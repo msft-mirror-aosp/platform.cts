@@ -20,8 +20,7 @@ import static android.app.admin.DevicePolicyIdentifiers.PERSISTENT_PREFERRED_ACT
 import static android.app.admin.TargetUser.LOCAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.FINANCED_DEVICE_CONTROLLER_ROLE;
 
-import static com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest.LESS_IMPORTANT;
-import static com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest.MORE_IMPORTANT;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -42,14 +41,13 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.PersistentPreferredActivities;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
@@ -80,7 +78,7 @@ public final class PersistentPreferredActivitiesTest {
     private static final String TEST_ACTION = "com.android.cts.deviceandprofileowner.CONFIRM";
 
     private static final TestApp sTestAppWithMultipleActivities =
-            sDeviceState.testApps().query()
+            testApps(sDeviceState).query()
                     .whereActivities().contains(
                             activity().where().intentFilters().contains(
                                     intentFilter()

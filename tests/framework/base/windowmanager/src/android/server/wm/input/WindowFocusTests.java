@@ -59,6 +59,7 @@ import android.media.ImageReader;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.BuildUtils;
+import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.StateLogger;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
@@ -67,10 +68,10 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.annotation.NonNull;
 
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.DebugInputRule;
 
 import org.junit.Rule;
@@ -91,6 +92,9 @@ import javax.annotation.concurrent.GuardedBy;
 public class WindowFocusTests extends WindowManagerTestBase {
 
     @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
+
+    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
+    @Rule public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.createDefault();
 
     private static void sendKey(int action, int keyCode, int displayId) {
         final long downTime = SystemClock.uptimeMillis();
@@ -369,8 +373,8 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     @DebugInputRule.DebugInput(bug = 368807736)
     public void testPointerCapture() {
-        final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                getMainDisplayId());
+        final PrimaryActivity primaryActivity = startActivityAndFocus(getMainDisplayId(),
+                /*hasFocus*/ true, PrimaryActivity.class);
 
         // Assert primary activity can have pointer capture before we have multiple focused windows.
         getInstrumentation().runOnMainSync(primaryActivity::requestPointerCapture);
@@ -401,9 +405,8 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     public void testPointerCaptureWhenFocus() throws Throwable {
         final AutoEngagePointerCaptureActivity primaryActivity =
-                startActivity(AutoEngagePointerCaptureActivity.class, getMainDisplayId());
-        assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(Duration.ofSeconds(5)));
+                startActivityAndFocus(getMainDisplayId(), /*hasFocus*/ true,
+                        AutoEngagePointerCaptureActivity.class);
 
         // Assert primary activity can have pointer capture before we have multiple focused windows.
         primaryActivity.waitAndAssertPointerCaptureState(true /* hasCapture */);
@@ -740,12 +743,10 @@ public class WindowFocusTests extends WindowManagerTestBase {
         VirtualDisplayWithOwnFocusSession(Context context, int additionalFlags) {
             mReader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888,
                     /* maxImages= */ 2);
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                mVirtualDisplay = context.getSystemService(DisplayManager.class)
-                        .createVirtualDisplay(WindowFocusTests.class.getSimpleName(), WIDTH, HEIGHT,
-                                DENSITY, mReader.getSurface(),
-                                getVirtualDisplayFlags() | additionalFlags);
-            });
+            mVirtualDisplay = context.getSystemService(DisplayManager.class)
+                    .createVirtualDisplay(WindowFocusTests.class.getSimpleName(), WIDTH, HEIGHT,
+                            DENSITY, mReader.getSurface(),
+                            getVirtualDisplayFlags() | additionalFlags);
             mDisplay = mVirtualDisplay.getDisplay();
         }
 
@@ -812,6 +813,15 @@ public class WindowFocusTests extends WindowManagerTestBase {
         // An untrusted virtual display won't have focus until the display is touched.
         final T activity = WindowManagerTestBase.startActivity(
                 cls, displayId, hasFocus);
+        // Regardless of whether the activity should be focused at launched, it should always be
+        // the top-most activity on the display.
+        try {
+            assertTrue("Timed out waiting for window to be on top",
+                    CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow()));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // Tap on the activity to bring it into focus, in case it wasn't focused before.
         tapOn(activity);
         activity.waitAndAssertWindowFocusState(true);
         return activity;

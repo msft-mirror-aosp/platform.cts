@@ -31,6 +31,7 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
 import android.util.Pair;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -188,6 +189,52 @@ public class CtsWindowInfoUtils {
             return false;
         };
         return waitForWindowInfos(wrappedPredicate, timeout);
+    }
+
+    /**
+     * Waits for the SurfaceView to be invisible.
+     */
+    public static boolean waitForSurfaceViewInvisible(@NonNull SurfaceView view)
+            throws InterruptedException {
+        Predicate<List<WindowInfo>> wrappedPredicate = windowInfos -> {
+            for (var windowInfo : windowInfos) {
+                if (windowInfo.isVisible) {
+                    continue;
+                }
+                if (windowInfo.name.startsWith(getHashCode(view))) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        return waitForWindowInfos(wrappedPredicate, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L));
+    }
+
+    /**
+     * Waits for the SurfaceView to be present.
+     */
+    public static boolean waitForSurfaceViewVisible(@NonNull SurfaceView view)
+            throws InterruptedException {
+        // Wait until view is attached to a display
+        PollingCheck.waitFor(() -> view.getDisplay() != null, "View not attached to a display");
+
+        Predicate<List<WindowInfo>> wrappedPredicate = windowInfos -> {
+            for (var windowInfo : windowInfos) {
+                if (!windowInfo.isVisible) {
+                    continue;
+                }
+                if (windowInfo.name.startsWith(getHashCode(view))
+                        && windowInfo.displayId == view.getDisplay().getDisplayId()) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        return waitForWindowInfos(wrappedPredicate, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L));
     }
 
     /**
@@ -860,5 +907,9 @@ public class CtsWindowInfoUtils {
         }
 
         return consumer.getState();
+    }
+
+    private static String getHashCode(Object obj) {
+        return Integer.toHexString(System.identityHashCode(obj));
     }
 }

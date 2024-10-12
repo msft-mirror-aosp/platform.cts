@@ -93,7 +93,9 @@ public final class ResetPasswordWithTokenTest {
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void setResetPasswordToken_validToken_passwordTokenSet() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         try {
             boolean possible = canSetResetPasswordToken(TOKEN);
@@ -110,7 +112,9 @@ public final class ResetPasswordWithTokenTest {
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_validPasswordAndToken_success() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
@@ -125,7 +129,9 @@ public final class ResetPasswordWithTokenTest {
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_badToken_failure() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         assertThat(sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
@@ -136,7 +142,9 @@ public final class ResetPasswordWithTokenTest {
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_noPassword_deviceIsNotSecure() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
@@ -150,7 +158,9 @@ public final class ResetPasswordWithTokenTest {
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_password_deviceIsSecure() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
@@ -223,7 +233,9 @@ public final class ResetPasswordWithTokenTest {
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_validPasswordAndToken_logged() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
@@ -819,7 +831,9 @@ public final class ResetPasswordWithTokenTest {
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void clearResetPasswordToken_passwordTokenIsResetAndUnableToSetNewPassword() {
         // TODO(b/371032678): Remove assumption after flag rollout.
-        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+        assumeTrue(
+                sDeviceState.dpc().componentName() != null
+                        || Flags.resetPasswordWithTokenCoexistence());
 
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
