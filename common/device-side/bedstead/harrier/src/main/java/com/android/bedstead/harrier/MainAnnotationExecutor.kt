@@ -71,8 +71,8 @@ import com.android.bedstead.harrier.components.PropertiesComponent
 import com.android.bedstead.harrier.components.ScreenOrientationComponent
 import com.android.bedstead.harrier.components.SecureSettingsComponent
 import com.android.bedstead.harrier.components.UserPasswordComponent
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.harrier.components.WifiComponent
-import com.android.bedstead.multiuser.UserTypeResolver
 
 /**
  * [AnnotationExecutor] for annotations that don't belong to specific modules

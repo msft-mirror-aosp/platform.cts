@@ -25,7 +25,7 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
-import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.testapp.NotFoundException
 import com.android.queryable.queries.ActivityQuery

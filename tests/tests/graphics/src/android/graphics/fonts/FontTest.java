@@ -1048,16 +1048,16 @@ public class FontTest {
         // WeightEqualsEmVariableFont adjust glyph advance as follows
         //  glyph advance = 'wght' value / 1000
         // Thus, by setting text size to 1000px, the glyph advance will equals to passed wght value.
-        Font baseFont = new Font.Builder(assets, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
+        Font baseFont = new Font.Builder(assets, "fonts/var_fonts/WidthEqualsEmVariableFont.ttf")
                 .build();
 
         FontStyle style = new FontStyle(123, FontStyle.FONT_SLANT_ITALIC);
 
-        for (int weight = 50; weight < 1000; weight += 50) {
+        for (int width = 50; width < 1000; width += 50) {
             Font clonedFont = new Font.Builder(baseFont)
                     .setWeight(style.getWeight())
                     .setSlant(style.getSlant())
-                    .setFontVariationSettings("'wght' " + weight)
+                    .setFontVariationSettings("'wdth' " + width)
                     .build();
 
             // New font should have the same style passed.
@@ -1069,8 +1069,7 @@ public class FontTest {
             p.setTypeface(new Typeface.CustomFallbackBuilder(
                     new FontFamily.Builder(clonedFont).build()
             ).build());
-            assertEquals(weight, p.measureText("a"), 0);
-
+            assertEquals(width, p.measureText("a"), 0);
         }
     }
 

@@ -36,6 +36,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance
@@ -55,11 +56,10 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUna
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.policies.DisallowBluetooth
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -73,6 +73,7 @@ import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapps.testApp
 import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.IntegerSetQuery
