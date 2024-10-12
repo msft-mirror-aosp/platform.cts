@@ -5,10 +5,8 @@ package {
 filegroup {
     name: "bedstead-enterprise-common-srcs",
     srcs: [
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/*.java",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/parameterized/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/parameterized/*.java",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.kt",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.java",
     ],
 }
 
@@ -33,6 +31,7 @@ android_library {
         "bedstead-multiuser",
         "Harrier",
         "Nene",
+        "bedstead-testapps",
     ],
 }
 

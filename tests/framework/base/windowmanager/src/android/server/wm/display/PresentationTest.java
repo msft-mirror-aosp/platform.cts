@@ -140,7 +140,7 @@ public class PresentationTest extends MultiDisplayTestBase {
         mContext.startActivity(intent);
         waitAndAssertTopResumedActivity(
                 Components.PRESENTATION_ACTIVITY,
-                Display.DEFAULT_DISPLAY,
+                getMainDisplayId(),
                 "Launched activity must be on top");
     }
 }

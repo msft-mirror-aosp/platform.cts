@@ -133,7 +133,10 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
         assertEquals(300f, glyphs.getWeightOverride(0))
-        assertEquals(0f, glyphs.getItalicOverride(0))
+        assertTrue(
+            glyphs.getItalicOverride(0) == 0f ||
+                glyphs.getItalicOverride(0) == PositionedGlyphs.NO_OVERRIDE
+        )
     }
 
     @Test

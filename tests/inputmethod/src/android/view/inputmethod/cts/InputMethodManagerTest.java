@@ -44,6 +44,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Debug;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -104,6 +105,8 @@ public class InputMethodManagerTest {
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
     private static final String HIDDEN_FROM_PICKER_IME_LABEL = "Hidden From Picker IME";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+    private static final long SCROLL_TIMEOUT_MS = 500;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -359,6 +362,9 @@ public class InputMethodManagerTest {
                             .hasDescendant(By.text(MOCK_IME_LABEL))));
             assertNotNull("Mock IME should be found", mockImeUiObject);
 
+            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+            SystemClock.sleep(SCROLL_TIMEOUT_MS);
+
             // Tapping on a menu item should dismiss the menu.
             mockImeUiObject.click();
             waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
@@ -405,6 +411,9 @@ public class InputMethodManagerTest {
                     Until.findObject(By.res("android:id/button1")));
             assertNotNull("Language settings button should be found",
                     languageSettingsButtonUiObject);
+
+            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+            SystemClock.sleep(SCROLL_TIMEOUT_MS);
 
             languageSettingsButtonUiObject.click();
 

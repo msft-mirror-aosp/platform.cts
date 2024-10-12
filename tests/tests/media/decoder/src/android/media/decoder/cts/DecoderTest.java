@@ -104,8 +104,8 @@ public class DecoderTest extends MediaTestBase {
     private static final String TAG = "DecoderTest";
     private static final String REPORT_LOG_NAME = "CtsMediaDecoderTestCases";
 
-    public static final boolean WAS_LAUNCHED_ON_S_OR_LATER =
-            SystemProperties.getInt("ro.product.first_api_level",
+    public static final boolean IS_VENDOR_AT_LEAST_S =
+            SystemProperties.getInt("ro.vendor.api_level",
                                     Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.S;
 
@@ -3526,8 +3526,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnHevc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3540,8 +3540,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnAvc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3554,8 +3554,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnVp9() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
@@ -3627,8 +3627,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffHevc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3641,8 +3641,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffAvc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3655,8 +3655,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffVp9() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
@@ -4067,6 +4067,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushHevc() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -4078,6 +4081,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushAvc() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -4089,6 +4095,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushVp9() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }

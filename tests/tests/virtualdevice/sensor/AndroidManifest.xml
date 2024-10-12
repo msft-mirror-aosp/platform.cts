@@ -27,6 +27,9 @@
 
     <uses-feature android:name="android.software.companion_device_setup" />
 
+    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.virtualdevice.cts.sensor"
                      android:label="CTS tests of android.companion.virtual sensor functionality">

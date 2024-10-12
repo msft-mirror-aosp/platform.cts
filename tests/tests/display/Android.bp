@@ -35,6 +35,7 @@ android_test {
         "flag-junit",
         "Harrier",
         "CtsSurfaceValidatorLib",
+        "CtsVirtualDeviceCommonLib",
         "android.companion.virtual.flags-aconfig-java",
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",

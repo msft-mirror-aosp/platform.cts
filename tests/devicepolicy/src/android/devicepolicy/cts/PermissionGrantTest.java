@@ -37,6 +37,7 @@ import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 import static com.android.bedstead.permissions.CommonPermissions.READ_PHONE_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.READ_SMS;
 import static com.android.bedstead.permissions.CommonPermissions.WRITE_CALENDAR;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -54,6 +55,7 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -65,7 +67,6 @@ import com.android.bedstead.harrier.annotations.EnsureUnlocked;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
 import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.policies.SetPermissionGrantState;
@@ -153,7 +154,7 @@ public final class PermissionGrantTest {
     private static final String NON_EXISTING_PACKAGE_NAME = "non.existing.package";
     private static final String NOT_DECLARED_PERMISSION = "not.declared.permission";
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .wherePermissions().contains(
                     READ_SMS,
                     CAMERA,
@@ -166,7 +167,7 @@ public final class PermissionGrantTest {
             ).wherePermissions().doesNotContain(
                     NOT_DECLARED_PERMISSION
             ).get();
-    private static final TestApp sNotInstalledTestApp = sDeviceState.testApps().query()
+    private static final TestApp sNotInstalledTestApp = testApps(sDeviceState).query()
             .wherePermissions().contains(GRANTABLE_PERMISSION)
             .whereActivities().isNotEmpty().get();
     private static TestAppInstance sTestAppInstance;

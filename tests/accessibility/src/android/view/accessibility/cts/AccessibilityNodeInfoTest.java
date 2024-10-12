@@ -34,6 +34,9 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.InputType;
 import android.text.NoCopySpan;
 import android.text.Spannable;
@@ -56,6 +59,8 @@ import android.view.accessibility.Flags;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,6 +80,9 @@ public class AccessibilityNodeInfoTest {
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @SmallTest
     @Test
@@ -294,6 +302,62 @@ public class AccessibilityNodeInfoTest {
         assertFalse(info.isHeading());
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testDefaultCheckedState() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#isChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testCheckedState_setUsingTriStateAPI() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        assertThat(info.isChecked()).isFalse();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.isChecked()).isTrue();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.isChecked()).isFalse();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked(boolean)",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked(int)",
+            "android.view.accessibility.AccessibilityNodeInfo#isChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testCheckedState_setUsingBooleanAPI() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setChecked(true);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.isChecked()).isTrue();
+
+        info.setChecked(false);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.isChecked()).isFalse();
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
@@ -365,6 +429,9 @@ public class AccessibilityNodeInfoTest {
         }
         info.setLabelFor(new View(getContext()));
         populateTouchDelegateTargetMap(info);
+
+        // Populate 1 int field
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
 
         // And Boolean properties are another field. Total is 38
 
@@ -578,6 +645,10 @@ public class AccessibilityNodeInfoTest {
         assertEqualsTouchDelegateInfo("TouchDelegate target map has incorrect value",
                 expectedInfo.getTouchDelegateInfo(),
                 receivedInfo.getTouchDelegateInfo());
+
+        // Check 1 int field
+        assertEquals("Checked state has incorrect value",
+                expectedInfo.getChecked(), receivedInfo.getChecked());
 
         // And the boolean properties are another field, for a total of 28
         // Missing parent: Tested end-to-end in AccessibilityWindowTraversalTest#testObjectContract

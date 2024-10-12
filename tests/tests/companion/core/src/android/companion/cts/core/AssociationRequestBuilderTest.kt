@@ -19,10 +19,11 @@ package android.companion.cts.core
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.BluetoothDeviceFilter
+import android.companion.Flags
 import android.companion.cts.common.assertEmpty
+import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Test
-import org.junit.runner.RunWith
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -30,6 +31,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Test [android.companion.AssociationRequest.Builder].
@@ -54,6 +57,7 @@ class AssociationRequestBuilderTest {
             assertFalse(isSelfManaged)
             assertFalse(isForceConfirmation)
             assertFalse(isSingleDevice)
+            assertNull(deviceIcon)
         }
     }
 
@@ -61,25 +65,35 @@ class AssociationRequestBuilderTest {
     fun test_setters() {
         val deviceFilterA = createBluetoothDeviceFilter("00:00:00:00:00:AA")
         val deviceFilterB = createBluetoothDeviceFilter("00:00:00:00:00:BB")
-        val request = AssociationRequest.Builder()
-                .setDeviceProfile(DEVICE_PROFILE_WATCH)
-                .setDisplayName(DISPLAY_NAME)
-                .setSelfManaged(true)
-                .setForceConfirmation(true)
-                .setSingleDevice(true)
-                .addDeviceFilter(deviceFilterA)
-                .addDeviceFilter(deviceFilterB)
-                .build()
+        val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        val deviceIcon = Icon.createWithBitmap(bitmap)
+
+        val request = AssociationRequest.Builder().apply {
+            setDeviceProfile(DEVICE_PROFILE_WATCH)
+            setDisplayName(DISPLAY_NAME)
+            setSelfManaged(true)
+            setForceConfirmation(true)
+            setSingleDevice(true)
+            addDeviceFilter(deviceFilterA)
+            addDeviceFilter(deviceFilterB)
+            if (Flags.associationDeviceIcon()) {
+                setDeviceIcon(deviceIcon)
+            }
+        }.build()
 
         request.apply {
             assertEquals(actual = deviceProfile, expected = DEVICE_PROFILE_WATCH)
             assertEquals(actual = displayName, expected = DISPLAY_NAME)
             assertContentEquals(
                     actual = deviceFilters,
-                    expected = listOf(deviceFilterA, deviceFilterB))
+                    expected = listOf(deviceFilterA, deviceFilterB)
+            )
             assertTrue(isSelfManaged)
             assertTrue(isForceConfirmation)
             assertTrue(isSingleDevice)
+            if (Flags.associationDeviceIcon()) {
+                assertNotNull(deviceIcon)
+            }
         }
     }
 

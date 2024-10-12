@@ -32,6 +32,19 @@ filegroup {
     srcs: ["src/android/server/wm/insets/ForceRelayoutTestBase.java"],
 }
 
+filegroup {
+    name: "cts-wm-untrusted-touch-test-base",
+    srcs: ["src/android/server/wm/input/WindowUntrustedTouchTestBase.java"],
+}
+
+filegroup {
+    name: "cts-wm-activity-record-input-sink-test-base",
+    srcs: [
+        "src/android/server/wm/activity/ActivityRecordInputSinkTestsBase.java",
+        "src/android/server/wm/activity/ActivityRecordInputSinkTestsActivity.java",
+    ],
+}
+
 java_defaults {
     name: "CtsWindowManagerDeviceDefault",
 
@@ -56,6 +69,7 @@ java_defaults {
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
         "CtsAccessibilityCommon",
+        "CtsVirtualDeviceCommonLib",
         "metrics-helper-lib",
         "truth",
         "cts-wm-overlayapp-base",

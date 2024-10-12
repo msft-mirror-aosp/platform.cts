@@ -27,6 +27,7 @@ import static android.os.Build.VERSION_CODES.S;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
 import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -67,10 +68,10 @@ public final class TestAppInstanceTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
     private static final UserReference sUser = TestApis.users().instrumented();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().isNotEmpty()
             .get();
-    private static final TestApp sTestApp2 = sDeviceState.testApps().any();
+    private static final TestApp sTestApp2 = testApps(sDeviceState).any();
 
     private static final String INTENT_ACTION = "com.android.bedstead.testapp.test_action";
     private static final IntentFilter INTENT_FILTER = new IntentFilter(INTENT_ACTION);

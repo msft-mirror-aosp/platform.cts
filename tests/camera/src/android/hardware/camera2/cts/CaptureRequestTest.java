@@ -46,6 +46,7 @@ import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -182,7 +183,14 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 p.recycle();
 
                 // Check capture request with additional physical camera settings
-                String physicalId = new String(Integer.toString(i + 1));
+                String physicalId;
+                if (TextUtils.isDigitsOnly(cameraIdsUnderTest[i])) {
+                    physicalId = new String(
+                            Integer.toString(Integer.valueOf(cameraIdsUnderTest[i]) + 1));
+                } else {
+                    physicalId = new String(Integer.toString(i + 1));
+                }
+
                 ArraySet<String> physicalIds = new ArraySet<String> ();
                 physicalIds.add(physicalId);
 

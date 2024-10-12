@@ -42,6 +42,7 @@ import android.view.KeyEvent
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
@@ -334,6 +335,15 @@ abstract class SensorPrivacyBaseTest(
         }
     }
 
+    // TODO(b/371636626): Re-enable once per-display interactiveness is supported.
+    @RequireNotVisibleBackgroundUsers(
+        reason = "This test relies on turning screen off and on " +
+        "to bring up keyguard. This test has to be skipped on devices with visible background " +
+        "users enabled (primarily Automotive Multi Display) because currently on such devices " +
+        "there is no support for per display interactiveness. PowerManager#IsInteractive will " +
+        "still return true when the driver screen is turned off because passenger screens are " +
+        "on, causing the test to get stuck."
+    )
     @Test
     @AppModeFull(reason = "Instant apps can't manage keyguard")
     fun testCantChangeWhenLocked() {

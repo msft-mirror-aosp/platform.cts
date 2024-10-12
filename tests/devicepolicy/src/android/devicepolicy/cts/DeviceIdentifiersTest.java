@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -45,7 +46,7 @@ public final class DeviceIdentifiersTest {
 
     private static final String SMS_ROLE = "android.app.role.SMS";
     private static final TestApp sSmsTestApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains("android.intent.action.SEND")
                     )).get();

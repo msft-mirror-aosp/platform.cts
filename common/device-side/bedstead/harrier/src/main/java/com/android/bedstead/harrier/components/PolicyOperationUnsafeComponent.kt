@@ -48,6 +48,22 @@ class PolicyOperationUnsafeComponent : DeviceStateComponent {
                 CommonDevicePolicy.OperationSafetyReason.OPERATION_SAFETY_REASON_NONE
             )
             nextSafetyOperationSet = false
+
+            /*
+            OneTimeSafetyChecker operates under following conditions:
+                - stores previously set OneTimeSafetyChecker as its field
+                - operates under 10s timeout, after which the previous OneTimeSafetyChecker is set
+            Due to those conditions, it is hard to be sure about the checker's state at any given
+            moment. Setting it to OPERATION_NONE during teardown may easily be undermined by
+            another OneTimeSafetyChecker set earlier in a test, that has just timed out and now sets
+            its previous OTSC as a current one, resulting in a faulty state for at least a couple of
+            seconds.
+            Provided timeout ensures that both setNextOperationSafety calls invoked during
+            teardown (and any other that could have been called before teardown) will timeout,
+            which will result in stable checker's state without any risk for it to change in the
+            following tests.
+             */
+            Thread.sleep(10_500L)
         }
     }
 }

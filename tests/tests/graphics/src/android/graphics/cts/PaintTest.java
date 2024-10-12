@@ -52,6 +52,7 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1061,7 +1062,8 @@ public class PaintTest {
     }
 
     @Test
-    public void testSetGetFontVariationSettings() {
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN)
+    public void testSetGetFontVariationSettings_Api35() {
         final Paint defaultPaint = new Paint();
 
         Paint p = new Paint();
@@ -1114,6 +1116,35 @@ public class PaintTest {
             assertTrue("Must return true for " + effectiveSetting,
                     p.setFontVariationSettings(effectiveSetting));
             assertEquals(effectiveSetting, p.getFontVariationSettings());
+        }
+
+        p.setFontVariationSettings("");
+        assertNull(p.getFontVariationSettings());
+    }
+
+    @Test
+    public void testSetGetFontVariationSettings() {
+        Paint p = new Paint();
+        Context context = InstrumentationRegistry.getTargetContext();
+        Typeface typeface = Typeface.createFromAsset(context.getAssets(),
+                "fonts/var_fonts/multiaxis.ttf");
+        p.setTypeface(typeface);
+
+        // multiaxis.ttf supports "wght", "PRIV", "PR12" axes.
+
+        // The default variation settings should be null.
+        assertNull(p.getFontVariationSettings());
+
+        final String[] varSettingsList = {
+                "'wght' 300",  // supported tag
+                "'wght' 300, 'PRIV' 0.5",  // both are supported
+                "'PRIV' 1.0, 'BBBB' 0.4",  // 'BBBB' is unsupported
+        };
+
+        for (String varSettings : varSettingsList) {
+            assertTrue("Must return true for " + varSettings,
+                    p.setFontVariationSettings(varSettings));
+            assertEquals(varSettings, p.getFontVariationSettings());
         }
 
         p.setFontVariationSettings("");

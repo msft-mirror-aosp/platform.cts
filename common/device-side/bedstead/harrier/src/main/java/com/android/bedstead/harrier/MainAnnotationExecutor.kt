@@ -28,17 +28,12 @@ import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsS
 import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.harrier.annotations.EnsurePolicyOperationUnsafe
 import com.android.bedstead.harrier.annotations.EnsurePropertySet
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme
 import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation
@@ -65,7 +60,6 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.components.AccountsComponent
 import com.android.bedstead.harrier.components.BluetoothComponent
 import com.android.bedstead.harrier.components.ContentSuggestionsComponent
@@ -76,15 +70,16 @@ import com.android.bedstead.harrier.components.PolicyOperationUnsafeComponent
 import com.android.bedstead.harrier.components.PropertiesComponent
 import com.android.bedstead.harrier.components.ScreenOrientationComponent
 import com.android.bedstead.harrier.components.SecureSettingsComponent
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.harrier.components.UserPasswordComponent
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.harrier.components.WifiComponent
-import com.android.bedstead.multiuser.UserTypeResolver
 
+/**
+ * [AnnotationExecutor] for annotations that don't belong to specific modules
+ */
 @Suppress("unused")
 class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
-    private val testAppsComponent: TestAppsComponent by locator
     private val userPasswordComponent: UserPasswordComponent by locator
     private val contentSuggestionsComponent: ContentSuggestionsComponent by locator
     private val bluetoothComponent: BluetoothComponent by locator
@@ -122,7 +117,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is RequireQuickSettingsSupport -> logic()
             is RequireHasDefaultBrowser -> logic(userTypeResolver)
             is RequireTelephonySupport -> logic()
-            is EnsurePackageRespondsToIntent -> logic(testAppsComponent, userTypeResolver)
             is EnsureNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequireNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequirePackageRespondsToIntent -> logic(userTypeResolver)
@@ -141,36 +135,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
 
             is EnsureUsingScreenOrientation ->
                 screenOrientationComponent.ensureUsingScreenOrientation(orientation)
-
-            is AdditionalQueryParameters -> testAppsComponent.addQueryParameters(this)
-            is EnsureTestAppInstalled -> testAppsComponent.ensureTestAppInstalled(
-                key,
-                query,
-                userTypeResolver.toUser(onUser),
-                isPrimary
-            )
-
-            is EnsureTestAppHasPermission -> testAppsComponent.ensureTestAppHasPermission(
-                testAppKey,
-                permissions = value,
-                minVersion,
-                maxVersion,
-                failureMode
-            )
-
-            is EnsureTestAppDoesNotHavePermission ->
-                testAppsComponent.ensureTestAppDoesNotHavePermission(
-                    testAppKey,
-                    value,
-                    failureMode
-                )
-
-            is EnsureTestAppHasAppOp -> testAppsComponent.ensureTestAppHasAppOp(
-                testAppKey,
-                value,
-                minVersion,
-                maxVersion
-            )
 
             is EnsurePasswordSet -> userPasswordComponent.ensurePasswordSet(forUser, password)
             is EnsurePasswordNotSet -> userPasswordComponent.ensurePasswordNotSet(forUser)

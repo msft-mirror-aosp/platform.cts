@@ -16,6 +16,8 @@
 package android.devicepolicy.cts
 
 import android.content.ComponentName
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
@@ -23,8 +25,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
@@ -34,6 +34,7 @@ import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapps.testApps
 import com.android.eventlib.truth.EventLogsSubject
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert

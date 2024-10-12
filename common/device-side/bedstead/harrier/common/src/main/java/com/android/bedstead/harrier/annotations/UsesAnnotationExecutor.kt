@@ -41,6 +41,7 @@ annotation class UsesAnnotationExecutor(
         const val MULTI_USER = "com.android.bedstead.multiuser.MultiUserAnnotationExecutor"
         const val ENTERPRISE = "com.android.bedstead.enterprise.EnterpriseAnnotationExecutor"
         const val MAIN = "com.android.bedstead.harrier.MainAnnotationExecutor"
+        const val TEST_APPS = "com.android.bedstead.testapps.TestAppsAnnotationExecutor"
     }
 }
 

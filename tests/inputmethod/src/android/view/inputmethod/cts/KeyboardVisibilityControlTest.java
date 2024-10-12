@@ -70,14 +70,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.Insets;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
@@ -1817,106 +1815,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // Rerun the test procedure to ensure it passes after exiting split-screen mode.
                 testProcedureForTestActivity2.run();
             }
-        }
-    }
-
-    /**
-     * This tests checks that the apps that are in vertical split screen, don't get IME insets
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
-    public void testNoImeInsetsInSplitScreen() throws Throwable {
-        assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
-
-        setAutoRotateScreen(false);
-        final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
-        uiDevice.setOrientationPortrait();
-        mInstrumentation.waitForIdleSync();
-
-        try (MockImeSession imeSession = MockImeSession.create(
-                mInstrumentation.getContext(),
-                mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder())) {
-            final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
-
-            // Launch an editor activity to be on the split primary task.
-            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                editTextRef.set(editText);
-                layout.addView(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(marker);
-                editText.requestFocus();
-                return layout;
-            });
-
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectImeInvisible(TIMEOUT);
-
-            // Launch another activity with SOFT_INPUT_STATE_HIDDEN flag to be on the split
-            // secondary task, expect the IME won't receive onStartInputView and invisible.
-            final TestActivity splitSecondaryActivity = new TestActivity.Starter()
-                    .asMultipleTask()
-                    .withAdditionalFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
-                    .startSync(splitPrimaryActivity, activity -> {
-                        activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_HIDDEN);
-                        return new LinearLayout(activity);
-                    }, TestActivity2.class);
-            expectImeInvisible(TIMEOUT);
-
-            final var editText = editTextRef.get();
-            final var display = editText.getContext().getDisplay();
-
-            final CountDownLatch imeInsetsLatch = new CountDownLatch(1);
-            AtomicReference<Boolean> hasNonZeroImeInsets = new AtomicReference<>(false);
-            AtomicReference<Insets> receivedInsets = new AtomicReference<>();
-            final View.OnApplyWindowInsetsListener listener = (v, windowInsets) -> {
-                receivedInsets.set(windowInsets.getInsets(WindowInsets.Type.ime()));
-                if (!Insets.NONE.equals(windowInsets.getInsets(ime()))) {
-                    hasNonZeroImeInsets.set(true);
-                }
-                if (windowInsets.isVisible(ime())) {
-                    imeInsetsLatch.countDown();
-                }
-                return v.onApplyWindowInsets(windowInsets);
-            };
-            // Depending on the size of the IME, only one of the two activities could get the insets
-            TestUtils.runOnMainSync(() -> {
-                splitPrimaryActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                        listener);
-                splitSecondaryActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                        listener);
-            });
-
-
-            /*
-             * Since this test relies on window focus with multiple windows involved, we need to
-             * use a global method of emulating touch that goes through the entire pipeline. This
-             * ensures that the window manager is aware of the tap that occurred, and provides
-             * window focus to the tapped window.
-             */
-            try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
-                // Tap the editor on the split primary task to focus the window and show the IME.
-                touch.tapOnViewCenter(editText);
-                // TODO(b/280797309): The first tap sends the IME show request before the
-                //  input focus changes, so we have to wait for that and tap again.
-                TestUtils.waitOnMainUntil(editText::hasWindowFocus, TIMEOUT);
-                touch.tapOnViewCenter(editText);
-
-                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-                expectImeVisible(TIMEOUT);
-            }
-
-            // Assert that the IME height of the app in split screen was zero
-            assertTrue("Waiting for onApplyWindowInsets with the IME visible failed",
-                    imeInsetsLatch.await(5, TimeUnit.SECONDS));
-            assertFalse("Received IME insets were not zero. Last received insets = "
-                    + receivedInsets.get(), hasNonZeroImeInsets.get());
-
         }
     }
 

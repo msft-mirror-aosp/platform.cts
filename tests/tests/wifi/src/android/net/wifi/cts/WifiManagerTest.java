@@ -7421,25 +7421,24 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     @RequiresFlagsEnabled(Flags.FLAG_AUTOJOIN_RESTRICTION_SECURITY_TYPES_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
-    @ApiTest(apis = {"android.net.wifi.WifiManager#setAutojoinRestrictionSecurityTypes",
-            "android.net.wifi.WifiManager#getAutojoinRestrictionSecurityTypes"})
-    public void testAutojoinRestrictions() throws Exception {
+    @ApiTest(apis = {"android.net.wifi.WifiManager#setAutojoinDisallowedSecurityTypes",
+            "android.net.wifi.WifiManager#getAutojoinDisallowedSecurityTypes"})
+    public void testAutojoinDisallowed() throws Exception {
         Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
         long now, deadline;
-        Set<Integer> restrictionTypes = new ArraySet<>(
-                new Integer[] {WifiInfo.SECURITY_TYPE_OPEN, WifiInfo.SECURITY_TYPE_OWE});
+        int[] restrictionTypes = { WifiInfo.SECURITY_TYPE_OPEN, WifiInfo.SECURITY_TYPE_OWE };
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            sWifiManager.setAutojoinRestrictionSecurityTypes(restrictionTypes);
-            sWifiManager.getAutojoinRestrictionSecurityTypes(mExecutor,
-                    new Consumer<Set<Integer>>() {
+            sWifiManager.setAutojoinDisallowedSecurityTypes(restrictionTypes);
+            sWifiManager.getAutojoinDisallowedSecurityTypes(mExecutor,
+                    new Consumer<int[]>() {
                         @Override
-                        public void accept(Set<Integer> integers) {
+                        public void accept(int[] values) {
                             synchronized (mLock) {
                                 isQuerySucceeded.value = true;
-                                assertEquals("Set and get results mismatch", restrictionTypes,
-                                        integers);
+                                assertArrayEquals("Set and get results mismatch", restrictionTypes,
+                                        values);
                             }
                         }
                     });
@@ -7453,7 +7452,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             assertTrue("get autojoin restrictions query fail", isQuerySucceeded.value);
         } finally {
-            sWifiManager.setAutojoinRestrictionSecurityTypes(Collections.EMPTY_SET);
+            sWifiManager.setAutojoinDisallowedSecurityTypes(new int[0]);
             uiAutomation.dropShellPermissionIdentity();
         }
     }

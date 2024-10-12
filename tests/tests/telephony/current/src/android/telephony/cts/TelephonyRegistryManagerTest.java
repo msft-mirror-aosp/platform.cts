@@ -42,6 +42,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -499,6 +500,169 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
+    private static class TestEmergencyCallbackModeListener extends TelephonyCallback implements
+            TelephonyCallback.EmergencyCallbackModeListener {
+        private final LinkedBlockingQueue<Pair<Integer, Long>> mStartedQueue;
+        private final LinkedBlockingQueue<Pair<Integer, Long>> mRestartedQueue;
+        private final LinkedBlockingQueue<Pair<Integer, Integer>> mStoppedQueue;
+
+        TestEmergencyCallbackModeListener(
+                @Nullable LinkedBlockingQueue<Pair<Integer, Long>> startedQueue,
+                @Nullable LinkedBlockingQueue<Pair<Integer, Long>> restartedQueue,
+                @Nullable LinkedBlockingQueue<Pair<Integer, Integer>> stoppedQueue) {
+            mStartedQueue = startedQueue;
+            mRestartedQueue = restartedQueue;
+            mStoppedQueue = stoppedQueue;
+        }
+
+        @Override
+        public void onCallbackModeStarted(@TelephonyManager.EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
+            if (mStartedQueue != null) {
+                mStartedQueue.offer(Pair.create(type, timerDuration.toMillis()));
+            }
+        }
+
+        @Override
+        public void onCallbackModeRestarted(@TelephonyManager.EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
+            if (mRestartedQueue != null) {
+                mRestartedQueue.offer(Pair.create(type, timerDuration.toMillis()));
+            }
+        }
+
+        @Override
+        public void onCallbackModeStopped(@TelephonyManager.EmergencyCallbackModeType int type,
+                @TelephonyManager.EmergencyCallbackModeStopReason int reason, int subId) {
+            if (mStoppedQueue != null) {
+                mStoppedQueue.offer(Pair.create(type, reason));
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
+    @Test
+    public void testNotifyCallbackModeStarted() throws Exception {
+        LinkedBlockingQueue<Pair<Integer, Long>> queue = new LinkedBlockingQueue<>(2);
+        TestEmergencyCallbackModeListener listener = new TestEmergencyCallbackModeListener(
+                queue, null, null);
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        Pair<Integer, Long> testVal = Pair.create(
+                TelephonyManager.EMERGENCY_CALLBACK_MODE_CALL, 1000L);
+
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeStarted(
+                            phoneId, defaultSubId, testVal.first, testVal.second));
+            Pair<Integer, Long> resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No callback mode notification received", resultVal);
+
+            assertEquals(testVal.first, resultVal.first);
+            assertEquals(testVal.second, resultVal.second);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeStopped(phoneId, defaultSubId,
+                            TelephonyManager.EMERGENCY_CALLBACK_MODE_CALL,
+                            TelephonyManager.STOP_REASON_UNKNOWN));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
+    @Test
+    public void testNotifyCallbackModeRestarted() throws Exception {
+        LinkedBlockingQueue<Pair<Integer, Long>> queue = new LinkedBlockingQueue<>(2);
+        TestEmergencyCallbackModeListener listener = new TestEmergencyCallbackModeListener(
+                null, queue, null);
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        Pair<Integer, Long> testVal = Pair.create(
+                TelephonyManager.EMERGENCY_CALLBACK_MODE_SMS, 1000L);
+
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeRestarted(
+                            phoneId, defaultSubId, testVal.first, testVal.second));
+            Pair<Integer, Long> resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No callback mode notification received", resultVal);
+
+            assertEquals(testVal.first, resultVal.first);
+            assertEquals(testVal.second, resultVal.second);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeStopped(phoneId, defaultSubId,
+                            TelephonyManager.EMERGENCY_CALLBACK_MODE_SMS,
+                            TelephonyManager.STOP_REASON_UNKNOWN));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
+    @Test
+    public void testNotifyCallbackModeStopped() throws Exception {
+        LinkedBlockingQueue<Pair<Integer, Integer>> queue = new LinkedBlockingQueue<>(2);
+        TestEmergencyCallbackModeListener listener = new TestEmergencyCallbackModeListener(
+                null, null, queue);
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        Pair<Integer, Integer> testVal = Pair.create(
+                TelephonyManager.EMERGENCY_CALLBACK_MODE_CALL,
+                TelephonyManager.STOP_REASON_OUTGOING_EMERGENCY_CALL_INITIATED);
+
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeStopped(
+                            phoneId, defaultSubId, testVal.first, testVal.second));
+            Pair<Integer, Integer> resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No callback mode notification received", resultVal);
+
+            assertEquals(testVal.first, resultVal.first);
+            assertEquals(testVal.second, resultVal.second);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCallbackModeStopped(phoneId, defaultSubId,
+                            TelephonyManager.EMERGENCY_CALLBACK_MODE_CALL,
+                            TelephonyManager.STOP_REASON_UNKNOWN));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
 
     @Test
     public void testNotifyPreciseCallStateWithImsCall() throws Exception {

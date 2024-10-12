@@ -26,6 +26,7 @@ import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubje
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -84,7 +85,7 @@ public final class UserControlDisabledPackagesTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final TestApp sTestApp =
-            sDeviceState.testApps().query().whereActivities().isNotEmpty().get();
+            testApps(sDeviceState).query().whereActivities().isNotEmpty().get();
 
     private static final ActivityManager sActivityManager =
             TestApis.context().instrumentedContext().getSystemService(ActivityManager.class);

@@ -22,6 +22,7 @@ import android.hardware.SensorAdditionalInfo;
 import android.hardware.SensorEventCallback;
 import android.hardware.SensorManager;
 import android.hardware.cts.helpers.SensorCtsHelper;
+import android.os.Build;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,8 +62,9 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
             }
             if (!s.isAdditionalInfoSupported()) {
                 // check SensorAdditionalInfo is supported for Automotive sensors.
+                // TODO(b/351896433): Remove the emulator check once b/351896433 is fixed.
                 if (getContext().getPackageManager().hasSystemFeature(
-                        PackageManager.FEATURE_AUTOMOTIVE)) {
+                        PackageManager.FEATURE_AUTOMOTIVE) && !Build.IS_EMULATOR) {
                     errors.add("Sensor: " + s.getName() +
                         ", error: AdditionalSensorInfo not supported for Automotive sensor.");
                 }

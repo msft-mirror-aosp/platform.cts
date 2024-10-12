@@ -34,6 +34,7 @@ public class TestVerifierServiceReject extends TestVerifierService {
                 .build();
         session.reportVerificationComplete(status);
         Intent broadcastIntent = new Intent(ACTION_REQUEST_RECEIVED);
+        broadcastIntent.putExtra(EXTRA_VERIFICATION_SESSION, session);
         broadcastIntent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         sendBroadcast(broadcastIntent);
         Log.i(TAG, "Returned verification failure.");

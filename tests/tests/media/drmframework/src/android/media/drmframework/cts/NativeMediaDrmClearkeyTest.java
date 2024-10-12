@@ -31,6 +31,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import java.io.File;
@@ -41,6 +42,7 @@ import java.util.UUID;
  * Tests MediaDrm NDK APIs. ClearKey system uses a subset of NDK APIs,
  * this test only tests the APIs that are supported by ClearKey system.
  */
+@FrameworkSpecificTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class NativeMediaDrmClearkeyTest extends MediaPlayerDrmTestBase {
     private static final String TAG = NativeMediaDrmClearkeyTest.class.getSimpleName();

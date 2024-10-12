@@ -982,7 +982,8 @@ def draw_green_boxes_around_faces(img, faces_cropped, img_name):
 
 
 def find_aruco_markers(
-    input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT):
+    input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT,
+    force_greyscale=False):
   """Detects ArUco markers in the input_img.
 
   Finds ArUco markers in the input_img and draws the contours
@@ -993,6 +994,8 @@ def find_aruco_markers(
     output_img_path: path of the image to be saved with contours
       around the markers detected
     aruco_marker_count: optional int for minimum markers to expect.
+    force_greyscale: optional bool to force greyscale detection, even if enough
+      markers are detected.
   Returns:
     corners: list of detected corners
     ids: list of int ids for each ArUco markers in the input_img
@@ -1011,8 +1014,8 @@ def find_aruco_markers(
     corners, ids, rejected_params = cv2.aruco.detectMarkers(
         input_img, aruco_dict, parameters=parameters
     )
-  # Early return if sufficient markers found
-  if ids is not None and len(ids) >= aruco_marker_count:
+  # Early return if sufficient markers found and greyscale detection not needed
+  if ids is not None and len(ids) >= aruco_marker_count and not force_greyscale:
     logging.debug('All ArUco markers detected.')
     cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
     image_processing_utils.write_image(input_img / 255, output_img_path)

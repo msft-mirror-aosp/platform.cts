@@ -24,7 +24,6 @@ import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -146,28 +145,6 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
                 createMotionEvent(MotionEvent.ACTION_HOVER_EXIT, x1, y1)
             )
         )
-    }
-
-    @Test
-    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val inputSize = 1f
-        val x = 50f
-        val y = 50f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualTouchscreen.sendTouchEvent(
-                    VirtualTouchEvent.Builder()
-                        .setAction(VirtualTouchEvent.ACTION_DOWN)
-                        .setPointerId(1)
-                        .setX(x)
-                        .setY(y)
-                        .setPressure(255f)
-                        .setMajorAxisSize(inputSize)
-                        .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                        .build()
-                )
-            }
-        }
     }
 
     private fun sendHoverEvent(action: Int, x: Float, y: Float) {

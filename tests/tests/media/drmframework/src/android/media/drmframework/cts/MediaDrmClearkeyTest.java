@@ -44,6 +44,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,6 +65,7 @@ import java.util.Vector;
 /**
  * Tests of MediaPlayer streaming capabilities.
  */
+@FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActivity> {
 
@@ -789,6 +791,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 MediaDrm.KEY_TYPE_STREAMING);
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testClearKeyPlaybackMpeg2ts() throws Exception {
         testClearKeyPlayback(
             CLEARKEY_SCHEME_UUID,

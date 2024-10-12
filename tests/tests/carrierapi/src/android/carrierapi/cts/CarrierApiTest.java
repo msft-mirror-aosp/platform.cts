@@ -222,8 +222,10 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 context.getContentResolver().acquireContentProviderClient(mStatusContentUri);
         mPackageManager = context.getPackageManager();
         mImsManager = context.getSystemService(ImsManager.class);
-        final int subId = SubscriptionManager.getDefaultSubscriptionId();
-        mMmTelManager = mImsManager.getImsMmTelManager(subId);
+        if (mImsManager != null) {
+            final int subId = SubscriptionManager.getDefaultSubscriptionId();
+            mMmTelManager = mImsManager.getImsMmTelManager(subId);
+        }
         mListenerThread = new HandlerThread("CarrierApiTest");
         mListenerThread.start();
     }
@@ -232,7 +234,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     public void tearDown() throws Exception {
         if (!werePreconditionsSatisfied()) return;
 
-        mListenerThread.quit();
+        if (mListenerThread != null) {
+            mListenerThread.quit();
+        }
         try {
             mStatusProvider.delete(mStatusContentUri, null, null);
             mVoicemailProvider.delete(mVoicemailContentUri, null, null);
@@ -413,9 +417,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                             TelephonyManager.APPTYPE_USIM,
                             TelephonyManager.AUTHTYPE_EAP_SIM,
                             base64Challenge);
-            assertWithMessage("Response to EAP-SIM Challenge must not be Null.")
-                    .that(response)
-                    .isNotNull();
+            assertWithMessage("UICC returned null for EAP-SIM auth").that(response).isNotNull();
             // response is base64 encoded. After decoding, the value should be:
             // 1 length byte + SRES(4 bytes) + 1 length byte + Kc(8 bytes)
             byte[] result = android.util.Base64.decode(response, android.util.Base64.DEFAULT);
@@ -436,6 +438,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     @SystemUserOnly(reason = "b/177921545, broadcast sent only to primary user")
     public void testSendDialerSpecialCode() {
+        assumeTrue(hasTelephonyCalling());
+
         IntentReceiver intentReceiver = new IntentReceiver();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Telephony.Sms.Intents.SECRET_CODE_ACTION);
@@ -836,6 +840,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // The AID here doesn't matter - we just need to open a valid connection. In this case, the
         // specified AID ("") opens a channel and selects the MF.
         IccOpenLogicalChannelResponse response = mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = response.getChannel();
         try {
             verifyValidIccOpenLogicalChannelResponse(response);
@@ -851,6 +856,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Specification v3.2 Section 6.2.7.h and TS 102 221 for details.
         int p2 = 0x0C; // '0C' for no data returned (TS 102 221 Section 11.1.1.2)
         IccOpenLogicalChannelResponse response = mTelephonyManager.iccOpenLogicalChannel("", p2);
+        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = response.getChannel();
         try {
             verifyValidIccOpenLogicalChannelResponse(response);
@@ -918,6 +924,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // An open LC is required for transmitting APDU commands. This opens an LC to the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
 
         // Get the status of the current directory. This should match the MF. TS 102 221 Section
         // 11.1.2
@@ -987,6 +994,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // An open LC is required for transmitting apdu commands. This opens an LC to the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = iccOpenLogicalChannelResponse.getChannel();
 
         try {
@@ -1072,6 +1080,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Open a logical channel and select the MF.
         IccOpenLogicalChannelResponse iccOpenLogicalChannel =
                 mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannel.getStatus()).isEqualTo(STATUS_NO_ERROR);
         final int logicalChannel = iccOpenLogicalChannel.getChannel();
 
         try {
@@ -1133,7 +1142,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 mTelephonyManager.iccTransmitApduBasicChannel(
                         cla, COMMAND_MANAGE_CHANNEL, p1, p2, p3, data);
         // response is in the format | 1 byte: channel number | 2 bytes: status word |
-        String responseStatus = response.substring(2);
+        String responseStatus = response.substring(response.length() - 4);
         assertThat(responseStatus).isEqualTo(STATUS_NORMAL_STRING);
 
         // Close the open channel
@@ -1198,6 +1207,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testVoiceMailNumber() {
+        assumeTrue(hasTelephonyCalling());
+
         // Cache original alpha tag and number values.
         String originalAlphaTag = mTelephonyManager.getVoiceMailAlphaTag();
         String originalNumber = mTelephonyManager.getVoiceMailNumber();
@@ -1290,8 +1301,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testAddSubscriptionToExistingGroupForEsim() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC)
-            && hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC));
         // Set subscription group with current sub Id.
         int subId = SubscriptionManager.getDefaultSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
@@ -1526,6 +1537,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                         TelephonyManager.APPTYPE_USIM,
                         TelephonyManager.AUTHTYPE_EAP_SIM,
                         base64Challenge);
+        assertWithMessage("UICC returned null for EAP-SIM auth").that(base64Response).isNotNull();
         byte[] response = Base64.decode(base64Response, Base64.DEFAULT);
         assertWithMessage("Results for AUTHTYPE_EAP_SIM failed")
                 .that(response)

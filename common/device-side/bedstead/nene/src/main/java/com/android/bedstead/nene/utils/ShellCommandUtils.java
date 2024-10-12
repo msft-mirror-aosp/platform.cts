@@ -140,8 +140,13 @@ public final class ShellCommandUtils {
             writeStdInAndClose(fdIn, stdInBytes);
 
             String out = new String(readStreamAndClose(fdOut));
-            String err = new String(readStreamAndClose(fdErr));
+            if (out.contains("Broken pipe")) {
+                throw new AdbException("Error executing command as connection to the device" +
+                          " broke. This could be because the adb request timed out.", 
+                          command, out);
+            }
 
+            String err = new String(readStreamAndClose(fdErr));
             if (!err.isEmpty()) {
                 throw new AdbException("Error executing command", command, out, err);
             }

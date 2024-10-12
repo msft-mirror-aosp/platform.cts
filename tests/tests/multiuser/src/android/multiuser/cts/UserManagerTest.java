@@ -33,6 +33,7 @@ import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 import static android.os.UserManager.USER_TYPE_PROFILE_MANAGED;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
@@ -75,6 +76,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
+import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
@@ -1120,6 +1122,20 @@ public final class UserManagerTest {
         // Boot user will be most recent user
         assertThat(mUserManager.getBootUser())
                 .isEqualTo(mUserManager.getPreviousForegroundUser());
+    }
+
+    @Test
+    @EnsureHasAdditionalUser(switchedToUser = FALSE)
+    @EnsurePasswordNotSet(forUser = ANY)
+    public void testSwitchFromNonCredentialToCredentialUser() {
+        UserReference initialUser = sDeviceState.initialUser();
+        UserReference additionalUser = sDeviceState.additionalUser();
+
+        initialUser.setScreenLockDisabled(true);
+        additionalUser.setPassword("1234");
+
+        // This will crash the system if the keyguard is not shown in 20 seconds.
+        additionalUser.switchTo();
     }
 
     @Test

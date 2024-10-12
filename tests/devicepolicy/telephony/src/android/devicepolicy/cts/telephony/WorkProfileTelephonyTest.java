@@ -31,6 +31,7 @@ import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_PHONE_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -67,16 +68,16 @@ import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
 import com.android.activitycontext.ActivityContext;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.roles.RoleContext;
@@ -111,11 +112,11 @@ public final class WorkProfileTelephonyTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final TestApp sSmsApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_SENDTO))).get();
     private static final TestApp sDialerApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_DIAL))).get();
 

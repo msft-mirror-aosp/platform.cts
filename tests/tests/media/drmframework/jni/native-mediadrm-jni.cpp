@@ -1017,12 +1017,18 @@ extern "C" jboolean testGetKeyRequestNative(
     AMediaDrmKeyRequestType keyRequestType;
 
     // The server recognizes "video/mp4" but not "video/avc".
-    status = AMediaDrm_getKeyRequestWithDefaultUrlAndType(aMediaObjects.getDrm(),
-            &sessionId, kClearkeyPssh, sizeof(kClearkeyPssh),
-            "video/mp4" /*mimeType*/, KEY_TYPE_STREAMING,
-            NULL, 0, &keyRequest, &keyRequestSize, &defaultUrl, &keyRequestType);
-
-    if(status != AMEDIA_OK) return JNI_FALSE;
+    // TODO(b/370732223) - (!__builtin_available) doesn't work to simplify the following.
+    if (__builtin_available(android __ANDROID_API_T__, *)) {
+        status = AMediaDrm_getKeyRequestWithDefaultUrlAndType(aMediaObjects.getDrm(),
+                &sessionId, kClearkeyPssh, sizeof(kClearkeyPssh),
+                "video/mp4" /*mimeType*/, KEY_TYPE_STREAMING,
+                NULL, 0, &keyRequest, &keyRequestSize, &defaultUrl, &keyRequestType);
+        if(status != AMEDIA_OK) {
+            return JNI_FALSE;
+        }
+    } else {
+        return JNI_FALSE;
+    }
 
     switch(keyRequestType) {
         case KEY_REQUEST_TYPE_INITIAL:

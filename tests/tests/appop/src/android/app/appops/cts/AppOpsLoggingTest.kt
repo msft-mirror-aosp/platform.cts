@@ -920,6 +920,36 @@ class AppOpsLoggingTest {
     }
 
     @Test
+    fun ignoreAsyncOpNoted() {
+        removeNotedAppOpsCollector()
+        appOpsManager.setOnOpNotedCallback(
+            Executor { it.run() },
+                object : OnOpNotedCallback() {
+                    override fun onNoted(op: SyncNotedAppOp) {
+                        noted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onSelfNoted(op: SyncNotedAppOp) {
+                        selfNoted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onAsyncNoted(asyncOp: AsyncNotedAppOp) {
+                        asyncNoted.add(asyncOp)
+                    }
+                },
+            AppOpsManager.OP_NOTED_CALLBACK_FLAG_IGNORE_ASYNC
+        )
+
+        context.createAttributionContext(TEST_ATTRIBUTION_TAG)
+                .sendBroadcast(Intent(PROTECTED_ACTION).setPackage(myPackage))
+        waitForBroadcasts()
+
+        eventually {
+            assertThat(asyncNoted).isEmpty()
+        }
+    }
+
+    @Test
     fun checkAttributionsAreUserVisible() {
         val pi = context.packageManager.getPackageInfo(
                 TEST_SERVICE_PKG, PackageManager.PackageInfoFlags.of(GET_ATTRIBUTIONS_LONG))

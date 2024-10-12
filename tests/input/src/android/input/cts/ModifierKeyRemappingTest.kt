@@ -183,6 +183,63 @@ class ModifierKeyRemappingTest {
         }
     }
 
+    @Test
+    fun testAltToCapsLockRemapping_forKeyboardWithNoCapsLockKey() {
+        ModifierRemappingFlag(true).use {
+            UinputKeyboard(instrumentation, listOf("KEY_Q", "KEY_LEFTALT")).use { keyboardDevice ->
+                val inputDevice = inputManager.getInputDevice(keyboardDevice.deviceId)
+                remapModifierKey(KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_CAPS_LOCK)
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_CAPS_LOCK ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
+
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
+                        withModifierState(KeyEvent.META_CAPS_LOCK_ON),
+                    )
+                )
+
+                // Send second pair of key presses to reset caps lock state
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
+                        withModifierState(KeyEvent.META_CAPS_LOCK_ON),
+                    )
+                )
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
+
+                clearAllModifierKeyRemappings()
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_ALT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
+
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_ALT_LEFT_ON or KeyEvent.META_ALT_ON)
+                    )
+                )
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
+
+                activity.assertNoEvents()
+            }
+        }
+    }
+
     /**
      * Remaps a modifier key to another modifier key
      *

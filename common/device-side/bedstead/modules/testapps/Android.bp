@@ -1,0 +1,44 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_library {
+    name: "bedstead-testapps",
+    sdk_version: "test_current",
+    srcs: [
+        "src/main/kotlin/**/*.kt",
+        "src/main/kotlin/**/*.java",
+    ],
+    manifest: "src/main/AndroidManifest.xml",
+    static_libs: [
+        "Harrier",
+    ],
+    min_sdk_version: "29",
+}
+
+filegroup {
+    name: "bedstead-testapps-harrier-temporary-srcs",
+    srcs: [
+        "src/main/kotlin/**/*.kt",
+        "src/main/kotlin/**/*.java",
+    ],
+}
+
+android_test {
+    name: "bedstead-testapps-test",
+    srcs: [
+        "src/test/kotlin/**/*.kt",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    static_libs: [
+        "Nene",
+        "Harrier",
+        "bedstead-testapps",
+        "androidx.test.ext.junit",
+        "truth",
+    ],
+    manifest: "src/test/AndroidManifest.xml",
+    min_sdk_version: "29",
+}

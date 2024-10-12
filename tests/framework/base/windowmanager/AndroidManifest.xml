@@ -21,6 +21,7 @@
      package="android.server.wm.cts"
      android:targetSandboxVersion="2">
 
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY"/>
     <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT"/>
     <uses-permission android:name="android.permission.DETECT_SCREEN_CAPTURE"/>
     <uses-permission android:name="android.permission.DETECT_SCREEN_RECORDING" />
@@ -476,7 +477,7 @@
             android:theme="@style/window_task_animation"
             android:exported="true"/>
 
-        <activity android:name="android.server.wm.input.WindowUntrustedTouchTest$TestActivity"
+        <activity android:name="android.server.wm.input.WindowUntrustedTouchTestBase$TestActivity"
                   android:exported="true"
                   android:configChanges="screenSize|screenLayout|orientation"
                   android:screenOrientation="nosensor" />

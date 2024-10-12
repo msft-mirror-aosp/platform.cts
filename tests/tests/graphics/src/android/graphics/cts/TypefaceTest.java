@@ -693,9 +693,8 @@ public class TypefaceTest {
         final Paint paint = new Paint();
         paint.setTextSize(100);  // Make 1em = 100px
 
-        // By default, WeightEqualsEmVariableFont has 0 'wght' value.
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .build());
+                .setFontVariationSettings("'wght' 0").build());
         assertEquals(0.0f, paint.measureText("a"), 0.0f);
 
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
@@ -743,7 +742,7 @@ public class TypefaceTest {
 
     @Test
     public void testFontVariationSettings_OutOfRangeValue() {
-        // WeightEqualsEmVariableFont is a special font generating the outlines a glyph of 1/1000
+        // WidthEqualsEmVariableFont is a special font generating the outlines a glyph of 1/1000
         // width of the given wght axis. For example, if 300 is given as the wght value to the font,
         // the font will generate 0.3em of the glyph for the 'a'..'z' characters.
         // The minimum, default, maximum value of 'wght' is 0, 0, 1000.
@@ -754,12 +753,12 @@ public class TypefaceTest {
         paint.setTextSize(100);  // Make 1em = 100px
 
         // Out of range value needs to be clipped at the minimum or maximum values.
-        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .setFontVariationSettings("'wght' -100").build());
+        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WidthEqualsEmVariableFont.ttf")
+                .setFontVariationSettings("'wdth' -100").build());
         assertEquals(0.0f, paint.measureText("a"), 0.0f);
 
-        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .setFontVariationSettings("'wght' 1300").build());
+        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WidthEqualsEmVariableFont.ttf")
+                .setFontVariationSettings("'wdth' 1300").build());
         assertEquals(100.0f, paint.measureText("a"), 0.0f);
     }
 

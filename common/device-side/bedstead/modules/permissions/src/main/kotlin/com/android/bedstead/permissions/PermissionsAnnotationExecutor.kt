@@ -32,6 +32,10 @@ import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 
+/**
+ * [AnnotationExecutor] for permissions annotations
+ */
+@Suppress("unused")
 class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
 
     private var permissionContext: PermissionContextImpl? = null

@@ -106,13 +106,6 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityTestCases android.view.accessibility.cts.AccessibilityEventTest#testStateEventBurstCombined"/>
     <option name="compatibility:include-filter" value="CtsAccessibilityTestCases android.view.accessibility.cts.AccessibilityManagerTest#testGetAccessibilityServiceList"/>
     <!-- CtsAccountManagerTestCases -->
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testFinishSessionAndStartUpdateCredentialsSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testIsCredentialsUpdateSuggestedDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testStartAddAccountSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testStartUpdateCredentialsSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAccountRenameAndGetPreviousName"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccount"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountExplicitlyAndRemoveAccountExplicitly"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountExplicitlyAndRemoveAccountWithDefaultImpl"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountWithCallbackAndHandler"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountWithNoAuthenticator"/>
@@ -2848,7 +2841,6 @@
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest#testDestroy_doubleCallsAreNoop"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_destroySoftwareDetector_activeDetectorRemoved"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_getMaxCustomInitializationStatus"/>
-    <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDspSecurityException_onFailure"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDspTimeout_triggerOnFailure"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDsp_rejection"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDsp_success"/>

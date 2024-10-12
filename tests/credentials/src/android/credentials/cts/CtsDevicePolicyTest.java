@@ -16,6 +16,7 @@
 
 package android.credentials.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 import static com.android.queryable.queries.ServiceQuery.service;
 
@@ -27,16 +28,16 @@ import android.app.admin.PackagePolicy;
 import android.content.pm.PackageManager;
 import android.credentials.CredentialProviderInfo;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.policies.CredentialManagerPolicy;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -57,8 +58,7 @@ public class CtsDevicePolicyTest {
     private static final String PACKAGE_NAME = "arbitrary.package.name";
 
     private static final TestApp sSystemCredentialProvider =
-            sDeviceState
-                    .testApps()
+            testApps(sDeviceState)
                     .query()
                     .whereServices()
                     .contains(
@@ -81,8 +81,7 @@ public class CtsDevicePolicyTest {
                     .get();
 
     private static final TestApp sNonSystemCredentialProvider =
-            sDeviceState
-                    .testApps()
+            testApps(sDeviceState)
                     .query()
                     .whereServices()
                     .contains(

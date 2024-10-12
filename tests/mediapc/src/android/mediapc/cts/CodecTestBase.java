@@ -16,6 +16,7 @@
 
 package android.mediapc.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.mediapc.cts.common.CodecMetrics.getMetrics;
@@ -507,6 +508,16 @@ abstract class CodecTestBase {
             }
         }
         return null;
+    }
+
+    /**
+     * Return CodecCapabilities for the given codec name
+     */
+    public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
+        MediaCodecInfo.CodecCapabilities codecCapabilities =
+                getCodecInfo(codecName).getCapabilitiesForType(mediaType);
+        return codecCapabilities;
+
     }
 
     /**

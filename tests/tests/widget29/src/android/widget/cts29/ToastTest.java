@@ -50,6 +50,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.Assert;
 
@@ -78,6 +79,7 @@ public class ToastTest {
     private boolean mLayoutDone;
     private ViewTreeObserver.OnGlobalLayoutListener mLayoutListener;
     private NotificationManager mNotificationManager;
+    private UserHelper mUserHelper;
 
     @Rule
     public ActivityTestRule<CtsActivity> mActivityRule =
@@ -86,6 +88,7 @@ public class ToastTest {
     @Before
     public void setup() {
         mContext = InstrumentationRegistry.getTargetContext();
+        mUserHelper = new UserHelper(mContext);
         mLayoutListener = () -> mLayoutDone = true;
         mNotificationManager =
                 mContext.getSystemService(NotificationManager.class);
@@ -241,6 +244,10 @@ public class ToastTest {
 
     @Test
     public void testAccessDuration_withA11yTimeoutEnabled() throws Throwable {
+        // TODO(b/372077250): remove method, callers, and mUserHelper when A11Y supports visible
+        // background users
+        assumeFalse("Not supported on visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         makeToast();
         final Runnable showToast = () -> {
             mToast.setDuration(Toast.LENGTH_SHORT);

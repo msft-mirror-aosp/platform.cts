@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.packages;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -36,7 +37,7 @@ public final class ProcessReferenceTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(activity().where().exported().isTrue())
             .get();
 

@@ -26,6 +26,7 @@ import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.test.AndroidTestCase;
 import android.util.Log;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.lang.Object;
 import android.os.Looper;
 
 // This test works with the MediaDrm mock plugin
+@FrameworkSpecificTest
 public class MediaDrmMockTest extends AndroidTestCase
         implements MediaDrm.OnEventListener, MediaDrm.OnKeyStatusChangeListener,
         MediaDrm.OnExpirationUpdateListener, MediaDrm.OnSessionLostStateListener {

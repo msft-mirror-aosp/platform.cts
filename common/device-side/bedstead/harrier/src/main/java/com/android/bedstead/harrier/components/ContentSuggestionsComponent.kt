@@ -21,11 +21,11 @@ import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.content
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.testapp.TestApp
+import com.android.bedstead.testapps.TestAppsComponent
 
 /**
  * Contains logic specific to content suggestions for Bedstead tests using [DeviceState] rule
