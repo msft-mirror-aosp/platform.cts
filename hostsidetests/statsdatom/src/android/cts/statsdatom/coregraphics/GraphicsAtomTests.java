@@ -17,8 +17,11 @@
 package android.cts.statsdatom.coregraphics;
 
 import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.TEXTURE_VIEW_EVENT_FIELD_NUMBER;
+import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.HARDWARE_RENDERER_EVENT_FIELD_NUMBER;
 
 import static com.google.common.truth.Truth.assertThat;
+
+import static java.util.stream.Collectors.toList;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -29,6 +32,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.StatsLog;
 import com.android.os.coregraphics.CoregraphicsExtensionAtoms;
+import com.android.os.coregraphics.HardwareRendererEvent;
 import com.android.os.coregraphics.TextureViewEvent;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -108,5 +112,45 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         assertThat(secondAtom.getPreviousDataspace()).isEqualTo(DATASPACE_P3);
 
         assertThat(firstAtom.getUid()).isEqualTo(secondAtom.getUid());
+    }
+
+    @Test
+    public void colorModeEvents() throws Exception {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        CoregraphicsExtensionAtoms.registerAllExtensions(registry);
+        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                HARDWARE_RENDERER_EVENT_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
+        DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                "ColorModeSwitchActivity", null, null);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+
+        List<HardwareRendererEvent> atoms = data.stream().map(StatsLog.EventMetricData::getAtom)
+                .map(atom -> atom.getExtension(CoregraphicsExtensionAtoms.hardwareRendererEvent))
+                .collect(toList());
+
+        List<Integer> uids = atoms.stream().map(HardwareRendererEvent::getUid)
+                .distinct()
+                .collect(toList());
+
+        assertThat(uids).hasSize(1);
+        assertThat(uids.get(0)).isGreaterThan(10000);
+
+        boolean seenSdrColorMode = false;
+        for (HardwareRendererEvent atom : atoms) {
+            assertThat(atom.getTimeSinceLastEventMillis()).isGreaterThan(0);
+            HardwareRendererEvent.ColorMode colorMode = atom.getPreviousColorMode();
+            if (colorMode == HardwareRendererEvent.ColorMode.DEFAULT) {
+                seenSdrColorMode = true;
+            }
+
+            // The test activity only switches between SDR and Wide Color
+            // Requesting wide color is optional, because some devices may not support it
+            assertThat(colorMode == HardwareRendererEvent.ColorMode.DEFAULT
+                    || colorMode == HardwareRendererEvent.ColorMode.WIDE_COLOR).isTrue();
+        }
+
+        assertThat(seenSdrColorMode).isTrue();
     }
 }
