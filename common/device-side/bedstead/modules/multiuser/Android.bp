@@ -5,10 +5,8 @@ package {
 filegroup {
     name: "bedstead-multiuser-common-srcs",
     srcs: [
-        "src/main/kotlin/com/android/bedstead/multiuser/annotations/*.kt",
-        "src/main/kotlin/com/android/bedstead/multiuser/annotations/*.java",
-        "src/main/kotlin/com/android/bedstead/multiuser/annotations/meta/*.kt",
-        "src/main/kotlin/com/android/bedstead/multiuser/annotations/meta/*.java",
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/**/*.kt",
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/**/*.java",
     ],
 }
 

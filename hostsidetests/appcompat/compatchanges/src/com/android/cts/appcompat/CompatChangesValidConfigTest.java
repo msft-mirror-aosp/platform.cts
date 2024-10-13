@@ -121,7 +121,8 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "BLOCK_NULL_ACTION_INTENTS",
             "ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS",
             "SEND_CHOOSER_RESULT",
-            "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION"
+            "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION",
+            "RO_DCL_CHANGE_ID"
     );
 
     /**

@@ -16,10 +16,8 @@
 package com.android.bedstead.harrier
 
 import android.app.ActivityManager
-import android.app.AppOpsManager
 import android.app.contentsuggestions.ContentSuggestionsManager
 import android.app.role.RoleManager
-import android.content.pm.PackageManager
 import android.provider.Settings
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
@@ -30,19 +28,13 @@ import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePropertySet
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme
 import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation
@@ -50,7 +42,6 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
-import com.android.bedstead.harrier.annotations.InstrumentationComponent
 import com.android.bedstead.harrier.annotations.RequireAospBuild
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
@@ -72,6 +63,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis.accounts
 import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.bugReports
@@ -85,20 +77,13 @@ import com.android.bedstead.nene.TestApis.roles
 import com.android.bedstead.nene.TestApis.settings
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.TestApis.wifi
-import com.android.bedstead.nene.appops.AppOpsMode
 import com.android.bedstead.nene.display.Display.getDisplayTheme
 import com.android.bedstead.nene.display.Display.getScreenOrientation
 import com.android.bedstead.nene.display.DisplayProperties
-import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.utils.Tags.hasTag
-import com.android.bedstead.permissions.CommonPermissions
-import com.android.bedstead.testapp.NotFoundException
-import com.android.bedstead.testapp.TestApp
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.Query
-import com.android.queryable.annotations.StringQuery
 import com.google.common.truth.Truth.assertThat
-import org.junit.Assert.assertThrows
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
@@ -254,149 +239,6 @@ class MainAnnotationExecutorTest {
     @EnsureBluetoothDisabled
     fun ensureBluetoothDisabledAnnotation_bluetoothIsDisabled() {
         assertThat(bluetooth().isEnabled).isFalse()
-    }
-
-    // We run this test twice to ensure that teardown doesn't change behaviour
-    @Test
-    fun testApps_testAppsAreAvailableToMultipleTests_1() {
-        assertThat(
-            deviceState.testApps().query()
-                .wherePackageName().isEqualTo(TEST_APP_PACKAGE_NAME).get()
-        ).isNotNull()
-    }
-
-    @Test
-    fun testApps_testAppsAreAvailableToMultipleTests_2() {
-        assertThat(
-            deviceState.testApps().query()
-                .wherePackageName().isEqualTo(TEST_APP_PACKAGE_NAME).get()
-        ).isNotNull()
-    }
-
-    // We run this test twice to ensure that teardown doesn't change behaviour
-    @Test
-    fun testApps_staticTestAppsAreNotReleased_1() {
-        assertThrows(NotFoundException::class.java) {
-            deviceState.testApps()
-                .query()
-                .wherePackageName()
-                .isEqualTo(TEST_APP_USED_IN_FIELD_NAME)
-                .get()
-        }
-    }
-
-    @Test
-    fun testApps_staticTestAppsAreNotReleased_2() {
-        assertThrows(NotFoundException::class.java) {
-            deviceState.testApps()
-                .query()
-                .wherePackageName()
-                .isEqualTo(TEST_APP_USED_IN_FIELD_NAME)
-                .get()
-        }
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @Test
-    fun ensureTestAppInstalledAnnotation_testAppIsInstalled() {
-        assertThat(packages().find(TEST_APP_PACKAGE_NAME).installedOnUser()).isTrue()
-    }
-
-    @EnsureHasSecondaryUser
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)),
-        onUser = UserType.SECONDARY_USER
-    )
-    @Test
-    fun ensureTestAppInstalledAnnotation_testAppIsInstalledOnCorrectUser() {
-        assertThat(
-            packages()
-                .find(TEST_APP_PACKAGE_NAME)
-                .installedOnUser(deviceState.secondaryUser())
-        ).isTrue()
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @Test
-    fun testApp_returnsTestApp() {
-        assertThat(deviceState.testApp().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
-    }
-
-    @Test
-    fun testApp_noHarrierManagedTestApp_throwsException() {
-        deviceState.testApps().any().install().use {
-            assertThrows(NeneException::class.java) {
-                deviceState.testApp()
-            }
-        }
-    }
-
-    @EnsureTestAppInstalled(
-        key = "testApp1",
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @EnsureTestAppInstalled(
-        key = "testApp2",
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME2))
-    )
-    @Test
-    fun testApp_withKey_returnsCorrectTestApp() {
-        assertThat(
-            deviceState.testApp("testApp1").packageName()
-        ).isEqualTo(TEST_APP_PACKAGE_NAME)
-        assertThat(
-            deviceState.testApp("testApp2").packageName()
-        ).isEqualTo(TEST_APP_PACKAGE_NAME2)
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)),
-        isPrimary = true
-    )
-    @Test
-    fun dpc_primaryTestApp_returnsTestApp() {
-        assertThat(deviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @EnsureTestAppHasPermission(CommonPermissions.READ_CONTACTS)
-    @Test
-    fun ensureTestAppHasPermissionAnnotation_testAppHasPermission() {
-        assertThat(
-            deviceState.testApp()
-                .context()
-                .checkSelfPermission(CommonPermissions.READ_CONTACTS)
-        ).isEqualTo(PackageManager.PERMISSION_GRANTED)
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @EnsureTestAppDoesNotHavePermission(CommonPermissions.READ_CONTACTS)
-    @Test
-    fun ensureTestAppDoesNotHavePermissionAnnotation_testAppDoesNotHavePermission() {
-        assertThat(
-            deviceState.testApp()
-                .context()
-                .checkSelfPermission(CommonPermissions.READ_CONTACTS)
-        ).isNotEqualTo(PackageManager.PERMISSION_GRANTED)
-    }
-
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @EnsureTestAppHasAppOp(AppOpsManager.OPSTR_START_FOREGROUND)
-    @Test
-    fun ensureTestAppHasAppOpAnnotation_testAppHasAppOp() {
-        assertThat(
-            deviceState.testApp().testApp().pkg().appOps()[AppOpsManager.OPSTR_START_FOREGROUND]
-        ).isEqualTo(AppOpsMode.ALLOWED)
     }
 
     // TODO(b/300218365): Test that settings are returned to their original values in teardown.
@@ -618,21 +460,6 @@ class MainAnnotationExecutorTest {
         assertThat(getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT)
     }
 
-    @Test
-    @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
-    )
-    @EnsureInstrumented(
-        [InstrumentationComponent(
-            packageName = TEST_APP_PACKAGE_NAME,
-            runnerClass = "androidx.test.runner.AndroidJUnitRunner"
-        )]
-    )
-    fun ensureTestAppInstrumented_testAppIsInstrumented() {
-        // This test does not assert anything. But will run successfully only when the test app
-        // given by [TEST_APP_PACKAGE_NAME] is successfully instrumented.
-    }
-
     @RequireSystemServiceAvailable(ContentSuggestionsManager::class)
     @EnsureDefaultContentSuggestionsServiceDisabled
     @Test
@@ -671,16 +498,5 @@ class MainAnnotationExecutorTest {
         @ClassRule
         @Rule
         val deviceState = DeviceState()
-
-        // Expects that this package name matches an actual test app
-        private const val TEST_APP_PACKAGE_NAME: String = "com.android.bedstead.testapp.LockTaskApp"
-        private const val TEST_APP_PACKAGE_NAME2: String = "com.android.bedstead.testapp.SmsApp"
-        private const val TEST_APP_USED_IN_FIELD_NAME: String =
-            "com.android.bedstead.testapp.NotEmptyTestApp"
-
-        // This is not used but is depended on by testApps_staticTestAppsAreNotReleased_1 and
-        // testApps_staticTestAppsAreNotReleased_2 which test that this testapp isn't released
-        private val sTestApp: TestApp = deviceState.testApps().query()
-            .wherePackageName().isEqualTo(TEST_APP_USED_IN_FIELD_NAME).get()
     }
 }

@@ -20,7 +20,6 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
-import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
 import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
@@ -47,7 +46,6 @@ import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
@@ -55,7 +53,6 @@ import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.harrier.components.AccountsComponent;
-import com.android.bedstead.harrier.components.TestAppsComponent;
 import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
@@ -74,8 +71,6 @@ import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
-import com.android.bedstead.testapp.TestAppInstance;
-import com.android.bedstead.testapp.TestAppProvider;
 import com.android.eventlib.EventLogs;
 
 import junit.framework.AssertionFailedError;
@@ -314,7 +309,6 @@ public final class DeviceState extends HarrierRule {
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
         mLocator.prepareTestState();
-        testApps().snapshot();
         Tags.clearTags();
         Tags.addTag(Tags.USES_DEVICESTATE);
         assumeFalse(mSkipTestsReason, mSkipTests);
@@ -1110,30 +1104,6 @@ public final class DeviceState extends HarrierRule {
      */
     public RemoteDevicePolicyManagerRoleHolder dpmRoleHolder() {
         return enterpriseComponent().dpmRoleHolder();
-    }
-
-    /**
-     * Get a {@link TestAppProvider} which is cleared between tests.
-     *
-     * <p>Note that you must still manage the test apps manually. To have the infrastructure
-     * automatically remove test apps use the {@link EnsureTestAppInstalled} annotation.
-     */
-    public TestAppProvider testApps() {
-        return getDependency(TestAppsComponent.class).getTestAppProvider();
-    }
-
-    /**
-     * Get a test app installed with @EnsureTestAppInstalled with no key.
-     */
-    public TestAppInstance testApp() {
-        return testApp(DEFAULT_KEY);
-    }
-
-    /**
-     * Get a test app installed with `@EnsureTestAppInstalled` with the given key.
-     */
-    public TestAppInstance testApp(String key) {
-        return getDependency(TestAppsComponent.class).testApp(key);
     }
 
     /**

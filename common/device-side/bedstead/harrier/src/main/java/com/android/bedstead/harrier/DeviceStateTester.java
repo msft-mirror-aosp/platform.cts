@@ -21,6 +21,7 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestAppProvider;
+import com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt;
 
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -107,9 +108,9 @@ public final class DeviceStateTester implements AutoCloseable {
         return mDeviceState.workProfile(TestApis.users().instrumented());
     }
 
-    /** See {@link DeviceState#testApps()}. */
+    /** See {@link TestAppsDeviceStateExtensionsKt#testApps()}. */
     public TestAppProvider testApps() {
-        return mDeviceState.testApps();
+        return TestAppsDeviceStateExtensionsKt.testApps(mDeviceState);
     }
 
     @Override
