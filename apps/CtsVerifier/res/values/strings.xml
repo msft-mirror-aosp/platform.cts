@@ -5629,6 +5629,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_record_colon"> record:</string>
 
     <string name="audio_general_results">Results</string>
+    <string name="audio_general_test">Test</string>
 
     <string name="audio_general_supporteddevices">Supported Devices</string>
     <string name="audio_general_availabledevices">Available Devices</string>
@@ -5646,11 +5647,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
 
     <!-- Audio Data Paths Test-->
-    <string name="audio_datapaths_clearresults">Clear Results</string>
-    <string name="audio_datapaths_legacy">Legacy</string>
-    <string name="audio_datapaths_mmap_shared">MMAP Shared</string>
-    <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
-    <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
+    <string name="audio_datapaths_clearresults">Clr</string>
+    <string name="audio_datapaths_showresults">Show</string>
+    <string name="audio_datapaths_shareresults">Share</string>
 
     <string name="perf_mode_none_abreviation">None</string>
     <string name="perf_mode_lowlatency_abreviation">LowLat</string>
@@ -7539,13 +7538,13 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
         \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
         \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
-        \n\n* Screenshots can be used for notification validation steps 3 and 4
+        \n\n* \"Save screen capture\" action below can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n3. Press \"Send notification\".
-        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n4. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
@@ -7577,8 +7576,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_app_local_screen_recorder_test_instructions">
         1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
-        \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n3. End local recording and verify the recording output does not redact any content".
+        \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">
         1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
@@ -7600,13 +7599,15 @@ You should be prompted to select credentials; choose the ones you just installed
         \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n5. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n5. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify there is content in screenshot".
         \n6. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
         \n7. Remember to disable the "Disable screen share protections" developer options.
     </string>
     <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
     <string name="notif_hiding_start_screen_recording">Start screen recording</string>
     <string name="notif_hiding_send_notification">Send notification</string>
+    <string name="notif_hiding_save_screen_capture">Save screen capture</string>
+    <string name="notif_hiding_save_screen_capture_path">Screen capture saved to %1$s</string>
     <string name="notif_hiding_success">No failures found, please press the green check mark</string>
     <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 </resources>

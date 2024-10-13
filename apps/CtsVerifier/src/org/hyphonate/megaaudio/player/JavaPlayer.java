@@ -209,7 +209,13 @@ public class JavaPlayer extends Player {
      */
     @Override
     public int startStream() {
+        if (LOG) {
+            Log.d(TAG, "startStream() mAudioTrack:" + mAudioTrack);
+        }
         if (mAudioTrack == null) {
+            if (LOG) {
+                Log.d(TAG, " - ERROR_INVALID_STATE");
+            }
             return ERROR_INVALID_STATE;
         }
         waitForStreamThreadToExit(); // just to be sure.

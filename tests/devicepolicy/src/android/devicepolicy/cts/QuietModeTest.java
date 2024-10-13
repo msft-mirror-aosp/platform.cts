@@ -24,6 +24,7 @@ import static android.os.UserManager.QUIET_MODE_DISABLE_ONLY_IF_CREDENTIAL_NOT_R
 
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -42,21 +43,21 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.queryable.info.ActivityInfo;
 import com.android.queryable.queries.Query;
 
@@ -80,7 +81,7 @@ public class QuietModeTest {
     public static final DeviceState sDeviceState = new DeviceState();
     private static final Context sContext = TestApis.context().instrumentedContext();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities()
             .contains(activity().where().exported().isTrue())
             .get();
@@ -93,7 +94,7 @@ public class QuietModeTest {
                                     .where().actions().contains(Intent.ACTION_MAIN)
                                     .where().categories().contains(Intent.CATEGORY_HOME));
     private static final TestApp sTestAppWithLauncherActivity =
-            sDeviceState.testApps().query()
+            testApps(sDeviceState).query()
                     .whereActivities().contains(sMainActivityQuery)
                     .get();
     private static final String PASSWORD = "12345678";

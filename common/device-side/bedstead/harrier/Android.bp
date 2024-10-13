@@ -89,6 +89,8 @@ android_library {
 
         //TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
         ":bedstead-multiuser-harrier-temporary-srcs",
+
+        ":bedstead-testapps-harrier-temporary-srcs",
     ],
 
     static_libs: [

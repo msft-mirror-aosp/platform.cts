@@ -1493,7 +1493,7 @@ public class SubscriptionManagerTest {
 
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
-        assertThat(info.isOnlyNonTerrestrialNetwork()).isNotNull();
+        boolean unused = info.isOnlyNonTerrestrialNetwork();
     }
 
     @Test
