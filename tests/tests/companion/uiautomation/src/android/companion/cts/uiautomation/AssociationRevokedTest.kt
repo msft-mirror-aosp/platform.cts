@@ -19,6 +19,7 @@ package android.companion.cts.uiautomation
 import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.cts.common.sleepFor
+import android.companion.cts.uicommon.ASSOCIATION_REVOKE_APP_NAME
 import android.platform.test.annotations.AppModeFull
 import com.android.compatibility.common.util.FeatureUtil
 import kotlin.test.assertContains
@@ -48,7 +49,8 @@ class AssociationRevokedTest : AssociationRevokedTestBase() {
         if (FeatureUtil.isWatch()) {
             return
         }
-
+        // Force to kill the app to clean any pending states.
+        forceKillApp(ASSOCIATION_REVOKE_APP_NAME)
         super.tearDown()
     }
 
@@ -75,16 +77,22 @@ class AssociationRevokedTest : AssociationRevokedTestBase() {
         sleepFor(2.seconds)
 
         // Make sure the Watch Profile is granted.
-        assertContains(getRoleHolders(DEVICE_PROFILE_WATCH),
-            packageName, "Not a holder of $DEVICE_PROFILE_WATCH")
+        assertContains(
+            getRoleHolders(DEVICE_PROFILE_WATCH),
+            packageName,
+            "Not a holder of $DEVICE_PROFILE_WATCH"
+        )
 
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
             cdm.disassociate(associations[0].id)
         }
 
         // Make sure the Watch Profile is not revoked after disassociate.
-        assertContains(getRoleHolders(DEVICE_PROFILE_WATCH),
-            packageName, "Not a holder of $DEVICE_PROFILE_WATCH")
+        assertContains(
+            getRoleHolders(DEVICE_PROFILE_WATCH),
+            packageName,
+            "Not a holder of $DEVICE_PROFILE_WATCH"
+        )
 
         // The test app should not crash after disassociate the watch profile device.
         assertAppStillRunning(packageName)
@@ -113,18 +121,24 @@ class AssociationRevokedTest : AssociationRevokedTestBase() {
         sleepFor(2.seconds)
 
         // Make sure the Watch Profile is granted.
-        assertContains(getRoleHolders(DEVICE_PROFILE_WATCH),
-            packageName, "Not a holder of $DEVICE_PROFILE_WATCH")
+        assertContains(
+            getRoleHolders(DEVICE_PROFILE_WATCH),
+            packageName,
+            "Not a holder of $DEVICE_PROFILE_WATCH"
+        )
 
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
             cdm.disassociate(associations[0].id)
         }
 
         // Make sure the Watch Profile is not revoked after disassociate.
-        assertContains(getRoleHolders(DEVICE_PROFILE_WATCH),
-            packageName, "Not a holder of $DEVICE_PROFILE_WATCH")
+        assertContains(
+            getRoleHolders(DEVICE_PROFILE_WATCH),
+            packageName,
+            "Not a holder of $DEVICE_PROFILE_WATCH"
+        )
 
-        forceKillApp(packageName)
+        uiDevice.pressHome()
         // Give it 2 seconds to make sure app is in the desire state.
         sleepFor(2.seconds)
         // The role holder should be removed.

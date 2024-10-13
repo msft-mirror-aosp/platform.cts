@@ -154,6 +154,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
             cap, props=props)
         img_name = f'{img_name_stem}_{fmt}_{i}_{round(z_result, 2)}.jpg'
         image_processing_utils.write_image(img, img_name)
+        img_bgr = cv2.cvtColor(
+            image_processing_utils.convert_image_to_uint8(img),
+            cv2.COLOR_RGB2BGR)
 
         # determine radius tolerance of capture
         cap_fl = cap['metadata']['android.lens.focalLength']
@@ -161,14 +164,14 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
 
         # Find the center ArUco marker in img and check if it's cropped
         corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-            img,
+            img_bgr,
             f'{img_name_stem}_{fmt}_{z_result:.2f}_ArUco.jpg',
             aruco_marker_count=1
         )
 
         all_aruco_corners.append([corner[0] for corner in corners])
         all_aruco_ids.append([id[0] for id in ids])
-        images.append(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        images.append(img_bgr)
         test_data.append(
             zoom_capture_utils.ZoomTestData(
                 result_zoom=z_result,

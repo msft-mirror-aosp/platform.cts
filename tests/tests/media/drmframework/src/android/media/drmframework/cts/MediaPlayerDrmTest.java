@@ -18,11 +18,14 @@ package android.media.drmframework.cts;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 import java.io.File;
 
 /**
  * Tests for the MediaPlayer API and local video/audio playback.
  */
+@FrameworkSpecificTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class MediaPlayerDrmTest extends MediaPlayerDrmTestBase {
 

@@ -16,6 +16,8 @@
 
 package android.media.cujsmalltest.cts;
 
+import android.content.Context;
+import android.media.cts.Utils;
 import android.media.cujcommon.cts.CallNotificationTestPlayerListener;
 import android.media.cujcommon.cts.CujTestBase;
 import android.media.cujcommon.cts.CujTestParam;
@@ -24,10 +26,13 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.PlatinumTest;
 
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,11 +53,25 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
 
   CujTestParam mCujTestParam;
   private final String mTestType;
+  private Context mContext;
 
   public CtsMediaShortFormFullModePlaybackTest(CujTestParam cujTestParam, String testType) {
     super(cujTestParam.playerListener());
     mCujTestParam = cujTestParam;
     this.mTestType = testType;
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    Utils.toggleNotificationPolicyAccess(mContext.getPackageName(),
+        InstrumentationRegistry.getInstrumentation(), true /* on */);
+  }
+
+  @After
+  public void TearDown() throws Exception {
+    Utils.toggleNotificationPolicyAccess(mContext.getPackageName(),
+        InstrumentationRegistry.getInstrumentation(), false /* off */);
   }
 
   /**
@@ -95,6 +114,9 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
     if (mCujTestParam.playerListener().isCallNotificationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
           deviceSupportPhoneCall(mActivity));
+      // Skip call notification tests for visible background users.
+      // Visible background users do not support call notifications.
+      Assume.assumeFalse(isVisibleBackgroundNonProfileUser(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

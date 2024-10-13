@@ -27,7 +27,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -35,6 +34,7 @@ import com.android.bedstead.nene.accounts.AccountReference
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP
+import com.android.bedstead.testapps.TestAppsComponent
 import com.google.errorprone.annotations.CanIgnoreReturnValue
 
 /**

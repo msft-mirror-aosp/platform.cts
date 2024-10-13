@@ -25,9 +25,10 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.UserTypeResolver
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation
@@ -166,8 +167,11 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         switchedToUser: OptionalBoolean
     ) {
         val resolvedUserType: UserType = RequireUserSupported(userType).logic()
-        val user = users()
-            .findUsersOfType(resolvedUserType).firstOrNull() ?: createUser(resolvedUserType)
+        val user = users().findUsersOfType(resolvedUserType).firstOrNull {
+            // If the existing user is ephemeral, foreground and ensured not to be the current user,
+            // then we need to create a new one because it will be deleted when switched away.
+            !(it.isEphemeral && switchedToUser == OptionalBoolean.FALSE && it.isForeground)
+        } ?: createUser(resolvedUserType)
         user.start()
         if (installInstrumentedApp == OptionalBoolean.TRUE) {
             packages().find(context.getPackageName()).installExisting(user)

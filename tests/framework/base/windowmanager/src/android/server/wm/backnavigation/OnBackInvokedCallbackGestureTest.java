@@ -29,6 +29,8 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TouchHelper;
 import android.view.KeyEvent;
@@ -40,6 +42,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -53,10 +56,12 @@ import java.util.concurrent.TimeUnit;
 public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     private static final int PROGRESS_SWIPE_STEPS = 10;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
     private BackInvocationTracker mTracker = new BackInvocationTracker();
-    private BackInvocationTracker mNoUiTracker = new BackInvocationTracker();
     private BackNavigationActivity mActivity;
 
     private final OnBackAnimationCallback mAnimationCallback = new OnBackAnimationCallback() {
@@ -81,28 +86,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         }
     };
 
-    private final OnBackAnimationCallback mObserverCallback = new OnBackAnimationCallback() {
-        @Override
-        public void onBackStarted(BackEvent e) {
-            mNoUiTracker.trackBackStarted();
-        }
-
-        @Override
-        public void onBackInvoked() {
-            mNoUiTracker.trackBackInvoked();
-        }
-
-        @Override
-        public void onBackCancelled() {
-            mNoUiTracker.trackBackCancelled();
-        }
-
-        @Override
-        public void onBackProgressed(BackEvent e) {
-            mNoUiTracker.trackBackProgressed(e);
-        }
-    };
-
     @Before
     public void setup() throws Exception {
         super.setUp();
@@ -121,11 +104,11 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
 
         mActivity = activitySession.getActivity();
-        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
     }
 
     @Test
     public void invokesCallback_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
@@ -159,6 +142,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     @Test
     public void invokesCallback_cancelled() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
@@ -182,6 +166,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     @Test
     public void invokesCallbackInButtonsNav_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
                 /* sync = */ true);
@@ -204,6 +189,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     @Test
     public void invokesCallbackInButtonsNav_cancelled() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
                 /* sync = */ true);
@@ -221,20 +207,40 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
-    public void invokesShadowCallbackInButtonsNav_invoked() throws InterruptedException {
-        registerBackCallback(mActivity, mObserverCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
+    public void invokesObserverCallback_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
+        int midHeight = mUiDevice.getDisplayHeight() / 2;
+        int midWidth = mUiDevice.getDisplayWidth() / 2;
+
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+
+        // Assert that observer callback does not receive start and progress events during the
+        // gesture
+        assertNotInvoked(mTracker.mStartLatch);
+        assertNotInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+
+        touchSession.finishSwipe();
+        assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
+    public void invokesObserverCallbackInButtonsNav_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
                 /* sync = */ true);
 
-        assertInvoked(mTracker.mStartLatch);
+        assertNotInvoked(mTracker.mStartLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
-        assertNotInvoked(mNoUiTracker.mStartLatch);
-        assertNotInvoked(mNoUiTracker.mProgressLatch);
-        assertNotInvoked(mNoUiTracker.mInvokeLatch);
-        assertNotInvoked(mNoUiTracker.mCancelLatch);
 
         assertTrue(mActivity.mOnUserInteractionCalled);
 
@@ -244,12 +250,9 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
                 /* sync = */ true);
 
         assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mStartLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mCancelLatch);
-        assertInvoked(mNoUiTracker.mInvokeLatch);
-        assertNotInvoked(mNoUiTracker.mStartLatch);
-        assertNotInvoked(mNoUiTracker.mProgressLatch);
-        assertNotInvoked(mNoUiTracker.mCancelLatch);
     }
 
     @Test

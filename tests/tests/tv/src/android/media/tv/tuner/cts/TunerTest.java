@@ -2542,7 +2542,7 @@ public class TunerTest {
     }
 
     private TunerFrontendInfo tunerFrontendInfo(
-            int handle, int frontendType, int exclusiveGroupId) {
+            long handle, int frontendType, int exclusiveGroupId) {
         TunerFrontendInfo info = new TunerFrontendInfo();
         info.handle = handle;
         info.type = frontendType;
@@ -2586,9 +2586,9 @@ public class TunerTest {
         }
     }
 
-    private void assignFeResource(int clientId, int frontendType,
-                                  boolean expectedResult, int expectedHandle) {
-        int[] feHandle = new int[1];
+    private void assignFeResource(
+            int clientId, int frontendType, boolean expectedResult, long expectedHandle) {
+        long[] feHandle = new long[1];
         TunerFrontendRequest request = new TunerFrontendRequest();
         request.clientId = clientId;
         request.frontendType = frontendType;
@@ -3227,6 +3227,15 @@ public class TunerTest {
             ap.hasAudioDescription();
             ap.hasDialogueEnhancement();
             ap.hasSpokenSubtitles();
+        }
+        if (TunerVersionChecker.isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_4_0)) {
+            e.getNumDataPieces();
+            e.getIndexInDataGroup();
+            e.getDataGroupId();
+        } else {
+            assertTrue(e.getNumDataPieces() == 0);
+            assertTrue(e.getIndexInDataGroup() == 0);
+            assertTrue(e.getDataGroupId() == 0);
         }
         e.release();
     }

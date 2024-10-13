@@ -19,6 +19,8 @@ package com.android.bedstead.nene.packages;
 import static android.Manifest.permission.MANAGE_EXTERNAL_STORAGE;
 import static android.os.Build.VERSION_CODES.R;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNotNull;
@@ -35,8 +37,8 @@ import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 
@@ -73,7 +75,7 @@ public class PackageTest {
             "android.permission.INTERACT_ACROSS_USERS";
     private static final String NON_EXISTING_PERMISSION = "aPermissionThatDoesntExist";
     private static final String USER_SPECIFIC_PERMISSION = "android.permission.READ_CONTACTS";
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .wherePermissions().contains(
                     USER_SPECIFIC_PERMISSION,
                     DECLARED_RUNTIME_PERMISSION,
