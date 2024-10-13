@@ -40,7 +40,7 @@
         <option name="test-timeout" value="600000" />
         <option name="runtime-hint" value="1h" />
         <option name="exclude-annotation" value="org.junit.Ignore" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
         <option name="hidden-api-checks" value="false" />
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
