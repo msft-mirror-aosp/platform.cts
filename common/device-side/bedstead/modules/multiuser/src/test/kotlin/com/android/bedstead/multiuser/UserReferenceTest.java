@@ -21,6 +21,7 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
@@ -120,9 +121,9 @@ public class UserReferenceTest {
     @Test
     @EnsureHasWorkProfile(isOrganizationOwned = true)
     public void remove_copeUser_removeUser() {
-        sDeviceState.workProfile().remove();
+        workProfile(sDeviceState).remove();
 
-        assertThat(sDeviceState.workProfile().exists()).isFalse();
+        assertThat(workProfile(sDeviceState).exists()).isFalse();
     }
 
     @Test
@@ -239,18 +240,18 @@ public class UserReferenceTest {
     @Test
     @RequireRunOnWorkProfile(switchedToParentUser = FALSE)
     public void switchTo_profile_switchesToParent() {
-        sDeviceState.workProfile().switchTo();
+        workProfile(sDeviceState).switchTo();
 
-        assertThat(TestApis.users().current()).isEqualTo(sDeviceState.workProfile().parent());
+        assertThat(TestApis.users().current()).isEqualTo(workProfile(sDeviceState).parent());
     }
 
     @Test
     @RequireRunOnInitialUser
     @EnsureHasWorkProfile
     public void stop_isWorkProfileOfCurrentUser_stops() {
-        sDeviceState.workProfile().stop();
+        workProfile(sDeviceState).stop();
 
-        assertThat(sDeviceState.workProfile().isRunning()).isFalse();
+        assertThat(workProfile(sDeviceState).isRunning()).isFalse();
     }
 
     @Test
@@ -447,7 +448,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasWorkProfile
     public void isVisibleBagroundNonProfileUser_profileUser_returnsFalse() {
-        UserReference user = sDeviceState.workProfile().start();
+        UserReference user = workProfile(sDeviceState).start();
 
         assertWithMessage("%s is visible bg user", user)
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
@@ -519,7 +520,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasWorkProfile
     public void parent_returnsParent() {
-        assertThat(sDeviceState.workProfile().parent()).isNotNull();
+        assertThat(workProfile(sDeviceState).parent()).isNotNull();
     }
 
     @Test
