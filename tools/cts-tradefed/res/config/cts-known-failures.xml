@@ -355,4 +355,5 @@
 
     <!-- b/368509186 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
 </configuration>
