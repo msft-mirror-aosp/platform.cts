@@ -19,10 +19,6 @@ import static android.view.View.FIND_VIEWS_WITH_TEXT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
@@ -199,19 +195,54 @@ public class DarkTextThemeTest extends AppWidgetTestCase {
         verifyColor(listView.getChildAt(2), Color.BLACK);
     }
 
+    private RemoteViewsService.RemoteViewsFactory newRemoteViewsFactory() {
+        return new RemoteViewsService.RemoteViewsFactory() {
+            @Override
+            public int getCount() {
+                return 3;
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return position;
+            }
+
+            @Override
+            public RemoteViews getViewAt(int position) {
+                RemoteViews remoteViews = getViewsForResponse();
+                remoteViews.setTextViewText(R.id.hello, "Text " + position);
+                return remoteViews;
+            }
+
+            @Override
+            public int getViewTypeCount() {
+                return 1;
+            }
+
+            @Override
+            public boolean hasStableIds() {
+                return false;
+            }
+
+            @Override
+            public RemoteViews getLoadingView() {
+                return null;
+            }
+
+            @Override
+            public void onCreate() {}
+
+            @Override
+            public void onDataSetChanged() {}
+
+            @Override
+            public void onDestroy() {}
+        };
+    }
+
     private void setupAndAwaitCollectionWidget() throws Throwable {
         // Configure the app widget service behavior
-        RemoteViewsService.RemoteViewsFactory factory =
-                mock(RemoteViewsService.RemoteViewsFactory.class);
-        when(factory.getCount()).thenReturn(3);
-        doAnswer(invocation -> {
-            final int position = (Integer) invocation.getArguments()[0];
-            RemoteViews remoteViews = getViewsForResponse();
-            remoteViews.setTextViewText(R.id.hello, "Text " + position);
-            return remoteViews;
-        }).when(factory).getViewAt(any(int.class));
-        when(factory.getViewTypeCount()).thenReturn(1);
-        MyAppWidgetService.setFactory(factory);
+        MyAppWidgetService.setFactory(newRemoteViewsFactory());
 
         // Push update
         RemoteViews views = new RemoteViews(mActivity.getPackageName(),
