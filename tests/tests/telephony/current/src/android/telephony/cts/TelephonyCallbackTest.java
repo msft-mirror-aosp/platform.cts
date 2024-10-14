@@ -119,6 +119,7 @@ public class TelephonyCallbackTest {
     private boolean mOnEmergencyCallbackModeChangedCalled;
     private boolean mOnCarrierRoamingNtnModeChangedCalled;
     private boolean mOnCarrierRoamingNtnEligibleCalled;
+    private boolean mOnCarrierRoamingNtnAvailableServiceCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1728,6 +1729,15 @@ public class TelephonyCallbackTest {
                 mLock.notify();
             }
         }
+
+        @Override
+        public void onCarrierRoamingNtnAvailableServicesChanged(
+                @NetworkRegistrationInfo.ServiceType List<Integer> availableServices) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnAvailableServiceCalled = true;
+                mLock.notify();
+            }
+        }
     }
 
     @Test
@@ -1765,6 +1775,25 @@ public class TelephonyCallbackTest {
         assertTrue(mOnCarrierRoamingNtnEligibleCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnEligibleCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnCarrierRoamingNtnAvailableServices() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnAvailableServiceCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnAvailableServiceCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnAvailableServiceCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnAvailableServiceCalled,
                 mCarrierRoamingNtnModeListener);
     }
 }
