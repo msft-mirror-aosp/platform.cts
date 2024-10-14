@@ -24,11 +24,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
@@ -89,15 +87,6 @@ public class StartActivityAsUserTests {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EXTRA_CALLBACK, cb);
 
-        final CountDownLatch returnToOriginalUserLatch = new CountDownLatch(1);
-        mContext.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mContext.unregisterReceiver(this);
-                returnToOriginalUserLatch.countDown();
-            }
-        }, new IntentFilter(Intent.ACTION_USER_FOREGROUND));
-
         UserHandle secondUserHandle = UserHandle.of(mSecondUserId);
 
         try {
@@ -115,9 +104,6 @@ public class StartActivityAsUserTests {
         }
 
         assertThat(secondUser[0]).isEqualTo(mSecondUserId);
-
-        // Avoid the race between switch-user and remove-user.
-        returnToOriginalUserLatch.await(20, TimeUnit.SECONDS);
     }
 
     @Test
