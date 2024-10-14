@@ -20,8 +20,6 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
-import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
-import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
@@ -45,17 +43,14 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
-import com.android.bedstead.harrier.components.AccountsComponent;
 import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
@@ -66,7 +61,6 @@ import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
 import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
@@ -191,10 +185,6 @@ public final class DeviceState extends HarrierRule {
 
     private EnterpriseComponent enterpriseComponent() {
         return getDependency(EnterpriseComponent.class);
-    }
-
-    private AccountsComponent accountsComponent() {
-        return getDependency(AccountsComponent.class);
     }
 
     @Override
@@ -995,52 +985,17 @@ public final class DeviceState extends HarrierRule {
         return enterpriseComponent().dpmRoleHolder();
     }
 
-    /**
-     * Access harrier-managed accounts on the instrumented user.
-     */
-    public RemoteAccountAuthenticator accounts() {
-        return accountsComponent().accounts();
-    }
-
-    /**
-     * Access harrier-managed accounts on the given user.
-     */
-    public RemoteAccountAuthenticator accounts(UserType user) {
-        return accountsComponent().accounts(user);
-    }
-
-    /**
-     * Access harrier-managed accounts on the given user.
-     */
-    public RemoteAccountAuthenticator accounts(UserReference user) {
-        return accountsComponent().accounts(user);
-    }
-
-    /**
-     * Get the default account defined with {@link EnsureHasAccount}.
-     */
-    public AccountReference account() {
-        return accountsComponent().account();
-    }
-
-    /**
-     * Get the account defined with {@link EnsureHasAccount} with a given key.
-     */
-    public AccountReference account(String key) {
-        return accountsComponent().account(key);
-    }
-
     @Override
     boolean isHeadlessSystemUserMode() {
         return TestApis.users().isHeadlessSystemUserMode();
     }
 
     private AnnotationExecutor usesAnnotationExecutor(UsesAnnotationExecutor executorClassName) {
-        return mLocator.get(getAnnotationExecutorClass(executorClassName));
+        return mLocator.get(executorClassName.value());
     }
 
     private TestRuleExecutor usesTestRuleExecutor(UsesTestRuleExecutor executorClassName) {
-        return mLocator.get(getTestRuleExecutorClass(executorClassName));
+        return mLocator.get(executorClassName.value());
     }
 
     void onTestFailed(Throwable exception) {
@@ -1057,11 +1012,7 @@ public final class DeviceState extends HarrierRule {
 
     private void createMissingFailureDumpers() {
         for (String className : FailureDumper.Companion.getFailureDumpers()) {
-            try {
-                var unused = mLocator.get(Class.forName(className));
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+            mLocator.get(className);
         }
     }
 
