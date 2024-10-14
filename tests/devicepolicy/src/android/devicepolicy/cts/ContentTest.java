@@ -33,7 +33,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
+import com.android.bedstead.contentsuggestions.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;

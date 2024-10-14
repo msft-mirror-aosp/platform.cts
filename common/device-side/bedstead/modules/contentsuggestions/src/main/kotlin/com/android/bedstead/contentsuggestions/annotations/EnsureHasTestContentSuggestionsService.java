@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.contentsuggestions.annotations;
 
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -34,7 +36,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.CONTENT_SUGGESTIONS)
 public @interface EnsureHasTestContentSuggestionsService {
 
     /** Which user type the service must be disabled on. */

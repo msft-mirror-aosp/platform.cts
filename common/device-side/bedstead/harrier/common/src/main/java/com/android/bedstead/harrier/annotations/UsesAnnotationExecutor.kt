@@ -43,5 +43,7 @@ annotation class UsesAnnotationExecutor(
         const val MAIN = "com.android.bedstead.harrier.MainAnnotationExecutor"
         const val TEST_APPS = "com.android.bedstead.testapps.TestAppsAnnotationExecutor"
         const val ACCOUNTS = "com.android.bedstead.accounts.AccountsAnnotationExecutor"
+        const val CONTENT_SUGGESTIONS =
+            "com.android.bedstead.contentsuggestions.ContentSuggestionsAnnotationExecutor"
     }
 }
