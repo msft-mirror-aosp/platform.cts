@@ -14,39 +14,34 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.accounts.annotations;
 
-import static com.android.bedstead.harrier.UserType.ANY;
-import static com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
+import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Ensure that an account exists.
+ * Annotation to indicate that a test needs an account authenticator.
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
-// TODO: Add options (features of the user, type of the user, etc.)
-public @interface EnsureHasNoAccounts {
+@Repeatable(EnsureHasAccountAuthenticatorGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ACCOUNTS)
+public @interface EnsureHasAccountAuthenticator {
 
-    int ENSURE_HAS_NO_ACCOUNTS_PRIORITY = ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY + 1;
+    int ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY = LATE;
 
-    /** Which user type the account must not be present added on. */
-    UserType onUser() default ANY;
-
-    /** Exclude pre created accounts. */
-    boolean allowPreCreatedAccounts() default true;
-
-    /** Behaviour if there are some accounts for the user. */
-    com.android.bedstead.harrier.annotations.FailureMode failureMode()
-            default com.android.bedstead.harrier.annotations.FailureMode.SKIP;
-
+    /** Which user type the account authenticator must be installed on. */
+    UserType onUser() default INSTRUMENTED_USER;
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -59,5 +54,5 @@ public @interface EnsureHasNoAccounts {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default ENSURE_HAS_NO_ACCOUNTS_PRIORITY;
+    int priority() default ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
 }

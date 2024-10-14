@@ -111,7 +111,6 @@ fun DeviceState.cloneProfile(): UserReference {
     return usersComponent().cloneProfile()
 }
 
-
 /**
  * Get the [UserReference] of the clone profile.
  *
