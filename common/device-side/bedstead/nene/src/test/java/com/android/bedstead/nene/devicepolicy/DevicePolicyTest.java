@@ -17,6 +17,7 @@
 package com.android.bedstead.nene.devicepolicy;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -492,7 +493,7 @@ public class DevicePolicyTest {
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), USER_RESTRICTION);
 
-            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+            assertThat(TestApis.devicePolicy().userRestrictions(additionalUser(sDeviceState))
                     .isSet(USER_RESTRICTION)).isTrue();
         } finally {
             if (!originalIsSet) {
@@ -513,7 +514,7 @@ public class DevicePolicyTest {
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
                     sDeviceState.dpc().componentName(), USER_RESTRICTION);
 
-            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+            assertThat(TestApis.devicePolicy().userRestrictions(additionalUser(sDeviceState))
                     .isSet(USER_RESTRICTION)).isFalse();
         } finally {
             if (!originalIsSet) {

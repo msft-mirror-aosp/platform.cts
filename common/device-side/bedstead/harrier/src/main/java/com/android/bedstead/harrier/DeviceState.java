@@ -180,6 +180,7 @@ public final class DeviceState extends HarrierRule {
      * Obtains the instance of the given [clazz] from locator
      * This method shouldn't be used in test directly
      */
+    @Nonnull
     public <T> T getDependency(Class<T> clazz) {
         return mLocator.get(clazz);
     }
@@ -651,102 +652,17 @@ public final class DeviceState extends HarrierRule {
     }
 
     /**
-     * Get the {@link UserReference} of the profile of the given type for the given user.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile for the given user
-     */
-    public UserReference profile(String profileType, UserType forUser) {
-        return usersComponent().profile(profileType, forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the profile for the current user.
-     *
-     * <p>If the current user is a profile of the correct type, then the current user will be
-     * returned.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile
-     */
-    public UserReference profile(String profileType) {
-        return profile(profileType, /* forUser= */ UserType.INSTRUMENTED_USER);
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile for the current user
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile() {
-        return usersComponent().tvProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile.
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile(UserType forUser) {
-        return usersComponent().tvProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile.
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile(UserReference forUser) {
-        return usersComponent().tvProfile(forUser);
-    }
-
-    /**
      * Get the {@link UserReference} of the clone profile for the current user
      *
      * <p>This should only be used to get clone profiles managed by Harrier (using either the
      * annotations or calls to the {@link DeviceState} class.
      *
      * @throws IllegalStateException if there is no harrier-managed clone profile
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public UserReference cloneProfile() {
         return usersComponent().cloneProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the clone profile.
-     *
-     * <p>This should only be used to get clone profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed clone profile
-     */
-    public UserReference cloneProfile(UserType forUser) {
-        return usersComponent().cloneProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the clone profile.
-     *
-     * <p>This should only be used to get clone profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed clone profile
-     */
-    public UserReference cloneProfile(UserReference forUser) {
-        return usersComponent().cloneProfile(forUser);
     }
 
     /**
@@ -756,33 +672,11 @@ public final class DeviceState extends HarrierRule {
      * annotations or calls to the {@link DeviceState} class.
      *
      * @throws IllegalStateException if there is no harrier-managed private profile
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public UserReference privateProfile() {
         return usersComponent().privateProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the private profile.
-     *
-     * <p>This should only be used to get private profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed private profile
-     */
-    public UserReference privateProfile(UserType forUser) {
-        return usersComponent().privateProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the private profile.
-     *
-     * <p>This should only be used to get private profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed private profile
-     */
-    public UserReference privateProfile(UserReference forUser) {
-        return usersComponent().privateProfile(forUser);
     }
 
     /**
@@ -812,18 +706,11 @@ public final class DeviceState extends HarrierRule {
      * annotations or calls to the {@link DeviceState} class.
      *
      * @throws IllegalStateException if there is no harrier-managed secondary user
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public UserReference secondaryUser() {
         return usersComponent().user(SECONDARY_USER_TYPE_NAME);
-    }
-
-    /**
-     * Gets the user marked as "other" by use of the {@code @OtherUser} annotation.
-     *
-     * @throws IllegalStateException if there is no "other" user
-     */
-    public UserReference otherUser() {
-        return usersComponent().otherUser();
     }
 
     /**
@@ -979,7 +866,9 @@ public final class DeviceState extends HarrierRule {
 
     /**
      * Returns the additional user specified by annotation
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public UserReference additionalUser() {
         return usersComponent().additionalUser();
     }

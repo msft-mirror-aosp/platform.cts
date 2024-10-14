@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.harrier.test.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
 import static com.android.bedstead.harrier.test.TestPolicyForPolicyArguments.POLICY_ARGUMENT_TWO;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.otherUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -238,10 +239,10 @@ public class BedsteadJUnit4Test {
     @Test
     public void crossUserTestAnnotation_isRunningWithCorrectUserPairs() {
         if (TestApis.users().instrumented().equals(sDeviceState.initialUser())) {
-            assertThat(sDeviceState.otherUser()).isEqualTo(sDeviceState.workProfile());
+            assertThat(otherUser(sDeviceState)).isEqualTo(sDeviceState.workProfile());
         } else {
             assertThat(TestApis.users().instrumented()).isEqualTo(sDeviceState.workProfile());
-            assertThat(sDeviceState.otherUser()).isEqualTo(sDeviceState.initialUser());
+            assertThat(otherUser(sDeviceState)).isEqualTo(sDeviceState.initialUser());
         }
     }
 
