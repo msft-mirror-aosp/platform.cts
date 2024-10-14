@@ -174,7 +174,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
         boolean bothSecure = isFirstSecure & isSecondSecure;
 
         if (bothSecure) {
-            testCodec(null, m2160pPc14WidevineTestFiles, 2160, 3840,
+            testCodec(null, m1080pWidevineTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else if (onlyOneSecure) {
             testCodec(m2160pPc14TestFiles, m2160pPc14WidevineTestFiles, 2160, 3840,
@@ -203,7 +203,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
         boolean bothSecure = isFirstSecure & isSecondSecure;
 
         if (bothSecure) {
-            testCodec(null, m2160pPc1410bitWidevineTestFiles, 2160, 3840,
+            testCodec(null, m1080pWidevine10bitTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else if (onlyOneSecure) {
             // 2 non-secure 4k HDR, 1 secure 4k SDR , 1 non-secure 1080p SDR
