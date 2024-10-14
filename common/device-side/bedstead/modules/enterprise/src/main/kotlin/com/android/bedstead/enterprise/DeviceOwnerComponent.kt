@@ -16,6 +16,7 @@
 package com.android.bedstead.enterprise
 
 import android.os.Build
+import com.android.bedstead.accounts.AccountsComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.AnnotationExecutorUtil
@@ -23,7 +24,6 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.components.AccountsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users

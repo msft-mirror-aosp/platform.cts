@@ -21,7 +21,9 @@ import static android.app.admin.TargetUser.LOCAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRICTIVE;
 import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 
-import static com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
+import static com.android.bedstead.accounts.AccountsDeviceStateExtensionsKt.account;
+import static com.android.bedstead.accounts.AccountsDeviceStateExtensionsKt.accounts;
+import static com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
@@ -50,8 +52,8 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
+import com.android.bedstead.accounts.annotations.EnsureHasAccount;
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.AccountManagement;
 import com.android.bedstead.harrier.policies.DisallowModifyAccounts;
@@ -117,7 +119,7 @@ public final class AccountManagementTest {
         Exception exception = assertThrows(Exception.class, () ->
                 sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                         sDeviceState.dpc().componentName(),
-                        sDeviceState.accounts().accountType(), /* disabled= */ false));
+                        accounts(sDeviceState).accountType(), /* disabled= */ false));
 
         assertTrue("Expected OperationCanceledException or SecurityException to be thrown",
                 (exception instanceof OperationCanceledException)
@@ -129,16 +131,16 @@ public final class AccountManagementTest {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             assertThat(sDeviceState.dpc().devicePolicyManager()
                     .getAccountTypesWithManagementDisabled()).asList().contains(
-                    sDeviceState.accounts().accountType());
+                    accounts(sDeviceState).accountType());
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(), /* disabled= */ false);
+                    accounts(sDeviceState).accountType(), /* disabled= */ false);
         }
     }
 
@@ -147,22 +149,22 @@ public final class AccountManagementTest {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             assertThat(
                     Arrays.stream(sDeviceState.dpc().devicePolicyManager()
                                     .getAccountTypesWithManagementDisabled())
-                            .filter(s -> s.equals(sDeviceState.accounts().accountType()))
+                            .filter(s -> s.equals(accounts(sDeviceState).accountType()))
                             .count()).isEqualTo(1);
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -171,16 +173,16 @@ public final class AccountManagementTest {
     public void setAccountManagementDisabled_disableThenEnable_notDisabled() {
         sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                 sDeviceState.dpc().componentName(),
-                sDeviceState.accounts().accountType(),
+                accounts(sDeviceState).accountType(),
                 /* disabled= */ true);
         sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                 sDeviceState.dpc().componentName(),
-                sDeviceState.accounts().accountType(),
+                accounts(sDeviceState).accountType(),
                 /* disabled= */ false);
 
         assertThat(sDeviceState.dpc().devicePolicyManager().getAccountTypesWithManagementDisabled())
                 .asList().doesNotContain(
-                        sDeviceState.accounts().accountType());
+                        accounts(sDeviceState).accountType());
     }
 
     @Postsubmit(reason = "new test")
@@ -193,7 +195,7 @@ public final class AccountManagementTest {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             // Management is disabled, but the DO/PO is still allowed to use the APIs
@@ -202,14 +204,14 @@ public final class AccountManagementTest {
                             sDeviceState.dpc().user(),
                             sDeviceState.dpc().accountManager())
                     .addAccount()
-                    .type(sDeviceState.accounts().accountType())
+                    .type(accounts(sDeviceState).accountType())
                     .add()) {
-                assertThat(sDeviceState.accounts().allAccounts()).contains(account);
+                assertThat(accounts(sDeviceState).allAccounts()).contains(account);
             }
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -230,9 +232,9 @@ public final class AccountManagementTest {
                             sDeviceState.dpc().user(),
                             sDeviceState.dpc().accountManager())
                     .addAccount()
-                    .type(sDeviceState.accounts().accountType())
+                    .type(accounts(sDeviceState).accountType())
                     .add()) {
-                assertThat(sDeviceState.accounts().allAccounts()).contains(account);
+                assertThat(accounts(sDeviceState).allAccounts()).contains(account);
             }
         } finally {
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
@@ -253,7 +255,7 @@ public final class AccountManagementTest {
             AccountReference account = TestApis.accounts().wrap(
                             sDeviceState.dpc().user(), sDeviceState.dpc().accountManager())
                     .addAccount()
-                    .type(sDeviceState.accounts().accountType())
+                    .type(accounts(sDeviceState).accountType())
                     .add();
 
             Bundle result = sDeviceState.dpc().accountManager().removeAccount(
@@ -264,7 +266,7 @@ public final class AccountManagementTest {
                     .getResult();
 
             assertThat(result.getBoolean(AccountManager.KEY_BOOLEAN_RESULT)).isTrue();
-            assertThat(sDeviceState.accounts().allAccounts()).doesNotContain(account);
+            assertThat(accounts(sDeviceState).allAccounts()).doesNotContain(account);
         } finally {
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
                     sDeviceState.dpc().componentName(), DISALLOW_MODIFY_ACCOUNTS);
@@ -279,7 +281,7 @@ public final class AccountManagementTest {
 
             assertThrows(OperationCanceledException.class, () ->
                     mAccountManager.addAccount(
-                            sDeviceState.accounts().accountType(),
+                            accounts(sDeviceState).accountType(),
                             /* authTokenType= */ null,
                             /* requiredFeatures= */ null,
                             /* addAccountOptions= */ null,
@@ -299,7 +301,7 @@ public final class AccountManagementTest {
             throws Exception {
         AccountReference account = null;
         try {
-            account = sDeviceState.accounts().addAccount().add();
+            account = accounts(sDeviceState).addAccount().add();
 
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                     sDeviceState.dpc().componentName(), UserManager.DISALLOW_MODIFY_ACCOUNTS);
@@ -321,15 +323,15 @@ public final class AccountManagementTest {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             assertThrows(Exception.class, () ->
-                    sDeviceState.accounts().addAccount().add());
+                    accounts(sDeviceState).addAccount().add());
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -347,15 +349,15 @@ public final class AccountManagementTest {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.account().type(),
+                    account(sDeviceState).type(),
                     /* disabled= */ true);
 
             NeneException e = assertThrows(NeneException.class, () ->
-                    sDeviceState.account().remove());
+                    account(sDeviceState).remove());
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -379,19 +381,19 @@ public final class AccountManagementTest {
     public void getDevicePolicyState_setAccountManagementDisabled_returnsPolicy() {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     TestApis.users().instrumented().userHandle());
 
             assertThat(policyState.getCurrentResolvedPolicy()).isTrue();
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -406,7 +408,7 @@ public final class AccountManagementTest {
     public void policyUpdateReceiver_setAccountManagementDisabled_receivedPolicySetBroadcast() {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             PolicySetResultUtils.assertPolicySetResultReceived(
@@ -415,7 +417,7 @@ public final class AccountManagementTest {
                     PolicyUpdateResult.RESULT_POLICY_SET, LOCAL_USER_ID, new Bundle());
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -429,20 +431,20 @@ public final class AccountManagementTest {
     public void getDevicePolicyState_setAccountManagementDisabled_returnsCorrectResolutionMechanism() {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     TestApis.users().instrumented().userHandle());
 
             assertThat(PolicyEngineUtils.getMostRestrictiveBooleanMechanism(policyState)
                     .getMostToLeastRestrictiveValues()).isEqualTo(TRUE_MORE_RESTRICTIVE);
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -459,7 +461,7 @@ public final class AccountManagementTest {
 //                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
@@ -469,18 +471,18 @@ public final class AccountManagementTest {
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     TestApis.users().instrumented().userHandle());
             assertThat(policyState.getCurrentResolvedPolicy()).isTrue();
             assertThat(sDeviceState.dpc().devicePolicyManager()
                     .getAccountTypesWithManagementDisabled()).asList().contains(
-                    sDeviceState.accounts().accountType());
+                    accounts(sDeviceState).accountType());
             assertThrows(Exception.class, () ->
-                    sDeviceState.accounts().addAccount().add());
+                    accounts(sDeviceState).addAccount().add());
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
-                    sDeviceState.accounts().accountType(),
+                    accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
 //            TestApis.flags().set(
 //                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
@@ -493,7 +495,7 @@ public final class AccountManagementTest {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
             AccountManagerFuture<Bundle> future =
                     sLocalAccountManager.startAddAccountSession(
-                            sDeviceState.accounts().accountType(),
+                            accounts(sDeviceState).accountType(),
                             AUTH_TOKEN_TYPE,
                             REQUIRED_FEATURES,
                             /* options= */ null,
@@ -507,7 +509,7 @@ public final class AccountManagementTest {
             assertThat(metrics.query()
                     .whereAdminPackageName().isEqualTo("")
                     .whereType().isEqualTo(EventId.ADD_ACCOUNT_VALUE)
-                    .whereStrings().contains(sDeviceState.accounts().accountType(),
+                    .whereStrings().contains(accounts(sDeviceState).accountType(),
                             ACCOUNT_TYPE, AUTH_TOKEN_TYPE,
                             REQUIRED_FEATURES_STR)
             ).wasLogged();
