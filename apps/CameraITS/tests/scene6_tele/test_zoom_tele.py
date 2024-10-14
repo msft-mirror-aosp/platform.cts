@@ -1,4 +1,4 @@
-# Copyright 2020 The Android Open Source Project
+# Copyright 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Verify zoom ratio scales ArUco marker sizes correctly."""
+"""Verify zoom ratio scales ArUco marker sizes correctly for the TELE camera."""
 
 
 import logging
@@ -20,40 +20,48 @@ import os.path
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
+import opencv_processing_utils
 import its_base_test
 import its_session_utils
-import opencv_processing_utils
 import cv2
 from mobly import test_runner
 import numpy as np
 import zoom_capture_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
-_TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
-_TEST_REQUIRED_MPC = 33
-_SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
-_ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
-# Wider zoom ratio range will be tested by test_zoom_tele
-_WIDE_ZOOM_RATIO_MAX = 2.0
+_NUMBER_OF_CAMERAS_TO_TEST = 2  # WIDE and TELE
+_NUM_STEPS_PER_SECTION = 10
+# YUV only to improve marker detection, JPEG is tested in test_zoom
+_TEST_FORMATS = ('yuv',)
+# Empirically found zoom ratio for main cameras without custom offset behavior
+_WIDE_ZOOM_RATIO_MIN = 2.0
+# Empirically found zoom ratio for TELE cameras
+_TELE_TRANSITION_ZOOM_RATIO = 10.0
 
 
-class ZoomTest(its_base_test.ItsBaseTest):
-  """Test the camera zoom behavior."""
+class ZoomTestTELE(its_base_test.ItsBaseTest):
+  """Test the camera zoom behavior for the TELE camera, if available."""
 
-  def test_zoom(self):
+  def test_zoom_tele(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
-        hidden_physical_id=self.hidden_physical_id) as cam:
+        # Use logical camera for captures. Physical ID only for result tracking
+        hidden_physical_id=None) as cam:
+      camera_properties_utils.skip_unless(self.hidden_physical_id is not None)
       props = cam.get_camera_properties()
-      props = cam.override_with_hidden_physical_camera_props(props)
+      physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
+      physical_fov = float(cam.calc_camera_fov(physical_props))
+      is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
       camera_properties_utils.skip_unless(
-          camera_properties_utils.zoom_ratio_range(props))
+          camera_properties_utils.zoom_ratio_range(props) and
+          is_tele)
 
       # Load chart for scene
       its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, self.chart_distance)
+          cam, props, self.scene, self.tablet,
+          # Ensure markers are large enough by loading unscaled chart
+          its_session_utils.CHART_DISTANCE_NO_SCALING)
 
       # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
@@ -61,36 +69,34 @@ class ZoomTest(its_base_test.ItsBaseTest):
       z_min, z_max = float(z_range[0]), float(z_range[1])
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-      z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
-      z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
+      z_min = max(z_min, _WIDE_ZOOM_RATIO_MIN)  # Force W
+      tele_transition_zoom_ratio = min(z_max, _TELE_TRANSITION_ZOOM_RATIO)
+      # Increase data near transition ratio
+      transition_z_list = np.arange(
+          z_min,
+          tele_transition_zoom_ratio,
+          (tele_transition_zoom_ratio - z_min) / (_NUM_STEPS_PER_SECTION - 1)
+      )
+      tele_z_list = np.array([])
+      if z_max > tele_transition_zoom_ratio:
+        tele_z_list = np.arange(
+            tele_transition_zoom_ratio,
+            z_max,
+            (z_max - tele_transition_zoom_ratio) / (_NUM_STEPS_PER_SECTION - 1)
+        )
+      z_list = np.unique(np.concatenate((transition_z_list, tele_z_list)))
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
 
-      # Check media performance class
-      media_performance_class = its_session_utils.get_media_performance_class(
-          self.dut.serial)
-      ultrawide_camera_found = cam.has_ultrawide_camera(
-          facing=props['android.lens.facing'])
-      if (media_performance_class >= _TEST_REQUIRED_MPC and
-          cam.is_primary_camera() and
-          ultrawide_camera_found and
-          int(z_min) >= 1):
-        raise AssertionError(
-            f'With primary camera {self.camera_id}, '
-            f'MPC >= {_TEST_REQUIRED_MPC}, and '
-            'an ultrawide camera facing in the same direction as the primary, '
-            'zoom_ratio minimum must be less than 1.0. '
-            f'Found media performance class {media_performance_class} '
-            f'and minimum zoom {z_min}.')
-
-      # set TOLs based on camera and test rig params
+      # Set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
         test_tols, size = zoom_capture_utils.get_test_tols_and_cap_size(
             cam, props, self.chart_distance, debug)
       else:
         test_tols = {}
-        fls = props['android.lens.info.availableFocalLengths']
-        for fl in fls:
+        focal_lengths = props['android.lens.info.availableFocalLengths']
+        logging.debug('focal lengths: %s', focal_lengths)
+        for fl in focal_lengths:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
         yuv_size = capture_request_utils.get_largest_format('yuv', props)
@@ -98,23 +104,18 @@ class ZoomTest(its_base_test.ItsBaseTest):
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
-      # determine first API level and test_formats to test
-      test_formats = _TEST_FORMATS
-      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      if first_api_level >= its_session_utils.ANDROID14_API_LEVEL:
-        test_formats.append(zoom_capture_utils.JPEG_STR)
-
-      # do captures over zoom range and find ArUco markers with cv2
+      # Do captures over zoom range and find ArUco markers with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       req = capture_request_utils.auto_capture_request()
       test_failed = False
-      for fmt in test_formats:
+
+      for fmt in _TEST_FORMATS:
         logging.debug('testing %s format', fmt)
         test_data = []
         all_aruco_ids = []
         all_aruco_corners = []
         images = []
-        physical_ids = set()
+        found_markers = False
         for z in z_list:
           req['android.control.zoomRatio'] = z
           logging.debug('zoom ratio: %.3f', z)
@@ -133,16 +134,13 @@ class ZoomTest(its_base_test.ItsBaseTest):
           cap_physical_id = (
               cap['metadata']['android.logicalMultiCamera.activePhysicalId']
           )
-          physical_ids.add(cap_physical_id)
-          logging.debug('Physical IDs: %s', physical_ids)
-
           img = image_processing_utils.convert_capture_to_rgb_image(
               cap, props=props)
-          img_name = (f'{img_name_stem}_{fmt}_{round(z, 2)}.'
+          img_name = (f'{img_name_stem}_{fmt}_{z:.2f}.'
                       f'{zoom_capture_utils.JPEG_STR}')
           image_processing_utils.write_image(img, img_name)
 
-          # determine radius tolerance of capture
+          # Determine radius tolerance of capture
           cap_fl = cap['metadata']['android.lens.focalLength']
           radius_tol, offset_tol = test_tols.get(
               cap_fl,
@@ -162,10 +160,16 @@ class ZoomTest(its_base_test.ItsBaseTest):
                 aruco_marker_count=1,
                 force_greyscale=True  # Maximize number of markers detected
             )
+            found_markers = True
           except AssertionError as e:
             logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
                           z, e)
-            break
+            if found_markers:
+              logging.debug('No more ArUco markers found at zoom %.2f', z)
+              break
+            else:
+              logging.debug('Still no ArUco markers found at zoom %.2f', z)
+              continue
           all_aruco_corners.append([corner[0] for corner in corners])
           all_aruco_ids.append([id[0] for id in ids])
           images.append(bgr_img)
@@ -183,19 +187,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
         # Find ArUco markers in all captures and update test data
         zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
             test_data, all_aruco_ids, all_aruco_corners, size)
+        test_artifacts_name_stem = f'{img_name_stem}_{fmt}'
         # Mark ArUco marker center and image center
         opencv_processing_utils.mark_zoom_images(
-            images, test_data, f'{img_name_stem}_{fmt}')
+            images, test_data, test_artifacts_name_stem)
 
-        number_of_cameras_to_test = (
-            _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
-            if ultrawide_camera_found
-            else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
-        )
         if not zoom_capture_utils.verify_zoom_data(
             test_data, size,
-            offset_plot_name_stem=f'{img_name_stem}_{fmt}',
-            number_of_cameras_to_test=number_of_cameras_to_test):
+            offset_plot_name_stem=test_artifacts_name_stem,
+            number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST):
           test_failed = True
 
     if test_failed:
