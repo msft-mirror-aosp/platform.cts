@@ -1150,6 +1150,9 @@ public class VehiclePropertyVerifier<T> {
                 CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
             return;
         }
+
+        verifySetPropertyWithNullValueThrowsException(areaId);
+
         if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
             Log.w(TAG, "Property: " + mPropertyName + " will be altered during the test and it is"
@@ -1177,6 +1180,12 @@ public class VehiclePropertyVerifier<T> {
             verifyCarPropertyValue(updatedCarPropertyValue, areaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
         }
+    }
+
+    private void verifySetPropertyWithNullValueThrowsException(int areaId) {
+        assertThrows(NullPointerException.class, () ->
+                mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId,
+                /* val= */ null));
     }
 
     private void verifyHvacTemperatureValueSuggestionSetter() {
