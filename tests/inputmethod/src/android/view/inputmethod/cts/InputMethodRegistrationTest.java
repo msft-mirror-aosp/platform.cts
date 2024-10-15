@@ -34,7 +34,6 @@ import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -43,13 +42,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
-@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
-public class InputMethodRegistrationTest {
+public final class InputMethodRegistrationTest {
 
     private static final String LARGE_RESOURCE_IME_APK_PATH =
             "/data/local/tmp/cts/inputmethod/CtsMockLargeResourceInputMethod.apk";

@@ -47,17 +47,14 @@ import android.view.inputmethod.TextSnapshot;
 import android.view.inputmethod.cts.util.InputConnectionTestUtils;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class BaseInputConnectionTest {
+public final class BaseInputConnectionTest {
 
     private static final int CAPS_MODE_MASK = TextUtils.CAP_MODE_CHARACTERS
             | TextUtils.CAP_MODE_WORDS | TextUtils.CAP_MODE_SENTENCES;

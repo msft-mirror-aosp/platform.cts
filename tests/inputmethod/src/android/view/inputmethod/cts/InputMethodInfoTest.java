@@ -51,7 +51,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -62,16 +61,14 @@ import com.android.compatibility.common.util.PropertyUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.List;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodInfoTest {
+public final class InputMethodInfoTest {
     private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
