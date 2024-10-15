@@ -41,7 +41,10 @@ import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpmRoleHolder
+import com.android.bedstead.enterprise.profileOwner
+import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit
@@ -49,6 +52,7 @@ import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotWatch
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
@@ -57,6 +61,7 @@ import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMo
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSingleUser
+import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin

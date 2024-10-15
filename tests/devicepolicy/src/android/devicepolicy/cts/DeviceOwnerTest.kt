@@ -22,6 +22,7 @@ import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType

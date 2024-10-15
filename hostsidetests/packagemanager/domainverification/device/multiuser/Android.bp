@@ -33,6 +33,7 @@ android_test {
         "CtsDomainVerificationAndroidConstantsLibrary",
         "CtsDomainVerificationJavaConstantsLibrary",
         "Harrier",
+        "bedstead-enterprise",
         "junit",
         "Nene",
         "truth",

@@ -16,6 +16,7 @@
 
 package com.android.bedstead.harrier;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 
@@ -74,7 +75,7 @@ public final class DeviceStateClassAnnotationTest extends DeviceStateTestParent 
                                         TestApis.users().initial()))
                 .isNotNull();
 
-        assertThrows(IllegalStateException.class, sDeviceState::additionalUser);
+        assertThrows(IllegalStateException.class, () -> additionalUser(sDeviceState));
 
         // Test that the parent always runs before the child
         assertThat(sParentBeforeClassHasRun).isTrue();

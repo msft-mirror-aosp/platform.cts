@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("EXTENSION_SHADOWED_BY_MEMBER")
-
 package com.android.bedstead.multiuser
 
 import com.android.bedstead.harrier.DeviceState

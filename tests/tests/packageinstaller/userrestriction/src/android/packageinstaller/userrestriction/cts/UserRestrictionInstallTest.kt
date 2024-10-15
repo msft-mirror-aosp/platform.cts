@@ -44,6 +44,7 @@ import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestricti
 import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException

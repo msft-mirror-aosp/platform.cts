@@ -61,6 +61,7 @@ import com.android.bedstead.harrier.policies.DisallowBluetooth
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.profile
+import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -330,20 +331,6 @@ class EnterpriseAnnotationExecutorTest {
     fun profileOwner_otherUser_profileOwnerIsNotSet_throwsException() {
         assertThrows(IllegalStateException::class.java) {
             sDeviceState.profileOwner()
-        }
-    }
-
-    @Test
-    fun profileOwner_userType_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException::class.java) {
-            sDeviceState.profileOwner(null as UserType?)
-        }
-    }
-
-    @Test
-    fun profileOwner_userReference_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException::class.java) {
-            sDeviceState.profileOwner(null as UserReference?)
         }
     }
 

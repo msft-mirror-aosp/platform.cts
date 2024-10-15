@@ -22,6 +22,7 @@ import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis.accounts
 import com.google.common.truth.Truth.assertThat

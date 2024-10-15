@@ -50,6 +50,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.IntTestParameter
