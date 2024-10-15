@@ -60,7 +60,10 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mts-nfc",
+        "mcts-nfc",
     ],
+    min_sdk_version: "current",
 }
 
 android_test {
