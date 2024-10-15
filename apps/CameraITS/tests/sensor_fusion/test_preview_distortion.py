@@ -45,6 +45,7 @@ _GREEN_LIGHT = (80, 255, 80)
 _GREEN_DARK = (0, 190, 0)
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_PREVIEW_MAX_TESTED_AREA = 3840 * 2160
 _RED = (255, 0, 0)
 _VALID_CONTROLLERS = ('arduino', 'external')
 _WIDE_ZOOM = 1
@@ -471,7 +472,9 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
 
       # Determine preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id, _ASPECT_RATIO_4_3)
+          cam, self.camera_id,
+          aspect_ratio=_ASPECT_RATIO_4_3,
+          max_tested_area=_PREVIEW_MAX_TESTED_AREA)
       logging.debug('preview_size: %s', preview_size)
 
       # Determine test zoom range

@@ -322,17 +322,19 @@ def is_aspect_ratio_match(size_str, target_ratio):
   return abs(width / height - target_ratio) < _ASPECT_TOL
 
 
-def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
+def get_max_preview_test_size(cam, camera_id, aspect_ratio=None,
+                              max_tested_area=_PREVIEW_MAX_TESTED_AREA):
   """Finds the max preview size to be tested.
 
   If the device supports the _HIGH_RES_SIZE preview size then
   it uses that for testing, otherwise uses the max supported
-  preview size capped at _PREVIEW_MAX_TESTED_AREA.
+  preview size capped at max_tested_area.
 
   Args:
     cam: camera object
     camera_id: str; camera device id under test
     aspect_ratio: preferred aspect_ratio For example: '4/3'
+    max_tested_area: area of max preview resolution
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
@@ -362,7 +364,7 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
         size
         for size in supported_preview_sizes
         if (
-            resolution_to_area(size) <= _PREVIEW_MAX_TESTED_AREA
+            resolution_to_area(size) <= max_tested_area
             and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
         )
     ]
