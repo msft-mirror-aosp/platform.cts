@@ -46,14 +46,14 @@ import android.os.Bundle;
 import android.os.UserManager;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.accounts.annotations.EnsureHasAccount;
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.accounts.annotations.EnsureHasAccount;
-import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.AccountManagement;
 import com.android.bedstead.harrier.policies.DisallowModifyAccounts;

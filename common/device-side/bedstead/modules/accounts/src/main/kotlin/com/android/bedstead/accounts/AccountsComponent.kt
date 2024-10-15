@@ -17,15 +17,15 @@ package com.android.bedstead.accounts
 
 import android.app.admin.DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_ALLOWED
 import android.app.admin.DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_DISALLOWED
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator
+import com.android.bedstead.accounts.annotations.EnsureHasAccounts
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.accounts.annotations.EnsureHasAccount
-import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator
-import com.android.bedstead.accounts.annotations.EnsureHasAccounts
-import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis
