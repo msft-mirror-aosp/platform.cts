@@ -22,6 +22,8 @@ import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -43,6 +45,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ThermalUtils;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +67,10 @@ public class PowerManager_ThermalTest {
     private OnThermalStatusChangedListener mListener1;
     @Mock
     private OnThermalStatusChangedListener mListener2;
+    @Mock
+    private PowerManager.OnThermalHeadroomChangedListener mHeadroomListener1;
+    @Mock
+    private PowerManager.OnThermalHeadroomChangedListener mHeadroomListener2;
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -138,6 +145,42 @@ public class PowerManager_ThermalTest {
                 .times(0)).onThermalStatusChanged(status);
         verify(mListener2, timeout(CALLBACK_TIMEOUT_MILLI_SEC)
                 .times(1)).onThermalStatusChanged(status);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.PowerManager#addThermalHeadroomListener",
+            "android.os.PowerManager#removeThermalHeadroomListener"})
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)
+    public void testThermalHeadroomCallback() throws Exception {
+        float headroom = mPowerManager.getThermalHeadroom(0);
+        // If the device doesn't support thermal headroom, return early
+        if (Float.isNaN(headroom)) {
+            return;
+        }
+        // Add listener1
+        mPowerManager.addThermalHeadroomListener(mExec, mHeadroomListener1);
+        verify(mHeadroomListener1, timeout(CALLBACK_TIMEOUT_MILLI_SEC)
+                .times(1)).onThermalHeadroomChanged(anyInt(), anyInt(), anyInt(), any());
+        reset(mHeadroomListener1);
+        // Add listener1 again
+        try {
+            mPowerManager.addThermalHeadroomListener(mHeadroomListener1);
+            Assert.fail("Expected exception not thrown");
+        } catch (IllegalArgumentException expectedException) {
+        }
+        // Add listener2 on main thread.
+        mPowerManager.addThermalHeadroomListener(mHeadroomListener2);
+        verify(mHeadroomListener2, timeout(CALLBACK_TIMEOUT_MILLI_SEC)
+                .times(1)).onThermalHeadroomChanged(anyInt(), anyInt(), anyInt(), any());
+        reset(mHeadroomListener2);
+        // Remove listener1
+        mPowerManager.removeThermalHeadroomListener(mHeadroomListener1);
+        // Remove listener1 again
+        try {
+            mPowerManager.removeThermalHeadroomListener(mHeadroomListener1);
+            Assert.fail("Expected exception not thrown");
+        } catch (IllegalArgumentException expectedException) {
+        }
     }
 
     /**
