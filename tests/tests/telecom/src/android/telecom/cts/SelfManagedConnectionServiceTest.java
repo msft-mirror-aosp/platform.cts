@@ -1686,10 +1686,9 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
                 connection.disconnectAndDestroy();
                 assertIsInCall(false);
             }
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
     }
 
     private void verifyIsInSelfManagedCallCrossUsers(UserHandle userHandle) {

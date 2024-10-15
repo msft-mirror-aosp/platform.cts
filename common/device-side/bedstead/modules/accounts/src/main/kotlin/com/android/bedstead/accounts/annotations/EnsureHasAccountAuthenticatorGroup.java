@@ -14,32 +14,23 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.accounts.annotations;
 
-import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
 
-import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Annotation to indicate that a test needs an account authenticator.
- */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(EnsureHasAccountAuthenticatorGroup.class)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
-public @interface EnsureHasAccountAuthenticator {
-
-    int ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY = LATE;
-
-    /** Which user type the account authenticator must be installed on. */
-    UserType onUser() default INSTRUMENTED_USER;
+@RepeatingAnnotation
+public @interface EnsureHasAccountAuthenticatorGroup {
+    EnsureHasAccountAuthenticator[] value();
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -52,5 +43,5 @@ public @interface EnsureHasAccountAuthenticator {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
+    int priority() default PRECEDENCE_NOT_IMPORTANT;
 }

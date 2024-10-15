@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.Manifest.permission.READ_NEARBY_STREAMING_POLICY;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.NotManaged;
 import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.SameManagedAccountOnly;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
@@ -151,7 +152,7 @@ public class NearbyNotificationStreamingPolicyTest {
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS_FULL)) {
             DevicePolicyManager dpm = TestApis.context()
-                    .instrumentedContextAsUser(sDeviceState.secondaryUser())
+                    .instrumentedContextAsUser(secondaryUser(sDeviceState))
                     .getSystemService(DevicePolicyManager.class);
 
             assertThrows(SecurityException.class, () -> dpm.getNearbyNotificationStreamingPolicy());

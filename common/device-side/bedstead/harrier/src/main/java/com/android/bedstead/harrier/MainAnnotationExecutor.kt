@@ -20,10 +20,6 @@ import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
-import com.android.bedstead.harrier.annotations.EnsureHasAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
 import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
@@ -60,7 +56,6 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.components.AccountsComponent
 import com.android.bedstead.harrier.components.BluetoothComponent
 import com.android.bedstead.harrier.components.ContentSuggestionsComponent
 import com.android.bedstead.harrier.components.DisplayThemeComponent
@@ -71,8 +66,8 @@ import com.android.bedstead.harrier.components.PropertiesComponent
 import com.android.bedstead.harrier.components.ScreenOrientationComponent
 import com.android.bedstead.harrier.components.SecureSettingsComponent
 import com.android.bedstead.harrier.components.UserPasswordComponent
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.harrier.components.WifiComponent
-import com.android.bedstead.multiuser.UserTypeResolver
 
 /**
  * [AnnotationExecutor] for annotations that don't belong to specific modules
@@ -91,7 +86,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     private val displayThemeComponent: DisplayThemeComponent by locator
     private val screenOrientationComponent: ScreenOrientationComponent by locator
     private val policyOperationUnsafeComponent: PolicyOperationUnsafeComponent by locator
-    private val accountsComponent: AccountsComponent by locator
     private val instrumentationComponent: InstrumentationComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
@@ -153,19 +147,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
 
             is EnsureHasTestContentSuggestionsService ->
                 contentSuggestionsComponent.ensureHasTestContentSuggestionsService(onUser)
-
-            //region TODO(b/334882463) move it into a new "bedstead-accounts" module
-            is EnsureHasAccount -> accountsComponent.ensureHasAccount(onUser, key, features)
-            is EnsureHasAccounts -> accountsComponent.ensureHasAccounts(value)
-            is EnsureHasNoAccounts -> accountsComponent.ensureHasNoAccounts(
-                onUser,
-                allowPreCreatedAccounts,
-                failureMode
-            )
-
-            is EnsureHasAccountAuthenticator ->
-                accountsComponent.ensureHasAccountAuthenticator(onUser)
-            //endregion
 
             is EnsureInstrumented -> instrumentationComponent.ensureInstrumented(this)
         }

@@ -45,7 +45,9 @@ import static android.app.role.RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT;
 import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 import static android.os.UserManager.DISALLOW_WIFI_DIRECT;
 
+import static com.android.bedstead.accounts.AccountsDeviceStateExtensionsKt.accounts;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -82,20 +84,20 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.os.UserHandle;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
@@ -153,7 +155,7 @@ public final class DeviceManagementCoexistenceTest {
             TestApis.packages().find("com.android.keychain");
 
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().exported().isTrue()
             ).get();
@@ -1016,7 +1018,7 @@ public final class DeviceManagementCoexistenceTest {
     public void setAccountManagementDisabled_serialisation_loadsPolicy() {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             // TODO(b/277071699): Add test API to trigger reloading from disk. Currently I've tested
@@ -1026,13 +1028,13 @@ public final class DeviceManagementCoexistenceTest {
             PolicyState<Boolean> policyState = getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     sDeviceState.dpc().user().userHandle());
 
             assertThat(policyState.getCurrentResolvedPolicy()).isEqualTo(true);
         } finally {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -1160,7 +1162,7 @@ public final class DeviceManagementCoexistenceTest {
                             sDeviceState.dpc().componentName(), sTestApp.packageName(),
                             bundle);
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
 
             // Reloading policies from disk
@@ -1220,7 +1222,7 @@ public final class DeviceManagementCoexistenceTest {
             PolicyState<Boolean> accountManagementDisabledPolicy = getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     sDeviceState.dpc().user().userHandle());
             // Asserting policies loaded correctly
             // TODO(b/273496614): enable once we enable unicorn APIs")
@@ -1293,7 +1295,7 @@ public final class DeviceManagementCoexistenceTest {
                     sDeviceState.dpc().componentName(),
                     sTestApp.packageName(), new Bundle());
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ false);
         }
     }
@@ -1327,7 +1329,7 @@ public final class DeviceManagementCoexistenceTest {
                     intentFilter,
                     sDeviceState.dpc().componentName());
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
-                    sDeviceState.dpc().componentName(), sDeviceState.accounts().accountType(),
+                    sDeviceState.dpc().componentName(), accounts(sDeviceState).accountType(),
                     /* disabled= */ true);
             sDeviceState.dpc().devicePolicyManager().setApplicationHidden(
                     sDeviceState.dpc().componentName(),
@@ -1364,7 +1366,7 @@ public final class DeviceManagementCoexistenceTest {
             PolicyState<Boolean> accountManagementDisabledPolicy = getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     sDeviceState.dpc().user().userHandle());
             // Assert policies removed from policy engine
             assertThat(lockTaskPolicy).isNull();
@@ -1427,7 +1429,7 @@ public final class DeviceManagementCoexistenceTest {
                 intentFilter,
                 new ComponentName(sDeviceState.dpmRoleHolder().packageName(), "class"));
         sDeviceState.dpmRoleHolder().devicePolicyManager().setAccountManagementDisabled(
-                null, sDeviceState.accounts().accountType(),
+                null, accounts(sDeviceState).accountType(),
                 /* disabled= */ true);
 
 
@@ -1463,7 +1465,7 @@ public final class DeviceManagementCoexistenceTest {
             PolicyState<Boolean> accountManagementDisabledPolicy = getBooleanPolicyState(
                     new AccountTypePolicyKey(
                             ACCOUNT_MANAGEMENT_DISABLED_POLICY,
-                            sDeviceState.accounts().accountType()),
+                            accounts(sDeviceState).accountType()),
                     sDeviceState.dpmRoleHolder().user().userHandle());
             // Assert policies removed from policy engine
             assertThat(lockTaskPolicy).isNull();

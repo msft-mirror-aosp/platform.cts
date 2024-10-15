@@ -25,9 +25,10 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.UserTypeResolver
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation
@@ -737,10 +738,3 @@ private class RemovedUser(
     val isRunning: Boolean,
     val isOriginalSwitchedToUser: Boolean
 )
-
-/**
- * See [UsersComponent.user]
- */
-fun DeviceState.user(userType: String): UserReference {
-    return getDependency(UsersComponent::class.java).user(userType)
-}

@@ -19,6 +19,8 @@ package com.android.bedstead.nene.devicepolicy;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -56,7 +58,7 @@ public class ProfileOwnerTest {
             RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX,
             "com.android.bedstead.testapp.BaseTestAppDeviceAdminReceiver"
     );
-    private static final TestApp sNonTestOnlyDpc = sDeviceState.testApps().query()
+    private static final TestApp sNonTestOnlyDpc = testApps(sDeviceState).query()
             .whereIsDeviceAdmin().isTrue()
             .whereTestOnly().isFalse()
             .get();
@@ -135,9 +137,9 @@ public class ProfileOwnerTest {
     @RequireRunNotOnSecondaryUser
     @EnsureHasProfileOwner(onUser = SECONDARY_USER)
     public void remove_onOtherUser_removesProfileOwner() {
-            TestApis.devicePolicy().getProfileOwner(sDeviceState.secondaryUser()).remove();
+            TestApis.devicePolicy().getProfileOwner(secondaryUser(sDeviceState)).remove();
 
-            assertThat(TestApis.devicePolicy().getProfileOwner(sDeviceState.secondaryUser()))
+            assertThat(TestApis.devicePolicy().getProfileOwner(secondaryUser(sDeviceState)))
                     .isNull();
     }
 

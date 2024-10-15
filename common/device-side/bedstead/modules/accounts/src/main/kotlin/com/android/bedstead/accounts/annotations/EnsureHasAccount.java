@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.accounts.annotations;
 
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.annotations.EnsureHasNoAccounts.ENSURE_HAS_NO_ACCOUNTS_PRIORITY;
+import static com.android.bedstead.accounts.annotations.EnsureHasNoAccounts.ENSURE_HAS_NO_ACCOUNTS_PRIORITY;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS;
 
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 
 import java.lang.annotation.ElementType;
@@ -34,7 +36,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureDoesNotHaveUserRestriction(DISALLOW_MODIFY_ACCOUNTS)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ACCOUNTS)
 // TODO(263353411): Make this take a query argument the same as remotedpc - instead of individual parameters
 public @interface EnsureHasAccount {
 

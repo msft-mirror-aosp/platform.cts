@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.components
+package com.android.bedstead.accounts
 
 import android.app.admin.DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_ALLOWED
 import android.app.admin.DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_DISALLOWED
@@ -22,12 +22,12 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
-import com.android.bedstead.harrier.annotations.EnsureHasAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator
+import com.android.bedstead.accounts.annotations.EnsureHasAccounts
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -42,7 +42,6 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue
  * Contains logic specific to accounts for Bedstead tests using [DeviceState] rule
  *
  * @param locator provides access to other dependencies.
- * TODO(b/334882463) move it into a new "bedstead-accounts" module
  */
 class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
