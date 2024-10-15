@@ -159,6 +159,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ItsService extends Service implements SensorEventListener {
     public static final String TAG = ItsService.class.getSimpleName();
@@ -1026,7 +1027,8 @@ public class ItsService extends Service implements SensorEventListener {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
-                    doGetSupportedPreviewSizes();
+                    boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
+                    doGetSupportedPreviewSizes(filterRecordable);
                 } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
                     doGetQueryableStreamCombinations();
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
@@ -2675,7 +2677,8 @@ public class ItsService extends Service implements SensorEventListener {
         return arrList.contains(mode);
     }
 
-    private void doGetSupportedPreviewSizes() throws ItsException {
+    private void doGetSupportedPreviewSizes(boolean filterRecordable)
+            throws ItsException {
         StreamConfigurationMap configMap = mCameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         if (!StreamConfigurationMap.isOutputSupportedFor(SurfaceHolder.class)) {
@@ -2689,13 +2692,45 @@ public class ItsService extends Service implements SensorEventListener {
             return;
         }
 
-        String response = Arrays.stream(outputSizes)
-                .distinct()
+        Stream<Size> previewSizesStream = Arrays.stream(outputSizes).distinct();
+        if (filterRecordable) {
+            Logt.i(TAG, "Filter preview sizes if supported by MediaRecorder");
+            previewSizesStream = previewSizesStream.filter(
+                    size -> isSizeSupportedByMediaRecorder(size));
+        }
+        String response = previewSizesStream
                 .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
                 .map(Size::toString)
                 .collect(Collectors.joining(";"));
 
         mSocketRunnableObj.sendResponse("supportedPreviewSizes", response);
+    }
+
+    private boolean isSizeSupportedByMediaRecorder(Size previewSize) {
+        Surface recordSurface = MediaCodec.createPersistentInputSurface();
+
+        MediaRecorder mediaRecorder = new MediaRecorder(this);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+
+        mediaRecorder.setVideoSize(previewSize.getWidth(), previewSize.getHeight());
+        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mediaRecorder.setInputSurface(recordSurface);
+        mediaRecorder.setVideoFrameRate(30);
+        String outputFile = getExternalCacheDir().getAbsolutePath() + "/its_test.mp4";
+        mediaRecorder.setOutputFile(outputFile);
+
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.release();
+            recordSurface.release();
+            return true;
+        } catch (IOException e) {
+            Logt.i(TAG, "Error preparing MediaRecorder with " + previewSize + ". error = " + e);
+        }
+        return false;
     }
 
     private void doGetQueryableStreamCombinations() throws ItsException {

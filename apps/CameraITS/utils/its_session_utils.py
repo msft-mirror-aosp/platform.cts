@@ -1139,7 +1139,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_all_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id, filter_recordable=False):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1148,13 +1148,16 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+      filter_recordable: filter preview sizes if supported for video recording
+                       using MediaRecorder
 
     Returns:
       List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
-        _CAMERA_ID_STR: camera_id
+        _CAMERA_ID_STR: camera_id,
+        'filter_recordable': filter_recordable,
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
