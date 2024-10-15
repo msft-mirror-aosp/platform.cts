@@ -47,6 +47,7 @@ android_test {
         "bedstead-multiuser",
         "bedstead-enterprise",
         "bedstead-contentsuggestions",
+        "bedstead-bluetooth",
     ],
     srcs: [
         "src/**/*.java",
@@ -86,6 +87,7 @@ android_test {
         "bedstead-multiuser",
         "bedstead-enterprise",
         "bedstead-contentsuggestions",
+        "bedstead-bluetooth",
     ],
     srcs: [
         "src/**/*.java",
