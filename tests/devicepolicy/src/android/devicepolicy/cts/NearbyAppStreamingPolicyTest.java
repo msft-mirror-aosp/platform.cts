@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.Manifest.permission.READ_NEARBY_STREAMING_POLICY;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
@@ -152,7 +153,7 @@ public class NearbyAppStreamingPolicyTest {
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS_FULL)) {
             dpm = TestApis.context()
-                    .instrumentedContextAsUser(sDeviceState.secondaryUser())
+                    .instrumentedContextAsUser(secondaryUser(sDeviceState))
                     .getSystemService(DevicePolicyManager.class);
         }
 

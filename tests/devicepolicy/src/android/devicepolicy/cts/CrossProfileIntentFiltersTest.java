@@ -21,6 +21,7 @@ import static android.app.admin.DevicePolicyManager.FLAG_PARENT_CAN_ACCESS_MANAG
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.otherUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
@@ -89,7 +90,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.content.pm.PackageManager#queryIntentActivities")
     public void queryIntentActivities_doesntIncludeAppInOtherUser() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
 
             assertThat(sPackageManager.queryIntentActivities(
                     new Intent(ACTION), /* flags = */ 0).size()).isEqualTo(0);
@@ -103,7 +104,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void queryIntentActivities_intentFilterIsSet_includesAppInOtherUser() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
 
             int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
@@ -159,7 +160,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void startActivity_intentFilterIsSet_startsAppInOtherUser() throws InterruptedException {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
             int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
@@ -220,7 +221,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void addCrossProfileIntentFilter_logsMetric() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create();
-             TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
             boolean runningOnWorkProfile = TestApis.users().instrumented().equals(
                     sDeviceState.workProfile());
             int flag = runningOnWorkProfile
@@ -246,7 +247,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#clearCrossProfileIntentFilters")
     public void clearCrossProfileIntentFilters_clears() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
             sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
@@ -272,7 +273,7 @@ public final class CrossProfileIntentFiltersTest {
     public void queryIntentActivities_intentFilterIsSet_includesAppInBothUsers() {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install();
-             TestAppInstance otherTestApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance otherTestApp = sTestApp.install(otherUser(sDeviceState))) {
 
             int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
@@ -304,7 +305,7 @@ public final class CrossProfileIntentFiltersTest {
             throws Exception {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install();
-             TestAppInstance otherTestApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance otherTestApp = sTestApp.install(otherUser(sDeviceState))) {
 
             int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;

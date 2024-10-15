@@ -62,4 +62,12 @@ public class SurfaceSyncGroupContinuousTest {
         mCapturedActivity.verifyTest(
                 new SyncValidatorSCVHTestCase(0 /* delayMs */, true /* inProcess */), mName);
     }
+
+    @Test
+    @Presubmit
+    public void testSurfaceControlViewHostAddToCompleteSync() throws Throwable {
+        mCapturedActivity.verifyTest(
+                new SyncValidatorSCVHTestCase.Builder().inProcess().injectTimedOutSync(5).build(),
+                mName, 5 /*max expected failed frames*/);
+    }
 }
