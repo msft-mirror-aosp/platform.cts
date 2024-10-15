@@ -16,6 +16,8 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
@@ -122,7 +124,7 @@ public final class UserUnlockTest {
         final InputMethodManager imm = Objects.requireNonNull(
                 context.getSystemService(InputMethodManager.class));
 
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int additionalUserId = additionalUser.id();
         assertTrue(additionalUser.isUnlocked());
 

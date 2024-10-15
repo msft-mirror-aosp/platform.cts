@@ -1017,10 +1017,8 @@ public class TelephonyManagerTest {
         mTelephonyManager.getCarrierConfig();
         mTelephonyManager.isVoiceCapable();
         mTelephonyManager.isSmsCapable();
-        if (Flags.dataOnlyCellularService()) {
-            mTelephonyManager.isDeviceVoiceCapable();
-            mTelephonyManager.isDeviceSmsCapable();
-        }
+        mTelephonyManager.isDeviceVoiceCapable();
+        mTelephonyManager.isDeviceSmsCapable();
         mTelephonyManager.isLteCdmaEvdoGsmWcdmaEnabled();
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isDataConnectionAllowed());
@@ -7215,7 +7213,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceVoiceCapable",
             "android.telephony.TelephonyManager#isVoiceCapable"})
@@ -7224,7 +7221,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceSmsCapable",
             "android.telephony.TelephonyManager#isSmsCapable"})

@@ -28,13 +28,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class NativeDriverCheckActivity {
+public class NativeDriverCheckTest {
 
     private static final String NATIVE_GL_RENDERER = "NATIVE_GL_RENDERER";
 
     /**
-     * Metrics will be reported under the "status in progress" for test cases to be associated with
-     * the running use cases.
+     * Metrics will be reported under the "status in progress" for test cases to be associated
+     * with the running use cases.
      */
     private static final int INST_STATUS_IN_PROGRESS = 2;
 
