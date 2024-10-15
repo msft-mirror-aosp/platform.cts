@@ -21,8 +21,8 @@ package {
     default_team: "trendy_team_android_media_solutions_editing",
 }
 
-android_test {
-    name: "CtsMediaRecorderTestCases",
+java_defaults {
+    name: "MediaRecorderTestCases_defaults",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -35,37 +35,26 @@ android_test {
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
 
 android_test {
-    name: "MctsMediaRecorderTestCases",
-    defaults: ["cts_defaults"],
-    // include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "ctstestrunner-axt",
-        "cts-media-common",
-    ],
-    srcs: [
-        "src/**/*.java",
-    ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    test_config: "AndroidTest-mcts.xml",
+    name: "CtsMediaRecorderTestCases",
+    defaults: ["MediaRecorderTestCases_defaults"],
+    test_config: "AndroidTest.xml",
     test_suites: [
         "cts",
         "general-tests",
-        "mcts-media",
-        "mts-media",
     ],
-    host_required: ["cts-dynamic-config"],
-    min_sdk_version: "29",
-    target_sdk_version: "31",
+}
+
+android_test {
+    name: "MctsMediaRecorderTestCases",
+    defaults: ["MediaRecorderTestCases_defaults"],
+    test_config: "AndroidTest-mcts.xml",
+    test_suites: [
+        "general-tests",
+    ],
 }
