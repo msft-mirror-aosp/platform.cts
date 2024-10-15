@@ -51,6 +51,7 @@ import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
+import android.car.hardware.property.Subscription;
 import android.content.Context;
 import android.os.Build;
 import android.os.SystemClock;
@@ -137,8 +138,7 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
-                    && Flags.areaIdConfigAccess();
+            isAtLeastV() && Flags.areaIdConfigAccess();
 
     private static Class<?> sExceptionClassOnGet;
     private static Class<?> sExceptionClassOnSet;
@@ -948,6 +948,10 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     }
 
+    private static boolean isAtLeastV() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
     /**
      * Gets the possible values for an integer property.
      */
@@ -1331,6 +1335,40 @@ public class VehiclePropertyVerifier<T> {
         return timeoutMillis;
     }
 
+    private static boolean subscribePropertyEvents(CarPropertyManager carPropertyManager,
+            CarPropertyManager.CarPropertyEventCallback callback, int propertyId,
+            float updateRateHz) {
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // Use new API if at least V.
+            return carPropertyManager.subscribePropertyEvents(List.of(
+                    new Subscription.Builder(propertyId).setUpdateRateHz(updateRateHz)
+                            .setVariableUpdateRateEnabled(false).build()),
+                    /* callbackExecutor= */ null, callback);
+        } else {
+            return carPropertyManager.registerCallback(callback, propertyId, updateRateHz);
+        }
+    }
+
+    private boolean subscribePropertyEvents(CarPropertyManager.CarPropertyEventCallback callback,
+            int propertyId, float updateRateHz) {
+        return subscribePropertyEvents(mCarPropertyManager, callback, propertyId, updateRateHz);
+    }
+
+    private static void unsubscribePropertyEvents(CarPropertyManager carPropertyManager,
+            CarPropertyManager.CarPropertyEventCallback callback, int propertyId) {
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // Use new API if at least V.
+            carPropertyManager.unsubscribePropertyEvents(propertyId, callback);
+        } else {
+            carPropertyManager.unregisterCallback(callback, propertyId);
+        }
+    }
+
+    private void unsubscribePropertyEvents(CarPropertyManager.CarPropertyEventCallback callback,
+            int propertyId) {
+        unsubscribePropertyEvents(mCarPropertyManager, callback, propertyId);
+    }
+
     private void verifyCarPropertyValueCallback() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if ((AREA_ID_CONFIG_ACCESS_FLAG ? carPropertyConfig.getAreaIdConfigs().get(0).getAccess()
@@ -1347,12 +1385,12 @@ public class VehiclePropertyVerifier<T> {
                 mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
         assertWithMessage("Failed to register callback for " + mPropertyName)
                 .that(
-                        mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
+                        subscribePropertyEvents(carPropertyValueCallback, mPropertyId,
                                 carPropertyConfig.getMaxSampleRate()))
                 .isTrue();
         SparseArray<List<CarPropertyValue<?>>> areaIdToCarPropertyValues =
                 carPropertyValueCallback.getAreaIdToCarPropertyValues();
-        mCarPropertyManager.unregisterCallback(carPropertyValueCallback, mPropertyId);
+        unsubscribePropertyEvents(carPropertyValueCallback, mPropertyId);
 
         for (int areaId : carPropertyConfig.getAreaIds()) {
             List<CarPropertyValue<?>> carPropertyValues = areaIdToCarPropertyValues.get(areaId);
@@ -2920,8 +2958,8 @@ public class VehiclePropertyVerifier<T> {
             int areaId, U valueToSet, U expectedValueToGet) {
         SetterCallback setterCallback = new SetterCallback(propertyId, areaId, expectedValueToGet);
         assertWithMessage("Failed to register setter callback for " + VehiclePropertyIds.toString(
-                propertyId)).that(carPropertyManager.registerCallback(setterCallback, propertyId,
-                CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
+                propertyId)).that(subscribePropertyEvents(carPropertyManager, setterCallback,
+                propertyId, CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
         } catch (PropertyNotAvailableException e) {
@@ -2935,7 +2973,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         CarPropertyValue<U> carPropertyValue = setterCallback.waitForUpdatedCarPropertyValue();
-        carPropertyManager.unregisterCallback(setterCallback, propertyId);
+        unsubscribePropertyEvents(carPropertyManager, setterCallback, propertyId);
         return carPropertyValue;
     }
 }
