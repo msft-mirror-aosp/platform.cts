@@ -540,15 +540,15 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "your code is 123G.",
                 "your code is 123",
                 "your code is 12 345",
-                "your code is 123T56789",
+                "your code is 123T567890",
                 "your code is TEFHXES",
                 "your code is 01-01-2001",
                 "your code is 1-1-2001",
                 "your code is 1-1-01",
                 "your code is 6--7893",
                 "your code is ------",
-                "your code isG-345821",
-                "your code is G-345821for real",
+                "your codeisG-345821",
+                "your code is G-345821forreal",
                 "your code is GVRXY 2",
             )
         var notifNum = 0
