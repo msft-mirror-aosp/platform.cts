@@ -24,6 +24,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule
+import android.provider.Settings
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
@@ -35,9 +36,11 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.UiAutomatorUtils2.waitFindObjectOrNull
 import java.util.regex.Pattern
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assume
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -47,14 +50,40 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "Instant apps cannot be a11y services")
 class ReviewAccessibilityServicesTest {
 
-    private val context: Context = InstrumentationRegistry.getInstrumentation().context
     private val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     private val testService1String = context.getString(R.string.test_accessibility_service)
     private val testService2String = context.getString(R.string.test_accessibility_service_2)
     private val packageName = context.packageManager.permissionControllerPackageName
 
     companion object {
+        private val context: Context = InstrumentationRegistry.getInstrumentation().context
+        private var enabledA11yServices: String? = null
         private const val EXPECTED_TIMEOUT_MS = 500L
+
+        @BeforeClass
+        @JvmStatic
+        fun disableServices() {
+            enabledA11yServices =
+                Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                )
+            if (enabledA11yServices != null) {
+                InstrumentedAccessibilityService.disableAllServices()
+            }
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun reenableServices() {
+            if (enabledA11yServices != null) {
+                SystemUtil.runShellCommand(
+                    "settings put secure ${Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES} " +
+                        enabledA11yServices
+                )
+                enabledA11yServices = null
+            }
+        }
     }
 
     @get:Rule
