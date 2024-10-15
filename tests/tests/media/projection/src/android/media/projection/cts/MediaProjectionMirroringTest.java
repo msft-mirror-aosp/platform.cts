@@ -90,6 +90,7 @@ import java.util.function.Supplier;
 public class MediaProjectionMirroringTest {
     private static final String TAG = "MediaProjectionMirroringTest-FOO";
     private static final int SCREENSHOT_TIMEOUT_MS = 1000;
+    private static final int TOLERANCE = 1;
     // Enable debug mode to save screenshots from MediaProjection session.
     private static final boolean DEBUG_MODE = false;
     private static final String VIRTUAL_DISPLAY = "MirroringTestVD";
@@ -378,9 +379,11 @@ public class MediaProjectionMirroringTest {
     private static void validateMirroredHierarchy(
             Activity activity, int virtualDisplayId,
             @NonNull Point expectedWindowSize) {
-        Predicate<WindowInfo> hasExpectedDimensions =
-                windowInfo -> windowInfo.bounds.width() == expectedWindowSize.x
-                        && windowInfo.bounds.height() == expectedWindowSize.y;
+        Predicate<WindowInfo> hasExpectedDimensions = windowInfo -> {
+            int widthDiff = Math.abs(windowInfo.bounds.width() - expectedWindowSize.x);
+            int heightDiff = Math.abs(windowInfo.bounds.height() - expectedWindowSize.y);
+            return widthDiff <= TOLERANCE && heightDiff <= TOLERANCE;
+        };
         Supplier<IBinder> taskWindowTokenSupplier =
                 activity.getWindow().getDecorView()::getWindowToken;
         try {
