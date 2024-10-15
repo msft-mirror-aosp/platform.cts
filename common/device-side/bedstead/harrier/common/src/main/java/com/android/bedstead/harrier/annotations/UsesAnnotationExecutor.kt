@@ -42,27 +42,6 @@ annotation class UsesAnnotationExecutor(
         const val ENTERPRISE = "com.android.bedstead.enterprise.EnterpriseAnnotationExecutor"
         const val MAIN = "com.android.bedstead.harrier.MainAnnotationExecutor"
         const val TEST_APPS = "com.android.bedstead.testapps.TestAppsAnnotationExecutor"
-    }
-}
-
-/**
- * Create class from the fully qualified name in [UsesAnnotationExecutor.value] parameter
- */
-fun UsesAnnotationExecutor.getAnnotationExecutorClass(): Class<out AnnotationExecutor?> {
-    if (value.isEmpty()) {
-        throw IllegalStateException("@UsesAnnotationExecutor value is empty")
-    } else {
-        try {
-            @Suppress("UNCHECKED_CAST")
-            return Class.forName(value) as Class<out AnnotationExecutor?>
-        } catch (ignored: ClassNotFoundException) {
-            throw IllegalStateException(
-                "Could not find annotation executor " +
-                        value +
-                        ". Probably a dependency issue. If you are depending on a " +
-                        "-annotations target (e.g. bedstead-root-annotations) instead " +
-                        "depend on the non-annotations target (e.g. bedstead-root)"
-            )
-        }
+        const val ACCOUNTS = "com.android.bedstead.accounts.AccountsAnnotationExecutor"
     }
 }

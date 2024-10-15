@@ -62,10 +62,18 @@ public class CallDiagnosticServiceTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void tearDown() throws Exception {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
         if (mConnection != null ) {
             mConnection.onDisconnect();
             mConnection.destroy();
         }
+        runWithShellPermissionIdentity(() -> {
+            // Make sure it is unregistered as well.
+            mTelecomManager.unregisterPhoneAccount(
+                    TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
+        });
         TestUtils.setCallDiagnosticService(getInstrumentation(), "default");
         super.tearDown();
     }

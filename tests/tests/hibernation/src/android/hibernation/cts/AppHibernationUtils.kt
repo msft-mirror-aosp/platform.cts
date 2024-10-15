@@ -255,8 +255,8 @@ fun startApp(packageName: String) {
     waitForIdle()
 }
 
-fun goHome() {
-    runShellCommandOrThrow("input keyevent KEYCODE_HOME")
+fun goBack() {
+    runShellCommandOrThrow("input keyevent KEYCODE_BACK")
     waitForIdle()
 }
 

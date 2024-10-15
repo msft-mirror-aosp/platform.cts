@@ -73,7 +73,7 @@ public class MediaProjectionCompatChangeTest {
 
     private static UiDevice sDevice;
     private static boolean sIsWatch;
-    private static Optional<Boolean> sSupportsPartialScreenshare;
+    private static Optional<Boolean> sSupportsPartialScreenshare = Optional.empty();
     private static String sEntireScreenString;
     private static String sSingleAppString;
 

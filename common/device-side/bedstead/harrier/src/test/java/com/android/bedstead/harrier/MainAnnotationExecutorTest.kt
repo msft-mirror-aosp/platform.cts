@@ -25,10 +25,6 @@ import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsS
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureDemoMode
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
-import com.android.bedstead.harrier.annotations.EnsureHasAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
@@ -64,7 +60,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOr
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.nene.TestApis.accounts
 import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.bugReports
 import com.android.bedstead.nene.TestApis.content
@@ -287,55 +282,6 @@ class MainAnnotationExecutorTest {
         assertThat(packages().instrumented().isInstantApp).isFalse()
     }
 
-    @EnsureHasAccountAuthenticator
-    @Test
-    fun ensureHasAccountAuthenticatorAnnotation_accountAuthenticatorIsInstalled() {
-        assertThat(
-            deviceState
-                .accounts()
-                .testApp()
-                .pkg()
-                .installedOnUser()
-        ).isTrue()
-    }
-
-    @Test
-    @EnsureHasAdditionalUser
-    @EnsureHasAccountAuthenticator(onUser = UserType.ADDITIONAL_USER)
-    fun ensureHasAccountAuthenticatorAnnotation_differentUser_accountAuthenticatorIsInstalledOnDifferentUser() {
-        assertThat(
-            deviceState
-                .accounts(deviceState.additionalUser())
-                .testApp()
-                .pkg()
-                .installedOnUser(deviceState.additionalUser())
-        ).isTrue()
-    }
-
-    @EnsureHasAccount
-    @Test
-    fun ensureHasAccountAnnotation_accountExists() {
-        assertThat(deviceState.accounts().allAccounts()).isNotEmpty()
-    }
-
-    @EnsureHasAccount
-    @Test
-    fun account_returnsAccount() {
-        assertThat(deviceState.account()).isNotNull()
-    }
-
-    @EnsureHasAccount(key = "testKey")
-    @Test
-    fun account_withKey_returnsAccount() {
-        assertThat(deviceState.account("testKey")).isNotNull()
-    }
-
-    @EnsureHasNoAccounts
-    @Test
-    fun ensureHasNoAccountsAnnotation_hasNoAccounts() {
-        assertThat(accounts().all()).isEmpty()
-    }
-
     @EnsureWifiEnabled
     @Test
     fun ensureWifiEnabledAnnotation_wifiIsEnabled() {
@@ -364,12 +310,6 @@ class MainAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_ensureTestAppInstalled_isRespected() {
         assertThat(deviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
-    }
-
-    @EnsureHasAccounts(EnsureHasAccount(), EnsureHasAccount())
-    @Test
-    fun ensureHasAccountsAnnotation_hasMultipleAccounts() {
-        assertThat(deviceState.accounts().allAccounts().size).isGreaterThan(1)
     }
 
     @Test
