@@ -26,6 +26,7 @@ import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.privateProfile;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
@@ -190,7 +191,7 @@ public class VoiceInteractionServiceTest {
     public void onHandleScreenShotAndAssist_workProfileWithoutDisallowPolicy_success()
             throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
-                sDeviceState.workProfile())) {
+                workProfile(sDeviceState))) {
             assertHasAssistDataAndScreenshot();
         }
     }
@@ -206,7 +207,7 @@ public class VoiceInteractionServiceTest {
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
             throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
-                sDeviceState.workProfile())) {
+                workProfile(sDeviceState))) {
             assertHasNoAssistDataAndScreenshot();
         }
     }

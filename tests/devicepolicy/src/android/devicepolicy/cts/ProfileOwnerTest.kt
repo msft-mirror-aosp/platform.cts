@@ -16,13 +16,13 @@
 package android.devicepolicy.cts
 
 import android.content.ComponentName
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.accounts.annotations.EnsureHasAccount
-import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.nene.TestApis

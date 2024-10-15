@@ -20,6 +20,7 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -76,13 +77,13 @@ public final class PersonalAppsSuspensionTest {
     public void setPersonalAppsSuspended_sendsPackageSuspendedBroadcast() {
         try (BlockingBroadcastReceiver broadcastReceiver =
                      sDeviceState.registerBroadcastReceiver(ACTION_MY_PACKAGE_SUSPENDED)) {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ true);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ true);
 
             broadcastReceiver.awaitForBroadcastOrFail();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ false);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ false);
         }
     }
 
@@ -91,8 +92,8 @@ public final class PersonalAppsSuspensionTest {
     @PolicyAppliesTest(policy = SuspendPersonalApps.class)
     public void setPersonalAppsSuspended_cannotStartActivity() {
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ true);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ true);
             TestAppActivityReference activity = testApp.activities().any();
 
             startActivity(activity.component().componentName());
@@ -101,8 +102,8 @@ public final class PersonalAppsSuspensionTest {
                     a -> a.componentName().equals(activity.component().componentName())))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ false);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ false);
         }
     }
 
@@ -111,8 +112,8 @@ public final class PersonalAppsSuspensionTest {
     @PolicyDoesNotApplyTest(policy = SuspendPersonalApps.class)
     public void setPersonalAppsSuspended_policyDoesNotApply_canStartActivity() {
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ true);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ true);
             TestAppActivityReference activity = testApp.activities().any();
 
             startActivity(activity.component().componentName());
@@ -121,8 +122,8 @@ public final class PersonalAppsSuspensionTest {
                     a -> a.componentName().equals(activity.component().componentName())))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ false);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ false);
         }
     }
 
@@ -135,8 +136,8 @@ public final class PersonalAppsSuspensionTest {
         try (TestAppInstance testApp = sSmsTestApp.install();
              RoleContext r = TestApis.packages().find(testApp.packageName()).setAsRoleHolder(
                      SMS_ROLE)) {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ true);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ true);
             TestAppActivityReference smsActivity =
                     testApp.activities().query().whereActivity().activityClass().simpleName()
                             .isEqualTo("SmsSenderActivity").get();
@@ -147,8 +148,8 @@ public final class PersonalAppsSuspensionTest {
                     a -> a.componentName().equals(smsActivity.component().componentName())))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                    sDeviceState.dpc().componentName(), /* suspended= */ false);
+            dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                    dpc(sDeviceState).componentName(), /* suspended= */ false);
         }
     }
 
@@ -157,8 +158,8 @@ public final class PersonalAppsSuspensionTest {
     @CannotSetPolicyTest(policy = SuspendPersonalApps.class, includeNonDeviceAdminStates = false)
     public void setPersonalAppsSuspended_cannotSetPolicy_throwsException() {
         assertThrows(SecurityException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().setPersonalAppsSuspended(
-                        sDeviceState.dpc().componentName(), /* suspended= */ false)
+                dpc(sDeviceState).devicePolicyManager().setPersonalAppsSuspended(
+                        dpc(sDeviceState).componentName(), /* suspended= */ false)
         );
     }
 

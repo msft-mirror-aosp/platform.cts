@@ -16,6 +16,8 @@
 
 package com.android.bedstead.harrier;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.harrier.test.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
@@ -228,7 +230,7 @@ public class BedsteadJUnit4Test {
     @Test
     public void userTestAnnotation_isRunningOnCorrectUsers() {
         if (!TestApis.users().instrumented().equals(sDeviceState.initialUser())) {
-            assertThat(TestApis.users().instrumented()).isEqualTo(sDeviceState.workProfile());
+            assertThat(TestApis.users().instrumented()).isEqualTo(workProfile(sDeviceState));
         }
     }
 
@@ -239,9 +241,9 @@ public class BedsteadJUnit4Test {
     @Test
     public void crossUserTestAnnotation_isRunningWithCorrectUserPairs() {
         if (TestApis.users().instrumented().equals(sDeviceState.initialUser())) {
-            assertThat(otherUser(sDeviceState)).isEqualTo(sDeviceState.workProfile());
+            assertThat(otherUser(sDeviceState)).isEqualTo(workProfile(sDeviceState));
         } else {
-            assertThat(TestApis.users().instrumented()).isEqualTo(sDeviceState.workProfile());
+            assertThat(TestApis.users().instrumented()).isEqualTo(workProfile(sDeviceState));
             assertThat(otherUser(sDeviceState)).isEqualTo(sDeviceState.initialUser());
         }
     }
@@ -288,7 +290,7 @@ public class BedsteadJUnit4Test {
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyAppliesTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
+        assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyDoesNotApplyTest(policy = LockTask.class)
@@ -297,7 +299,7 @@ public class BedsteadJUnit4Test {
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyDoesNotApplyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
+        assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CanSetPolicyTest(policy = LockTask.class)
@@ -306,7 +308,7 @@ public class BedsteadJUnit4Test {
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_canSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
+        assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CannotSetPolicyTest(policy = LockTask.class)
@@ -315,7 +317,7 @@ public class BedsteadJUnit4Test {
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_cannotSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
+        assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyAppliesTest(policy = {
