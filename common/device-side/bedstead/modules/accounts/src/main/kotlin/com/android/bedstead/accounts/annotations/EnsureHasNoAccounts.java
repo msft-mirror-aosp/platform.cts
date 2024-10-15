@@ -14,22 +14,41 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.accounts.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
+import static com.android.bedstead.harrier.UserType.ANY;
+import static com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
 
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Ensure that an account exists.
+ */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RepeatingAnnotation
-public @interface EnsureHasAccountAuthenticatorGroup {
-    EnsureHasAccountAuthenticator[] value();
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ACCOUNTS)
+// TODO: Add options (features of the user, type of the user, etc.)
+public @interface EnsureHasNoAccounts {
+
+    int ENSURE_HAS_NO_ACCOUNTS_PRIORITY = ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY + 1;
+
+    /** Which user type the account must not be present added on. */
+    UserType onUser() default ANY;
+
+    /** Exclude pre created accounts. */
+    boolean allowPreCreatedAccounts() default true;
+
+    /** Behaviour if there are some accounts for the user. */
+    com.android.bedstead.harrier.annotations.FailureMode failureMode()
+            default com.android.bedstead.harrier.annotations.FailureMode.SKIP;
+
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -42,5 +61,5 @@ public @interface EnsureHasAccountAuthenticatorGroup {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default PRECEDENCE_NOT_IMPORTANT;
+    int priority() default ENSURE_HAS_NO_ACCOUNTS_PRIORITY;
 }
