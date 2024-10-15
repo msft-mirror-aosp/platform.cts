@@ -41,6 +41,7 @@ import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.enterprise.dpmRoleHolder
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit

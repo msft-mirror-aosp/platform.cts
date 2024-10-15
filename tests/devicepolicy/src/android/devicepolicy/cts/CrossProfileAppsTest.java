@@ -20,6 +20,9 @@ import static android.app.admin.flags.Flags.FLAG_ALLOW_QUERYING_PROFILE_TYPE;
 import static android.content.pm.CrossProfileApps.ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED;
 import static android.provider.Settings.ACTION_MANAGE_CROSS_PROFILE_ACCESS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.CLONE_PROFILE;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
@@ -340,7 +343,7 @@ public final class CrossProfileAppsTest {
     public void startMainActivity_activityNotExported_throwsSecurityException() {
         assertThrows(SecurityException.class, () -> {
             sCrossProfileApps.startMainActivity(
-                    NOT_EXPORTED_ACTIVITY, sDeviceState.workProfile().userHandle());
+                    NOT_EXPORTED_ACTIVITY, workProfile(sDeviceState).userHandle());
         });
     }
 
@@ -351,7 +354,7 @@ public final class CrossProfileAppsTest {
     public void startMainActivity_activityNotMain_throwsSecurityException() {
         assertThrows(SecurityException.class, () -> {
             sCrossProfileApps.startMainActivity(
-                    NOT_MAIN_ACTIVITY, sDeviceState.workProfile().userHandle());
+                    NOT_MAIN_ACTIVITY, workProfile(sDeviceState).userHandle());
         });
     }
 
@@ -361,7 +364,7 @@ public final class CrossProfileAppsTest {
     @Postsubmit(reason = "new test")
     public void startMainActivity_activityIncorrectPackage_throwsSecurityException() {
         try (TestAppInstance instance =
-                     sTestAppWithMainActivity.install(sDeviceState.workProfile())) {
+                     sTestAppWithMainActivity.install(workProfile(sDeviceState))) {
 
             TestAppActivityReference activity = instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -375,7 +378,7 @@ public final class CrossProfileAppsTest {
             assertThrows(SecurityException.class, () -> {
                 sCrossProfileApps.startMainActivity(
                         activity.component().componentName(),
-                        sDeviceState.workProfile().userHandle());
+                        workProfile(sDeviceState).userHandle());
             });
         }
     }
@@ -391,7 +394,7 @@ public final class CrossProfileAppsTest {
         ActivityContext.runWithContext(activity ->
                 assertThrows(NullPointerException.class, () ->
                         sCrossProfileApps.startActivity(
-                                intent, sDeviceState.workProfile().userHandle(), activity)));
+                                intent, workProfile(sDeviceState).userHandle(), activity)));
     }
 
     @Test
@@ -400,7 +403,7 @@ public final class CrossProfileAppsTest {
     @Postsubmit(reason = "new test")
     public void startActivity_byIntent_differentPackage_throwsException() throws Exception {
         try (TestAppInstance testAppInstance =
-                     sTestAppWithActivity.install(sDeviceState.workProfile())) {
+                     sTestAppWithActivity.install(workProfile(sDeviceState))) {
             TestAppActivityReference targetActivity = testAppInstance.activities().any();
             Intent intent = new Intent();
             intent.setComponent(targetActivity.component().componentName());
@@ -408,7 +411,7 @@ public final class CrossProfileAppsTest {
             ActivityContext.runWithContext(activity ->
                     assertThrows(SecurityException.class, () ->
                             sCrossProfileApps.startActivity(
-                                    intent, sDeviceState.workProfile().userHandle(), activity)));
+                                    intent, workProfile(sDeviceState).userHandle(), activity)));
         }
     }
 
@@ -418,14 +421,14 @@ public final class CrossProfileAppsTest {
     @Postsubmit(reason = "new test")
     public void startActivity_byComponent_differentPackage_throwsException() throws Exception {
         try (TestAppInstance testAppInstance =
-                     sTestAppWithActivity.install(sDeviceState.workProfile())) {
+                     sTestAppWithActivity.install(workProfile(sDeviceState))) {
             TestAppActivityReference targetActivity = testAppInstance.activities().any();
 
             ActivityContext.runWithContext(activity ->
                     assertThrows(SecurityException.class, () ->
                             sCrossProfileApps.startActivity(
                                     targetActivity.component().componentName(),
-                                    sDeviceState.workProfile().userHandle())));
+                                    workProfile(sDeviceState).userHandle())));
         }
     }
 
@@ -443,7 +446,7 @@ public final class CrossProfileAppsTest {
         ActivityContext.runWithContext(activity ->
                 assertThrows(SecurityException.class, () ->
                         sCrossProfileApps.startActivity(
-                                intent, sDeviceState.workProfile().userHandle(), activity)));
+                                intent, workProfile(sDeviceState).userHandle(), activity)));
     }
 
     @Test
@@ -457,7 +460,7 @@ public final class CrossProfileAppsTest {
         ActivityContext.runWithContext(activity ->
                 assertThrows(SecurityException.class, () ->
                         sCrossProfileApps.startActivity(
-                                NOT_MAIN_ACTIVITY, sDeviceState.workProfile().userHandle())));
+                                NOT_MAIN_ACTIVITY, workProfile(sDeviceState).userHandle())));
     }
 
     @RequireRunOnInitialUser
@@ -472,11 +475,11 @@ public final class CrossProfileAppsTest {
 
         ActivityContext.runWithContext(activity -> {
             sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity);
+                    intent, workProfile(sDeviceState).userHandle(), activity);
         });
 
         assertThat(
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated()
         ).eventOccurred();
     }
@@ -493,7 +496,7 @@ public final class CrossProfileAppsTest {
 
         ActivityContext.runWithContext(activity -> {
             assertThrows(SecurityException.class, () -> sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity));
+                    intent, workProfile(sDeviceState).userHandle(), activity));
         });
     }
 
@@ -507,11 +510,11 @@ public final class CrossProfileAppsTest {
             throws Exception {
         ActivityContext.runWithContext(activity -> {
             sCrossProfileApps.startActivity(
-                    NOT_MAIN_ACTIVITY, sDeviceState.workProfile().userHandle());
+                    NOT_MAIN_ACTIVITY, workProfile(sDeviceState).userHandle());
         });
 
         assertThat(
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated()
         ).eventOccurred();
     }
@@ -528,12 +531,12 @@ public final class CrossProfileAppsTest {
 
         ActivityContext.runWithContext(activity -> {
             sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity,
+                    intent, workProfile(sDeviceState).userHandle(), activity,
                     ActivityOptions.makeBasic().toBundle());
         });
 
         assertThat(
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated()
         ).eventOccurred();
     }
@@ -550,11 +553,11 @@ public final class CrossProfileAppsTest {
 
         ActivityContext.runWithContext(activity -> {
             sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity);
+                    intent, workProfile(sDeviceState).userHandle(), activity);
         });
 
         assertThat(
-                ActivityEvents.forActivity(NOT_EXPORTED_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_EXPORTED_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated()
         ).eventOccurred();
     }
@@ -568,7 +571,7 @@ public final class CrossProfileAppsTest {
             throws Exception {
         ActivityContext.runWithContext(activity -> {
             assertThrows(SecurityException.class, () -> sCrossProfileApps.startActivity(
-                    NOT_EXPORTED_ACTIVITY, sDeviceState.workProfile().userHandle()));
+                    NOT_EXPORTED_ACTIVITY, workProfile(sDeviceState).userHandle()));
         });
     }
 
@@ -583,13 +586,13 @@ public final class CrossProfileAppsTest {
 
         int originalTaskId = ActivityContext.getWithContext(activity -> {
             sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity);
+                    intent, workProfile(sDeviceState).userHandle(), activity);
 
             return activity.getTaskId();
         });
 
         ActivityCreatedEvent event =
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated().waitForEvent();
         assertThat(event.taskId()).isEqualTo(originalTaskId);
     }
@@ -603,7 +606,7 @@ public final class CrossProfileAppsTest {
         int originalTaskId = ActivityContext.getWithContext(activity -> {
             sCrossProfileApps.startMainActivity(
                     MAIN_ACTIVITY,
-                    sDeviceState.workProfile().userHandle(),
+                    workProfile(sDeviceState).userHandle(),
                     /* callingActivity */ null,
                     /* options */ null);
 
@@ -611,7 +614,7 @@ public final class CrossProfileAppsTest {
         });
 
         ActivityCreatedEvent event =
-                ActivityEvents.forActivity(MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated().waitForEvent();
         assertThat(event.taskId()).isNotEqualTo(originalTaskId);
     }
@@ -625,7 +628,7 @@ public final class CrossProfileAppsTest {
         int originalTaskId = ActivityContext.getWithContext(activity -> {
             sCrossProfileApps.startMainActivity(
                     MAIN_ACTIVITY,
-                    sDeviceState.workProfile().userHandle(),
+                    workProfile(sDeviceState).userHandle(),
                     activity,
                     /* options */ null);
 
@@ -633,7 +636,7 @@ public final class CrossProfileAppsTest {
         });
 
         ActivityCreatedEvent event =
-                ActivityEvents.forActivity(MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated().waitForEvent();
         assertThat(event.taskId()).isEqualTo(originalTaskId);
     }
@@ -647,7 +650,7 @@ public final class CrossProfileAppsTest {
         int originalTaskId = ActivityContext.getWithContext(activity -> {
             sCrossProfileApps.startActivity(
                     NOT_MAIN_ACTIVITY,
-                    sDeviceState.workProfile().userHandle(),
+                    workProfile(sDeviceState).userHandle(),
                     /* callingActivity */ null,
                     /* options */ null);
 
@@ -655,7 +658,7 @@ public final class CrossProfileAppsTest {
         });
 
         ActivityCreatedEvent event =
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated().waitForEvent();
         assertThat(event.taskId()).isNotEqualTo(originalTaskId);
     }
@@ -669,7 +672,7 @@ public final class CrossProfileAppsTest {
         int originalTaskId = ActivityContext.getWithContext(activity -> {
             sCrossProfileApps.startActivity(
                     NOT_MAIN_ACTIVITY,
-                    sDeviceState.workProfile().userHandle(),
+                    workProfile(sDeviceState).userHandle(),
                     activity,
                     /* options */ null);
 
@@ -677,7 +680,7 @@ public final class CrossProfileAppsTest {
         });
 
         ActivityCreatedEvent event =
-                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, sDeviceState.workProfile())
+                ActivityEvents.forActivity(NOT_MAIN_ACTIVITY, workProfile(sDeviceState))
                         .activityCreated().waitForEvent();
         assertThat(event.taskId()).isEqualTo(originalTaskId);
     }
@@ -694,7 +697,7 @@ public final class CrossProfileAppsTest {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
             ActivityContext.runWithContext(activity ->
                     sCrossProfileApps.startActivity(
-                    intent, sDeviceState.workProfile().userHandle(), activity));
+                    intent, workProfile(sDeviceState).userHandle(), activity));
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.START_ACTIVITY_BY_INTENT_VALUE)
@@ -804,12 +807,12 @@ public final class CrossProfileAppsTest {
     })
     public void canRequestInteractAcrossProfiles_hasValidTarget_returnsTrue()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         try (TestAppInstance currentApp = sCrossProfileTestApp.install();
              TestAppInstance otherApp = sCrossProfileTestApp.install(otherUser(sDeviceState))) {
             profileOwner.setCrossProfilePackages(
-                    sDeviceState.profileOwner(WORK_PROFILE).componentName(),
+                    profileOwner(sDeviceState, WORK_PROFILE).componentName(),
                     Set.of(sCrossProfileTestApp.packageName()));
 
             assertThat(currentApp.crossProfileApps().canRequestInteractAcrossProfiles()).isTrue();
@@ -833,14 +836,14 @@ public final class CrossProfileAppsTest {
     @RequireRunOnInitialUser
     public void canRequestInteractAcrossProfiles_packageNotInAllowList_returnsTrue()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         try (TestAppInstance personalApp = sCrossProfileTestApp.install(
                 sDeviceState.initialUser());
              TestAppInstance workApp = sCrossProfileTestApp.install(
-                sDeviceState.workProfile())) {
+                workProfile(sDeviceState))) {
             profileOwner.setCrossProfilePackages(
-                    sDeviceState.profileOwner(WORK_PROFILE).componentName(),
+                    profileOwner(sDeviceState, WORK_PROFILE).componentName(),
                     Collections.emptySet());
 
             assertThat(personalApp.crossProfileApps().canRequestInteractAcrossProfiles()).isTrue();
@@ -852,12 +855,12 @@ public final class CrossProfileAppsTest {
     @RequireRunOnInitialUser
     public void canRequestInteractAcrossProfiles_packageNotInstalledInPersonalProfile_returnsTrue()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         try (TestAppInstance workApp = sCrossProfileTestApp.install(
-                sDeviceState.workProfile())) {
+                workProfile(sDeviceState))) {
             profileOwner.setCrossProfilePackages(
-                    sDeviceState.profileOwner(WORK_PROFILE).componentName(),
+                    profileOwner(sDeviceState, WORK_PROFILE).componentName(),
                     Set.of(sCrossProfileTestApp.packageName()));
 
             assertThat(workApp.crossProfileApps().canRequestInteractAcrossProfiles()).isTrue();
@@ -869,12 +872,12 @@ public final class CrossProfileAppsTest {
     @RequireRunOnInitialUser
     public void canRequestInteractAcrossProfiles_packageNotInstalledInWorkProfile_returnsTrue()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         try (TestAppInstance personalApp = sCrossProfileTestApp.install(
                 sDeviceState.initialUser())) {
             profileOwner.setCrossProfilePackages(
-                    sDeviceState.profileOwner(WORK_PROFILE).componentName(),
+                    profileOwner(sDeviceState, WORK_PROFILE).componentName(),
                     Set.of(sCrossProfileTestApp.packageName()));
 
             assertThat(personalApp.crossProfileApps().canRequestInteractAcrossProfiles()).isTrue();
@@ -886,14 +889,14 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void canRequestInteractAcrossProfiles_permissionNotRequested_returnsFalse()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         try (TestAppInstance personalApp = sNonCrossProfileTestApp.install(
                 sDeviceState.initialUser());
              TestAppInstance workApp = sNonCrossProfileTestApp.install(
-                sDeviceState.workProfile())) {
+                workProfile(sDeviceState))) {
             profileOwner.setCrossProfilePackages(
-                    sDeviceState.profileOwner(WORK_PROFILE).componentName(),
+                    profileOwner(sDeviceState, WORK_PROFILE).componentName(),
                     Set.of(sCrossProfileTestApp.packageName()));
 
             assertThat(personalApp.crossProfileApps().canRequestInteractAcrossProfiles()).isFalse();
@@ -906,14 +909,14 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void canRequestInteractAcrossProfiles_profileOwner_returnsFalse()
             throws Exception {
-        RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
+        RemoteDevicePolicyManager profileOwner = profileOwner(sDeviceState, WORK_PROFILE)
                 .devicePolicyManager();
         profileOwner.setCrossProfilePackages(
-                sDeviceState.profileOwner(WORK_PROFILE).componentName(),
-                Set.of(sDeviceState.profileOwner(WORK_PROFILE).componentName().getPackageName()));
+                profileOwner(sDeviceState, WORK_PROFILE).componentName(),
+                Set.of(profileOwner(sDeviceState, WORK_PROFILE).componentName().getPackageName()));
 
         assertThat(
-                sDeviceState.profileOwner(WORK_PROFILE).crossProfileApps()
+                profileOwner(sDeviceState, WORK_PROFILE).crossProfileApps()
                         .canRequestInteractAcrossProfiles()
         ).isFalse();
     }
@@ -923,10 +926,10 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void canInteractAcrossProfiles_appOpIsSetOnAllProfiles_returnsTrue() {
         try (TestAppInstance primaryApp = sCrossProfileTestApp.install();
-             TestAppInstance workApp = sCrossProfileTestApp.install(sDeviceState.workProfile())) {
+             TestAppInstance workApp = sCrossProfileTestApp.install(workProfile(sDeviceState))) {
             sCrossProfileTestApp.pkg().appOps().set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES, AppOpsMode.ALLOWED);
-            sCrossProfileTestApp.pkg().appOps(sDeviceState.workProfile()).set(
+            sCrossProfileTestApp.pkg().appOps(workProfile(sDeviceState)).set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
                     AppOpsMode.ALLOWED);
 
@@ -940,10 +943,10 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void canInteractAcrossProfiles_appOpDisabledOnCaller_returnsFalse() {
         try (TestAppInstance primaryApp = sCrossProfileTestApp.install();
-             TestAppInstance workApp = sCrossProfileTestApp.install(sDeviceState.workProfile())) {
+             TestAppInstance workApp = sCrossProfileTestApp.install(workProfile(sDeviceState))) {
             sCrossProfileTestApp.pkg().appOps().set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES, AppOpsMode.DEFAULT);
-            sCrossProfileTestApp.pkg().appOps(sDeviceState.workProfile()).set(
+            sCrossProfileTestApp.pkg().appOps(workProfile(sDeviceState)).set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
                     AppOpsMode.ALLOWED);
 
@@ -956,10 +959,10 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void canInteractAcrossProfiles_appOpDisabledOnOtherProfile_returnsFalse() {
         try (TestAppInstance primaryApp = sCrossProfileTestApp.install();
-             TestAppInstance workApp = sCrossProfileTestApp.install(sDeviceState.workProfile())) {
+             TestAppInstance workApp = sCrossProfileTestApp.install(workProfile(sDeviceState))) {
             sCrossProfileTestApp.pkg().appOps().set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES, AppOpsMode.ALLOWED);
-            sCrossProfileTestApp.pkg().appOps(sDeviceState.workProfile()).set(
+            sCrossProfileTestApp.pkg().appOps(workProfile(sDeviceState)).set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
                     AppOpsMode.DEFAULT);
 
@@ -987,7 +990,7 @@ public final class CrossProfileAppsTest {
             INTERACT_ACROSS_PROFILES, INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL})
     // TODO(b/191637162): When we can adopt permissions for testapps, we can use testapps here
     public void canInteractAcrossProfiles_permissionIsSet_returnsTrue() {
-        TestApis.packages().instrumented().appOps(sDeviceState.workProfile()).set(
+        TestApis.packages().instrumented().appOps(workProfile(sDeviceState)).set(
                 AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
                 AppOpsMode.ALLOWED);
 
@@ -1010,10 +1013,10 @@ public final class CrossProfileAppsTest {
     @EnsureHasWorkProfile
     public void createRequestInteractAcrossProfilesIntent_canRequest_returnsIntent() {
         try (TestAppInstance primaryApp = sCrossProfileTestApp.install();
-             TestAppInstance workApp = sCrossProfileTestApp.install(sDeviceState.workProfile())) {
+             TestAppInstance workApp = sCrossProfileTestApp.install(workProfile(sDeviceState))) {
             sCrossProfileTestApp.pkg().appOps().set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES, AppOpsMode.ALLOWED);
-            sCrossProfileTestApp.pkg().appOps(sDeviceState.workProfile()).set(
+            sCrossProfileTestApp.pkg().appOps(workProfile(sDeviceState)).set(
                     AppOpsManager.OPSTR_INTERACT_ACROSS_PROFILES,
                     AppOpsMode.ALLOWED);
 
@@ -1031,16 +1034,16 @@ public final class CrossProfileAppsTest {
     public void setCrossProfilePackages_packageRemoved_packageReceivesBroadcast() {
         try (TestAppInstance parentTestApp = sCrossProfileTestApp.install(TestApis.users().instrumented().parent());
             TestAppInstance workTestApp = sCrossProfileTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setCrossProfilePackages(
-                            sDeviceState.dpc().componentName(), Set.of(sCrossProfileTestApp.packageName()));
+                            dpc(sDeviceState).componentName(), Set.of(sCrossProfileTestApp.packageName()));
             parentTestApp.appOps().setPermission(INTERACT_ACROSS_PROFILES, AppOpsMode.ALLOWED);
             workTestApp.appOps().setPermission(INTERACT_ACROSS_PROFILES, AppOpsMode.ALLOWED);
             EventLogs.resetLogs(); // Ignore any broadcasts related to setting the appOps
 
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setCrossProfilePackages(
-                            sDeviceState.dpc().componentName(), Set.of());
+                            dpc(sDeviceState).componentName(), Set.of());
 
             assertThat(parentTestApp.events().broadcastReceived()
                     .whereIntent().action().isEqualTo(ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED))
