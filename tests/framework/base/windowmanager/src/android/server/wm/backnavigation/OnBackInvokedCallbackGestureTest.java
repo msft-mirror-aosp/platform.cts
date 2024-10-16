@@ -169,8 +169,8 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             assertTrue(event.getProgress() <= events.get(i + 1).getProgress());
             assertTrue(event.getTouchX() <= events.get(i + 1).getTouchX());
             assertTrue("frame time must be monotonically increasing",
-                    event.getFrameTime() <= events.get(i + 1).getFrameTime());
-            assertTrue("frame time must be >= 0", event.getFrameTime() >= 0);
+                    event.getFrameTimeMillis() <= events.get(i + 1).getFrameTimeMillis());
+            assertTrue("frame time must be >= 0", event.getFrameTimeMillis() >= 0);
             assertEquals(midHeight, midHeight, event.getTouchY());
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
         }
@@ -337,13 +337,13 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         final float y = 300;
         final float progress = 0.5f;
         final int swipeEdge = BackEvent.EDGE_RIGHT;
-        final long frameTime = 1234567;
-        BackEvent event = new BackEvent(x, y, progress, swipeEdge, frameTime);
+        final long frameTimeMillis = 1234567;
+        BackEvent event = new BackEvent(x, y, progress, swipeEdge, frameTimeMillis);
         assertEquals(x, event.getTouchX());
         assertEquals(y, event.getTouchY());
         assertEquals(progress, event.getProgress());
         assertEquals(swipeEdge, event.getSwipeEdge());
-        assertEquals(frameTime, event.getFrameTime());
+        assertEquals(frameTimeMillis, event.getFrameTimeMillis());
     }
 
     private void assertInvoked(CountDownLatch latch) throws InterruptedException {
