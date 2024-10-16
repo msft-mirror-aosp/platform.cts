@@ -7229,7 +7229,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_shouldBeSupported() {
@@ -7250,7 +7249,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_requiresNoPermission() {

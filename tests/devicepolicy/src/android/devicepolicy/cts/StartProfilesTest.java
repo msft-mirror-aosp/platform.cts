@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.tvProfile;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
@@ -79,9 +80,9 @@ public final class StartProfilesTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void startProfile_returnsTrue() {
-        sDeviceState.workProfile().stop();
+        workProfile(sDeviceState).stop();
 
-        assertThat(sActivityManager.startProfile(sDeviceState.workProfile().userHandle())).isTrue();
+        assertThat(sActivityManager.startProfile(workProfile(sDeviceState).userHandle())).isTrue();
     }
 
     @Test
@@ -92,18 +93,18 @@ public final class StartProfilesTest {
     @SlowApiTest("Start profile broadcasts can take a long time")
     public void startProfile_broadcastIsReceived_profileIsStarted() {
         try (BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(sDeviceState.workProfile()))) {
-            sDeviceState.workProfile().stop();
+                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(workProfile(sDeviceState)))) {
+            workProfile(sDeviceState).stop();
         }
 
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
                 Intent.ACTION_PROFILE_ACCESSIBLE,
-                userIsEqual(sDeviceState.workProfile()));
-        sActivityManager.startProfile(sDeviceState.workProfile().userHandle());
+                userIsEqual(workProfile(sDeviceState)));
+        sActivityManager.startProfile(workProfile(sDeviceState).userHandle());
 
         broadcastReceiver.awaitForBroadcastOrFail(START_PROFILE_BROADCAST_TIMEOUT);
 
-        assertThat(sUserManager.isUserRunning(sDeviceState.workProfile().userHandle())).isTrue();
+        assertThat(sUserManager.isUserRunning(workProfile(sDeviceState).userHandle())).isTrue();
     }
 
     @Test
@@ -113,7 +114,7 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void stopProfile_returnsTrue() {
-        assertThat(sActivityManager.stopProfile(sDeviceState.workProfile().userHandle())).isTrue();
+        assertThat(sActivityManager.stopProfile(workProfile(sDeviceState).userHandle())).isTrue();
     }
 
     @Test
@@ -124,13 +125,13 @@ public final class StartProfilesTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void stopProfile_profileIsStopped() {
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(sDeviceState.workProfile()));
+                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(workProfile(sDeviceState)));
 
-        sActivityManager.stopProfile(sDeviceState.workProfile().userHandle());
+        sActivityManager.stopProfile(workProfile(sDeviceState).userHandle());
         broadcastReceiver.awaitForBroadcastOrFail();
 
         assertThat(
-                sUserManager.isUserRunning(sDeviceState.workProfile().userHandle())).isFalse();
+                sUserManager.isUserRunning(workProfile(sDeviceState).userHandle())).isFalse();
     }
 
     @Test
@@ -141,21 +142,21 @@ public final class StartProfilesTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void startUser_immediatelyAfterStopped_profileIsStarted() {
         try (BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(sDeviceState.workProfile()))) {
-            sActivityManager.stopProfile(sDeviceState.workProfile().userHandle());
+                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(workProfile(sDeviceState)))) {
+            sActivityManager.stopProfile(workProfile(sDeviceState).userHandle());
         }
 
         // start profile as soon as ACTION_PROFILE_INACCESSIBLE is received
         // verify that ACTION_PROFILE_ACCESSIBLE is received if profile is re-started
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_ACCESSIBLE, userIsEqual(sDeviceState.workProfile()));
-        sActivityManager.startProfile(sDeviceState.workProfile().userHandle());
+                Intent.ACTION_PROFILE_ACCESSIBLE, userIsEqual(workProfile(sDeviceState)));
+        sActivityManager.startProfile(workProfile(sDeviceState).userHandle());
         Intent broadcast = broadcastReceiver.awaitForBroadcast();
 
         assertWithMessage("Expected to receive ACTION_PROFILE_ACCESSIBLE broadcast").that(
                 broadcast).isNotNull();
         assertThat(
-                sUserManager.isUserRunning(sDeviceState.workProfile().userHandle())).isTrue();
+                sUserManager.isUserRunning(workProfile(sDeviceState).userHandle())).isTrue();
     }
 
     @Test
@@ -165,14 +166,14 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void startUser_userIsStopping_profileIsStarted() {
-        sDeviceState.workProfile().start();
+        workProfile(sDeviceState).start();
 
         // stop and restart profile without waiting for ACTION_PROFILE_INACCESSIBLE broadcast
-        sActivityManager.stopProfile(sDeviceState.workProfile().userHandle());
-        sActivityManager.startProfile(sDeviceState.workProfile().userHandle());
+        sActivityManager.stopProfile(workProfile(sDeviceState).userHandle());
+        sActivityManager.startProfile(workProfile(sDeviceState).userHandle());
 
         Poll.forValue("user running",
-                        () -> sUserManager.isUserRunning(sDeviceState.workProfile().userHandle()))
+                        () -> sUserManager.isUserRunning(workProfile(sDeviceState).userHandle()))
                 .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
@@ -186,7 +187,7 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     public void startProfile_withoutPermission_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sActivityManager.startProfile(sDeviceState.workProfile().userHandle()));
+                () -> sActivityManager.startProfile(workProfile(sDeviceState).userHandle()));
     }
 
     @Test
@@ -197,7 +198,7 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     public void stopProfile_withoutPermission_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sActivityManager.stopProfile(sDeviceState.workProfile().userHandle()));
+                () -> sActivityManager.stopProfile(workProfile(sDeviceState).userHandle()));
     }
 
     @Test

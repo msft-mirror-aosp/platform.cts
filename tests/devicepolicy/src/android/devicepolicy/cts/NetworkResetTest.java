@@ -21,6 +21,9 @@ import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.os.UserManager.DISALLOW_CONFIG_PRIVATE_DNS;
 import static android.os.UserManager.DISALLOW_NETWORK_RESET;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.deviceOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.Context;
@@ -81,8 +84,8 @@ public final class NetworkResetTest {
                 sUserManager.hasUserRestriction(DISALLOW_NETWORK_RESET);
         try {
             sConnectivityManager.setAirplaneMode(true);
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_NETWORK_RESET);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_NETWORK_RESET);
 
             sConnectivityManager.factoryReset();
 
@@ -103,9 +106,9 @@ public final class NetworkResetTest {
         try {
             ConnectivitySettingsManager.setPrivateDnsMode(sContext,
                     ConnectivitySettingsManager.PRIVATE_DNS_MODE_OFF);
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .addUserRestriction(
-                            sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+                            dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
 
             sConnectivityManager.factoryReset();
 
@@ -133,12 +136,12 @@ public final class NetworkResetTest {
                     ConnectivitySettingsManager.PRIVATE_DNS_MODE_OFF);
             // Ensure no policy set.
             //TODO(b/264642433): Use Nene API once available.
-            sDeviceState.deviceOwner().devicePolicyManager()
+            deviceOwner(sDeviceState).devicePolicyManager()
                     .clearUserRestriction(
-                            sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
-            sDeviceState.deviceOwner().devicePolicyManager()
+                            dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+            deviceOwner(sDeviceState).devicePolicyManager()
                     .clearUserRestriction(
-                            sDeviceState.dpc().componentName(), DISALLOW_NETWORK_RESET);
+                            dpc(sDeviceState).componentName(), DISALLOW_NETWORK_RESET);
 
             sConnectivityManager.factoryReset();
 
@@ -173,11 +176,11 @@ public final class NetworkResetTest {
 
     private void restoreUserRestriction(boolean originalUserRestriction, String policy) {
         if (originalUserRestriction) {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), policy);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), policy);
         } else {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), policy);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), policy);
         }
     }
 }

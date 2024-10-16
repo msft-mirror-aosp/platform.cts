@@ -132,7 +132,7 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
     }
 
     public void testRawContactDelete_setsDeleteFlag() {
-        long rawContactid = RawContactUtil.insertRawContact(mResolver,
+        long rawContactid = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver,
                 StaticAccountAuthenticator.ACCOUNT_1);
 
         assertTrue(RawContactUtil.rawContactExistsById(mResolver, rawContactid));
@@ -158,7 +158,7 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
         String type = RawContacts.getLocalAccountType(mContext);
         Account account = name != null && type != null ? new Account(name, type) : null;
 
-        long rawContactid = RawContactUtil.insertRawContact(mResolver, account);
+        long rawContactid = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver, account);
         assertTrue(RawContactUtil.rawContactExistsById(mResolver, rawContactid));
 
         // Local raw contacts should be deleted immediately even if isSyncAdapter=false
@@ -170,7 +170,7 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
     }
 
     public void testRawContactDelete_removesRecord() {
-        long rawContactid = RawContactUtil.insertRawContact(mResolver,
+        long rawContactid = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver,
                 StaticAccountAuthenticator.ACCOUNT_1);
         assertTrue(RawContactUtil.rawContactExistsById(mResolver, rawContactid));
 
@@ -207,7 +207,7 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
     @CddTest(requirement="3.18/C-1-1,C-1-2,C-1-3")
     public void testRawContactCreate_noAccountUsesLocalAccount() {
         // Save a raw contact without an account.
-        long rawContactid = RawContactUtil.insertRawContact(mResolver, null);
+        long rawContactid = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver, null);
 
         String[] row =  RawContactUtil.queryByRawContactId(mResolver, rawContactid,
                 new String[] {

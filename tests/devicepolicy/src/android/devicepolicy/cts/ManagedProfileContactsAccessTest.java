@@ -18,6 +18,9 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -82,7 +85,7 @@ public class ManagedProfileContactsAccessTest {
 
     @Before
     public void setUp() {
-        mRemoteDevicePolicyManager = sDeviceState.dpc().devicePolicyManager();
+        mRemoteDevicePolicyManager = dpc(sDeviceState).devicePolicyManager();
     }
 
     @After
@@ -171,7 +174,7 @@ public class ManagedProfileContactsAccessTest {
     })
     public void setCrossProfileContactsDisabled_toFalse_setsAllAllowedPolicy() {
         mRemoteDevicePolicyManager.setCrossProfileContactsSearchDisabled(
-                sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).componentName(),
                 /*disabled = */ false);
         PackagePolicy expectedPolicy = new PackagePolicy(PackagePolicy.PACKAGE_POLICY_BLOCKLIST);
 
@@ -186,7 +189,7 @@ public class ManagedProfileContactsAccessTest {
     })
     public void setCrossProfileContactsSearchDisabled_toTrue_setsAllBlockedPolicy() {
         mRemoteDevicePolicyManager.setCrossProfileContactsSearchDisabled(
-                sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).componentName(),
                 /*disabled = */ true);
         PackagePolicy expectedPolicy = new PackagePolicy(PackagePolicy.PACKAGE_POLICY_ALLOWLIST);
 
@@ -207,11 +210,11 @@ public class ManagedProfileContactsAccessTest {
 
         Context ctx = TestApis.context().instrumentedContext();
         DevicePolicyManager dpm = ctx.getSystemService(DevicePolicyManager.class);
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_ONE)).isFalse();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_TWO)).isTrue();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_SYSTEM_PACKAGE)).isTrue();
     }
 
@@ -228,11 +231,11 @@ public class ManagedProfileContactsAccessTest {
 
         Context ctx = TestApis.context().instrumentedContext();
         DevicePolicyManager dpm = ctx.getSystemService(DevicePolicyManager.class);
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_TWO)).isFalse();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_SYSTEM_PACKAGE)).isFalse();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_ONE)).isTrue();
     }
 
@@ -251,11 +254,11 @@ public class ManagedProfileContactsAccessTest {
 
         Context ctx = TestApis.context().instrumentedContext();
         DevicePolicyManager dpm = ctx.getSystemService(DevicePolicyManager.class);
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_TWO)).isFalse();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_SYSTEM_PACKAGE)).isTrue();
-        assertThat(dpm.hasManagedProfileContactsAccess(sDeviceState.workProfile().userHandle(),
+        assertThat(dpm.hasManagedProfileContactsAccess(workProfile(sDeviceState).userHandle(),
                 TEST_PACKAGE_ONE)).isTrue();
     }
 }
