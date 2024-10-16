@@ -32,8 +32,11 @@ import static android.os.UserManager.USER_TYPE_FULL_SECONDARY;
 import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 import static android.os.UserManager.USER_TYPE_PROFILE_MANAGED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.privateProfile;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
@@ -174,7 +177,7 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
     @EnsureDoesNotHavePermission({CREATE_USERS, QUERY_USERS, MANAGE_USERS})
     public void testIsAdminUserForOtherUserContextFailsWithoutPermission() {
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
         additionalUser.switchTo();
         Context userContext;
         try (PermissionContext p =
@@ -201,7 +204,7 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
     @EnsureHasPermission(CREATE_USERS)
     public void testIsAdminUserForOtherUserContextWithPermission() {
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
         Context userContext;
         try (PermissionContext p =
                      TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
@@ -322,7 +325,7 @@ public final class UserManagerTest {
     @RequireRunOnInitialUser
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
     public void testIsForegroundUserAdminUser_withAdditionalUser() {
-        UserReference additionalUserRef = sDeviceState.additionalUser();
+        UserReference additionalUserRef = additionalUser(sDeviceState);
         final UserManager initialUm = mUserManager;
         Context additionalUserContext;
         try (PermissionContext p =
@@ -352,7 +355,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile(installInstrumentedApp = TRUE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call isUserRunning()
     public void testIsUserRunning_stoppedProfileOfCurrentUser() {
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 
@@ -369,16 +372,16 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call isUserRunning()
     public void testIsUserRunning_stoppedSecondaryUser() {
-        Log.d(TAG, "Stopping  user " + sDeviceState.additionalUser()
+        Log.d(TAG, "Stopping  user " + additionalUser(sDeviceState)
                 + " (called from " + sContext.getUser() + ")");
-        sDeviceState.additionalUser().stop();
+        additionalUser(sDeviceState).stop();
 
         UserManager um =
                 TestApis.context().instrumentedContext().getSystemService(UserManager.class);
 
         assertWithMessage("isUserRunning() for stopped secondary user (id=%s)",
-                sDeviceState.additionalUser().id())
-                .that(um.isUserRunning(sDeviceState.additionalUser().userHandle())).isFalse();
+                additionalUser(sDeviceState).id())
+                .that(um.isUserRunning(additionalUser(sDeviceState).userHandle())).isFalse();
     }
 
     @Test
@@ -646,7 +649,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile(forUser = ADDITIONAL_USER)
     @EnsureHasPermission(CREATE_USERS)
     public void testRemoveParentUser_withProfiles() {
-        UserReference workProfile = sDeviceState.workProfile(/* forUser= */ ADDITIONAL_USER);
+        UserReference workProfile = workProfile(sDeviceState, /* forUser= */ ADDITIONAL_USER);
         UserReference parentUser = workProfile.parent();
         parentUser.remove();
 
@@ -666,7 +669,7 @@ public final class UserManagerTest {
         UserHandle parentUser = null;
 
         try {
-            UserReference workProfile = sDeviceState.workProfile(/* forUser= */ ADDITIONAL_USER);
+            UserReference workProfile = workProfile(sDeviceState, /* forUser= */ ADDITIONAL_USER);
             parentUser = workProfile.parent().userHandle();
             UserHandle workProfileUser = workProfile.userHandle();
 
@@ -691,7 +694,7 @@ public final class UserManagerTest {
     public void testRemoveMainUser_shouldNotRemoveMainUser() {
         assumeTrue("Main user is not permanent admin.", isMainUserPermanentAdmin());
         UserReference initialUser = sDeviceState.initialUser();
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
         if (TestApis.users().current() != additionalUser) {
             additionalUser.switchTo();
         }
@@ -990,7 +993,7 @@ public final class UserManagerTest {
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission({CREATE_USERS, QUERY_USERS})
     public void testGetUserProperties_managedProfile() {
-        final UserHandle profile = sDeviceState.workProfile().userHandle();
+        final UserHandle profile = workProfile(sDeviceState).userHandle();
         final UserProperties properties = mUserManager.getUserProperties(profile);
         assertThat(properties).isNotNull();
 
@@ -1061,7 +1064,7 @@ public final class UserManagerTest {
     @EnsureHasPermission({QUERY_USERS})
     public void testGetPreviousForegroundUser_switchingBetweenInitialAndAdditional() {
         UserReference initialUser = sDeviceState.initialUser();
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
 
         if (TestApis.users().current() != initialUser) {
             initialUser.switchTo();
@@ -1078,7 +1081,7 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser
     @EnsureHasPermission({CREATE_USERS})
     public void setBootUser_providedUserIsSwitchable() {
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
         mUserManager.setBootUser(additionalUser.userHandle());
 
         assertThat(mUserManager.getBootUser()).isEqualTo(additionalUser.userHandle());
@@ -1091,8 +1094,8 @@ public final class UserManagerTest {
     @EnsureHasPermission({CREATE_USERS})
     @RequireNotHeadlessSystemUserMode(reason = "Testing non-HSUM scenario")
     public void setBootUser_providedUserIsNotSwitchable_nonHsum() {
-        UserReference additionalUser = sDeviceState.additionalUser();
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference additionalUser = additionalUser(sDeviceState);
+        UserReference workProfile = workProfile(sDeviceState);
         mUserManager.setBootUser(workProfile.userHandle());
 
         // Switch to additional user to make sure there is a previous user that is not the
@@ -1111,8 +1114,8 @@ public final class UserManagerTest {
     @EnsureHasPermission({CREATE_USERS})
     @RequireHeadlessSystemUserMode(reason = "Testing HSUM scenario")
     public void setBootUser_providedUserIsNotSwitchable_Hsum() {
-        UserReference additionalUser = sDeviceState.additionalUser();
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference additionalUser = additionalUser(sDeviceState);
+        UserReference workProfile = workProfile(sDeviceState);
         mUserManager.setBootUser(workProfile.userHandle());
 
         // Switch to additional user to make sure there is a previous user that is not the
@@ -1129,7 +1132,7 @@ public final class UserManagerTest {
     @EnsurePasswordNotSet(forUser = ANY)
     public void testSwitchFromNonCredentialToCredentialUser() {
         UserReference initialUser = sDeviceState.initialUser();
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
 
         initialUser.setScreenLockDisabled(true);
         additionalUser.setPassword("1234");
@@ -1145,7 +1148,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
+        final UserHandle profileHandle = privateProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */null);
@@ -1160,7 +1163,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
-        UserReference privateProfile = sDeviceState.privateProfile();
+        UserReference privateProfile = privateProfile(sDeviceState);
         final UserHandle profileHandle = privateProfile.userHandle();
         privateProfile.setSetupComplete(true);
         presetQuietModeStatus(true, profileHandle);
@@ -1174,7 +1177,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */
@@ -1189,7 +1192,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_PROFILE_AVAILABLE, /* checker= */
@@ -1202,7 +1205,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileUnavailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE, /* checker= */
@@ -1215,7 +1218,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileAvailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_AVAILABLE, /* checker= */

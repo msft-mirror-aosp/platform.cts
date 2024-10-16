@@ -32,6 +32,7 @@ android_library {
         "Harrier",
         "Nene",
         "bedstead-testapps",
+        "bedstead-accounts",
     ],
 }
 

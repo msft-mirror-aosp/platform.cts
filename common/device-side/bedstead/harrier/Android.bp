@@ -91,6 +91,7 @@ android_library {
         ":bedstead-multiuser-harrier-temporary-srcs",
 
         ":bedstead-testapps-harrier-temporary-srcs",
+        ":bedstead-accounts-harrier-temporary-srcs",
     ],
 
     static_libs: [

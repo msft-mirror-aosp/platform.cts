@@ -22,6 +22,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_HAS_ARR_SUPPORT;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -1203,6 +1205,13 @@ public class DisplayTest extends TestBase {
         assertEquals("", width);
         String height = SystemProperties.get("ro.surface_flinger.max_graphics_height");
         assertEquals("", height);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_HAS_ARR_SUPPORT)
+    public void testHasArrSupport() {
+        // TODO(b/365163281) Update the test case with more concrete behavior test
+        mDefaultDisplay.hasArrSupport();
     }
 
     /**

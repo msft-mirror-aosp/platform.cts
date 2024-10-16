@@ -19,6 +19,9 @@
     <!-- <option name="compatibility:exclude-filter" value="MODULE_NAME PACKAGE_NAME.CLASS_NAME" /> Excludes whole class -->
     <!-- <option name="compatibility:exclude-filter" value="MODULE_NAME PACKAGE_NAME.CLASS_NAME#TEST_NAME" /> Excludes individual test -->
 
+    <!-- b/363173199 -->
+    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testPermissionlessService_ignored" />
+
     <!-- b/38182235 -->
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases android.location.cts.GnssTtffTests#testTtffWithNetwork" />
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases[instant] android.location.cts.GnssTtffTests#testTtffWithNetwork" />
@@ -358,4 +361,5 @@
 
     <!-- b/368509186 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
 </configuration>

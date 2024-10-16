@@ -16,6 +16,8 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -66,7 +68,7 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
 
         // Prepare the users and the user contexts
         mPrimaryUser = sDeviceState.initialUser();
-        mWorkProfileUser = sDeviceState.workProfile();
+        mWorkProfileUser = workProfile(sDeviceState);
 
         installExistingPackageOnUser(getContext().getPackageName(), mWorkProfileUser.id());
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
