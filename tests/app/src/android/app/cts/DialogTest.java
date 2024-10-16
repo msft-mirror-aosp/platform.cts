@@ -63,6 +63,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.After;
@@ -90,6 +91,8 @@ public class DialogTest {
     private Context mContext;
     private ActivityScenario<DialogStubActivity> mScenario;
     private DialogStubActivity mActivity;
+
+    private final UserHelper mUserHelper = new UserHelper();
 
     @Before
     public void setup() throws Throwable {
@@ -450,6 +453,7 @@ public class DialogTest {
         }
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, action, x, y, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        mUserHelper.injectDisplayIdIfNeeded(event);
         mInstrumentation.getUiAutomation().injectInputEvent(event, true);
         mInstrumentation.waitForIdleSync();
         return event;
@@ -512,6 +516,7 @@ public class DialogTest {
         long eventTime = SystemClock.uptimeMillis();
         final MotionEvent trackBallEvent = MotionEvent.obtain(eventTime, eventTime,
                 MotionEvent.ACTION_DOWN, 0.0f, 0.0f, 0);
+        mUserHelper.injectDisplayIdIfNeeded(trackBallEvent);
 
         assertNull(d.trackballEvent);
         assertNull(d.onTrackballEvent);
