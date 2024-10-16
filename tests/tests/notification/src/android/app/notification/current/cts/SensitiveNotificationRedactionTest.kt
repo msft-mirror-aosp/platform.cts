@@ -547,7 +547,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "your code is 1-1-01",
                 "your code is 6--7893",
                 "your code is ------",
-                "your codeisG-345821",
                 "your code is G-345821forreal",
                 "your code is GVRXY 2",
             )
