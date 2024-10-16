@@ -61,6 +61,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.After;
@@ -84,12 +85,16 @@ public class InstrumentationTest {
     private Intent mIntent;
     private boolean mRunOnMainSyncResult;
     private Context mContext;
+    private int mTestRunningUserId;
     private MockActivity mMockActivity;
+
+    private final UserHelper mUserHelper = new UserHelper();
 
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
+        mTestRunningUserId = mContext.getUserId();
         mIntent = new Intent(mContext, InstrumentationTestActivity.class);
         mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mActivity = (InstrumentationTestActivity) mInstrumentation.startActivitySync(mIntent);
@@ -108,7 +113,8 @@ public class InstrumentationTest {
 
     @Test
     public void testDefaultProcessInstrumentation() throws Exception {
-        String cmd = "am instrument -w android.app.cts/.DefaultProcessInstrumentation";
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w android.app.cts/.DefaultProcessInstrumentation";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + "=true" +
                 "\nINSTRUMENTATION_CODE: -1\n", result);
@@ -116,7 +122,8 @@ public class InstrumentationTest {
 
     @Test
     public void testAltProcessInstrumentation() throws Exception {
-        String cmd = "am instrument -w android.app.cts/.AltProcessInstrumentation";
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w android.app.cts/.AltProcessInstrumentation";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + ":other=true" +
                 "\nINSTRUMENTATION_CODE: -1\n", result);
@@ -124,7 +131,8 @@ public class InstrumentationTest {
 
     @Test
     public void testWildcardProcessInstrumentation() throws Exception {
-        String cmd = "am instrument -w android.app.cts/.WildcardProcessInstrumentation";
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w android.app.cts/.WildcardProcessInstrumentation";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + "=true" +
                 "\nINSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + ":receiver=true" +
@@ -133,7 +141,8 @@ public class InstrumentationTest {
 
     @Test
     public void testMultiProcessInstrumentation() throws Exception {
-        String cmd = "am instrument -w android.app.cts/.MultiProcessInstrumentation";
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w android.app.cts/.MultiProcessInstrumentation";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + "=true" +
                 "\nINSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + ":other=true" +
@@ -145,7 +154,8 @@ public class InstrumentationTest {
         assumeFalse(Build.isDebuggable());
         // Start the instrumentation from shell, it should succeed.
         final String defaultInstrumentationName = "android.app.cts/.DefaultProcessInstrumentation";
-        String cmd = "am instrument -w " + defaultInstrumentationName;
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w " + defaultInstrumentationName;
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + SIMPLE_PACKAGE_NAME + "=true"
                 + "\nINSTRUMENTATION_CODE: -1\n", result);
@@ -154,13 +164,14 @@ public class InstrumentationTest {
                 ComponentName.unflattenFromString(defaultInstrumentationName), null, null);
         // Start the instrumentation from another process, this time it should fail.
         SystemUtil.runShellCommand(mInstrumentation,
-                "cmd deviceidle tempwhitelist android.app.cts");
+                "cmd deviceidle tempwhitelist -u " + mTestRunningUserId + " android.app.cts");
         try {
             assertFalse(InstrumentationHelperService.startInstrumentation(
                     mContext, defaultInstrumentationName));
         } finally {
             SystemUtil.runShellCommand(mInstrumentation,
-                    "cmd deviceidle tempwhitelist -r android.app.cts");
+                    "cmd deviceidle tempwhitelist -u "
+                    + mTestRunningUserId + " -r android.app.cts");
         }
     }
 
@@ -168,7 +179,8 @@ public class InstrumentationTest {
     public void testChainedInstrumentation() throws Exception {
         final String testPkg1 = "com.android.test.cantsavestate1";
         final String testPkg2 = "com.android.test.cantsavestate2";
-        String cmd = "am instrument -w android.app.cts/.ChainedInstrumentationFirst";
+        String cmd = "am instrument --user " + mTestRunningUserId
+                + " -w android.app.cts/.ChainedInstrumentationFirst";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
         assertEquals("INSTRUMENTATION_RESULT: " + testPkg1 + "=true"
                 + "\nINSTRUMENTATION_RESULT: " + testPkg2 + "=true"
@@ -269,6 +281,7 @@ public class InstrumentationTest {
         long now = SystemClock.uptimeMillis();
         MotionEvent orig = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN,
                 100, 100, 0);
+        mUserHelper.injectDisplayIdIfNeeded(orig);
         mInstrumentation.sendTrackballEventSync(orig);
         mInstrumentation.waitForIdleSync();
 
@@ -443,6 +456,7 @@ public class InstrumentationTest {
         long now = SystemClock.uptimeMillis();
         MotionEvent orig = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN,
                 x, y, 0);
+        mUserHelper.injectDisplayIdIfNeeded(orig);
         mInstrumentation.sendPointerSync(orig);
 
         mInstrumentation.waitForIdleSync();
