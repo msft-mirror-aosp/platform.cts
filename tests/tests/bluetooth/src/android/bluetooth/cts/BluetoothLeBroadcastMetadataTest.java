@@ -36,7 +36,6 @@ import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -44,7 +43,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -230,7 +228,6 @@ public class BluetoothLeBroadcastMetadataTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
     public void createMetadataFromBuilderAndCheckRssi() {
