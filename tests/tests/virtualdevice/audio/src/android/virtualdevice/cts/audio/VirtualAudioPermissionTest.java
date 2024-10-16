@@ -91,6 +91,7 @@ public class VirtualAudioPermissionTest {
     private int mVirtualDisplayId;
     private AudioPolicy mAudioPolicy;
     private AudioInjector mAudioInjector;
+    private boolean mIsRecording;
 
     @Before
     public void setUp() throws Exception {
@@ -103,6 +104,7 @@ public class VirtualAudioPermissionTest {
 
     @After
     public void tearDown() throws Exception {
+        mIsRecording = false;
         if (mAudioPolicy != null) {
             mContext.getSystemService(AudioManager.class).unregisterAudioPolicy(mAudioPolicy);
         }
@@ -269,7 +271,20 @@ public class VirtualAudioPermissionTest {
         int res = audioManager.registerAudioPolicy(mAudioPolicy);
         assertThat(res).isEqualTo(AudioManager.SUCCESS);
         AudioTrack audioTrackSource = mAudioPolicy.createAudioTrackSource(audioMix);
-        audioTrackSource.play();
+
+        Thread audioTrackThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                byte[] buffer = new byte[AudioInjector.BUFFER_SIZE_IN_BYTES];
+                audioTrackSource.play();
+                mIsRecording = true;
+                while (mIsRecording) {
+                    audioTrackSource.write(buffer, 0, AudioInjector.BUFFER_SIZE_IN_BYTES);
+                }
+            }
+        });
+
+        audioTrackThread.start();
     }
 
     private void grantPermission(int deviceId) {
