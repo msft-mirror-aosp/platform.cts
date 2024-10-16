@@ -16,9 +16,14 @@
 
 package android.display.cts;
 
+import static android.view.Display.DEFAULT_DISPLAY;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -30,6 +35,7 @@ import android.os.Looper;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.view.Display;
 import android.view.Display.HdrCapabilities;
 
 import androidx.test.InstrumentationRegistry;
@@ -60,7 +66,7 @@ import java.util.function.Predicate;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class HdrConversionEnabledTest {
+public class HdrSettingsTest {
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
 
@@ -68,13 +74,18 @@ public class HdrConversionEnabledTest {
 
     private HdrConversionMode mOriginalHdrConversionModeSettings;
 
+    private int[] mOriginalUserDisabledTypes;
+
+    private boolean mOriginalAreUserDisabledHdrTypesAllowed;
+
     private HdrConversionTestActivity mHdrConversionTestActivity;
 
     @Rule
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
             InstrumentationRegistry.getInstrumentation().getUiAutomation(),
             Manifest.permission.HDMI_CEC,
-            Manifest.permission.MODIFY_HDR_CONVERSION_MODE);
+            Manifest.permission.MODIFY_HDR_CONVERSION_MODE,
+            Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @Rule
     public ActivityScenarioRule<HdrConversionTestActivity> mActivityRule =
@@ -212,17 +223,93 @@ public class HdrConversionEnabledTest {
                 mDisplayManager.getHdrConversionMode().getConversionMode());
     }
 
+    @Test
+    public void forceSdr_whenSystemConversionAndDisabledTypesAllowed_displayReturnsNoHdr() {
+        mDisplayManager.setHdrConversionMode(new HdrConversionMode(
+                HdrConversionMode.HDR_CONVERSION_SYSTEM));
+        mDisplayManager.setAreUserDisabledHdrTypesAllowed(true);
+        mDisplayManager.setUserDisabledHdrTypes(new int[0]);
+        Display display = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
+        assumeNotNull(display.getHdrCapabilities());
+
+        mDisplayManager.setHdrConversionMode(
+                new HdrConversionMode(HdrConversionMode.HDR_CONVERSION_FORCE,
+                        HdrCapabilities.HDR_TYPE_INVALID));
+
+        assertNull(display.getHdrCapabilities());
+    }
+
+    @Test
+    public void forceSdr_whenSystemConversionAndHdrTypesDisabled_displayReturnsNoHdr() {
+        mDisplayManager.setHdrConversionMode(new HdrConversionMode(
+                HdrConversionMode.HDR_CONVERSION_SYSTEM));
+        mDisplayManager.setAreUserDisabledHdrTypesAllowed(false);
+        mDisplayManager.setUserDisabledHdrTypes(new int[0]);
+        Display display = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
+        assumeNotNull(display.getHdrCapabilities());
+        int[] hdrTypes = display.getHdrCapabilities().getSupportedHdrTypes();
+        mDisplayManager.setUserDisabledHdrTypes(hdrTypes); // all HDR types disabled
+        assertTrue(display.getHdrCapabilities().getSupportedHdrTypes().length == 0);
+
+        mDisplayManager.setHdrConversionMode(
+                new HdrConversionMode(HdrConversionMode.HDR_CONVERSION_FORCE,
+                        HdrCapabilities.HDR_TYPE_INVALID));
+
+        assertNull(display.getHdrCapabilities());
+    }
+
+    @Test
+    public void setAreUserDisabledHdrTypesAllowed_updatesSettings() {
+        mDisplayManager.setAreUserDisabledHdrTypesAllowed(false);
+        assertFalse(mDisplayManager.areUserDisabledHdrTypesAllowed());
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        int invalidAreUserDisabledHdrFormatsAllowed = -1;
+        int currentAreUserDisabledHdrFormatsAllowed =
+                Settings.Global.getInt(context.getContentResolver(),
+                        Settings.Global.ARE_USER_DISABLED_HDR_FORMATS_ALLOWED,
+                        invalidAreUserDisabledHdrFormatsAllowed);
+        assertEquals(0, currentAreUserDisabledHdrFormatsAllowed);
+
+        mDisplayManager.setAreUserDisabledHdrTypesAllowed(true);
+
+        assertTrue(mDisplayManager.areUserDisabledHdrTypesAllowed());
+        int newAreUserDisabledHdrFormatsAllowed =
+                Settings.Global.getInt(context.getContentResolver(),
+                Settings.Global.ARE_USER_DISABLED_HDR_FORMATS_ALLOWED,
+                        invalidAreUserDisabledHdrFormatsAllowed);
+        assertEquals(1, newAreUserDisabledHdrFormatsAllowed);
+    }
+
+    @Test
+    public void setUserDisabledHdrTypes_updatesSettings() {
+        mDisplayManager.setUserDisabledHdrTypes(new int[0]);
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        String userDisabledFormatsString = Settings.Global.getString(context.getContentResolver(),
+                Settings.Global.USER_DISABLED_HDR_FORMATS);
+        assertEquals(0, userDisabledFormatsString.length());
+
+        mDisplayManager.setUserDisabledHdrTypes(new int[]{HdrCapabilities.HDR_TYPE_HDR10});
+
+        userDisabledFormatsString = Settings.Global.getString(context.getContentResolver(),
+                Settings.Global.USER_DISABLED_HDR_FORMATS);
+        assertEquals(String.valueOf(HdrCapabilities.HDR_TYPE_HDR10), userDisabledFormatsString);
+    }
     private void cacheOriginalHdrConversionModeSetting() {
         mOriginalHdrConversionModeSettings = mDisplayManager.getHdrConversionModeSetting();
+        mOriginalUserDisabledTypes = mDisplayManager.getUserDisabledHdrTypes();
+        mOriginalAreUserDisabledHdrTypesAllowed = mDisplayManager.areUserDisabledHdrTypesAllowed();
     }
 
     private void restoreOriginalHdrConversionModeSettings() {
-        // mDisplayManager can be null if the test assumptions if setUp have failed.
+        // mDisplayManager can be null if the test assumptions if setUp have failed
         if (mDisplayManager == null || mOriginalHdrConversionModeSettings == null) {
             return;
         }
+        // Use cache here
         mDisplayManager.setHdrConversionMode(
                 new HdrConversionMode(mOriginalHdrConversionModeSettings.getConversionMode()));
+        mDisplayManager.setUserDisabledHdrTypes(mOriginalUserDisabledTypes);
+        mDisplayManager.setAreUserDisabledHdrTypesAllowed(mOriginalAreUserDisabledHdrTypesAllowed);
     }
 
     private void waitUntil(Predicate<DisplayManager> pred, Duration maxWait)

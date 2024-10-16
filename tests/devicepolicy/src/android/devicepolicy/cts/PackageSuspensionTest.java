@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -56,7 +58,7 @@ public final class PackageSuspensionTest {
 
     @Before
     public void setup() {
-        mAdmin = sDeviceState.dpc().componentName();
+        mAdmin = dpc(sDeviceState).componentName();
     }
 
     @CanSetPolicyTest(policy = SuspendPackage.class)
@@ -66,14 +68,14 @@ public final class PackageSuspensionTest {
         skipRoleHolderTestIfFlagNotEnabled();
         String testApp = testApp(sDeviceState).packageName();
         try {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp}, /* suspended */ true);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().isPackageSuspended(mAdmin, testApp)
+                    dpc(sDeviceState).devicePolicyManager().isPackageSuspended(mAdmin, testApp)
             ).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ false);
         }
     }
@@ -84,10 +86,10 @@ public final class PackageSuspensionTest {
     public void isPackageSuspended_packageIsNotSuspended_returnFalse() throws Exception {
         String testApp = testApp(sDeviceState).packageName();
         skipRoleHolderTestIfFlagNotEnabled();
-        sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+        dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                 mAdmin, new String[] {testApp},  /* suspended */ false);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(mAdmin, testApp))
+        assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(mAdmin, testApp))
                 .isFalse();
     }
 
@@ -98,14 +100,14 @@ public final class PackageSuspensionTest {
         skipRoleHolderTestIfFlagNotEnabled();
         String testApp = testApp(sDeviceState).packageName();
         try {
-            assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ true)
             ).isEmpty();
-            assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                     mAdmin, testApp)
             ).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ false);
         }
     }
@@ -119,14 +121,14 @@ public final class PackageSuspensionTest {
         try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp},  /* suspended */ true);
 
-                assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp},  /* suspended */ true)
                 ).isEmpty();
             } finally {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp},  /* suspended */ false);
             }
         }
@@ -136,7 +138,7 @@ public final class PackageSuspensionTest {
     @Postsubmit(reason = "new test")
     public void setPackagesSuspended_suspendUninstalledPackage_notSuspended() throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                 mAdmin, new String[] {sNonexistentPackage},  /* suspended */ true)
         ).isEqualTo(new String[] {sNonexistentPackage});
     }
@@ -149,17 +151,17 @@ public final class PackageSuspensionTest {
         String testApp = testApp(sDeviceState).packageName();
         try {
             // Start with suspended package
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ false)
             ).isEmpty();
-            assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                     mAdmin, testApp)
             ).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ false);
         }
     }
@@ -169,7 +171,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackagesSuspended_unsuspendAlreadyUnsuspendedPackage_returnsEmpty() {
         skipRoleHolderTestIfFlagNotEnabled();
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                 mAdmin,
                 new String[] {testApp(sDeviceState).packageName()},
                 /* suspended */ false)
@@ -180,7 +182,7 @@ public final class PackageSuspensionTest {
     @Postsubmit(reason = "new test")
     public void setPackagesSuspended_unsuspendNonexistentPackage_remainUnuspended() {
         skipRoleHolderTestIfFlagNotEnabled();
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                 mAdmin,
                 new String[] {sNonexistentPackage},
                 /* suspended */ false)).isEqualTo(new String[] {sNonexistentPackage});
@@ -196,17 +198,17 @@ public final class PackageSuspensionTest {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Suspend both packages in two calls
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[] {testApp},  /* suspended */ true);
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[] {testApp, anotherTestApp}, /* suspended */ true);
                 // Assert suspension state
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, testApp)).isTrue();
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, anotherTestApp)).isTrue();
             } finally {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp}, /* suspended */ false);
             }
         }
@@ -223,21 +225,21 @@ public final class PackageSuspensionTest {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Start with packages suspended
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp}, /* suspended */ true);
                 // Unsuspend packages in two calls
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{anotherTestApp},  /* suspended */ false);
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp},  /* suspended */ false);
                 // Assert suspension state
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, testApp)).isFalse();
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, anotherTestApp)).isFalse();
 
             } finally {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[]{testApp, anotherTestApp},  /* suspended */ false);
             }
         }
@@ -251,14 +253,14 @@ public final class PackageSuspensionTest {
         skipRoleHolderTestIfFlagNotEnabled();
         try {
             // Suspend both packages
-            assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp, sNonexistentPackage}, /* suspended */ true))
                     .isEqualTo(new String[] {sNonexistentPackage});
             // Assert suspension state
-            assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+            assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                     mAdmin, testApp)).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp, sNonexistentPackage},  /* suspended */ false);
         }
     }
@@ -277,23 +279,23 @@ public final class PackageSuspensionTest {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Suspend packages from different admins
-                assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                        sDeviceState.dpc().componentName(), new String[]{testApp},
+                assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                        dpc(sDeviceState).componentName(), new String[]{testApp},
                         /* suspended */ true)
                 ).isEmpty();
-                assertThat(sDeviceState.dpmRoleHolder().devicePolicyManager().setPackagesSuspended(
+                assertThat(dpmRoleHolder(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         null, new String[]{testApp, anotherTestApp},  /* suspended */ true)
                 ).isEmpty();
                 // Assert package state
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, testApp)).isTrue();
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, anotherTestApp)).isTrue();
             } finally {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                        sDeviceState.dpc().componentName(), new String[]{testApp},
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                        dpc(sDeviceState).componentName(), new String[]{testApp},
                         /* suspended */ false);
-                sDeviceState.dpmRoleHolder().devicePolicyManager().setPackagesSuspended(
+                dpmRoleHolder(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         null, new String[]{testApp, anotherTestApp},
                         /* suspended */ false);
             }
@@ -311,26 +313,26 @@ public final class PackageSuspensionTest {
         try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                        sDeviceState.dpc().componentName(), new String[]{testApp},
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                        dpc(sDeviceState).componentName(), new String[]{testApp},
                         /* suspended */ true);
-                sDeviceState.dpmRoleHolder().devicePolicyManager().setPackagesSuspended(
+                dpmRoleHolder(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         null, new String[]{anotherTestApp},  /* suspended */ true);
 
-                assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                        sDeviceState.dpc().componentName(), new String[]{testApp, anotherTestApp},
+                assertThat(dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                        dpc(sDeviceState).componentName(), new String[]{testApp, anotherTestApp},
                         /* suspended */ false)
                 ).isEqualTo(new String[]{anotherTestApp});
 
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, testApp)).isFalse();
-                assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
+                assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
                         mAdmin, anotherTestApp)).isTrue();
             } finally {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                        sDeviceState.dpc().componentName(), new String[]{testApp},
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                        dpc(sDeviceState).componentName(), new String[]{testApp},
                         /* suspended */ false);
-                sDeviceState.dpmRoleHolder().devicePolicyManager().setPackagesSuspended(
+                dpmRoleHolder(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         null, new String[]{anotherTestApp},  /* suspended */ false);
             }
         }
@@ -343,7 +345,7 @@ public final class PackageSuspensionTest {
         skipRoleHolderTestIfFlagNotEnabled();
         String testApp = testApp(sDeviceState).packageName();
         assertThrows(SecurityException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().isPackageSuspended(mAdmin, testApp));
+                dpc(sDeviceState).devicePolicyManager().isPackageSuspended(mAdmin, testApp));
     }
 
     @CannotSetPolicyTest(policy = SuspendPackage.class)
@@ -354,11 +356,11 @@ public final class PackageSuspensionTest {
         String testApp = testApp(sDeviceState).packageName();
         try {
             assertThrows(SecurityException.class, () ->
-                    sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                    dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                                     mAdmin, new String[] {testApp},  /* suspended */ true));
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
+                dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
                         mAdmin, new String[] {testApp},  /* suspended */ false);
             } catch (SecurityException ex) {
                 // Expected
@@ -368,7 +370,7 @@ public final class PackageSuspensionTest {
 
     private void skipRoleHolderTestIfFlagNotEnabled() {
         try {
-            if (sDeviceState.dpc() == sDeviceState.dpmRoleHolder()) {
+            if (dpc(sDeviceState) == dpmRoleHolder(sDeviceState)) {
                 assumeTrue("This test only runs with flag "
                         + Flags.FLAG_UNMANAGED_MODE_MIGRATION
                         + " is enabled", Flags.unmanagedModeMigration());

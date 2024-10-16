@@ -19,6 +19,7 @@ package android.suspendapps.cts;
 import static android.content.Intent.ACTION_PACKAGE_UNSUSPENDED_MANUALLY;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.SUSPEND_APPS;
@@ -86,7 +87,7 @@ public class CrossUserSuspendTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, SUSPEND_APPS})
     @Test
     public void suspendProfileActivityFromPrimary_verifyUnsuspendedBroadcast() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance instance = sTestApp.install(workProfile);
                 BlockingBroadcastReceiver broadcastReceiver =
                         sDeviceState.registerBroadcastReceiver(
@@ -122,7 +123,7 @@ public class CrossUserSuspendTest {
     @EnsureDoesNotHavePermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void suspendProfileActivityFromPrimary_withoutCrossUserFull_throws() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance ignored = sTestApp.install(workProfile)) {
             PackageManager profilePackageManager;
             try (PermissionContext ignoredToo = TestApis.permissions()
