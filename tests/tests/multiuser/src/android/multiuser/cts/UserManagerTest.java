@@ -32,6 +32,7 @@ import static android.os.UserManager.USER_TYPE_FULL_SECONDARY;
 import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 import static android.os.UserManager.USER_TYPE_PROFILE_MANAGED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
@@ -354,7 +355,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile(installInstrumentedApp = TRUE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call isUserRunning()
     public void testIsUserRunning_stoppedProfileOfCurrentUser() {
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 
@@ -648,7 +649,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile(forUser = ADDITIONAL_USER)
     @EnsureHasPermission(CREATE_USERS)
     public void testRemoveParentUser_withProfiles() {
-        UserReference workProfile = sDeviceState.workProfile(/* forUser= */ ADDITIONAL_USER);
+        UserReference workProfile = workProfile(sDeviceState, /* forUser= */ ADDITIONAL_USER);
         UserReference parentUser = workProfile.parent();
         parentUser.remove();
 
@@ -668,7 +669,7 @@ public final class UserManagerTest {
         UserHandle parentUser = null;
 
         try {
-            UserReference workProfile = sDeviceState.workProfile(/* forUser= */ ADDITIONAL_USER);
+            UserReference workProfile = workProfile(sDeviceState, /* forUser= */ ADDITIONAL_USER);
             parentUser = workProfile.parent().userHandle();
             UserHandle workProfileUser = workProfile.userHandle();
 
@@ -992,7 +993,7 @@ public final class UserManagerTest {
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasPermission({CREATE_USERS, QUERY_USERS})
     public void testGetUserProperties_managedProfile() {
-        final UserHandle profile = sDeviceState.workProfile().userHandle();
+        final UserHandle profile = workProfile(sDeviceState).userHandle();
         final UserProperties properties = mUserManager.getUserProperties(profile);
         assertThat(properties).isNotNull();
 
@@ -1094,7 +1095,7 @@ public final class UserManagerTest {
     @RequireNotHeadlessSystemUserMode(reason = "Testing non-HSUM scenario")
     public void setBootUser_providedUserIsNotSwitchable_nonHsum() {
         UserReference additionalUser = additionalUser(sDeviceState);
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         mUserManager.setBootUser(workProfile.userHandle());
 
         // Switch to additional user to make sure there is a previous user that is not the
@@ -1114,7 +1115,7 @@ public final class UserManagerTest {
     @RequireHeadlessSystemUserMode(reason = "Testing HSUM scenario")
     public void setBootUser_providedUserIsNotSwitchable_Hsum() {
         UserReference additionalUser = additionalUser(sDeviceState);
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         mUserManager.setBootUser(workProfile.userHandle());
 
         // Switch to additional user to make sure there is a previous user that is not the
@@ -1176,7 +1177,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_PROFILE_UNAVAILABLE, /* checker= */
@@ -1191,7 +1192,7 @@ public final class UserManagerTest {
     @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_PROFILE_AVAILABLE, /* checker= */
@@ -1204,7 +1205,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileUnavailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE, /* checker= */
@@ -1217,7 +1218,7 @@ public final class UserManagerTest {
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     public void testRequestQuietModeOnManaged_shouldSendManagedProfileAvailableBroadcast() {
-        final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
+        final UserHandle profileHandle = workProfile(sDeviceState).userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
                 .registerBroadcastReceiver(Intent.ACTION_MANAGED_PROFILE_AVAILABLE, /* checker= */

@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.provider.Settings.Secure.SHOW_FIRST_CRASH_DIALOG_DEV_OPTION;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SYSTEM_ERROR_DIALOGS;
@@ -70,8 +71,8 @@ public final class SystemErrorDialogsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SYSTEM_ERROR_DIALOGS")
     public void addUserRestriction_disallowSystemErrorDialogs_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS));
     }
 
     @CanSetPolicyTest(policy = DisallowSystemErrorDialogs.class)
@@ -81,16 +82,16 @@ public final class SystemErrorDialogsTest {
     // TODO: Test that this is actually global
     public void addUserRestriction_disallowSystemErrorDialogs_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy()
                     .userRestrictions().isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 
@@ -102,15 +103,15 @@ public final class SystemErrorDialogsTest {
     @Ignore // TODO(332503102): this is failing with permissions but the code looks right...
     public void addUserRestrictionGlobally_disallowSystemErrorDialogs_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy()
                     .userRestrictions().isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 
@@ -121,19 +122,19 @@ public final class SystemErrorDialogsTest {
     // TODO: Test that this is actually global
     public void clearUserRestriction_disallowSystemErrorDialogs_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 

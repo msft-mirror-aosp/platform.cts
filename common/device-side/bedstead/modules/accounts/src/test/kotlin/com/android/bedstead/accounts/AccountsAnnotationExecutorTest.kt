@@ -15,13 +15,13 @@
  */
 package com.android.bedstead.accounts
 
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.UserType
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.accounts.annotations.EnsureHasAccounts
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis.accounts
 import com.google.common.truth.Truth.assertThat
@@ -82,10 +82,7 @@ class AccountsAnnotationExecutorTest {
         assertThat(accounts().all()).isEmpty()
     }
 
-    @EnsureHasAccounts(
-        EnsureHasAccount(),
-        EnsureHasAccount()
-    )
+    @EnsureHasAccounts(EnsureHasAccount(), EnsureHasAccount())
     @Test
     fun ensureHasAccountsAnnotation_hasMultipleAccounts() {
         assertThat(deviceState.accounts().allAccounts().size).isGreaterThan(1)

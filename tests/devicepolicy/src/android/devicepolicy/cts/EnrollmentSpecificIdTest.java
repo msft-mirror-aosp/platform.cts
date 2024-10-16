@@ -19,6 +19,9 @@ import static android.Manifest.permission.LOCAL_MAC_ADDRESS;
 import static android.Manifest.permission.NETWORK_SETTINGS;
 import static android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -71,20 +74,20 @@ public final class EnrollmentSpecificIdTest {
     @PolicyAppliesTest(policy = EnrollmentSpecificId.class)
     public void emptyOrganizationId_throws() {
         assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setOrganizationId(""));
+                () -> dpc(sDeviceState).devicePolicyManager().setOrganizationId(""));
     }
 
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = EnrollmentSpecificId.class)
     public void reSetOrganizationId_throws() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
+            dpc(sDeviceState).devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
 
             assertThrows(IllegalStateException.class,
-                    () -> sDeviceState.dpc().devicePolicyManager()
+                    () -> dpc(sDeviceState).devicePolicyManager()
                             .setOrganizationId(DIFFERENT_ORGANIZATION_ID));
         } finally {
-            TestApis.devicePolicy().clearOrganizationId(sDeviceState.dpc().user());
+            TestApis.devicePolicy().clearOrganizationId(dpc(sDeviceState).user());
         }
     }
 
@@ -97,16 +100,16 @@ public final class EnrollmentSpecificIdTest {
     @EnsureHasPermission({READ_PRIVILEGED_PHONE_STATE, NETWORK_SETTINGS, LOCAL_MAC_ADDRESS})
     public void enrollmentSpecificId_CorrectlyCalculated() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
-            final String esidFromDpm = sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
+            final String esidFromDpm = dpc(sDeviceState).devicePolicyManager()
                     .getEnrollmentSpecificId();
             final String calculatedEsid = calculateEsid(
-                    sDeviceState.dpc().componentName().getPackageName(),
+                    dpc(sDeviceState).componentName().getPackageName(),
                     ORGANIZATION_ID);
 
             assertThat(esidFromDpm).isEqualTo(calculatedEsid);
         } finally {
-            TestApis.devicePolicy().clearOrganizationId(sDeviceState.dpc().user());
+            TestApis.devicePolicy().clearOrganizationId(dpc(sDeviceState).user());
         }
     }
 
@@ -119,15 +122,15 @@ public final class EnrollmentSpecificIdTest {
     @EnsureHasDevicePolicyManagerRoleHolder
     public void enrollmentSpecificId_RoleHolderCanAccess() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
-            String esidFromDpm = sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager().setOrganizationId(ORGANIZATION_ID);
+            String esidFromDpm = dpc(sDeviceState).devicePolicyManager()
                     .getEnrollmentSpecificId();
-            String esidFromRoleHolder = sDeviceState.dpmRoleHolder().devicePolicyManager()
+            String esidFromRoleHolder = dpmRoleHolder(sDeviceState).devicePolicyManager()
                     .getEnrollmentSpecificId();
 
             assertThat(esidFromDpm).isEqualTo(esidFromRoleHolder);
         } finally {
-            TestApis.devicePolicy().clearOrganizationId(sDeviceState.dpc().user());
+            TestApis.devicePolicy().clearOrganizationId(dpc(sDeviceState).user());
         }
     }
 

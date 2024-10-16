@@ -33,8 +33,6 @@ import android.content.IntentFilter;
 import android.os.Process;
 import android.util.Log;
 
-import com.android.bedstead.enterprise.DeviceAdminComponent;
-import com.android.bedstead.enterprise.DeviceOwnerComponent;
 import com.android.bedstead.enterprise.EnterpriseComponent;
 import com.android.bedstead.enterprise.ProfileOwnersComponent;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
@@ -61,7 +59,6 @@ import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
@@ -612,7 +609,9 @@ public final class DeviceState extends HarrierRule {
      * annotations or calls to the {@link DeviceState} class.
      *
      * @throws IllegalStateException if there is no harrier-managed work profile
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public UserReference workProfile() {
         return enterpriseComponent().workProfile();
     }
@@ -624,19 +623,9 @@ public final class DeviceState extends HarrierRule {
      * annotations or calls to the {@link DeviceState} class.
      *
      * @throws IllegalStateException if there is no harrier-managed work profile for the given user
+     * @deprecated use the extension function instead
      */
-    public UserReference workProfile(UserType forUser) {
-        return enterpriseComponent().workProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the work profile.
-     *
-     * <p>This should only be used to get work profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed work profile for the given user
-     */
+    @Deprecated
     public UserReference workProfile(UserReference forUser) {
         return enterpriseComponent().workProfile(forUser);
     }
@@ -882,35 +871,14 @@ public final class DeviceState extends HarrierRule {
     }
 
     /**
-     * Get the {@link RemoteDpc} for the device owner controlled by Harrier.
-     *
-     * <p>If no Harrier-managed device owner exists, an exception will be thrown.
-     *
-     * <p>If the device owner is not a RemoteDPC then an exception will be thrown
-     */
-    public RemoteDpc deviceOwner() {
-        return getDependency(DeviceOwnerComponent.class).deviceOwner();
-    }
-
-
-    /**
-     * Get the {@link RemoteDpc} for the profile owner on the current user controlled by Harrier.
-     *
-     * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
-     *
-     * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
-     */
-    public RemoteDpc profileOwner() {
-        return profileOwner(UserType.INSTRUMENTED_USER);
-    }
-
-    /**
      * Get the {@link RemoteDpc} for the profile owner on the given user controlled by Harrier.
      *
      * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
      *
      * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public RemoteDpc profileOwner(UserType onUser) {
         return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
     }
@@ -921,37 +889,11 @@ public final class DeviceState extends HarrierRule {
      * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
      *
      * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public RemoteDpc profileOwner(UserReference onUser) {
         return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin set using
-     * `EnsureHasDeviceAdmin` without specifying a custom key.
-     *
-     * If no Harrier-managed device admin exists, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin() {
-        return getDependency(DeviceAdminComponent.class).deviceAdmin();
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin with the specified key set on the
-     * user and controlled by Harrier.
-     *
-     * If no Harrier-managed device admin exists for the given key, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin(String key) {
-        return getDependency(DeviceAdminComponent.class).deviceAdmin(key);
-    }
-
-    /**
-     * Behaves like {@link #dpc()} except that when running on a delegate, this will return
-     * the delegating DPC not the delegate.
-     */
-    public RemotePolicyManager dpcOnly() {
-        return enterpriseComponent().dpcOnly();
     }
 
     /**
@@ -972,17 +914,11 @@ public final class DeviceState extends HarrierRule {
      * <p>If no Harrier-managed profile owner or device owner exists, an exception will be thrown.
      *
      * <p>If the profile owner or device owner is not a RemoteDPC then an exception will be thrown.
+     * @deprecated use the extension function instead
      */
+    @Deprecated
     public RemotePolicyManager dpc() {
         return enterpriseComponent().dpc();
-    }
-
-
-    /**
-     * Get the Device Policy Management Role Holder.
-     */
-    public RemoteDevicePolicyManagerRoleHolder dpmRoleHolder() {
-        return enterpriseComponent().dpmRoleHolder();
     }
 
     @Override

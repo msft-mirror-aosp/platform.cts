@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -71,7 +72,7 @@ public class LockTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().lockNow());
+                () -> dpc(sDeviceState).devicePolicyManager().lockNow());
     }
 
     @PolicyAppliesTest(policy = LockNow.class)
@@ -80,11 +81,11 @@ public class LockTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_logsMetric() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().lockNow(/* flags= */ 0);
+            dpc(sDeviceState).devicePolicyManager().lockNow(/* flags= */ 0);
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.LOCK_NOW_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereInteger().isEqualTo(0)
             ).wasLogged();
         }
@@ -98,8 +99,8 @@ public class LockTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_noPasswordSet_turnsScreenOff() throws Exception {
         Assume.assumeFalse("LockNow on profile won't turn off screen",
-                sDeviceState.dpc().user().isProfile());
-        sDeviceState.dpc().devicePolicyManager().lockNow();
+                dpc(sDeviceState).user().isProfile());
+        dpc(sDeviceState).devicePolicyManager().lockNow();
 
         Poll.forValue("isScreenOn", () -> TestApis.device().isScreenOn())
                 .toBeEqualTo(false)
@@ -114,7 +115,7 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_automotive_noPasswordSet_doesNotTurnScreenOff() throws Exception {
-        sDeviceState.dpc().devicePolicyManager().lockNow();
+        dpc(sDeviceState).devicePolicyManager().lockNow();
 
         assertThat(TestApis.device().isScreenOn()).isTrue();
     }
@@ -126,7 +127,7 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_passwordSet_locksDevice() throws Exception {
-        sDeviceState.dpc().devicePolicyManager().lockNow();
+        dpc(sDeviceState).devicePolicyManager().lockNow();
 
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
                 .toBeEqualTo(true)
@@ -139,8 +140,8 @@ public class LockTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaximumTimeToLock")
     public void setMaximumTimeToLock_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .setMaximumTimeToLock(sDeviceState.dpc().componentName(), TIMEOUT));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .setMaximumTimeToLock(dpc(sDeviceState).componentName(), TIMEOUT));
     }
 
     @PolicyAppliesTest(policy = MaximumTimeToLock.class)
@@ -149,18 +150,18 @@ public class LockTest {
             "android.app.admin.DevicePolicyManager#getMaximumTimeToLock"})
     @Ignore // Incorrect logic
     public void setMaximumTimeToLock_maximumTimeToLockIsSet() {
-        long originalTimeout = sDeviceState.dpc().devicePolicyManager()
-                .getMaximumTimeToLock(sDeviceState.dpc().componentName());
+        long originalTimeout = dpc(sDeviceState).devicePolicyManager()
+                .getMaximumTimeToLock(dpc(sDeviceState).componentName());
 
         assertThat(TestApis.devicePolicy().getMaximumTimeToLock()).isEqualTo(TIMEOUT);
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setMaximumTimeToLock(sDeviceState.dpc().componentName(), TIMEOUT);
+            dpc(sDeviceState).devicePolicyManager()
+                    .setMaximumTimeToLock(dpc(sDeviceState).componentName(), TIMEOUT);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMaximumTimeToLock(
-                    sDeviceState.dpc().componentName(), originalTimeout);
+            dpc(sDeviceState).devicePolicyManager().setMaximumTimeToLock(
+                    dpc(sDeviceState).componentName(), originalTimeout);
         }
     }
 
@@ -169,18 +170,18 @@ public class LockTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setMaximumTimeToLock",
             "android.app.admin.DevicePolicyManager#getMaximumTimeToLock"})
     public void setMaximumTimeToLock_doesNotApply_maximumTimeToLockIsNotSet() {
-        long originalTimeout = sDeviceState.dpc().devicePolicyManager()
-                .getMaximumTimeToLock(sDeviceState.dpc().componentName());
+        long originalTimeout = dpc(sDeviceState).devicePolicyManager()
+                .getMaximumTimeToLock(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setMaximumTimeToLock(sDeviceState.dpc().componentName(), TIMEOUT);
+            dpc(sDeviceState).devicePolicyManager()
+                    .setMaximumTimeToLock(dpc(sDeviceState).componentName(), TIMEOUT);
 
             assertThat(TestApis.devicePolicy().getMaximumTimeToLock()).isNotEqualTo(TIMEOUT);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMaximumTimeToLock(
-                    sDeviceState.dpc().componentName(), originalTimeout);
+            dpc(sDeviceState).devicePolicyManager().setMaximumTimeToLock(
+                    dpc(sDeviceState).componentName(), originalTimeout);
         }
     }
 }
