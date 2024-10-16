@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -85,7 +86,7 @@ public final class DefaultSmsApplicationTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDpm = dpc.devicePolicyManager();
         mTelephonyManager = sContext.getSystemService(TelephonyManager.class);
@@ -136,7 +137,7 @@ public final class DefaultSmsApplicationTest {
         }
         String previousSmsAppInTest = getDefaultSmsPackage();
         String previousSmsAppInDpc = getDefaultSmsPackageInDpc();
-        try (TestAppInstance smsApp = sSmsApp.install(sDeviceState.dpc().user())) {
+        try (TestAppInstance smsApp = sSmsApp.install(dpc(sDeviceState).user())) {
             mDpm.setDefaultSmsApplication(mAdmin, smsApp.packageName());
 
             assertThat(Telephony.Sms.getDefaultSmsPackage(sContext))
@@ -246,9 +247,9 @@ public final class DefaultSmsApplicationTest {
         try {
             return Telephony.Sms.getDefaultSmsPackage(
                     sContext.createPackageContextAsUser(
-                            sDeviceState.dpc().packageName(),
+                            dpc(sDeviceState).packageName(),
                             /* flags= */ 0,
-                            sDeviceState.dpc().user().userHandle()));
+                            dpc(sDeviceState).user().userHandle()));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }

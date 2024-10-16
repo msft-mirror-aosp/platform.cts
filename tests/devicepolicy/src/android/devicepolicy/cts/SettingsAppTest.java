@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -91,7 +93,7 @@ public final class SettingsAppTest {
     public void deviceAdminSettings_correctlyListsManagedProfileAndNonManagedProfileAdmins()
             throws Exception {
         // Remove RemoteDPC from the primary user so only one entry is listed
-        sDeviceState.dpc().testApp().pkg().uninstall(sDeviceState.primaryUser());
+        dpc(sDeviceState).testApp().pkg().uninstall(sDeviceState.primaryUser());
 
         // Launch Security settings in work settings app
         Step.execute(NavigateToWorkSecuritySettingsStep.class);

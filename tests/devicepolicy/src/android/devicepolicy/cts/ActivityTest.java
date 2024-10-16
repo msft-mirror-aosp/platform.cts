@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
@@ -68,7 +69,7 @@ public class ActivityTest {
     @PermissionTest({INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL})
     public void startActivityForResultAsUser_differentUser_startedSuccessfully()
             throws InterruptedException {
-        try (TestAppInstance instance = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance instance = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference activityReference =
                     instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -78,7 +79,7 @@ public class ActivityTest {
                 Intent intent = new Intent();
                 intent.setComponent(activityReference.component().componentName());
                 activity.startActivityForResultAsUser(intent, EMPTY_REQUEST_CODE,
-                        sDeviceState.workProfile().userHandle());
+                        workProfile(sDeviceState).userHandle());
             });
 
             assertThat(activityReference.events().activityStarted()).eventOccurred();
@@ -91,7 +92,7 @@ public class ActivityTest {
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     public void startActivityForResultAsUser_requestCodeAndResultPassedSuccessfully()
             throws InterruptedException {
-        try (TestAppInstance instance = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance instance = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference activityReference =
                     instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -104,7 +105,7 @@ public class ActivityTest {
                         intent.putExtra(BaseTestAppActivity.ACTIVITY_RESULT_KEY,
                                 ACTIVITY_RESULT_VALUE);
                         activity.startActivityForResultAsUser(intent, REQUEST_CODE,
-                                sDeviceState.workProfile().userHandle());
+                                workProfile(sDeviceState).userHandle());
                     },
                     activity -> {
                         try {
@@ -125,7 +126,7 @@ public class ActivityTest {
     @EnsureDoesNotHavePermission(
             {INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL})
     public void startActivityForResultAsUser_noPermissions_throwsSecurityException() {
-        try (TestAppInstance instance = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance instance = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference activityReference =
                     instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -136,7 +137,7 @@ public class ActivityTest {
                         Intent intent = new Intent();
                         intent.setComponent(activityReference.component().componentName());
                         activity.startActivityForResultAsUser(intent, EMPTY_REQUEST_CODE,
-                                sDeviceState.workProfile().userHandle());
+                                workProfile(sDeviceState).userHandle());
                     })
             );
         }
@@ -148,7 +149,7 @@ public class ActivityTest {
     public void startActivityAsUser_differentUser_startedSuccessfully()
             throws InterruptedException {
         Bundle options = new Bundle();
-        try (TestAppInstance instance = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance instance = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference activityReference =
                     instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -158,7 +159,7 @@ public class ActivityTest {
                 Intent intent = new Intent();
                 intent.setComponent(activityReference.component().componentName());
                 activity.startActivityAsUser(intent, options,
-                        sDeviceState.workProfile().userHandle());
+                        workProfile(sDeviceState).userHandle());
             });
 
             assertThat(activityReference.events().activityStarted()).eventOccurred();
@@ -172,7 +173,7 @@ public class ActivityTest {
             {INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL})
     public void startActivityAsUser_noPermissions_throwsSecurityException() {
         Bundle options = new Bundle();
-        try (TestAppInstance instance = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance instance = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference activityReference =
                     instance.activities().query()
                             .whereActivity().exported().isTrue()
@@ -183,7 +184,7 @@ public class ActivityTest {
                         Intent intent = new Intent();
                         intent.setComponent(activityReference.component().componentName());
                         activity.startActivityAsUser(intent, options,
-                                sDeviceState.workProfile().userHandle());
+                                workProfile(sDeviceState).userHandle());
                     })
             );
         }

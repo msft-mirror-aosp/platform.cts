@@ -21,6 +21,9 @@ import static android.content.Intent.ACTION_MANAGED_PROFILE_REMOVED;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
@@ -103,7 +106,7 @@ public class DevicePolicyManagementRoleHolderTest {
                         MANAGED_PROFILE_PROVISIONING_PARAMS))) {
             Poll.forValue(() -> TestApis.packages().installedForUser(profile))
                     .toMeet(packages -> packages.contains(
-                            Package.of(sDeviceState.dpmRoleHolder().packageName())))
+                            Package.of(dpmRoleHolder(sDeviceState).packageName())))
                     .errorOnFail("Role holder package not installed on the managed profile.")
                     .await();
             }
@@ -118,15 +121,15 @@ public class DevicePolicyManagementRoleHolderTest {
     @CddTest(requirements = {"3.9.4/C-3-1"})
     public void createAndManageUser_roleHolderIsInManagedUser() {
         try (UserReference userReference = UserReference.of(
-                sDeviceState.dpc().devicePolicyManager().createAndManageUser(
-                        sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager().createAndManageUser(
+                        dpc(sDeviceState).componentName(),
                         MANAGED_USER_NAME,
-                        sDeviceState.dpc().componentName(),
+                        dpc(sDeviceState).componentName(),
                         /* adminExtras= */ null,
                         /* flags= */ 0))) {
             Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
                     .toMeet(packages -> packages.contains(Package.of(
-                            sDeviceState.dpmRoleHolder().packageName())))
+                            dpmRoleHolder(sDeviceState).packageName())))
                     .errorOnFail("Role holder package not installed on the managed user.")
                     .await();
         }
@@ -144,7 +147,7 @@ public class DevicePolicyManagementRoleHolderTest {
 
         TestApis.users().find(profile).remove();
 
-        EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+        EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                         .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_REMOVED))
                 .eventOccurred();
     }
@@ -161,7 +164,7 @@ public class DevicePolicyManagementRoleHolderTest {
                         MANAGED_PROFILE_PROVISIONING_PARAMS))) {
             profile.setQuietMode(true);
 
-            EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+            EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                             .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_UNAVAILABLE))
                     .eventOccurred();
         }
@@ -181,7 +184,7 @@ public class DevicePolicyManagementRoleHolderTest {
 
             profile.setQuietMode(false);
 
-            EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+            EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                             .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_AVAILABLE))
                     .eventOccurred();
         }
@@ -304,8 +307,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasDevicePolicyManagerRoleHolder
     @Test
     public void uninstallAllowedForNonPreinstalledDmrhWhenUnmanaged() {
-        sDeviceState.dpmRoleHolder().pkg().uninstall(TestApis.users().instrumented());
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser()).isFalse();
+        dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented());
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isFalse();
     }
 
     /**
@@ -317,8 +320,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @Test
     public void uninstallNotAllowedForNonPreinstalledDmrhWhenManaged() {
         assertThrows(NeneException.class, () ->
-                sDeviceState.dpmRoleHolder().pkg().uninstall(TestApis.users().instrumented()));
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser()).isTrue();
+                dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented()));
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isTrue();
     }
 
     /**
@@ -333,14 +336,14 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = WORK_PROFILE)
     @Test
     public void workProfileDmrhCanBeUninstalledFromPersonal() {
-        Package dmrhPackage = sDeviceState.dpmRoleHolder().pkg();
+        Package dmrhPackage = dpmRoleHolder(sDeviceState).pkg();
 
         if (!dmrhPackage.installedOnUser()) {
             dmrhPackage.installExisting(TestApis.users().instrumented());
         }
 
-        sDeviceState.dpmRoleHolder().pkg().uninstall(TestApis.users().instrumented());
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser()).isFalse();
+        dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented());
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isFalse();
     }
 
     /**
@@ -353,8 +356,8 @@ public class DevicePolicyManagementRoleHolderTest {
     @Test
     public void workProfileDmrhCantBeUninstalledFromWork() {
         assertThrows(NeneException.class, () ->
-                sDeviceState.dpmRoleHolder().pkg().uninstall(sDeviceState.workProfile()));
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser(sDeviceState.workProfile()))
+                dpmRoleHolder(sDeviceState).pkg().uninstall(workProfile(sDeviceState)));
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser(workProfile(sDeviceState)))
                 .isTrue();
     }
 }

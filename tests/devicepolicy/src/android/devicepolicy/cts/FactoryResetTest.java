@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_FACTORY_RESET;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -48,8 +49,8 @@ public final class FactoryResetTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FACTORY_RESET")
     public void addUserRestriction_disallowFactoryReset_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET));
     }
 
     @PolicyAppliesTest(policy = DisallowFactoryReset.class)
@@ -57,14 +58,14 @@ public final class FactoryResetTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FACTORY_RESET")
     public void addUserRestriction_disallowFactoryReset_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FACTORY_RESET))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
         }
     }
 
@@ -73,18 +74,18 @@ public final class FactoryResetTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FACTORY_RESET")
     public void clearUserRestriction_disallowFactoryReset_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_FACTORY_RESET);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FACTORY_RESET))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
         }
     }
 
@@ -97,14 +98,14 @@ public final class FactoryResetTest {
     @Ignore
     public void addUserRestrictionGlobally_disallowFactoryReset_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_FACTORY_RESET);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FACTORY_RESET))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
         }
     }
 
@@ -117,17 +118,17 @@ public final class FactoryResetTest {
     @Ignore
     public void clearGlobalUserRestriction_disallowFactoryReset_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_FACTORY_RESET);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FACTORY_RESET))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FACTORY_RESET);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FACTORY_RESET);
         }
     }
 

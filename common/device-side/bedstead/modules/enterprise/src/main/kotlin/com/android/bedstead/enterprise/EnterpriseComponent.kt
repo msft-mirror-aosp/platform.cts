@@ -196,10 +196,10 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
     /**
      * See [com.android.bedstead.harrier.DeviceState.dpcOnly]
      */
-    fun dpcOnly(): RemotePolicyManager? {
+    fun dpcOnly(): RemotePolicyManager {
         if (primaryPolicyManager != null) {
             if (primaryPolicyManager!!.isDelegate) {
-                return delegateDpc
+                return delegateDpc!!
             }
         }
 

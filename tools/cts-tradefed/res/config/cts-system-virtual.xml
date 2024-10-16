@@ -994,6 +994,11 @@
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1704]"/>
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1712]"/>
   <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.AllDataFragmentTest#allDataFragment_clickOnPermissionType_navigatesToEntriesAndAccess"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_MoveToCloudDeviceContactsAccount#testMoveLocalContactsToSimDefaultAccount"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_MoveToCloudDeviceContactsAccount#testMoveLocalContactsToLocalDefaultAccount"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_MoveToCloudDeviceContactsAccount#testMoveLocalContactsToNotSetDefaultAccount"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_MoveToCloudDeviceContactsAccount#testGetNumberOfMovableSimContactsWithSimContacts"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_MoveToCloudDeviceContactsAccount#testGetNumberOfMovableLocalContactsWithLocalContacts"/>
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />

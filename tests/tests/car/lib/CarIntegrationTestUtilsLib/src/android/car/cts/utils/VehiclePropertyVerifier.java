@@ -51,6 +51,7 @@ import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
+import android.car.hardware.property.Subscription;
 import android.content.Context;
 import android.os.Build;
 import android.os.SystemClock;
@@ -137,8 +138,11 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
-                    && Flags.areaIdConfigAccess();
+            isAtLeastV() && Flags.areaIdConfigAccess();
+
+    private static final CarPropertyValueCallback FAKE_CALLBACK = new CarPropertyValueCallback(
+            /* propertyName= */ "", new int[]{}, /* totalCarPropertyValuesPerAreaId= */ 0,
+            /* timeoutMillis= */ 0);
 
     private static Class<?> sExceptionClassOnGet;
     private static Class<?> sExceptionClassOnSet;
@@ -625,6 +629,32 @@ public class VehiclePropertyVerifier<T> {
                                     + " permissions.",
                             SecurityException.class,
                             () -> verifyGetPropertiesAsync());
+
+                    // If the caller only has write permission, registerCallback throws
+                    // SecurityException.
+                    assertThrows(
+                                mPropertyName
+                                        + " - property ID: "
+                                        + mPropertyId
+                                        + " should not be able to be listened to without read"
+                                        + " permission.",
+                                SecurityException.class,
+                                () ->  mCarPropertyManager.registerCallback(
+                                        FAKE_CALLBACK, mPropertyId, 0f));
+
+                    if (isAtLeastV() && Flags.variableUpdateRate()) {
+                        // For the new API, if the caller does not read permission, it throws
+                        // SecurityException.
+                        assertThrows(
+                                mPropertyName
+                                        + " - property ID: "
+                                        + mPropertyId
+                                        + " should not be able to be listened to without read"
+                                        + " permission.",
+                                SecurityException.class,
+                                () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId,
+                                        areaId, FAKE_CALLBACK));
+                    }
                 }, writePermissions.toArray(new String[0]));
     }
 
@@ -946,6 +976,10 @@ public class VehiclePropertyVerifier<T> {
 
     private static boolean isAtLeastU() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    }
+
+    private static boolean isAtLeastV() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
 
     /**
@@ -1331,12 +1365,48 @@ public class VehiclePropertyVerifier<T> {
         return timeoutMillis;
     }
 
+    private static boolean subscribePropertyEvents(CarPropertyManager carPropertyManager,
+            CarPropertyManager.CarPropertyEventCallback callback, int propertyId,
+            float updateRateHz) {
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // Use new API if at least V.
+            return carPropertyManager.subscribePropertyEvents(List.of(
+                    new Subscription.Builder(propertyId).setUpdateRateHz(updateRateHz)
+                            .setVariableUpdateRateEnabled(false).build()),
+                    /* callbackExecutor= */ null, callback);
+        } else {
+            return carPropertyManager.registerCallback(callback, propertyId, updateRateHz);
+        }
+    }
+
+    private boolean subscribePropertyEvents(CarPropertyManager.CarPropertyEventCallback callback,
+            int propertyId, float updateRateHz) {
+        return subscribePropertyEvents(mCarPropertyManager, callback, propertyId, updateRateHz);
+    }
+
+    private static void unsubscribePropertyEvents(CarPropertyManager carPropertyManager,
+            CarPropertyManager.CarPropertyEventCallback callback, int propertyId) {
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // Use new API if at least V.
+            carPropertyManager.unsubscribePropertyEvents(propertyId, callback);
+        } else {
+            carPropertyManager.unregisterCallback(callback, propertyId);
+        }
+    }
+
+    private void unsubscribePropertyEvents(CarPropertyManager.CarPropertyEventCallback callback,
+            int propertyId) {
+        unsubscribePropertyEvents(mCarPropertyManager, callback, propertyId);
+    }
+
     private void verifyCarPropertyValueCallback() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if ((AREA_ID_CONFIG_ACCESS_FLAG ? carPropertyConfig.getAreaIdConfigs().get(0).getAccess()
                 : carPropertyConfig.getAccess())
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
-            verifyCallbackFails();
+            // This means we specify read permission for one property, but the OEM specify it as
+            // write-only. This will only happen for properties that we allow READ_WRITE or WRITE.
+            // We currently do not have such system property.
             return;
         }
         int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
@@ -1347,12 +1417,12 @@ public class VehiclePropertyVerifier<T> {
                 mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
         assertWithMessage("Failed to register callback for " + mPropertyName)
                 .that(
-                        mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
+                        subscribePropertyEvents(carPropertyValueCallback, mPropertyId,
                                 carPropertyConfig.getMaxSampleRate()))
                 .isTrue();
         SparseArray<List<CarPropertyValue<?>>> areaIdToCarPropertyValues =
                 carPropertyValueCallback.getAreaIdToCarPropertyValues();
-        mCarPropertyManager.unregisterCallback(carPropertyValueCallback, mPropertyId);
+        unsubscribePropertyEvents(carPropertyValueCallback, mPropertyId);
 
         for (int areaId : carPropertyConfig.getAreaIds()) {
             List<CarPropertyValue<?>> carPropertyValues = areaIdToCarPropertyValues.get(areaId);
@@ -1371,23 +1441,6 @@ public class VehiclePropertyVerifier<T> {
                 }
             }
         }
-    }
-
-    private void verifyCallbackFails() {
-        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
-        long timeoutMillis = getRegisterCallbackTimeoutMillis(mChangeMode,
-                carPropertyConfig.getMinSampleRate());
-
-        CarPropertyValueCallback carPropertyValueCallback = new CarPropertyValueCallback(
-                mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
-        assertThrows(
-                mPropertyName
-                        + " is a write_only property so registerCallback should throw an"
-                        + " IllegalArgumentException.",
-                IllegalArgumentException.class,
-                () -> mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
-                    carPropertyConfig.getMaxSampleRate()));
     }
 
     private void verifyAccess_isSubsetOfOtherAccess(int subAccess, int superAccess) {
@@ -2011,12 +2064,6 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
-        long timeoutMillis = getRegisterCallbackTimeoutMillis(mChangeMode,
-                carPropertyConfig.getMinSampleRate());
-        CarPropertyValueCallback carPropertyValueCallback = new CarPropertyValueCallback(
-                mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
-
         // We expect a return value of false and not a SecurityException thrown.
         // This is because registerCallback first tries to get the CarPropertyConfig for the
         // property, but since no permissions have been granted it can't find the CarPropertyConfig,
@@ -2027,9 +2074,20 @@ public class VehiclePropertyVerifier<T> {
                             + mPropertyId
                             + " should not be able to be listened to without permissions.")
                 .that(
-                        mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
-                                carPropertyConfig.getMaxSampleRate()))
+                        mCarPropertyManager.registerCallback(FAKE_CALLBACK, mPropertyId, 0f))
                 .isFalse();
+
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // For the new API, if the caller does not have read and write permission, it throws
+            // SecurityException.
+            assertThrows(
+                    mPropertyName
+                            + " - property ID: "
+                            + mPropertyId
+                            + " should not be able to be listened to without permissions.",
+                    SecurityException.class,
+                    () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId, FAKE_CALLBACK));
+        }
     }
 
     private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
@@ -2920,8 +2978,8 @@ public class VehiclePropertyVerifier<T> {
             int areaId, U valueToSet, U expectedValueToGet) {
         SetterCallback setterCallback = new SetterCallback(propertyId, areaId, expectedValueToGet);
         assertWithMessage("Failed to register setter callback for " + VehiclePropertyIds.toString(
-                propertyId)).that(carPropertyManager.registerCallback(setterCallback, propertyId,
-                CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
+                propertyId)).that(subscribePropertyEvents(carPropertyManager, setterCallback,
+                propertyId, CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
         } catch (PropertyNotAvailableException e) {
@@ -2935,7 +2993,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         CarPropertyValue<U> carPropertyValue = setterCallback.waitForUpdatedCarPropertyValue();
-        carPropertyManager.unregisterCallback(setterCallback, propertyId);
+        unsubscribePropertyEvents(carPropertyManager, setterCallback, propertyId);
         return carPropertyValue;
     }
 }

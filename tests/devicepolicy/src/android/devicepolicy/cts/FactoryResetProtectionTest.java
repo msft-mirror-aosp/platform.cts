@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -70,9 +71,9 @@ public final class FactoryResetProtectionTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setFactoryResetProtectionPolicy")
     public void setFactoryResetProtectionPolicy_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setFactoryResetProtectionPolicy(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 FACTORY_RESET_PROTECTION_POLICY));
     }
 
@@ -81,29 +82,29 @@ public final class FactoryResetProtectionTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getFactoryResetProtectionPolicy")
     public void getFactoryResetProtectionPolicy_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .getFactoryResetProtectionPolicy(
-                                sDeviceState.dpc().componentName()));
+                                dpc(sDeviceState).componentName()));
     }
 
     @CanSetPolicyTest(policy = FactoryResetProtection.class)
     @Postsubmit(reason = "New test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setFactoryResetProtectionPolicy")
     public void setFactoryResetProtectionPolicy_setsFactoryResetProtectionPolicy() {
-        FactoryResetProtectionPolicy originalFrpPolicy = sDeviceState.dpc().devicePolicyManager()
-                .getFactoryResetProtectionPolicy(sDeviceState.dpc().componentName());
+        FactoryResetProtectionPolicy originalFrpPolicy = dpc(sDeviceState).devicePolicyManager()
+                .getFactoryResetProtectionPolicy(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setFactoryResetProtectionPolicy(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setFactoryResetProtectionPolicy(dpc(sDeviceState).componentName(),
                             FACTORY_RESET_PROTECTION_POLICY);
 
             assertThat(isEqualToFactoryResetProtectionPolicy(
-                    sDeviceState.dpc().devicePolicyManager().getFactoryResetProtectionPolicy(
-                            sDeviceState.dpc().componentName()))).isTrue();
+                    dpc(sDeviceState).devicePolicyManager().getFactoryResetProtectionPolicy(
+                            dpc(sDeviceState).componentName()))).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setFactoryResetProtectionPolicy(
-                    sDeviceState.dpc().componentName(), originalFrpPolicy);
+            dpc(sDeviceState).devicePolicyManager().setFactoryResetProtectionPolicy(
+                    dpc(sDeviceState).componentName(), originalFrpPolicy);
         }
     }
 
@@ -111,23 +112,23 @@ public final class FactoryResetProtectionTest {
     @Postsubmit(reason = "New test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setFactoryResetProtectionPolicy")
     public void setFactoryResetProtectionPolicy_isLogged() {
-        FactoryResetProtectionPolicy originalFrpPolicy = sDeviceState.dpc().devicePolicyManager()
-                .getFactoryResetProtectionPolicy(sDeviceState.dpc().componentName());
+        FactoryResetProtectionPolicy originalFrpPolicy = dpc(sDeviceState).devicePolicyManager()
+                .getFactoryResetProtectionPolicy(dpc(sDeviceState).componentName());
 
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setFactoryResetProtectionPolicy(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setFactoryResetProtectionPolicy(dpc(sDeviceState).componentName(),
                             FACTORY_RESET_PROTECTION_POLICY);
 
             assertThat(metrics.query()
                     .whereType()
                     .isEqualTo(EventId.SET_FACTORY_RESET_PROTECTION_VALUE)
                     .whereAdminPackageName()
-                    .isEqualTo(sDeviceState.dpc().componentName().getPackageName()))
+                    .isEqualTo(dpc(sDeviceState).componentName().getPackageName()))
                     .wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setFactoryResetProtectionPolicy(
-                    sDeviceState.dpc().componentName(), originalFrpPolicy);
+            dpc(sDeviceState).devicePolicyManager().setFactoryResetProtectionPolicy(
+                    dpc(sDeviceState).componentName(), originalFrpPolicy);
         }
     }
 

@@ -128,8 +128,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         }
     }
 
-    private long insertRawContact(Account account) {
-        long rawContactId = RawContactUtil.insertRawContact(mResolver, account);
+    private long insertRawContact(Account account) throws Exception {
+        long rawContactId = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver, account);
         mCreatedContacts.add(rawContactId);
         return rawContactId;
     }
