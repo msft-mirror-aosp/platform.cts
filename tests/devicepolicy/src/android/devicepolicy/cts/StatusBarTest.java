@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -85,7 +87,7 @@ public final class StatusBarTest {
     @CddTest(requirements = "3.9.2/C-1-4")
     @NotFullyAutomated(reason = "DoesTheStatusBarContainWorkIconStep")
     public void statusBar_workActivityIsInForeground_includesWorkBadge() throws Exception {
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance testApp = sTestApp.install(workProfile(sDeviceState))) {
             TestAppActivityReference t = testApp.activities().query()
                     .whereActivity().exported().isTrue()
                     .whereActivity().intentFilters().isEmpty()
@@ -107,8 +109,8 @@ public final class StatusBarTest {
     @CannotSetPolicyTest(policy = StatusBarDisabled.class, includeNonDeviceAdminStates = false)
     public void setStatusBarDisabled_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setStatusBarDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
         });
     }
 
@@ -116,7 +118,7 @@ public final class StatusBarTest {
     @CannotSetPolicyTest(policy = StatusBarDisabled.class, includeNonDeviceAdminStates = false)
     public void isStatusBarDisabled_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().isStatusBarDisabled();
+            dpc(sDeviceState).devicePolicyManager().isStatusBarDisabled();
         });
     }
 
@@ -124,22 +126,22 @@ public final class StatusBarTest {
     @CanSetPolicyTest(policy = StatusBarDisabled.class)
     public void setStatusBarDisabled_true_isStatusBarDisabledIsTrue() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setStatusBarDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isStatusBarDisabled()).isTrue();
+            assertThat(dpc(sDeviceState).devicePolicyManager().isStatusBarDisabled()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ false);
+            dpc(sDeviceState).devicePolicyManager().setStatusBarDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ false);
         }
     }
 
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = StatusBarDisabled.class)
     public void setStatusBarDisabled_false_isStatusBarDisabledIsFalse() {
-        sDeviceState.dpc().devicePolicyManager().setStatusBarDisabled(
-                sDeviceState.dpc().componentName(), /* disabled= */ false);
+        dpc(sDeviceState).devicePolicyManager().setStatusBarDisabled(
+                dpc(sDeviceState).componentName(), /* disabled= */ false);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isStatusBarDisabled()).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().isStatusBarDisabled()).isFalse();
     }
 }

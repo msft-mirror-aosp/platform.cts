@@ -21,6 +21,7 @@ import static android.app.admin.DevicePolicyManager.WIFI_SECURITY_PERSONAL;
 import static android.net.wifi.WifiManager.STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_INVALID;
 import static android.net.wifi.WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_WIFI_CONFIG;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CHANGE_WIFI_STATE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_TETHERING;
@@ -123,8 +124,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_WIFI")
     public void setUserRestriction_disallowConfigWifi_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_WIFI));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_WIFI));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigWifi.class)
@@ -132,15 +133,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_WIFI")
     public void setUserRestriction_disallowConfigWifi_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_WIFI);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_WIFI);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_WIFI))
                     .isTrue();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_WIFI);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_WIFI);
         }
     }
 
@@ -149,15 +150,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_WIFI")
     public void setUserRestriction_disallowConfigWifi_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_WIFI);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_WIFI);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_WIFI))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_WIFI);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_WIFI);
         }
     }
 
@@ -193,8 +194,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CHANGE_WIFI_STATE")
     public void setUserRestriction_disallowChangeWifiState_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CHANGE_WIFI_STATE));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CHANGE_WIFI_STATE));
     }
 
     @PolicyAppliesTest(policy = DisallowChangeWifiState.class)
@@ -202,14 +203,14 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CHANGE_WIFI_STATE")
     public void setUserRestriction_disallowChangeWifiState_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CHANGE_WIFI_STATE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CHANGE_WIFI_STATE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CHANGE_WIFI_STATE))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CHANGE_WIFI_STATE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CHANGE_WIFI_STATE);
         }
     }
 
@@ -218,15 +219,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CHANGE_WIFI_STATE")
     public void setUserRestriction_disallowChangeWifiState_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CHANGE_WIFI_STATE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CHANGE_WIFI_STATE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CHANGE_WIFI_STATE))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CHANGE_WIFI_STATE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CHANGE_WIFI_STATE);
         }
     }
 
@@ -264,8 +265,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_TETHERING")
     public void setUserRestriction_disallowWifiTethering_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_WIFI_TETHERING));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_WIFI_TETHERING));
     }
 
     @PolicyAppliesTest(policy = DisallowWifiTethering.class)
@@ -273,15 +274,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_TETHERING")
     public void setUserRestriction_disallowWifiTethering_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_TETHERING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_WIFI_TETHERING))
                     .isTrue();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_TETHERING);
         }
     }
 
@@ -290,15 +291,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_TETHERING")
     public void setUserRestriction_disallowWifiTethering_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_TETHERING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_WIFI_TETHERING))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_TETHERING);
         }
     }
 
@@ -341,8 +342,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_TETHERING")
     public void setUserRestriction_disallowConfigTethering_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_TETHERING));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_TETHERING));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigTethering.class)
@@ -350,15 +351,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_TETHERING")
     public void setUserRestriction_disallowConfigTethering_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_TETHERING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_TETHERING))
                     .isTrue();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_TETHERING);
         }
     }
 
@@ -367,15 +368,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_TETHERING")
     public void setUserRestriction_disallowConfigTethering_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_TETHERING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_TETHERING))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_TETHERING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_TETHERING);
         }
     }
 
@@ -404,8 +405,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_DIRECT")
     public void setUserRestriction_disallowWifiDirect_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_WIFI_DIRECT));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_WIFI_DIRECT));
     }
 
     @PolicyAppliesTest(policy = DisallowWifiDirect.class)
@@ -413,15 +414,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_DIRECT")
     public void setUserRestriction_disallowWifiDirect_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_DIRECT);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_DIRECT);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_WIFI_DIRECT))
                     .isTrue();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_DIRECT);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_DIRECT);
         }
     }
 
@@ -430,15 +431,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_WIFI_DIRECT")
     public void setUserRestriction_disallowWifiDirect_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_DIRECT);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_DIRECT);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_WIFI_DIRECT))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_WIFI_DIRECT);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_WIFI_DIRECT);
         }
     }
 
@@ -476,8 +477,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_WIFI_CONFIG")
     public void setUserRestriction_disallowAddWifiConfig_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_ADD_WIFI_CONFIG));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_ADD_WIFI_CONFIG));
     }
 
     @PolicyAppliesTest(policy = DisallowAddWifiConfig.class)
@@ -485,15 +486,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_WIFI_CONFIG")
     public void setUserRestriction_disallowAddWifiConfig_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_WIFI_CONFIG);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_WIFI_CONFIG);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_WIFI_CONFIG))
                     .isTrue();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_WIFI_CONFIG);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_WIFI_CONFIG);
         }
     }
 
@@ -502,15 +503,15 @@ public final class WifiTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_WIFI_CONFIG")
     public void setUserRestriction_disallowAddWifiConfig_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_WIFI_CONFIG);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_WIFI_CONFIG);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ADD_WIFI_CONFIG))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_WIFI_CONFIG);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_WIFI_CONFIG);
         }
     }
 
@@ -545,8 +546,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getWifiMacAddress")
     public void getWifiMacAddress_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .getWifiMacAddress(sDeviceState.dpc().componentName()));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .getWifiMacAddress(dpc(sDeviceState).componentName()));
     }
 
     @CanSetPolicyTest(policy = Wifi.class)
@@ -554,8 +555,8 @@ public final class WifiTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getWifiMacAddress")
     @EnsureWifiEnabled
     public void getWifiMacAddress_doesNotThrow() {
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                .getWifiMacAddress(sDeviceState.dpc().componentName())).isNotNull();
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                .getWifiMacAddress(dpc(sDeviceState).componentName())).isNotNull();
     }
 
     @CannotSetPolicyTest(policy = Wifi.class)
@@ -563,7 +564,7 @@ public final class WifiTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMinimumRequiredWifiSecurityLevel")
     public void setMinimumRequiredWifiSecurityLevel_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setMinimumRequiredWifiSecurityLevel(WIFI_SECURITY_LEVEL));
     }
 
@@ -572,16 +573,16 @@ public final class WifiTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setMinimumRequiredWifiSecurityLevel",
             "android.app.admin.DevicePolicyManager#getMinimumRequiredWifiSecurityLevel"})
     public void setMinimumRequiredWifiSecurityLevel_minimumRequiredWifiSecurityLevelIsSet() {
-        int originalWifiSecurityLevel = sDeviceState.dpc().devicePolicyManager()
+        int originalWifiSecurityLevel = dpc(sDeviceState).devicePolicyManager()
                 .getMinimumRequiredWifiSecurityLevel();
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setMinimumRequiredWifiSecurityLevel(WIFI_SECURITY_LEVEL);
 
             assertThat(sLocalDevicePolicyManager.getMinimumRequiredWifiSecurityLevel())
                     .isEqualTo(WIFI_SECURITY_LEVEL);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setMinimumRequiredWifiSecurityLevel(originalWifiSecurityLevel);
         }
     }
@@ -591,16 +592,16 @@ public final class WifiTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setMinimumRequiredWifiSecurityLevel",
             "android.app.admin.DevicePolicyManager#getMinimumRequiredWifiSecurityLevel"})
     public void setMinimumRequiredWifiSecurityLevel_doesNotApply_minimumRequiredWifiSecurityLevelIsNotSet() {
-        int originalWifiSecurityLevel = sDeviceState.dpc().devicePolicyManager()
+        int originalWifiSecurityLevel = dpc(sDeviceState).devicePolicyManager()
                 .getMinimumRequiredWifiSecurityLevel();
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setMinimumRequiredWifiSecurityLevel(WIFI_SECURITY_LEVEL);
 
             assertThat(sLocalDevicePolicyManager.getMinimumRequiredWifiSecurityLevel())
                     .isNotEqualTo(WIFI_SECURITY_LEVEL);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setMinimumRequiredWifiSecurityLevel(originalWifiSecurityLevel);
         }
     }
@@ -610,7 +611,7 @@ public final class WifiTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setWifiSsidPolicy")
     public void setWifiSsidPolicy_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setWifiSsidPolicy(WIFI_SSID_POLICY));
     }
 
@@ -619,15 +620,15 @@ public final class WifiTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setWifiSsidPolicy",
             "android.app.admin.DevicePolicyManager#getWifiSsidPolicy"})
     public void setWifiSsidPolicy_wifiSsidPolicyIsSet() {
-        WifiSsidPolicy originalWifiSsidPolicy = sDeviceState.dpc().devicePolicyManager()
+        WifiSsidPolicy originalWifiSsidPolicy = dpc(sDeviceState).devicePolicyManager()
                 .getWifiSsidPolicy();
         try {
-            sDeviceState.dpc().devicePolicyManager().setWifiSsidPolicy(WIFI_SSID_POLICY);
+            dpc(sDeviceState).devicePolicyManager().setWifiSsidPolicy(WIFI_SSID_POLICY);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getWifiSsidPolicy())
+            assertThat(dpc(sDeviceState).devicePolicyManager().getWifiSsidPolicy())
                     .isEqualTo(WIFI_SSID_POLICY);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setWifiSsidPolicy(originalWifiSsidPolicy);
+            dpc(sDeviceState).devicePolicyManager().setWifiSsidPolicy(originalWifiSsidPolicy);
         }
     }
 
@@ -635,9 +636,9 @@ public final class WifiTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setConfiguredNetworksLockdownState")
     public void setConfiguredNetworksLockdownState_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setConfiguredNetworksLockdownState(
-                        sDeviceState.dpc().componentName(), /* lockdown= */ true));
+                        dpc(sDeviceState).componentName(), /* lockdown= */ true));
     }
 
     // We can't have a simple policyappliestest + policydoesnotapplytest because we can't fetch the
@@ -650,19 +651,19 @@ public final class WifiTest {
             "android.app.admin.DevicePolicyManager#hasLockdownAdminConfiguredNetworks"
     })
     public void setConfiguredNetworksLockdownState_true_isSet() {
-        boolean originalLockdown = sDeviceState.dpc().devicePolicyManager()
-                .hasLockdownAdminConfiguredNetworks(sDeviceState.dpc().componentName());
+        boolean originalLockdown = dpc(sDeviceState).devicePolicyManager()
+                .hasLockdownAdminConfiguredNetworks(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setConfiguredNetworksLockdownState(
-                            sDeviceState.dpc().componentName(), /* lockdown= */ true);
+                            dpc(sDeviceState).componentName(), /* lockdown= */ true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().hasLockdownAdminConfiguredNetworks(
-                    sDeviceState.dpc().componentName())).isTrue();
+            assertThat(dpc(sDeviceState).devicePolicyManager().hasLockdownAdminConfiguredNetworks(
+                    dpc(sDeviceState).componentName())).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setConfiguredNetworksLockdownState(
-                            sDeviceState.dpc().componentName(), originalLockdown);
+                            dpc(sDeviceState).componentName(), originalLockdown);
         }
     }
 
@@ -673,19 +674,19 @@ public final class WifiTest {
             "android.app.admin.DevicePolicyManager#hasLockdownAdminConfiguredNetworks"
     })
     public void setConfiguredNetworksLockdownState_false_isSet() {
-        boolean originalLockdown = sDeviceState.dpc().devicePolicyManager()
-                .hasLockdownAdminConfiguredNetworks(sDeviceState.dpc().componentName());
+        boolean originalLockdown = dpc(sDeviceState).devicePolicyManager()
+                .hasLockdownAdminConfiguredNetworks(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setConfiguredNetworksLockdownState(
-                            sDeviceState.dpc().componentName(), /* lockdown= */ false);
+                            dpc(sDeviceState).componentName(), /* lockdown= */ false);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().hasLockdownAdminConfiguredNetworks(
-                    sDeviceState.dpc().componentName())).isFalse();
+            assertThat(dpc(sDeviceState).devicePolicyManager().hasLockdownAdminConfiguredNetworks(
+                    dpc(sDeviceState).componentName())).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setConfiguredNetworksLockdownState(
-                            sDeviceState.dpc().componentName(), originalLockdown);
+                            dpc(sDeviceState).componentName(), originalLockdown);
         }
     }
 
@@ -720,18 +721,18 @@ public final class WifiTest {
     public void addNetwork_keychainKeyGranted_success() {
         int networkId = -1;
         try {
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     TEST_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToWifiAuth(TEST_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToWifiAuth(TEST_ALIAS);
 
-            networkId = sDeviceState.dpc().wifiManager().addNetwork(sWifiConfiguration);
+            networkId = dpc(sDeviceState).wifiManager().addNetwork(sWifiConfiguration);
 
             assertThat(networkId).isNotEqualTo(-1);
         } finally {
-            sDeviceState.dpc().wifiManager().removeNetwork(networkId);
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), TEST_ALIAS);
+            dpc(sDeviceState).wifiManager().removeNetwork(networkId);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), TEST_ALIAS);
         }
     }
 
@@ -740,15 +741,15 @@ public final class WifiTest {
     @Postsubmit(reason = "new test")
     public void addNetwork_keychainKeyNotGranted_failure() {
         try {
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     TEST_ALIAS, /* requestAccess= */ false);
 
-            assertThat(sDeviceState.dpc().wifiManager().addNetwork(sWifiConfiguration))
+            assertThat(dpc(sDeviceState).wifiManager().addNetwork(sWifiConfiguration))
                     .isEqualTo(-1);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), TEST_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), TEST_ALIAS);
         }
     }
 
@@ -757,18 +758,18 @@ public final class WifiTest {
     @Postsubmit(reason = "new test")
     public void addNetworkSuggestions_keychainKeyGranted_success() {
         try {
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     TEST_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToWifiAuth(TEST_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToWifiAuth(TEST_ALIAS);
 
-            assertThat(sDeviceState.dpc().wifiManager().addNetworkSuggestions(
+            assertThat(dpc(sDeviceState).wifiManager().addNetworkSuggestions(
                     sWifiNetworkSuggestions))
                     .isEqualTo(STATUS_NETWORK_SUGGESTIONS_SUCCESS);
         } finally {
-            sDeviceState.dpc().wifiManager().removeNetworkSuggestions(sWifiNetworkSuggestions);
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), TEST_ALIAS);
+            dpc(sDeviceState).wifiManager().removeNetworkSuggestions(sWifiNetworkSuggestions);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), TEST_ALIAS);
         }
     }
 
@@ -777,17 +778,17 @@ public final class WifiTest {
     @Postsubmit(reason = "new test")
     public void addNetworkSuggestions_keychainKeyNotGranted_invalid() {
         try {
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     TEST_ALIAS, /* requestAccess= */ false);
 
-            assertThat(sDeviceState.dpc().wifiManager().addNetworkSuggestions(
+            assertThat(dpc(sDeviceState).wifiManager().addNetworkSuggestions(
                     sWifiNetworkSuggestions))
                     .isEqualTo(STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_INVALID);
         } finally {
-            sDeviceState.dpc().wifiManager().removeNetworkSuggestions(sWifiNetworkSuggestions);
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), TEST_ALIAS);
+            dpc(sDeviceState).wifiManager().removeNetworkSuggestions(sWifiNetworkSuggestions);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), TEST_ALIAS);
         }
     }
 
