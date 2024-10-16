@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <!--
   ~ Copyright (C) 2024 The Android Open Source Project
   ~
@@ -14,12 +15,5 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<configuration description="Config for Bedstead Accounts test cases">
-    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="bedstead-accounts-test.apk" />
-    </target_preparer>
-    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="com.android.bedstead.accounts.test" />
-    </test>
-</configuration>
+
+<manifest package="com.android.bedstead.bluetooth" />
