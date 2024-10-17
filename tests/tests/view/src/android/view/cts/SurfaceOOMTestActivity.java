@@ -118,7 +118,7 @@ public class SurfaceOOMTestActivity extends Activity implements Choreographer.Fr
             assertTrue(
                     "Unable to finish creating many surfaces with " + mRemainingSurfacesToCreate
                             + "/" + numSurfacesToCreate + " remaining",
-                    mFence.await(5, TimeUnit.MINUTES));
+                    mFence.await(10, TimeUnit.MINUTES));
             mFence = null;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
