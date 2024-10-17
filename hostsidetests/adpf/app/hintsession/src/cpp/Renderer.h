@@ -69,7 +69,10 @@ public:
      */
     jlong render();
 
-    void startHintSession(std::vector<pid_t> &threads, int64_t target);
+    /*!
+     * Attempts to start hint session and returns whether ADPF is supported on a given device.
+     */
+    bool startHintSession(std::vector<pid_t> &threads, int64_t target);
     void closeHintSession();
     void reportActualWorkDuration(int64_t duration);
     void updateTargetWorkDuration(int64_t target);
@@ -93,11 +96,6 @@ public:
      * Retrieve the results map.
      */
     std::map<std::string, std::string> &getResults();
-
-    /*!
-     * Informs the test whether ADPF is supported on a given device.
-     */
-    bool getAdpfSupported();
 
     /*
      * Finds the test settings that best match this device, and returns the
