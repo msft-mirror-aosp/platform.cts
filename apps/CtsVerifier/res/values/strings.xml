@@ -5802,6 +5802,10 @@ You should be prompted to select credentials; choose the ones you just installed
           Repeat until a sufficient confidence is achieved. When each route test is completed, the
           measured and required latencies will be displayed.
           \n\nWhen all test routes have passed, the test as a whole can be passed.
+          \n\nIf a route fails, the captured audio can be copied to a host computer with the "adb pull command"
+          using the \"WAV Capture Folder\" and \"Capture File\" displayed in the Results Panel.
+          \nFor example, on a typical device \"adb pull /data/user/0/com.android.cts.verifier/files/AudioLoopbackLatency_0.wav\"
+          will copy the audio from the Speaker/Mic path to the host computer.
     </string>
     <string name="audio_loopback_instructions">
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
@@ -5845,7 +5849,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_basiclatency">Basic Latency:</string>
     <string name="audio_loopback_mpclatency">MPC Latency</string>
     <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
-
+    <string name="audio_loopback_wavcapturefolder">WAV Capture Folder:</string>
+    <string name="audio_loopback_wavcapturefile">Capture File:</string>
+    <string name="audio_loopback_nocapture">No Capture</string>
     <string name="audio_general_proaudio">Pro Audio</string>
     <string name="audio_general_mpc">MCP</string>
     <string name="audio_general_basicaudio">Basic Audio</string>
