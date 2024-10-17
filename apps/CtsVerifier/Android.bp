@@ -215,6 +215,7 @@ filegroup {
 filegroup {
     name: "other_required_apps",
     srcs: [
+        ":CameraFeatureCombinationVerifier",
         ":CtsCarWatchdogCompanionApp",
         ":CtsTileServiceApp",
         ":CtsVerifierUSBCompanion",
