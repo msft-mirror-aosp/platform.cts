@@ -32,7 +32,7 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
     ],
-    data: [
+    device_common_data: [
         ":TelephonyProviderDeviceTest",
     ],
     per_testcase_directory: true,

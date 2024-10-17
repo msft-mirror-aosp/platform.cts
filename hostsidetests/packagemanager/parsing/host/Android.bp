@@ -35,12 +35,12 @@ java_test_host {
         "cts-host-utils",
         "CtsPackageManagerParsingAnnotationProcessorApi",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsPackageManagerParsingHostTestGen",
     ],
 }
 
-genrule {
+java_genrule {
     name: "CtsPackageManagerParsingHostTestGen",
     defaults: ["CtsPackageManagerParsingApkGenerator"],
     srcs: ["src/**/*.kt"],
