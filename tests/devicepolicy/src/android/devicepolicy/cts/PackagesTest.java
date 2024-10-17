@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.ENSURE_VERIFY_APPS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -47,8 +48,8 @@ public final class PackagesTest {
     @ApiTest(apis = "android.os.UserManager#ENSURE_VERIFY_APPS")
     public void setUserRestriction_ensureVerifyApps_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), ENSURE_VERIFY_APPS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), ENSURE_VERIFY_APPS));
     }
 
     @PolicyAppliesTest(policy = EnsureVerifyApps.class)
@@ -56,14 +57,14 @@ public final class PackagesTest {
     @ApiTest(apis = "android.os.UserManager#ENSURE_VERIFY_APPS")
     public void setUserRestriction_ensureVerifyApps_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), ENSURE_VERIFY_APPS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), ENSURE_VERIFY_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(ENSURE_VERIFY_APPS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), ENSURE_VERIFY_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), ENSURE_VERIFY_APPS);
         }
     }
 
@@ -72,15 +73,15 @@ public final class PackagesTest {
     @ApiTest(apis = "android.os.UserManager#ENSURE_VERIFY_APPS")
     public void setUserRestriction_ensureVerifyApps_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), ENSURE_VERIFY_APPS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), ENSURE_VERIFY_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(ENSURE_VERIFY_APPS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), ENSURE_VERIFY_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), ENSURE_VERIFY_APPS);
         }
     }
 

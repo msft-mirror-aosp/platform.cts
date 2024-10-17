@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.components
+package com.android.bedstead.bluetooth
 
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothDisabled
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothEnabled
 import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.users

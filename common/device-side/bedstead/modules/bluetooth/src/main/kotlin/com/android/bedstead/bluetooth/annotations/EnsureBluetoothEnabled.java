@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.bluetooth.annotations;
 
-import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
-import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,18 +27,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method requires the default content suggestions service to be disabled.
+ * Mark that a test method requires bluetooth to be enabled.
  *
  * <p>You can use {@code DeviceState} to ensure that the device enters
  * the correct state for the method.
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
-public @interface EnsureDefaultContentSuggestionsServiceDisabled {
-
-    /** Which user type the service must be disabled on. */
-    UserType onUser() default INSTRUMENTED_USER;
+@UsesAnnotationExecutor(UsesAnnotationExecutor.BLUETOOTH)
+public @interface EnsureBluetoothEnabled {
 
      /**
      * Priority sets the order that annotations will be resolved.

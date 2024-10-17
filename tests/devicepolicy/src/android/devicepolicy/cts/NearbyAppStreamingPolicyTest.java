@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.Manifest.permission.READ_NEARBY_STREAMING_POLICY;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -68,7 +69,7 @@ public class NearbyAppStreamingPolicyTest {
 
     @PolicyAppliesTest(policy = GetNearbyAppStreamingPolicy.class)
     public void getNearbyAppStreamingPolicy_defaultToSameManagedAccountOnly() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
 
         assertThat(dpm.getNearbyAppStreamingPolicy())
                 .isEqualTo(DevicePolicyManager.NEARBY_STREAMING_SAME_MANAGED_ACCOUNT_ONLY);
@@ -81,14 +82,14 @@ public class NearbyAppStreamingPolicyTest {
     //  permissions in test apps we can re-enable this and remove all normal permissions from
     //  testapps.
     public void getNearbyAppStreamingPolicy_policyIsNotAllowedToBeSet_throwsException() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
 
         assertThrows(SecurityException.class, () -> dpm.getNearbyAppStreamingPolicy());
     }
 
     @PolicyAppliesTest(policy = SetNearbyAppStreamingPolicy.class)
     public void setNearbyAppStreamingPolicy_policyApplied_works() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
         int originalPolicy = dpm.getNearbyAppStreamingPolicy();
 
         dpm.setNearbyAppStreamingPolicy(DevicePolicyManager.NEARBY_STREAMING_DISABLED);
@@ -104,7 +105,7 @@ public class NearbyAppStreamingPolicyTest {
     @PolicyDoesNotApplyTest(policy = SetNearbyAppStreamingPolicy.class)
     @EnsureHasPermission(READ_NEARBY_STREAMING_POLICY)
     public void setNearbyAppStreamingPolicy_policyApplied_otherUsersUnaffected() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
         int originalLocalPolicy = sLocalDevicePolicyManager.getNearbyAppStreamingPolicy();
         int originalPolicy = dpm.getNearbyAppStreamingPolicy();
 
@@ -120,7 +121,7 @@ public class NearbyAppStreamingPolicyTest {
 
     @CannotSetPolicyTest(policy = SetNearbyAppStreamingPolicy.class)
     public void setNearbyAppStreamingPolicy_policyIsNotAllowedToBeSet_throwsException() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
 
         assertThrows(SecurityException.class, () ->
                 dpm.setNearbyAppStreamingPolicy(DevicePolicyManager.NEARBY_STREAMING_DISABLED));
@@ -130,7 +131,7 @@ public class NearbyAppStreamingPolicyTest {
     @PolicyDoesNotApplyTest(policy = SetNearbyAppStreamingPolicy.class)
     @EnsureHasPermission(READ_NEARBY_STREAMING_POLICY)
     public void setNearbyAppStreamingPolicy_setEnabled_doesNotApply() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager dpm = dpc(sDeviceState).devicePolicyManager();
         int originalPolicy = dpm.getNearbyAppStreamingPolicy();
 
         dpm.setNearbyAppStreamingPolicy(DevicePolicyManager.NEARBY_STREAMING_ENABLED);

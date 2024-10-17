@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.components
+package com.android.bedstead.contentsuggestions
 
+import com.android.bedstead.contentsuggestions.annotations.EnsureDefaultContentSuggestionsServiceEnabled
+import com.android.bedstead.contentsuggestions.annotations.EnsureHasTestContentSuggestionsService
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
-import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis.content
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.users.UserReference
@@ -87,7 +88,7 @@ class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceState
         if (!mOriginalDefaultContentSuggestionsServiceEnabled.containsKey(user)) {
             mOriginalDefaultContentSuggestionsServiceEnabled[user] = currentValue
         }
-        content().suggestions().setDefaultServiceEnabled(value = enabled)
+        content().suggestions().setDefaultServiceEnabled(user, value = enabled)
     }
 
     override fun teardownShareableState() {

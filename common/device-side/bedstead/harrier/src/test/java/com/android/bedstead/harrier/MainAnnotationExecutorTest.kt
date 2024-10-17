@@ -19,10 +19,6 @@ import android.app.ActivityManager
 import android.app.contentsuggestions.ContentSuggestionsManager
 import android.app.role.RoleManager
 import android.provider.Settings
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureDemoMode
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode
@@ -59,10 +55,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.bugReports
-import com.android.bedstead.nene.TestApis.content
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.device
 import com.android.bedstead.nene.TestApis.packages
@@ -222,18 +215,6 @@ class MainAnnotationExecutorTest {
     @EnsurePasswordNotSet
     fun requirePasswordNotSetAnnotation_passwordNotSet() {
         assertThat(users().instrumented().hasLockCredential()).isFalse()
-    }
-
-    @Test
-    @EnsureBluetoothEnabled
-    fun ensureBluetoothEnabledAnnotation_bluetoothIsEnabled() {
-        assertThat(bluetooth().isEnabled).isTrue()
-    }
-
-    @Test
-    @EnsureBluetoothDisabled
-    fun ensureBluetoothDisabledAnnotation_bluetoothIsDisabled() {
-        assertThat(bluetooth().isEnabled).isFalse()
     }
 
     // TODO(b/300218365): Test that settings are returned to their original values in teardown.
@@ -398,39 +379,6 @@ class MainAnnotationExecutorTest {
     @IncludeLightMode
     fun includeRunOnLightModeDevice_themeIsSet() {
         assertThat(getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT)
-    }
-
-    @RequireSystemServiceAvailable(ContentSuggestionsManager::class)
-    @EnsureDefaultContentSuggestionsServiceDisabled
-    @Test
-    fun ensureDefaultContentSuggestionsServiceDisabledAnnotation_defaultContentSuggestionsServiceIsDisabled() {
-        assertThat(content().suggestions().defaultServiceEnabled()).isFalse()
-    }
-
-    @RequireSystemServiceAvailable(ContentSuggestionsManager::class)
-    @EnsureDefaultContentSuggestionsServiceEnabled
-    @Test
-    fun ensureDefaultContentSuggestionsServiceEnabledAnnotation_defaultContentSuggestionsServiceIsEnabled() {
-        assertThat(content().suggestions().defaultServiceEnabled()).isTrue()
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureDefaultContentSuggestionsServiceEnabled(onUser = UserType.ADDITIONAL_USER)
-    @Test
-    fun ensureDefaultContentSuggestionsServiceEnabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsEnabled() {
-        assertThat(
-            content().suggestions().defaultServiceEnabled(deviceState.additionalUser())
-        ).isTrue()
-    }
-
-    // TODO(b/366175813) fix Bedstead to make this test green
-    @EnsureHasAdditionalUser
-    @EnsureDefaultContentSuggestionsServiceDisabled(onUser = UserType.ADDITIONAL_USER)
-    @Test
-    fun ensureDefaultContentSuggestionsServiceDisabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsDisabled() {
-        assertThat(
-            content().suggestions().defaultServiceEnabled(deviceState.additionalUser())
-        ).isFalse()
     }
 
     companion object {

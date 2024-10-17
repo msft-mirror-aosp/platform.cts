@@ -15,12 +15,12 @@
  */
 package com.android.bedstead.accounts
 
-import com.android.bedstead.harrier.AnnotationExecutor
-import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.accounts.annotations.EnsureHasAccounts
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
+import com.android.bedstead.harrier.AnnotationExecutor
+import com.android.bedstead.harrier.BedsteadServiceLocator
 
 /**
  * [AnnotationExecutor] for accounts annotations

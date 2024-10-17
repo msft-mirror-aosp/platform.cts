@@ -25,6 +25,7 @@ android_test {
         "android.companion.virtual.flags-aconfig-java",
         "android.view.accessibility.flags-aconfig-java",
         "ctstestrunner-axt",
+        "cts-install-lib",
         "cts-wm-util",
         "flag-junit",
         "hamcrest-library",
@@ -61,6 +62,10 @@ android_test {
         ":CtsAccessibilityUpdateServiceAppV1",
         ":CtsAccessibilityUpdateServiceAppV2",
         ":CtsAccessibilityUpdateServiceAppV3",
+    ],
+    java_resources: [
+        ":CVE-358092445-v1",
+        ":CVE-358092445-v2",
     ],
 }
 
