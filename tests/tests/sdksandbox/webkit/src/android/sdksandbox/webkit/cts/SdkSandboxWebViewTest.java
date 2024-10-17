@@ -23,6 +23,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -297,6 +298,7 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
+    @Ignore("b/368230178 - re-enable when WebView M131 is available in Android main branch")
     public void testSetSafeBrowsingAllowlistWithValidList() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testSetSafeBrowsingAllowlistWithValidList");
     }
