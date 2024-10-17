@@ -194,7 +194,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
         assertThat(data).hasSize(1);
         assertThat(extractPerfettoTriggerEvents(data))
                 .containsExactly(
-                        PerfettoTrigger.Event.PERFETTO_TRIGGER_PERFETTO_TRIGGER);
+                        PerfettoTrigger.Event.PERFETTO_TRACED_TRIGGER);
     }
 
     private ByteString getPerfettoIncidentConfig() {

@@ -15,8 +15,6 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
@@ -53,7 +51,6 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.components.BluetoothComponent
 import com.android.bedstead.harrier.components.DisplayThemeComponent
 import com.android.bedstead.harrier.components.GlobalSettingsComponent
 import com.android.bedstead.harrier.components.InstrumentationComponent
@@ -72,7 +69,6 @@ import com.android.bedstead.harrier.components.WifiComponent
 class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
     private val userPasswordComponent: UserPasswordComponent by locator
-    private val bluetoothComponent: BluetoothComponent by locator
     private val wifiComponent: WifiComponent by locator
     private val userTypeResolver: UserTypeResolver by locator
     private val globalSettingsComponent: GlobalSettingsComponent by locator
@@ -109,8 +105,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is EnsureNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequireNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequirePackageRespondsToIntent -> logic(userTypeResolver)
-            is EnsureBluetoothEnabled -> bluetoothComponent.ensureBluetoothEnabled()
-            is EnsureBluetoothDisabled -> bluetoothComponent.ensureBluetoothDisabled()
             is EnsureWifiEnabled -> wifiComponent.ensureWifiEnabled()
             is EnsureWifiDisabled -> wifiComponent.ensureWifiDisabled()
             is EnsureGlobalSettingSet -> globalSettingsComponent.ensureGlobalSettingSet(key, value)
