@@ -330,28 +330,20 @@ void Renderer::setNumHeads(int headCount) {
     }
 }
 
-bool Renderer::getAdpfSupported() {
+bool Renderer::startHintSession(std::vector<int32_t> &tids, int64_t target) {
     if (hintManager_ == nullptr) {
         hintManager_ = APerformanceHint_getManager();
     }
     long preferredRate = APerformanceHint_getPreferredUpdateRateNanos(hintManager_);
-    results_["isHintSessionSupported"] = preferredRate < 0 ? "false" : "true";
     results_["preferredRate"] = std::to_string(preferredRate);
-    return preferredRate >= 0;
-}
-
-void Renderer::startHintSession(std::vector<int32_t> &tids, int64_t target) {
-    if (hintManager_ == nullptr) {
-        hintManager_ = APerformanceHint_getManager();
-    }
-    if (hintSession_ == nullptr && hintManager_ != nullptr) {
+    if (preferredRate > 0 && hintSession_ == nullptr && hintManager_ != nullptr) {
         lastTarget_ = target;
         hintSession_ =
                 APerformanceHint_createSession(hintManager_, tids.data(), tids.size(), target);
-        if (hintSession_ == nullptr) {
-            Utility::setFailure("Failed to create session", this);
-        }
     }
+    bool supported = preferredRate > 0 && hintSession_ != nullptr;
+    results_["isHintSessionSupported"] = supported ? "true" : "false";
+    return supported;
 }
 
 void Renderer::reportActualWorkDuration(int64_t duration) {
