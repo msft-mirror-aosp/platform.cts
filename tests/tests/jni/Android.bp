@@ -36,6 +36,7 @@ android_test {
         "compatibility-device-util-axt",
     ],
     jni_libs: [
+        "libcts_jni",
         "libjni_test_dlclose",
         "libjninamespacea1",
         "libjninamespacea2",
