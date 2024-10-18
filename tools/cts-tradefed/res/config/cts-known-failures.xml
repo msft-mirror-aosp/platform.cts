@@ -353,6 +353,14 @@
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
 
+    <!-- b/355597917 -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withStylusTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withStylusTap" />
+
     <!-- b/339846869 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService" />
 
