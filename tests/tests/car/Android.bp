@@ -59,8 +59,6 @@ android_test {
         "automotive-general-tests",
     ],
     sdk_version: "test_current",
-    min_sdk_version: "33", //CTS tests needs to run upto N-2 version to support mainline
-    target_sdk_version: "34",
     per_testcase_directory: true,
     certificate: ":cts-testkey1",
     data: [
