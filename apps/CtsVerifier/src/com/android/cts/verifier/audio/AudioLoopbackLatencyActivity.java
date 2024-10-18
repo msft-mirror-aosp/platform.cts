@@ -30,6 +30,7 @@ import android.mediapc.cts.common.Requirements.RoundTripAudioLatencyRequirement;
 import android.mediapc.cts.common.Requirements.TwentyFourBitAudioRequirement;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -607,7 +608,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mConnectListener = new ConnectListener();
 
         // WAV Capture
-        mFilesDir = mContext.getFilesDir();
+        mFilesDir = Environment.getExternalStorageDirectory();
         mWavFileCapture = new WavFileCapture();
 
         showRouteStatus();

@@ -5804,7 +5804,7 @@ You should be prompted to select credentials; choose the ones you just installed
           \n\nWhen all test routes have passed, the test as a whole can be passed.
           \n\nIf a route fails, the captured audio can be copied to a host computer with the "adb pull command"
           using the \"WAV Capture Folder\" and \"Capture File\" displayed in the Results Panel.
-          \nFor example, on a typical device \"adb pull /data/user/0/com.android.cts.verifier/files/AudioLoopbackLatency_0.wav\"
+          \nFor example, on a typical device \"adb pull /storage/emulated/0/AudioLoopbackLatency_0.wav\"
           will copy the audio from the Speaker/Mic path to the host computer.
     </string>
     <string name="audio_loopback_instructions">
