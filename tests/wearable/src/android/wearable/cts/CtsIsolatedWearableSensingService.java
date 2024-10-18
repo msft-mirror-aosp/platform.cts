@@ -37,6 +37,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -137,10 +138,22 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     public static final String ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION =
             "WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION";
 
+    /** PersistableBundle value that represents a request to remove all stored connections. */
+    public static final String ACTION_REMOVE_ALL_STORED_CONNECTIONS =
+            "REMOVE_ALL_STORED_CONNECTIONS";
+
+    /**
+     * PersistableBundle value that represents a request to verify that no connection is provided.
+     */
+    public static final String ACTION_VERIFY_NO_CONNECTION_PROVIDED =
+            "VERIFY_NO_CONNECTION_PROVIDED";
+
     private volatile ParcelFileDescriptor mSecureWearableConnection;
 
     @GuardedBy("mSecureWearableConnectionMap")
     private final Map<Integer, ParcelFileDescriptor> mSecureWearableConnectionMap = new HashMap<>();
+
+    private Set<ParcelFileDescriptor> mConnectionsToCleanUp = new HashSet<>();
 
     private volatile boolean mBooleanState = false;
 
@@ -260,11 +273,17 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                         Log.e(
                                 TAG,
                                 "ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION but no"
-                                    + " connectionId provided.");
+                                        + " connectionId provided.");
                         statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
                     } else {
                         writeToConnectionAndVerifyException(connectionId, statusConsumer);
                     }
+                    return;
+                case ACTION_REMOVE_ALL_STORED_CONNECTIONS:
+                    removeAllStoredConnections(statusConsumer);
+                    return;
+                case ACTION_VERIFY_NO_CONNECTION_PROVIDED:
+                    verifyNoConnectionProvided(statusConsumer);
                     return;
                 default:
                     Log.w(TAG, "Unknown action: " + action);
@@ -288,6 +307,9 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                 tryCloseConnection(connection);
             }
             mSecureWearableConnectionMap.clear();
+        }
+        for (ParcelFileDescriptor connection : mConnectionsToCleanUp) {
+            tryCloseConnection(connection);
         }
         mBooleanState = false;
     }
@@ -321,7 +343,7 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                 Log.e(
                         TAG,
                         "#verifyDataReceivedFromWearableViaConcurrentConnection connection ID not"
-                            + " found: "
+                                + " found: "
                                 + connectionId);
                 statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
                 return;
@@ -513,6 +535,32 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         }
         Log.e(TAG, "No exception encountered when writing to the connection");
         statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+    }
+
+    private void removeAllStoredConnections(Consumer<Integer> statusConsumer) {
+        // We want to remove stored connections without closing them because closing them will
+        // trigger clean up code in the system and affect test results, so we add them to a clean up
+        // list to be closed in the next reset.
+        Optional.ofNullable(mSecureWearableConnection).ifPresent(mConnectionsToCleanUp::add);
+        mSecureWearableConnection = null;
+        synchronized (mSecureWearableConnectionMap) {
+            mConnectionsToCleanUp.addAll(mSecureWearableConnectionMap.values());
+            mSecureWearableConnectionMap.clear();
+        }
+        statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyNoConnectionProvided(Consumer<Integer> statusConsumer) {
+        boolean isSecureWearableConnectionMapEmpty;
+        synchronized (mSecureWearableConnectionMap) {
+            isSecureWearableConnectionMapEmpty = mSecureWearableConnectionMap.isEmpty();
+        }
+        if (mSecureWearableConnection == null && isSecureWearableConnectionMapEmpty) {
+            statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+        } else {
+            Log.e(TAG, "At least one connection has been provided.");
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+        }
     }
 
     // The methods below are not used. They are tested in CtsWearableSensingService and only

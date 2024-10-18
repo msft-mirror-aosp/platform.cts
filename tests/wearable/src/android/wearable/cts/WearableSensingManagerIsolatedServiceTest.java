@@ -18,11 +18,13 @@ package android.wearable.cts;
 
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_CLOSE_WEARABLE_CONNECTION;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_READ_FILE_AND_VERIFY;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_REMOVE_ALL_STORED_CONNECTIONS;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_RESET;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SEND_DATA_TO_WEARABLE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SET_BOOLEAN_STATE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_BOOLEAN_STATE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_NO_CONNECTION_PROVIDED;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_WRITE_FILE_AND_VERIFY_EXCEPTION;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.BUNDLE_ACTION_KEY;
@@ -44,6 +46,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -91,8 +94,11 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -148,6 +154,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     private Integer mCdmAssociationId1;
     private Integer mCdmAssociationId2;
     private File mTestDirectory;
+    private final List<ParcelFileDescriptor> mParcelFileDescriptorsToCleanUp = new ArrayList<>();
 
     @Rule
     public final DeviceConfigStateChangerRule mWearableSensingConfigRule =
@@ -180,6 +187,12 @@ public class WearableSensingManagerIsolatedServiceTest {
         mSocketPair0 = ParcelFileDescriptor.createSocketPair();
         mSocketPair1 = ParcelFileDescriptor.createSocketPair();
         mSocketPair2 = ParcelFileDescriptor.createSocketPair();
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair0[0]);
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair0[1]);
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair1[0]);
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair1[1]);
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair2[0]);
+        mParcelFileDescriptorsToCleanUp.add(mSocketPair2[1]);
         mWearableConnection0 =
                 createWearableConnection(
                         mSocketPair0[0],
@@ -235,6 +248,12 @@ public class WearableSensingManagerIsolatedServiceTest {
                 file.delete();
             }
             mTestDirectory.delete();
+        }
+        for (ParcelFileDescriptor parcelFileDescriptor : mParcelFileDescriptorsToCleanUp) {
+            try {
+                parcelFileDescriptor.close();
+            } catch (IOException ignored) {
+            }
         }
     }
 
@@ -560,6 +579,93 @@ public class WearableSensingManagerIsolatedServiceTest {
                 DATA_TO_WRITE_4.getBytes(StandardCharsets.UTF_8),
                 new int[] {cdmSecureChannelContext2.mAssociationId});
         verifyDataReceivedFromWearable(DATA_TO_WRITE_4, 2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void provideConnection_canProvideAvailableNumberOfConnections() throws Exception {
+        int availableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
+        assumeTrue(availableConnectionCount > 0);
+
+        for (int i = 0; i < availableConnectionCount; i++) {
+            provideNewConnectionAndVerifySuccess();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void provideConnection_cannotProvideConnectionAfterReachingLimit() throws Exception {
+        int availableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
+        assumeTrue(availableConnectionCount > 0);
+        for (int i = 0; i < availableConnectionCount; i++) {
+            provideNewConnectionAndVerifySuccess();
+        }
+        assertThat(mWearableSensingManager.getAvailableConnectionCount()).isEqualTo(0);
+        removeAllStoredConnectionsFromWss();
+        Consumer<Integer> mockStatusConsumer = (Consumer<Integer>) mock(Consumer.class);
+        WearableConnection newConnection = createNewConnection(mockStatusConsumer);
+
+        mWearableSensingManager.provideConnection(newConnection, EXECUTOR);
+
+        verify(mockStatusConsumer, timeout(2000))
+                .accept(WearableSensingManager.STATUS_MAX_CONCURRENT_CONNECTIONS_EXCEEDED);
+        SystemClock.sleep(2000); // make sure all async operations have completed
+        verifyNoConnectionProvidedToWss();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void provideConnection_reachedConnectionLimit_canProvideAfterRemovingConnection()
+            throws Exception {
+        int availableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
+        assumeTrue(availableConnectionCount > 0);
+        WearableConnection firstConnection = provideNewConnectionAndVerifySuccess();
+        for (int i = 0; i < availableConnectionCount - 1; i++) {
+            provideNewConnectionAndVerifySuccess();
+        }
+        assertThat(mWearableSensingManager.getAvailableConnectionCount()).isEqualTo(0);
+
+        // remove the first, provide again, verify success
+        mWearableSensingManager.removeConnection(firstConnection);
+        WearableConnection lastConnection = provideNewConnectionAndVerifySuccess();
+
+        // remove the last, provide again, verify success
+        mWearableSensingManager.removeConnection(lastConnection);
+        provideNewConnectionAndVerifySuccess();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void provideConnection_reachedConnectionLimit_canProvideAfterRemovingAllConnections()
+            throws Exception {
+        int maxAvailableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
+        assumeTrue(maxAvailableConnectionCount > 0);
+        for (int i = 0; i < maxAvailableConnectionCount; i++) {
+            provideNewConnectionAndVerifySuccess();
+        }
+        assertThat(mWearableSensingManager.getAvailableConnectionCount()).isEqualTo(0);
+
+        mWearableSensingManager.removeAllConnections();
+
+        for (int i = 0; i < maxAvailableConnectionCount; i++) {
+            provideNewConnectionAndVerifySuccess();
+        }
+    }
+
+    private WearableConnection provideNewConnectionAndVerifySuccess() throws Exception {
+        Consumer<Integer> mockStatusConsumer = (Consumer<Integer>) mock(Consumer.class);
+        WearableConnection connection = createNewConnection(mockStatusConsumer);
+        mWearableSensingManager.provideConnection(connection, EXECUTOR);
+        verify(mockStatusConsumer, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
+        return connection;
+    }
+
+    private WearableConnection createNewConnection(Consumer<Integer> statusConsumer)
+            throws Exception {
+        ParcelFileDescriptor[] socketPair = ParcelFileDescriptor.createSocketPair();
+        mParcelFileDescriptorsToCleanUp.add(socketPair[0]);
+        mParcelFileDescriptorsToCleanUp.add(socketPair[1]);
+        return createWearableConnection(socketPair[0], PersistableBundle.EMPTY, statusConsumer);
     }
 
     @Test
@@ -1104,6 +1210,20 @@ public class WearableSensingManagerIsolatedServiceTest {
         } else {
             assertThat(statusCode).isEqualTo(WearableSensingManager.STATUS_UNKNOWN);
         }
+    }
+
+    private void removeAllStoredConnectionsFromWss() throws Exception {
+        assertThat(
+                        sendActionToIsolatedWearableSensingServiceAndWait(
+                                ACTION_REMOVE_ALL_STORED_CONNECTIONS))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyNoConnectionProvidedToWss() throws Exception {
+        assertThat(
+                        sendActionToIsolatedWearableSensingServiceAndWait(
+                                ACTION_VERIFY_NO_CONNECTION_PROVIDED))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
     }
 
     private int sendActionToIsolatedWearableSensingServiceAndWait(String action) throws Exception {
