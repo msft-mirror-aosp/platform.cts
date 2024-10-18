@@ -845,6 +845,10 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
     }
 
     protected static class SatelliteModeRadiosUpdater extends ContentObserver implements
@@ -1649,6 +1653,24 @@ public class SatelliteManagerTestBase {
         loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    protected static int getNtnOnlySubscriptionId() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+
+        int subId = infoList.stream()
+                .filter(info -> info.isOnlyNonTerrestrialNetwork())
+                .mapToInt(SubscriptionInfo::getSubscriptionId)
+                .findFirst()
+                .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID && !infoList.isEmpty()) {
+            subId = infoList.get(0).getSubscriptionId();
+        }
+        logd("getNtnOnlySubscriptionId: subId=" + subId);
+        return subId;
     }
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
