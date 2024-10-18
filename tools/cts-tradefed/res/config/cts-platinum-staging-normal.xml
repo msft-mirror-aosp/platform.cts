@@ -1580,10 +1580,10 @@
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testGetHdrConversionModeSetting"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testGetSupportedHdrOutputTypes"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testSetHdrConversionMode"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettings#testGetSupportedHdrOutputTypes"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettings#testGetSupportedHdrOutputTypesWithAppOverride"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettings#testSetHdrConversionMode"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettings#testSetHdrConversionModeThrowsExceptionWithInvalidArgument"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testGetSupportedHdrOutputTypes"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testGetSupportedHdrOutputTypesWithAppOverride"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testSetHdrConversionMode"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testSetHdrConversionModeThrowsExceptionWithInvalidArgument"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.VirtualDisplayTest#testVirtualDisplayWithRequestedRefreshRate"/>
     <!-- CtsDomainVerificationDeviceMultiUserTestCases -->
     <option name="compatibility:include-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileAllowParentLinkingTests#inPersonal_unverified"/>

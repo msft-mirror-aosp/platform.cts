@@ -2035,13 +2035,18 @@ public class KeyAttestationTest {
             Log.i(TAG, "key attestation with device IDs not supported; test skipped");
             return true;
         }
-        throw new Exception("Unexpected failure while generating"
-                        + " key.\nIn case of AOSP/GSI builds, system "
-                        + "provided properties could be different from "
-                        + "provisioned properties in KeyMaster/KeyMint. "
-                        + "In such cases, make sure attestation specific "
-                        + "properties (Build.*_FOR_ATTESTATION) are "
-                        + "configured correctly.",
-                e);
+
+        if (TestUtils.isGsiImage()) {
+            // When running under GSI, the ro.product.<device-id> values may be replaced with values
+            // that don't match the vendor code.  However, any ro.product.vendor.<device-id> values
+            // will not be replaced by GSI (and the frameworks code will use them in preference to
+            // the ro.product.<device-id> values), so raise a different Exception to give out a hint
+            // that these should be set.
+            throw new Exception("Failed to generate key with device ID attestation under GSI.  "
+                                + "Check that the relevant ro.product.vendor.<device-id> field is "
+                                + "set correctly in the vendor image.",
+                    e);
+        }
+        return false;
     }
 }
