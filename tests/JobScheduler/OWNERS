@@ -1,4 +1,4 @@
 # Bug component: 330738
 set noparent
 
-include platform/frameworks/base:/apex/jobscheduler/OWNERS
+include platform/frameworks/base:/apex/jobscheduler/JOB_OWNERS
