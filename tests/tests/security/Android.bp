@@ -40,7 +40,7 @@ android_test {
         "sts-device-util",
         "hamcrest-library",
         "NeneInternal",
-        "CameraPermissionTestIntentKeys",
+        "CameraPermissionTestLib",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -48,7 +48,8 @@ android_test {
         "android.test.base.stubs.system",
     ],
     java_resources: [
-        ":CameraPermissionTestApp",
+        ":CameraProxyApp",
+        ":OpenCameraApp",
         ":PackageInstallerTestApp",
     ],
     jni_libs: [

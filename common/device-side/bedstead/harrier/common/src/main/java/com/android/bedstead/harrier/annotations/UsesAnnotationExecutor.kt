@@ -45,5 +45,6 @@ annotation class UsesAnnotationExecutor(
         const val ACCOUNTS = "com.android.bedstead.accounts.AccountsAnnotationExecutor"
         const val CONTENT_SUGGESTIONS =
             "com.android.bedstead.contentsuggestions.ContentSuggestionsAnnotationExecutor"
+        const val BLUETOOTH = "com.android.bedstead.bluetooth.BluetoothAnnotationExecutor"
     }
 }
