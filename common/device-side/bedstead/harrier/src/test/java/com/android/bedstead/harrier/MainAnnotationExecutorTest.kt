@@ -19,8 +19,6 @@ import android.app.ActivityManager
 import android.app.contentsuggestions.ContentSuggestionsManager
 import android.app.role.RoleManager
 import android.provider.Settings
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
 import com.android.bedstead.harrier.annotations.EnsureDemoMode
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode
@@ -57,7 +55,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation
-import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.bugReports
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.device
@@ -218,18 +215,6 @@ class MainAnnotationExecutorTest {
     @EnsurePasswordNotSet
     fun requirePasswordNotSetAnnotation_passwordNotSet() {
         assertThat(users().instrumented().hasLockCredential()).isFalse()
-    }
-
-    @Test
-    @EnsureBluetoothEnabled
-    fun ensureBluetoothEnabledAnnotation_bluetoothIsEnabled() {
-        assertThat(bluetooth().isEnabled).isTrue()
-    }
-
-    @Test
-    @EnsureBluetoothDisabled
-    fun ensureBluetoothDisabledAnnotation_bluetoothIsDisabled() {
-        assertThat(bluetooth().isEnabled).isFalse()
     }
 
     // TODO(b/300218365): Test that settings are returned to their original values in teardown.

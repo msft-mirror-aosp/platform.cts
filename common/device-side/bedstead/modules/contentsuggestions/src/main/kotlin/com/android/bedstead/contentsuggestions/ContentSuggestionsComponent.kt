@@ -88,7 +88,7 @@ class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceState
         if (!mOriginalDefaultContentSuggestionsServiceEnabled.containsKey(user)) {
             mOriginalDefaultContentSuggestionsServiceEnabled[user] = currentValue
         }
-        content().suggestions().setDefaultServiceEnabled(value = enabled)
+        content().suggestions().setDefaultServiceEnabled(user, value = enabled)
     }
 
     override fun teardownShareableState() {
