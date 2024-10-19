@@ -21,6 +21,7 @@ import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL
 import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL_OPEN;
 import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL_WARN;
 import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_NONE;
+import static android.content.pm.verify.pkg.VerificationSession.VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -42,6 +43,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.SharedLibraryInfo;
 import android.content.pm.SigningInfo;
 import android.content.pm.verify.pkg.VerificationSession;
+import android.content.pm.verify.pkg.VerificationStatus;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -49,6 +51,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -561,11 +564,62 @@ public class VerifierServiceTest {
                         () -> session.setVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN)),
                 android.Manifest.permission.VERIFICATION_AGENT
         );
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> expectThrows(IllegalStateException.class,
+                        () -> session.reportVerificationIncomplete(
+                                VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE)),
+                android.Manifest.permission.VERIFICATION_AGENT
+        );
+        VerificationStatus status = new VerificationStatus.Builder().build();
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> expectThrows(IllegalStateException.class,
+                        () -> session.reportVerificationComplete(status)),
+                android.Manifest.permission.VERIFICATION_AGENT
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testAdbInstallBypassesVerifier() {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        installPackageWithAdb(EMPTY_APP_APK);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testAdbInstallForcesVerifier() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        installPackageWithAdbForceVerification(EMPTY_APP_APK,
+                "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
+                + " Verifier rejected the installation with message: " + REJECT_MESSAGE + "]");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testUpdateVerifierBypassesVerifier() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        assertInstallPackageWithSession(VERIFIER_APP_APK_PATH, VERIFIER_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_VERIFICATION_SERVICE)
+    public void testDisabledFeatureFlagBypassesVerifier() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
     // Only used to install the verifier package
     private void installPackageWithAdb(String apkPath) {
         assertThat(SystemUtil.runShellCommand("pm install " + apkPath)).isEqualTo("Success\n");
+    }
+
+    private void installPackageWithAdbForceVerification(String apkPath, String errMsgExpected) {
+        assertThat(SystemUtil.runShellCommand("pm install --force-verification " + apkPath))
+                .startsWith(errMsgExpected);
     }
 
     private void uninstallPackage(String packageName) {
