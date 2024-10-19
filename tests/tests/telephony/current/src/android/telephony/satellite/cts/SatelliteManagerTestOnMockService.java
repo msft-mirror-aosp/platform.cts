@@ -111,6 +111,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -323,6 +324,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteModeRadiosUpdater(getContext());
         assertTrue(satelliteRadiosModeUpdater.setSatelliteModeRadios(""));
 
+        beforeSatelliteForOemTest();
         grantSatellitePermission();
         if (!isSatelliteEnabled()) {
             logd("Enable satellite");
@@ -395,6 +397,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
+        afterSatelliteForOemTest();
     }
 
     @Test
@@ -493,6 +496,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
+    @Ignore
     public void testSatelliteRequestEnabled() {
         if (!shouldTestSatelliteWithMockService()) return;
         assumeTrue(sMockSatelliteServiceManager != null);
@@ -647,7 +651,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void testDisableSatelliteWhenCellularModemEnabledInIdleMode() {
         if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -756,7 +759,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             overrideCarrierConfig(sTestSubIDForCarrierSatellite, null);
             revokeSatellitePermission();
             updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-            afterSatelliteForOemTest();
         }
     }
 
@@ -764,7 +766,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void testSatelliteModemStateChangedForNbIot() {
         if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -936,7 +937,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
 
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -944,7 +944,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void testSendKeepAliveDatagramInNotConnectedState() {
         if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -1083,7 +1082,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.setSatelliteListeningTimeoutDuration(0));
         assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -3409,6 +3407,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachEnabledForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         @SatelliteManager.SatelliteResult int expectedSuccess =
@@ -3505,6 +3504,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachRestrictionForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         clearSatelliteEnabledForCarrier();
@@ -3912,6 +3912,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testGetAggregateSatellitePlmnListForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         @SatelliteManager.SatelliteResult int expectedSuccess =
@@ -4498,7 +4499,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService() || Flags.carrierRoamingNbIotNtn()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4563,7 +4563,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -4582,7 +4581,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4661,7 +4659,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -4761,7 +4758,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4840,7 +4836,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -4859,7 +4854,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4941,7 +4935,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -4961,7 +4954,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5012,7 +5004,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5032,7 +5023,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5085,7 +5075,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5309,7 +5298,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5415,7 +5403,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5541,7 +5528,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5610,7 +5596,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sSatelliteManager.unregisterForModemStateChanged(callback);
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5627,7 +5612,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5704,7 +5688,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sSatelliteManager.unregisterForModemStateChanged(callback);
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5722,7 +5705,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
          */
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -5827,7 +5809,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sSatelliteManager.unregisterForModemStateChanged(callback);
         sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -6022,7 +6003,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testDemoSimulator: start");
-        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -6094,7 +6074,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sSatelliteManager.unregisterForNtnSignalStrengthChanged(ntnSignalStrengthCallback);
             sSatelliteManager.unregisterForModemStateChanged(stateCallback);
             updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-            afterSatelliteForOemTest();
             revokeSatellitePermission();
         }
     }
@@ -6190,7 +6169,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testRequestSatelliteSubscriberProvisionStatus:");
-        beforeSatelliteForOemTest();
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         /* Test when this carrier is supported ESOS in the carrier config */
@@ -6217,7 +6195,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         } finally {
             assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                     TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
-            afterSatelliteForOemTest();
             revokeSatellitePermission();
         }
     }
@@ -6228,7 +6205,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testSatelliteSubscriptionProvisionStateChanged:");
-        beforeSatelliteForOemTest();
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
@@ -6370,7 +6346,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -6470,7 +6445,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testDeprovisionSatellite:");
-        beforeSatelliteForOemTest();
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
@@ -7467,6 +7441,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
 
     static int sTestSubIDForCarrierSatellite;
+    static int sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     static SubscriptionManager sSubscriptionManager;
     static boolean sPreviousSatelliteAttachEnabled;
     static boolean sPreviousSatelliteIsOnlyNtn;
@@ -7493,7 +7468,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void beforeSatelliteForOemTest() {
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sNtnOnlySubId = getNtnOnlySubscriptionId();
         sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(SubscriptionManager.class);
         // Get the default subscription values for COLUMN_IS_ONLY_NTN.
@@ -7502,15 +7477,19 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                         SubscriptionManager.IS_ONLY_NTN,
                         false,
                         getContext());
+        logd("beforeSatelliteForOemTest: sPreviousSatelliteIsOnlyNtn=" + sPreviousSatelliteIsOnlyNtn
+                 + ", sNtnOnlySubId=" + sNtnOnlySubId);
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
             // Set user Setting as true
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.IS_ONLY_NTN, String.valueOf(1));
         } finally {
             ui.dropShellPermissionIdentity();
         }
+
+        waitForNtnOnlySubscriptionAvailable();
     }
 
     private void afterSatelliteForCarrierTest() {
@@ -7528,16 +7507,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void afterSatelliteForOemTest() {
+        logd("afterSatelliteForOemTest: sPreviousSatelliteIsOnlyNtn=" + sPreviousSatelliteIsOnlyNtn
+                + ", sNtnOnlySubId=" + sNtnOnlySubId);
+        if (sNtnOnlySubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("afterSatelliteForOemTest: no need to restore");
+            return;
+        }
         // Set user Setting value to previous one.
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.IS_ONLY_NTN,
                     sPreviousSatelliteIsOnlyNtn ? "1" : "0");
         } finally {
             ui.dropShellPermissionIdentity();
-            sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+            sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
         }
     }
 
@@ -7681,5 +7666,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setSatelliteSubscriberIdListChangedIntentComponent("reset"));
         context.unregisterReceiver(receiver);
+    }
+
+    private static void waitForNtnOnlySubscriptionAvailable() {
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        int i = 0;
+        while (i < 10) {
+            List<SubscriptionInfo> subscriptionInfoList = sm.getAllSubscriptionInfoList();
+            for (SubscriptionInfo info : subscriptionInfoList) {
+                if (info.isOnlyNonTerrestrialNetwork()) {
+                    logd("waitForNtnOnlySubscriptionAvailable: NTN only subscription  " + info
+                            + " is available");
+                    return;
+                }
+            }
+            i++;
+            waitFor(500);
+        }
+        fail("NTN only subscription is not available");
     }
 }

@@ -18,7 +18,6 @@ package android.input.cts
 import android.cts.input.EventVerifier
 import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
-import android.view.Display.DEFAULT_DISPLAY
 import android.view.Gravity
 import android.view.InputEvent
 import android.view.MotionEvent
@@ -29,6 +28,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.compatibility.common.util.UserHelper
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import java.util.concurrent.LinkedBlockingQueue
@@ -56,6 +56,7 @@ class PointerCancelTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var verifier: EventVerifier
     private val touchInjector = TouchInjector(instrumentation)
+    private val displayId = UserHelper().mainDisplayId
 
     @Before
     fun setUp() {
@@ -65,7 +66,7 @@ class PointerCancelTest {
         PollingCheck.waitFor { activity.hasWindowFocus() }
         verifier = EventVerifier(activity::getInputEvent)
 
-        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)
+        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(displayId)
         instrumentation.uiAutomation.syncInputTransactions()
     }
 
@@ -78,7 +79,11 @@ class PointerCancelTest {
         val secondPointer = PointF(pointerInDecorView.x + 1, pointerInDecorView.y + 1)
 
         // Start a valid touch stream
-        touchInjector.sendMultiTouchEvent(arrayOf(pointerInDecorView, secondPointer), true)
+        touchInjector.sendMultiTouchEvent(
+            arrayOf(pointerInDecorView, secondPointer),
+            displayId,
+            cancelPointer = true
+        )
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1))
@@ -106,7 +111,11 @@ class PointerCancelTest {
         }
         val verifierForFloating = EventVerifier { eventsInFloating.poll(5, TimeUnit.SECONDS) }
 
-        touchInjector.sendMultiTouchEvent(arrayOf(pointerInFloating, pointerOutsideFloating), true)
+        touchInjector.sendMultiTouchEvent(
+            arrayOf(pointerInFloating, pointerOutsideFloating),
+            displayId,
+            cancelPointer = true
+        )
 
         // First finger down (floating window)
         verifierForFloating.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))

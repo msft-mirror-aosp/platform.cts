@@ -314,7 +314,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               if not zoom_capture_utils.verify_zoom_results(
                   test_data, size, z_max, z_min):
                 failure_msg = (
-                    f'{combination_name}: failed!'
+                    f'{combination_name}: failed! '
                     'Check test_log.DEBUG for errors')
                 test_failures.append(failure_msg)
 
