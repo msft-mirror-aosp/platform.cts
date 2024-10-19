@@ -66,6 +66,10 @@ import androidx.test.rule.ActivityTestRule;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SynchronousPixelCopy;
 import com.android.compatibility.common.util.WidgetTestUtils;
+import com.android.graphics.flags.Flags;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,9 +83,6 @@ import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @MediumTest
 @RunWith(JUnitParamsRunner.class)
@@ -275,15 +276,28 @@ public class TextureViewTest {
     // TODO(b/230400473): Add in BT2020 and BT709 and BT601 once SurfaceFlinger reliably color
     // converts.
     private static Object[] testDataSpaces() {
-        return new Integer[]{
-            DataSpace.DATASPACE_SCRGB_LINEAR,
-            DataSpace.DATASPACE_SRGB,
-            DataSpace.DATASPACE_SCRGB,
-            DataSpace.DATASPACE_DISPLAY_P3,
-            DataSpace.DATASPACE_ADOBE_RGB,
-            DataSpace.DATASPACE_DCI_P3,
-            DataSpace.DATASPACE_SRGB_LINEAR
-        };
+        if (Flags.displayBt2020Colorspace()) {
+            return new Integer[]{
+                DataSpace.DATASPACE_SCRGB_LINEAR,
+                DataSpace.DATASPACE_SRGB,
+                DataSpace.DATASPACE_SCRGB,
+                DataSpace.DATASPACE_DISPLAY_P3,
+                DataSpace.DATASPACE_ADOBE_RGB,
+                DataSpace.DATASPACE_DCI_P3,
+                DataSpace.DATASPACE_SRGB_LINEAR,
+                DataSpace.DATASPACE_DISPLAY_BT2020
+            };
+        } else {
+            return new Integer[]{
+                DataSpace.DATASPACE_SCRGB_LINEAR,
+                DataSpace.DATASPACE_SRGB,
+                DataSpace.DATASPACE_SCRGB,
+                DataSpace.DATASPACE_DISPLAY_P3,
+                DataSpace.DATASPACE_ADOBE_RGB,
+                DataSpace.DATASPACE_DCI_P3,
+                DataSpace.DATASPACE_SRGB_LINEAR
+            };
+        }
     }
 
     @Test
