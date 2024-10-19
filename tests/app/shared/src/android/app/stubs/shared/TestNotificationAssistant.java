@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class TestNotificationAssistant extends NotificationAssistantService {
     public static final String TAG = "TestNotificationAssistant";
@@ -55,6 +56,8 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     private NotificationManager mNotificationManager;
 
     public Map<String, Integer> mRemoved = new HashMap<>();
+    private CountDownLatch mRankingUpdateLatch = null;
+    private CountDownLatch mAllowedAdjustmentsLatch = null;
 
     /**
      * This controls whether there is a listener connected or not. Depending on the method, if the
@@ -147,6 +150,7 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     @Override
     public void onAllowedAdjustmentsChanged() {
         mCurrentCapabilities = mNotificationManager.getAllowedAssistantAdjustments();
+        maybeUpdateLatch(mAllowedAdjustmentsLatch);
     }
 
     public void resetNotificationVisibilityCounts() {
@@ -203,11 +207,32 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     }
 
     @Override
+    public void onNotificationRankingUpdate(RankingMap rankingMap) {
+        maybeUpdateLatch(mRankingUpdateLatch);
+    }
+
+    @Override
     public void onNotificationRemoved(StatusBarNotification sbn, RankingMap rankingMap,
             int reason) {
         if (sbn == null) {
             return;
         }
         mRemoved.put(sbn.getKey(), reason);
+    }
+
+    public CountDownLatch setAllowedAdjustmentCountdown(int countDownNumber) {
+        mAllowedAdjustmentsLatch = new CountDownLatch(countDownNumber);
+        return mAllowedAdjustmentsLatch;
+    }
+
+    public CountDownLatch setRankingUpdateCountDown(int countDownNumber) {
+        mRankingUpdateLatch = new CountDownLatch(countDownNumber);
+        return mRankingUpdateLatch;
+    }
+
+    private void maybeUpdateLatch(CountDownLatch latch) {
+        if (latch != null) {
+            latch.countDown();
+        }
     }
 }

@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_DEBUGGING_FEATURES;
 
 import static org.testng.Assert.assertThrows;
@@ -44,8 +45,8 @@ public final class DebuggingTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_DEBUGGING_FEATURES")
     public void setUserRestriction_disallowDebuggingFeatures_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_DEBUGGING_FEATURES));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_DEBUGGING_FEATURES));
     }
 
 //    @PolicyAppliesTest(policy = DisallowDebuggingFeatures.class)
@@ -54,14 +55,14 @@ public final class DebuggingTest {
 //    @Ignore // We can't add positive tests because the adb connection will break and the test will crash
 //    public void setUserRestriction_disallowDebuggingFeatures_isSet() {
 //        try {
-//            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-//                    sDeviceState.dpc().componentName(), DISALLOW_DEBUGGING_FEATURES);
+//            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+//                    dpc(sDeviceState).componentName(), DISALLOW_DEBUGGING_FEATURES);
 //
 //            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_DEBUGGING_FEATURES))
 //                    .isTrue();
 //        } finally {
-//            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-//                    sDeviceState.dpc().componentName(), DISALLOW_DEBUGGING_FEATURES);
+//            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+//                    dpc(sDeviceState).componentName(), DISALLOW_DEBUGGING_FEATURES);
 //        }
 //    }
 //
@@ -71,15 +72,15 @@ public final class DebuggingTest {
 //    @Ignore // We can't add positive tests because the adb connection will break and the test will crash
 //    public void setUserRestriction_disallowDebuggingFeatures_isNotSet() {
 //        try {
-//            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-//                    sDeviceState.dpc().componentName(), DISALLOW_DEBUGGING_FEATURES);
+//            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+//                    dpc(sDeviceState).componentName(), DISALLOW_DEBUGGING_FEATURES);
 //
 //            assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_DEBUGGING_FEATURES))
 //                    .isFalse();
 //        } finally {
 //
-//            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-//                    sDeviceState.dpc().componentName(), DISALLOW_DEBUGGING_FEATURES);
+//            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+//                    dpc(sDeviceState).componentName(), DISALLOW_DEBUGGING_FEATURES);
 //        }
 //    }
 //

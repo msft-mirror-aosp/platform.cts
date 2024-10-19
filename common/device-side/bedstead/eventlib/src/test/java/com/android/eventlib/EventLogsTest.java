@@ -19,6 +19,7 @@ package com.android.eventlib;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -536,12 +537,12 @@ public class EventLogsTest {
     @Test
     @EnsureHasWorkProfile
     public void differentUser_queryWorks() {
-        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(sDeviceState.workProfile());
+        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(workProfile(sDeviceState));
         logCustomEventOnTestApp(
-                sDeviceState.workProfile(), /* tag= */ TEST_TAG1, /* data= */ null);
+                workProfile(sDeviceState), /* tag= */ TEST_TAG1, /* data= */ null);
 
         EventLogs<CustomEvent> eventLogs = CustomEvent.queryPackage(TEST_APP_PACKAGE_NAME)
-                .onUser(sDeviceState.workProfile());
+                .onUser(workProfile(sDeviceState));
 
         assertThat(eventLogs.poll().tag()).isEqualTo(TEST_TAG1);
     }
@@ -549,12 +550,12 @@ public class EventLogsTest {
     @Test
     @EnsureHasWorkProfile
     public void differentUserSpecifiedByUserHandle_queryWorks() {
-        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(sDeviceState.workProfile());
+        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(workProfile(sDeviceState));
         logCustomEventOnTestApp(
-                sDeviceState.workProfile(), /* tag= */ TEST_TAG1, /* data= */ null);
+                workProfile(sDeviceState), /* tag= */ TEST_TAG1, /* data= */ null);
 
         EventLogs<CustomEvent> eventLogs = CustomEvent.queryPackage(TEST_APP_PACKAGE_NAME)
-                .onUser(sDeviceState.workProfile().userHandle());
+                .onUser(workProfile(sDeviceState).userHandle());
 
         assertThat(eventLogs.poll().tag()).isEqualTo(TEST_TAG1);
     }
@@ -562,13 +563,13 @@ public class EventLogsTest {
     @Test
     @EnsureHasWorkProfile
     public void differentUser_doesntGetEventsFromWrongUser() {
-        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(sDeviceState.workProfile());
+        TestApis.packages().find(TEST_APP_PACKAGE_NAME).installExisting(workProfile(sDeviceState));
         logCustomEventOnTestApp(/* tag= */ TEST_TAG1, /* data= */ null);
         logCustomEventOnTestApp(
-                sDeviceState.workProfile(), /* tag= */ TEST_TAG2, /* data= */ null);
+                workProfile(sDeviceState), /* tag= */ TEST_TAG2, /* data= */ null);
 
         EventLogs<CustomEvent> eventLogs = CustomEvent.queryPackage(TEST_APP_PACKAGE_NAME)
-                .onUser(sDeviceState.workProfile());
+                .onUser(workProfile(sDeviceState));
 
         assertThat(eventLogs.poll().tag()).isEqualTo(TEST_TAG2);
     }

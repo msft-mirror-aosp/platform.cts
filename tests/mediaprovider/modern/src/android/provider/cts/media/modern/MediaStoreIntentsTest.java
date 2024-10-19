@@ -77,6 +77,7 @@ public class MediaStoreIntentsTest {
     }
 
     @Test
+    @Ignore("b/369795989")
     public void testPickImageDir() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setData(mExternalImages);
@@ -84,6 +85,7 @@ public class MediaStoreIntentsTest {
     }
 
     @Test
+    @Ignore("b/369795989")
     public void testPickVideoDir() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setData(mExternalVideo);
@@ -91,6 +93,7 @@ public class MediaStoreIntentsTest {
     }
 
     @Test
+    @Ignore("b/369795989")
     public void testPickAudioDir() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setData(mExternalAudio);

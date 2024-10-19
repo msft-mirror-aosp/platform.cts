@@ -53,11 +53,13 @@ import org.junit.Test;
 @android.server.wm.annotation.Group3
 public class DisplayShapeTests extends WindowManagerTestBase {
 
+    private int mLaunchDisplayId;
     private Display mDisplay;
 
     @Before
     public void setUp() throws Exception {
-        mDisplay = mDm.getDisplay(DEFAULT_DISPLAY);
+        mLaunchDisplayId = getMainDisplayId();
+        mDisplay = mDm.getDisplay(mLaunchDisplayId);
         assumeNotNull(mDisplay);
     }
 
@@ -100,7 +102,7 @@ public class DisplayShapeTests extends WindowManagerTestBase {
     @Test
     public void testDisplayShapeFromWindowInsets() {
         DisplayShapeTests.TestActivity activity =
-                startActivity(DisplayShapeTests.TestActivity.class, DEFAULT_DISPLAY);
+                startActivity(DisplayShapeTests.TestActivity.class, mLaunchDisplayId);
 
         final DisplayShape fromDisplay = mDisplay.getShape();
         final View decorView = activity.getWindow().getDecorView();

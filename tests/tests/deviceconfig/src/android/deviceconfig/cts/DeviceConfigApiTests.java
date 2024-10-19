@@ -25,17 +25,20 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.ravenwood.RavenwoodConfig;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
 import android.provider.flags.Flags;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.modules.utils.build.SdkLevel;
+import com.android.ravenwood.common.RavenwoodCommonUtils;
 
 import com.google.common.truth.Expect;
 
@@ -108,9 +111,9 @@ public final class DeviceConfigApiTests {
 
     private static final String DUMP_PREFIX = "..";
 
-    private static final Context CONTEXT = InstrumentationRegistry.getContext();
+    private static Context sContext;
 
-    private static final Executor EXECUTOR = CONTEXT.getMainExecutor();
+    private static Executor sExecutor;
 
 
     private static final long WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS = 2000; // 2 sec
@@ -137,16 +140,25 @@ public final class DeviceConfigApiTests {
 
     @Rule public final TestName testName = new TestName();
 
+    @RavenwoodConfig.Config
+    public static final RavenwoodConfig sConfig = new RavenwoodConfig.Builder()
+            .setProvideMainThread(true)
+            .build();
+
     /**
      * Get necessary permissions to access and modify properties through DeviceConfig API.
      */
     @BeforeClass
     public static void setUp() throws Exception {
         assumeTrue(SdkLevel.isAtLeastU());
-        if (CONTEXT.getUserId() != UserHandle.USER_SYSTEM
-                && CONTEXT.getPackageManager().isInstantApp()) {
+
+        sContext = InstrumentationRegistry.getInstrumentation().getContext();
+        sExecutor = sContext.getMainExecutor();
+
+        if (sContext.getUserId() != UserHandle.USER_SYSTEM
+                && sContext.getPackageManager().isInstantApp()) {
             sUnsupportedReason = "cannot run test as instant app on secondary user "
-                    + CONTEXT.getUserId();
+                    + sContext.getUserId();
             return;
         }
 
@@ -183,7 +195,10 @@ public final class DeviceConfigApiTests {
 
         OnPropertiesChangedListenerForTests.unregisterAfter(DeviceConfigApiTests.class, testName);
 
-        TimeUnit.MILLISECONDS.sleep(WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS);
+        if (!RavenwoodCommonUtils.isOnRavenwood()) {
+            // Do not need waiting on Ravenwood as everything happens locally in process.
+            TimeUnit.MILLISECONDS.sleep(WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS);
+        }
         nullifyProperty(NAMESPACE1, KEY1);
         nullifyProperty(NAMESPACE2, KEY1);
         nullifyProperty(NAMESPACE1, KEY2);
@@ -201,7 +216,8 @@ public final class DeviceConfigApiTests {
      */
     @AfterClass
     public static void cleanUpAfterAllTests() {
-        if (!isSupported()) return;
+        // Ravenwood cleans up DeviceConfig automatically
+        if (!isSupported() || RavenwoodCommonUtils.isOnRavenwood()) return;
 
         deletePropertyThrowShell(NAMESPACE1, KEY1);
         deletePropertyThrowShell(NAMESPACE2, KEY1);
@@ -1151,7 +1167,7 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener listener1 = createOnPropertiesChangedListener(receivedUpdates1);
         OnPropertiesChangedListener listener2 = createOnPropertiesChangedListener(receivedUpdates2);
 
-        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, EXECUTOR, listener1);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
         waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
@@ -1163,7 +1179,7 @@ public final class DeviceConfigApiTests {
                 receivedUpdates2.size(), /*expectedTotalUpdatesCount=*/0);
         receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
 
-        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, EXECUTOR, listener2);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener2);
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
 
         waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
@@ -1213,7 +1229,7 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener listener1 = createOnPropertiesChangedListener(receivedUpdates1);
         OnPropertiesChangedListener listener2 = createOnPropertiesChangedListener(receivedUpdates2);
 
-        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, EXECUTOR, listener1);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
         waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
@@ -1225,7 +1241,7 @@ public final class DeviceConfigApiTests {
                 receivedUpdates2.size(), 0);
         receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
 
-        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, EXECUTOR, listener2);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, sExecutor, listener2);
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
 
         waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
@@ -1284,6 +1300,7 @@ public final class DeviceConfigApiTests {
      * Test that reset to package default successfully resets values.
      */
     @Test
+    @DisabledOnRavenwood(reason = "DeviceConfig#resetToDefaults is not supported")
     public void testResetToPackageDefaults() {
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/true);
         DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
@@ -1323,11 +1340,12 @@ public final class DeviceConfigApiTests {
      * Test set monitor callback.
      */
     @Test
+    @DisabledOnRavenwood(reason = "Monitor callback is not supported")
     public void testSetMonitorCallback() {
         final CountDownLatch latch = new CountDownLatch(2);
         final TestMonitorCallback callback = new TestMonitorCallback(latch);
 
-        DeviceConfig.setMonitorCallback(CONTEXT.getContentResolver(),
+        DeviceConfig.setMonitorCallback(sContext.getContentResolver(),
                 Executors.newSingleThreadExecutor(), callback);
         try {
             DeviceConfig.setProperties(new Properties.Builder(NAMESPACE1)
@@ -1349,20 +1367,21 @@ public final class DeviceConfigApiTests {
         }
         assertEquals(callback.onNamespaceUpdateCalls, 1);
         assertEquals(callback.onDeviceConfigAccessCalls, 1);
-        DeviceConfig.clearMonitorCallback(CONTEXT.getContentResolver());
+        DeviceConfig.clearMonitorCallback(sContext.getContentResolver());
     }
 
     /**
      * Test clear monitor callback.
      */
     @Test
+    @DisabledOnRavenwood(reason = "Monitor callback is not supported")
     public void testClearMonitorCallback() {
         final CountDownLatch latch = new CountDownLatch(2);
         final TestMonitorCallback callback = new TestMonitorCallback(latch);
 
-        DeviceConfig.setMonitorCallback(CONTEXT.getContentResolver(),
+        DeviceConfig.setMonitorCallback(sContext.getContentResolver(),
                 Executors.newSingleThreadExecutor(), callback);
-        DeviceConfig.clearMonitorCallback(CONTEXT.getContentResolver());
+        DeviceConfig.clearMonitorCallback(sContext.getContentResolver());
         // Reading properties triggers the monitor callback function.
         DeviceConfig.getString(NAMESPACE1, KEY1, null);
         try {
@@ -1506,7 +1525,7 @@ public final class DeviceConfigApiTests {
         final List<PropertyUpdate> receivedUpdates = new ArrayList<>();
         OnPropertiesChangedListener changeListener = createOnPropertiesChangedListener(receivedUpdates);
 
-        DeviceConfig.addOnPropertiesChangedListener(setNamespace, EXECUTOR, changeListener);
+        DeviceConfig.addOnPropertiesChangedListener(setNamespace, sExecutor, changeListener);
 
         DeviceConfig.setProperty(setNamespace, setName, setValue, /*makeDefault=*/false);
         waitForListenerUpdateOrTimeout(receivedUpdates, 1);
@@ -1526,7 +1545,7 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener changeListener
                 = createOnPropertiesChangedListener(receivedUpdates);
         DeviceConfig.addOnPropertiesChangedListener(
-                properties.getNamespace(), EXECUTOR, changeListener);
+                properties.getNamespace(), sExecutor, changeListener);
 
         DeviceConfig.setProperties(properties);
         waitForListenerUpdateOrTimeout(receivedUpdates, 1);
@@ -1544,7 +1563,7 @@ public final class DeviceConfigApiTests {
         final List<PropertyUpdate> receivedUpdates = new ArrayList<>();
         OnPropertiesChangedListener changeListener = createOnPropertiesChangedListener(receivedUpdates);
 
-        DeviceConfig.addOnPropertiesChangedListener(namespace, EXECUTOR, changeListener);
+        DeviceConfig.addOnPropertiesChangedListener(namespace, sExecutor, changeListener);
 
         assertTrue(DeviceConfig.deleteProperty(namespace, name));
         assertNull("DeviceConfig.getProperty() must return null if property is deleted",
@@ -1565,7 +1584,7 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener changeListener = createOnPropertiesChangedListener(
                 receivedUpdates);
 
-        DeviceConfig.addOnPropertiesChangedListener(namespace, EXECUTOR, changeListener);
+        DeviceConfig.addOnPropertiesChangedListener(namespace, sExecutor, changeListener);
 
         assertTrue(DeviceConfig.deleteProperty(namespace, name));
         assertNull("DeviceConfig.getProperty() must return null if property is deleted",

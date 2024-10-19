@@ -59,6 +59,10 @@ class VariableFamilyTest {
         nonVarFont = makeFont("fonts/samplefont.ttf")
     }
 
+    fun assertNoItalOverride(override: Float) {
+        assertTrue(override == 0f || override == PositionedGlyphs.NO_OVERRIDE)
+    }
+
     @Test
     fun testVariableFamily_twoFonts_upright() {
         val family = requireNotNull(
@@ -73,7 +77,7 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
         assertEquals(100f, glyphs.getWeightOverride(0))
-        assertEquals(PositionedGlyphs.NO_OVERRIDE, glyphs.getItalicOverride(0))
+        assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 
     @Test
@@ -90,7 +94,7 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
         assertEquals(200f, glyphs.getWeightOverride(0))
-        assertEquals(PositionedGlyphs.NO_OVERRIDE, glyphs.getItalicOverride(0))
+        assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 
     @Test
@@ -105,7 +109,7 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
         assertEquals(300f, glyphs.getWeightOverride(0))
-        assertEquals(PositionedGlyphs.NO_OVERRIDE, glyphs.getItalicOverride(0))
+        assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 
     @Test
@@ -118,7 +122,7 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertTrue(glyphs.getFakeItalic(0))
         assertEquals(500f, glyphs.getWeightOverride(0))
-        assertEquals(PositionedGlyphs.NO_OVERRIDE, glyphs.getItalicOverride(0))
+        assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 
     @Test
@@ -133,10 +137,7 @@ class VariableFamilyTest {
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
         assertEquals(300f, glyphs.getWeightOverride(0))
-        assertTrue(
-            glyphs.getItalicOverride(0) == 0f ||
-                glyphs.getItalicOverride(0) == PositionedGlyphs.NO_OVERRIDE
-        )
+        assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 
     @Test

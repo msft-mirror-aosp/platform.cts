@@ -109,6 +109,7 @@ public class ListeningPortsTest extends AndroidTestCase {
     static {
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:50002");  // Diagnostic Monitor Daemon port
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:60002");  // vcd port
+        USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:7555 1021");  // gnssd running under GPS UID
     }
 
     private static final List<String> OEM_EXCEPTION_PATTERNS = new ArrayList<String>();
@@ -156,7 +157,7 @@ public class ListeningPortsTest extends AndroidTestCase {
 
             if (isPortListening(entry.state, isTcp)
                     && !(isException(addrPort) || isException(addrUid) || isException(addrPortUid))
-                    && !(isUserDebugException(addrPort))
+                    && !(isUserDebugException(addrPort) || isUserDebugException(addrPortUid))
                     && !(tv && isOemUid(entry.uid) && isOemException(addrPort))
                     && (!entry.localAddress.isLoopbackAddress() ^ loopback)) {
                 if (isTcp && !isTcpConnectable(entry.localAddress, entry.port)) {

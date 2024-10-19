@@ -75,7 +75,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
-    'scene6', 'scene7', 'scene8', 'scene9',
+    'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -102,6 +102,7 @@ _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
 _ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
 
 # Scenes that are logically grouped and can be called as group
+# scene6_tele is not grouped with scene6 because it requires extension rig
 _GROUPED_SCENES = types.MappingProxyType({
         'scene1': ('scene1_1', 'scene1_2'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
@@ -127,8 +128,11 @@ _SCENE_REQ = types.MappingProxyType({
     'scene5': 'Capture images with a diffuser attached to the camera. See '
               'source.android.com/docs/compatibility/cts/camera-its-tests#scene5/diffuser '  # pylint: disable line-too-long
               'for more details',
-    'scene6': 'A grid of black circles on a white background. '
+    'scene6': 'A grid of ArUco markers on a white background. '
               'See tests/scene6/scene6.png',
+    'scene6_tele': 'A grid of ArUco markers on a white background. Identical '
+              'to scene6, but for tele cameras. '
+              'See tests/scene6_tele/scene6_tele.png',
     'scene7': 'The picture with 4 different colors, slanted edge and'
               '4 ArUco markers. See tests/scene7/scene7.png',
     'scene8': 'The picture with 4 faces in 4 different colors overlay.'
@@ -188,6 +192,9 @@ SUB_CAMERA_TESTS = {
     ),
     'scene4': (
         'test_aspect_ratio_and_crop',
+    ),
+    'scene6_tele': (
+        'test_zoom_tele',
     ),
     'scene_video': (
         'test_preview_frame_drop',

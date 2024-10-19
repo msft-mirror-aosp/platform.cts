@@ -616,13 +616,12 @@ void SurfaceTransaction_setColor(JNIEnv* /*env*/, jclass, jlong surfaceControl,
             r, g, b, alpha, ADATASPACE_UNKNOWN);
 }
 
-void SurfaceTransaction_setEnableBackPressure(JNIEnv* /*env*/, jclass, jlong surfaceControl,
-                                              jlong surfaceTransaction,
+void SurfaceTransaction_setEnableBackPressure(JNIEnv* env, jclass, jobject javaTransaction,
+                                              jobject javaSurfaceControl,
                                               jboolean enableBackPressure) {
-    ASurfaceTransaction_setEnableBackPressure(reinterpret_cast<ASurfaceTransaction*>(
-                                                      surfaceTransaction),
-                                              reinterpret_cast<ASurfaceControl*>(surfaceControl),
-                                              enableBackPressure);
+    ASurfaceTransaction* transaction = ASurfaceTransaction_fromJava(env, javaTransaction);
+    ASurfaceControl* surfaceControl = ASurfaceControl_fromJava(env, javaSurfaceControl);
+    ASurfaceTransaction_setEnableBackPressure(transaction, surfaceControl, enableBackPressure);
 }
 
 void SurfaceTransaction_setOnCompleteCallback(JNIEnv* env, jclass, jlong surfaceTransaction,
@@ -799,7 +798,8 @@ static const JNINativeMethod JNI_METHODS[] = {
         {"nSurfaceTransaction_setBufferAlpha", "(JJD)V", (void*)SurfaceTransaction_setBufferAlpha},
         {"nSurfaceTransaction_reparent", "(JJJ)V", (void*)SurfaceTransaction_reparent},
         {"nSurfaceTransaction_setColor", "(JJFFFF)V", (void*)SurfaceTransaction_setColor},
-        {"nSurfaceTransaction_setEnableBackPressure", "(JJZ)V",
+        {"nSurfaceTransaction_setEnableBackPressure",
+         "(Landroid/view/SurfaceControl$Transaction;Landroid/view/SurfaceControl;Z)V",
          (void*)SurfaceTransaction_setEnableBackPressure},
         {"nSurfaceTransaction_setOnCompleteCallback",
          "(JZLandroid/view/cts/util/ASurfaceControlTestUtils$TransactionCompleteListener;)V",

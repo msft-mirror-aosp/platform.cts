@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SAFE_BOOT;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -55,8 +56,8 @@ public final class SafeBootTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SAFE_BOOT")
     public void setUserRestriction_disallowSafeBoot_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_SAFE_BOOT));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_SAFE_BOOT));
     }
 
     @PolicyAppliesTest(policy = DisallowSafeBoot.class)
@@ -64,14 +65,14 @@ public final class SafeBootTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SAFE_BOOT")
     public void setUserRestriction_disallowSafeBoot_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SAFE_BOOT);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SAFE_BOOT);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SAFE_BOOT))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SAFE_BOOT);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SAFE_BOOT);
         }
     }
 
@@ -80,15 +81,15 @@ public final class SafeBootTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SAFE_BOOT")
     public void setUserRestriction_disallowSafeBoot_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SAFE_BOOT);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SAFE_BOOT);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SAFE_BOOT))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SAFE_BOOT);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SAFE_BOOT);
         }
     }
 

@@ -91,12 +91,16 @@ public class ColorSpaceTest {
     @Test
     public void testNamedColorSpaces() {
         ColorSpace.Named[] values = ColorSpace.Named.values();
-        int numColorSpaces;
+        int unflaggedColorSpaces = 2;
         if (Flags.okLabColorspace()) {
-            numColorSpaces = values.length;
-        } else {
-            numColorSpaces = values.length - 1;
+            unflaggedColorSpaces -= 1;
         }
+
+        if (Flags.displayBt2020Colorspace()) {
+            unflaggedColorSpaces -= 1;
+        }
+
+        int numColorSpaces = values.length - unflaggedColorSpaces;
         for (int i = 0; i < numColorSpaces; i++) {
             ColorSpace.Named named = values[i];
             ColorSpace colorSpace = ColorSpace.get(named);
@@ -367,10 +371,11 @@ public class ColorSpaceTest {
         for (ColorSpace.Named e : ColorSpace.Named.values()) {
             ColorSpace colorSpace = ColorSpace.get(e);
             // ColorSpace.get is guaranteed to return non-null. So if this is queried with
-            // a ColorSpace that is flagged, this falls back ot return SRGB as a default.
+            // a ColorSpace that is flagged, this falls back to return SRGB as a default.
             // The values method of an enum will always return the full set of enum values
             // regardless if they are flagged out or not
-            boolean isSrgbFallback = (colorSpace.getId() == 0 && !Flags.okLabColorspace());
+            boolean isSrgbFallback = colorSpace.getId() == 0
+                    && (!Flags.okLabColorspace() || !Flags.displayBt2020Colorspace());
             if (e == ColorSpace.Named.SRGB || isSrgbFallback) {
                 assertTrue(colorSpace.isSrgb());
             } else {

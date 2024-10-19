@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY_EUICC;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.utils.Assert.assertThrows;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -68,7 +69,7 @@ public final class EmbeddedSubscriptionsTest {
     @Test
     public void getSubscriptionIds_initiallyEmpty() {
         Set<Integer> managedSubscriptions =
-                sDeviceState.dpc().devicePolicyManager().getSubscriptionIds();
+                dpc(sDeviceState).devicePolicyManager().getSubscriptionIds();
         assertThat(managedSubscriptions).isEmpty();
     }
 
@@ -78,7 +79,7 @@ public final class EmbeddedSubscriptionsTest {
     @Test
     public void getSubscriptionIds_noPermission_throws() throws Exception {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().getSubscriptionIds());
+                () -> dpc(sDeviceState).devicePolicyManager().getSubscriptionIds());
     }
 
     @ApiTest(apis = "android.telephony.euicc.EuiccManager#downloadSubscription")
@@ -88,12 +89,12 @@ public final class EmbeddedSubscriptionsTest {
     @Test
     public void downloadSubscription_withSwitchAfterDownloadAsTrue_failsAsNotAllowed() {
         assumeTrue("Test requires embedded subscriptions to be enabled on the device",
-                sDeviceState.dpc().euiccManager().isEnabled());
+                dpc(sDeviceState).euiccManager().isEnabled());
         BlockingPendingIntent blockingPendingIntent = BlockingPendingIntent.getBroadcast();
         DownloadableSubscription downloadableSubscription =
                 DownloadableSubscription.forActivationCode("");
 
-        sDeviceState.dpc().euiccManager().downloadSubscription(
+        dpc(sDeviceState).euiccManager().downloadSubscription(
                 downloadableSubscription, /*switchAfterDownload*/true,
                 blockingPendingIntent.pendingIntent());
 

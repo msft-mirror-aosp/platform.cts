@@ -60,6 +60,7 @@ import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParame
 import com.android.bedstead.harrier.policies.DisallowBluetooth
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.profile
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users

@@ -26,6 +26,7 @@ import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.view.AttachedSurfaceControl;
@@ -66,6 +67,30 @@ public class SyncValidatorSCVHTestCase implements ISurfaceValidatorTestCase {
     private final CountDownLatch mReadyToStart = new CountDownLatch(1);
 
     private final boolean mInProcess;
+    private int mInjectTimedOutSync = 0;
+
+    public static class Builder {
+        private long mDelayMs = 0;
+        private boolean mInProcess = false;
+        private int mInjectTimedOutSync = 0;
+        public Builder withDelay(long delayMs) {
+            mDelayMs = delayMs;
+            return this;
+        }
+        public Builder inProcess() {
+            mInProcess = true;
+            return this;
+        }
+        public Builder injectTimedOutSync(int injectTimedOutSync) {
+            mInjectTimedOutSync = injectTimedOutSync;
+            return this;
+        }
+        public SyncValidatorSCVHTestCase build() {
+            SyncValidatorSCVHTestCase test = new SyncValidatorSCVHTestCase(mDelayMs, mInProcess);
+            test.mInjectTimedOutSync = mInjectTimedOutSync;
+            return test;
+        }
+    };
 
     public SyncValidatorSCVHTestCase(long delayMs, boolean inProcess) {
         mDelayMs = delayMs;
@@ -102,6 +127,17 @@ public class SyncValidatorSCVHTestCase implements ISurfaceValidatorTestCase {
             syncGroup.add(mSurfaceView.getRootSurfaceControl(), svResizeRunnable);
             syncGroup.add(mSurfacePackage, embeddedResizeRunnable);
             syncGroup.markSyncReady();
+
+            if (mInjectTimedOutSync-- > 0) {
+                // Wait for the ViewRootImpl's SSF to timeout, which will mark
+                // the SSG as ready
+                SystemClock.sleep(1100L * HW_TIMEOUT_MULTIPLIER);
+
+                // add the completed sync.
+                SurfaceSyncGroup secondSyncGroup = new SurfaceSyncGroup(TAG);
+                secondSyncGroup.add(mSurfaceView.getRootSurfaceControl(), ()->{});
+                secondSyncGroup.markSyncReady();
+            }
 
             SurfaceControl.Transaction t = new SurfaceControl.Transaction();
             t.addTransactionCommittedListener(Runnable::run, () -> {

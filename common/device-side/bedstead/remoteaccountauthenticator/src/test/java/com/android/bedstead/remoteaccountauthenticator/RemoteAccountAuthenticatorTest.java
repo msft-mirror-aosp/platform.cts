@@ -16,6 +16,8 @@
 
 package com.android.bedstead.remoteaccountauthenticator;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -45,9 +47,9 @@ public final class RemoteAccountAuthenticatorTest {
     @EnsureHasAdditionalUser
     public void install_differentUser_appIsInstalled() {
         try (RemoteAccountAuthenticator authenticator =
-                     RemoteAccountAuthenticator.install(sDeviceState.additionalUser())) {
+                     RemoteAccountAuthenticator.install(additionalUser(sDeviceState))) {
             assertThat(authenticator.testApp().pkg().installedOnUser(
-                    sDeviceState.additionalUser())).isTrue();
+                    additionalUser(sDeviceState))).isTrue();
         }
     }
 

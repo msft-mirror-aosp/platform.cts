@@ -20,23 +20,47 @@ package {
 }
 
 android_library {
-    name: "CameraPermissionTestIntentKeys",
+    name: "CameraPermissionTestLib",
     srcs: [
         "src/IntentKeys.kt",
+        "src/**/IOpenCameraActivity.aidl",
     ],
     min_sdk_version: "21",
+    manifest: "AndroidManifestLibrary.xml",
 }
 
 android_test_helper_app {
-    name: "CameraPermissionTestApp",
+    name: "OpenCameraApp",
     srcs: [
         "src/OpenCameraActivity.kt",
     ],
     static_libs: [
-        "CameraPermissionTestIntentKeys",
+        "androidx.appcompat_appcompat",
+        "androidx.lifecycle_lifecycle-common",
+        "CameraPermissionTestLib",
         "kotlin-stdlib",
+        "kotlinx-coroutines-android",
     ],
 
     min_sdk_version: "30",
     target_sdk_version: "30",
+    manifest: "AndroidManifestOpen.xml",
+}
+
+android_test_helper_app {
+    name: "CameraProxyApp",
+    srcs: [
+        "src/CameraProxyActivity.kt",
+    ],
+    static_libs: [
+        "androidx.appcompat_appcompat",
+        "androidx.lifecycle_lifecycle-common",
+        "CameraPermissionTestLib",
+        "kotlin-stdlib",
+        "kotlinx-coroutines-android",
+    ],
+
+    min_sdk_version: "30",
+    target_sdk_version: "30",
+    manifest: "AndroidManifestProxy.xml",
 }

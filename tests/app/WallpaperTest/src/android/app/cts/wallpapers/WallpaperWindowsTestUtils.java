@@ -24,6 +24,7 @@ import android.server.wm.WindowManagerStateHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Utility class to check the status of the wallpaper windows.
@@ -100,7 +101,9 @@ public class WallpaperWindowsTestUtils {
         private void updateWindows() {
             mWmState.waitForAppTransitionIdleOnDisplay(sContext.getDisplayId());
             mWmState.computeState();
-            mWallpaperWindows = mWmState.getMatchingWindowType(TYPE_WALLPAPER);
+            mWallpaperWindows = mWmState.getMatchingWindowType(TYPE_WALLPAPER).stream()
+                    .filter(w->w.getDisplayId() == sContext.getDisplayId())
+                    .collect(Collectors.toList());
             mPackageNames = new ArrayList<>();
             mWallpaperWindows.forEach(w -> mPackageNames.add(w.getPackageName()));
         }

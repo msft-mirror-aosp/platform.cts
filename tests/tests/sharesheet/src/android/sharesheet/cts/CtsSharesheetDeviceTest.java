@@ -221,6 +221,9 @@ public class CtsSharesheetDeviceTest {
 
         // Finally ensure the device is awake
         mDevice.wakeUp();
+        // a workaround for the b/360030797 (the test suit may cause the Launcher wallpaper & style
+        // window to be left visible)
+        mDevice.pressHome();
     }
 
     /**

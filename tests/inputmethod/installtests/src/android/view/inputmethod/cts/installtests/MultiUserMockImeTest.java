@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -87,7 +88,7 @@ public final class MultiUserMockImeTest {
     @EnsureHasWorkProfile
     public void testProfileSwitching() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference workUser = sDeviceState.workProfile(currentUser);
+        final UserReference workUser = workProfile(sDeviceState, currentUser);
         final int currentUserId = currentUser.id();
         final int workUserId = workUser.id();
 

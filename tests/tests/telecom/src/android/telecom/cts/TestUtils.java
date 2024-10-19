@@ -52,6 +52,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -75,6 +76,13 @@ public class TestUtils {
     // tests in the Telecom2 test package.
     public static String PACKAGE = "android.telecom.cts";
     public static String SELF_MANAGED_PACKAGE = "android.telecom.cts.selfmanagedcstestappone";
+    // Note: Please add new test packages to the list below:
+    public static List<String> TEST_PACKAGES;
+    static {
+        TEST_PACKAGES = new ArrayList<>();
+        TEST_PACKAGES.add(PACKAGE);
+        TEST_PACKAGES.add(SELF_MANAGED_PACKAGE);
+    }
     public static final String TEST_URI_SCHEME = "foobuzz";
     public static final String COMPONENT = "android.telecom.cts.CtsConnectionService";
     public static final String INCALL_COMPONENT = "android.telecom.cts/.MockInCallService";

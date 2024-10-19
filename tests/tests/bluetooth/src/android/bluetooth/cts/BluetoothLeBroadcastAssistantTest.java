@@ -635,7 +635,6 @@ public class BluetoothLeBroadcastAssistantTest {
                 mBluetoothLeBroadcastAssistant.getConnectionState(testDevice));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void onSourceLostCallback() {

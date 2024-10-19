@@ -53,6 +53,7 @@ import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.StatUtils;
+import com.android.cts.verifier.audio.audiolib.WavFileCapture;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
@@ -63,6 +64,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.rules.TestName;
 
+import java.io.File;
 import java.util.Locale;
 
 /**
@@ -132,6 +134,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private boolean mIsTV;
     private boolean mIsAutomobile;
     private boolean mIsHandheld;
+    private boolean mIsEmulator;
     private int     mSpeakerDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
     private int     mMicDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
 
@@ -174,6 +177,10 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     final TestName mTestName = new TestName();
 
+    // WAV File Stuff
+    File mFilesDir;
+    WavFileCapture mWavFileCapture;
+
     class TestSpec {
         private static final String TAG = "AudioLoopbackLatencyActivity.TestSpec";
         // impossibly low latencies (indicating something in the test went wrong).
@@ -209,6 +216,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         boolean mRouteConnected; // is the route available NOW
         boolean mTestRun;
 
+        String mWavCaptureFileName;
+        int mCaptureCode = mWavFileCapture.CAPTURE_NOTDONE;
+
         TestSpec(int routeId, double requiredConfidence) {
             mRouteId = routeId;
             mRequiredConfidence = requiredConfidence;
@@ -229,6 +239,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
             mTestStatusText.setVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.VISIBLE);
+
+            // WAV Capture
+            mWavCaptureFileName = "AudioLoopbackTest_" + mRouteId + ".wav";
+            mWavFileCapture.setCaptureFile(mFilesDir.getPath() + "/" + mWavCaptureFileName);
+            mWavFileCapture.setWavSpec(/*numChannels*/ 1, mSampleRate);
+            mWavFileCapture.startCapture();
         }
 
         void recordPhase(int phase, double latencyMS, double confidence,
@@ -265,6 +281,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
             mTestStatusText.setVisibility(View.GONE);
             mProgressBar.setVisibility(View.GONE);
+
+            mCaptureCode = mWavFileCapture.completeCapture();
         }
 
         boolean isMeasurementValid() {
@@ -481,6 +499,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mIsTV = AudioSystemFlags.isTV(this);
         mIsAutomobile = AudioSystemFlags.isAutomobile(this);
         mIsHandheld = AudioSystemFlags.isHandheld(this);
+        mIsEmulator = Build.IS_EMULATOR;
 
         mUSBAudioSupport = AudioDeviceUtils.supportsUsbAudio(this);
         mAnalogJackSupport = AudioDeviceUtils.supportsAnalogHeadset(this);
@@ -542,6 +561,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 (mIsAutomobile ? mYesString : mNoString));
         ((TextView) findViewById(R.id.audio_loopback_is_handheld)).setText(
                 (mIsHandheld ? mYesString : mNoString));
+        ((TextView) findViewById(R.id.audio_loopback_emulator)).setText(
+                (mIsEmulator ? mYesString : mNoString));
 
         // Individual Test Results
         mRouteStatus[TESTROUTE_DEVICE] =
@@ -584,6 +605,10 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         }
 
         mConnectListener = new ConnectListener();
+
+        // WAV Capture
+        mFilesDir = mContext.getFilesDir();
+        mWavFileCapture = new WavFileCapture();
 
         showRouteStatus();
         showTestInstructions();
@@ -952,7 +977,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     }
 
     private boolean mustRunTest() {
-        return mIsHandheld  && hasInternalPath();
+        // Special handling for emulators
+        if (mIsEmulator) {
+            return false;
+        }
+
+        return mIsHandheld && hasInternalPath();
     }
 
     boolean hasInternalPath() {
@@ -1211,6 +1241,25 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             return pass;
         }
 
+        private void reportCapture(TextFormatter textFormatter, int pathId) {
+            if (mTestSpecs[pathId].mCaptureCode == WavFileCapture.CAPTURE_SUCCESS) {
+                textFormatter.appendBreak()
+                        .appendText(getString(R.string.audio_loopback_wavcapturefile) + " "
+                                + mTestSpecs[pathId].mWavCaptureFileName);
+            } else {
+                if (mTestSpecs[pathId].mWavCaptureFileName == null) {
+                    textFormatter.appendBreak()
+                            .appendText(getString(R.string.audio_loopback_nocapture));
+                } else {
+                    textFormatter.appendBreak()
+                            .openBold()
+                            .appendText(getString(R.string.audio_loopback_nocapture)
+                                + ": " + mTestSpecs[pathId].mWavCaptureFileName)
+                            .closeBold();
+                }
+            }
+        }
+
         private void buildResultsPanel(boolean proAudio, int mediaPerformanceClass) {
             // We will want to think about non-WebView devices
             TextFormatter textFormatter = new HtmlFormatter();
@@ -1275,6 +1324,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         .appendBreak();
             }
 
+            textFormatter.appendBreak()
+                    .appendText(getString(R.string.audio_loopback_wavcapturefolder))
+                    .appendBreak()
+                    .appendText(mFilesDir.getPath())
+                    .appendBreak();
+
             /*
              * Speaker/Mic route
              */
@@ -1309,6 +1364,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     textFormatter.appendText(getString(R.string.ctsv_general_failsuffix));
                 }
             }
+
+            // Capture Info
+            reportCapture(textFormatter, TESTROUTE_DEVICE);
             textFormatter.closeParagraph();
 
             /*
@@ -1361,6 +1419,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 }
                 textFormatter.closeItalic();
             }
+
+            // Capture Info
+            reportCapture(textFormatter, TESTROUTE_ANALOG_JACK);
             textFormatter.closeParagraph();
 
             /*
@@ -1411,6 +1472,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 }
                 textFormatter.closeItalic();
             }
+
+            // Capture Info
+            reportCapture(textFormatter, TESTROUTE_USB);
             textFormatter.closeParagraph();
 
             textFormatter.openParagraph();

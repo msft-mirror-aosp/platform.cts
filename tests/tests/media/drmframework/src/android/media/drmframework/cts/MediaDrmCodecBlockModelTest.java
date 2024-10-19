@@ -29,7 +29,6 @@ import android.test.AndroidTestCase;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import java.io.File;
@@ -41,7 +40,6 @@ import java.util.UUID;
  * Media DRM Codec tests with CONFIGURE_FLAG_USE_BLOCK_MODEL.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaDrmCodecBlockModelTest extends AndroidTestCase {
     private static final String TAG = "MediaDrmCodecBlockModelTest";

@@ -16,6 +16,7 @@
 
 package android.car.cts.builtin.os;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.car.builtin.os.SystemPropertiesHelper;
@@ -32,6 +33,9 @@ public final class SystemPropertiesHelperTest {
     // a temporary SystemProperty for CTS.
     private static final String CTS_TEST_PROPERTY_KEY = "dev.android.car.test.cts.builtin_test";
     private static final String CTS_TEST_PROPERTY_VAL = "SystemPropertiesHelperTest";
+    private static final String CTS_TEST_LONG_PROPERTY =
+            "dev.android.car.test.cts.some_doesnt_exist_prop";
+    private static final long CTS_TEST_PROPERTY_LONG_VAL = 1111L;
 
     @Test
     public void testSet_throwsException() {
@@ -41,5 +45,12 @@ public final class SystemPropertiesHelperTest {
         // permission deny.
         assertThrows(RuntimeException.class,
                 () -> SystemPropertiesHelper.set(CTS_TEST_PROPERTY_KEY, CTS_TEST_PROPERTY_VAL));
+    }
+
+    @Test
+    public void testGetLong_ThrowsException() {
+        assertEquals("Some long property that doesn't exist",
+                SystemPropertiesHelper.getLong(CTS_TEST_LONG_PROPERTY, CTS_TEST_PROPERTY_LONG_VAL),
+                CTS_TEST_PROPERTY_LONG_VAL);
     }
 }

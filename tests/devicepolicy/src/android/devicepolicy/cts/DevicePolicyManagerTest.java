@@ -19,6 +19,9 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.deviceOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_AIRPLANE_MODE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 
@@ -84,7 +87,7 @@ public final class DevicePolicyManagerTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#removeActiveAdmin")
     public void removeActiveAdmin_adminPassedDoesNotBelongToCaller_throwsException() {
         assertThrows(SecurityException.class, () -> sDevicePolicyManager.removeActiveAdmin(
-                sDeviceState.deviceOwner().componentName()));
+                deviceOwner(sDeviceState).componentName()));
     }
 
     @EnsureHasDeviceOwner
@@ -93,7 +96,7 @@ public final class DevicePolicyManagerTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#removeActiveAdmin")
     public void removeActiveAdmin_adminPassedDoesNotBelongToCaller_manageDeviceAdminsPermission_noException() {
         sDevicePolicyManager.removeActiveAdmin(
-                sDeviceState.deviceOwner().componentName());
+                deviceOwner(sDeviceState).componentName());
     }
 
     @Test
@@ -120,7 +123,7 @@ public final class DevicePolicyManagerTest {
     public void getPolicyManagedProfiles_hasWorkProfile_returnsWorkProfileUser() {
         assertThat(sDevicePolicyManager.getPolicyManagedProfiles(
                 TestApis.context().instrumentationContext().getUser()))
-                .containsExactly(sDeviceState.workProfile().userHandle());
+                .containsExactly(workProfile(sDeviceState).userHandle());
     }
 
     @Postsubmit(reason = "new test")
@@ -180,15 +183,15 @@ public final class DevicePolicyManagerTest {
             // policy should hit the size limit.
             int newLimit = TestApis.devicePolicy().getPolicySizeForAdmin(
                     new EnforcingAdmin(
-                            sDeviceState.dpc().packageName(),
+                            dpc(sDeviceState).packageName(),
                             DpcAuthority.DPC_AUTHORITY,
-                            sDeviceState.dpc().user().userHandle()));
+                            dpc(sDeviceState).user().userHandle()));
             TestApis.devicePolicy().setMaxPolicySize(newLimit);
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
-           sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                   sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+           dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                   dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
             PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
                     getIdentifierForUserRestriction(DISALLOW_AIRPLANE_MODE),
@@ -203,8 +206,8 @@ public final class DevicePolicyManagerTest {
                     .isTrue();
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
             sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
         }
     }
@@ -221,22 +224,22 @@ public final class DevicePolicyManagerTest {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
             EnforcingAdmin admin = new EnforcingAdmin(
-                    sDeviceState.dpc().packageName(),
+                    dpc(sDeviceState).packageName(),
                     DpcAuthority.DPC_AUTHORITY,
-                    sDeviceState.dpc().user().userHandle(),
-                    sDeviceState.dpc().componentName());
+                    dpc(sDeviceState).user().userHandle(),
+                    dpc(sDeviceState).componentName());
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
             TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
             assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin))
                     .isGreaterThan(currentSize);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
             sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
         }
     }
@@ -253,23 +256,23 @@ public final class DevicePolicyManagerTest {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
             EnforcingAdmin admin = new EnforcingAdmin(
-                    sDeviceState.dpc().packageName(),
+                    dpc(sDeviceState).packageName(),
                     DpcAuthority.DPC_AUTHORITY,
-                    sDeviceState.dpc().user().userHandle(),
-                    sDeviceState.dpc().componentName());
+                    dpc(sDeviceState).user().userHandle(),
+                    dpc(sDeviceState).componentName());
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
             TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
             assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin)).isEqualTo(currentSize);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
             sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
         }
     }
@@ -286,23 +289,23 @@ public final class DevicePolicyManagerTest {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
             EnforcingAdmin admin = new EnforcingAdmin(
-                    sDeviceState.dpc().packageName(),
+                    dpc(sDeviceState).packageName(),
                     DpcAuthority.DPC_AUTHORITY,
-                    sDeviceState.dpc().user().userHandle(),
-                    sDeviceState.dpc().componentName());
+                    dpc(sDeviceState).user().userHandle(),
+                    dpc(sDeviceState).componentName());
             TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
             int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
 
             assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin)).isEqualTo(currentSize);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_AIRPLANE_MODE);
             sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
         }
     }

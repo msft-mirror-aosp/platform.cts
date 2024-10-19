@@ -31,6 +31,12 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.testng.Assert.assertThrows;
 
 import android.Manifest;
@@ -45,19 +51,31 @@ import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.provider.Settings;
-import android.test.AndroidTestCase;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.UserSettings;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
 import junit.framework.Assert;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -71,8 +89,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+@RunWith(AndroidJUnit4.class)
+public class UiModeManagerTest {
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
-public class UiModeManagerTest extends AndroidTestCase {
     private static final String TAG = "UiModeManagerTest";
     private static final long MAX_WAIT_TIME_SECS = 2;
     private static final long MAX_WAIT_TIME_MS = MAX_WAIT_TIME_SECS * 1000;
@@ -80,22 +101,28 @@ public class UiModeManagerTest extends AndroidTestCase {
 
     private static final String CONTRAST_LEVEL = "contrast_level";
 
+    private final UserHelper mUserHelper = new UserHelper();
+
+    private Context mContext;
+    private Context mTargetContext;
+
     private final UserSettings mSystemUserSettings = new UserSettings(UserHandle.USER_SYSTEM);
     private UiModeManager mUiModeManager;
     private boolean mHasModifiedNightModePermissionAcquired = false;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mUiModeManager = (UiModeManager) getContext().getSystemService(Context.UI_MODE_SERVICE);
+    @Before
+    public void setUp() throws Exception {
+        mContext = getInstrumentation().getContext();
+        mTargetContext = getInstrumentation().getTargetContext();
+        mUiModeManager = mContext.getSystemService(UiModeManager.class);
         assertNotNull(mUiModeManager);
         resetNightMode();
         // Make sure automotive projection is not set by this package at the beginning of the test.
         releaseAutomotiveProjection();
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         resetNightMode();
         BatteryUtils.runDumpsysBatteryReset();
         BatteryUtils.resetBatterySaver();
@@ -106,6 +133,10 @@ public class UiModeManagerTest extends AndroidTestCase {
             if (!mHasModifiedNightModePermissionAcquired) {
                 acquireModifyNightModePermission();
             }
+            if (mUserHelper.isVisibleBackgroundUser()) {
+                // TODO(b/340960913): remove it once uimode supports visible background users.
+                return;
+            }
             mUiModeManager.setNightMode(UiModeManager.MODE_NIGHT_NO);
             mUiModeManager.setNightModeActivatedForCustomMode(MODE_NIGHT_CUSTOM_TYPE_BEDTIME,
                     false /* active */);
@@ -115,6 +146,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testUiMode() throws Exception {
         if (isAutomotive()) {
             Log.i(TAG, "testUiMode automotive");
@@ -133,6 +169,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightMode() throws Exception {
         if (isAutomotive()) {
             assertTrue(mUiModeManager.isNightModeLocked());
@@ -146,6 +187,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetAndGetCustomTimeStart() {
         LocalTime time = mUiModeManager.getCustomNightModeStart();
         // decrease time
@@ -157,6 +203,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertEquals(timeNew, mUiModeManager.getCustomNightModeStart());
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetAndGetCustomTimeEnd() {
         LocalTime time = mUiModeManager.getCustomNightModeEnd();
         // decrease time
@@ -168,6 +219,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertEquals(timeNew, mUiModeManager.getCustomNightModeEnd());
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeYesPersisted() throws InterruptedException {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeYesPersisted skipped: night mode is locked");
@@ -181,6 +237,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertStoredNightModeSetting(UiModeManager.MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeAutoPersisted() throws InterruptedException {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeAutoPersisted skipped: night mode is locked");
@@ -194,11 +255,21 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertStoredNightModeSetting(UiModeManager.MODE_NIGHT_AUTO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeCustomType_noPermission_bedtime_shouldThrow() {
         assertThrows(SecurityException.class,
                 () -> mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME));
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeCustomType_customTypeUnknown_bedtime_shouldThrow() {
         acquireModifyNightModePermission();
 
@@ -206,6 +277,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 () -> mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_UNKNOWN));
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeCustomType_bedtime_shouldPersist() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
@@ -215,6 +291,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeCustomType_schedule_shouldPersist() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_SCHEDULE);
@@ -224,6 +305,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_SCHEDULE);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testGetNightModeCustomType_nightModeNo_shouldReturnUnknown() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_NO);
@@ -232,6 +318,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_UNKNOWN);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testGetNightModeCustomType_nightModeYes_shouldReturnUnknown() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_YES);
@@ -240,6 +331,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_UNKNOWN);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testGetNightModeCustomType_nightModeAuto_shouldReturnUnknown() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_AUTO);
@@ -248,6 +344,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_UNKNOWN);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testGetNightModeCustomType_nightModeCustom_shouldReturnScheduleAsDefault() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_CUSTOM);
@@ -256,6 +357,11 @@ public class UiModeManagerTest extends AndroidTestCase {
                 .isEqualTo(MODE_NIGHT_CUSTOM_TYPE_SCHEDULE);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeCustomType_hasPermission_bedtime_shouldNotActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
@@ -263,6 +369,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_NO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_noPermission_customTypeBedtime_activateAtBedtime_shouldNotActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
@@ -275,6 +386,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_NO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_customTypeBedtime_activateAtBedtime_shouldActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
@@ -285,6 +401,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_customTypeBedtime_deactivateAtBedtime_shouldDeactivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_BEDTIME);
@@ -295,6 +416,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_NO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeNo_activateAtBedtime_shouldNotActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_NO);
@@ -305,6 +431,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_NO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeYes_activateAtBedtime_shouldKeepNightModeActivated() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_YES);
@@ -315,11 +446,16 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeAuto_activateAtBedtime_shouldNotActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_AUTO);
-        int uiMode = getContext().getResources().getConfiguration().uiMode &
-                Configuration.UI_MODE_NIGHT_MASK;
+        int uiMode = mContext.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
 
         assertThat(mUiModeManager.setNightModeActivatedForCustomMode(
                 MODE_NIGHT_CUSTOM_TYPE_BEDTIME, true /* active */)).isFalse();
@@ -327,11 +463,16 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(uiMode);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_customTypeSchedule_activateAtBedtime_shouldNotActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_SCHEDULE);
-        int uiMode = getContext().getResources().getConfiguration().uiMode &
-                Configuration.UI_MODE_NIGHT_MASK;
+        int uiMode = mContext.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
 
         assertThat(mUiModeManager.setNightModeActivatedForCustomMode(
                 MODE_NIGHT_CUSTOM_TYPE_BEDTIME, true /* active */)).isFalse();
@@ -339,6 +480,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(uiMode);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeNo_activateAtBedtime_thenCustomTypeBedtime_shouldActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_NO);
@@ -350,6 +496,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeYes_activateAtBedtime_thenCustomTypeBedtime_shouldActiveNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_YES);
@@ -361,6 +512,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_modeAuto_activateAtBedtime_thenCustomTypeBedtime_shouldActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightMode(MODE_NIGHT_AUTO);
@@ -372,6 +528,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testSetNightModeActivatedForCustomMode_customTypeSchedule_activateAtBedtime_thenCustomTypeBedtime_shouldActivateNightMode() {
         acquireModifyNightModePermission();
         mUiModeManager.setNightModeCustomType(MODE_NIGHT_CUSTOM_TYPE_SCHEDULE);
@@ -383,6 +544,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertVisibleNightModeInConfiguration(Configuration.UI_MODE_NIGHT_YES);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeAutoNotPersistedCarMode() {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeAutoNotPersistedCarMode skipped: night mode is locked");
@@ -398,6 +564,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         mUiModeManager.disableCarMode(0);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeCustomTypeBedtimeNotPersistedInCarMode() throws InterruptedException {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeCustomTypeBedtimeNotPersistedInCarMode skipped: night mode is "
@@ -416,6 +587,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         mUiModeManager.disableCarMode(0);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeInCarModeIsTransient() {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeInCarModeIsTransient skipped: night mode is locked");
@@ -434,6 +610,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertEquals(UiModeManager.MODE_NIGHT_NO, mUiModeManager.getNightMode());
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeToggleInCarModeDoesNotChangeSetting() {
         if (mUiModeManager.isNightModeLocked()) {
             Log.i(TAG, "testNightModeToggleInCarModeDoesNotChangeSetting skipped: "
@@ -454,6 +635,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         assertStoredNightModeSetting(UiModeManager.MODE_NIGHT_NO);
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testNightModeInCarModeOnPowerSaveIsTransient() throws Throwable {
         if (mUiModeManager.isNightModeLocked() || !BatteryUtils.isBatterySaverSupported()) {
             Log.i(TAG, "testNightModeInCarModeOnPowerSaveIsTransient skipped: "
@@ -507,6 +693,11 @@ public class UiModeManagerTest extends AndroidTestCase {
      * Verifies that an app holding the ENTER_CAR_MODE_PRIORITIZED permission can enter car mode
      * while specifying a priority.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testEnterCarModePrioritized() {
         if (mUiModeManager.isUiModeLocked()) {
             return;
@@ -525,6 +716,11 @@ public class UiModeManagerTest extends AndroidTestCase {
      * Attempts to use the prioritized car mode API when the caller does not hold the correct
      * permission to use that API.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testEnterCarModePrioritizedDenied() {
         if (mUiModeManager.isUiModeLocked()) {
             return;
@@ -542,6 +738,11 @@ public class UiModeManagerTest extends AndroidTestCase {
      * Verifies that an app holding the TOGGLE_AUTOMOTIVE_PROJECTION permission can request/release
      * automotive projection.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testToggleAutomotiveProjection() throws Exception {
         // If we didn't hold it in the first place, we didn't release it, so expect false.
         assertFalse(releaseAutomotiveProjection());
@@ -556,6 +757,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     /**
      * Verifies that the system can correctly read the projection state.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState() throws Exception {
         assertEquals(UiModeManager.PROJECTION_TYPE_NONE, getActiveProjectionTypes());
         assertTrue(getProjectingPackages(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE).isEmpty());
@@ -563,9 +769,9 @@ public class UiModeManagerTest extends AndroidTestCase {
         requestAutomotiveProjection();
         assertEquals(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE, getActiveProjectionTypes());
         assertTrue(getProjectingPackages(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE)
-                .contains(getContext().getPackageName()));
+                .contains(mTargetContext.getPackageName()));
         assertTrue(getProjectingPackages(UiModeManager.PROJECTION_TYPE_ALL)
-                .contains(getContext().getPackageName()));
+                .contains(mTargetContext.getPackageName()));
         releaseAutomotiveProjection();
         assertEquals(UiModeManager.PROJECTION_TYPE_NONE, getActiveProjectionTypes());
         assertTrue(getProjectingPackages(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE).isEmpty());
@@ -573,6 +779,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     /** Verifies that the system receives callbacks about the projection state at expected times. */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState_listener() throws Exception {
         // Use AtomicInteger so it can be effectively final.
         AtomicInteger activeProjectionTypes = new AtomicInteger();
@@ -596,7 +807,7 @@ public class UiModeManagerTest extends AndroidTestCase {
                 MAX_WAIT_TIME_SECS, () -> callbackInvocations.get() == 1);
         assertEquals(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE, activeProjectionTypes.get());
         assertEquals(1, projectingPackages.size());
-        assertTrue(projectingPackages.contains(getContext().getPackageName()));
+        assertTrue(projectingPackages.contains(mTargetContext.getPackageName()));
 
         // Callback should not be invoked again.
         requestAutomotiveProjection();
@@ -620,7 +831,7 @@ public class UiModeManagerTest extends AndroidTestCase {
                 MAX_WAIT_TIME_SECS, () -> callbackInvocations.get() == 3);
         assertEquals(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE, activeProjectionTypes.get());
         assertEquals(1, projectingPackages.size());
-        assertTrue(projectingPackages.contains(getContext().getPackageName()));
+        assertTrue(projectingPackages.contains(mTargetContext.getPackageName()));
 
         // Unregister and shouldn't receive further callbacks.
         runWithShellPermissionIdentity(() -> mUiModeManager.removeOnProjectionStateChangedListener(
@@ -641,6 +852,10 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     private boolean releaseAutomotiveProjection() throws Exception {
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            // TODO(b/340960913): remove it once uimode supports visible background users.
+            return false;
+        }
         return callWithShellPermissionIdentity(
                 () -> mUiModeManager.releaseProjection(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE),
                 Manifest.permission.TOGGLE_AUTOMOTIVE_PROJECTION,
@@ -661,6 +876,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     /**
      * Attempts to request automotive projection without TOGGLE_AUTOMOTIVE_PROJECTION permission.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testRequestAutomotiveProjectionDenied() {
         try {
             mUiModeManager.requestProjection(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE);
@@ -674,6 +894,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     /**
      * Attempts to request automotive projection without TOGGLE_AUTOMOTIVE_PROJECTION permission.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReleaseAutomotiveProjectionDenied() {
         try {
             mUiModeManager.releaseProjection(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE);
@@ -687,6 +912,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     /**
      * Attempts to request more than one projection type at once.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testRequestAllProjectionTypes() {
         try {
             mUiModeManager.requestProjection(UiModeManager.PROJECTION_TYPE_ALL);
@@ -700,6 +930,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     /**
      * Attempts to release more than one projection type.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReleaseAllProjectionTypes() {
         try {
             mUiModeManager.releaseProjection(UiModeManager.PROJECTION_TYPE_ALL);
@@ -711,6 +946,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     /** Attempts to request no projection types. */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testRequestNoProjectionTypes() {
         try {
             mUiModeManager.requestProjection(UiModeManager.PROJECTION_TYPE_NONE);
@@ -722,6 +962,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     /** Attempts to release no projection types. */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReleaseNoProjectionTypes() {
         try {
             mUiModeManager.releaseProjection(UiModeManager.PROJECTION_TYPE_NONE);
@@ -733,6 +978,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     /** Attempts to call getActiveProjectionTypes without READ_PROJECTION_STATE permission. */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState_getActiveProjectionTypesDenied() {
         try {
             mUiModeManager.getActiveProjectionTypes();
@@ -744,6 +994,11 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     /** Attempts to call getProjectingPackages without READ_PROJECTION_STATE permission. */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState_getProjectingPackagesDenied() {
         try {
             mUiModeManager.getProjectingPackages(UiModeManager.PROJECTION_TYPE_ALL);
@@ -758,10 +1013,15 @@ public class UiModeManagerTest extends AndroidTestCase {
      * Attempts to call addOnProjectionStateChangedListener without
      * READ_PROJECTION_STATE permission.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState_addOnProjectionStateChangedListenerDenied() {
         try {
             mUiModeManager.addOnProjectionStateChangedListener(UiModeManager.PROJECTION_TYPE_ALL,
-                    getContext().getMainExecutor(), (t, pkgs) -> { });
+                    mContext.getMainExecutor(), (t, pkgs) -> { });
         } catch (SecurityException se) {
             // Expect exception.
             return;
@@ -773,10 +1033,15 @@ public class UiModeManagerTest extends AndroidTestCase {
      * Attempts to call removeOnProjectionStateChangedListener without
      * READ_PROJECTION_STATE permission.
      */
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testReadProjectionState_removeOnProjectionStateChangedListenerDenied() {
         UiModeManager.OnProjectionStateChangedListener listener = (t, pkgs) -> { };
         runWithShellPermissionIdentity(() -> mUiModeManager.addOnProjectionStateChangedListener(
-                UiModeManager.PROJECTION_TYPE_ALL, getContext().getMainExecutor(), listener),
+                UiModeManager.PROJECTION_TYPE_ALL, mContext.getMainExecutor(), listener),
                 Manifest.permission.READ_PROJECTION_STATE);
         try {
             mUiModeManager.removeOnProjectionStateChangedListener(listener);
@@ -787,6 +1052,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         fail("Expected SecurityException");
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testGetContrast() throws Exception {
         float initialContrast = mUiModeManager.getContrast();
         putContrastInSettings(0f);
@@ -802,6 +1072,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testAddContrastChangeListener() {
         float initialContrast = mUiModeManager.getContrast();
         putContrastInSettings(0f);
@@ -849,6 +1124,11 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the annotation once uimode supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "The uimode does not support"
+            + " visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
+    @Test
     public void testRemoveContrastChangeListener() {
         float initialContrast = mUiModeManager.getContrast();
         putContrastInSettings(0f);
@@ -887,19 +1167,97 @@ public class UiModeManagerTest extends AndroidTestCase {
         }
     }
 
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testSetNightMode_visibleBackgroundUser_shouldThrow() {
+        acquireModifyNightModePermission();
+
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.setNightMode(MODE_NIGHT_NO));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testSetNightModeActivatedForCustomMode_visibleBackgroundUser_shouldThrow() {
+        acquireModifyNightModePermission();
+
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.setNightModeActivatedForCustomMode(
+                    MODE_NIGHT_CUSTOM_TYPE_BEDTIME, true /* active */));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testSetCustomNightModeStart_visibleBackgroundUser_shouldThrow() {
+        acquireModifyNightModePermission();
+
+        LocalTime now = LocalTime.now();
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.setCustomNightModeStart(now));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testSetCustomNightModeEnd_visibleBackgroundUser_shouldThrow() {
+        acquireModifyNightModePermission();
+
+        LocalTime now = LocalTime.now();
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.setCustomNightModeEnd(now));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testRequestProjection_visibleBackgroundUser_shouldThrow() {
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.TOGGLE_AUTOMOTIVE_PROJECTION);
+
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.requestProjection(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testReleaseProjection_visibleBackgroundUser_shouldThrow() {
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.TOGGLE_AUTOMOTIVE_PROJECTION);
+
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.releaseProjection(UiModeManager.PROJECTION_TYPE_AUTOMOTIVE));
+    }
+
+    // TODO(b/340960913): remove the test once uimode supports visible background users.
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    @Test
+    public void testAddOnProjectionStateChangedListener_visibleBackgroundUser_shouldThrow() {
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.READ_PROJECTION_STATE);
+
+        assertThrows(SecurityException.class,
+                () -> mUiModeManager.addOnProjectionStateChangedListener(
+                    UiModeManager.PROJECTION_TYPE_ALL,
+                    mContext.getMainExecutor(), (t, pkgs) -> { }));
+    }
+
     private boolean isAutomotive() {
-        return getContext().getPackageManager().hasSystemFeature(
+        return mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private boolean isTelevision() {
-        PackageManager pm = getContext().getPackageManager();
+        PackageManager pm = mContext.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
                 || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
     private boolean isWatch() {
-        return getContext().getPackageManager().hasSystemFeature(
+        return mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WATCH);
     }
 
@@ -963,7 +1321,7 @@ public class UiModeManagerTest extends AndroidTestCase {
     }
 
     private void assertVisibleNightModeInConfiguration(int mode) {
-        int uiMode = getContext().getResources().getConfiguration().uiMode;
+        int uiMode = mContext.getResources().getConfiguration().uiMode;
         int flags = uiMode & Configuration.UI_MODE_NIGHT_MASK;
         assertEquals(mode, flags);
     }

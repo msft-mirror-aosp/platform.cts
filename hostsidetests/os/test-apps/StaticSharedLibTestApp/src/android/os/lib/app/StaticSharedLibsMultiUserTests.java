@@ -18,6 +18,8 @@ package android.os.lib.app;
 
 import static android.Manifest.permission.INSTALL_PACKAGES;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -68,7 +70,7 @@ public class StaticSharedLibsMultiUserTests {
     @Before
     public void setUp() throws Exception {
         mInitialUser = sDeviceState.initialUser();
-        mAdditionalUser = sDeviceState.additionalUser();
+        mAdditionalUser = additionalUser(sDeviceState);
 
         mContextInitial = TestApis.context().androidContextAsUser(mInitialUser);
         mContextAdditional = TestApis.context().androidContextAsUser(mAdditionalUser);

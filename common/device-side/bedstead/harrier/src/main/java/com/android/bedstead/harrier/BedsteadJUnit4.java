@@ -108,6 +108,9 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
+    private static final Map<Annotation, Integer> ANNOTATION_COST_CACHE = new HashMap<>();
+    private static final Map<Annotation, Integer> ANNOTATION_PRIORITY_CACHE = new HashMap<>();
+
     private static final String LOG_TAG = "BedsteadJUnit4";
     private boolean mHasManualHarrierRule = false;
 
@@ -238,6 +241,16 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     private static int getAnnotationCost(Annotation annotation) {
+        return ANNOTATION_COST_CACHE.computeIfAbsent(
+                annotation, BedsteadJUnit4::computeAnnotationCost);
+    }
+
+    private static int getAnnotationPriority(Annotation annotation) {
+        return ANNOTATION_PRIORITY_CACHE.computeIfAbsent(
+                annotation, BedsteadJUnit4::computeAnnotationPriority);
+    }
+
+    private static int computeAnnotationCost(Annotation annotation) {
         try {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
@@ -248,7 +261,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
     }
 
-    private static int getAnnotationPriority(Annotation annotation) {
+    private static int computeAnnotationPriority(Annotation annotation) {
         if (annotation instanceof DynamicParameterizedAnnotation) {
             // Special case, not important
             return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;

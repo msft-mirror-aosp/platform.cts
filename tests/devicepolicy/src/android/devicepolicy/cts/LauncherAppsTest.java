@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -97,7 +98,7 @@ public final class LauncherAppsTest {
     @IncludeRunOnProfileOwnerProfileWithNoDeviceOwner // Work profiles should not show hidden apps
     public void getActivityList_activityIsDisabled_isNotIncludedInList() {
         // We install on the DPC user so that this installs in the work profile when there is one
-        try (TestAppInstance app = sTestApp.install(sDeviceState.dpc().user())) {
+        try (TestAppInstance app = sTestApp.install(dpc(sDeviceState).user())) {
             disableMainActivity(app);
 
             List<LauncherActivityInfo> launcherActivities = sLauncherApps.getActivityList(

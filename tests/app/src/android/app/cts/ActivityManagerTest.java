@@ -191,6 +191,7 @@ public final class ActivityManagerTest {
             | PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 
     private Context mTargetContext;
+    private int mTestRunningUserId;
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
     private Intent mIntent;
@@ -220,6 +221,7 @@ public final class ActivityManagerTest {
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mTargetContext = mInstrumentation.getTargetContext();
+        mTestRunningUserId = mTargetContext.getUserId();
         mActivityManager = mInstrumentation.getContext().getSystemService(ActivityManager.class);
         mPackageManager = mInstrumentation.getContext().getPackageManager();
 
@@ -810,30 +812,11 @@ public final class ActivityManagerTest {
             Log.d(TAG, "launcHome(): no home screen");
             return;
         }
-        launchHomeScreenUsingIntent();
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mTargetContext.startActivity(intent);
         Thread.sleep(WAIT_TIME);
-    }
-
-    private void launchHomeScreenUsingIntent() {
-        Intent intent = new Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_HOME)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (mUserHelper.isVisibleBackgroundUser()) {
-            ActivityOptions options = mUserHelper.getActivityOptions();
-            mTargetContext.startActivity(intent, options.toBundle());
-        } else {
-            mTargetContext.startActivity(intent);
-        }
-    }
-
-    private void launchHomeScreenUsingKeyCode() throws IOException {
-        if (mUserHelper.isVisibleBackgroundUser()) {
-            // TODO(b/270634492): should call "input -d + mDisplayId + keyevent KEYCODE_HOME", but
-            // it's not working
-            launchHomeScreenUsingIntent();
-            return;
-        }
-        executeAndLogShellCommand("input keyevent KEYCODE_HOME");
     }
 
     /**
@@ -1275,7 +1258,8 @@ public final class ActivityManagerTest {
             toggleScreenOn(true);
 
             // Now launch home
-            launchHomeScreenUsingKeyCode();
+            executeAndLogShellCommand("input -d " + mUserHelper.getMainDisplayId()
+                    + " keyevent KEYCODE_HOME");
 
             // force device idle again
             toggleScreenOn(false);
@@ -1298,7 +1282,8 @@ public final class ActivityManagerTest {
             runWithShellPermissionIdentity(() -> {
                 mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME);
             });
-            executeAndLogShellCommand("am kill " + STUB_PACKAGE_NAME);
+            executeAndLogShellCommand("am kill --user " + mTestRunningUserId
+                    + " " + STUB_PACKAGE_NAME);
         }
     }
 
@@ -1827,8 +1812,8 @@ public final class ActivityManagerTest {
             mInstrumentation.getUiAutomation().revokeRuntimePermission(PACKAGE_NAME_APP1,
                     android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
             // Set the PACKAGE_NAME_APP1 into rare bucket
-            runShellCommand(mInstrumentation, "am set-standby-bucket "
-                    + PACKAGE_NAME_APP1 + " rare");
+            runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
+                    + " " + PACKAGE_NAME_APP1 + " rare");
 
             // Make sure we could start activity from background
             forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
@@ -1864,12 +1849,13 @@ public final class ActivityManagerTest {
             forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
                     "cmd deviceidle whitelist -" + packageName));
             // Restrict the PACKAGE_NAME_APP1
-            runShellCommand(mInstrumentation, "am set-standby-bucket "
-                    + PACKAGE_NAME_APP1 + " restricted");
+            runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
+                    + " " + PACKAGE_NAME_APP1 + " restricted");
             waitUntilTrue(WAITFOR_MSEC, () -> {
                 try {
                     final int bucket = Integer.getInteger(runShellCommand(mInstrumentation,
-                            "am get-standby-bucket " + PACKAGE_NAME_APP1));
+                            "am get-standby-bucket --user " + mTestRunningUserId
+                                    + " " + PACKAGE_NAME_APP1));
                     return bucket == STANDBY_BUCKET_RESTRICTED;
                 } catch (Exception e) {
                     return false;
@@ -1896,8 +1882,8 @@ public final class ActivityManagerTest {
             verifyLruOrders(packageNames, 0, false, (a, b) -> a < b, "%s should be older than %s");
 
             // Set the PACKAGE_NAME_APP1 into rare bucket again.
-            runShellCommand(mInstrumentation, "am set-standby-bucket "
-                    + PACKAGE_NAME_APP1 + " rare");
+            runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
+                    + " " + PACKAGE_NAME_APP1 + " rare");
 
             latch[0] = new CountDownLatch(1);
             // Send a broadcast to PACKAGE_NAME_APP1 again.
@@ -1911,8 +1897,8 @@ public final class ActivityManagerTest {
             forEach(packageNames, packageName -> runShellCommand(mInstrumentation,
                     "cmd deviceidle whitelist -" + packageName));
 
-            runShellCommand(mInstrumentation, "am set-standby-bucket "
-                    + PACKAGE_NAME_APP1 + " rare");
+            runShellCommand(mInstrumentation, "am set-standby-bucket --user " + mTestRunningUserId
+                    + " " + PACKAGE_NAME_APP1 + " rare");
 
             // force stop test package, where the whole test process group will be killed.
             forEach(packageNames, packageName -> runWithShellPermissionIdentity(

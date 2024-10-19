@@ -22,6 +22,8 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.devicepolicy.cts.utils.TestArtifactUtils.dumpWindowHierarchy;
 import static android.os.UserManager.QUIET_MODE_DISABLE_ONLY_IF_CREDENTIAL_NOT_REQUIRED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
@@ -104,7 +106,7 @@ public class QuietModeTest {
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void startActivityInQuietProfile_quietModeDialogShown() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         String titleText = sContext.getString(R.string.test_string_1);
         try (TestAppInstance instance = sTestApp.install(workProfile)) {
             // Override "Turn on work apps" dialog title to avoid depending on a particular string.
@@ -139,7 +141,7 @@ public class QuietModeTest {
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void quietMode_profileStopped() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
 
         workProfile.setQuietMode(true);
         try {
@@ -148,7 +150,7 @@ public class QuietModeTest {
                     .errorOnFail().await();
 
             // The DPC shouldn't be suspended.
-            assertThat(sDeviceState.dpc().testApp().pkg().isSuspended(workProfile)).isFalse();
+            assertThat(dpc(sDeviceState).testApp().pkg().isSuspended(workProfile)).isFalse();
         } finally {
             workProfile.setQuietMode(false);
         }
@@ -162,7 +164,7 @@ public class QuietModeTest {
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install()) {
             assertThrows(SecurityException.class,
                     () -> testAppInstance.userManager().requestQuietModeEnabled(true,
-                            sDeviceState.workProfile().userHandle()));
+                            workProfile(sDeviceState).userHandle()));
         }
     }
 
@@ -171,7 +173,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerIsNotDefaultLauncher_throwsSecurityException() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install()) {
             runTestAppInForeground(testAppInstance);
 
@@ -189,7 +191,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerIsForegroundLauncher_success() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
             RoleContext r = setTestAppAsForegroundDefaultLauncher(testAppInstance)) {
 
@@ -207,7 +209,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerHasModifyQuietModePermission_success() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
              PermissionContext p = testAppInstance.permissions().withPermission(
                      MODIFY_QUIET_MODE)) {
@@ -226,7 +228,7 @@ public class QuietModeTest {
     @EnsureHasPermission(MODIFY_QUIET_MODE)
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_true_managedProfileUnavailableBroadcastSent() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(
                 sContext, ACTION_MANAGED_PROFILE_UNAVAILABLE).register()) {
             workProfile.setQuietMode(true);
@@ -245,7 +247,7 @@ public class QuietModeTest {
     @EnsureHasPermission(MODIFY_QUIET_MODE)
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_false_managedProfileAvailableBroadcastSent() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         workProfile.setQuietMode(true);
         try (BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(
                 sContext, ACTION_MANAGED_PROFILE_AVAILABLE).register()) {
@@ -264,7 +266,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_false_credentialsSet_isNotDisabled() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
             RoleContext r = setTestAppAsForegroundDefaultLauncher(testAppInstance)) {
             workProfile.setPassword(PASSWORD);

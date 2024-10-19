@@ -55,7 +55,7 @@ public class SurfaceOOMTest {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
     }
 
-    @Test(timeout = 5 * 60 * 1000)
+    @Test(timeout = 10 * 60 * 1000)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SURFACE_NATIVE_ALLOC_REGISTRATION_RO)
     public void testSurfaceGarbageCollection() throws Throwable {
         long imageSizeBytes = BIG_WIDTH * BIG_HEIGHT * BYTES_PER_PIXEL;

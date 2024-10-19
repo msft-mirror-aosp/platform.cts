@@ -195,8 +195,9 @@ public class ASurfaceControlTestUtils {
             long newParentSurfaceControl, long surfaceTransaction);
     public static native void nSurfaceTransaction_setColor(long surfaceControl,
             long surfaceTransaction, float r, float g, float b, float alpha);
-    public static native void nSurfaceTransaction_setEnableBackPressure(long surfaceControl,
-            long surfaceTransaction, boolean enableBackPressure);
+    public static native void nSurfaceTransaction_setEnableBackPressure(
+            SurfaceControl.Transaction transaction,
+            SurfaceControl surfaceControl, boolean enableBackPressure);
     public static native void nSurfaceTransaction_setOnCompleteCallback(long surfaceTransaction,
             boolean waitForFence, TransactionCompleteListener listener);
     public static native void nSurfaceTransaction_setOnCommitCallback(long surfaceTransaction,

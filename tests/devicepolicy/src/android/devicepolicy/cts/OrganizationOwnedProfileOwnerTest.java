@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 
@@ -45,8 +46,8 @@ public final class OrganizationOwnedProfileOwnerTest {
     @Test
     public void organizationOwnedProfileOwner_userCannotBeRemoved() {
         assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                    .removeUser(sDeviceState.workProfile().userHandle())).isFalse();
-        assertThat(sDeviceState.workProfile().exists()).isTrue();
+                    .removeUser(workProfile(sDeviceState).userHandle())).isFalse();
+        assertThat(workProfile(sDeviceState).exists()).isTrue();
     }
 
     // We run on a different user so we don't block deleting the parent
@@ -56,7 +57,7 @@ public final class OrganizationOwnedProfileOwnerTest {
     @Test
     public void organizationOwnedProfileOwner_parentCannotBeRemoved() {
         assertThat(TestApis.context().instrumentedContext().getSystemService(UserManager.class)
-                .removeUser(sDeviceState.workProfile().parent().userHandle())).isFalse();
-        assertThat(sDeviceState.workProfile().parent().exists()).isTrue();
+                .removeUser(workProfile(sDeviceState).parent().userHandle())).isFalse();
+        assertThat(workProfile(sDeviceState).parent().exists()).isTrue();
     }
 }

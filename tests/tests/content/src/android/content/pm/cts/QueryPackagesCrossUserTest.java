@@ -18,6 +18,8 @@ package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_REMOVE_CROSS_USER_PERMISSION_HACK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
@@ -95,7 +97,7 @@ public class QueryPackagesCrossUserTest {
     public void setup() throws Exception {
         assumeTrue("Device is not supported", isDeviceSupported());
         mPrimaryUser = sDeviceState.initialUser();
-        mSecondaryUser = sDeviceState.workProfile();
+        mSecondaryUser = workProfile(sDeviceState);
         assumeTrue(UserManager.supportsMultipleUsers());
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
     }

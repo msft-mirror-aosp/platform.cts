@@ -72,9 +72,9 @@ public class ResourceManagerTestActivityBase extends Activity {
             if (mChangingCodecImportance && error == MediaCodec.CodecException.ERROR_RECLAIMED) {
                 if (mFirstMediaCodec == codec) {
                     mGotReclaimedException = true;
+                    mUseCodecs = false;
                     Log.d(TAG, "Codec " + codec + " Was expected to be Reclaimed");
                 }
-                codec.release();
             }
         }
 
@@ -360,16 +360,28 @@ public class ResourceManagerTestActivityBase extends Activity {
     private void doUseCodecs() {
         int current = 0;
         try {
-            for (current = 0; current < mCodecs.size(); ++current) {
+            for (current = 0; mUseCodecs && current < mCodecs.size(); ++current) {
                 mCodecs.get(current).getName();
             }
         } catch (MediaCodec.CodecException e) {
-            Log.d(TAG, "useCodecs got CodecException 0x" + Integer.toHexString(e.getErrorCode()));
+            Log.d(TAG, "doUseCodecs got CodecException 0x" + Integer.toHexString(e.getErrorCode()));
             if (e.getErrorCode() == MediaCodec.CodecException.ERROR_RECLAIMED) {
                 Log.d(TAG, "Remove codec " + current + " from the list");
                 mCodecs.get(current).release();
                 mCodecs.remove(current);
                 mGotReclaimedException = true;
+                mUseCodecs = false;
+            }
+            return;
+        } catch (IllegalStateException e) {
+            Log.d(TAG, "doUseCodecs got IllegalStateException: " + e.toString());
+            if (mChangingCodecImportance && mGotReclaimedException
+                    && mFirstMediaCodec == mCodecs.get(current)) {
+                // Since the first codec has been reclaimed already,
+                // release it, remove from the list and end the loop.
+                Log.d(TAG, "Release and Remove reclaimed codec " + current + " from the list");
+                mCodecs.get(current).release();
+                mCodecs.remove(current);
                 mUseCodecs = false;
             }
             return;

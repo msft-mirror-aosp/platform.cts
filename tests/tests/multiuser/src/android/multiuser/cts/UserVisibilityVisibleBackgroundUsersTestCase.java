@@ -20,6 +20,8 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.multiuser.cts.TestingUtils.sContext;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
@@ -240,7 +242,7 @@ abstract class UserVisibilityVisibleBackgroundUsersTestCase extends UserVisibili
         }
 
         // Stop the profile as it was initially running in the same display as parent
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 

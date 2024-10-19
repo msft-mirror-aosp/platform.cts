@@ -91,6 +91,7 @@ java_test_host {
         "src/**/AppSecurityTests.java",
         "src/**/DeviceIdentifierTest.java",
         "src/**/KeySetHostTest.java",
+        "src/**/KeyStoreManagerTest.java",
         "src/**/ListeningPortsTest.java",
         "src/**/PkgInstallSignatureVerificationTest.java",
         "src/**/StatsdAppSecurityAtomTest.java",
@@ -207,6 +208,9 @@ java_test_host {
         ":CtsReadSettingsFieldsAppTargetS",
         // UseProcessTest
         ":CtsUseProcessFailActivity",
+        // KeyStoreManagerTest
+        ":KeyStoreManagerTestGranteeApp",
+        ":KeyStoreManagerTestGranterApp",
     ],
 }
 

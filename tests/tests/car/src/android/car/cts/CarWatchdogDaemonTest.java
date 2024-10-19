@@ -16,22 +16,28 @@
 
 package android.car.cts;
 
-import static android.car.PlatformVersion.VERSION_CODES;
-
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import android.car.Car;
+import android.app.UiAutomation;
+import android.automotive.watchdog.CarWatchdogDaemonDump;
+import android.automotive.watchdog.PackageStorageIoStats;
+import android.automotive.watchdog.PerformanceProfilerDump;
+import android.automotive.watchdog.PerformanceStats;
+import android.automotive.watchdog.StatsCollection;
+import android.automotive.watchdog.StatsRecord;
+import android.automotive.watchdog.StorageIoStats;
+import android.automotive.watchdog.UserPackageInfo;
 import android.car.test.util.DiskUtils;
 import android.content.Context;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.UserHandle;
 import android.system.Os;
 import android.system.StructStatVfs;
-import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -42,11 +48,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
@@ -63,6 +71,8 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
                     + " 120 --interval 5 --filter_packages " + getContext().getPackageName();
     private static final String STOP_CUSTOM_PERF_COLLECTION_CMD =
             "dumpsys android.automotive.watchdog.ICarWatchdog/default --stop_perf";
+    private static final String DUMP_CUSTOM_PERF_COLLECTION_PROTO_CMD =
+            "dumpsys android.automotive.watchdog.ICarWatchdog/default --proto";
     private static final String START_CUSTOM_COLLECTION_SUCCESS_MSG =
             "Successfully started custom perf collection";
 
@@ -103,13 +113,9 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
                 writtenBytes).isGreaterThan(0L);
         // Sleep twice the collection interval to capture the entire write.
         Thread.sleep(CAPTURE_WAIT_MS);
-        String contents = runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
-        Log.i(TAG, "stop results:" + contents);
-        assertWithMessage("Failed to custom collect I/O performance data").that(
-                contents).isNotEmpty();
-        // TODO(b/338282230): Use proto dump instead of text dump to verify the test results.
-        long recordedBytes = parseDump(contents, UserHandle.getUserId(Process.myUid()),
-                getContext().getPackageName());
+        CarWatchdogDaemonDump contents = stopCustomCollectionAndGetProtoDump();
+        long recordedBytes = verifyProtoDumpAndGetWrittenBytesForPackage(contents,
+                UserHandle.getUserId(Process.myUid()), getContext().getPackageName());
         assertThat(recordedBytes).isAtLeast(writtenBytes);
     }
 
@@ -132,81 +138,111 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
                 });
     }
 
+
+    /**
+     * Executes a shell command.
+     *
+     * @return byte array.
+     */
+    public static byte[] executeShellCommand(String command) {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation();
+        ParcelFileDescriptor pfd = uiAutomation.executeShellCommand(command);
+        try (FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd)) {
+            byte[] buf = new byte[512];
+            int bytesRead;
+            ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+            while ((bytesRead = fis.read(buf)) != -1) {
+                outStream.write(buf, 0, bytesRead);
+            }
+            return outStream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Stop the custom collection and return the proto dump.
+     *
+     * @return Proto dump.
+     */
+    public static CarWatchdogDaemonDump stopCustomCollectionAndGetProtoDump() {
+        byte[] contents = executeShellCommand(DUMP_CUSTOM_PERF_COLLECTION_PROTO_CMD);
+        executeShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
+        assertWithMessage("Failed to custom collect I/O performance data").that(
+                contents).isNotEmpty();
+        try {
+            CarWatchdogDaemonDump carWatchdogDaemonDump = CarWatchdogDaemonDump.parseFrom(contents);
+            return carWatchdogDaemonDump;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Parse the custom I/O performance data dump generated by the carwatchdog daemon.
      *
-     * Format of the dump:
-     *
-     * ProcStat collector failed to access the file /proc/stat
-     * ... <Skipping unrelated text> ...
-     *
-     * Top N storage I/O writes:
-     * -------------------------
-     * Android User ID, Package Name, Foreground Bytes, Foreground Bytes %, Foreground Fsync, ...
-     * 10, android.car.cts, 0, 0.00%, 0, 0.00%, 348516352, 100.00%, 1, 33.33%
-     * 0, root, 389120, 84.82%, 2, 22.22%, 0, 0.00%, 0, 0.00%
-     * 10, shared:android.uid.bluetooth, 36864, 8.04%, 2, 22.22%, 4096, 0.00%, 2, 66.67%
-     * 0, system, 32768, 7.14%, 5, 55.56%, 0, 0.00%, 0, 0.00%
-     * 0, shared:com.google.uid.shared, 0, 0.00%, 0, 0.00%, 0, 0.00%, 0, 0.00%
-     *
-     * ... <Repeats on multiple collections> ...
-     *
-     * @param content     Content of the dump.
-     * @param userId      UserId of the current process.
-     * @param packageName Package name of the current process.
+     * @param contents      Content of the dump.
+     * @param userId        UserId of the current process.
+     * @param packageName   Package name of the current process.
      * @return Total written bytes recorded for the current userId and package name.
      */
-    private static long parseDump(String content, int userId, String packageName) throws Exception {
-        String ioWritesHeader = Car.getPlatformVersion().isAtLeast(VERSION_CODES.TIRAMISU_1)
-                ? "Top N Storage I/O Writes:" : "Top N Writes:";
-        long writtenBytes = 0;
-        Section curSection = Section.NONE;
-        String errorLines = "";
-        for (String line : content.split("\\r?\\n")) {
-            if (line.isEmpty() || line.startsWith("-") || line.startsWith("=")) {
-                if (curSection == Section.WRITTEN_BYTES_DATA_SECTION) {
-                    // Marks the end of data section.
-                    curSection = Section.NONE;
+    private static long verifyProtoDumpAndGetWrittenBytesForPackage(CarWatchdogDaemonDump contents,
+            int userId, String packageName) throws Exception {
+        long recordedBytes = 0;
+
+        assertWithMessage("Performance profiler dump proto").that(
+                contents.hasPerformanceProfilerDump()).isTrue();
+        PerformanceProfilerDump performanceProfilerDump = contents.getPerformanceProfilerDump();
+
+        assertWithMessage("Performance stats proto").that(
+                performanceProfilerDump.hasPerformanceStats()).isTrue();
+        PerformanceStats performanceStats = performanceProfilerDump.getPerformanceStats();
+
+        assertWithMessage("Custom collection stats proto").that(
+                performanceStats.hasCustomCollectionStats()).isTrue();
+        StatsCollection custom_collection_stats = performanceStats.getCustomCollectionStats();
+
+        List<StatsRecord> records = custom_collection_stats.getRecordsList();
+        assertWithMessage("Size of records list").that(records.size()).isGreaterThan(0);
+
+        for (StatsRecord record : records) {
+            List<PackageStorageIoStats> packageStorageIoWriteStats =
+                    record.getPackageStorageIoWriteStatsList();
+            assertWithMessage("Size of package storage IO write stats list").that(
+                    packageStorageIoWriteStats.size()).isGreaterThan(0);
+
+            for (PackageStorageIoStats packageStorageIoWriteStat : packageStorageIoWriteStats) {
+                assertWithMessage("User package info proto").that(
+                        packageStorageIoWriteStat.hasUserPackageInfo()).isTrue();
+                UserPackageInfo userPackageInfo = packageStorageIoWriteStat.getUserPackageInfo();
+
+                assertWithMessage("User id").that(userPackageInfo.hasUserId()).isTrue();
+                int recordUserId = userPackageInfo.getUserId();
+
+                assertWithMessage("Package name").that(userPackageInfo.hasPackageName()).isTrue();
+                String recordPackageName = userPackageInfo.getPackageName();
+
+                if (recordUserId == userId && recordPackageName.equals(packageName)) {
+                    assertWithMessage("Storage IO stats proto").that(
+                            packageStorageIoWriteStat.hasStorageIoStats()).isTrue();
+                    StorageIoStats storageIoStats = packageStorageIoWriteStat.getStorageIoStats();
+
+                    assertWithMessage("Foreground bytes").that(
+                            storageIoStats.hasFgBytes()).isTrue();
+                    long foregroundBytes = storageIoStats.getFgBytes();
+
+                    assertWithMessage("Background bytes").that(
+                            storageIoStats.hasBgBytes()).isTrue();
+                    long backgroundBytes = storageIoStats.getBgBytes();
+
+                    recordedBytes += foregroundBytes;
+                    recordedBytes += backgroundBytes;
                 }
-                continue;
             }
-            // A collector fails to access its data source when there are SELinux policy violations.
-            if (line.contains("collector failed to access")) {
-                errorLines += "\n" + line;
-            }
-            if (line.regionMatches(/* ignoreCase= */true, 0, ioWritesHeader, 0,
-                    ioWritesHeader.length())) {
-                curSection = Section.WRITTEN_BYTES_HEADER_SECTION;
-                continue;
-            }
-            if (curSection == Section.WRITTEN_BYTES_HEADER_SECTION) {
-                // Skip the header line.
-                curSection = Section.WRITTEN_BYTES_DATA_SECTION;
-                continue;
-            }
-            if (curSection != Section.WRITTEN_BYTES_DATA_SECTION) {
-                continue;
-            }
-            Matcher m = TOP_N_WRITES_LINE_PATTERN.matcher(line);
-            if (!m.matches() || m.groupCount() != 6) {
-                throw new IllegalStateException(
-                        "'Top N Writes' data line '" + line + "' doesn't match regex '"
-                                + TOP_N_WRITES_LINE_PATTERN.toString() + "'");
-            }
-            if (Integer.valueOf(m.group(1), 10) != userId ||
-                    !String.valueOf(m.group(2)).equals(packageName)) {
-                continue;
-            }
-            writtenBytes += Integer.valueOf(m.group(3), 10);
-            writtenBytes += Integer.valueOf(m.group(5), 10);
-            curSection = Section.NONE;
         }
-        if (!errorLines.isEmpty()) {
-            throw new IllegalStateException(
-                    "One or more collectors failed to access their data source. Errors:" +
-                            errorLines);
-        }
-        return writtenBytes;
+
+        return recordedBytes;
     }
 
     private enum Section {

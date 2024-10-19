@@ -177,7 +177,6 @@ public class VehiclePropertyVerifiers {
                 .setPossibleConfigArrayValues(HVAC_TEMPERATURE_DISPLAY_UNITS)
                 .requirePropertyValueTobeInConfigArray()
                 .verifySetterWithConfigArrayValues()
-                .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .build();

@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -181,7 +182,7 @@ public class NoAdminLeakingTest {
     @Test
     public void testScreenCaptureDisabled_adminPolicyNotAvailableToNonAdmin() {
         Assume.assumeFalse("Test not suitable for non-deviceadmins",
-                sDeviceState.dpc().componentName() == null);
+                dpc(sDeviceState).componentName() == null);
         assertOnlyAggregatePolicyAvailableToNonAdmin(
                 (dpm, who) -> dpm.getScreenCaptureDisabled(who));
     }
@@ -192,7 +193,7 @@ public class NoAdminLeakingTest {
     public void testTrustAgentConfiguration_adminPolicyNotAvailableToNonAdmin() {
         assertOnlyAggregatePolicyAvailableToNonAdmin(
                 (dpm, who) -> dpm.getTrustAgentConfiguration(who,
-                        sDeviceState.dpc().componentName()
+                        dpc(sDeviceState).componentName()
                         /* agent component, need to be non-null */));
     }
 
@@ -207,7 +208,7 @@ public class NoAdminLeakingTest {
             try {
                 // Requesting policy for an admin from a different app should throw.
                 accessor.accept(testApp.devicePolicyManager(),
-                        sDeviceState.dpc().componentName());
+                        dpc(sDeviceState).componentName());
                 fail("Checking particular admin policy shouldn't be allowed for non admin");
             } catch (SecurityException e) {
                 adminPackageEx = e;
@@ -226,7 +227,7 @@ public class NoAdminLeakingTest {
             // Both exceptions should have the same message (except package name) to avoid revealing
             // admin existence.
             String adminMessage = adminPackageEx.getMessage()
-                    .replace(sDeviceState.dpc().componentName().toString(), "");
+                    .replace(dpc(sDeviceState).componentName().toString(), "");
             String nonexistentMessage = nonexistentPackageEx.getMessage()
                     .replace(nonexistentComponent.toString(), "");
             assertThat(adminMessage).isEqualTo(nonexistentMessage);

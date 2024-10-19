@@ -16,6 +16,7 @@
 package android.autofillservice.cts.activities;
 
 import android.autofillservice.cts.R;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.autofill.AutofillId;
@@ -71,6 +72,10 @@ public final class PasswordOnlyActivity extends AbstractAutoFillActivity {
     public void login() {
         final String password = mPasswordEditText.getText().toString();
         Log.i(TAG, "Login as " + mUsername + "/" + password);
+
+        final Intent intent = new Intent(this, SimpleAfterLoginActivity.class);
+        startActivity(intent);
+
         finish();
     }
 }

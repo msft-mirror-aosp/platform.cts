@@ -670,7 +670,43 @@ public class CardEmulationTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
-    public void testSetShouldDefaultToObserveModeShouldDefaultToObserveMode()
+    public void testSetShouldDefaultToObserveModeShouldDefaultToObserveModeDynamic()
+            throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            ComponentName backgroundService =
+                    new ComponentName(mContext, BackgroundHostApduService.class);
+            Assert.assertTrue(
+                    cardEmulation.setShouldDefaultToObserveModeForService(
+                            backgroundService, false));
+
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
+            ensurePreferredService(BackgroundHostApduService.class);
+
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            Assert.assertTrue(
+                    cardEmulation.setShouldDefaultToObserveModeForService(backgroundService, true));
+            // Observe mode is set asynchronously, so just wait a bit to let it happen.
+            try {
+                CommonTestUtils.waitUntil(
+                        "Observe mode hasn't been set", 1, () -> adapter.isObserveModeEnabled());
+            } catch (InterruptedException ie) {
+            }
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testSetShouldDefaultToObserveModeFalseShouldNotDefaultToObserveMode()
             throws InterruptedException {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
@@ -679,20 +715,77 @@ public class CardEmulationTest {
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         try {
             ComponentName ctsService = new ComponentName(mContext, CtsMyHostApduService.class);
-            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
-                    false));
-
             Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsService));
             ensurePreferredService(CtsMyHostApduService.class);
 
             Assert.assertFalse(adapter.isObserveModeEnabled());
-            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
-                    true));
-            // Observe mode is set asynchronously, so just wait a bit to let it happen.
-            try {
-                CommonTestUtils.waitUntil("Observe mode hasn't been set", 1,
-                        () -> adapter.isObserveModeEnabled());
-            } catch (InterruptedException ie) { }
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testSetShouldDefaultToObserveModeShouldDefaultToObserveMode()
+            throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            ComponentName backgroundService =
+                    new ComponentName(mContext, BackgroundHostApduService.class);
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, backgroundService));
+            ensurePreferredService(BackgroundHostApduService.class);
+
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testSetShouldDefaultToObserveModeFalseShouldNotDefaultToObserveModeOffHost()
+            throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            ComponentName ctsService = new ComponentName(mContext, CtsMyOffHostApduService.class);
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsService));
+            ensurePreferredService(CtsMyOffHostApduService.class);
+
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testSetShouldDefaultToObserveModeShouldDefaultToObserveModeOffHost()
+            throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            ComponentName offhostService =
+                    new ComponentName(mContext, CtsMyOffHostDefaultToObserveApduService.class);
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, offhostService));
+            ensurePreferredService(CtsMyOffHostDefaultToObserveApduService.class);
+
             Assert.assertTrue(adapter.isObserveModeEnabled());
         } finally {
             Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
@@ -799,13 +892,26 @@ public class CardEmulationTest {
         ensurePreferredService(serviceClass, mContext);
     }
 
+    static int getResIdForServiceClass(Class serviceClass) {
+        if (CtsMyHostApduService.class.equals(serviceClass)) {
+            return R.string.CtsPaymentService;
+        } else if (CustomHostApduService.class.equals(serviceClass)) {
+            return R.string.CtsCustomPaymentService;
+        } else if (BackgroundHostApduService.class.equals(serviceClass)) {
+            return R.string.CtsBackgroundPaymentService;
+        } else if (CtsMyOffHostApduService.class.equals(serviceClass)) {
+            return R.string.CtsOffHostPaymentService;
+        } else if (CtsMyOffHostDefaultToObserveApduService.class.equals(serviceClass)) {
+            return R.string.CtsOffHostDefaultToObservePaymentService;
+        } else {
+            throw new IllegalArgumentException("no mapping from class to description string");
+        }
+    }
+
     static void ensurePreferredService(Class serviceClass, Context context) {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-        int resId = (serviceClass == CtsMyHostApduService.class
-                ? R.string.CtsPaymentService
-                : (serviceClass == CustomHostApduService.class
-                        ? R.string.CtsCustomPaymentService : R.string.CtsBackgroundPaymentService));
+        int resId = getResIdForServiceClass(serviceClass);
         final String desc = context.getResources().getString(resId);
         DefaultPaymentProviderTestUtils.ensurePreferredService(desc, context);
     }
@@ -2043,7 +2149,8 @@ public class CardEmulationTest {
 
     private CardEmulation createMockedInstance() throws NoSuchFieldException {
         CardEmulation instance = CardEmulation.getInstance(mAdapter);
-        FieldSetter.setField(instance, instance.getClass().getDeclaredField("sService"), mEmulation);
+        FieldSetter.setField(
+                instance, instance.getClass().getDeclaredField("sService"), mEmulation);
         return instance;
     }
 }

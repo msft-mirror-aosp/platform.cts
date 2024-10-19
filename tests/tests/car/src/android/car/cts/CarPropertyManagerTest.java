@@ -92,6 +92,7 @@ import android.car.hardware.property.VehicleTurnSignal;
 import android.car.hardware.property.VehicleVendorPermission;
 import android.car.hardware.property.WindshieldWipersState;
 import android.car.hardware.property.WindshieldWipersSwitch;
+import android.os.Build;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
@@ -8755,6 +8756,55 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @ApiTest(
             apis = {
                     "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
+                    "android.car.hardware.property.CarPropertyManager#unsubscribePropertyEvents",
+                    "android.car.hardware.property.Subscription.Builder#Builder",
+                    "android.car.hardware.property.Subscription.Builder#addAreaId",
+                    "android.car.hardware.property.Subscription.Builder#build"
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_BATCHED_SUBSCRIPTIONS,
+            Flags.FLAG_ALWAYS_SEND_INITIAL_VALUE_EVENT})
+    public void testSubscribePropertyEventsForOnchangeProperty_alwaysReceiveInitEvent()
+            throws Exception {
+        assumeTrue("Skipped for target SDK version <= Android V",
+                mContext.getApplicationInfo().targetSdkVersion
+                        > Build.VERSION_CODES.VANILLA_ICE_CREAM);
+
+        runWithShellPermissionIdentity(
+                () -> {
+                    // Test for on_change properties
+                    int nightModePropId = VehiclePropertyIds.NIGHT_MODE;
+                    CarPropertyConfig<?> carPropertyConfig =
+                            mCarPropertyManager.getCarPropertyConfig(nightModePropId);
+                    // Night mode is required in CDD.
+                    assertWithMessage("Night mode property is not supported")
+                            .that(carPropertyConfig).isNotNull();
+
+                    CarPropertyEventCounter listener = new CarPropertyEventCounter();
+
+                    // If we register the same listener multiple times, we still expect to
+                    // receive the initial value event for every registration.
+                    for (int i = 0; i < 5; i++) {
+                        listener.resetCountDownLatch(ONCHANGE_RATE_EVENT_COUNTER);
+                        listener.resetReceivedEvents();
+
+                        mCarPropertyManager.subscribePropertyEvents(
+                                List.of(new Subscription.Builder(nightModePropId)
+                                        .addAreaId(0).build()),
+                                /* callbackExecutor= */ null, listener);
+
+                        listener.assertOnChangeEventCalled();
+                        assertWithMessage("Must receive expected number of initial value events")
+                                .that(listener.receivedEvent(nightModePropId)).isEqualTo(1);
+                    }
+
+                    mCarPropertyManager.unsubscribePropertyEvents(listener);
+                });
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                    "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
                     "android.car.hardware.property.CarPropertyManager#unregisterCallback"
             })
     @RequiresFlagsEnabled({Flags.FLAG_BATCHED_SUBSCRIPTIONS, Flags.FLAG_VARIABLE_UPDATE_RATE})
@@ -9970,6 +10020,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             }
         }
 
+        public void resetReceivedEvents() {
+            synchronized (mLock) {
+                mEventCounter.clear();
+                mErrorCounter.clear();
+                mErrorWithErrorCodeCounter.clear();
+            }
+        }
+
         public void assertOnChangeEventCalled() throws InterruptedException {
             CountDownLatch countDownLatch;
             int counter;
@@ -9981,7 +10039,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 throw new IllegalStateException(
                         "Callback is not called "
                                 + counter
-                                + "times in "
+                                + " times in "
                                 + mTimeoutMillis
                                 + " ms. It was only called "
                                 + (counter - countDownLatch.getCount())

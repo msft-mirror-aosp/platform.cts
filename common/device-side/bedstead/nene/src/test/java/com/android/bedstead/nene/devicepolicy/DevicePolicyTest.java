@@ -16,7 +16,9 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -445,18 +447,18 @@ public class DevicePolicyTest {
     @Test
     @EnsureHasProfileOwner(isPrimary = true)
     public void isSet_userRestrictionIsSet_returnsTrue() {
-        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                        sDeviceState.dpc().componentName())
+        boolean originalIsSet = dpc(sDeviceState).devicePolicyManager().getUserRestrictions(
+                        dpc(sDeviceState).componentName())
                 .getBoolean(USER_RESTRICTION, /*default= */ false);
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), USER_RESTRICTION);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
         } finally {
             if (!originalIsSet) {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), USER_RESTRICTION);
             }
         }
     }
@@ -464,19 +466,19 @@ public class DevicePolicyTest {
     @Test
     @EnsureHasProfileOwner(isPrimary = true)
     public void isSet_userRestrictionIsNotSet_returnsFalse() {
-        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                        sDeviceState.dpc().componentName())
+        boolean originalIsSet = dpc(sDeviceState).devicePolicyManager().getUserRestrictions(
+                        dpc(sDeviceState).componentName())
                 .getBoolean(USER_RESTRICTION, /*default= */ false);
         try {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), USER_RESTRICTION);
 
             assertThat(
                     TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
         } finally {
             if (!originalIsSet) {
-                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+                dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), USER_RESTRICTION);
             }
         }
     }
@@ -485,19 +487,19 @@ public class DevicePolicyTest {
     @EnsureHasAdditionalUser
     @EnsureHasProfileOwner(isPrimary = true, onUser = ADDITIONAL_USER)
     public void isSet_userRestrictionIsSet_differentUser_returnsTrue() {
-        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                sDeviceState.dpc().componentName()).getBoolean(USER_RESTRICTION,
+        boolean originalIsSet = dpc(sDeviceState).devicePolicyManager().getUserRestrictions(
+                dpc(sDeviceState).componentName()).getBoolean(USER_RESTRICTION,
                 /*default= */ false);
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), USER_RESTRICTION);
 
-            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+            assertThat(TestApis.devicePolicy().userRestrictions(additionalUser(sDeviceState))
                     .isSet(USER_RESTRICTION)).isTrue();
         } finally {
             if (!originalIsSet) {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), USER_RESTRICTION);
             }
         }
     }
@@ -506,19 +508,19 @@ public class DevicePolicyTest {
     @EnsureHasAdditionalUser
     @EnsureHasProfileOwner(isPrimary = true, onUser = ADDITIONAL_USER)
     public void isSet_userRestrictionIsNotSet_differentUser_returnsFalse() {
-        boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                sDeviceState.dpc().componentName()).getBoolean(USER_RESTRICTION,
+        boolean originalIsSet = dpc(sDeviceState).devicePolicyManager().getUserRestrictions(
+                dpc(sDeviceState).componentName()).getBoolean(USER_RESTRICTION,
                 /*default= */ false);
         try {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), USER_RESTRICTION);
 
-            assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
+            assertThat(TestApis.devicePolicy().userRestrictions(additionalUser(sDeviceState))
                     .isSet(USER_RESTRICTION)).isFalse();
         } finally {
             if (!originalIsSet) {
-                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), USER_RESTRICTION);
+                dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), USER_RESTRICTION);
             }
         }
     }

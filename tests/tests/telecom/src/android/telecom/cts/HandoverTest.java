@@ -66,14 +66,16 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
     @Override
     protected void tearDown() throws Exception {
         try {
-            CtsSelfManagedConnectionService connectionService =
-                    CtsSelfManagedConnectionService.getConnectionService();
-            if (connectionService != null) {
-                connectionService.tearDown();
+            if (mShouldTestTelecom) {
                 mTelecomManager.unregisterPhoneAccount(
                         TestUtils.TEST_HANDOVER_SRC_PHONE_ACCOUNT_HANDLE);
                 mTelecomManager.unregisterPhoneAccount(
                         TestUtils.TEST_HANDOVER_DEST_PHONE_ACCOUNT_HANDLE);
+            }
+            CtsSelfManagedConnectionService connectionService =
+                    CtsSelfManagedConnectionService.getConnectionService();
+            if (connectionService != null) {
+                connectionService.tearDown();
             }
         } finally {
             super.tearDown();

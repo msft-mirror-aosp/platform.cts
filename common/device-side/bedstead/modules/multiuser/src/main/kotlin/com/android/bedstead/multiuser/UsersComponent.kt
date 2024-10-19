@@ -738,10 +738,3 @@ private class RemovedUser(
     val isRunning: Boolean,
     val isOriginalSwitchedToUser: Boolean
 )
-
-/**
- * See [UsersComponent.user]
- */
-fun DeviceState.user(userType: String): UserReference {
-    return getDependency(UsersComponent::class.java).user(userType)
-}

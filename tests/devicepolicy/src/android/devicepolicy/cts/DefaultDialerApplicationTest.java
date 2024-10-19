@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -80,7 +81,7 @@ public final class DefaultDialerApplicationTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDpm = dpc.devicePolicyManager();
         mTelephonyManager = sContext.getSystemService(TelephonyManager.class);
@@ -111,9 +112,9 @@ public final class DefaultDialerApplicationTest {
         assumeTrue(mTelephonyManager.isVoiceCapable()
                 || (mRoleManager != null && mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)));
         String previousDialerAppInTest = getDefaultDialerPackage();
-        String previousDialerAppInDpc = sDeviceState.dpc().telecomManager()
+        String previousDialerAppInDpc = dpc(sDeviceState).telecomManager()
                 .getDefaultDialerPackage();
-        try (TestAppInstance dialerApp = sDialerApp.install(sDeviceState.dpc().user())) {
+        try (TestAppInstance dialerApp = sDialerApp.install(dpc(sDeviceState).user())) {
             setDefaultDialerApplication(mDpm, dialerApp.packageName());
             // Make sure the default dialer in the test user is unchanged.
             assertThat(getDefaultDialerPackage()).isEqualTo(previousDialerAppInTest);

@@ -21,6 +21,8 @@ import static android.app.admin.DevicePolicyManager.WIFI_SECURITY_ENTERPRISE_EAP
 import static android.app.admin.DevicePolicyManager.WIFI_SECURITY_OPEN;
 import static android.app.admin.DevicePolicyManager.WIFI_SECURITY_PERSONAL;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -55,7 +57,7 @@ public class WifiMinimumSecurityTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mDevicePolicyManager = dpc.devicePolicyManager();
     }
 

@@ -20,6 +20,7 @@ import static android.app.admin.DevicePolicyIdentifiers.PACKAGE_UNINSTALL_BLOCKE
 import static android.app.admin.TargetUser.LOCAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRICTIVE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -86,8 +87,8 @@ public class BlockUninstallTest {
     @CannotSetPolicyTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_notAllowed_throwsException() {
         assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true);
         });
     }
@@ -97,21 +98,21 @@ public class BlockUninstallTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_true_isUninstallBlockedIsTrue() {
-        sTestApp.install(sDeviceState.dpc().user());
+        sTestApp.install(dpc(sDeviceState).user());
         try {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true
             );
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isUninstallBlocked(
-                    sDeviceState.dpc().componentName(), sTestApp.packageName()
+            assertThat(dpc(sDeviceState).devicePolicyManager().isUninstallBlocked(
+                    dpc(sDeviceState).componentName(), sTestApp.packageName()
             )).isTrue();
             assertThat(sLocalDevicePolicyManager.isUninstallBlocked(/* admin= */ null,
                     sTestApp.packageName())).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false
             );
         }
@@ -122,21 +123,21 @@ public class BlockUninstallTest {
     @Postsubmit(reason = "new test")
     @PolicyDoesNotApplyTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_true_isUninstallBlockedIsFalse() {
-        sTestApp.install(sDeviceState.dpc().user());
+        sTestApp.install(dpc(sDeviceState).user());
         try {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true
             );
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isUninstallBlocked(
-                    sDeviceState.dpc().componentName(), sTestApp.packageName()
+            assertThat(dpc(sDeviceState).devicePolicyManager().isUninstallBlocked(
+                    dpc(sDeviceState).componentName(), sTestApp.packageName()
             )).isTrue();
             assertThat(sLocalDevicePolicyManager.isUninstallBlocked(/* admin= */ null,
                     sTestApp.packageName())).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false
             );
         }
@@ -147,14 +148,14 @@ public class BlockUninstallTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_false_isUninstallBlockedIsFalse() {
-        sTestApp.install(sDeviceState.dpc().user());
-        sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                sDeviceState.dpc().componentName(),
+        sTestApp.install(dpc(sDeviceState).user());
+        dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                dpc(sDeviceState).componentName(),
                 sTestApp.packageName(), /* uninstallBlocked= */ false
         );
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isUninstallBlocked(
-                sDeviceState.dpc().componentName(), sTestApp.packageName()
+        assertThat(dpc(sDeviceState).devicePolicyManager().isUninstallBlocked(
+                dpc(sDeviceState).componentName(), sTestApp.packageName()
         )).isFalse();
         assertThat(sLocalDevicePolicyManager.isUninstallBlocked(/* admin= */ null,
                 sTestApp.packageName())).isFalse();
@@ -165,14 +166,14 @@ public class BlockUninstallTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_true_appIsNotInstalled_silentlyFails() {
-        sTestApp.install(sDeviceState.dpc().user());
-        sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                sDeviceState.dpc().componentName(),
+        sTestApp.install(dpc(sDeviceState).user());
+        dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                dpc(sDeviceState).componentName(),
                 NOT_INSTALLED_PACKAGE_NAME, /* uninstallBlocked= */ true
         );
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isUninstallBlocked(
-                sDeviceState.dpc().componentName(), NOT_INSTALLED_PACKAGE_NAME
+        assertThat(dpc(sDeviceState).devicePolicyManager().isUninstallBlocked(
+                dpc(sDeviceState).componentName(), NOT_INSTALLED_PACKAGE_NAME
         )).isFalse();
     }
 
@@ -182,22 +183,22 @@ public class BlockUninstallTest {
     @CanSetPolicyTest(policy = BlockUninstall.class)
     public void setUninstallBlocked_logged() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true
             );
 
             assertThat(metrics.query()
                             .whereType().isEqualTo(EventId.SET_UNINSTALL_BLOCKED_VALUE)
                             .whereAdminPackageName().isEqualTo(
-                                    sDeviceState.dpc().packageName())
+                                    dpc(sDeviceState).packageName())
                             .whereStrings().contains(sTestApp.packageName())
                             .whereStrings().size().isEqualTo(1)
-                            .whereBoolean().isEqualTo(sDeviceState.dpc().isDelegate())
+                            .whereBoolean().isEqualTo(dpc(sDeviceState).isDelegate())
                             ).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false);
         }
     }
@@ -209,8 +210,8 @@ public class BlockUninstallTest {
     @PolicyAppliesTest(policy = BlockUninstall.class)
     public void getDevicePolicyState_uninstallBlockedSet_returnsPolicy() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true);
 
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
@@ -221,8 +222,8 @@ public class BlockUninstallTest {
 
             assertThat(policyState.getCurrentResolvedPolicy()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false);
         }
     }
@@ -238,8 +239,8 @@ public class BlockUninstallTest {
         Bundle bundle = new Bundle();
         bundle.putString(PolicyUpdateReceiver.EXTRA_PACKAGE_NAME, sTestApp.packageName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true);
 
             PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
@@ -247,8 +248,8 @@ public class BlockUninstallTest {
                     PolicyUpdateResult.RESULT_POLICY_SET, LOCAL_USER_ID, bundle);
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false);
         }
     }
@@ -260,8 +261,8 @@ public class BlockUninstallTest {
     @CanSetPolicyTest(policy = BlockUninstall.class, singleTestOnly = true)
     public void getDevicePolicyState_uninstallBlocked_returnsCorrectResolutionMechanism() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ true);
 
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
@@ -273,8 +274,8 @@ public class BlockUninstallTest {
             assertThat(PolicyEngineUtils.getMostRestrictiveBooleanMechanism(policyState)
                     .getMostToLeastRestrictiveValues()).isEqualTo(TRUE_MORE_RESTRICTIVE);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setUninstallBlocked(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setUninstallBlocked(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), /* uninstallBlocked= */ false
             );
         }

@@ -1023,8 +1023,13 @@ def find_aruco_markers(
   # Try with high-contrast greyscale if needed
   logging.debug('Trying ArUco marker detection with greyscale image.')
   bw_img = convert_image_to_high_contrast_black_white(input_img)
-  corners, ids, rejected_params = cv2.aruco.detectMarkers(
-      bw_img, aruco_dict, parameters=parameters)
+  # Use ArucoDetector object if available, else fall back to detectMarkers()
+  if aruco_detector is not None:
+    corners, ids, rejected_params = aruco_detector.detectMarkers(bw_img)
+  else:
+    corners, ids, rejected_params = cv2.aruco.detectMarkers(
+        bw_img, aruco_dict, parameters=parameters
+    )
   if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected with greyscale image.')
   # Handle case where no markers are found

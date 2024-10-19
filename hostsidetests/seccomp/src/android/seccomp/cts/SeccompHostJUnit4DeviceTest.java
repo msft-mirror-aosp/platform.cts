@@ -59,7 +59,19 @@ public class SeccompHostJUnit4DeviceTest extends BaseHostJUnit4Test {
 
     @Test
     public void testAppZygoteSyscalls() throws Exception {
-        Assert.assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, TEST_CTS_SYSCALL_APP_ZYGOTE));
+        // To speed up this test, the app zygote preload code repeatedly forks and
+        // tries to execute a system call that is either allowed or denied by seccomp;
+        // the resulting crashes will not bring down the app zygote itself, but the
+        // overall time to complete the test can take several minutes on slow devices;
+        // this means that the app zygote preload phase will be blocked for all this time,
+        // preventing other stuff from starting.
+        // Extend the timeout for the test.
+        try {
+            getDevice().executeShellCommand("am set-app-zygote-preload-timeout 500000");
+            Assert.assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, TEST_CTS_SYSCALL_APP_ZYGOTE));
+        } finally {
+            getDevice().executeShellCommand("am set-app-zygote-preload-timeout 15000");
+        }
     }
 
     @After

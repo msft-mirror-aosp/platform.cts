@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.admin.DevicePolicyManager;
@@ -49,13 +51,13 @@ public final class KeyguardDisableFeaturesTest {
     @Postsubmit(reason = "new test")
     public void setKeyguardDisabledFeature_isSet(@PolicyArgument int flag) {
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), flag);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), flag);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(flag);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(),
                     DevicePolicyManager.KEYGUARD_DISABLE_FEATURES_NONE
             );
         }
@@ -68,13 +70,13 @@ public final class KeyguardDisableFeaturesTest {
     @Postsubmit(reason = "new test")
     public void setKeyguardDisabledFeature_cannotSet_isNotSet(@PolicyArgument int flag) {
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), flag);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), flag);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(flag);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(),
                     DevicePolicyManager.KEYGUARD_DISABLE_FEATURES_NONE
             );
         }

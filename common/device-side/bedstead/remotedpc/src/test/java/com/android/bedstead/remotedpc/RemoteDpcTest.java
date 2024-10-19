@@ -19,6 +19,7 @@ package com.android.bedstead.remotedpc;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -728,7 +729,7 @@ public class RemoteDpcTest {
     @Test
     @EnsureHasDeviceOwner
     public void frameworkCall_makesCall() {
-        sDeviceState.dpc().devicePolicyManager().getCurrentFailedPasswordAttempts();
+        dpc(sDeviceState).devicePolicyManager().getCurrentFailedPasswordAttempts();
     }
 
     @Test

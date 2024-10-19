@@ -46,14 +46,14 @@ public class DumpProtoUtils {
     private DumpProtoUtils() {
     }
 
-    private static void logProtoDump(byte[] dump, Throwable th) {
-        Log.e(TAG, "Exception detected while parsing proto", th);
+    private static void logProtoDump(byte[] dump, InvalidProtocolBufferNanoException th) {
+        Log.e(TAG, "InvalidProtocolBufferNanoException detected while parsing proto", th);
         if (dump == null) {
             Log.e(TAG, "Dump is null. This shouldn't happen.");
             return;
         }
         Log.e(TAG, "Length=" + dump.length);
-        Log.e(TAG, "Dump in UTF-8=" + new String(dump, StandardCharsets.UTF_8));
+        Log.e(TAG, "Dump in UTF-8: " + new String(dump, StandardCharsets.UTF_8).trim());
 
         Log.e(TAG, "Dump in base64:");
         for (var s : Base64.encodeToString(dump, 0).split("\n")) {
@@ -61,40 +61,67 @@ public class DumpProtoUtils {
         }
     }
 
+    private interface ThrowingFunction<T, R> {
+        R apply(T value) throws InvalidProtocolBufferNanoException;
+    }
+
+    private static <T> T parseProtoDumpsys(String command, ThrowingFunction<byte[], T> parser) {
+        byte[] dump = null;
+        try {
+            try {
+                return parser.apply(dump = getDump(command));
+            } catch (InvalidProtocolBufferNanoException e) {
+                logProtoDump(dump, e);
+                throw new RuntimeException(
+                        "Failed to parse output from `" + command
+                                + "`. Dumpsys crashed or system is dead? Output="
+                                + new String(dump, StandardCharsets.UTF_8).trim(),
+                        e);
+            }
+        } catch (Throwable th) {
+            Log.e(TAG, "Failed to parse proto", th);
+            throw th;
+        }
+    }
+
+    private static <T> T parseProtoDumpsysWithRetries(
+            String command, ThrowingFunction<byte[], T> parser) {
+        final int MAX_TRIES = 3;
+        int n = 0;
+        while (true) {
+            n++;
+            try {
+                return parseProtoDumpsys(command, parser);
+            } catch (Throwable e) {
+                if (n >= MAX_TRIES) {
+                    // Give up.
+                    throw e;
+                }
+
+                Log.e(TAG, "Exception detected, retrying... (#" + n + ")");
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
+    }
+
     /**
      * Returns the proto from `dumpsys activity --proto processes`
      */
     public static ActivityManagerServiceDumpProcessesProto dumpProcesses() {
-        byte[] dump = null;
-        try {
-            try {
-                return ActivityManagerServiceDumpProcessesProto.parseFrom(
-                        dump = getDump("dumpsys activity --proto processes"));
-            } catch (InvalidProtocolBufferNanoException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (Throwable th) {
-            logProtoDump(dump, th);
-            throw th;
-        }
+        return parseProtoDumpsysWithRetries("dumpsys activity --proto processes",
+                ActivityManagerServiceDumpProcessesProto::parseFrom);
     }
 
     /**
      * Returns the proto from `dumpsys activity --proto services`
      */
     public static ActivityManagerServiceDumpServicesProto dumpServices() {
-        byte[] dump = null;
-        try {
-            try {
-                return ActivityManagerServiceDumpServicesProto.parseFrom(
-                        dump = getDump("dumpsys activity --proto service"));
-            } catch (InvalidProtocolBufferNanoException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (Throwable th) {
-            logProtoDump(dump, th);
-            throw th;
-        }
+        return parseProtoDumpsysWithRetries("dumpsys activity --proto service",
+                ActivityManagerServiceDumpServicesProto::parseFrom);
     }
 
     private static byte[] getDump(String command) {

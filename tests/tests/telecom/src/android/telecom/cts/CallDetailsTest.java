@@ -171,10 +171,14 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     @Override
     protected void tearDown() throws Exception {
         try {
-            if (mShouldTestTelecom && mContactUri != null) {
-                ContentResolver resolver =
-                        getInstrumentation().getTargetContext().getContentResolver();
-                TestUtils.deleteContact(resolver, mContactUri);
+            if (mShouldTestTelecom) {
+                mTelecomManager.unregisterPhoneAccount(
+                        TestUtils.TEST_PHONE_ACCOUNT_2.getAccountHandle());
+                if (mContactUri != null) {
+                    ContentResolver resolver =
+                            getInstrumentation().getTargetContext().getContentResolver();
+                    TestUtils.deleteContact(resolver, mContactUri);
+                }
             }
         } finally {
             super.tearDown();

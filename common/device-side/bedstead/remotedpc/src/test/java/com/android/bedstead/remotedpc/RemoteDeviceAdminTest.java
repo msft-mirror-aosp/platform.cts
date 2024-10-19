@@ -16,6 +16,8 @@
 
 package com.android.bedstead.remotedpc;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -69,7 +71,7 @@ public final class RemoteDeviceAdminTest {
     public void setAsDeviceAdmin_specifyUser_getActiveAdmins_returnsRemoteDeviceAdmin() {
         RemoteDeviceAdmin remoteDeviceAdmin = null;
         try {
-            UserReference additionalUser = sDeviceState.additionalUser();
+            UserReference additionalUser = additionalUser(sDeviceState);
             remoteDeviceAdmin = RemoteDeviceAdmin.setAsDeviceAdmin(additionalUser);
 
             Set<DeviceAdmin> deviceAdmins =

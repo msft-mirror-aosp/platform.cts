@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -64,7 +66,7 @@ public final class SupportMessageTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDevicePolicyManager = dpc.devicePolicyManager();
     }

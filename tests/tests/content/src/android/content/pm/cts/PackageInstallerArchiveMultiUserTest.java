@@ -19,6 +19,7 @@ package android.content.pm.cts;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -102,7 +103,7 @@ public class PackageInstallerArchiveMultiUserTest {
     public void setup() throws Exception {
         assumeTrue("Form factor is not supported", isFormFactorSupported());
         mPrimaryUser = sDeviceState.initialUser();
-        mSecondaryUser = sDeviceState.workProfile();
+        mSecondaryUser = workProfile(sDeviceState);
         assumeTrue(UserManager.supportsMultipleUsers());
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mArchiveIntentSender = new ArchiveIntentSender();
