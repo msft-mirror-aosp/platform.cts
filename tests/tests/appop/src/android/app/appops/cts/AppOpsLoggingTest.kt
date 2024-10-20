@@ -76,6 +76,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Process
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.ContactsContract
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
@@ -165,6 +167,8 @@ class AppOpsLoggingTest {
             locationManager.setLocationEnabledForUser(wasLocationEnabled, myUserHandle)
         }
     }
+
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     fun setLocationEnabled() {
         val locationManager = context.getSystemService(LocationManager::class.java)!!
@@ -920,6 +924,7 @@ class AppOpsLoggingTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_SYNC_ON_OP_NOTED_API)
     fun ignoreAsyncOpNoted() {
         removeNotedAppOpsCollector()
         appOpsManager.setOnOpNotedCallback(

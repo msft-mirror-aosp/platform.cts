@@ -28,6 +28,7 @@ import android.companion.cts.common.assertEmpty
 import android.graphics.drawable.Icon
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -36,6 +37,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -49,6 +51,8 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class AssociateSelfManagedTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun test_associate_selfManaged_requiresPermission() {

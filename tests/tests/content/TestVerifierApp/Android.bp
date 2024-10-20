@@ -54,6 +54,18 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
+    name: "CtsTestVerifierAppRejectWithPolicyOverride",
+    defaults: ["cts_defaults"],
+    sdk_version: "test_current",
+    srcs: ["**/*.java"],
+    manifest: "AndroidManifestRejectWithPolicyOverride.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
     name: "CtsTestVerifierAppTimeout",
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
@@ -71,6 +83,18 @@ android_test_helper_app {
     sdk_version: "test_current",
     srcs: ["**/*.java"],
     manifest: "AndroidManifestIncompleteUnknown.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsTestVerifierAppIncompleteNetworkUnavailable",
+    defaults: ["cts_defaults"],
+    sdk_version: "test_current",
+    srcs: ["**/*.java"],
+    manifest: "AndroidManifestIncompleteNetworkUnavailable.xml",
     test_suites: [
         "cts",
         "general-tests",

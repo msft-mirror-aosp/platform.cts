@@ -25,6 +25,8 @@ import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_SUSPENSION;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
@@ -247,7 +249,7 @@ public class ApplicationExemptionsTest {
         Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_POWER_RESTRICTIONS);
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationExemptions(
                     sTestApp.packageName(),
                     exemptionSet);
 
@@ -270,7 +272,7 @@ public class ApplicationExemptionsTest {
             // Take away background usage.
             testApp.appOps().set(OPSTR_RUN_ANY_IN_BACKGROUND, IGNORED);
 
-            sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationExemptions(
                     sTestApp.packageName(),
                     exemptionSet);
 
@@ -288,9 +290,9 @@ public class ApplicationExemptionsTest {
         Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_POWER_RESTRICTIONS);
 
         try (TestAppInstance localApp = sTestApp.install();
-             TestAppInstance dpcUserApp = sTestApp.install(sDeviceState.dpc().user())) {
+             TestAppInstance dpcUserApp = sTestApp.install(dpc(sDeviceState).user())) {
 
-            sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationExemptions(
                     sTestApp.packageName(),
                     exemptionSet);
 
@@ -309,7 +311,7 @@ public class ApplicationExemptionsTest {
         try (TestAppInstance app = sTestApp.install()) {
 
             assertThrows(SecurityException.class, () -> {
-                sDeviceState.dpc().devicePolicyManager().setApplicationExemptions(
+                dpc(sDeviceState).devicePolicyManager().setApplicationExemptions(
                         sTestApp.packageName(),
                         exemptionSet);
             });
@@ -395,16 +397,16 @@ public class ApplicationExemptionsTest {
     public void setApplicationExemptions_noExemption_testAppCanBeSuspended()
             throws NameNotFoundException {
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                    dpc(sDeviceState).componentName(),
                     new String[]{sTestApp.packageName()}, true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
-                    sDeviceState.dpc().componentName(),
+            assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName())).isEqualTo(true);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                    dpc(sDeviceState).componentName(),
                     new String[]{sTestApp.packageName()}, false);
         }
     }
@@ -419,18 +421,18 @@ public class ApplicationExemptionsTest {
         Set<Integer> exemptionSet = Set.of(EXEMPT_FROM_SUSPENSION);
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationExemptions(
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setApplicationExemptions(
                     sTestApp.packageName(),
                     exemptionSet);
             String[] notSuspendedPackages =
-                    sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
-                            sDeviceState.dpc().componentName(),
+                    dpc(sDeviceState).devicePolicyManager().setPackagesSuspended(
+                            dpc(sDeviceState).componentName(),
                             new String[]{sTestApp.packageName()}, true);
 
             assertThat(List.of(notSuspendedPackages)).contains(sTestApp.packageName());
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().isPackageSuspended(
-                    sDeviceState.dpc().componentName(),
+            assertThat(dpc(sDeviceState).devicePolicyManager().isPackageSuspended(
+                    dpc(sDeviceState).componentName(),
                 sTestApp.packageName())).isEqualTo(false);
         }
     }

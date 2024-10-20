@@ -16,6 +16,7 @@
 
 package android.credentials.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 import static com.android.queryable.queries.ServiceQuery.service;
@@ -112,8 +113,7 @@ public class CtsDevicePolicyTest {
         assertThrows(
                 SecurityException.class,
                 () ->
-                        sDeviceState
-                                .dpc()
+                        dpc(sDeviceState)
                                 .devicePolicyManager()
                                 .setCredentialManagerPolicy(
                                         new PackagePolicy(
@@ -130,12 +130,12 @@ public class CtsDevicePolicyTest {
                 new PackagePolicy(PackagePolicy.PACKAGE_POLICY_ALLOWLIST, Set.of(PACKAGE_NAME));
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(pp);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(pp);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getCredentialManagerPolicy())
+            assertThat(dpc(sDeviceState).devicePolicyManager().getCredentialManagerPolicy())
                     .isEqualTo(pp);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 
@@ -144,9 +144,9 @@ public class CtsDevicePolicyTest {
     @CanSetPolicyTest(policy = CredentialManagerPolicy.class, singleTestOnly = true)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCredentialManagerPolicy")
     public void setCredentialManagerPolicy_null_setsPolicy() {
-        sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+        dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().getCredentialManagerPolicy()).isNull();
+        assertThat(dpc(sDeviceState).devicePolicyManager().getCredentialManagerPolicy()).isNull();
     }
 
     @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
@@ -169,8 +169,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setCredentialManagerPolicy(
                             new PackagePolicy(
@@ -187,7 +186,7 @@ public class CtsDevicePolicyTest {
                     .containsAtLeast(
                             systemCredentialProviderService, nonSystemCredentialProviderService);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 
@@ -212,8 +211,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setCredentialManagerPolicy(
                             new PackagePolicy(
@@ -230,7 +228,7 @@ public class CtsDevicePolicyTest {
                     .containsAtLeast(
                             systemCredentialProviderService, nonSystemCredentialProviderService);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 
@@ -253,8 +251,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setCredentialManagerPolicy(
                             new PackagePolicy(
@@ -270,7 +267,7 @@ public class CtsDevicePolicyTest {
             assertThat(components).contains(nonSystemCredentialProviderService);
             assertThat(components).doesNotContain(systemCredentialProviderService);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 
@@ -292,8 +289,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setCredentialManagerPolicy(
                             new PackagePolicy(
@@ -309,7 +305,7 @@ public class CtsDevicePolicyTest {
             assertThat(components).contains(credentialProviderService2);
             assertThat(components).doesNotContain(credentialProviderService1);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 
@@ -331,7 +327,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
 
             Set<CredentialProviderInfo> services =
                     TestApis.credentials().getCredentialProviderServices();
@@ -362,8 +358,7 @@ public class CtsDevicePolicyTest {
                             + "/"
                             + "com.android.TestApp.CredentialProviderService";
 
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setCredentialManagerPolicy(
                             new PackagePolicy(
@@ -379,7 +374,7 @@ public class CtsDevicePolicyTest {
             assertThat(components)
                     .containsAtLeast(credentialProviderService1, credentialProviderService2);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setCredentialManagerPolicy(null);
+            dpc(sDeviceState).devicePolicyManager().setCredentialManagerPolicy(null);
         }
     }
 }

@@ -21,6 +21,7 @@ import static android.multiuser.cts.TestingUtils.getContextForOtherUser;
 import static android.multiuser.cts.TestingUtils.getContextForUser;
 import static android.multiuser.cts.TestingUtils.sContext;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
@@ -112,7 +113,7 @@ public final class UserVisibilityTest extends UserVisibilityTestCase {
     @EnsureHasWorkProfile(installInstrumentedApp = TRUE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call isUserVisible() on other context
     public void testIsUserVisible_stoppedProfileOfCurrentUser() throws Exception {
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 
@@ -176,7 +177,7 @@ public final class UserVisibilityTest extends UserVisibilityTestCase {
     @EnsureHasWorkProfile(installInstrumentedApp = TRUE)
     @EnsureHasPermission(INTERACT_ACROSS_USERS) // needed to call getVisibleUsers()
     public void testGetVisibleUsers_stoppedProfileOfCurrentUser() throws Exception {
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 

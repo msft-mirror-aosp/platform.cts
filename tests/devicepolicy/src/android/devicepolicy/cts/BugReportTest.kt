@@ -28,6 +28,7 @@ import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.dpcOnly
 import com.android.bedstead.harrier.policies.RequestBugReport
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat

@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_AUDIO_SETTINGS;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_UNMUTE_MICROPHONE;
 
@@ -58,8 +59,8 @@ public final class AudioTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_UNMUTE_MICROPHONE")
     public void setUserRestriction_disallowUnmuteMicrophone_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_UNMUTE_MICROPHONE));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_UNMUTE_MICROPHONE));
     }
 
     @PolicyAppliesTest(policy = DisallowUnmuteMicrophone.class)
@@ -67,14 +68,14 @@ public final class AudioTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_UNMUTE_MICROPHONE")
     public void setUserRestriction_disallowUnmuteMicrophone_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_UNMUTE_MICROPHONE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_UNMUTE_MICROPHONE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_UNMUTE_MICROPHONE))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_UNMUTE_MICROPHONE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_UNMUTE_MICROPHONE);
         }
     }
 
@@ -83,15 +84,15 @@ public final class AudioTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_UNMUTE_MICROPHONE")
     public void setUserRestriction_disallowUnmuteMicrophone_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_UNMUTE_MICROPHONE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_UNMUTE_MICROPHONE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_UNMUTE_MICROPHONE))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_UNMUTE_MICROPHONE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_UNMUTE_MICROPHONE);
         }
     }
 

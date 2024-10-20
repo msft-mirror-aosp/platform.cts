@@ -16,6 +16,8 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -123,7 +125,7 @@ public class MultiUserTest {
     @EnsureHasAdditionalUser
     public void testAdditionalUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
 
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
@@ -190,7 +192,7 @@ public class MultiUserTest {
     @EnsureHasWorkProfile
     public void testProfileUser() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference profileUser = sDeviceState.workProfile(currentUser);
+        final UserReference profileUser = workProfile(sDeviceState, currentUser);
         final int currentUserId = currentUser.id();
         final int profileUserId = profileUser.id();
 

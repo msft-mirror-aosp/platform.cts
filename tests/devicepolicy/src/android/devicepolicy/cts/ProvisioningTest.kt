@@ -26,6 +26,8 @@ import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.os.*
 import android.provider.Settings
+import com.android.bedstead.accounts.account
+import com.android.bedstead.accounts.accounts
 import com.android.bedstead.deviceadminapp.DeviceAdminApp
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
@@ -38,7 +40,8 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.enterprise.dpmRoleHolder
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit

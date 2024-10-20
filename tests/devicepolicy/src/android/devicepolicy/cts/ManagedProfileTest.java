@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
@@ -101,7 +102,7 @@ public final class ManagedProfileTest {
     @Test
     @RequireRunOnWorkProfile
     public void isManagedProfile_runOnWorkProfile_returnsTrue() {
-        assertThat(sDeviceState.dpc().userManager().isManagedProfile()).isTrue();
+        assertThat(dpc(sDeviceState).userManager().isManagedProfile()).isTrue();
     }
 
     @ApiTest(apis = "android.os.UserManager#isManagedProfile")

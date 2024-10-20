@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.BroadcastReceiver;
@@ -430,6 +431,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             assertWithMessage("Two responses must be different")
                     .that(response)
                     .isNotEqualTo(response2);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("EAP-SIM/AKA not supported", e);
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
         }
@@ -1532,11 +1535,15 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Format: [Length][RAND]
         String challenge = "10" + EAP_SIM_AKA_RAND;
         String base64Challenge = Base64.encodeToString(hexStringToBytes(challenge), Base64.NO_WRAP);
-        String base64Response =
-                mTelephonyManager.getIccAuthentication(
-                        TelephonyManager.APPTYPE_USIM,
-                        TelephonyManager.AUTHTYPE_EAP_SIM,
-                        base64Challenge);
+        String base64Response = null;
+        try {
+            base64Response = mTelephonyManager.getIccAuthentication(
+                    TelephonyManager.APPTYPE_USIM,
+                    TelephonyManager.AUTHTYPE_EAP_SIM,
+                    base64Challenge);
+        } catch (UnsupportedOperationException e) {
+            assumeNoException("EAP-SIM not supported", e);
+        }
         assertWithMessage("UICC returned null for EAP-SIM auth").that(base64Response).isNotNull();
         byte[] response = Base64.decode(base64Response, Base64.DEFAULT);
         assertWithMessage("Results for AUTHTYPE_EAP_SIM failed")
@@ -1547,6 +1554,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     public void testEapAkaAuthentication() {
         // Wear devices do not yet support EapAkaAuthentication, so skip this test for now
+        // TODO: use REQUEST_NOT_SUPPORTED on Wear instead of skipping this test
         if (isWear()) {
             return;
         }
@@ -1558,11 +1566,15 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // Format: [Length][Rand][Length][Autn]
         String challenge = "10" + EAP_SIM_AKA_RAND + "10" + EAP_AKA_AUTN;
         String base64Challenge = Base64.encodeToString(hexStringToBytes(challenge), Base64.NO_WRAP);
-        String base64Response =
-                mTelephonyManager.getIccAuthentication(
-                        TelephonyManager.APPTYPE_USIM,
-                        TelephonyManager.AUTHTYPE_EAP_AKA,
-                        base64Challenge);
+        String base64Response = null;
+        try {
+            base64Response = mTelephonyManager.getIccAuthentication(
+                    TelephonyManager.APPTYPE_USIM,
+                    TelephonyManager.AUTHTYPE_EAP_AKA,
+                    base64Challenge);
+        } catch (UnsupportedOperationException ex) {
+            assumeNoException("EAP-AKA not supported", ex);
+        }
 
         assertWithMessage("UICC returned null for EAP-AKA auth").that(base64Response).isNotNull();
         byte[] response = Base64.decode(base64Response, Base64.NO_WRAP);

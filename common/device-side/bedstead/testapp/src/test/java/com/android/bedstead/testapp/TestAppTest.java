@@ -16,6 +16,7 @@
 
 package com.android.bedstead.testapp;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.performanceanalyzer.PerformanceAnalyzer.analyzeThat;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -308,7 +309,7 @@ public final class TestAppTest {
         }
 
         // The second will fail 100% of the time if DISALLOW_INSTALL_UNKNOWN_SOURCES is enabled
-        try (TestAppInstance t = testApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance t = testApp.install(workProfile(sDeviceState))) {
             // Intentionally empty
         }
     }

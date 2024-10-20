@@ -4,6 +4,7 @@ import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
 import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -699,8 +700,8 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(Flags.FLAG_NFC_STATE_CHANGE_SECURITY_LOG_EVENT_ENABLED)
     public void testSecurityLogWhenChangeNfcState() throws InterruptedException {
         long testStartTimeNanos = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
-        ComponentName component = sDeviceState.dpc().componentName();
-        var dpm = sDeviceState.dpc().devicePolicyManager();
+        ComponentName component = dpc(sDeviceState).componentName();
+        var dpm = dpc(sDeviceState).devicePolicyManager();
         try {
             dpm.setSecurityLoggingEnabled(component, false);
             dpm.setSecurityLoggingEnabled(component, true);

@@ -21,6 +21,7 @@ import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
+import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
@@ -28,6 +29,7 @@ import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -107,7 +109,8 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void invokesCallback_invoked() throws InterruptedException {
+    @RequiresFlagsDisabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
+    public void invokesCallback_invoked_preTimestampApi() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -131,6 +134,43 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             BackEvent event = events.get(i);
             assertTrue(event.getProgress() <= events.get(i + 1).getProgress());
             assertTrue(event.getTouchX() <= events.get(i + 1).getTouchX());
+            assertEquals(midHeight, midHeight, event.getTouchY());
+            assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
+        }
+
+        touchSession.finishSwipe();
+        assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
+    public void invokesCallback_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
+        int midHeight = mUiDevice.getDisplayHeight() / 2;
+        int midWidth = mUiDevice.getDisplayWidth() / 2;
+
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        // Back start event shouldn't be sent until the edge swipe threshold is crossed.
+        assertNotInvoked(mTracker.mStartLatch);
+
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        assertInvoked(mTracker.mStartLatch);
+        assertInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+        List<BackEvent> events = mTracker.mProgressEvents;
+        assertTrue(events.size() > 0);
+        for (int i = 0; i < events.size() - 1; i++) {
+            // Check that progress events report increasing progress and frameTime values.
+            BackEvent event = events.get(i);
+            assertTrue(event.getProgress() <= events.get(i + 1).getProgress());
+            assertTrue(event.getTouchX() <= events.get(i + 1).getTouchX());
+            assertTrue("frame time must be monotonically increasing",
+                    event.getFrameTime() <= events.get(i + 1).getFrameTime());
+            assertTrue("frame time must be >= 0", event.getFrameTime() >= 0);
             assertEquals(midHeight, midHeight, event.getTouchY());
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
         }
@@ -277,7 +317,8 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void constructsEvent() {
+    @RequiresFlagsDisabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
+    public void constructsEvent_preTimestampApi() {
         final float x = 200;
         final float y = 300;
         final float progress = 0.5f;
@@ -287,6 +328,22 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertEquals(y, event.getTouchY());
         assertEquals(progress, event.getProgress());
         assertEquals(swipeEdge, event.getSwipeEdge());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_TIMESTAMP_API)
+    public void constructsEvent() {
+        final float x = 200;
+        final float y = 300;
+        final float progress = 0.5f;
+        final int swipeEdge = BackEvent.EDGE_RIGHT;
+        final long frameTime = 1234567;
+        BackEvent event = new BackEvent(x, y, progress, swipeEdge, frameTime);
+        assertEquals(x, event.getTouchX());
+        assertEquals(y, event.getTouchY());
+        assertEquals(progress, event.getProgress());
+        assertEquals(swipeEdge, event.getSwipeEdge());
+        assertEquals(frameTime, event.getFrameTime());
     }
 
     private void assertInvoked(CountDownLatch latch) throws InterruptedException {

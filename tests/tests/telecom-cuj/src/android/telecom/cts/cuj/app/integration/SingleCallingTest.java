@@ -1373,8 +1373,11 @@ public class SingleCallingTest extends BaseAppVerifier {
         String mt = addIncomingCallAndVerify(appControlWrapper);
         verifyCallIsInState(mt, STATE_RINGING);
         if (shouldWaitForMusicFocusLost) {
+            // with incoming/ringing calls it is possible that the audio framework will allow duck
+            // so that the ringtone plays overtop of the music.
             waitForAndVerifyMusicFocus(AudioManager.AUDIOFOCUS_LOSS,
-                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT);
+                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK);
         }
         setCallStateAndVerify(appControlWrapper, mt, STATE_ACTIVE);
         setCallStateAndVerify(appControlWrapper, mt, STATE_HOLDING);
