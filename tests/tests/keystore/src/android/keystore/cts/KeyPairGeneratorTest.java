@@ -956,9 +956,8 @@ public class KeyPairGeneratorTest {
             BigInteger sqrt = sqrtAndRemainder[0];
             BigInteger remainder = sqrtAndRemainder[1];
             if (remainder.equals(BigInteger.ZERO)) {
-                fail(
-                        "RSA key public modulus is perfect square. "
-                                + HexDump.dumpHexString(publicKey.getEncoded()));
+                fail("RSA key public modulus is perfect square. "
+                        + HexDump.dumpHexString(publicKey.getEncoded()));
             }
         }
     }
@@ -1020,9 +1019,8 @@ public class KeyPairGeneratorTest {
         for (PublicKey pk : publicKeys) {
             int keyHash = java.util.Arrays.hashCode(pk.getEncoded());
             if (keyHashSet.contains(keyHash)) {
-                fail(
-                        "The same RSA key was generated twice. Key: "
-                                + HexDump.dumpHexString(pk.getEncoded()));
+                fail("The same RSA key was generated twice. Key: "
+                        + HexDump.dumpHexString(pk.getEncoded()));
             }
             keyHashSet.add(keyHash);
         }
@@ -1605,9 +1603,8 @@ public class KeyPairGeneratorTest {
                         .setKeySize(keySizeBits)
                         .setIsStrongBoxBacked(useStrongbox)
                         .build());
-                fail("EC KeyPairGenerator initialized with unsupported key size: "
-                        + keySizeBits + " bits. useStrongbox: " + useStrongbox
-                        + "\nThis test will fail until b/113108008 is resolved");
+                fail("EC KeyPairGenerator initialized with unsupported key size: " + keySizeBits
+                        + " bits");
             } catch (InvalidAlgorithmParameterException expected) {
             }
         }
@@ -2236,8 +2233,9 @@ public class KeyPairGeneratorTest {
                 results.add(new String(signature));
             }
             // Verify different signatures are generated for fixed message with all different keys
-            assertEquals(TextUtils.formatSimple("%d different signature should have been generated"
-                    + " for %d different keys.", numberOfKeysToTest, numberOfKeysToTest),
+            assertEquals(TextUtils.formatSimple("%d different signatures should have been generated"
+                                         + " for %d different keys over message |%s|.",
+                                 numberOfKeysToTest, numberOfKeysToTest, HexEncoding.encode(msg)),
                     numberOfKeysToTest, results.size());
         }
     }

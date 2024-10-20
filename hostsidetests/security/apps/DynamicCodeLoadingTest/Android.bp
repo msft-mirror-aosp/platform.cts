@@ -28,6 +28,7 @@ android_test_helper_app {
     libs: [
         "junit",
     ],
+    compile_multilib: "both",
     jni_libs: ["read_only_native_lib"],
     static_libs: [
         "ctstestrunner-axt",
