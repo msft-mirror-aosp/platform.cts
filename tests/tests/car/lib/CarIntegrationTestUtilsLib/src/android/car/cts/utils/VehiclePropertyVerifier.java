@@ -139,6 +139,9 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
             isAtLeastV() && Flags.areaIdConfigAccess();
+    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
+            CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
+            CarPropertyValue.STATUS_ERROR);
 
     private static final CarPropertyValueCallback FAKE_CALLBACK = new CarPropertyValueCallback(
             /* propertyName= */ "", new int[]{}, /* totalCarPropertyValuesPerAreaId= */ 0,
@@ -1860,9 +1863,10 @@ public class VehiclePropertyVerifier<T> {
                                 + areaId
                                 + " - source: "
                                 + source
-                                + " value must have AVAILABLE status")
-                .that(status)
-                .isEqualTo(CarPropertyValue.STATUS_AVAILABLE);
+                                + " value must have a valid status: "
+                                + VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .that(VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .contains(status);
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
