@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -52,7 +54,7 @@ public final class AffiliationIdsTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDpm = dpc.devicePolicyManager();
     }

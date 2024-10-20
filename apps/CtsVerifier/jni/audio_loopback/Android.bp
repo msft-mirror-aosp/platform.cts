@@ -7,6 +7,8 @@ cc_test_library {
     srcs: [
         "jni-bridge.cpp",
         "NativeAudioAnalyzer.cpp",
+        "WaveFileWriter.cpp",
+        "WavFileCapture.cpp",
     ],
     include_dirs: [
         "system/core/include/cutils",

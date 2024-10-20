@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.security.cts.camera
+package android.security.cts.camera.open.lib
 
 class IntentKeys(private val packageName: String) {
     val shouldOpenCamera1: String
@@ -43,4 +43,16 @@ class IntentKeys(private val packageName: String) {
 
     val exception: String
         get() = "$packageName.EXCEPTION"
+
+    val aidlInterface: String
+        get() = "$packageName.AIDL_INTERFACE"
+
+    val attributionSource: String
+        get() = "$packageName.ATTRIBUTION_SOURCE"
+
+    val openCamera1ByProxy: String
+        get() = "$packageName.OPEN_CAMERA1_BY_PROXY"
+
+    val openCamera2ByProxy: String
+        get() = "$packageName.OPEN_CAMERA2_BY_PROXY"
 }

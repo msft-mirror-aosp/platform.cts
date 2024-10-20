@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -69,16 +70,16 @@ public final class SystemAppTest {
     @Postsubmit(reason = "new test")
     public void enableSystemApp_nonSystemApp_throwsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().enableSystemApp(
-                        sDeviceState.dpc().componentName(), sTestApp.packageName()));
+                () -> dpc(sDeviceState).devicePolicyManager().enableSystemApp(
+                        dpc(sDeviceState).componentName(), sTestApp.packageName()));
     }
 
     @CannotSetPolicyTest(policy = EnableSystemApp.class)
     @Postsubmit(reason = "new test")
     public void enableSystemApp_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().enableSystemApp(
-                        sDeviceState.dpc().componentName(), sTestApp.packageName()));
+                () -> dpc(sDeviceState).devicePolicyManager().enableSystemApp(
+                        dpc(sDeviceState).componentName(), sTestApp.packageName()));
     }
 
     @CanSetPolicyTest(policy = EnableSystemApp.class)
@@ -87,14 +88,14 @@ public final class SystemAppTest {
     public void enableSystemApp_isLogged() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
 
-            sDeviceState.dpc().devicePolicyManager().enableSystemApp(
-                    sDeviceState.dpc().componentName(), SYSTEM_APP.packageName());
+            dpc(sDeviceState).devicePolicyManager().enableSystemApp(
+                    dpc(sDeviceState).componentName(), SYSTEM_APP.packageName());
 
             assertThat(metrics.query()
                     .whereType()
                     .isEqualTo(EventId.ENABLE_SYSTEM_APP_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
-                    .whereBoolean().isEqualTo(sDeviceState.dpc().isDelegate())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
+                    .whereBoolean().isEqualTo(dpc(sDeviceState).isDelegate())
                     .whereStrings().contains(SYSTEM_APP.packageName())
             ).wasLogged();
         }

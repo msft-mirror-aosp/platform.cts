@@ -73,7 +73,7 @@ public class BootCompletedFgsStartTest {
     private static final String TARGET_APP_STUBS = "android.app.stubs";
 
     public static final String ALLOW_FGS_START_CMD =
-            "am broadcast -a " + ACTION_FAKE_BOOT_COMPLETED
+            "am broadcast --user %d -a " + ACTION_FAKE_BOOT_COMPLETED
             + " --allow-fgs-start-reason 200"
             + " --include-stopped-packages"
             + " -p ";
@@ -100,7 +100,8 @@ public class BootCompletedFgsStartTest {
     }
 
     private void startFgsBootCompleted(String pkg, String extra) throws Exception {
-        CtsAppTestUtils.executeShellCmd(mInstrumentation, ALLOW_FGS_START_CMD + pkg + extra);
+        CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                String.format(ALLOW_FGS_START_CMD, mTargetContext.getUserId()) + pkg + extra);
     }
 
     @Before

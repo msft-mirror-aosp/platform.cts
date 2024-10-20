@@ -118,16 +118,16 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
     /**
      * See [DeviceState.deviceAdmin].
      */
-    fun deviceAdmin(): RemoteDeviceAdmin? {
+    fun deviceAdmin(): RemoteDeviceAdmin {
         return deviceAdmin(EnsureHasDeviceAdmin.DEFAULT_KEY)
     }
 
     /**
      * See [DeviceState.deviceAdmin(key)].
      */
-    fun deviceAdmin(key: String?): RemoteDeviceAdmin? {
+    fun deviceAdmin(key: String?): RemoteDeviceAdmin {
         if (mAddedDeviceAdmins.containsKey(key)) {
-            return RemoteDeviceAdmin.forDevicePolicyController(mAddedDeviceAdmins.get(key))
+            return RemoteDeviceAdmin.forDevicePolicyController(mAddedDeviceAdmins[key])
         }
         throw IllegalStateException(
             "No Harrier-managed device admin exists for the given key. This method should only " +

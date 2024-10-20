@@ -20,7 +20,10 @@ import static android.app.admin.DevicePolicyManager.FLAG_MANAGED_CAN_ACCESS_PARE
 import static android.app.admin.DevicePolicyManager.FLAG_PARENT_CAN_ACCESS_MANAGED;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.otherUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
@@ -89,7 +92,7 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.content.pm.PackageManager#queryIntentActivities")
     public void queryIntentActivities_doesntIncludeAppInOtherUser() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
 
             assertThat(sPackageManager.queryIntentActivities(
                     new Intent(ACTION), /* flags = */ 0).size()).isEqualTo(0);
@@ -103,14 +106,14 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void queryIntentActivities_intentFilterIsSet_includesAppInOtherUser() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
 
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             List<ResolveInfo> activities =
@@ -119,8 +122,8 @@ public final class CrossProfileIntentFiltersTest {
             assertThat(activities).hasSize(1);
             assertThat(activities.get(0).isCrossProfileIntentForwarderActivity()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -132,12 +135,12 @@ public final class CrossProfileIntentFiltersTest {
     public void queryIntentActivities_intentFilterIsSet_includesAppInOwnUser() {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install()) {
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             List<ResolveInfo> activities =
@@ -146,8 +149,8 @@ public final class CrossProfileIntentFiltersTest {
             assertThat(activities).hasSize(1);
             assertThat(activities.get(0).isCrossProfileIntentForwarderActivity()).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -159,13 +162,13 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void startActivity_intentFilterIsSet_startsAppInOtherUser() throws InterruptedException {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             ActivityContext.runWithContext(activity -> {
@@ -179,8 +182,8 @@ public final class CrossProfileIntentFiltersTest {
                                     intentFilter().where().actions().contains(ACTION)
                     ).get().events().activityStarted()).eventOccurred();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -192,12 +195,12 @@ public final class CrossProfileIntentFiltersTest {
     public void startActivity_intentFilterIsSet_startsAppInOwnUser() {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install()) {
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             TestApis.context().instrumentedContext().startActivity(new Intent(ACTION).setFlags(
@@ -208,8 +211,8 @@ public final class CrossProfileIntentFiltersTest {
                             intentFilter().where().actions().contains(ACTION)
                     ).get().events().activityStarted()).eventOccurred();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -220,25 +223,25 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#addCrossProfileIntentFilter")
     public void addCrossProfileIntentFilter_logsMetric() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create();
-             TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
             boolean runningOnWorkProfile = TestApis.users().instrumented().equals(
-                    sDeviceState.workProfile());
+                    workProfile(sDeviceState));
             int flag = runningOnWorkProfile
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.ADD_CROSS_PROFILE_INTENT_FILTER_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereInteger().isEqualTo(flag)
                     .whereStrings().contains(ACTION)).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -246,21 +249,21 @@ public final class CrossProfileIntentFiltersTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#clearCrossProfileIntentFilters")
     public void clearCrossProfileIntentFilters_clears() {
         sTestApp.uninstallFromAllUsers();
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.otherUser())) {
+        try (TestAppInstance testApp = sTestApp.install(otherUser(sDeviceState))) {
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, FLAG_PARENT_CAN_ACCESS_MANAGED);
 
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
 
             assertThat(sPackageManager.queryIntentActivities(
                     new Intent(ACTION), /* flags = */ 0).size()).isEqualTo(0);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -272,14 +275,14 @@ public final class CrossProfileIntentFiltersTest {
     public void queryIntentActivities_intentFilterIsSet_includesAppInBothUsers() {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install();
-             TestAppInstance otherTestApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance otherTestApp = sTestApp.install(otherUser(sDeviceState))) {
 
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             List<ResolveInfo> activities =
@@ -289,8 +292,8 @@ public final class CrossProfileIntentFiltersTest {
             assertThat(activities.stream().filter(
                     ResolveInfo::isCrossProfileIntentForwarderActivity).count()).isEqualTo(1);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 
@@ -304,14 +307,14 @@ public final class CrossProfileIntentFiltersTest {
             throws Exception {
         sTestApp.uninstallFromAllUsers();
         try (TestAppInstance testApp = sTestApp.install();
-             TestAppInstance otherTestApp = sTestApp.install(sDeviceState.otherUser())) {
+             TestAppInstance otherTestApp = sTestApp.install(otherUser(sDeviceState))) {
 
-            int flag = TestApis.users().instrumented().equals(sDeviceState.workProfile())
+            int flag = TestApis.users().instrumented().equals(workProfile(sDeviceState))
                     ? FLAG_PARENT_CAN_ACCESS_MANAGED : FLAG_MANAGED_CAN_ACCESS_PARENT;
             IntentFilter testIntentFilter = new IntentFilter();
             testIntentFilter.addAction(ACTION);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(),
                     testIntentFilter, flag);
 
             TestApis.context().instrumentedContext().startActivity(new Intent(ACTION).setFlags(
@@ -322,8 +325,8 @@ public final class CrossProfileIntentFiltersTest {
                             IsThereAScreenVisibleToSelectBetweenPersonalAndWorkApps.class))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .clearCrossProfileIntentFilters(sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager()
+                    .clearCrossProfileIntentFilters(dpc(sDeviceState).componentName());
         }
     }
 }

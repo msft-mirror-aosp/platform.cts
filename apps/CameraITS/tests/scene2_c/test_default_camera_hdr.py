@@ -64,6 +64,12 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
+      lens_facing = props['android.lens.facing']
+      if lens_facing == camera_properties_utils.LENS_FACING['FRONT']:
+        camera_facing = 'front'
+      else:
+        camera_facing = 'rear'
+      logging.debug('Camera facing: %s', camera_facing)
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()
       logging.debug('Default camera pkg name: %s', pkg_name)
@@ -73,7 +79,7 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       # Launch ItsTestActivity
       its_device_utils.start_its_test_activity(device_id)
       device_img_path = ui_interaction_utils.launch_and_take_capture(
-          self.dut, pkg_name)
+          self.dut, pkg_name, camera_facing, self.log_path)
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path)
 

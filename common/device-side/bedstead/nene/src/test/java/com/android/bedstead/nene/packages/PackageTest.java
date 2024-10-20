@@ -19,6 +19,7 @@ package com.android.bedstead.nene.packages;
 import static android.Manifest.permission.MANAGE_EXTERNAL_STORAGE;
 import static android.os.Build.VERSION_CODES.R;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -124,12 +125,12 @@ public class PackageTest {
     @EnsureHasSecondaryUser
     @RequireRunNotOnSecondaryUser
     public void installExisting_alreadyInstalled_installsInUser() {
-        sInstrumentedPackage.installExisting(sDeviceState.secondaryUser());
+        sInstrumentedPackage.installExisting(secondaryUser(sDeviceState));
 
         try {
-            assertThat(sInstrumentedPackage.installedOnUser(sDeviceState.secondaryUser())).isTrue();
+            assertThat(sInstrumentedPackage.installedOnUser(secondaryUser(sDeviceState))).isTrue();
         } finally {
-            sInstrumentedPackage.uninstall(sDeviceState.secondaryUser());
+            sInstrumentedPackage.uninstall(secondaryUser(sDeviceState));
         }
     }
 
@@ -138,7 +139,7 @@ public class PackageTest {
     @RequireRunNotOnSecondaryUser
     public void uninstallForAllUsers_isUninstalledForAllUsers() throws Exception {
         Package pkg = TestApis.packages().install(sTestAppApkFile);
-        pkg.installExisting(sDeviceState.secondaryUser());
+        pkg.installExisting(secondaryUser(sDeviceState));
 
         pkg.uninstallFromAllUsers();
 
@@ -153,15 +154,15 @@ public class PackageTest {
         Package pkg = TestApis.packages().install(sTestAppApkFile);
 
         try {
-            pkg.installExisting(sDeviceState.secondaryUser());
+            pkg.installExisting(secondaryUser(sDeviceState));
 
             pkg.uninstall(TestApis.users().instrumented());
 
             assertThat(sTestApp.pkg().installedOnUsers()).containsExactly(
-                    sDeviceState.secondaryUser());
+                    secondaryUser(sDeviceState));
         } finally {
             pkg.uninstall(TestApis.users().instrumented());
-            pkg.uninstall(sDeviceState.secondaryUser());
+            pkg.uninstall(secondaryUser(sDeviceState));
         }
     }
 
@@ -181,7 +182,7 @@ public class PackageTest {
         TestApis.packages().install(sTestAppApkFile);
 
         try {
-            sTestApp.pkg().uninstall(sDeviceState.secondaryUser());
+            sTestApp.pkg().uninstall(secondaryUser(sDeviceState));
         } finally {
             sTestApp.pkg().uninstallFromAllUsers();
         }
@@ -223,12 +224,12 @@ public class PackageTest {
     @RequireRunNotOnSecondaryUser
     public void grantPermission_permissionIsUserSpecific_permissionIsGrantedOnlyForThatUser() {
         try (TestAppInstance instance1 = sTestApp.install();
-             TestAppInstance instance2 = sTestApp.install(sDeviceState.secondaryUser())) {
+             TestAppInstance instance2 = sTestApp.install(secondaryUser(sDeviceState))) {
 
-            sTestApp.pkg().grantPermission(sDeviceState.secondaryUser(), USER_SPECIFIC_PERMISSION);
+            sTestApp.pkg().grantPermission(secondaryUser(sDeviceState), USER_SPECIFIC_PERMISSION);
 
             assertThat(sTestApp.pkg().hasPermission(USER_SPECIFIC_PERMISSION)).isFalse();
-            assertThat(sTestApp.pkg().hasPermission(sDeviceState.secondaryUser(),
+            assertThat(sTestApp.pkg().hasPermission(secondaryUser(sDeviceState),
                     USER_SPECIFIC_PERMISSION)).isTrue();
         }
     }
@@ -306,13 +307,13 @@ public class PackageTest {
     @RequireRunNotOnSecondaryUser
     public void denyPermission_permissionIsUserSpecific_permissionIsDeniedOnlyForThatUser() {
         try (TestAppInstance instance1 = sTestApp.install();
-             TestAppInstance instance2 = sTestApp.install(sDeviceState.secondaryUser())) {
+             TestAppInstance instance2 = sTestApp.install(secondaryUser(sDeviceState))) {
             sTestApp.pkg().grantPermission(USER_SPECIFIC_PERMISSION);
-            sTestApp.pkg().grantPermission(sDeviceState.secondaryUser(), USER_SPECIFIC_PERMISSION);
+            sTestApp.pkg().grantPermission(secondaryUser(sDeviceState), USER_SPECIFIC_PERMISSION);
 
-            sTestApp.pkg().denyPermission(sDeviceState.secondaryUser(), USER_SPECIFIC_PERMISSION);
+            sTestApp.pkg().denyPermission(secondaryUser(sDeviceState), USER_SPECIFIC_PERMISSION);
 
-            assertThat(sTestApp.pkg().hasPermission(sDeviceState.secondaryUser(),
+            assertThat(sTestApp.pkg().hasPermission(secondaryUser(sDeviceState),
                     USER_SPECIFIC_PERMISSION)).isFalse();
             assertThat(sTestApp.pkg().hasPermission(USER_SPECIFIC_PERMISSION)).isTrue();
         }
@@ -353,10 +354,10 @@ public class PackageTest {
     @RequireRunNotOnSecondaryUser
     public void installedOnUsers_doesNotIncludeUserWithoutPackageInstalled() throws Exception {
         Package pkg = TestApis.packages().install(sTestAppApkFile);
-        pkg.uninstall(sDeviceState.secondaryUser());
+        pkg.uninstall(secondaryUser(sDeviceState));
 
         try {
-            assertThat(pkg.installedOnUsers()).doesNotContain(sDeviceState.secondaryUser());
+            assertThat(pkg.installedOnUsers()).doesNotContain(secondaryUser(sDeviceState));
         } finally {
             pkg.uninstall(TestApis.users().instrumented());
         }

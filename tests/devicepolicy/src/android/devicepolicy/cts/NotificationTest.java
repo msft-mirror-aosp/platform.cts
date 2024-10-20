@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.POST_NOTIFICATIONS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
@@ -84,7 +85,7 @@ public final class NotificationTest {
     @CddTest(requirements = "3.9.2/C-1-3")
     @NotFullyAutomated(reason = "DoesTheNotificationTitledNotificationHaveAWorkBadgeStep")
     public void notification_fromWorkProfile_isBadged() throws Exception {
-        try (TestAppInstance workProfileApp = sTestApp.install(sDeviceState.workProfile());
+        try (TestAppInstance workProfileApp = sTestApp.install(workProfile(sDeviceState));
              PermissionContext p = workProfileApp.permissions().withPermission(POST_NOTIFICATIONS)) {
             showNotificationWithTitleNotification(workProfileApp);
 

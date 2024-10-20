@@ -233,6 +233,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void
             testOverrideLandscapeOrientationToReverseLandscape_propertyIsFalse_overrideNotApply() {
         try (var compatChange = new CompatChangeCloseable(
@@ -246,6 +247,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_LANDSCAPE_ORIENTATION_TO_REVERSE_LANDSCAPE})
     public void testOverrideLandscapeOrientationToReverseLandscape() {
         try (var session = new ActivitySessionCloseable(NON_RESIZEABLE_LANDSCAPE_ACTIVITY)) {
@@ -382,6 +384,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testOverrideIgnoreRequestedOrientation_isDisabled_propertyIsTrue_overrideApplied() {
         assumeTrue("Skipping test: "
                     + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled not enabled",
@@ -396,6 +399,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION})
     public void testOverrideIgnoreRequestedOrientation() {
         assumeTrue("Skipping test: "
@@ -813,6 +817,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * display.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSizeCompatForNonResizeableActivity() {
         runSizeCompatTest(NON_RESIZEABLE_PORTRAIT_ACTIVITY, /* inSizeCompatModeAfterResize */ true);
     }
@@ -873,6 +878,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * Display APIs.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableAspectRatioActivity() {
         runSizeCompatModeSandboxTest(NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY,
                 /* isSandboxed */ true, /* inSizeCompatModeAfterResize */ true);
@@ -891,6 +897,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * enabled.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.NEVER_SANDBOX_DISPLAY_APIS})
     public void testSandboxForNonResizableAspectRatioActivityNeverSandboxDisplayApisEnabled() {
         runSizeCompatModeSandboxTest(NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY,
@@ -903,6 +910,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * flag is true.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityNeverSandboxDeviceConfigAllPackagesFlagTrue() {
         try (var neverForAll = setNeverConstrainDisplayApisAllPackagesFlag("true");
                 var neverAnApp = setNeverConstrainDisplayApisFlag("com.android.other::")) {
@@ -917,6 +925,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * package with an open ended range.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityPackageUnboundedInNeverSandboxDeviceConfigFlag() {
         ComponentName activity = NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY;
         try (var neverForApp = setNeverConstrainDisplayApisFlag(
@@ -932,6 +941,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * package with a version range that matches the installed version of the package.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityPackageWithinRangeInNeverSandboxDeviceConfig() {
         ComponentName activity = NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY;
         long version = getPackageVersion(activity);
@@ -949,6 +959,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * package with a version range that doesn't match the installed version of the package.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityPackageOutsideRangeInNeverSandboxDeviceConfig() {
         ComponentName activity = NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY;
         long version = getPackageVersion(activity);
@@ -966,6 +977,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * test package.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityPackageNotInNeverSandboxDeviceConfigFlag() {
         try (var neverForApp = setNeverConstrainDisplayApisFlag(
                 "com.android.other::,com.android.other2::")) {
@@ -979,6 +991,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * APIs sandboxed when the 'never_constrain_display_apis' Device Config flag is empty.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityNeverSandboxDeviceConfigFlagEmpty() {
         try (var empty = setNeverConstrainDisplayApisFlag("")) {
             runSizeCompatModeSandboxTest(NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY,
@@ -992,6 +1005,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * entry for the test package.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testSandboxForNonResizableActivityInvalidEntryInNeverSandboxDeviceConfigFlag() {
         ComponentName activity = NON_RESIZEABLE_LARGE_ASPECT_RATIO_ACTIVITY;
         try (var neverForApp = setNeverConstrainDisplayApisFlag(
@@ -1041,6 +1055,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testNoSandbox_viewApiForLetterboxedActivity() {
         // Enable OVERRIDE_SANDBOX_VIEW_BOUNDS_APIS changeId for the test application
         try (var aspectRatio = new DisplayAspectRatioCloseable(ORIENTATION_LANDSCAPE, 2.0f);
@@ -1059,6 +1074,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     public void testNoSandbox_viewApiForLetterboxedActivityOptOut() {
         // Enable OVERRIDE_SANDBOX_VIEW_BOUNDS_APIS changeId for the test application
         try (var aspectRatio = new DisplayAspectRatioCloseable(ORIENTATION_LANDSCAPE, 2.0f);
@@ -1194,6 +1210,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * ratio to {@link ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO_LARGE_VALUE}.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE})
     public void testOverrideMinAspectRatioLargeAspectRatio() {
@@ -1206,6 +1223,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * ratio to {@link ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO_MEDIUM_VALUE}.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_MEDIUM})
     public void testOverrideMinAspectRatioMediumAspectRatio() {
@@ -1218,6 +1236,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * effect.
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_MEDIUM})
@@ -1231,6 +1250,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * there is an override for a larger min aspect ratio present (16:9 > 1.6).
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE})
     public void testOverrideMinAspectRatioActivityMinAspectRatioSmallerThanOverride() {
@@ -1243,6 +1263,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * there is an override for a smaller min aspect ratio present (3:2 < 1.6).
      */
     @Test
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO,
             ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_MEDIUM})
     public void testOverrideMinAspectRatioActivityMinAspectRatioLargerThanOverride() {

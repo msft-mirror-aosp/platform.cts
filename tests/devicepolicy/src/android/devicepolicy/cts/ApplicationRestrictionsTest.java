@@ -18,6 +18,8 @@ package android.devicepolicy.cts;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
@@ -81,24 +83,24 @@ public final class ApplicationRestrictionsTest {
     @PolicyAppliesTest(policy = DpcOnlyApplicationRestrictions.class)
     public void setApplicationRestrictions_applicationRestrictionsAreSet() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_applicationRestrictionsAreSet");
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             BundleUtils.assertEqualToBundle(
                     "setApplicationRestrictions_applicationRestrictionsAreSet",
                     testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -108,28 +110,28 @@ public final class ApplicationRestrictionsTest {
   @Ignore("b/290932414")
   public void setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions");
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             new Bundle());
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
       BundleUtils.assertEqualToBundle(
           "setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions",
           testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -141,17 +143,17 @@ public final class ApplicationRestrictionsTest {
     // dpm.getParentInstance().getApplicationRestrictions()
     public void getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
     Bundle bundle =
         BundleUtils.createBundle(
             "getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions");
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
       BundleUtils.assertEqualToBundle(
@@ -160,10 +162,10 @@ public final class ApplicationRestrictionsTest {
               .dpc()
               .devicePolicyManager()
               .getApplicationRestrictions(
-                  sDeviceState.dpc().componentName(), sTestApp.packageName()));
+                  dpc(sDeviceState).componentName(), sTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -172,24 +174,24 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_differentPackage_throwsException() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "getApplicationRestrictions_differentPackage_throwsException");
 
         try (TestAppInstance differentTestApp = sDifferentTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             assertThrows(SecurityException.class,
                     () -> differentTestApp.userManager().getApplicationRestrictions(
                             sTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -198,16 +200,16 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_setForOtherPackage_returnsNull() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "getApplicationRestrictions_setForOtherPackage_returnsNull");
 
         try (TestAppInstance differentTestApp = sDifferentTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             BundleUtils.assertNotEqualToBundle(
@@ -215,8 +217,8 @@ public final class ApplicationRestrictionsTest {
                     differentTestApp.userManager().getApplicationRestrictions(
                     sDifferentTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -225,23 +227,23 @@ public final class ApplicationRestrictionsTest {
     @PolicyDoesNotApplyTest(policy = ApplicationRestrictions.class)
     public void setApplicationRestrictions_policyDoesNotApply_applicationRestrictionsAreNotSet() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager().getApplicationRestrictions(
-                        sDeviceState.dpc().componentName(), sTestApp.packageName());
+                dpc(sDeviceState).devicePolicyManager().getApplicationRestrictions(
+                        dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_policyDoesNotApply_applicationRestrictionsAreNotSet");
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
       BundleUtils.assertNotEqualToBundle(
           "setApplicationRestrictions_policyDoesNotApply_applicationRestrictionsAreNotSet",
           testApp.userManager().getApplicationRestrictions(sTestApp.packageName()));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -252,9 +254,9 @@ public final class ApplicationRestrictionsTest {
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_cannotSetPolicy_throwsException");
         assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
         });
     }
@@ -263,9 +265,9 @@ public final class ApplicationRestrictionsTest {
     @CannotSetPolicyTest(policy = ApplicationRestrictions.class)
     public void getApplicationRestrictions_cannotSetPolicy_throwsException() {
         assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .getApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName());
+                            dpc(sDeviceState).componentName(), sTestApp.packageName());
         });
     }
 
@@ -275,7 +277,7 @@ public final class ApplicationRestrictionsTest {
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_nullComponent_throwsException");
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(null,
+                () -> dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(null,
                         sTestApp.packageName(), bundle));
     }
 
@@ -284,9 +286,9 @@ public final class ApplicationRestrictionsTest {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_restrictionsChangedBroadcastIsReceived() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_restrictionsChangedBroadcastIsReceived");
 
@@ -294,16 +296,16 @@ public final class ApplicationRestrictionsTest {
             testApp.registerReceiver(new IntentFilter(ACTION_APPLICATION_RESTRICTIONS_CHANGED),
                     RECEIVER_EXPORTED);
 
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             assertThat(testApp.events().broadcastReceived().whereIntent().action().isEqualTo(
                     ACTION_APPLICATION_RESTRICTIONS_CHANGED)).eventOccurred();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -313,19 +315,19 @@ public final class ApplicationRestrictionsTest {
     public void setApplicationRestrictionsManagingPackage_applicationRestrictionsManagingPackageIsSet()
             throws Exception {
         final String originalApplicationRestrictionsManagingPackage =
-                sDeviceState.dpc().devicePolicyManager().getApplicationRestrictionsManagingPackage(
-                        sDeviceState.dpc().componentName());
+                dpc(sDeviceState).devicePolicyManager().getApplicationRestrictionsManagingPackage(
+                        dpc(sDeviceState).componentName());
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictionsManagingPackage(
-                    sDeviceState.dpc().componentName(), sTestApp.packageName());
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictionsManagingPackage(
+                    dpc(sDeviceState).componentName(), sTestApp.packageName());
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .getApplicationRestrictionsManagingPackage(sDeviceState.dpc().componentName()))
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getApplicationRestrictionsManagingPackage(dpc(sDeviceState).componentName()))
                     .isEqualTo(sTestApp.packageName());
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager().setApplicationRestrictionsManagingPackage(
-                        sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager().setApplicationRestrictionsManagingPackage(
+                        dpc(sDeviceState).componentName(),
                         originalApplicationRestrictionsManagingPackage);
             } catch (Throwable expected) {
                 // If the original has been removed this can throw
@@ -339,9 +341,9 @@ public final class ApplicationRestrictionsTest {
         sDifferentTestApp.uninstall();
 
         assertThrows(PackageManager.NameNotFoundException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setApplicationRestrictionsManagingPackage(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 sDifferentTestApp.packageName()));
     }
 
@@ -350,28 +352,28 @@ public final class ApplicationRestrictionsTest {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_logged() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle("setApplicationRestrictions_logged");
 
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create();
              TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_APPLICATION_RESTRICTIONS_VALUE)
                     .whereAdminPackageName().isEqualTo(
-                            sDeviceState.dpc().packageName())
+                            dpc(sDeviceState).packageName())
                     .whereStrings().contains(sTestApp.packageName())
                     .whereStrings().size().isEqualTo(1))
                     .wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -383,8 +385,8 @@ public final class ApplicationRestrictionsTest {
         Bundle bundle = BundleUtils.createBundle(
                 "setApplicationRestrictions_invalidPackageName_throwsException");
         assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                        sDeviceState.dpc().componentName(), "/../blah", bundle));
+                () -> dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                        dpc(sDeviceState).componentName(), "/../blah", bundle));
     }
 
     @Postsubmit(reason = "New test")
@@ -392,17 +394,17 @@ public final class ApplicationRestrictionsTest {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void getApplicationRestrictionsPerAdmin_restrictionsSetForOneAdmin_returnsApplicationRestrictions() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "getApplicationRestrictionsPerAdmin_applicationRestrictionsAreSetForOneAdmin"
                         + "_returnsApplicationRestrictions");
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             List<Bundle> restrictions = testApp.restrictionsManager()
@@ -413,8 +415,8 @@ public final class ApplicationRestrictionsTest {
                             + "_returnsApplicationRestrictions",
                     restrictions.get(0));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -423,23 +425,23 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
     public void roleHolderSetApplicationRestrictions_UserManagerReturnsNull() {
         Bundle originalApplicationRestrictions =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(
-                                sDeviceState.dpc().componentName(), sTestApp.packageName());
+                                dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
                 "roleHolderSetApplicationRestrictions_UserManagerReturnsNull");
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             bundle);
 
             assertThat(testApp.userManager()
                     .getApplicationRestrictions(testApp.packageName()).isEmpty()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
+                    dpc(sDeviceState).componentName(),
                     sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -449,8 +451,8 @@ public final class ApplicationRestrictionsTest {
     @UserTest({INITIAL_USER, PRIVATE_PROFILE})
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_successWithBroadcastSent() {
-        ComponentName admin = sDeviceState.dpc().componentName();
-        Bundle originalApplicationRestrictions = sDeviceState.dpc().devicePolicyManager()
+        ComponentName admin = dpc(sDeviceState).componentName();
+        Bundle originalApplicationRestrictions = dpc(sDeviceState).devicePolicyManager()
                         .getApplicationRestrictions(admin, sTestApp.packageName());
 
         String bundleName = "parentUserBundle";
@@ -459,7 +461,7 @@ public final class ApplicationRestrictionsTest {
             testApp.registerReceiver(new IntentFilter(ACTION_APPLICATION_RESTRICTIONS_CHANGED),
                     RECEIVER_EXPORTED);
 
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .getParentProfileInstance(admin)
                     .setApplicationRestrictions(
                     admin, sTestApp.packageName(), BundleUtils.createBundle(bundleName));
@@ -472,7 +474,7 @@ public final class ApplicationRestrictionsTest {
             assertThat(testApp.events().broadcastReceived().whereIntent().action().isEqualTo(
                     ACTION_APPLICATION_RESTRICTIONS_CHANGED)).eventOccurred();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     admin, sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
@@ -483,9 +485,9 @@ public final class ApplicationRestrictionsTest {
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_throwExceptionIfNotCope() {
         assertThrows(IllegalStateException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().getParentProfileInstance(null)
+            dpc(sDeviceState).devicePolicyManager().getParentProfileInstance(null)
                     .setApplicationRestrictions(
-                            sDeviceState.dpc().componentName(), sTestApp.packageName(),
+                            dpc(sDeviceState).componentName(), sTestApp.packageName(),
                             new Bundle());
         });
     }
@@ -503,18 +505,18 @@ public final class ApplicationRestrictionsTest {
     @RequireRunOnInitialUser
     @Test
     public void dpcAndRoleHolderSetApplicationRestrictions_doesNotOverlap() {
-        ComponentName dpcAdmin = sDeviceState.dpc().componentName();
-        ComponentName dmrhAdmin = sDeviceState.dpmRoleHolder().componentName();
-        Bundle originalDpcAppRestrictions = sDeviceState.dpc().devicePolicyManager()
+        ComponentName dpcAdmin = dpc(sDeviceState).componentName();
+        ComponentName dmrhAdmin = dpmRoleHolder(sDeviceState).componentName();
+        Bundle originalDpcAppRestrictions = dpc(sDeviceState).devicePolicyManager()
                 .getApplicationRestrictions(dpcAdmin, sTestApp.packageName());
-        Bundle originalRoleHolderAppRestrictions = sDeviceState.dpmRoleHolder()
+        Bundle originalRoleHolderAppRestrictions = dpmRoleHolder(sDeviceState)
                 .devicePolicyManager()
                 .getApplicationRestrictions(dmrhAdmin, sTestApp.packageName());
 
         try (TestAppInstance testApp = sTestApp.install()) {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     dpcAdmin, sTestApp.packageName(), BundleUtils.createBundle("dpcBundle"));
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationRestrictions(
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     null, sTestApp.packageName(), BundleUtils.createBundle("dmrhBundle"));
 
             BundleUtils.assertEqualToBundle("dpcBundle",
@@ -524,9 +526,9 @@ public final class ApplicationRestrictionsTest {
                     .getApplicationRestrictionsPerAdmin();
             BundleUtils.assertEqualToBundleList(restrictions, "dpcBundle", "dmrhBundle");
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setApplicationRestrictions(
+            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     dpcAdmin, sTestApp.packageName(), originalDpcAppRestrictions);
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationRestrictions(
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setApplicationRestrictions(
                     dmrhAdmin, sTestApp.packageName(), originalRoleHolderAppRestrictions);
         }
     }

@@ -26,6 +26,9 @@ import static android.content.Intent.EXTRA_TEXT;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.os.UserManager.DISALLOW_SHARE_INTO_MANAGED_PROFILE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CROSS_PROFILE_COPY_PASTE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -189,7 +192,7 @@ public final class CrossProfileSharingTest {
     @Postsubmit(reason = "new test")
     @EnsureHasWorkProfile
     public void sharingFromPersonalToWork_disallowShareIntoProfile_restrictionRemoved() {
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance testApp = sTestApp.install(workProfile(sDeviceState))) {
             ResolveInfo personalToWorkForwarder = getPersonalToWorkForwarder();
 
             // Enforce the restriction and wait for it to be applied, then remove it and wait again.
@@ -210,8 +213,8 @@ public final class CrossProfileSharingTest {
         try {
             IntentFilter sendIntentFilter = IntentFilter.create(ACTION_SEND, /* dataType= */ "*/*");
             sendIntentFilter.addCategory(CATEGORY_DEFAULT);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(), sendIntentFilter,
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(), sendIntentFilter,
                     FLAG_MANAGED_CAN_ACCESS_PARENT | FLAG_PARENT_CAN_ACCESS_MANAGED);
             Intent switchToOtherProfileIntent = getSwitchToOtherProfileIntent();
 
@@ -231,8 +234,8 @@ public final class CrossProfileSharingTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearCrossProfileIntentFilters(
-                    sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager().clearCrossProfileIntentFilters(
+                    dpc(sDeviceState).componentName());
         }
     }
 
@@ -293,7 +296,7 @@ public final class CrossProfileSharingTest {
     }
 
     private ResolveInfo getPersonalToWorkForwarder() {
-        return getResolveInfo(sDeviceState.workProfile(), FLAG_MANAGED_CAN_ACCESS_PARENT);
+        return getResolveInfo(workProfile(sDeviceState), FLAG_MANAGED_CAN_ACCESS_PARENT);
     }
 
     private ResolveInfo getWorkToPersonalForwarder() {
@@ -310,16 +313,16 @@ public final class CrossProfileSharingTest {
         try (TestAppInstance testApp = sTestApp.install(targetProfile)) {
             // Set up cross profile intent filters so we can resolve these to find out framework's
             // intent forwarder activity as ground truth
-            sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager()
-                    .addCrossProfileIntentFilter(sDeviceState.profileOwner(WORK_PROFILE)
+            profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager()
+                    .addCrossProfileIntentFilter(profileOwner(sDeviceState, WORK_PROFILE)
                                     .componentName(),
                             new IntentFilter(CROSS_PROFILE_ACTION), direction);
             try {
                 forwarderInfo = getCrossProfileIntentForwarder(new Intent(CROSS_PROFILE_ACTION));
             } finally {
-                sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager()
+                profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager()
                         .clearCrossProfileIntentFilters(
-                                sDeviceState.profileOwner(WORK_PROFILE).componentName());
+                                profileOwner(sDeviceState, WORK_PROFILE).componentName());
             }
         }
         return forwarderInfo;
@@ -338,7 +341,7 @@ public final class CrossProfileSharingTest {
     }
 
     private void setSharingIntoProfileEnabled(boolean enabled) {
-        RemoteDpc remoteDpc = sDeviceState.profileOwner(WORK_PROFILE);
+        RemoteDpc remoteDpc = profileOwner(sDeviceState, WORK_PROFILE);
         IntentFilter filter = new IntentFilter(ACTION_DATA_SHARING_RESTRICTION_APPLIED);
         Context remoteCtx = TestApis.context().androidContextAsUser(remoteDpc.user());
         try (PermissionContext permissionContext =

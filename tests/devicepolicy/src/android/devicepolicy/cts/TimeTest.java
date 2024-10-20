@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_DATE_TIME;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -66,33 +67,33 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_false_setsAutoTimeNotRequired() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeRequired();
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeRequired();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), false);
 
             assertThat(TestApis.devicePolicy().autoTimeRequired()).isFalse();
 
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
     @PolicyAppliesTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_true_setsAutoTimeRequired() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeRequired();
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeRequired();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), true);
 
             assertThat(TestApis.devicePolicy().autoTimeRequired()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -101,24 +102,24 @@ public final class TimeTest {
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_notAllowed_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                        sDeviceState.dpc().componentName(), true));
+                () -> dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                        dpc(sDeviceState).componentName(), true));
     }
 
     @Postsubmit(reason = "New test")
     @PolicyDoesNotApplyTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_true_policyDoesNotApply_autoTimeIsNotRequired() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeRequired();
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeRequired();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), true);
 
             assertThat(TestApis.devicePolicy().autoTimeRequired()).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -126,18 +127,18 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_true_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeRequired();
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeRequired();
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), true);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_REQUIRED_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -145,18 +146,18 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
     public void setAutoTimeRequired_false_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeRequired();
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeRequired();
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), false);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_REQUIRED_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isFalse()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeRequired(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeRequired(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -164,19 +165,19 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
-                sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
+                dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -184,20 +185,20 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
-                sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
+                dpc(sDeviceState).componentName());
 
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isFalse()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -205,18 +206,18 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_autoTimeIsEnabled() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager().getAutoTimeEnabled(
-                sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
             assertThat(TestApis.settings().global()
                     .getInt(Settings.Global.AUTO_TIME, 0)).isEqualTo(1);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -224,18 +225,18 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_autoTimeIsNotEnabled() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME, 0)).isEqualTo(0);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -243,18 +244,18 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void getAutoTimeEnabled_returnsAutoTimeEnabled() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .getAutoTimeEnabled(sDeviceState.dpc().componentName())).isEqualTo(true);
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getAutoTimeEnabled(dpc(sDeviceState).componentName())).isEqualTo(true);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -263,8 +264,8 @@ public final class TimeTest {
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .setAutoTimeEnabled(sDeviceState.dpc().componentName(), true));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimeEnabled(dpc(sDeviceState).componentName(), true));
     }
 
     @Postsubmit(reason = "New test")
@@ -272,26 +273,26 @@ public final class TimeTest {
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#getAutoTimeEnabled")
     public void getAutoTimeEnabled_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .getAutoTimeEnabled(sDeviceState.dpc().componentName()));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .getAutoTimeEnabled(dpc(sDeviceState).componentName()));
     }
 
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_autoTimeZoneIsEnabled() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(1);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -299,18 +300,18 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_autoTimeZoneIsNotEnabled() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(0);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -318,27 +319,27 @@ public final class TimeTest {
     @CannotSetPolicyTest(policy = AutoTimeZoneEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_notAllowed_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager()
-                .setAutoTimeZoneEnabled(sDeviceState.dpc().componentName(), true));
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
+                .setAutoTimeZoneEnabled(dpc(sDeviceState).componentName(), true));
     }
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_ZONE_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -346,19 +347,19 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_logsEvent() {
-        boolean originalValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_AUTO_TIME_ZONE_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isFalse()).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalValue);
         }
     }
 
@@ -369,14 +370,14 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = Time.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTime")
     public void setTime_timeIsSet() {
-        boolean originalAutoTimeEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTime(sDeviceState.dpc().componentName(), MILLIS_SINCE_EPOCH);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTime(dpc(sDeviceState).componentName(), MILLIS_SINCE_EPOCH);
 
             assertThat(returnValue).isTrue();
 
@@ -385,8 +386,8 @@ public final class TimeTest {
 
             assertThat(differenceSeconds).isLessThan(120); // Within 2 minutes
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
         }
     }
 
@@ -394,20 +395,20 @@ public final class TimeTest {
     @PolicyDoesNotApplyTest(policy = Time.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTime")
     public void setTime_doesNotApply_timeIsNotSet() {
-        boolean originalAutoTimeEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTime(sDeviceState.dpc().componentName(), MILLIS_SINCE_EPOCH);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTime(dpc(sDeviceState).componentName(), MILLIS_SINCE_EPOCH);
 
             assertThat(returnValue).isTrue();
             assertThat(System.currentTimeMillis()).isNotEqualTo(MILLIS_SINCE_EPOCH);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
         }
     }
 
@@ -415,20 +416,20 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = Time.class, singleTestOnly = true)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTime")
     public void setTime_autoTimeIsEnabled_returnsFalse() {
-        boolean originalAutoTimeEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), true);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), true);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTime(sDeviceState.dpc().componentName(), MILLIS_SINCE_EPOCH);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTime(dpc(sDeviceState).componentName(), MILLIS_SINCE_EPOCH);
 
             assertThat(returnValue).isFalse();
             assertThat(System.currentTimeMillis()).isNotEqualTo(MILLIS_SINCE_EPOCH);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
         }
     }
 
@@ -437,30 +438,30 @@ public final class TimeTest {
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTime")
     public void setTime_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .setTime(sDeviceState.dpc().componentName(), MILLIS_SINCE_EPOCH));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .setTime(dpc(sDeviceState).componentName(), MILLIS_SINCE_EPOCH));
     }
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = Time.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTime")
     public void setTime_logsEvent() {
-        boolean originalAutoTimeEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
-            sDeviceState.dpc().devicePolicyManager()
-                    .setTime(sDeviceState.dpc().componentName(), MILLIS_SINCE_EPOCH);
+            dpc(sDeviceState).devicePolicyManager()
+                    .setTime(dpc(sDeviceState).componentName(), MILLIS_SINCE_EPOCH);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_TIME_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
             ).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
         }
     }
 
@@ -468,28 +469,28 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_timeZoneIsSet() {
-        boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTimeZone(sDeviceState.dpc().componentName(), TIMEZONE);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTimeZone(dpc(sDeviceState).componentName(), TIMEZONE);
 
             assertThat(returnValue).isTrue();
             Poll.forValue("timezone ID", () -> TimeZone.getDefault().getID())
                     .toBeEqualTo(TIMEZONE).errorOnFail().await();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeZoneEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
         }
     }
 
     // TODO(234609037): Once these APIs are accessible via permissions, this should be moved to Nene
     private void setAutoTimeZoneEnabled(RemoteDevicePolicyManager dpm,
             ComponentName componentName, boolean enabled) {
-        sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
+        dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
                 componentName, enabled);
 
         Poll.forValue("autoTimeZoneEnabled",
@@ -503,20 +504,20 @@ public final class TimeTest {
     @PolicyDoesNotApplyTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_doesNotApply_timeZoneIsNotSet() {
-        boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try {
-            setAutoTimeZoneEnabled(sDeviceState.dpc().devicePolicyManager(),
-                    sDeviceState.dpc().componentName(), false);
+            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
+                    dpc(sDeviceState).componentName(), false);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTimeZone(sDeviceState.dpc().componentName(), TIMEZONE);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTimeZone(dpc(sDeviceState).componentName(), TIMEZONE);
 
             assertThat(returnValue).isTrue();
             assertThat(TimeZone.getDefault().getDisplayName()).isNotEqualTo(TIMEZONE);
         } finally {
-            setAutoTimeZoneEnabled(sDeviceState.dpc().devicePolicyManager(),
-                    sDeviceState.dpc().componentName(), originalAutoTimeZoneEnabledValue);
+            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
+                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
         }
     }
 
@@ -524,20 +525,20 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = com.android.bedstead.harrier.policies.TimeZone.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_autoTimeZoneIsEnabled_returnsFalse() {
-        boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try {
-            setAutoTimeZoneEnabled(sDeviceState.dpc().devicePolicyManager(),
-                    sDeviceState.dpc().componentName(), true);
+            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
+                    dpc(sDeviceState).componentName(), true);
 
-            boolean returnValue = sDeviceState.dpc().devicePolicyManager()
-                    .setTimeZone(sDeviceState.dpc().componentName(), TIMEZONE);
+            boolean returnValue = dpc(sDeviceState).devicePolicyManager()
+                    .setTimeZone(dpc(sDeviceState).componentName(), TIMEZONE);
 
             assertThat(returnValue).isFalse();
             assertThat(TimeZone.getDefault().getDisplayName()).isNotEqualTo(TIMEZONE);
         } finally {
-            setAutoTimeZoneEnabled(sDeviceState.dpc().devicePolicyManager(),
-                    sDeviceState.dpc().componentName(), originalAutoTimeZoneEnabledValue);
+            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
+                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
         }
     }
 
@@ -547,30 +548,30 @@ public final class TimeTest {
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .setTimeZone(sDeviceState.dpc().componentName(), TIMEZONE));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .setTimeZone(dpc(sDeviceState).componentName(), TIMEZONE));
     }
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = Time.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setTimeZone")
     public void setTimeZone_logsEvent() {
-        boolean originalAutoTimeZoneEnabledValue = sDeviceState.dpc().devicePolicyManager()
-                .getAutoTimeZoneEnabled(sDeviceState.dpc().componentName());
+        boolean originalAutoTimeZoneEnabledValue = dpc(sDeviceState).devicePolicyManager()
+                .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), false);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), false);
 
-            sDeviceState.dpc().devicePolicyManager()
-                    .setTimeZone(sDeviceState.dpc().componentName(), TIMEZONE);
+            dpc(sDeviceState).devicePolicyManager()
+                    .setTimeZone(dpc(sDeviceState).componentName(), TIMEZONE);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(EventId.SET_TIME_ZONE_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
             ).wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setAutoTimeZoneEnabled(
-                    sDeviceState.dpc().componentName(), originalAutoTimeZoneEnabledValue);
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
         }
     }
 
@@ -579,8 +580,8 @@ public final class TimeTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DATE_TIME")
     public void setUserRestriction_disallowConfigDateTime_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DATE_TIME));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DATE_TIME));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigDateTime.class)
@@ -588,14 +589,14 @@ public final class TimeTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DATE_TIME")
     public void setUserRestriction_disallowConfigDateTime_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DATE_TIME);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DATE_TIME);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_DATE_TIME))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DATE_TIME);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DATE_TIME);
         }
     }
 
@@ -604,15 +605,15 @@ public final class TimeTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DATE_TIME")
     public void setUserRestriction_disallowConfigDateTime_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DATE_TIME);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DATE_TIME);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_DATE_TIME))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DATE_TIME);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DATE_TIME);
         }
     }
 

@@ -16,6 +16,7 @@
 
 package com.android.bedstead.harrier;
 
+import com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -100,12 +101,13 @@ public final class DeviceStateTester implements AutoCloseable {
 
     /** See {@link DeviceState#profileOwner()}. */
     public RemoteDpc profileOwner() {
-        return mDeviceState.profileOwner();
+        return EnterpriseDeviceStateExtensionsKt.profileOwner(mDeviceState);
     }
 
     /** See {@link DeviceState#workProfile()}. */
     public UserReference workProfile() {
-        return mDeviceState.workProfile(TestApis.users().instrumented());
+        return EnterpriseDeviceStateExtensionsKt.workProfile(mDeviceState,
+                TestApis.users().instrumented());
     }
 
     /** See {@link TestAppsDeviceStateExtensionsKt#testApps()}. */

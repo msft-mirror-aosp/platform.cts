@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -100,15 +101,15 @@ public final class PrivateProfileTest {
     @Test
     @PolicyAppliesTest(policy = DisallowAddPrivateProfile.class)
     public void addUserRestriction_restrictionApplies() {
-        ComponentName admin = sDeviceState.dpc().componentName();
+        ComponentName admin = dpc(sDeviceState).componentName();
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(admin,
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(admin,
                     DISALLOW_ADD_PRIVATE_PROFILE);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(admin,
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(admin,
                     DISALLOW_ADD_PRIVATE_PROFILE);
         }
     }

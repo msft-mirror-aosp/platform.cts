@@ -81,7 +81,7 @@ public class BaseAppVerifierImpl {
             "android.permission.REGISTER_SIM_SUBSCRIPTION";
     private static final String MODIFY_PHONE_STATE_PERMISSION =
             "android.permission.MODIFY_PHONE_STATE";
-    private static final int FOCUS_TIMEOUT_MILLIS = 3000;
+    private static final int FOCUS_TIMEOUT_MILLIS = 6000;
     private static final int TIME_BETWEEN_FOCUS_ATTEMPTS_MILLIS = 500;
     private static final int MAX_FOCUS_ATTEMPTS = 10;
 
@@ -115,7 +115,10 @@ public class BaseAppVerifierImpl {
      * can wait for it later.
      */
     private final AudioManager.OnAudioFocusChangeListener mMusicAudioFocusChangeListener =
-            mMusicAudioFocusQueue::offer;
+            focusChange -> {
+                android.util.Log.i(TAG, "onAudioFocusChange: changed to " + focusChange);
+                mMusicAudioFocusQueue.offer(focusChange);
+            };
 
     /**
      * Setup an audio focus request for simulated pre-call music playback.  We want to get notified
@@ -550,7 +553,8 @@ public class BaseAppVerifierImpl {
         } catch (InterruptedException ie) {
             fail("Expected to get new music focus but timed out.");
         }
-        assertNotNull(newFocus);
+        assertNotNull("Expected focus to be reported but none was within the timeout.",
+                newFocus);
         int newFocusValue = newFocus.intValue();
 
         // We expect to have lost focus; it will likely be reported as transient focus lost.  Both

@@ -75,6 +75,7 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
+    'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
 )
@@ -84,6 +85,7 @@ TABLET_LEGACY_NAME = 'dragon'
 # List entries must be entered in lowercase
 TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
+    'nabu_tw': ANDROID13_API_LEVEL,
     'yunluo': ANDROID14_API_LEVEL
     })
 TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist'
@@ -144,10 +146,16 @@ def validate_tablet(tablet_name, brightness, device_id):
   """
   tablet_name = tablet_name.lower()
   if tablet_name not in TABLET_ALLOWLIST:
-    raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    raise AssertionError(
+        f'Tablet product name: {tablet_name}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+    )
   if tablet_name in TABLET_OS_VERSION:
-    if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
-      raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    if (device_sdk := get_build_sdk_version(
+        device_id)) < TABLET_OS_VERSION[tablet_name]:
+      raise AssertionError(
+          f' Tablet product name: {tablet_name}. '
+          f'Android version: {device_sdk}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+      )
   name_to_brightness = {
       TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
   }
@@ -1150,7 +1158,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_all_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id, filter_recordable=False):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1159,13 +1167,16 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+      filter_recordable: filter preview sizes if supported for video recording
+                       using MediaRecorder
 
     Returns:
       List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
-        _CAMERA_ID_STR: camera_id
+        _CAMERA_ID_STR: camera_id,
+        'filter_recordable': filter_recordable,
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
