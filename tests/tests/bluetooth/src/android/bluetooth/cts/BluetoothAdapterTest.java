@@ -48,7 +48,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemProperties;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -57,7 +56,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 
 import org.junit.After;
@@ -629,7 +627,6 @@ public class BluetoothAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_AUTO_ON_FEATURE)
     public void autoOnApi() {
         assumeTrue(mHasBluetooth);
 
