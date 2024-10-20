@@ -113,8 +113,6 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "general-tests",
-        "cts",
-        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "current",
