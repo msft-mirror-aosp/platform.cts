@@ -48,8 +48,8 @@ cc_test_library {
     sdk_version: "29",
 }
 
-android_test {
-    name: "CtsMediaMiscTestCases",
+java_defaults {
+    name: "MediaMiscTestCases_defaults",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -102,11 +102,6 @@ android_test {
         "org.apache.http.legacy.stubs.system",
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
-    ],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
@@ -114,60 +109,19 @@ android_test {
 }
 
 android_test {
-    name: "MctsMediaMiscTestCases",
-    defaults: ["cts_defaults"],
-    // include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "androidx.test.core",
-        "androidx.test.ext.junit",
-        "compatibility-device-util-axt",
-        "ctsdeviceutillegacy-axt",
-        "ctsmediautil",
-        "ctstestrunner-axt",
-        "hamcrest-library",
-        "ctstestserver",
-        "cts-media-common",
-        "junit",
-        "junit-params",
-        "testng",
-        "truth",
-        "mockito-target-minus-junit4",
-        "androidx.heifwriter_heifwriter",
-        "CtsCameraUtils",
-        "aconfig_mediacodec_flags_java_lib",
+    name: "CtsMediaMiscTestCases",
+    defaults: ["MediaMiscTestCases_defaults"],
+    test_config: "AndroidTest.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
     ],
-    jni_libs: [
-        "libctscodecutils_jni",
-        "libctsmediamisc_jni",
-        "libctsmediacommon_jni",
-        "libnativehelper_compat_libc++",
-    ],
-    asset_dirs: ["assets"],
-    resource_dirs: ["res"],
-    aaptflags: [
-        "--auto-add-overlay",
+}
 
-        // Do not compress these files:
-        "-0 .vp9",
-        "-0 .ts",
-        "-0 .heic",
-        "-0 .trp",
-        "-0 .ota",
-        "-0 .mxmf",
-    ],
-    srcs: [
-        "src/**/*.java",
-        "aidl/**/*.aidl",
-    ],
-    // This test uses private APIs
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    libs: [
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
-        "android.test.runner.stubs.system",
-    ],
+android_test {
+    name: "MctsMediaMiscTestCases",
+    defaults: ["MediaMiscTestCases_defaults"],
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
     test_suites: [

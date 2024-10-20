@@ -51,7 +51,7 @@ public class ReadOnlyDynamicCodeLoadingTest {
     public void testLoadWritable_expectException() throws Exception {
         UnsatisfiedLinkError unsatisfiedLinkError = assertThrows(UnsatisfiedLinkError.class,
                 this::copyLibraryToWritableFileAndLoad);
-        assertThat(unsatisfiedLinkError).hasMessageThat().contains("writeable");
+        assertThat(unsatisfiedLinkError).hasMessageThat().contains("writable");
     }
 
     private void copyLibraryToWritableFileAndLoad() throws Exception {

@@ -361,7 +361,6 @@ public class KeyGeneratorTest {
         }
     }
 
-    // TODO: This test will fail until b/117509689 is resolved.
     @Test
     public void testDESKeySupportedSizes() throws Exception {
         if (!TestUtils.supports3DES()) {
@@ -397,8 +396,7 @@ public class KeyGeneratorTest {
                     assertEquals(0, rng.getOutputSizeBytes());
                 }
             } catch (Throwable e) {
-                throw new RuntimeException("Failed for key size " + i +
-                    "\n***This test will continue to fail until b/117509689 is resolved***", e);
+                throw new RuntimeException("Failed for key size " + i, e);
             }
         }
     }
@@ -829,9 +827,10 @@ public class KeyGeneratorTest {
                 results.add(new String(cipherText));
             }
             // Verify unique cipher text is generated for all different keys
-            assertEquals(TextUtils.formatSimple("%d different cipher text should have been"
-                                + " generated for %d different keys. Failed for message \"%s\".",
-                            numberOfKeysToTest, numberOfKeysToTest, new String(msg)),
+            assertEquals(
+                    TextUtils.formatSimple("%d different cipher text should have been"
+                                    + " generated for %d different keys. Failed for message |%s|.",
+                            numberOfKeysToTest, numberOfKeysToTest, HexEncoding.encode(msg)),
                     numberOfKeysToTest, results.size());
         }
     }
@@ -870,8 +869,9 @@ public class KeyGeneratorTest {
                 results.add(new String(macSign));
             }
             // Verify unique MAC is generated for all different keys
-            assertEquals(TextUtils.formatSimple("%d different MAC should have been generated for "
-                    + "%d different keys.", numberOfKeysToTest, numberOfKeysToTest),
+            assertEquals(TextUtils.formatSimple("%d different MACs should have been generated for "
+                                         + "%d different keys over message |%s|",
+                                 numberOfKeysToTest, numberOfKeysToTest, HexEncoding.encode(msg)),
                     numberOfKeysToTest, results.size());
         }
     }

@@ -50,7 +50,7 @@ public class ReadOnlyDynamicCodeLoadTest extends CompatChangeGatingTestCase {
         }
     }
 
-    public void testWriteableLoad_withChangeEnabled_throws() throws Exception {
+    public void testWritableLoad_withChangeEnabled_throws() throws Exception {
         // TODO(b/324474892): Remove this and replace it with flag annotations.
         if (checkFlagIsEnabled()) {
             runDeviceCompatTest(TEST_PKG, ".ReadOnlyDynamicCodeLoadingTest",
