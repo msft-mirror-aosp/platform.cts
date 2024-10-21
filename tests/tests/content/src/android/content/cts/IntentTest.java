@@ -16,6 +16,7 @@
 
 package android.content.cts;
 
+import static android.content.Intent.EXTENDED_FLAG_MISSING_CREATOR_OR_INVALID_TOKEN;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.content.Intent.FLAG_RECEIVER_OFFLOAD;
 
@@ -60,6 +61,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
+import android.security.Flags;
 import android.test.mock.MockContext;
 import android.util.AttributeSet;
 import android.util.Xml;
@@ -2283,6 +2285,17 @@ public class IntentTest {
 
         assertThat(deserialized.toInsecureString())
                 .isEqualTo(intent.toInsecureString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREVENT_INTENT_REDIRECT)
+    public void testRemoveLaunchSecurityProtection() {
+        Intent intent = new Intent(TEST_ACTION);
+        intent.setCreatorToken(new Binder());
+        intent.addExtendedFlags(EXTENDED_FLAG_MISSING_CREATOR_OR_INVALID_TOKEN);
+        intent.removeLaunchSecurityProtection();
+        assertThat(intent.getExtendedFlags()).isEqualTo(0);
+        assertThat(intent.getCreatorToken()).isNull();
     }
 
     private void roundtrip() {
