@@ -6250,6 +6250,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             throws Exception {
         if (!shouldTestSatelliteWithMockService()) return;
 
+        assumeTrue(getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_MESSAGING));
+
         logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterDefaultSmsSubIdChanged:");
         SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
         Context context = getContext();
