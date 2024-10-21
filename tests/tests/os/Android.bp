@@ -108,6 +108,7 @@ android_ravenwood_test {
         "src/android/os/cts/DeadObjectExceptionTest.java",
         "src/android/os/cts/HandlerTest.java",
         "src/android/os/cts/HandlerThreadTest.java",
+        "src/android/os/cts/IpcDataCacheTest.java",
         "src/android/os/cts/ISecondary.aidl",
         "src/android/os/cts/LocaleListTest.java",
         "src/android/os/cts/LooperTest.java",
