@@ -16,7 +16,6 @@
 
 package android.hardware.input.cts.tests;
 
-import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
 import static android.Manifest.permission.INJECT_EVENTS;
 import static android.view.Display.DEFAULT_DISPLAY;
 
@@ -62,7 +61,8 @@ public class VirtualInputDeviceGenericTest {
     private static final String DEVICE_NAME = "CtsVirtualGenericTestDevice";
 
     @Rule
-    public final VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public final VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
+            INJECT_EVENTS);
 
     private VirtualDevice mVirtualDevice;
     private DisplayManager mDisplayManager;
@@ -158,8 +158,8 @@ public class VirtualInputDeviceGenericTest {
     public void createVirtualInputDevice_defaultDisplay_throwsException(
             VirtualInputDeviceFactory factory) {
         Display display = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
-        assertThrows(SecurityException.class,
-                () -> factory.create(mVirtualDevice, DEVICE_NAME, display));
+        mRule.runWithoutPermissions(() -> assertThrows(SecurityException.class,
+                () -> factory.create(mVirtualDevice, DEVICE_NAME, display)));
     }
 
     @Parameters(method = "allInputDevices")
@@ -168,8 +168,8 @@ public class VirtualInputDeviceGenericTest {
             VirtualInputDeviceFactory factory) {
         VirtualDisplay unownedDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH);
-        assertThrows(SecurityException.class,
-                () -> factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.getDisplay()));
+        mRule.runWithoutPermissions(() -> assertThrows(SecurityException.class,
+                () -> factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.getDisplay())));
     }
 
     @Parameters(method = "allInputDevices")
@@ -177,10 +177,7 @@ public class VirtualInputDeviceGenericTest {
     public void createVirtualInputDevice_defaultDisplay_injectEvents_succeeds(
             VirtualInputDeviceFactory factory) {
         Display display = mDisplayManager.getDisplay(DEFAULT_DISPLAY);
-        assertThat(mRule.runWithTemporaryPermission(
-                () -> factory.create(mVirtualDevice, DEVICE_NAME, display),
-                INJECT_EVENTS, CREATE_VIRTUAL_DEVICE))
-                .isNotNull();
+        assertThat(factory.create(mVirtualDevice, DEVICE_NAME, display)).isNotNull();
     }
 
     @Parameters(method = "allInputDevices")
@@ -189,9 +186,7 @@ public class VirtualInputDeviceGenericTest {
             VirtualInputDeviceFactory factory) {
         VirtualDisplay unownedDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH);
-        assertThat(mRule.runWithTemporaryPermission(
-                () -> factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.getDisplay()),
-                INJECT_EVENTS, CREATE_VIRTUAL_DEVICE))
+        assertThat(factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.getDisplay()))
                 .isNotNull();
     }
 
