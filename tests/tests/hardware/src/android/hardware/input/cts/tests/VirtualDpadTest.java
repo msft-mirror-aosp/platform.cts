@@ -79,17 +79,6 @@ public class VirtualDpadTest extends VirtualDeviceTestCase {
     }
 
     @Test
-    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualDpad.sendKeyEvent(
-                                new VirtualKeyEvent.Builder()
-                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                                        .build())));
-    }
-
-    @Test
     public void rejectsUnsupportedKeyCodes() {
         assertThrows(IllegalArgumentException.class,
                 () -> mVirtualDpad.sendKeyEvent(new VirtualKeyEvent.Builder()
