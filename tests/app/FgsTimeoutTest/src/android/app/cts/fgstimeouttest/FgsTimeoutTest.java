@@ -26,6 +26,8 @@ import static android.app.nano.AppProtoEnums.PROCESS_STATE_TOP;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
+import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
@@ -41,6 +43,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.os.UserManager;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -50,7 +53,6 @@ import android.provider.DeviceConfig;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.ShellUtils;
@@ -569,7 +571,13 @@ public class FgsTimeoutTest {
                         == PROCESS_STATE_TOP);
         assertHelperPackageProcState(PROCESS_STATE_TOP);
 
-        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressHome();
+        // Press the home button to send the app to the background.
+        final UserManager userManager = sContext.getSystemService(UserManager.class);
+        final int displayId = userManager.isVisibleBackgroundUsersSupported()
+                ? userManager.getMainDisplayIdAssignedToUser()
+                : DEFAULT_DISPLAY;
+        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                String.format("input -d %d keyevent %d", displayId, KEYCODE_HOME));
 
         SystemClock.sleep(1000); // Wait for oomadj to kick in.
     }

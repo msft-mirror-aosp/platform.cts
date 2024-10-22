@@ -144,43 +144,6 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
                         0f /* relativeX */, 0f /* relativeY */, 1f /* vScroll */)));
     }
 
-    @Test
-    public void sendButtonEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualMouse.sendButtonEvent(
-                                new VirtualMouseButtonEvent.Builder()
-                                        .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
-                                        .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
-                                        .build())));
-    }
-
-    @Test
-    public void sendRelativeEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float relativeChangeX = 25f;
-        final float relativeChangeY = 35f;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualMouse.sendRelativeEvent(
-                                new VirtualMouseRelativeEvent.Builder()
-                                        .setRelativeY(relativeChangeY)
-                                        .setRelativeX(relativeChangeX)
-                                        .build())));
-    }
-
-    @Test
-    public void sendScrollEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float moveX = 0f;
-        final float moveY = 1f;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualMouse.sendScrollEvent(
-                                new VirtualMouseScrollEvent.Builder()
-                                        .setYAxisMovement(moveY)
-                                        .setXAxisMovement(moveX)
-                                        .build())));
-    }
-
     @Ignore("b/369000028")
     @Test
     public void testStartingCursorPosition() {

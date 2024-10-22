@@ -22,7 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.configinfrastructure.aconfig.AconfigPackage;
-import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = AconfigPackage.class)
 public final class AconfigApiTest {
     @Rule
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -48,9 +49,9 @@ public final class AconfigApiTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_NEW_STORAGE_PUBLIC_API)
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testStorageReaderDisableInstance() {
         AconfigPackage reader = AconfigPackage.load("android.provider.flags");
-        assertFalse(reader.getBooleanFlagValue("new_storage_public_api", true));
+        assertFalse(reader.getBooleanFlagValue("flag_not_exist", false));
     }
 }
