@@ -24,6 +24,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
+import com.android.compatibility.common.util.UserHelper
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -48,6 +49,7 @@ class InputShellCommandTest {
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var activity: CaptureEventActivity
+    private val displayId = UserHelper().mainDisplayId
 
     @Before
     fun setUp() {
@@ -65,7 +67,7 @@ class InputShellCommandTest {
     fun testDefaultTapToolType() {
         val (x, y) = getViewCenterOnScreen(activity.window.decorView)
 
-        ShellUtils.runShellCommand("input tap $x $y")
+        ShellUtils.runShellCommand("input -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_FINGER)
     }
 
@@ -76,31 +78,31 @@ class InputShellCommandTest {
     fun testTapToolType() {
         val (x, y) = getViewCenterOnScreen(activity.window.decorView)
 
-        ShellUtils.runShellCommand("input touchscreen tap $x $y")
+        ShellUtils.runShellCommand("input touchscreen -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_FINGER)
 
-        ShellUtils.runShellCommand("input touchpad tap $x $y")
+        ShellUtils.runShellCommand("input touchpad -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_FINGER)
 
-        ShellUtils.runShellCommand("input touchnavigation tap $x $y")
+        ShellUtils.runShellCommand("input touchnavigation -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_FINGER)
 
-        ShellUtils.runShellCommand("input stylus tap $x $y")
+        ShellUtils.runShellCommand("input stylus -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_STYLUS)
 
-        ShellUtils.runShellCommand("input mouse tap $x $y")
+        ShellUtils.runShellCommand("input mouse -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_MOUSE)
 
-        ShellUtils.runShellCommand("input trackball tap $x $y")
+        ShellUtils.runShellCommand("input trackball -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_MOUSE)
 
-        ShellUtils.runShellCommand("input joystick tap $x $y")
+        ShellUtils.runShellCommand("input joystick -d $displayId tap $x $y")
         assertTapToolType(MotionEvent.TOOL_TYPE_UNKNOWN)
     }
 
     @Test
     fun testDefaultScroll() {
-        ShellUtils.runShellCommand("input scroll")
+        ShellUtils.runShellCommand("input -d $displayId scroll")
 
         val event = getMotionEvent()
         assertThat(event.source).isEqualTo(InputDevice.SOURCE_ROTARY_ENCODER)
@@ -111,7 +113,7 @@ class InputShellCommandTest {
     fun testPointerScroll() {
         val (x, y) = getViewCenterOnScreen(activity.window.decorView)
 
-        ShellUtils.runShellCommand("input mouse scroll $x $y --axis VSCROLL,-1")
+        ShellUtils.runShellCommand("input mouse -d $displayId scroll $x $y --axis VSCROLL,-1")
 
         val event = getMotionEvent()
         assertThat(event.source).isEqualTo(InputDevice.SOURCE_MOUSE)
@@ -123,7 +125,9 @@ class InputShellCommandTest {
 
     @Test
     fun testNonPointerScroll() {
-        ShellUtils.runShellCommand("input rotaryencoder scroll --axis SCROLL,-8 --axis HSCROLL,2")
+        ShellUtils.runShellCommand(
+            "input rotaryencoder -d $displayId scroll --axis SCROLL,-8 --axis HSCROLL,2"
+        )
 
         val event = getMotionEvent()
         assertThat(event.source).isEqualTo(InputDevice.SOURCE_ROTARY_ENCODER)
@@ -134,10 +138,10 @@ class InputShellCommandTest {
 
     @Test
     fun testInvalidScroll() {
-        ShellUtils.runShellCommand("input scroll --axis SCROLL -8")
-        ShellUtils.runShellCommand("input scroll --axis scroll,-8")
-        ShellUtils.runShellCommand("input scroll --random_option SCROLL,-8")
-        ShellUtils.runShellCommand("input scroll --axis X,-8")
+        ShellUtils.runShellCommand("input -d $displayId scroll --axis SCROLL -8")
+        ShellUtils.runShellCommand("input -d $displayId scroll --axis scroll,-8")
+        ShellUtils.runShellCommand("input -d $displayId scroll --random_option SCROLL,-8")
+        ShellUtils.runShellCommand("input -d $displayId scroll --axis X,-8")
 
         assertThat(activity.getInputEvent()).isNull()
     }
