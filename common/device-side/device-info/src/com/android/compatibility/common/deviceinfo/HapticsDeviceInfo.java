@@ -22,7 +22,6 @@ import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
-import android.os.vibrator.VibratorFrequencyProfile;
 
 import com.android.compatibility.common.util.DeviceInfoStore;
 
@@ -97,17 +96,6 @@ public final class HapticsDeviceInfo extends DeviceInfo {
             store.addResult("has_frequency_control", vibrator.hasFrequencyControl());
             store.addResult("q_factor", vibrator.getQFactor());
             store.addResult("resonant_frequency", vibrator.getResonantFrequency());
-            VibratorFrequencyProfile frequencyProfile = vibrator.getFrequencyProfile();
-            if (frequencyProfile != null) {
-                store.startGroup("frequency_profile");
-                store.addResult("min_frequency", frequencyProfile.getMinFrequency());
-                store.addResult("max_frequency", frequencyProfile.getMaxFrequency());
-                store.addResult("max_amplitude_measurement_interval",
-                        frequencyProfile.getMaxAmplitudeMeasurementInterval());
-                store.addArrayResult("max_amplitude_measurements",
-                        frequencyProfile.getMaxAmplitudeMeasurements());
-                store.endGroup();
-            }
         }
         store.endGroup();
     }

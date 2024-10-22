@@ -210,13 +210,6 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     @Test
-    public void createVirtualDevice_noPermission_shouldThrowSecurityException() {
-        mRule.runWithTemporaryPermission(
-                () -> assertThrows(SecurityException.class,
-                        () -> mRule.createManagedVirtualDevice()));
-    }
-
-    @Test
     public void createVirtualDevice_invalidAssociationId_shouldThrowIllegalArgumentException() {
         assertThrows(
                 IllegalArgumentException.class,

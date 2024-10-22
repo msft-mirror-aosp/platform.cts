@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.os.Binder;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
@@ -40,6 +41,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(reason = "Permissions not supported on Ravenwood")
 public final class DeviceConfigApiPermissionTests {
     private static final String NAMESPACE = "namespace";
     private static final String NAMESPACE2 = "namespace2";
