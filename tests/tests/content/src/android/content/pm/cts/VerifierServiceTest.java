@@ -51,7 +51,6 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -602,14 +601,6 @@ public class VerifierServiceTest {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
         assertInstallPackageWithSession(VERIFIER_APP_APK_PATH, VERIFIER_APP_PACKAGE_NAME);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_VERIFICATION_SERVICE)
-    public void testDisabledFeatureFlagBypassesVerifier() throws Exception {
-        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
-        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
-        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
     // Only used to install the verifier package

@@ -19,6 +19,7 @@ import android.app.ActivityManager
 import android.app.contentsuggestions.ContentSuggestionsManager
 import android.app.role.RoleManager
 import android.provider.Settings
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.annotations.EnsureDemoMode
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode

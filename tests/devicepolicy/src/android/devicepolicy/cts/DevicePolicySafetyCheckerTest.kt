@@ -23,6 +23,7 @@ import com.android.bedstead.harrier.annotations.EnsurePolicyOperationUnsafe
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.policies.LockNow
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy

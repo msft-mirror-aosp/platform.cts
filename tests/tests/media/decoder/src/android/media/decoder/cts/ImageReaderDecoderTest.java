@@ -33,7 +33,6 @@ import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaExtractor;
@@ -51,6 +50,7 @@ import android.view.Surface;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -336,6 +336,19 @@ public class ImageReaderDecoderTest {
         return false;
     }
 
+    @ApiTest(apis = {"android.graphics.ImageFormat#YUV_420_888",
+            "android.graphics.ImageFormat#YCBCR_P010",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUVP010",
+            "android.media.MediaCodecInfo.CodecCapabilities#isFormatSupported",
+            "android.media.MediaCodecInfo.VideoCapabilities#areSizeAndRateSupported",
+            "android.media.MediaCodec#releaseOutputBuffer",
+            "android.media.ImageReader#newInstance",
+            "android.media.ImageReader.OnImageAvailableListener#onImageAvailable",
+            "android.media.ImageReader#getSurface",
+            "android.media.ImageReader#acquireNextImage",
+            "android.media.ImageReader#acquireLatestImage",
+            "android.media.ImageReader#close"})
     @Test
     public void decodeTest() throws Exception {
         int imageFormat = ImageFormat.YUV_420_888;
