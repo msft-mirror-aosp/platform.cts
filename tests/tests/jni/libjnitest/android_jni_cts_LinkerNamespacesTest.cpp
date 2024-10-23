@@ -51,8 +51,6 @@
 #endif
 
 static const std::string kSystemLibraryPath = "/system/" LIB_DIR;
-static const std::string kVendorLibraryPath = "/vendor/" LIB_DIR;
-static const std::string kProductLibraryPath = "/product/" LIB_DIR;
 
 // APEX library paths to check for either presence or absence of public
 // libraries.
