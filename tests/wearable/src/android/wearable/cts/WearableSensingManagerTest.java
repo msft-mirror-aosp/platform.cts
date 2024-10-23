@@ -130,6 +130,22 @@ public class WearableSensingManagerTest {
     }
 
     @Test
+    public void noAccessWhenAttemptingProvideReadOnlyParcelFileDescriptor() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to provideReadOnlyParcelFileDescriptor from non system app",
+                SecurityException.class,
+                () ->
+                        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                                mPipe[0], PersistableBundle.EMPTY, EXECUTOR, (result) -> {}));
+    }
+
+    @Test
     public void noAccessWhenAttemptingProvideData() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,

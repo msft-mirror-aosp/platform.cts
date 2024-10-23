@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -75,10 +76,13 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             "VERIFY_DATA_RECEIVED_FROM_WEARABLE";
 
     /**
-     * PersistableBundle key that represents the expected string to be received from the wearable.
+     * PersistableBundle key that represents the expected string to be received from the requested
+     * ACTION.
      */
-    public static final String EXPECTED_STRING_FROM_WEARABLE_KEY =
-            "EXPECTED_STRING_FROM_WEARABLE_KEY";
+    public static final String EXPECTED_STRING_KEY = "EXPECTED_STRING_KEY";
+
+    /** PersistableBundle key that represents the metadata to verify. */
+    public static final String METADATA_KEY = "METADATA_KEY";
 
     /**
      * PersistableBundle value that represents a request to send data to the secure wearable
@@ -148,12 +152,35 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     public static final String ACTION_VERIFY_NO_CONNECTION_PROVIDED =
             "VERIFY_NO_CONNECTION_PROVIDED";
 
+    /**
+     * PersistableBundle value that represents a request to verify that
+     * onReadOnlyParcelFileDescriptorProvided is not invoked.
+     */
+    public static final String ACTION_VERIFY_NO_READ_ONLY_PFD_PROVIDED =
+            "VERIFY_NO_READ_ONLY_PFD_PROVIDED";
+
+    /**
+     * PersistableBundle value that represents a request to verify data received from the
+     * ParcelFileDescriptor provided via onReadOnlyParcelFileDescriptorProvided.
+     */
+    public static final String ACTION_VERIFY_DATA_RECEIVED_FROM_PFD =
+            "VERIFY_DATA_RECEIVED_FROM_PFD";
+
+    /**
+     * PersistableBundle value that represents a request to verify a metadata value received from
+     * onReadOnlyParcelFileDescriptorProvided.
+     */
+    public static final String ACTION_VERIFY_METADATA = "VERIFY_METADATA";
+
     private volatile ParcelFileDescriptor mSecureWearableConnection;
 
     @GuardedBy("mSecureWearableConnectionMap")
     private final Map<Integer, ParcelFileDescriptor> mSecureWearableConnectionMap = new HashMap<>();
 
-    private Set<ParcelFileDescriptor> mConnectionsToCleanUp = new HashSet<>();
+    private Set<ParcelFileDescriptor> mParcelFileDescriptorsToCleanUp = new HashSet<>();
+
+    private volatile ParcelFileDescriptor mReadOnlyParcelFileDescriptorReceived = null;
+    private volatile PersistableBundle mMetadataReceived = null;
 
     private volatile boolean mBooleanState = false;
 
@@ -201,12 +228,23 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     }
 
     @Override
+    public void onReadOnlyParcelFileDescriptorProvided(
+            ParcelFileDescriptor parcelFileDescriptor,
+            PersistableBundle metadata,
+            Consumer<Integer> statusConsumer) {
+        mReadOnlyParcelFileDescriptorReceived = parcelFileDescriptor;
+        mMetadataReceived = metadata;
+        statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    @Override
     public void onDataProvided(
             PersistableBundle data, SharedMemory sharedMemory, Consumer<Integer> statusConsumer) {
         String action = data.getString(BUNDLE_ACTION_KEY);
         Log.i(TAG, "#onDataProvided, action: " + action);
         try {
             String relativeFilePath;
+            String expectedString;
             int connectionId;
             switch (action) {
                 case ACTION_RESET:
@@ -214,7 +252,7 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                     statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
                     return;
                 case ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE:
-                    String expectedString = data.getString(EXPECTED_STRING_FROM_WEARABLE_KEY);
+                    expectedString = data.getString(EXPECTED_STRING_KEY);
                     connectionId =
                             data.getInt(
                                     BUNDLE_CONNECTION_ID_KEY,
@@ -285,6 +323,17 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                 case ACTION_VERIFY_NO_CONNECTION_PROVIDED:
                     verifyNoConnectionProvided(statusConsumer);
                     return;
+                case ACTION_VERIFY_NO_READ_ONLY_PFD_PROVIDED:
+                    verifyNoReadOnlyPfdProvided(statusConsumer);
+                    return;
+                case ACTION_VERIFY_DATA_RECEIVED_FROM_PFD:
+                    expectedString = data.getString(EXPECTED_STRING_KEY);
+                    verifyDataReceivedFromPfd(expectedString, statusConsumer);
+                    return;
+                case ACTION_VERIFY_METADATA:
+                    expectedString = data.getString(EXPECTED_STRING_KEY);
+                    verifyMetadata(expectedString, statusConsumer);
+                    return;
                 default:
                     Log.w(TAG, "Unknown action: " + action);
                     statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
@@ -308,10 +357,12 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             }
             mSecureWearableConnectionMap.clear();
         }
-        for (ParcelFileDescriptor connection : mConnectionsToCleanUp) {
+        for (ParcelFileDescriptor connection : mParcelFileDescriptorsToCleanUp) {
             tryCloseConnection(connection);
         }
         mBooleanState = false;
+        mReadOnlyParcelFileDescriptorReceived = null;
+        mMetadataReceived = null;
     }
 
     private void tryCloseConnection(ParcelFileDescriptor connection) {
@@ -331,7 +382,8 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
-        verifyDataReceivedFromWearable(expectedString, statusConsumer, mSecureWearableConnection);
+        verifyDataReceivedFromParcelFileDescriptor(
+                expectedString, statusConsumer, mSecureWearableConnection);
     }
 
     private void verifyDataReceivedFromWearableViaConcurrentConnection(
@@ -358,28 +410,30 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                         + connection
                         + ", expected "
                         + expectedString);
-        verifyDataReceivedFromWearable(expectedString, statusConsumer, connection);
+        verifyDataReceivedFromParcelFileDescriptor(expectedString, statusConsumer, connection);
     }
 
-    private void verifyDataReceivedFromWearable(
+    private void verifyDataReceivedFromParcelFileDescriptor(
             String expectedString,
             Consumer<Integer> statusConsumer,
-            ParcelFileDescriptor secureWearableConnection)
+            ParcelFileDescriptor parcelFileDescriptor)
             throws IOException {
         if (expectedString == null) {
-            Log.e(TAG, "#verifyDataReceivedFromWearable called but no expected string is provided");
+            Log.e(
+                    TAG,
+                    "#verifyDataReceivedFromParcelFileDescriptor called but no expected string is"
+                            + " provided");
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
         byte[] expectedBytes = expectedString.getBytes(StandardCharsets.UTF_8);
-        Log.i(
-                TAG,
-                "About to read from " + secureWearableConnection + " expected: " + expectedString);
-        byte[] dataFromWearable = readData(secureWearableConnection, expectedBytes.length);
+        Log.i(TAG, "About to read from " + parcelFileDescriptor + " expected: " + expectedString);
+        byte[] dataFromWearable = readData(parcelFileDescriptor, expectedBytes.length);
+        mParcelFileDescriptorsToCleanUp.add(parcelFileDescriptor);
         Log.i(
                 TAG,
                 "Finished reading from "
-                        + secureWearableConnection
+                        + parcelFileDescriptor
                         + " data read: "
                         + new String(dataFromWearable, StandardCharsets.UTF_8));
         if (Arrays.equals(expectedBytes, dataFromWearable)) {
@@ -388,8 +442,8 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             Log.e(
                     TAG,
                     String.format(
-                            "Data bytes received from wearable are different from expected."
-                                    + " Received length: %s, expected length: %s",
+                            "Data bytes received from parcelFileDescriptor are different from"
+                                    + " expected. Received length: %s, expected length: %s",
                             dataFromWearable.length, expectedBytes.length));
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
         }
@@ -399,7 +453,8 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         InputStream is = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
         byte[] dataRead = new byte[length];
         is.read(dataRead, 0, length);
-        is.close();
+        // Do not close the InputStream because it will close the underlying PFD, which may be
+        // needed in a later part of the test.
         return dataRead;
     }
 
@@ -541,10 +596,11 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         // We want to remove stored connections without closing them because closing them will
         // trigger clean up code in the system and affect test results, so we add them to a clean up
         // list to be closed in the next reset.
-        Optional.ofNullable(mSecureWearableConnection).ifPresent(mConnectionsToCleanUp::add);
+        Optional.ofNullable(mSecureWearableConnection)
+                .ifPresent(mParcelFileDescriptorsToCleanUp::add);
         mSecureWearableConnection = null;
         synchronized (mSecureWearableConnectionMap) {
-            mConnectionsToCleanUp.addAll(mSecureWearableConnectionMap.values());
+            mParcelFileDescriptorsToCleanUp.addAll(mSecureWearableConnectionMap.values());
             mSecureWearableConnectionMap.clear();
         }
         statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
@@ -563,8 +619,57 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         }
     }
 
+    private void verifyNoReadOnlyPfdProvided(Consumer<Integer> statusConsumer) {
+        if (mReadOnlyParcelFileDescriptorReceived == null) {
+            statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+        } else {
+            Log.e(
+                    TAG,
+                    "verifyNoReadOnlyPfdProvided called, but a read-only ParcelFileDescriptor was"
+                            + " provided.");
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+        }
+    }
+
+    private void verifyDataReceivedFromPfd(String expectedData, Consumer<Integer> statusConsumer)
+            throws Exception {
+        if (mReadOnlyParcelFileDescriptorReceived == null) {
+            Log.e(
+                    TAG,
+                    "verifyDataReceivedFromPfd called, but mReadOnlyParcelFileDescriptorReceived is"
+                            + " null");
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+            return;
+        }
+        verifyDataReceivedFromParcelFileDescriptor(
+                expectedData, statusConsumer, mReadOnlyParcelFileDescriptorReceived);
+    }
+
+    private void verifyMetadata(String expectedString, Consumer<Integer> statusConsumer) {
+        if (expectedString == null) {
+            Log.e(TAG, "verifyMetadata called, but no expected string is provided.");
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+            return;
+        }
+        if (mMetadataReceived == null) {
+            Log.e(TAG, "No metadata was received.");
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+            return;
+        }
+        if (Objects.equals(mMetadataReceived.getString(METADATA_KEY), expectedString)) {
+            statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+        } else {
+            Log.e(
+                    TAG,
+                    String.format(
+                            "Expected metadata %s, but received %s",
+                            expectedString, mMetadataReceived.getString(METADATA_KEY)));
+            statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+        }
+    }
+
     // The methods below are not used. They are tested in CtsWearableSensingService and only
-    // implemented here because they are abstact.
+    // implemented here because they are abstract.
 
     @Override
     public void onStartDetection(

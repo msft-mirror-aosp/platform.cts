@@ -23,17 +23,21 @@ import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_RESE
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SEND_DATA_TO_WEARABLE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_SET_BOOLEAN_STATE;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_BOOLEAN_STATE;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_DATA_RECEIVED_FROM_PFD;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_METADATA;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_NO_CONNECTION_PROVIDED;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_VERIFY_NO_READ_ONLY_PFD_PROVIDED;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_WRITE_FILE_AND_VERIFY_EXCEPTION;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.BUNDLE_ACTION_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.BUNDLE_CONNECTION_ID_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.EXPECTED_EXCEPTION_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.EXPECTED_FILE_CONTENT_KEY;
-import static android.wearable.cts.CtsIsolatedWearableSensingService.EXPECTED_STRING_FROM_WEARABLE_KEY;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.EXPECTED_STRING_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.FILE_PATH_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.INVALID_CONNECTION_ID;
+import static android.wearable.cts.CtsIsolatedWearableSensingService.METADATA_KEY;
 import static android.wearable.cts.CtsIsolatedWearableSensingService.STRING_TO_SEND_KEY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -42,6 +46,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -93,8 +98,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -217,6 +225,10 @@ public class WearableSensingManagerIsolatedServiceTest {
         resetIsolatedWearableSensingServiceStates();
         if (Flags.enableConcurrentWearableConnections()) {
             mWearableSensingManager.removeAllConnections();
+            Log.i(
+                    TAG,
+                    "available concurrent connection count: "
+                            + mWearableSensingManager.getAvailableConnectionCount());
         }
         mTestDirectory = new File(mContext.getFilesDir(), FILE_DIRECTORY_NAME);
         mTestDirectory.mkdirs();
@@ -677,7 +689,6 @@ public class WearableSensingManagerIsolatedServiceTest {
         assertThat(mWearableSensingManager.removeConnection(mWearableConnection0)).isTrue();
     }
 
-
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_connectionNotPreviouslyProvided_returnsFalse() {
@@ -1010,6 +1021,121 @@ public class WearableSensingManagerIsolatedServiceTest {
         writeDataAndVerifyException(FILE_DIRECTORY_NAME + "/" + filename);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_fromSocketPair_throwsException()
+            throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                                mSocketPair0[0],
+                                PersistableBundle.EMPTY,
+                                EXECUTOR,
+                                mMockStatusConsumer0));
+        // Sleep to make sure async calls are complete
+        SystemClock.sleep(2000);
+        verifyNoReadOnlyPfdProvidedToWss();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_writeEndOfPipe_throwsException()
+            throws Exception {
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        mParcelFileDescriptorsToCleanUp.add(pipe[0]);
+        mParcelFileDescriptorsToCleanUp.add(pipe[1]);
+
+        // pipe index 1 is write end
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                                pipe[1], PersistableBundle.EMPTY, EXECUTOR, mMockStatusConsumer0));
+        // Sleep to make sure async calls are complete
+        SystemClock.sleep(2000);
+        verifyNoReadOnlyPfdProvidedToWss();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_readEndOfPipe_canReadFromWss()
+            throws Exception {
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        mParcelFileDescriptorsToCleanUp.add(pipe[0]);
+        mParcelFileDescriptorsToCleanUp.add(pipe[1]);
+        OutputStream outputStream = new AutoCloseOutputStream(pipe[1]);
+        outputStream.write(DATA_TO_WRITE_0.getBytes(StandardCharsets.UTF_8));
+
+        // pipe index 0 is read end
+        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                pipe[0], PersistableBundle.EMPTY, EXECUTOR, mMockStatusConsumer0);
+
+        verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
+        verifyDataReceivedFromReadOnlyPfd(DATA_TO_WRITE_0);
+        // write again after WSS receives the stream
+        outputStream.write(DATA_TO_WRITE_1.getBytes(StandardCharsets.UTF_8));
+        verifyDataReceivedFromReadOnlyPfd(DATA_TO_WRITE_1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_writableFileHandle_throwsException()
+            throws Exception {
+        String filename = "provideReadOnlyParcelFileDescriptor1";
+        File file = new File(mTestDirectory, filename);
+        ParcelFileDescriptor writablePfd =
+                ParcelFileDescriptor.dup(new FileOutputStream(file).getFD());
+        mParcelFileDescriptorsToCleanUp.add(writablePfd);
+
+        // pipe index 1 is write end
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                                writablePfd,
+                                PersistableBundle.EMPTY,
+                                EXECUTOR,
+                                mMockStatusConsumer0));
+        // Sleep to make sure async calls are complete
+        SystemClock.sleep(2000);
+        verifyNoReadOnlyPfdProvidedToWss();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_readOnlyFile_canReadFromWss() throws Exception {
+        String filename = "provideReadOnlyParcelFileDescriptor2";
+        File file = new File(mTestDirectory, filename);
+        writeFile(file.getAbsolutePath(), DATA_TO_WRITE_0);
+
+        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                ParcelFileDescriptor.dup(new FileInputStream(file).getFD()),
+                PersistableBundle.EMPTY,
+                EXECUTOR,
+                mMockStatusConsumer0);
+
+        verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
+        verifyDataReceivedFromReadOnlyPfd(DATA_TO_WRITE_0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
+    public void provideReadOnlyParcelFileDescriptor_providesCorrectMetadata() throws Exception {
+        ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        mParcelFileDescriptorsToCleanUp.add(pipe[0]);
+        mParcelFileDescriptorsToCleanUp.add(pipe[1]);
+        PersistableBundle metadata = new PersistableBundle();
+        metadata.putString(METADATA_KEY, DATA_TO_WRITE_0);
+
+        // pipe index 0 is read end
+        mWearableSensingManager.provideReadOnlyParcelFileDescriptor(
+                pipe[0], metadata, EXECUTOR, mMockStatusConsumer0);
+
+        verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
+        verifyExpectedMetadataReceived(DATA_TO_WRITE_0);
+    }
+
     private void writeFile(String absolutePath, String content) throws Exception {
         try (PrintWriter printWriter = new PrintWriter(new File(absolutePath))) {
             printWriter.print(content);
@@ -1170,7 +1296,7 @@ public class WearableSensingManagerIsolatedServiceTest {
             throws Exception {
         PersistableBundle instruction = new PersistableBundle();
         instruction.putString(BUNDLE_ACTION_KEY, ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE);
-        instruction.putString(EXPECTED_STRING_FROM_WEARABLE_KEY, expectedString);
+        instruction.putString(EXPECTED_STRING_KEY, expectedString);
         if (connectionId != INVALID_CONNECTION_ID) {
             instruction.putInt(BUNDLE_CONNECTION_ID_KEY, connectionId);
         }
@@ -1223,6 +1349,29 @@ public class WearableSensingManagerIsolatedServiceTest {
         assertThat(
                         sendActionToIsolatedWearableSensingServiceAndWait(
                                 ACTION_VERIFY_NO_CONNECTION_PROVIDED))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyNoReadOnlyPfdProvidedToWss() throws Exception {
+        assertThat(
+                        sendActionToIsolatedWearableSensingServiceAndWait(
+                                ACTION_VERIFY_NO_READ_ONLY_PFD_PROVIDED))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyDataReceivedFromReadOnlyPfd(String expectedString) throws Exception {
+        PersistableBundle instruction = new PersistableBundle();
+        instruction.putString(BUNDLE_ACTION_KEY, ACTION_VERIFY_DATA_RECEIVED_FROM_PFD);
+        instruction.putString(EXPECTED_STRING_KEY, expectedString);
+        assertThat(sendInstructionToIsolatedWearableSensingServiceAndWait(instruction))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyExpectedMetadataReceived(String expectedString) throws Exception {
+        PersistableBundle instruction = new PersistableBundle();
+        instruction.putString(BUNDLE_ACTION_KEY, ACTION_VERIFY_METADATA);
+        instruction.putString(EXPECTED_STRING_KEY, expectedString);
+        assertThat(sendInstructionToIsolatedWearableSensingServiceAndWait(instruction))
                 .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
     }
 
