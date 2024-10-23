@@ -17,7 +17,6 @@
 package android.display.cts;
 
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
-import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -26,7 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -60,13 +58,12 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.widget.ImageView;
-
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.StateKeeperRule;
@@ -122,10 +119,9 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
+    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.ADD_TRUSTED_DISPLAY,
+    public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
@@ -289,26 +285,6 @@ public class VirtualDisplayTest {
             virtualDisplay.release();
         }
         assertDisplayUnregistered(display);
-    }
-
-    /**
-     * Ensures that throws {@link SecurityException} when an application creates a trusted virtual
-     * display without holding the permission {@code ADD_TRUSTED_DISPLAY}.
-     */
-    @Test
-    public void testTrustedVirtualDisplay() throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
-
-        try {
-            VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
-                    WIDTH, HEIGHT, DENSITY, mSurface, VIRTUAL_DISPLAY_FLAG_TRUSTED);
-        } catch (SecurityException e) {
-            // Expected.
-            return;
-        }
-        fail("SecurityException must be thrown if a trusted virtual display is created without"
-                + "holding the permission ADD_TRUSTED_DISPLAY.");
     }
 
     /**
