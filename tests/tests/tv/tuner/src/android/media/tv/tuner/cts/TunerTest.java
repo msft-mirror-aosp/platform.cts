@@ -853,6 +853,9 @@ public class TunerTest {
                     case FrontendStatus.FRONTEND_STATUS_TYPE_IPTV_AVERAGE_JITTER_MS:
                         status.getIptvAverageJitterMillis();
                         break;
+                    case FrontendStatus.FRONTEND_STATUS_TYPE_STANDARD_EXT:
+                        status.getStandardExt();
+                        break;
                 }
             }
             tuner.close();
