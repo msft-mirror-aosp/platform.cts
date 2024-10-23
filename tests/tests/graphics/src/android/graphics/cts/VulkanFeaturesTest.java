@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -45,6 +46,7 @@ import org.junit.runner.RunWith;
  * features accurately indicate the capabilities of the Vulkan driver if one exists.
  */
 @SmallTest
+@AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class VulkanFeaturesTest {
 
