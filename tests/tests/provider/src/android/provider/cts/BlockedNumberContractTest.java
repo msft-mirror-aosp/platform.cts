@@ -40,6 +40,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import junit.framework.Assert;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -429,14 +430,16 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             return;
         }
 
+        BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
+                BlockedNumbersManager.class);
+        HashMap<String, Boolean> blockedNumbersState = new HashMap<>();
         try {
             setDefaultSmsApp(true);
-            BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
-                    BlockedNumbersManager.class);
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(
                             Manifest.permission.WRITE_BLOCKED_NUMBERS,
                             Manifest.permission.READ_BLOCKED_NUMBERS);
+            saveBlockedNumberState(blockedNumbersManager, blockedNumbersState);
 
             // Enable enhanced block setting.
             blockedNumbersManager.setBlockedNumberSetting(
@@ -491,6 +494,7 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             // Verify that emergency call notification is not shown.
             assertFalse(blockedNumbersManager.shouldShowEmergencyCallNotification());
         }  finally {
+            restoreBlockedNumberState(blockedNumbersManager, blockedNumbersState);
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
@@ -505,14 +509,16 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             return;
         }
 
+        BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
+                BlockedNumbersManager.class);
+        HashMap<String, Boolean> blockedNumbersState = new HashMap<>();
         try {
             setDefaultSmsApp(true);
-            BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
-                    BlockedNumbersManager.class);
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(
                             Manifest.permission.WRITE_BLOCKED_NUMBERS,
                             Manifest.permission.READ_BLOCKED_NUMBERS);
+            saveBlockedNumberState(blockedNumbersManager, blockedNumbersState);
 
             // Check whether block numbers not in contacts setting works as expected.
             blockedNumbersManager.setBlockedNumberSetting(
@@ -590,6 +596,7 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
             assertFalse(blockedNumbersManager.getBlockedNumberSetting(
                     SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE));
         } finally {
+            restoreBlockedNumberState(blockedNumbersManager, blockedNumbersState);
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
@@ -627,6 +634,68 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
         }
         cursor.close();
         return insertedUri;
+    }
+
+    private void saveBlockedNumberState(BlockedNumbersManager blockedNumbersManager,
+            HashMap<String, Boolean> blockedNumberState) {
+        try {
+            // Save the device's current state
+            blockedNumberState.put(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED));
+            blockedNumberState.put(SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE));
+            blockedNumberState.put(SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE));
+            blockedNumberState.put(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN));
+            blockedNumberState.put(SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE));
+            blockedNumberState.put(
+                    SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION,
+                    blockedNumbersManager.getBlockedNumberSetting(
+                            SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION));
+        } catch (Exception e) {
+            fail("couldn't save BlockedNumberState, exception=" + e);
+        }
+    }
+
+    private void restoreBlockedNumberState(BlockedNumbersManager blockedNumbersManager,
+            HashMap<String, Boolean> blockedNumberState) {
+        try {
+            // Restore the device's current state
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED, false));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE, false));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE, false));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN, false));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE, false));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION,
+                    blockedNumberState.getOrDefault(
+                            SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION,
+                            false));
+        } catch (Exception e) {
+            fail("couldn't save BlockedNumberState, exception=" + e);
+        }
     }
 
     private ContentValues getContentValues(String originalNumber) {
