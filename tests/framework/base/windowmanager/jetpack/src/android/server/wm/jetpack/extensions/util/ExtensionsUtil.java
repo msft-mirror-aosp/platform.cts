@@ -65,6 +65,8 @@ public class ExtensionsUtil {
     // released. Activity Embedding animation customization is the only major feature for v7.
     public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V6 = 6;
     public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V7 = 7;
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V8 = 8;
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V9 = 9;
 
     /**
      * Returns the current version of {@link WindowExtensions} if present on the device.
@@ -100,7 +102,11 @@ public class ExtensionsUtil {
      * corresponding platform version.
      */
     public static boolean isExtensionVersionLatest() {
-        if (Flags.activityEmbeddingAnimationCustomizationFlag()) {
+        if (Flags.wlinfoOncreate()) {
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V9);
+        } else if (Flags.aeBackStackRestore()) {
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V8);
+        } else if (Flags.activityEmbeddingAnimationCustomizationFlag()) {
             return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V7);
         } else {
             return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V6);
