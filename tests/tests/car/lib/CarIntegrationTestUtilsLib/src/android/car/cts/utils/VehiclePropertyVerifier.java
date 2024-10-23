@@ -49,6 +49,7 @@ import android.car.hardware.property.CarPropertyManager.SetPropertyCallback;
 import android.car.hardware.property.CarPropertyManager.SetPropertyRequest;
 import android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 import android.car.hardware.property.ErrorState;
+import android.car.hardware.property.MinMaxSupportedValue;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
@@ -122,6 +123,11 @@ public class VehiclePropertyVerifier<T> {
      */
     public static final String STEP_VERIFY_READ_APIS_SUBSCRIBE =
             STEP_VERIFY_READ_APIS_PREFIX + ".subscribePropertyEvents";
+    /**
+     * A step to verify {@link CarPropertyManager#getMinMaxSupportedValue}.
+     */
+    public static final String STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE =
+            STEP_VERIFY_READ_APIS_PREFIX + ".getMinMaxSupportedValue";
     /**
      * A step to verify that for ADAS properties, if the feature is disabled, the property must
      * report error state.
@@ -500,6 +506,7 @@ public class VehiclePropertyVerifier<T> {
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC,
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC,
                 STEP_VERIFY_READ_APIS_SUBSCRIBE,
+                STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE,
                 STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC,
@@ -779,6 +786,11 @@ public class VehiclePropertyVerifier<T> {
 
                 if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
                     verifyCarPropertyValueCallback();
+                }
+
+                if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
+                        && Flags.carPropertySupportedValue()) {
+                    verifyGetMinMaxSupportedValue();
                 }
 
                 if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
@@ -1895,7 +1907,19 @@ public class VehiclePropertyVerifier<T> {
                         + " must have min value defined").that(areaIdMinValue).isNotNull();
                 assertWithMessage(mPropertyName + " - area ID: " + areaId
                         + " must have max value defined").that(areaIdMaxValue).isNotNull();
+
+                if (Flags.carPropertySupportedValue()) {
+                    assertWithMessage(mPropertyName + " - area ID: " + areaId
+                            + " config must set hasMaxSupportedValue to true")
+                            .that(carPropertyConfig.getAreaIdConfig(areaId).hasMaxSupportedValue())
+                            .isTrue();
+                    assertWithMessage(mPropertyName + " - area ID: " + areaId
+                            + " config must set hasMinSupportedValue to true")
+                            .that(carPropertyConfig.getAreaIdConfig(areaId).hasMinSupportedValue())
+                            .isTrue();
+                }
             }
+
             if (mRequireMinValuesToBeZero) {
                 assertWithMessage(
                         mPropertyName + " - area ID: " + areaId + " min value must be zero").that(
@@ -1941,6 +1965,13 @@ public class VehiclePropertyVerifier<T> {
                                 + supportedEnumValues + " must all exist in all possible enum set "
                                 + mAllPossibleEnumValues).that(
                         mAllPossibleEnumValues.containsAll(supportedEnumValues)).isTrue();
+                if (Flags.carPropertySupportedValue()) {
+                    assertWithMessage(
+                            mPropertyName + " - areaId: " + areaId
+                            + " config must set hasSupportedValuesList to true")
+                            .that(carPropertyConfig.getAreaIdConfig(areaId)
+                            .hasSupportedValuesList()).isTrue();
+                }
             } else if (isAtLeastU()) {
                 assertWithMessage(mPropertyName + " - areaId: " + areaId
                         + "'s supported enum values must be empty since property does not support"
@@ -3375,6 +3406,59 @@ public class VehiclePropertyVerifier<T> {
                 () -> mCarPropertyManager.setPropertiesAsync(setPropertyRequests,
                         /* cancellationSignal: */ null, /* callbackExecutor: */ null,
                         testSetPropertyCallback));
+    }
+
+    private void verifyGetMinMaxSupportedValue() {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        int[] areaIds = carPropertyConfig.getAreaIds();
+        for (int areaId : areaIds) {
+            // Because min/max supported value is dynamic, the value we got here is not necessarily
+            // the same as the value we got from VehicleAreaConfig.
+            MinMaxSupportedValue<T> minMaxSupportedValue =
+                    mCarPropertyManager.getMinMaxSupportedValue(mPropertyId, areaId);
+            AreaIdConfig areaIdConfig = carPropertyConfig.getAreaIdConfig(areaId);
+            T areaIdMinValue = minMaxSupportedValue.getMinValue();
+            T areaIdMaxValue = minMaxSupportedValue.getMaxValue();
+            if (areaIdConfig.hasMinSupportedValue()) {
+                assertWithMessage(
+                        "minSupportedValue must not be null if hasMinSupportedValue is true")
+                        .that(areaIdMinValue).isNotNull();
+            } else {
+                assertWithMessage(
+                        "minSupportedValue must be null if hasMinSupportedValue is false")
+                        .that(areaIdMinValue).isNull();
+            }
+
+            if (areaIdConfig.hasMaxSupportedValue()) {
+                assertWithMessage(
+                        "maxSupportedValue must not be null if hasMaxSupportedValue is true")
+                        .that(areaIdMaxValue).isNotNull();
+            } else {
+                assertWithMessage(
+                        "maxSupportedValue must be null if hasMaxSupportedValue is false")
+                        .that(areaIdMaxValue).isNull();
+            }
+            if (mRequireMinValuesToBeZero) {
+                assertWithMessage(
+                        mPropertyName + " - area ID: " + areaId + " min value must be zero").that(
+                        areaIdMinValue).isEqualTo(0);
+            }
+            if (mRequireZeroToBeContainedInMinMaxRanges) {
+                assertWithMessage(mPropertyName + " - areaId: " + areaId
+                        + "'s max and min range must contain zero").that(
+                        verifyMaxAndMinRangeContainsZero(areaIdMinValue, areaIdMaxValue)).isTrue();
+
+            }
+            if (areaIdMinValue != null || areaIdMaxValue != null) {
+                assertWithMessage(
+                        mPropertyName
+                                + " - areaId: "
+                                + areaId
+                                + "'s max value must be >= min value")
+                        .that(verifyMaxAndMin(areaIdMinValue, areaIdMaxValue))
+                        .isTrue();
+            }
+        }
     }
 
     private static <U> CarPropertyValue<U> setPropertyAndWaitForChange(
