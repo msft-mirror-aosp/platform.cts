@@ -694,7 +694,7 @@ public class CardEmulationTest {
             try {
                 CommonTestUtils.waitUntil(
                         "Observe mode hasn't been set", 1, () -> adapter.isObserveModeEnabled());
-            } catch (InterruptedException ie) {
+            } catch (InterruptedException|AssertionError e) {
             }
             Assert.assertTrue(adapter.isObserveModeEnabled());
         } finally {
@@ -1776,7 +1776,7 @@ public class CardEmulationTest {
                     }
                 );
             }
-        } catch (InterruptedException ie) {
+        } catch (InterruptedException|AssertionError e) {
         }
     }
 

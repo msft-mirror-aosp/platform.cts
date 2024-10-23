@@ -21,6 +21,7 @@ import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Canvas;
@@ -31,11 +32,13 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.CtsWindowInfoUtils;
 import android.util.Pair;
+import android.view.SurfaceControlViewHost;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.flags.Flags;
+import android.widget.Button;
 import android.window.WindowInfosListenerForTest;
 
 import androidx.test.annotation.UiThreadTest;
@@ -67,6 +70,8 @@ public class SurfaceViewTest {
     @Rule
     public ActivityTestRule<SurfaceViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(SurfaceViewCtsActivity.class);
+    private SurfaceControlViewHost mSurfaceControlViewHost;
+    private SurfaceControlViewHost.SurfacePackage mSurfacePackage;
 
     @Before
     public void setup() {
@@ -203,6 +208,65 @@ public class SurfaceViewTest {
         mTestSurfaceView.getHolder().unlockCanvasAndPost(canvas);
         PollingCheck.waitFor(() -> mTestSurfaceView.isDetachedFromWindow()
                 && !mTestSurfaceView.isShown());
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.SurfaceView#getChildSurfacePackage"})
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_VIEW_GET_SURFACE_PACKAGE)
+    public void testSurfaceViewGetChildSurfacePackage() throws InterruptedException {
+        mActivityRule.getActivity().runOnUiThread(() -> {
+            assertNull(mTestSurfaceView.getChildSurfacePackage());
+
+            mSurfaceControlViewHost =
+                    new SurfaceControlViewHost(mActivity, mActivity.getDisplay(),
+                        mTestSurfaceView.getHostToken());
+            mSurfaceControlViewHost.setView(new Button(mActivity), 10, 10);
+            mSurfacePackage = mSurfaceControlViewHost.getSurfacePackage();
+            assertNotNull(mSurfacePackage);
+
+            mTestSurfaceView.setChildSurfacePackage(mSurfacePackage);
+        });
+
+        assertTrue(CtsWindowInfoUtils.waitForWindowOnTopWithZ(
+                Duration.ofSeconds(WAIT_TIME_SECONDS),
+                () -> mSurfaceControlViewHost.getView().getWindowToken(), 1));
+
+        mActivityRule.getActivity().runOnUiThread(() ->
+                assertEquals(mSurfacePackage, mTestSurfaceView.getChildSurfacePackage())
+        );
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.SurfaceView#getChildSurfacePackage",
+            "android.view.SurfaceView#clearChildSurfacePackage"})
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_VIEW_GET_SURFACE_PACKAGE)
+    public void testSurfaceViewClearChildSurfacePackage() throws InterruptedException {
+        mActivityRule.getActivity().runOnUiThread(() -> {
+            assertNull(mTestSurfaceView.getChildSurfacePackage());
+
+            mSurfaceControlViewHost =
+                    new SurfaceControlViewHost(mActivity, mActivity.getDisplay(),
+                            mTestSurfaceView.getHostToken());
+            mSurfaceControlViewHost.setView(new Button(mActivity), 10, 10);
+            mSurfacePackage = mSurfaceControlViewHost.getSurfacePackage();
+            assertNotNull(mSurfacePackage);
+
+            mTestSurfaceView.setChildSurfacePackage(mSurfacePackage);
+        });
+
+        assertTrue(CtsWindowInfoUtils.waitForWindowOnTopWithZ(
+                Duration.ofSeconds(WAIT_TIME_SECONDS),
+                () -> mSurfaceControlViewHost.getView().getWindowToken(), 1));
+
+        mActivityRule.getActivity().runOnUiThread(() -> {
+            assertEquals(mSurfacePackage, mTestSurfaceView.getChildSurfacePackage());
+            mTestSurfaceView.clearChildSurfacePackage();
+            assertNull(mTestSurfaceView.getChildSurfacePackage());
+        });
+
+        assertTrue(CtsWindowInfoUtils.waitForWindowInvisible(
+                () ->  mSurfaceControlViewHost.getView().getWindowToken(),
+                Duration.ofSeconds(WAIT_TIME_SECONDS)));
     }
 
     @Test
