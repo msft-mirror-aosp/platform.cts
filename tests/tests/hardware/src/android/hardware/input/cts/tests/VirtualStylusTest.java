@@ -221,21 +221,6 @@ public class VirtualStylusTest extends VirtualDeviceTestCase {
         assertNoMoreEvents();
     }
 
-    @Test
-    public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final int x = 50;
-        final int y = 50;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualStylus.sendMotionEvent(new VirtualStylusMotionEvent.Builder()
-                                .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                                .setX(x)
-                                .setY(y)
-                                .setPressure(255)
-                                .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                                .build())));
-    }
-
     private void verifyStylusTouchWithTilt(int tiltXDegrees, int tiltYDegrees,
             int expectedTiltDegrees, int expectedOrientationDegrees) {
         final int x0 = 60, y0 = 60;

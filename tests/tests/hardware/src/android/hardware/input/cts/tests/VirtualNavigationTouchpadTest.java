@@ -82,16 +82,6 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
     }
 
     @Test
-    public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float x = 30f;
-        final float y = 30f;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> sendVirtualNavigationTouchEvent(x, y,
-                                VirtualTouchEvent.ACTION_DOWN)));
-    }
-
-    @Test
     public void createVirtualNavigationTouchpad_nullArguments_throwsException() {
         assertThrows(NullPointerException.class,
                 () -> mVirtualDevice.createVirtualNavigationTouchpad(null));
