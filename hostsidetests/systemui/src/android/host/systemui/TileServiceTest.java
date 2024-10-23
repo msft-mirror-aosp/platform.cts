@@ -14,9 +14,8 @@
 
 package android.host.systemui;
 
-import com.android.tradefed.util.RunUtil;
-
 import com.android.compatibility.common.util.ApiTest;
+import com.android.tradefed.util.RunUtil;
 
 /**
  * Tests the lifecycle of a TileService by adding/removing it and opening/closing
@@ -36,6 +35,9 @@ public class TileServiceTest extends BaseTileServiceTest {
 
     public static final String START_ACTIVITY_AND_COLLAPSE =
             SHELL_BROADCAST_COMMAND + ACTION_START_ACTIVITY;
+
+    // this is smaller than default for cases where we expect the log to not show up
+    private static final int MAX_RETRIES_BEFORE_GIVING_UP = 10;
 
     public TileServiceTest() {
         super(SERVICE);
@@ -152,7 +154,7 @@ public class TileServiceTest extends BaseTileServiceTest {
         // taken to a new activity
         getDevice().executeShellCommand(
                 SHELL_BROADCAST_COMMAND + ACTION_START_ACTIVITY_WITH_PENDING_INTENT);
-        assertFalse((waitFor("TestActivity#onResume")));
+        assertFalse((waitFor("TestActivity#onResume", MAX_RETRIES_BEFORE_GIVING_UP)));
     }
 
     @ApiTest(apis = {"android.service.quicksettings.Tile#setActivityLaunchForClick"})
@@ -169,7 +171,7 @@ public class TileServiceTest extends BaseTileServiceTest {
         assertTrue(waitFor("onStartListening"));
 
         // Verify that the activity is not launched
-        assertFalse((waitFor("TestActivity#onResume")));
+        assertFalse((waitFor("TestActivity#onResume", MAX_RETRIES_BEFORE_GIVING_UP)));
     }
 
     @ApiTest(apis = {"android.service.quicksettings.Tile#setActivityLaunchForClick"})
@@ -189,7 +191,7 @@ public class TileServiceTest extends BaseTileServiceTest {
 
         // Click on the tile and verify the onClick is not called.
         clickTile();
-        assertFalse(waitFor("onClick"));
+        assertFalse(waitFor("onClick", MAX_RETRIES_BEFORE_GIVING_UP));
 
         // Verify that the activity is launched
         assertTrue((waitFor("TestActivity#onResume")));
@@ -221,7 +223,7 @@ public class TileServiceTest extends BaseTileServiceTest {
 
         // Click on the tile and verify the onClick is not called.
         clickTile();
-        assertFalse(waitFor("onClick"));
+        assertFalse(waitFor("onClick", MAX_RETRIES_BEFORE_GIVING_UP));
 
         // Verify that the activity is launched
         assertTrue((waitFor("TestActivity#onResume")));
@@ -253,7 +255,7 @@ public class TileServiceTest extends BaseTileServiceTest {
         assertTrue(waitFor("onClick"));
 
         // Verify that the activity is not launched
-        assertFalse((waitFor("TestActivity#onResume")));
+        assertFalse((waitFor("TestActivity#onResume", MAX_RETRIES_BEFORE_GIVING_UP)));
     }
 
     @ApiTest(apis = {
