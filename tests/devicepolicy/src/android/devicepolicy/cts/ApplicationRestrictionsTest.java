@@ -158,8 +158,7 @@ public final class ApplicationRestrictionsTest {
 
       BundleUtils.assertEqualToBundle(
           "getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions",
-          sDeviceState
-              .dpc()
+          dpc(sDeviceState)
               .devicePolicyManager()
               .getApplicationRestrictions(
                   dpc(sDeviceState).componentName(), sTestApp.packageName()));
