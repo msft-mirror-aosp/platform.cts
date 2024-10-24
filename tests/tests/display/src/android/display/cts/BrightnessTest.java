@@ -29,7 +29,6 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -37,7 +36,6 @@ import android.content.pm.PackageManager;
 import android.hardware.display.BrightnessChangeEvent;
 import android.hardware.display.BrightnessConfiguration;
 import android.hardware.display.DisplayManager;
-import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.util.Pair;
@@ -50,13 +48,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.function.Predicate;
 
 @AppModeFull
@@ -561,19 +556,6 @@ public class BrightnessTest extends TestBase {
     private void revokePermission(String permission) {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .revokeRuntimePermission(mContext.getPackageName(), permission);
-    }
-
-    private String runShellCommand(String cmd) {
-        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        ParcelFileDescriptor output = automation.executeShellCommand(cmd);
-        String result = convertFileDescriptorToString(output.getFileDescriptor());
-        return result.trim();
-    }
-
-    private String convertFileDescriptorToString(FileDescriptor desc) {
-        try (Scanner s = new Scanner(new FileInputStream(desc)).useDelimiter("\\Z")) {
-            return s.hasNext() ? s.next() : "";
-        }
     }
 
     private static void assertInRange(float[] values, float min, float max) {

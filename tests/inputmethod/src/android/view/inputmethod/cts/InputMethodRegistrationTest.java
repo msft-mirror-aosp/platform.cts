@@ -174,20 +174,10 @@ public class InputMethodRegistrationTest {
      */
     @Test
     public void testLoadEnabledIMEsAndMore() throws InterruptedException {
-
         final var imm = mContext.getSystemService(InputMethodManager.class);
-
-        final int flags =
-                PackageManager.GET_META_DATA | PackageManager.MATCH_DISABLED_UNTIL_USED_COMPONENTS
-                        | PackageManager.MATCH_DISABLED_COMPONENTS;
-        final List<ResolveInfo> allPackageImes = mContext.getPackageManager().queryIntentServices(
-                new Intent(InputMethod.SERVICE_INTERFACE).setPackage(LARGE_RESOURCE_IME_PACKAGE),
-                PackageManager.ResolveInfoFlags.of(flags));
         final List<ComponentName> componentNamesToEnable = List.of(
                 INITIALLY_DISABLED_IME_1, INITIALLY_DISABLED_IME_2);
-
         try {
-
             // Wait until ime 19 and 20 are loaded
             final ComponentName enable_ime19 = ComponentName.createRelative(
                     LARGE_RESOURCE_IME_PACKAGE, ".services.imeservice19");

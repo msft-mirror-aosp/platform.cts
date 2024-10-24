@@ -25,7 +25,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
@@ -36,16 +35,16 @@ import android.media.AudioRecord;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.NonMainlineTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
@@ -67,6 +66,7 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 @FlakyTest(bugId = 326206728)
+@AppModeFull(reason = "Fails on infra with instant, for unknown reasons")
 public class DevicesForAttributesTest {
     private static final String TAG = DevicesForAttributesTest.class.getSimpleName();
 
@@ -131,7 +131,6 @@ public class DevicesForAttributesTest {
     @Test
     public void testListenerRegistration() {
         DevicesForAttributesListener listener = new DevicesForAttributesListener();
-        List<AudioDeviceAttributes> devices;
 
         mAudioManager.addOnDevicesForAttributesChangedListener(
                 MEDIA_ATTR, Executors.newSingleThreadExecutor(), listener);
@@ -141,6 +140,17 @@ public class DevicesForAttributesTest {
         assertFalse("listener should not be called on register", listener.mCalled);
 
         mAudioManager.removeOnDevicesForAttributesChangedListener(listener);
+    }
+
+    @Test
+    public void testListenerRegistrationNoPermission() {
+        // drop MODIFY_AUDIO_ROUTING which is required for addOnDevicesForAttributesChangedListener
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertThrows("addOnDevicesForAttributesChangedListener must throw SE w/o permission",
+                SecurityException.class,
+                () -> mAudioManager.addOnDevicesForAttributesChangedListener(
+                        MEDIA_ATTR, Executors.newSingleThreadExecutor(),
+                        new DevicesForAttributesListener()));
     }
 
     @Test

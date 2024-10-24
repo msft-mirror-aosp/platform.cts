@@ -63,6 +63,7 @@ android_test {
         "CtsVirtualDeviceCommonLib",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
+        "com.android.input.flags-aconfig-java",
         "compatibility-device-util-axt",
         "cts-input-lib",
         "cts-kernelinfo-lib",
@@ -76,6 +77,7 @@ android_test {
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
         "android.companion.virtual.flags-aconfig-java",
+        "android.media.codec-aconfig-java",
         "ui-trace-collector",
         "collector-device-lib",
     ],
@@ -91,4 +93,19 @@ android_test {
         ":TestIme",
     ],
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_cts_tests",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.input.cts.tests"],
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_hardware_lights",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.hardware.lights"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

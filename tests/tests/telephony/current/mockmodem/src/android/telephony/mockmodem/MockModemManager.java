@@ -1111,6 +1111,11 @@ public class MockModemManager {
         if (modemCount == 1) {
             return false;
         }
+        // In case there are more than 2 modems, it is enough to shuffle the primary IMEI with
+        // another one slot, so enough to run the loop for 2 times.
+        if (modemCount > 2) {
+            modemCount = 2;
+        }
         for (int slotId = 0; slotId < modemCount; slotId++) {
             mMockModemService.getIRadioModem((byte) slotId).resetAllLatchCountdown();
             mMockModemService.getIRadioModem((byte) slotId).changeImeiMapping();

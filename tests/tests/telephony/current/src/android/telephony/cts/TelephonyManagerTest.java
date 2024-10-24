@@ -75,6 +75,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -221,6 +222,7 @@ public class TelephonyManagerTest {
     private static final int WAIT_FOR_CONDITION = 3000;
     private static final int TOLERANCE = 1000;
     private static final int TIMEOUT_FOR_NETWORK_OPS = TOLERANCE * 180;
+    private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 1000;
 
     private static final int TIMEOUT_FOR_CARRIER_STATUS_FILE_CHECK = TOLERANCE * 180;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
@@ -793,10 +795,38 @@ public class TelephonyManagerTest {
     public static boolean setLocationEnabled(boolean setEnabled) {
         Context ctx = getContext();
         LocationManager locationManager = ctx.getSystemService(LocationManager.class);
-        boolean wasEnabled = locationManager.isLocationEnabled();
-        if (wasEnabled != setEnabled) {
-            locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+        boolean wasEnabled = locationManager.isLocationEnabledForUser(ctx.getUser());
+        if (wasEnabled == setEnabled) return wasEnabled;
+
+        CountDownLatch locationChangeLatch = new CountDownLatch(1);
+        BroadcastReceiver locationModeChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (!LocationManager.MODE_CHANGED_ACTION.equals(intent.getAction())) return;
+                if (setEnabled == intent.getBooleanExtra(LocationManager.EXTRA_LOCATION_ENABLED,
+                        !setEnabled)) {
+                    locationChangeLatch.countDown();
+                }
+            }
+        };
+
+        Log.d(TAG, "Setting location " + (setEnabled ? "enabled" : "disabled"));
+
+        ctx.registerReceiver(locationModeChangeReceiver,
+                new IntentFilter(LocationManager.MODE_CHANGED_ACTION));
+        try {
+            runWithShellPermissionIdentity(() -> {
+                locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+            });
+            assertThat(locationChangeLatch.await(LOCATION_SETTING_CHANGE_WAIT_MS,
+                    TimeUnit.MILLISECONDS)).isTrue();
+        } catch (InterruptedException e) {
+            Log.w(TAG, "Interrupted while waiting for location settings change. Test results"
+                    + " may not be accurate.");
+        } finally {
+            ctx.unregisterReceiver(locationModeChangeReceiver);
         }
+
         return wasEnabled;
     }
 
@@ -1016,10 +1046,8 @@ public class TelephonyManagerTest {
         mTelephonyManager.getCarrierConfig();
         mTelephonyManager.isVoiceCapable();
         mTelephonyManager.isSmsCapable();
-        if (Flags.dataOnlyCellularService()) {
-            mTelephonyManager.isDeviceVoiceCapable();
-            mTelephonyManager.isDeviceSmsCapable();
-        }
+        mTelephonyManager.isDeviceVoiceCapable();
+        mTelephonyManager.isDeviceSmsCapable();
         mTelephonyManager.isLteCdmaEvdoGsmWcdmaEnabled();
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isDataConnectionAllowed());
@@ -2639,6 +2667,7 @@ public class TelephonyManagerTest {
      * exception.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testNetworkRegistrationInfoIsRoaming() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -2656,6 +2685,7 @@ public class TelephonyManagerTest {
      * @see ServiceState.RoamingType
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testNetworkRegistrationInfoGetRoamingType() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -4042,21 +4072,14 @@ public class TelephonyManagerTest {
 
         // test with permission
         try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER,
-                            allowedNetworkTypes));
-
-            long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER);
-                    }
-            );
-            assertEquals(allowedNetworkTypes, deviceAllowedNetworkTypes);
-        } catch (SecurityException se) {
-            fail("testSetAllowedNetworkTypes: SecurityException not expected");
+            // Register telephony callback for AllowedNetworkTypesListener
+            AllowedNetworkTypesListener listener = new AllowedNetworkTypesListener();
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.registerTelephonyCallback(mSimpleExecutor, listener));
+            verifySetAndGetAllowedNetworkTypesForReason(listener,
+                    TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER, allowedNetworkTypes);
+        } catch (Exception e) {
+            fail("testSetAllowedNetworkTypes: Exception is not expected e:" + e);
         }
     }
 
@@ -5384,6 +5407,8 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(
+            reason = "SDK sandboxes are not allowed to access cell info - no location permission")
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
@@ -5987,6 +6012,7 @@ public class TelephonyManagerTest {
 
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPackagesWithCarrierPrivileges"})
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
     public void testGetPackagesWithCarrierPrivilegesEnforcesReadPrivilege() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
@@ -6006,6 +6032,8 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.telephony.TelephonyManager#getPackagesWithCarrierPrivileges"})
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
     public void testGetPackagesWithCarrierPrivilegesThrowsExceptionWithoutReadPrivilege() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
@@ -6444,6 +6472,7 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#requestRadioPowerOffForReason",
             "android.telephony.TelephonyManager#clearRadioPowerOffForReason",
             "android.telephony.TelephonyManager#getRadioPowerOffReasons"})
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permission")
     public void testSetRadioPowerForReasonNearbyDevice() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
@@ -7140,6 +7169,7 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#persistEmergencyCallDiagnosticData"})
     @RequiresFlagsEnabled(
             com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_DROPBOX_DATA permission")
     public void testPersistEmergencyCallDiagnosticData() throws Exception {
         long startTime = SystemClock.elapsedRealtime();
         getContext().registerReceiver(new BroadcastReceiver() {
@@ -7215,7 +7245,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceVoiceCapable",
             "android.telephony.TelephonyManager#isVoiceCapable"})
@@ -7224,7 +7253,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceSmsCapable",
             "android.telephony.TelephonyManager#isSmsCapable"})
@@ -7233,7 +7261,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_shouldBeSupported() {
@@ -7254,7 +7281,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RESET_MOBILE_NETWORK_SETTINGS)
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_requiresNoPermission() {
@@ -7300,6 +7326,8 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(
+            reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
     public void testGetServiceStateForSlot() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 

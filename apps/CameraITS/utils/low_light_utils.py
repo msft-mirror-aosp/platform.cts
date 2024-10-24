@@ -46,21 +46,25 @@ _FIG_SIZE = (10, 6)
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
+    'hwcmr09',  # Huawei MediaPad M5
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'nabu',  # Xiaomi Pad 5
+    'nabu_tw',  # Xiaomi Pad 5
 )
 
 # Tablet brightness mapping strings for (rear, front) facing camera tests
 # List entries must be entered in lowercase
 TABLET_BRIGHTNESS = {
+    'hwcmr09': ('4', '8'),  # Huawei MediaPad M5
     'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
     'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+
     'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
     'nabu': ('8', '14'),  # Xiaomi Pad 5
+    'nabu_tw': ('8', '14'),  # Xiaomi Pad 5
 }
 
 
@@ -409,13 +413,13 @@ def _plot_noise(results, file_stem, img, test_name):
     padding = min(w, h) * _BOX_PADDING_RATIO
     left = int(x + padding)
     top = int(y + padding)
-    width = int(w - 2 * padding) - left
-    height = int(y + h - padding) - top
-    noise = image_processing_utils.compute_patch_noise(
-        img, (left, top, width, height))
-    luma_noise_values.append(noise['luma'])
-    chroma_u_noise_values.append(noise['chroma_u'])
-    chroma_v_noise_values.append(noise['chroma_v'])
+    right = int(x + w - padding)
+    bottom = int(y + h - padding)
+    noise_stats = image_processing_utils.compute_patch_noise(
+        img, (left, top, (right - left), (bottom - top)))
+    luma_noise_values.append(noise_stats['luma'])
+    chroma_u_noise_values.append(noise_stats['chroma_u'])
+    chroma_v_noise_values.append(noise_stats['chroma_v'])
 
   box_labels = [f'Box {i + 1}' for i in range(len(results))]
 

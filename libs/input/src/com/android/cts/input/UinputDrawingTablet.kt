@@ -76,4 +76,5 @@ class UinputDrawingTablet(instrumentation: Instrumentation, display: Display) : 
     display,
     createDrawingTabletRegisterCommand(display),
     InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
+    MT_TOOL_PEN,
 )

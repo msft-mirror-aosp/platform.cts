@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Verify preview zoom ratio scales circle sizes correctly."""
+"""Verify preview zoom ratio scales ArUco marker sizes correctly."""
 
 import logging
 import os.path
@@ -23,12 +23,12 @@ from mobly import test_runner
 import its_base_test
 import camera_properties_utils
 import its_session_utils
+import opencv_processing_utils
 import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
 
-_CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FPS = 30
@@ -116,6 +116,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       test_data = []
       test_data_index = 0
+      all_aruco_ids = []
+      all_aruco_corners = []
+      img_paths = []
       # Initialize video writer
       fourcc = cv2.VideoWriter_fourcc(*_MP4V)
       uncompressed_video = os.path.join(log_path,
@@ -123,12 +126,16 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       out = cv2.VideoWriter(uncompressed_video, fourcc, _FPS,
                             (size[0], size[1]))
 
+      physical_ids = set()
       for capture_result, img_name in zip(capture_results, file_list):
         z = float(capture_result['android.control.zoomRatio'])
         if camera_properties_utils.logical_multi_camera(props):
           phy_id = capture_result['android.logicalMultiCamera.activePhysicalId']
         else:
           phy_id = None
+        if phy_id:
+          physical_ids.add(phy_id)
+        logging.debug('Physical IDs: %s', physical_ids)
 
         # read image
         img_bgr = cv2.imread(os.path.join(log_path, img_name))
@@ -143,34 +150,30 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
             (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
         )
 
-        # Scale circlish RTOL for low zoom ratios
-        if z < 1:
-          circlish_rtol = _CIRCLISH_RTOL / z
-        else:
-          circlish_rtol = _CIRCLISH_RTOL
-
-        # Find the center circle in img and check if it's cropped
-        circle = zoom_capture_utils.find_center_circle(
-            img_bgr, img_path, size, z, z_min, circlish_rtol=circlish_rtol,
-            debug=debug, draw_color=_CV2_RED, write_img=False)
-
-        # Zoom is too large to find center circle
-        if circle is None:
-          logging.error('Unable to detect circle in %s', img_path)
+        # Find ArUco markers
+        # TODO: b/370585114 - improve test time and skip saving debug images.
+        try:
+          corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+              img_bgr,
+              (f'{os.path.join(log_path, img_name)}_{z:.2f}_'
+               f'ArUco.{zoom_capture_utils.JPEG_STR}'),
+              aruco_marker_count=1
+          )
+        except AssertionError as e:
+          logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
+                        z, e)
           break
 
-        out.write(img_bgr)
-        # Remove png file
-        its_session_utils.remove_file(img_path)
+        all_aruco_corners.append([corner[0] for corner in corners])
+        all_aruco_ids.append([id[0] for id in ids])
+        img_paths.append(img_path)
 
         test_data.append(
             zoom_capture_utils.ZoomTestData(
                 result_zoom=z,
-                circle=circle,
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
                 focal_length=cap_fl,
-                physical_id=phy_id
             )
         )
 
@@ -178,7 +181,17 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                       test_data[test_data_index])
         test_data_index = test_data_index + 1
 
+      # Find ArUco markers in all captures and update test data
+      zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+          test_data, all_aruco_ids, all_aruco_corners, size)
+      # Mark ArUco marker center and image center
+      opencv_processing_utils.mark_zoom_images_to_video(
+          out, img_paths, test_data)
+
       out.release()
+      # Remove png files
+      for path in img_paths:
+        its_session_utils.remove_file(path)
 
       # --- Compress Video ---
       compressed_video = os.path.join(log_path, 'output_frames.mp4')
@@ -187,6 +200,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       os.remove(uncompressed_video)
 
       plot_name_stem = f'{os.path.join(log_path, _NAME)}'
+      # TODO: b/369852004 - decrease TOL for test_preview_zoom
       if not zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')

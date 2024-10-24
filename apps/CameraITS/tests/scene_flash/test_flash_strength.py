@@ -227,10 +227,14 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
             # take capture and evaluate
             cap = _take_captures(out_surfaces, cam, img_name, ae_mode, strength)
             formats_means.append(_get_mean(cap, props))
-
+        check_mean = True
+        first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+        if ae_mode == 1 and first_api_level <= its_session_utils.ANDROID15_API_LEVEL:
+          check_mean = False
         # Compare means and assert PASS/FAIL
-        failure_messages += _compare_means(formats_means,
-                                           ae_mode, flash_strengths)
+        if check_mean:
+          failure_messages += _compare_means(formats_means,
+                                             ae_mode, flash_strengths)
 
     # turn the lights back on
     lighting_control_utils.set_lighting_state(

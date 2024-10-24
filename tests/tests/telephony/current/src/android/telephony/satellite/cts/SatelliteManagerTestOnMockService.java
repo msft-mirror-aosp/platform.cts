@@ -16,11 +16,23 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ACCESS_BARRED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_DISABLE_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ENABLE_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NO_RESOURCES;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_REQUEST_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCCESS;
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_ALIGNED_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_NOT_ALIGNED_DURATION_MILLIS;
+import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -64,8 +76,10 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
@@ -79,6 +93,7 @@ import android.telephony.satellite.SatelliteSessionStats;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.stub.NTRadioTechnology;
+import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.util.Log;
 import android.util.Pair;
@@ -96,9 +111,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,11 +137,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final long TEST_SATELLITE_DEVICE_ALIGN_FOREVER_TIMEOUT_MILLIS = 100000;
     private static final long TEST_DATAGRAM_DELAY_IN_DEMO_MODE_TIMEOUT_MILLIS = 100;
     private static final long TEST_DATAGRAM_DELAY_IN_DEMO_MODE_TIMEOUT_LONG_MILLIS = 1000;
+    private static final long WAIT_FOREVER_TIMEOUT_MILLIS = Duration.ofMinutes(10).toMillis();
 
     private static MockSatelliteServiceManager sMockSatelliteServiceManager;
 
     /* SatelliteCapabilities constant indicating that the radio technology is proprietary. */
     private static final Set<Integer> SUPPORTED_RADIO_TECHNOLOGIES;
+
     static {
         SUPPORTED_RADIO_TECHNOLOGIES = new HashSet<>();
         SUPPORTED_RADIO_TECHNOLOGIES.add(SatelliteManager.NT_RADIO_TECHNOLOGY_PROPRIETARY);
@@ -136,22 +155,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final int MAX_BYTES_PER_DATAGRAM = 339;
     /* SatelliteCapabilites constant antenna position map received from satellite modem. */
     private static final Map<Integer, AntennaPosition> ANTENNA_POSITION_MAP;
+
     static {
         ANTENNA_POSITION_MAP = new HashMap<>();
         ANTENNA_POSITION_MAP.put(SatelliteManager.DISPLAY_MODE_OPENED,
-                new AntennaPosition(new AntennaDirection(1,1,1),
+                new AntennaPosition(new AntennaDirection(1, 1, 1),
                         SatelliteManager.DEVICE_HOLD_POSITION_PORTRAIT));
         ANTENNA_POSITION_MAP.put(SatelliteManager.DISPLAY_MODE_CLOSED,
-                new AntennaPosition(new AntennaDirection(2,2,2),
+                new AntennaPosition(new AntennaDirection(2, 2, 2),
                         SatelliteManager.DEVICE_HOLD_POSITION_LANDSCAPE_LEFT));
     }
+
     private static CarrierConfigReceiver sCarrierConfigReceiver;
 
     private static final int SUB_ID = SubscriptionManager.DEFAULT_SUBSCRIPTION_ID;
     private static final String OVERRIDING_COUNTRY_CODES = "US";
     private static final String SATELLITE_COUNTRY_CODES = "US,UK,CA";
     private static final String SATELLITE_S2_FILE = "google_us_san_sat_s2.dat";
-    private static final String TEST_PROVIDER = LocationManager.GPS_PROVIDER;
+    private static final String TEST_PROVIDER = LocationManager.FUSED_PROVIDER;
     private static final float LOCATION_ACCURACY = 95;
     private static LocationManager sLocationManager;
 
@@ -280,8 +301,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void setUp() throws Exception {
         logd("setUp");
         if (sInitError != null) throw sInitError;
-        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(sMockSatelliteServiceManager != null);
+
+        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true);
 
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
         sMockSatelliteServiceManager.setWaitToSend(false);
@@ -301,6 +324,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteModeRadiosUpdater(getContext());
         assertTrue(satelliteRadiosModeUpdater.setSatelliteModeRadios(""));
 
+        beforeSatelliteForOemTest();
         grantSatellitePermission();
         if (!isSatelliteEnabled()) {
             logd("Enable satellite");
@@ -310,6 +334,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                     getContext().getMainExecutor(), callback);
             assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
             assertTrue(callback.waitUntilResult(1));
+
+            // Bypass geofence by enforcing SatelliteAccessController to use on-device data with
+            // mock location
+            assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, null, null, null, 0));
+            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
+                    false, true, SATELLITE_S2_FILE, TimeUnit.MINUTES.toNanos(10), "US"));
+
+            // Set location provider and current location to Google San Diego office
+            registerTestLocationProvider();
+            setTestProviderLocation(32.909808231041644, -117.18185788819781);
+            verifyIsSatelliteAllowed(true);
 
             int i = 0;
             while (requestSatelliteEnabledWithResult(true, EXTERNAL_DEPENDENT_TIMEOUT)
@@ -333,6 +368,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
         sMockSatelliteServiceManager.setWaitToSend(false);
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+
+        sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false);
 
         grantSatellitePermission();
         if (isSatelliteEnabled()) {
@@ -359,12 +397,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
+        afterSatelliteForOemTest();
     }
 
     @Test
     public void testProvisionSatelliteService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testProvisionSatelliteService: start");
         grantSatellitePermission();
 
@@ -422,8 +459,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testPointingUICrashHandling() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -457,9 +492,60 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    public void testSatelliteModemStateChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
+    @Ignore
+    public void testSatelliteRequestEnabled() {
+        assumeTrue(sMockSatelliteServiceManager != null);
+        grantSatellitePermission();
 
+        /*
+         * When the LocationManager is disabled :
+         * 1) Set location inside or outside of geofence
+         * 2) Check both requestSatelliteEnabled and requestIsCommunicationAllowedForCurrentLocation
+         *  - result is SATELLITE_RESULT_LOCATION_DISABLED
+         */
+        // LocationManager is disabled
+        sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+
+        // Set current location inside of the geofence data (San Diego office)
+        setTestProviderLocation(32.909808231041644, -117.18185788819781);
+        verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
+
+        int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
+
+        // Set current location outside of the geofence data (Bangalore office)
+        setTestProviderLocation(12.997138153769894, 77.66099948612018);
+        verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
+
+        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
+
+        /*
+         * When the LocationManager is enabled and cache is valid :
+         * 1) Set location outside of geofence
+         * - The result of requestIsCommunicationAllowedForCurrentLocation is true due to cache
+         * - The result of requestSatelliteEnabled is SATELLITE_RESULT_ACCESS_BARRED
+         * 2) Check the result of requestIsCommunicationAllowedForCurrentLocation once more
+         * - Since the cache is updated as false in
+         */
+        // LocationManager is disabled and cache is valid
+        sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
+        assertTrue(sMockSatelliteServiceManager
+                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("cache_allowed"));
+
+        // Set current location outside of the geofence data (Bangalore office)
+        setTestProviderLocation(12.997138153769894, 77.66099948612018);
+        verifyIsSatelliteAllowed(true);
+
+        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SATELLITE_RESULT_ACCESS_BARRED, result);
+
+        verifyIsSatelliteAllowed(false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    public void testSatelliteModemStateChanged() {
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -554,10 +640,125 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    public void testSatelliteModemStateChangedForNbIot() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testDisableSatelliteWhenCellularModemEnabledInIdleMode() {
+        if (!Flags.oemEnabledSatelliteFlag()) return;
 
-        beforeSatelliteForOemTest();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        boolean originalEnabledState = isSatelliteEnabled();
+        boolean registerCallback = false;
+        if (originalEnabledState) {
+            registerCallback = true;
+
+            long registerResult = sSatelliteManager.registerForModemStateChanged(
+                    getContext().getMainExecutor(), callback);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+            assertTrue(callback.waitUntilResult(1));
+
+            requestSatelliteEnabled(false);
+
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+        if (!registerCallback) {
+            long registerResult = sSatelliteManager
+                    .registerForModemStateChanged(getContext().getMainExecutor(),
+                            callback);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+            assertTrue(callback.waitUntilResult(1));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            callback.clearModemStates();
+        }
+
+        assertTrue(sMockSatelliteServiceManager.connectSatelliteGatewayService());
+        // Change timer value for NbIotInactivityTimer
+        // This make to move NOT_CONNECTED to IDLE quickly.
+        assertTrue(sMockSatelliteServiceManager.setSatelliteListeningTimeoutDuration(
+                TEST_SATELLITE_LISTENING_TIMEOUT_MILLIS));
+        // Set response of MockSatelliteService to cellular mode control.
+        sMockSatelliteServiceManager.setEnableCellularScanningErrorCode(SATELLITE_RESULT_SUCCESS);
+        // Clear the number of calls to  requestSatelliteEnabled in MockSatelliteService
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+
+        try {
+            sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false);
+
+            // Case1 : emergency mode
+            //         KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL false
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putBoolean(
+                    KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL, false);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+            // Enable satellite for emergency
+            requestSatelliteEnabled(true, true);
+            assertTrue(callback.waitUntilResult(3));
+            assertTrue(isSatelliteEnabled());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                    callback.getModemState(0));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED,
+                    callback.getModemState(1));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
+                    callback.getModemState(2));
+            callback.clearModemStates();
+
+            // In IDLE mode, framework shouldn't disable satellite.
+            // MockSatelliteService's requestSatelliteEnabled must be called once(enable only).
+            assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+            sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+
+            // Move to POWER_OFF
+            requestSatelliteEnabled(false, true);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+
+            // Case2 : emergency mode
+            //         KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL true
+            bundle.putBoolean(
+                    KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL, true);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+            // Enable satellite for emergency
+            requestSatelliteEnabled(true, true);
+            assertTrue(callback.waitUntilResult(3));
+            assertTrue(isSatelliteEnabled());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                    callback.getModemState(0));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED,
+                    callback.getModemState(1));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
+                    callback.getModemState(2));
+
+            // In IDLE mode, framework should disable satellite.
+            // MockSatelliteService's requestSatelliteEnabled must be called twice(enable, disable).
+            assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(2));
+            sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        } finally {
+            // Restore test status.
+            sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, null);
+            revokeSatellitePermission();
+            updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        }
+    }
+
+    @Test
+    public void testSatelliteModemStateChangedForNbIot() {
+        if (!Flags.oemEnabledSatelliteFlag()) return;
+
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -729,13 +930,12 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
 
-        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
     @Test
     public void testSendKeepAliveDatagramInNotConnectedState() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
+        if (!Flags.oemEnabledSatelliteFlag()) return;
 
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
@@ -792,6 +992,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
 
         // Send SOS satellite datagram
+        datagramCallback.clearSendDatagramRequested();
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 sosResultListener::offer);
@@ -803,13 +1004,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT,
                         1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
+        assertTrue(datagramCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, datagramCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                datagramCallback.getSendDatagramRequestedType(0));
 
         // Send keepAlive satellite datagram
         datagramCallback.clearSendDatagramStateChanges();
+        datagramCallback.clearSendDatagramRequested();
         callback.clearModemStates();
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE,
                 datagram, true, getContext().getMainExecutor(),
                 keepAliveResultListener::offer);
+        assertTrue(datagramCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, datagramCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE,
+                datagramCallback.getSendDatagramRequestedType(0));
 
         // Modem state and datagram transfer state should not be updated
         assertFalse(datagramCallback.waitUntilOnSendDatagramStateChanged(1));
@@ -865,7 +1075,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.setSatelliteListeningTimeoutDuration(0));
         assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
-
         revokeSatellitePermission();
     }
 
@@ -877,9 +1086,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         String mText = "This is a test datagram message from user";
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
 
+        transmissionUpdateCallback.clearSendDatagramRequested();
         sSatelliteManager.sendDatagram(
                 SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
                 getContext().getMainExecutor(), resultListener::offer);
+        assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, transmissionUpdateCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                transmissionUpdateCallback.getSendDatagramRequestedType(0));
 
         Integer errorCode;
         try {
@@ -1094,7 +1308,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED, (long) errorCode);
+        assertEquals(SATELLITE_RESULT_REQUEST_ABORTED, (long) errorCode);
 
         // Expected datagram transfer state transitions: IDLE -> WAITING_FOR_CONNECTED -> FAILED
         // -> IDLE.
@@ -1107,7 +1321,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertThat(transmissionUpdateCallback.getSendDatagramStateChange(1)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_FAILED,
-                        1, SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED));
+                        1, SATELLITE_RESULT_REQUEST_ABORTED));
         assertThat(transmissionUpdateCallback.getSendDatagramStateChange(2)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
@@ -1277,7 +1491,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteEnableErrorHandling() {
-        if (!shouldTestSatelliteWithMockService()) return;
         assumeTrue(sTelephonyManager != null);
 
         grantSatellitePermission();
@@ -1320,7 +1533,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(isSatelliteEnabled());
 
         requestSatelliteEnabled(true, true, SatelliteManager.SATELLITE_RESULT_SUCCESS);
-        requestSatelliteEnabled(true, false, SatelliteManager.SATELLITE_RESULT_INVALID_ARGUMENTS);
+        if (Flags.carrierRoamingNbIotNtn()) {
+            requestSatelliteEnabled(
+                    true, false, SatelliteManager.SATELLITE_RESULT_SUCCESS);
+        } else {
+            requestSatelliteEnabled(
+                    true, false, SatelliteManager.SATELLITE_RESULT_INVALID_ARGUMENTS);
+        }
 
         callback.clearModemStates();
         turnRadioOff();
@@ -1332,6 +1551,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
 
+        // Cannot turn on satellite when radio is OFF
         requestSatelliteEnabled(true, true, SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE);
         requestSatelliteEnabled(false);
 
@@ -1365,8 +1585,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteDatagramReceivedAck() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
 
         assertTrue(isSatelliteProvisioned());
@@ -1399,8 +1617,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void  testRequestSatelliteCapabilities() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRequestSatelliteCapabilities");
         grantSatellitePermission();
 
@@ -1443,8 +1659,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1474,7 +1688,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_FAILED,
-                            1, SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED));
+                            1, SATELLITE_RESULT_REQUEST_ABORTED));
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(1)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
@@ -1495,8 +1709,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1565,8 +1777,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendMultipleSatelliteDatagrams_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendMultipleSatelliteDatagrams_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1597,6 +1807,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         // Send three datagrams to observe how pendingCount is updated
         // after processing one datagram at a time.
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener1 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
@@ -1606,16 +1817,31 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING,
                         1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener2 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 resultListener2::offer);
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
+
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener3 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 resultListener3::offer);
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
 
@@ -1708,8 +1934,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendMultipleSatelliteDatagrams_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendMultipleSatelliteDatagrams_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1804,7 +2028,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(errorCode);
         assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
 
-        assertTrue(callback.waitUntilOnSendDatagramStateChanged(4));
+        assertTrue(callback.waitUntilOnSendDatagramStateChanged(5));
         // Pending count is 2 as there are 2 datagrams to be sent.
         assertThat(callback.getSendDatagramStateChange(0)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
@@ -1817,6 +2041,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertThat(callback.getSendDatagramStateChange(2)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_SUCCESS,
+                        1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
+        assertThat(callback.getSendDatagramStateChange(3)).isEqualTo(
+                new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
+                        SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING,
                         1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
         assertThat(callback.getSendDatagramStateChange(4)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
@@ -1834,8 +2062,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatelliteDatagram() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatelliteDatagram");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1867,7 +2093,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(0)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVE_FAILED,
-                            0, SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED));
+                            0, SATELLITE_RESULT_REQUEST_ABORTED));
             assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(1)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
@@ -1888,8 +2114,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveMultipleSatelliteDatagrams() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveMultipleSatelliteDatagrams");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -1990,8 +2214,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatellitePositionUpdate() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatellitePositionUpdate");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2033,8 +2255,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveMultipleSatellitePositionUpdates() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveMultipleSatellitePositionUpdates");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2089,8 +2309,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendAndReceiveSatelliteDatagram_DemoMode_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2121,7 +2339,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_FAILED,
-                            1, SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED));
+                            1, SATELLITE_RESULT_REQUEST_ABORTED));
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(1)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
@@ -2191,8 +2409,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendAndReceiveMultipleSatelliteDatagrams_DemoMode_success() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendAndReceiveMultipleSatelliteDatagrams_DemoMode_success");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2273,8 +2489,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_DemoMode_failure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_failure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2362,8 +2576,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadios() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadios: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2423,8 +2635,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadios_noRadiosSensitiveToSatelliteMode() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadios_noRadiosSensitiveToSatelliteMode: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2486,8 +2696,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModeRadiosWithAirplaneMode() throws Exception {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModeRadiosWithAirplaneMode: start");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
@@ -2573,8 +2781,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagram_DemoMode_not_Aligned() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_not_Aligned");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2758,7 +2964,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             return;
         }
         assertNotNull(errorCode);
-        assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED);
+        assertThat(errorCode).isEqualTo(SATELLITE_RESULT_REQUEST_ABORTED);
 
         /*
          * Send datagram transfer state should have the following transitions:
@@ -2770,7 +2976,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertThat(callback.getSendDatagramStateChange(0)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_FAILED,
-                        1, SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED));
+                        1, SATELLITE_RESULT_REQUEST_ABORTED));
         assertThat(callback.getSendDatagramStateChange(1)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_IDLE,
@@ -2790,8 +2996,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testReceiveSatelliteDatagram_DemoMode_not_Aligned() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testReceiveSatelliteDatagram_DemoMode_not_Aligned");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2876,8 +3080,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemSendingDatagram_pollingFailure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemSendingDatagram_pollingFailure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2921,8 +3123,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemPollingDatagrams_pollingFailure() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemPollingDatagrams_pollingFailure");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -2959,8 +3159,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemBusy_modemPollingDatagram_sendingDelayed() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteModemBusy_modemPollingDatagram_sendingDelayed");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3057,8 +3255,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testRebindToSatelliteService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteSupported());
 
@@ -3076,15 +3272,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.waitForRemoteSatelliteServiceConnected(1));
 
         // Restore original binding states
+        sMockSatelliteServiceManager.resetSatelliteService();
+        assertTrue(sMockSatelliteServiceManager.connectSatelliteService());
+
         SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
         long registerResult = sSatelliteManager.registerForModemStateChanged(
                 getContext().getMainExecutor(), callback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
         assertTrue(callback.waitUntilResult(1));
-
-        callback.clearModemStates();
-        sMockSatelliteServiceManager.resetSatelliteService();
-        assertTrue(sMockSatelliteServiceManager.connectSatelliteService());
         assertTrue(callback.waitUntilModemOff(EXTERNAL_DEPENDENT_TIMEOUT));
         callback.clearModemStates();
 
@@ -3099,14 +3294,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.stopExternalSatelliteService());
         assertTrue(sMockSatelliteServiceManager
                 .waitForExternalSatelliteServiceDisconnected(1));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
 
         revokeSatellitePermission();
     }
 
     @Test
     public void testRebindToSatelliteGatewayService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
 
@@ -3156,9 +3350,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachEnabledForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachEnabledForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         @SatelliteManager.SatelliteResult int expectedSuccess =
@@ -3252,9 +3447,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachRestrictionForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachRestrictionForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         clearSatelliteEnabledForCarrier();
@@ -3321,8 +3517,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testNtnSignalStrength() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testNtnSignalStrength: start");
         grantSatellitePermission();
 
@@ -3343,7 +3537,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNull(pairResult.second);
 
         expectedLevel = NtnSignalStrength.NTN_SIGNAL_STRENGTH_GOOD;
-        expectedError = SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
+        expectedError = SATELLITE_RESULT_MODEM_ERROR;
         setSatelliteError(expectedError);
         setNtnSignalStrength(expectedLevel);
         pairResult = requestNtnSignalStrength();
@@ -3367,6 +3561,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNull(pairResult.second);
 
         /* Cache will be updated when non-terrestrial network signal strength changed event comes */
+        ntnSignalStrengthCallbackTest.drainPermits();
         sendOnNtnSignalStrengthChanged(expectedLevel);
         assertTrue(ntnSignalStrengthCallbackTest.waitUntilResult(1));
         pairResult = requestNtnSignalStrength();
@@ -3374,6 +3569,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNull(pairResult.second);
         assertEquals(expectedLevel, ntnSignalStrengthCallbackTest.mNtnSignalStrength.getLevel());
 
+        ntnSignalStrengthCallbackTest.drainPermits();
         expectedLevel = NtnSignalStrength.NTN_SIGNAL_STRENGTH_MODERATE;
         sendOnNtnSignalStrengthChanged(expectedLevel);
         assertTrue(ntnSignalStrengthCallbackTest.waitUntilResult(1));
@@ -3383,6 +3579,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(expectedLevel, ntnSignalStrengthCallbackTest.mNtnSignalStrength.getLevel());
 
         /* Initialize the non-terrestrial signal strength cache in the framework */
+        ntnSignalStrengthCallbackTest.drainPermits();
         expectedLevel = NtnSignalStrength.NTN_SIGNAL_STRENGTH_NONE;
         sendOnNtnSignalStrengthChanged(expectedLevel);
         assertTrue(ntnSignalStrengthCallbackTest.waitUntilResult(1));
@@ -3400,8 +3597,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForCapabilitiesChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRegisterForCapabilitiesChanged: start");
         grantSatellitePermission();
 
@@ -3474,8 +3669,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSendSatelliteDatagram_DemoMode_WithDeviceConfig() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagram_DemoMode_WithDeviceConfig");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3571,8 +3764,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSatelliteAccessControl() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
@@ -3656,9 +3847,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @FlaggedApi(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testGetSatellitePlmnsForCarrier() {
-        if (!shouldTestSatelliteWithMockService() || !Flags.carrierEnabledSatelliteFlag()) return;
+        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testGetAggregateSatellitePlmnListForCarrier");
+        afterSatelliteForOemTest();
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
         @SatelliteManager.SatelliteResult int expectedSuccess =
@@ -3705,8 +3897,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendSatelliteDatagrams_timeout() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSendSatelliteDatagrams_timeout");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -3780,8 +3970,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
     @Test
     public void testRequestSatelliteEnabled_timeout() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
 
@@ -3806,7 +3994,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         // Time out to enable satellite
         logd("testRequestSatelliteEnabled_timeout: enabling satellite...");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
         int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
         assertEquals(SatelliteManager.SATELLITE_RESULT_MODEM_TIMEOUT, result);
         assertTrue(callback.waitUntilResult(2));
         assertEquals(2, callback.getTotalCountOfModemStates());
@@ -3814,12 +4004,12 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 callback.getModemState(0));
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
-        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
 
         // Respond to the above enable request. Telephony should ignore the event.
         logd("testRequestSatelliteEnabled_timeout: Responding the enabling request...");
         callback.clearModemStates();
-        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true));
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
         assertFalse(callback.waitUntilResult(1));
         assertFalse(isSatelliteEnabled());
 
@@ -3843,35 +4033,1809 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 500));
 
         // Time out to disable satellite. Telephony should respond SATELLITE_RESULT_MODEM_TIMEOUT to
-        // clients and stay in SATELLITE_MODEM_STATE_NOT_CONNECTED as satellite disable request
+        // clients and stay in SATELLITE_MODEM_STATE_OUT_OF_SERVICE as satellite disable request
         // failed.
         logd("testRequestSatelliteEnabled_timeout: disabling satellite...");
         callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
         result = requestSatelliteEnabledWithResult(false, TIMEOUT);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
         assertEquals(SatelliteManager.SATELLITE_RESULT_MODEM_TIMEOUT, result);
         assertTrue(callback.waitUntilResult(2));
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.modemState);
         assertTrue(isSatelliteEnabled());
-        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
 
         // Respond to the above disable request. Telephony should ignore the event.
         logd("testRequestSatelliteEnabled_timeout: Responding the disabling request...");
         callback.clearModemStates();
-        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false));
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
         assertFalse(callback.waitUntilResult(1));
         assertTrue(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable() {
+        /*
+        * Test scenario:
+        * 1) Enable request
+        * 2) Disable request
+        * 3) Response from modem for the disable request. Note that there is no response for the
+        *    enable request from modem
+        * 4) Satellite should move to OFF state and the enable request should be aborted
+        */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable: disabling "
+                    + "satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable: enabling "
+                + "satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
 
         // Restore the original states
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+
+        // Successfully disable satellite while enabling is in progress. No response for enable
+        // request from modem
+        logd("testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable: disabling "
+                + "satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        requestSatelliteEnabled(false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
+        assertFalse(isSatelliteEnabled());
+        // The enable request right before the disable request should have been aborted
+        assertResult(enableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable() {
+        /*
+         * Test scenario:
+         * 1) Enable request
+         * 2) Disable request
+         * 3) Successful response from modem for the enable request
+         * 4) Successful response from modem for the disable request
+         * 5) Satellite should move to OFF state
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: enabling"
+                + " satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Disable satellite while enabling is in progress
+        logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: disabling"
+                + " satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a successful response for the enable request
+        logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: responding to"
+                + " the enable request... (4)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(enableResult, SATELLITE_RESULT_SUCCESS);
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable: responding to"
+                + " the disable request... (5)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable() {
+        /*
+         * Test scenario:
+         * 1) Enable request
+         * 2) Disable request
+         * 3) Successful response from modem for the disable request
+         * 4) Satellite should move to OFF state and the enable request should be aborted
+         * 5) Successful response from modem for the enable request
+         * 6) Framework should ignore the response from modem for the enable request and stay at
+         *    OFF state
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: enabling"
+                + " satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Disable satellite while enabling is in progress
+        logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: disabling"
+                + " satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: responding to"
+                + " the disable request... (4)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+        // The enable request right before the disable request should have been aborted
+        assertResult(enableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+
+        // Send a successful response for the enable request
+        logd("testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable: responding to"
+                + " the enable request... (5)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable() {
+        /*
+         * Test scenario:
+         * 1) Enable request
+         * 2) Satellite should move to ENABLING state
+         * 3) Disable request
+         * 4) Satellite should move to DISABLING state
+         * 5) Failure response from modem for the enable request
+         * 6) Response from modem for the disable request
+         * 7) Satellite should move to OFF state
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: enabling"
+                + " satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Disable satellite while enabling is in progress
+        logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: disabling"
+                + " satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a failure response for the enable request
+        logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: responding to"
+                + " the enable request... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_REQUEST_ABORTED);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(enableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable: responding to"
+                + " the disable request... (5)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    public void testRequestSatelliteEnabled_EnableDisable_FeatureDisabled() {
+        /*
+         * Test scenario:
+         * 1) Enable request
+         * 2) Satellite should move to ENABLING state
+         * 3) Disable request
+         * 4) Telephony should return SATELLITE_RESULT_ENABLE_IN_PROGRESS since the feature flag
+         *    is not enabled.
+         * 5) Successful response from modem for the enable request
+         * 6) Satellite should move to NOT_CONNECTED state
+         */
+        if (Flags.carrierRoamingNbIotNtn()) return;
+
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: enabling"
+                + " satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Disable satellite while enabling is in progress
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: disabling"
+                + " satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertResult(disableResult, SATELLITE_RESULT_ENABLE_IN_PROGRESS);
+
+        // Send a successful response for the enable request
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: responding to"
+                + " the enable request... (4)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(enableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with P2P mode
+         * 4) Successful response from modem for the first enable request
+         * 5) Satellite should move to NOT_CONNECTED state and in demo mode
+         * 6) Successful response from modem for the second enable request
+         * 7) Satellite should stay at NOT_CONNECTED state and in P2P mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: enabling"
+                + " satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: updating to real mode"
+                + " ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Send a successful response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: responding to"
+                + " the first enable request... (4)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+        verifyDemoMode(true);
+        // The second enable request should be pushed to modem now
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Send a successful response for the second enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse: responding to"
+                + " the second enable request... (5)");
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(secondEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(isSatelliteEnabled());
+        verifyDemoMode(false);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with P2P mode
+         * 4) Failure response from modem for the first enable request
+         * 5) Satellite should move to OFF state and the second enable request should be aborted
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse: enabling"
+                + " satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse: updating to real mode"
+                + " ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Send a failure response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse: responding to"
+                + " the first enable request... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_MODEM_ERROR);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertResult(secondEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with P2P mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with emergency mode
+         * 4) Successful response from modem for the first enable request
+         * 5) Satellite should move to NOT_CONNECTED state and in P2P mode
+         * 6) Successful response from modem for the second enable request
+         * 7) Satellite should stay at NOT_CONNECTED state and in emergency mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: enabling"
+                + " satellite for P2P SMS... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: updating to "
+                + "emergency mode... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, true);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Send a successful response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: responding to"
+                + " the first enable request... (4)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+        verifyEmergencyMode(false);
+        // The second enable request should be pushed to modem now
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Send a successful response for the second enable request
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse: responding to"
+                + " the second enable request... (5)");
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(secondEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(isSatelliteEnabled());
+        verifyEmergencyMode(true);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with P2P mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with emergency mode
+         * 4) Successful response from modem for the first enable request
+         * 5) Satellite should move to NOT_CONNECTED state and in P2P mode
+         * 6) Failure response from modem for the second enable request
+         * 7) Satellite should stay at NOT_CONNECTED state and in P2P mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: enabling"
+                + " satellite for P2P SMS... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: updating to "
+                + "emergency mode... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, true);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Send a successful response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: responding to"
+                + " the first enable request... (4)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+        verifyEmergencyMode(false);
+        // The second enable request should be pushed to modem now
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Send a failure response for the second enable request
+        logd("testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse: responding to"
+                + " the second enable request... (5)");
+        sMockSatelliteServiceManager.setErrorCode(
+                SatelliteResult.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(secondEnableResult, SATELLITE_RESULT_REQUEST_NOT_SUPPORTED);
+        assertTrue(isSatelliteEnabled());
+        verifyEmergencyMode(false);
+
+        // Restore the original states
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Successful response from modem for the first enable request
+         * 4) Satellite should move to NOT_CONNECTED state and in demo mode
+         * 5) Enable request with P2P mode
+         * 6) Satellite should move to ENABLING state
+         * 7) Successful response from modem for the second enable request
+         * 8) Satellite should move to NOT_CONNECTED state and in P2P mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        // Enable satellite with demo mode
+        logd("testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse: enabling"
+                + " satellite with demo mode... (2)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        requestSatelliteEnabled(true, true, SATELLITE_RESULT_SUCCESS);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(1));
+        assertTrue(isSatelliteEnabled());
+        verifyDemoMode(true);
+
+        // Change to P2P mode
+        logd("testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse: updating to real mode"
+                + " ... (3)");
+        callback.clearModemStates();
+        requestSatelliteEnabled(true, false, SATELLITE_RESULT_SUCCESS);
+        verifyDemoMode(false);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse() {
+        /*
+         * Test scenario:
+         * 1) Enable request with P2P mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Successful response from modem for the first enable request
+         * 4) Satellite should move to NOT_CONNECTED state and in P2P mode
+         * 5) Enable request with emergency mode
+         * 6) Satellite should move to ENABLING state
+         * 7) Successful response from modem for the second enable request
+         * 8) Satellite should move to NOT_CONNECTED state and in emergency mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        // Enable satellite with P2P mode
+        logd("testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse: enabling"
+                + " satellite with P2P mode... (2)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        requestSatelliteEnabled(true, false, SATELLITE_RESULT_SUCCESS);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(1));
+        assertTrue(isSatelliteEnabled());
+        verifyEmergencyMode(false);
+
+        // Change to emergency mode
+        logd("testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse: updating to emergency"
+                + " mode... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, true);
+        assertResult(secondEnableResult, SATELLITE_RESULT_SUCCESS);
+        verifyEmergencyMode(true);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with P2P mode
+         * 4) Disable request
+         * 5) Satellite should move to DISABLING state
+         * 6) Successful response from modem for the first enable request
+         * 7) The second enable request is aborted
+         * 8) Successful response from modem for the disable request
+         * 9) Satellite should move to OFF state
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                + "starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                    + "disabling satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: enabling"
+                + " satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                + "updating to real mode ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Disable satellite while enabling and enable attributes updating are in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                + "disabling satellite... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a successful response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                + "responding to the first enable request... (5)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_SUCCESS);
+        verifyDemoMode(true);
+        assertResult(secondEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable: "
+                + "responding to the disable request... (6)");
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Enable request with P2P mode
+         * 3) Disable request
+         * 4) Successful response from modem for the disable request
+         * 5) Satellite should move to OFF state and the two enable requests are aborted
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: "
+                + "starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: "
+                    + "disabling satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: enabling"
+                + " satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: "
+                + "updating to real mode ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Disable satellite while enabling and enable attributes updating are in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: disabling"
+                + " satellite... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable: "
+                + "responding to the disable request... (5)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+        assertResult(firstEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+        assertResult(secondEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with P2P mode
+         * 4) Disable request
+         * 5) Satellite should move to DISABLING state
+         * 6) Failure response from modem for the disable request
+         * 7) Satellite should move back to ENABLING state
+         * 8) Successful response for the first enable request
+         * 9) Satellite should move to NOT_CONNECTED state and in demo mode
+         * 10) Successful response for the second enable request
+         * 11) Satellite should stay at NOT_CONNECTED state and in P2P mode
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                + "starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                    + "disabling satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: enabling"
+                + " satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                + "updating to real mode ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Disable satellite while enabling and enable attributes updating are in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: disabling"
+                + " satellite... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a failure response for the disable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                + "responding to the disable request... (5)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_NO_RESOURCES);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(disableResult, SATELLITE_RESULT_NO_RESOURCES);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a successful response for the first enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                + "responding to the first enable request... (6)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(firstEnableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+        verifyDemoMode(true);
+        // The enable attributes update request should be pushed to modem now
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+
+        // Send a successful response for the second enable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable: "
+                + "responding to the second enable request... (6)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(secondEnableResult, SATELLITE_RESULT_SUCCESS);
+        verifyDemoMode(false);
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable() {
+        /*
+         * Test scenario:
+         * 1) Enable request with demo mode
+         * 2) Satellite should move to ENABLING state
+         * 3) Enable request with P2P mode
+         * 4) Disable request
+         * 5) Satellite should move to DISABLING state
+         * 6) Modem report OFF state
+         * 7) Failure response from modem for the disable request
+         * 8) Satellite should move to OFF state and the enable requests are aborted
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable: "
+                + "starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_"
+                    + "FailureResponseForDisable: disabling satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable: "
+                + "enabling satellite with demo mode... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> firstEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable: "
+                + "updating to real mode ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Disable satellite while enabling and enable attributes updating are in progress
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable: "
+                + "disabling satellite... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Send a failure response for the disable request
+        logd("testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable: "
+                + "responding to the disable request... (5)");
+        callback.clearModemStates();
+        // Send the OFF state before sending the failure response for the disable request
+        sMockSatelliteServiceManager.sendOnSatelliteModemStateChanged(
+                SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
+        sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_NO_RESOURCES);
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false,
+                MockSatelliteService.NOT_UPDATED_SATELLITE_MODEM_STATE));
+        assertResult(disableResult, SATELLITE_RESULT_NO_RESOURCES);
+        assertResult(firstEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+        assertResult(secondEnableResult, SATELLITE_RESULT_REQUEST_ABORTED);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        // Satellite modem state should be reverted back to ENABLING state due to the failure of
+        // the disable request.
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        // Satellite modem state should be changed to OFF state due to the OFF state report from
+        // modem.
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF,
+                callback.getModemState(1));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        revokeSatellitePermission();
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
-    public void testRegisterForSupportedStateChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
+    public void testRequestSatelliteEnabled_ModemCrashDuringDisable() {
+        /*
+         * Test scenario:
+         * 1) Send disable request to modem
+         * 2) Satellite should move to DISABLING state
+         * 3) Modem crash before responding to framework
+         * 4) Modem come back up
+         * 5) Framework abort the request and move to OFF state
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
 
+        logd("testRequestSatelliteEnabled_ModemCrashDuringDisable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to disabling state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringDisable: disabling satellite (1)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+
+        // Mocking modem crash scenario
+        logd("testRequestSatelliteEnabled_ModemCrashDuringDisable: mocking modem crash (2)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager.waitForRemoteSatelliteServiceConnected(1));
+
+        // The disable request should be aborted
+        assertResult(disableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore original binding state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringDisable: restoring mock satellite "
+                + "service (3)");
+        sMockSatelliteServiceManager.resetSatelliteService();
+        assertTrue(sMockSatelliteServiceManager.connectSatelliteService());
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+
+        // Enable satellite should succeed
+        logd("testRequestSatelliteEnabled_ModemCrashDuringDisable: enabling satellite (4)");
+        callback.clearModemStates();
+        requestSatelliteEnabled(true);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(1));
+        assertTrue(isSatelliteEnabled());
+
+        assertTrue(sMockSatelliteServiceManager.stopExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager
+                .waitForExternalSatelliteServiceDisconnected(1));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRequestSatelliteEnabled_ModemCrashDuringEnable() {
+        /*
+         * Test scenario:
+         * 1) Send enable request to modem
+         * 2) Satellite should move to ENABLING state
+         * 3) Modem crash before responding to framework
+         * 4) Modem come back up
+         * 5) Framework abort the request and move to OFF state
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: disabling satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: enabling satellite (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Mocking modem crash scenario
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: mocking modem crash (3)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager.waitForRemoteSatelliteServiceConnected(1));
+
+        // The enable request should be aborted
+        assertResult(enableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore original binding state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: restoring mock satellite "
+                + "service (4)");
+        sMockSatelliteServiceManager.resetSatelliteService();
+        assertTrue(sMockSatelliteServiceManager.connectSatelliteService());
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+
+        // Enable satellite should succeed
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnable: enabling satellite (5)");
+        callback.clearModemStates();
+        requestSatelliteEnabled(true);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(1));
+        assertTrue(isSatelliteEnabled());
+
+        assertTrue(sMockSatelliteServiceManager.stopExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager
+                .waitForExternalSatelliteServiceDisconnected(1));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable() {
+        /*
+         * Test scenario:
+         * 1) Send enable request to modem with demo mode
+         * 2) Send enable request to modem with P2P mode
+         * 3) Send a disable request to modem
+         * 4) Modem crash before responding to framework
+         * 5) Modem come back up
+         * 6) Framework abort all requests and move to OFF state
+         */
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: enabling"
+                + " satellite (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> firtEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, true, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Change to real mode while enabling demo mode is in progress
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: "
+                + "updating to real mode ... (3)");
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> secondEnableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        // Wait for some time to make sure SatelliteController receive the second request
+        waitFor(500);
+
+        // Disable satellite while enabling and enable attributes updating are in progress
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: disabling"
+                + " satellite... (4)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+
+        // Mocking modem crash scenario
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: mocking modem"
+                + " crash (5)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager.waitForRemoteSatelliteServiceConnected(1));
+
+        // All requests should be aborted
+        assertResult(firtEnableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertResult(secondEnableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertResult(disableResult, SATELLITE_RESULT_MODEM_ERROR);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Restore original binding state
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: restoring mock  "
+                + "satellite service (6)");
+        sMockSatelliteServiceManager.resetSatelliteService();
+        assertTrue(sMockSatelliteServiceManager.connectSatelliteService());
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+
+        // Enable satellite should succeed
+        logd("testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable: enabling"
+                + " satellite (7)");
+        callback.clearModemStates();
+        requestSatelliteEnabled(true);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(1));
+        assertTrue(isSatelliteEnabled());
+
+        assertTrue(sMockSatelliteServiceManager.stopExternalSatelliteService());
+        assertTrue(sMockSatelliteServiceManager
+                .waitForExternalSatelliteServiceDisconnected(1));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRequestSatelliteEnabled_DisableEnable() {
+        /*
+         * Test scenario:
+         * 1) Send disable request
+         * 2) Send enable request
+         * 3) The enable request is rejected
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_DisableEnable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to disabling state
+        logd("testRequestSatelliteEnabled_DisableEnable: disabling satellite (1)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+
+        // Send an enable request
+        logd("testRequestSatelliteEnabled_DisableEnable: enabling satellite (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertResult(enableResult, SATELLITE_RESULT_DISABLE_IN_PROGRESS);
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_DisableEnable: responding to the disable request (3)");
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(
+                false, SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertFalse(isSatelliteEnabled());
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRequestSatelliteEnabled_DisableDisable() {
+        /*
+         * Test scenario:
+         * 1) Send disable request
+         * 2) Send another disable request
+         * 3) The second disable request is rejected
+         */
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_DisableDisable: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to disabling state
+        logd("testRequestSatelliteEnabled_DisableDisable: disabling satellite (1)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertTrue(isSatelliteEnabled());
+
+        // Send another disable request
+        logd("testRequestSatelliteEnabled_DisableDisable: disabling satellite (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        callback.clearModemStates();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertResult(enableResult, SATELLITE_RESULT_REQUEST_IN_PROGRESS);
+
+        // Send a successful response for the disable request
+        logd("testRequestSatelliteEnabled_DisableDisable: responding to the disable request (3)");
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(
+                false, SatelliteModemState.SATELLITE_MODEM_STATE_OFF));
+        assertResult(disableResult, SATELLITE_RESULT_SUCCESS);
+        assertFalse(isSatelliteEnabled());
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+
+        revokeSatellitePermission();
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForSupportedStateChanged() {
         logd("testRegisterForSupportedStateChanged: start");
         grantSatellitePermission();
 
@@ -3930,8 +5894,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testDemoSimulator() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testDemoSimulator: start");
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
@@ -3964,6 +5926,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
             logd("testDemoSimulator: Enable satellite for demo mode");
             stateCallback.clearModemStates();
+            ntnSignalStrengthCallback.drainPermits();
             requestSatelliteEnabledForDemoMode(true);
             assertTrue(stateCallback.waitUntilResult(2));
             assertTrue(isSatelliteEnabled());
@@ -3973,6 +5936,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
             logd("testDemoSimulator: Set device aligned with satellite");
             stateCallback.clearModemStates();
+            ntnSignalStrengthCallback.drainPermits();
             sSatelliteManager.setDeviceAlignedWithSatellite(true);
             assertTrue(stateCallback.waitUntilResult(1));
             assertTrue(ntnSignalStrengthCallback.waitUntilResult(1));
@@ -3981,6 +5945,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
             logd("testDemoSimulator: Set device not aligned with satellite");
             stateCallback.clearModemStates();
+            ntnSignalStrengthCallback.drainPermits();
             sSatelliteManager.setDeviceAlignedWithSatellite(false);
             assertTrue(stateCallback.waitUntilResult(1));
             assertTrue(ntnSignalStrengthCallback.waitUntilResult(1));
@@ -4008,8 +5973,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSessionStats() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRequestSessionStats: start");
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4093,15 +6056,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteSubscriberProvisionStatus() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testRequestSatelliteSubscriberProvisionStatus:");
-        beforeSatelliteForCarrierTest();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         /* Test when this carrier is supported ESOS in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
         overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-        waitFor(TimeUnit.MINUTES.toMillis(1));
 
         grantSatellitePermission();
         try {
@@ -4120,6 +6081,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 }
             }
         } finally {
+            assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                    TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
             revokeSatellitePermission();
         }
     }
@@ -4127,72 +6090,250 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSatelliteSubscriptionProvisionStateChanged() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
         logd("testSatelliteSubscriptionProvisionStateChanged:");
-        // TODO(b/351911296): fix to CTS failed
-        beforeSatelliteForCarrierTest();
+        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                registerSubscriberIdProvisionCallback();
+        assertTrue(provisionSatelliteForSubscriberId(callback));
+
+        afterSubscriberIdTest(callback);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged()
+            throws Exception {
+        logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged:");
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+        Context context = getContext();
+        grantSatellitePermission();
+        try {
+            receiver.clearQueue();
+            // Check if the ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent is sent by reading
+            // carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL value and setting the opposite
+            // value.
+            boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL,
+                    !eSosSupported);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertTrue(receiver.waitForReceive());
+        } finally {
+            resetSatelliteReceiverTest(context, receiver);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentActionSatelliteSubscriberIdListChangedAfterDefaultSmsSubIdChanged()
+            throws Exception {
+        assumeTrue(getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_MESSAGING));
+
+        logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterDefaultSmsSubIdChanged:");
+        SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+        Context context = getContext();
+        SubscriptionManager subscriptionManager = context.getSystemService(
+                SubscriptionManager.class);
+        int defaultSmsSubId = subscriptionManager.getDefaultSmsSubscriptionId();
+        grantSatellitePermission();
+        try {
+            boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+            // Set carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL to true.
+            if (!eSosSupported) {
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+                overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            }
+            receiver.clearQueue();
+            // When the default SMS subId changes, check if the
+            // ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent has been sent.
+            setDefaultSmsSubId(context, SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assertTrue(receiver.waitForReceive());
+        } finally {
+            resetSatelliteReceiverTest(context, receiver);
+            setDefaultSmsSubId(context, defaultSmsSubId);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentAfterChangedToOnlyHaveIsNtnOnlyCase() throws Exception {
+        logd("testReceiveIntentAfterChangedToOnlyHaveIsNtnOnlyCase:");
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> subscriptionInfoList = sm.getAllSubscriptionInfoList();
+        boolean isNtnOnlySimExist = false;
+        for (SubscriptionInfo info : subscriptionInfoList) {
+            if (info.isOnlyNonTerrestrialNetwork()) {
+                isNtnOnlySimExist = true;
+            }
+        }
+
+        if (isNtnOnlySimExist) {
+            SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+            grantSatellitePermission();
+            try {
+                boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                        CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                        CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+                PersistableBundle bundle = new PersistableBundle();
+                // Set carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL to true.
+                if (!eSosSupported) {
+                    bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+                    overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+                }
+                // When only is ntn only sim exists for supporting the satellite, check if the
+                // ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent has been sent.
+                receiver.clearQueue();
+                bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+                overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+                assertTrue(receiver.waitForReceive());
+            } finally {
+                resetSatelliteReceiverTest(context, receiver);
+                revokeSatellitePermission();
+            }
+        }
+    }
+
+    private SatelliteSubscriptionProvisionStateChangedTest registerSubscriberIdProvisionCallback() {
+        logd("getSubscriberIdProvisionCallback");
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         /* Test when this carrier is supported ESOS in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
         overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-        waitFor(TimeUnit.MINUTES.toMillis(1));
 
         grantSatellitePermission();
-        SatelliteSubscriptionProvisionStateChangedTest callback = null;
-        try {
-            callback = new SatelliteSubscriptionProvisionStateChangedTest();
-            long registerError = sSatelliteManager.registerForProvisionStateChanged(
-                    getContext().getMainExecutor(), callback);
-            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
-            Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
-                    requestSatelliteSubscriberProvisionStatus();
-            if (pairResult == null) {
-                fail("requestSatelliteSubscriberProvisionStatus "
-                        + "List<SatelliteSubscriberProvisionStatus> null");
-                revokeSatellitePermission();
-                return;
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                new SatelliteSubscriptionProvisionStateChangedTest();
+        long registerError = sSatelliteManager.registerForProvisionStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+
+        return callback;
+    }
+
+    private void afterSubscriberIdTest(SatelliteSubscriptionProvisionStateChangedTest callback) {
+        if (callback != null) {
+            sSatelliteManager.unregisterForProvisionStateChanged(callback);
+        }
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+        revokeSatellitePermission();
+    }
+
+    private List<SatelliteSubscriberInfo> getSatelliteSubscriberInfoList(boolean provisioned) {
+        List<SatelliteSubscriberInfo> list = new ArrayList<>();
+        Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                requestSatelliteSubscriberProvisionStatus();
+        if (pairResult == null) {
+            return list;
+        }
+        for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
+            SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
+            // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
+            if (info.getSubId() == sTestSubIDForCarrierSatellite) {
+                assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
+                        info.getSubscriberIdType());
             }
 
-            if (pairResult.first.size() > 0) {
-                List<SatelliteSubscriberInfo> requestProvisioningList = new ArrayList<>();
-                for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
-                    SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
-                    // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
-                    if (info.getSubId() == sTestSubIDForCarrierSatellite) {
-                        assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
-                                info.getSubscriberIdType());
-                    }
+            if (provisioned == status.getProvisionStatus()) {
+                list.add(info);
+            }
+        }
+        return list;
+    }
 
-                    // Add not provisioned SatelliteSubscriberInfo.
-                    if (!status.getProvisionStatus()) {
-                        requestProvisioningList.add(info);
-                    }
-                }
-                // Request provisioning with SatelliteSubscriberInfo that has not been provisioned
-                // before, and verify that onSatelliteSubscriptionProvisionStateChanged is called.
-                if (requestProvisioningList.size() > 0) {
-                    Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
-                            requestProvisioningList);
-                    assertTrue(callback.waitUntilResult(1));
-                    assertTrue(pairResultForProvisionSatellite.first);
-                    assertTrue(callback.getResultList().get(0).getProvisionStatus());
-                }
+    private void deprovisionSatelliteForSubscriberId(
+            SatelliteSubscriptionProvisionStateChangedTest callback) {
+        List<SatelliteSubscriberInfo> requestDeprovisionSubscriberId =
+                getSatelliteSubscriberInfoList(true);
+        if (requestDeprovisionSubscriberId.size() == 0) {
+            logd("already deprovision this subscriberId");
+            return;
+        }
+        callback.clearProvisionedStates();
+        Pair<Boolean, Integer> pairResult = deprovisionSatellite(requestDeprovisionSubscriberId);
+        assertTrue(callback.waitUntilResult(1));
+        assertTrue(pairResult.first);
+        assertFalse(callback.getResultList().get(0).getProvisionStatus());
+
+        // Request deprovisioning with the same SatelliteSubscriberInfo that was previously
+        // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not called.
+        pairResult = deprovisionSatellite(requestDeprovisionSubscriberId);
+        assertFalse(callback.waitUntilResult(1));
+        assertTrue(pairResult.first);
+        callback.clearProvisionedStates();
+    }
+
+    private boolean provisionSatelliteForSubscriberId(
+            SatelliteSubscriptionProvisionStateChangedTest callback) {
+        Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                requestSatelliteSubscriberProvisionStatus();
+        if (pairResult == null) {
+            fail("requestSatelliteSubscriberProvisionStatus "
+                    + "List<SatelliteSubscriberProvisionStatus> null");
+            return false;
+        }
+        if (pairResult.first.size() > 0) {
+            // Get the not provisioned subscriberId List.
+            List<SatelliteSubscriberInfo> notProvisionedSubscriberList =
+                    getSatelliteSubscriberInfoList(false);
+            // If all subscriberIds already provisioned then trigger deprovision.
+            if (notProvisionedSubscriberList.size() == 0) {
+                deprovisionSatelliteForSubscriberId(callback);
+            }
+
+            // Get the not provisioned subscriberId List again.
+            notProvisionedSubscriberList = getSatelliteSubscriberInfoList(false);
+            // Request provisioning with SatelliteSubscriberInfo that has not been provisioned
+            // before, and verify that onSatelliteSubscriptionProvisionStateChanged is called.
+            if (notProvisionedSubscriberList.size() > 0) {
+                Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
+                        notProvisionedSubscriberList);
+                assertTrue(callback.waitUntilResult(1));
+                assertTrue(pairResultForProvisionSatellite.first);
+                assertTrue(callback.getResultList().get(0).getProvisionStatus());
 
                 // Request provisioning with the same SatelliteSubscriberInfo that was previously
                 // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not
                 // called.
-                Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
-                        requestProvisioningList);
+                pairResultForProvisionSatellite = provisionSatellite(
+                        notProvisionedSubscriberList);
                 assertFalse(callback.waitUntilResult(1));
                 assertTrue(pairResultForProvisionSatellite.first);
+            } else {
+                logd("provisionSatelliteForSubscriberId: no provisioning list");
+                return false;
             }
-        } finally {
-            if (callback != null) {
-                sSatelliteManager.unregisterForProvisionStateChanged(callback);
-            }
-            revokeSatellitePermission();
         }
+
+        logd("provisionSatelliteForSubscriberId true");
+        return true;
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testDeprovisionSatellite() {
+        logd("testDeprovisionSatellite:");
+        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                registerSubscriberIdProvisionCallback();
+        assertTrue(provisionSatelliteForSubscriberId(callback));
+        deprovisionSatelliteForSubscriberId(callback);
+
+        afterSubscriberIdTest(callback);
     }
 
     /*
@@ -4464,6 +6605,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         if (shouldOverridePointingUiClassName) {
             assertTrue(sMockSatelliteServiceManager.overrideSatellitePointingUiClassName());
         }
@@ -4484,6 +6626,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(errorCode);
         assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         /*
          * Send datagram transfer state should have the following transitions:
@@ -4523,6 +6669,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         SatelliteDatagram datagram = new SatelliteDatagram(sampleText.getBytes());
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         assertTrue(sMockSatelliteServiceManager.overrideSatellitePointingUiClassName());
         sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
         sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
@@ -4543,6 +6690,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(errorCode);
         assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         /*
          * Send datagram transfer state should have the following transitions:
@@ -5086,13 +7237,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             case SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE:
                 satelliteError = SatelliteResult.SATELLITE_RESULT_INVALID_MODEM_STATE;
                 break;
-            case SatelliteManager.SATELLITE_RESULT_MODEM_ERROR:
+            case SATELLITE_RESULT_MODEM_ERROR:
                 satelliteError = SatelliteResult.SATELLITE_RESULT_MODEM_ERROR;
                 break;
             case SatelliteManager.SATELLITE_RESULT_RADIO_NOT_AVAILABLE:
                 satelliteError = SatelliteResult.SATELLITE_RESULT_RADIO_NOT_AVAILABLE;
                 break;
-            case SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED:
+            case SATELLITE_RESULT_REQUEST_NOT_SUPPORTED:
             default:
                 satelliteError = SatelliteResult.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED;
                 break;
@@ -5171,6 +7322,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
 
     static int sTestSubIDForCarrierSatellite;
+    static int sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     static SubscriptionManager sSubscriptionManager;
     static boolean sPreviousSatelliteAttachEnabled;
     static boolean sPreviousSatelliteIsOnlyNtn;
@@ -5197,7 +7349,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void beforeSatelliteForOemTest() {
-        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sNtnOnlySubId = getNtnOnlySubscriptionId();
         sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(SubscriptionManager.class);
         // Get the default subscription values for COLUMN_IS_ONLY_NTN.
@@ -5206,15 +7358,19 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                         SubscriptionManager.IS_ONLY_NTN,
                         false,
                         getContext());
+        logd("beforeSatelliteForOemTest: sPreviousSatelliteIsOnlyNtn=" + sPreviousSatelliteIsOnlyNtn
+                 + ", sNtnOnlySubId=" + sNtnOnlySubId);
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
             // Set user Setting as true
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.IS_ONLY_NTN, String.valueOf(1));
         } finally {
             ui.dropShellPermissionIdentity();
         }
+
+        waitForNtnOnlySubscriptionAvailable();
     }
 
     private void afterSatelliteForCarrierTest() {
@@ -5232,16 +7388,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void afterSatelliteForOemTest() {
+        logd("afterSatelliteForOemTest: sPreviousSatelliteIsOnlyNtn=" + sPreviousSatelliteIsOnlyNtn
+                + ", sNtnOnlySubId=" + sNtnOnlySubId);
+        if (sNtnOnlySubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("afterSatelliteForOemTest: no need to restore");
+            return;
+        }
         // Set user Setting value to previous one.
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
-            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+            sSubscriptionManager.setSubscriptionProperty(sNtnOnlySubId,
                     SubscriptionManager.IS_ONLY_NTN,
                     sPreviousSatelliteIsOnlyNtn ? "1" : "0");
         } finally {
             ui.dropShellPermissionIdentity();
-            sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+            sNtnOnlySubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
         }
     }
 
@@ -5313,8 +7475,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(allowed, result.first);
     }
 
+    private void verifySatelliteNotAllowedErrorReason(int expectedError) {
+        grantSatellitePermission();
+        Pair<Boolean, Integer> result =
+                requestIsCommunicationAllowedForCurrentLocation();
+        assertNotNull(result.second);
+        assertEquals(expectedError, (int) result.second);
+    }
+
     private static void registerTestLocationProvider() {
         requestMockLocationPermission(true);
+        sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
         sLocationManager.addTestProvider(TEST_PROVIDER,
                 new ProviderProperties.Builder().build());
         sLocationManager.setTestProviderEnabled(TEST_PROVIDER, true);
@@ -5353,5 +7524,47 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(true, null, null, null, 0));
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
                 true, true, null, 0, null));
+    }
+
+    private SatelliteReceiverTest setUpSatelliteReceiverTest() {
+        SatelliteReceiverTest receiver = new SatelliteReceiverTest();
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
+        Context context = getContext();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
+                "package"));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
+                "class"));
+        context.registerReceiver(receiver, new IntentFilter(SatelliteReceiver.TEST_INTENT),
+                Context.RECEIVER_EXPORTED);
+        return receiver;
+    }
+
+    private void resetSatelliteReceiverTest(Context context, SatelliteReceiverTest receiver) {
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+        assertTrue(sMockSatelliteServiceManager
+                .setSatelliteSubscriberIdListChangedIntentComponent("reset"));
+        context.unregisterReceiver(receiver);
+    }
+
+    private static void waitForNtnOnlySubscriptionAvailable() {
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        int i = 0;
+        while (i < 10) {
+            List<SubscriptionInfo> subscriptionInfoList = sm.getAllSubscriptionInfoList();
+            for (SubscriptionInfo info : subscriptionInfoList) {
+                if (info.isOnlyNonTerrestrialNetwork()) {
+                    logd("waitForNtnOnlySubscriptionAvailable: NTN only subscription  " + info
+                            + " is available");
+                    return;
+                }
+            }
+            i++;
+            waitFor(500);
+        }
+        fail("NTN only subscription is not available");
     }
 }

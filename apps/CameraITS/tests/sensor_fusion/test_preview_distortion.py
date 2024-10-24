@@ -27,6 +27,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 import preview_processing_utils
 
 _ACCURACY = 0.001
@@ -45,6 +46,7 @@ _GREEN_LIGHT = (80, 255, 80)
 _GREEN_DARK = (0, 190, 0)
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_PREVIEW_MAX_TESTED_AREA = 3840 * 2160
 _RED = (255, 0, 0)
 _VALID_CONTROLLERS = ('arduino', 'external')
 _WIDE_ZOOM = 1
@@ -250,8 +252,9 @@ def get_aruco_corners(image):
                   None if expected ArUco corners are not found.
   """
   # Detect ArUco markers
-  aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-  corners, ids, _ = aruco.detectMarkers(image, aruco_dict)
+  corners, ids, _ = opencv_processing_utils.version_agnostic_detect_markers(
+      image
+  )
 
   logging.debug('corners: %s', corners)
   logging.debug('ids: %s', ids)
@@ -471,7 +474,9 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
 
       # Determine preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id, _ASPECT_RATIO_4_3)
+          cam, self.camera_id,
+          aspect_ratio=_ASPECT_RATIO_4_3,
+          max_tested_area=_PREVIEW_MAX_TESTED_AREA)
       logging.debug('preview_size: %s', preview_size)
 
       # Determine test zoom range

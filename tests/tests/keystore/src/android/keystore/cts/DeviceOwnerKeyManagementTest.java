@@ -43,7 +43,7 @@ import android.text.TextUtils;
 import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -158,6 +158,23 @@ public class DeviceOwnerKeyManagementTest {
         }
         AuthorizationList teeAttestation = attestationRecord.getTeeEnforced();
         assertThat(teeAttestation).isNotNull();
+
+        // The frameworks code (in AndroidKeyStoreKeyPairGeneratorSpi.java) populates device ID
+        // values from one of 3 places, so the same logic needs to be reproduced here so the tests
+        // check what's expected correctly.
+        //
+        // In order of preference, the properties checked are:
+        //
+        // 1) `ro.product.<device-id>_for_attestation`: This should only be set in special cases; in
+        //     particular, AOSP builds for reference devices use a different value than the normal
+        //     builds for the same device (e.g. model of "aosp_raven" instead of "raven").
+        //
+        // 2) `ro.product.vendor.<device-id>`: This property refers to the vendor code, and so is
+        //    retained even in a GSI environment.
+        //
+        // 3) `ro.product.<device-id>`: Note that this property is replaced by a default value when
+        //    running a GSI environment, and so will *not* match the value expected/used by the
+        //    vendor code on the device.
         final String platformReportedBrand =
                 TestUtils.isPropertyEmptyOrUnknown(Build.BRAND_FOR_ATTESTATION)
                 ? Build.BRAND : Build.BRAND_FOR_ATTESTATION;
@@ -178,6 +195,7 @@ public class DeviceOwnerKeyManagementTest {
                 TestUtils.isPropertyEmptyOrUnknown(Build.MODEL_FOR_ATTESTATION)
                 ? Build.MODEL : Build.MODEL_FOR_ATTESTATION;
         assertThat(teeAttestation.getModel()).isEqualTo(platformReportedModel);
+
         assertThat(teeAttestation.getSerialNumber()).isEqualTo(expectedSerial);
         assertThat(teeAttestation.getImei()).isEqualTo(expectedImei);
         assertThat(teeAttestation.getMeid()).isEqualTo(expectedMeid);

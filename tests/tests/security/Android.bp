@@ -40,6 +40,7 @@ android_test {
         "sts-device-util",
         "hamcrest-library",
         "NeneInternal",
+        "CameraPermissionTestLib",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -47,6 +48,8 @@ android_test {
         "android.test.base.stubs.system",
     ],
     java_resources: [
+        ":CameraProxyApp",
+        ":OpenCameraApp",
         ":PackageInstallerTestApp",
     ],
     jni_libs: [
@@ -264,4 +267,28 @@ filegroup {
     srcs: [
         "test-cert-with-1-2-4-in-rotation-history",
     ],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_CertBlockist",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.security.cts.CertBlocklistTest",
+        "android.security.cts.CertBlocklistFileTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_cts_fileintegritymanagertest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.FileIntegrityManagerTest"],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_cts_motioneventtest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.MotionEventTest"],
 }

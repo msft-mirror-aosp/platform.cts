@@ -17,6 +17,7 @@ import logging
 import math
 import os
 
+import cv2
 from mobly import test_runner
 
 import its_base_test
@@ -24,18 +25,14 @@ import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
-_CIRCLE_R = 2
-_CIRCLE_X = 0
-_CIRCLE_Y = 1
-_CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
+
 _MAX_STR = 'max'
 _MIN_STR = 'min'
-_MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
-_MIN_CIRCLE_PTS = 10
 _MIN_RESOLUTION_AREA = 1280*720  # 720P
 _MIN_ZOOM_SCALE_CHART = 0.70  # zoom factor to trigger scaled chart
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -177,6 +174,11 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       smallest_common_video_quality = common_preview_size_info.smallest_quality
 
       # Start video recording over minZoom and 2x Zoom
+      all_aruco_ids = []
+      all_aruco_corners = []
+      images = []
+      img_name_stem = ''
+      recording_size = (0, 0)
       for quality_profile_id_pair in supported_video_qualities:
         quality = quality_profile_id_pair.split(':')[0]
         profile_id = quality_profile_id_pair.split(':')[-1]
@@ -195,9 +197,10 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             logging.debug('Camera focal length: %.2f', cap_fl)
 
             # Determine width and height of video
-            size = smallest_common_size.split('x')
-            width = int(size[0])
-            height = int(size[1])
+            size_to_parse = smallest_common_size.split('x')
+            width = int(size_to_parse[0])
+            height = int(size_to_parse[1])
+            recording_size = (width, height)
 
             # Start video recording
             video_file_name = _do_video_recording(
@@ -208,19 +211,38 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                 video_processing_utils.extract_last_key_frame_from_recording(
                     log_path, video_file_name))
 
-            # Find the center circle in video img
+            # Find Aruco markers in video img
             img_name_stem = os.path.join(log_path, 'video_zoomRatio')
             video_img_name = (
-                f'{img_name_stem}_{z:.2f}_{quality}_circle.png')
-            circle = zoom_capture_utils.find_center_circle(
-                video_img, video_img_name, [width, height],
-                z, z_min, circlish_rtol=_CIRCLISH_RTOL,
-                min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
+                f'{img_name_stem}_{z:.2f}_{quality}_ArUco_markers.png')
+            corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+                video_img, video_img_name, aruco_marker_count=1
+            )
+            all_aruco_corners.append([corner[0] for corner in corners])
+            all_aruco_ids.append([id[0] for id in ids])
+            images.append(cv2.cvtColor(video_img, cv2.COLOR_RGB2BGR))
+            video_test_data[i] = zoom_capture_utils.ZoomTestData(
+                result_zoom=z,
+                radius_tol=_RADIUS_RTOL,
+                offset_tol=_OFFSET_TOL,
+                focal_length=cap_fl
+            )
             logging.debug('Recorded video name: %s', video_file_name)
 
-            video_test_data[i] = {'z': z, 'circle': circle}
+      # Find ArUco markers in all captures and update test data
+      zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+          video_test_data, all_aruco_ids, all_aruco_corners, recording_size)
+      # Mark ArUco marker center and image center
+      opencv_processing_utils.mark_zoom_images(
+          images, [v for v in video_test_data.values()],
+          f'{img_name_stem}_video')
 
       # Start preview recording over minZoom and maxZoom
+      all_aruco_ids = []
+      all_aruco_corners = []
+      images = []
+      img_name_stem = ''
+      recording_size = (0, 0)
       for size in supported_preview_sizes:
         if size == smallest_common_size:
           for i, z in enumerate(zoom_ratios_to_be_tested):
@@ -231,6 +253,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             # Define width and height from size
             width = int(size.split('x')[0])
             height = int(size.split('x')[1])
+            recording_size = (width, height)
 
             # Get key frames from the preview recording
             preview_img = (
@@ -251,38 +274,67 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             else:
               img_name_stem = os.path.join(log_path, 'rear_preview')
 
-            # Find the center circle in preview img
+            # Find ArUco markers in preview img
             preview_img_name = (
-                f'{img_name_stem}_zoomRatio_{z:.2f}_{size}_circle.png')
-            circle = zoom_capture_utils.find_center_circle(
-                preview_img, preview_img_name, [width, height],
-                z, z_min, circlish_rtol=_CIRCLISH_RTOL,
-                min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
-
-            preview_test_data[i] = {'z': z, 'circle': circle}
+                f'{img_name_stem}_zoomRatio_{z:.2f}_{size}_ArUco_marker.png')
+            corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+                preview_img, preview_img_name, aruco_marker_count=1
+            )
+            all_aruco_corners.append([corner[0] for corner in corners])
+            all_aruco_ids.append([id[0] for id in ids])
+            images.append(cv2.cvtColor(preview_img, cv2.COLOR_RGB2BGR))
+            preview_test_data[i] = zoom_capture_utils.ZoomTestData(
+                result_zoom=z,
+                radius_tol=_RADIUS_RTOL,
+                offset_tol=_OFFSET_TOL,
+                focal_length=cap_fl
+            )
+      # Find ArUco markers in all captures and update test data
+      zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+          preview_test_data, all_aruco_ids, all_aruco_corners, recording_size)
+      # Mark ArUco marker center and image center
+      opencv_processing_utils.mark_zoom_images(
+          images, [v for v in preview_test_data.values()],
+          f'{img_name_stem}_preview')
 
       # Compare size and center of preview's circle to video's circle
       preview_radius = {}
       video_radius = {}
       z_idx = {}
       zoom_factor = {}
-      preview_radius[_MIN_STR] = (preview_test_data[0]['circle'][_CIRCLE_R])
-      video_radius[_MIN_STR] = (video_test_data[0]['circle'][_CIRCLE_R])
-      preview_radius[_MAX_STR] = (preview_test_data[1]['circle'][_CIRCLE_R])
-      video_radius[_MAX_STR] = (video_test_data[1]['circle'][_CIRCLE_R])
+      preview_radius[_MIN_STR] = (
+          opencv_processing_utils.get_aruco_marker_side_length(
+              preview_test_data[0].aruco_corners)
+      )
+      video_radius[_MIN_STR] = (
+          opencv_processing_utils.get_aruco_marker_side_length(
+              video_test_data[0].aruco_corners)
+      )
+      preview_radius[_MAX_STR] = (
+          opencv_processing_utils.get_aruco_marker_side_length(
+              preview_test_data[1].aruco_corners)
+      )
+      video_radius[_MAX_STR] = (
+          opencv_processing_utils.get_aruco_marker_side_length(
+              video_test_data[1].aruco_corners)
+      )
       z_idx[_MIN_STR] = (
           preview_radius[_MIN_STR] / video_radius[_MIN_STR])
       z_idx[_MAX_STR] = (
           preview_radius[_MAX_STR] / video_radius[_MAX_STR])
       z_comparison = z_idx[_MAX_STR] / z_idx[_MIN_STR]
-      zoom_factor[_MIN_STR] = preview_test_data[0]['z']
-      zoom_factor[_MAX_STR] = preview_test_data[1]['z']
+      zoom_factor[_MIN_STR] = preview_test_data[0].result_zoom
+      zoom_factor[_MAX_STR] = preview_test_data[1].result_zoom
 
-      # Compare preview circle's center with video circle's center
-      preview_circle_x = preview_test_data[1]['circle'][_CIRCLE_X]
-      video_circle_x = video_test_data[1]['circle'][_CIRCLE_X]
-      preview_circle_y = preview_test_data[1]['circle'][_CIRCLE_Y]
-      video_circle_y = video_test_data[1]['circle'][_CIRCLE_Y]
+      # Compare preview ArUco marker center with video ArUco marker center
+      preview_circle_x, preview_circle_y = (
+          opencv_processing_utils.get_aruco_center(
+              preview_test_data[1].aruco_corners)
+      )
+      video_circle_x, video_circle_y = (
+          opencv_processing_utils.get_aruco_center(
+              video_test_data[1].aruco_corners)
+      )
       circles_offset_x = math.isclose(preview_circle_x, video_circle_x,
                                       abs_tol=_OFFSET_TOL)
       circles_offset_y = math.isclose(preview_circle_y, video_circle_y,

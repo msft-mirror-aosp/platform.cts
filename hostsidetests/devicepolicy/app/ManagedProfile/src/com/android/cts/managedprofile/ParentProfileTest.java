@@ -19,7 +19,6 @@ package com.android.cts.managedprofile;
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
-import android.app.admin.flags.Flags;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -107,7 +106,7 @@ public class ParentProfileTest extends BaseManagedProfileTest {
         SUPPORTED_APIS.add("getResources");
         SUPPORTED_APIS.add("isMtePolicyEnforced");
         SUPPORTED_APIS.add("setSystemSetting");
-        if (Flags.dmrhSetAppRestrictions()) SUPPORTED_APIS.add("setApplicationRestrictions");
+        SUPPORTED_APIS.add("setApplicationRestrictions");
     }
 
     private static final String LOG_TAG = "ParentProfileTest";

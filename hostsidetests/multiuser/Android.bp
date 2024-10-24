@@ -38,3 +38,12 @@ java_test_host {
         "general-tests",
     ],
 }
+
+java_library_host {
+    name: "cts-multi-user-test-utils",
+    srcs: ["src/android/host/multiuser/BaseMultiUserTest.java"],
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+    ],
+}

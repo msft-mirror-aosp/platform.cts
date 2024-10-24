@@ -65,3 +65,13 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsWidgetTestCases_seekbar_and_numberpicker",
+    base: "CtsWidgetTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.widget.cts.SeekBarTest",
+        "android.widget.cts.NumberPickerTest",
+    ],
+}

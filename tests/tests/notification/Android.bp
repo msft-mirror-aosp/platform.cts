@@ -71,3 +71,10 @@ android_test {
     target_sdk_version: "current",
     min_sdk_version: "34",
 }
+
+test_module_config {
+    name: "CtsNotificationTestCases_notification",
+    base: "CtsNotificationTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

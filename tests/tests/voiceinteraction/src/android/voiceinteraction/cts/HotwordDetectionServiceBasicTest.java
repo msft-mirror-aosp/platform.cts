@@ -59,6 +59,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -816,6 +817,8 @@ public class HotwordDetectionServiceBasicTest {
     @RequiresDevice
     public void testHotwordDetectionService_createDetectorTwiceQuickly_triggerSuccess()
             throws Throwable {
+        // TODO(b/367437694): have @RequiresDevice annotation work for Wear
+        assumeFalse(isWatchEmulator());
         // Create SoftwareHotwordDetector
         HotwordDetector softwareHotwordDetector = createSoftwareHotwordDetector(/* useOnFailure= */
                 false);
@@ -1649,6 +1652,8 @@ public class HotwordDetectionServiceBasicTest {
     @Test
     @RequiresDevice
     public void testHotwordDetectionService_concurrentCapture() throws Throwable {
+        // TODO(b/367437694): have @RequiresDevice annotation work for Wear
+        assumeFalse(isWatchEmulator());
         // Create SoftwareHotwordDetector
         HotwordDetector softwareHotwordDetector = createSoftwareHotwordDetector(/* useOnFailure= */
                 false);
@@ -1702,6 +1707,8 @@ public class HotwordDetectionServiceBasicTest {
     @Test
     @RequiresDevice
     public void testMultipleDetectors_onDetectFromDspAndMic_success() throws Throwable {
+        // TODO(b/367437694): have @RequiresDevice annotation work for Wear
+        assumeFalse(isWatchEmulator());
         assumeTrue("Not support multiple hotword detectors",
                 Helper.isEnableMultipleDetectors());
 
@@ -2350,7 +2357,15 @@ public class HotwordDetectionServiceBasicTest {
         return statusRef.get();
     }
 
-    private boolean isWatch() {
+    private static boolean isWatch() {
         return sPkgMgr.hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+    private static boolean isEmulator() {
+        return SystemProperties.get("ro.hardware").contains("cutf_cvm");
+    }
+
+    private static boolean isWatchEmulator() {
+        return isWatch() && isEmulator();
     }
 }

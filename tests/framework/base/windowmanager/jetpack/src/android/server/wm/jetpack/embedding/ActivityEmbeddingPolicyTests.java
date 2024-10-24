@@ -19,7 +19,6 @@ package android.server.wm.jetpack.embedding;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.server.wm.jetpack.second.Components.PORTRAIT_ACTIVITY;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
 
@@ -34,7 +33,6 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.NestedShellPermission;
 import android.server.wm.RotationSession;
 import android.server.wm.WindowManagerState;
-import android.view.Display;
 import android.view.WindowManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -101,7 +99,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
         assumeTrue(getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE);
 
         // Launch a fixed-portrait activity
-        startActivityOnDisplay(Display.DEFAULT_DISPLAY, PORTRAIT_ACTIVITY);
+        startActivityOnDisplay(getMainDisplayId(), PORTRAIT_ACTIVITY);
 
         // The display should be remained in landscape.
         assertEquals("The display should be remained in landscape", ORIENTATION_LANDSCAPE,
@@ -110,7 +108,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
 
     private Configuration getDisplayConfiguration() {
         mWmState.computeState();
-        WindowManagerState.DisplayContent display = mWmState.getDisplay(DEFAULT_DISPLAY);
+        WindowManagerState.DisplayContent display = mWmState.getDisplay(getMainDisplayId());
         return display.getFullConfiguration();
     }
 }

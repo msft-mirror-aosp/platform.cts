@@ -32,8 +32,6 @@ java_test_host {
     ],
     test_suites: [
         "cts",
-        "cts-shim-host-lib",
-        "tradefed",
     ],
     data: [
         ":VideoEncodingMinApp",

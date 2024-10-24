@@ -42,6 +42,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 
@@ -57,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@FrameworkSpecificTest
 @Presubmit
 @SmallTest
 @RequiresDevice
@@ -571,6 +573,31 @@ public class MediaCasTest {
             }
             if (descrambler != null) {
                 descrambler.close();
+            }
+        }
+    }
+
+    /**
+     * Test updateResourcePriority API.
+     */
+    @Test
+    public void testUpdateResourcePriority() throws Exception {
+        MediaCas mediaCas = null;
+        if (!MediaUtils.check(mIsAtLeastS, "test needs Android 12")) return;
+
+        try {
+            mediaCas =
+                    new MediaCas(
+                            InstrumentationRegistry.getContext(),
+                            sClearKeySystemId,
+                            null,
+                            android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+
+            assertTrue(mediaCas.updateResourcePriority(100, 20));
+
+        } finally {
+            if (mediaCas != null) {
+                mediaCas.close();
             }
         }
     }

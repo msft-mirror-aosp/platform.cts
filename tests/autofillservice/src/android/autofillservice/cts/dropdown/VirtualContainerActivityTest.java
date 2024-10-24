@@ -578,11 +578,18 @@ public class VirtualContainerActivityTest
         // Trigger auto-fill.
         focusToUsernameExpectNoWindowEvent();
         sReplier.getNextFillRequest();
-
         // Fill in some stuff
         mActivity.mUsername.setText("foo");
+
+        // Add a delay to prevent fill request triggers when focusing on
+        // password field
+        mUiBot.waitForIdleSync();
+
         focusToPasswordExpectNoWindowEvent();
         mActivity.mPassword.setText("bar");
+
+        // Add a delay to prevent save trigger happens too fast
+        mUiBot.waitForIdleSync();
 
         // Trigger save.
         switch (commitType) {
