@@ -36,6 +36,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
@@ -69,6 +70,8 @@ public class DecoderTestAacFormat {
      */
     @Test
     @CddTest(requirements = {"5.1.2/C-2-1", "5.1.2/C-7-1", "5.1.2/C-7-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_MAX_OUTPUT_CHANNEL_COUNT",
+            "android.media.MediaFormat#KEY_CHANNEL_MASK"})
     public void testHeAacM4aMultichannelDownmix() throws Exception {
         Log.i(TAG, "START testDecodeHeAacMcM4a");
 
