@@ -36,6 +36,8 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Before;
@@ -66,6 +68,11 @@ public class DecoderTestAacDrc {
     /**
      * Verify correct decoding of MPEG-4 AAC with output level normalization to -23dBFS.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcLevelM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -81,6 +88,11 @@ public class DecoderTestAacDrc {
      * Verify correct decoding of MPEG-4 AAC with Dynamic Range Control (DRC) metadata.
      * Fully apply light compression DRC (default settings).
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcFullM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -94,6 +106,11 @@ public class DecoderTestAacDrc {
      * Verify correct decoding of MPEG-4 AAC with Dynamic Range Control (DRC) metadata.
      * Apply only half of the light compression DRC and normalize to -20dBFS output level.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcHalfM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -109,6 +126,11 @@ public class DecoderTestAacDrc {
      * Verify correct decoding of MPEG-4 AAC with Dynamic Range Control (DRC) metadata.
      * Disable light compression DRC to test if MediaFormat keys reach the decoder.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcOffM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -124,6 +146,11 @@ public class DecoderTestAacDrc {
      * Verify correct decoding of MPEG-4 AAC with Dynamic Range Control (DRC) metadata.
      * Apply heavy compression gains and normalize to -16dBFS output level.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcHeavyM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -139,6 +166,11 @@ public class DecoderTestAacDrc {
      * Test signal limiting (without clipping) of MPEG-4 AAC decoder with the help of DRC metadata.
      * Uses a two channel 248 Hz sine tone at 48 kHz sampling rate for input.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacDrcClipM4a() throws Exception {
         AudioParameter decParams = new AudioParameter();
@@ -151,6 +183,11 @@ public class DecoderTestAacDrc {
      * Test if there is decoder internal clipping of MPEG-4 AAC decoder.
      * Uses a two channel 248 Hz sine tone at 48 kHz sampling rate for input.
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL"})
     @Test
     public void testDecodeAacInternalClipM4a() throws Exception {
         if (!MediaUtils.check(sIsAndroidRAndAbove, "Internal clipping fixed in Android R"))
@@ -171,6 +208,12 @@ public class DecoderTestAacDrc {
     /**
      * Test USAC decoder with different target loudness levels
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_OUTPUT_LOUDNESS"})
     @Test
     public void testDecodeUsacLoudnessM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacLoudnessM4a");
@@ -233,6 +276,12 @@ public class DecoderTestAacDrc {
     /**
      * Verify that the correct output loudness values are returned by the MPEG-4 AAC decoder
      */
+    @CddTest(requirements = {"5.1.2/C-2-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_OUTPUT_LOUDNESS"})
     @Test
     public void testDecodeAacDrcOutputLoudnessM4a() throws Exception {
         Log.v(TAG, "START testDecodeAacDrcOutputLoudnessM4a");
