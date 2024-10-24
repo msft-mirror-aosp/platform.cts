@@ -1260,6 +1260,8 @@ public class TelephonyManagerTest {
                 mTelephonyManager.getSubscriberId();
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            } catch (UnsupportedOperationException ex) {
+                // EAP-AKA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1272,6 +1274,8 @@ public class TelephonyManagerTest {
 
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_GBA_BOOTSTRAP, "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1286,6 +1290,8 @@ public class TelephonyManagerTest {
                         TelephonyManager.APPTYPE_USIM,
                         TelephonyManager.AUTHTYPE_GBA_NAF_KEY_EXTERNAL,
                         "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
