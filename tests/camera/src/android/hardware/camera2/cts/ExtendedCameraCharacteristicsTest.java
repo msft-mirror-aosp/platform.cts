@@ -3432,6 +3432,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     .addRequiredValue(
                             Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
                     .build();
             RequiredMeasurement<Integer> frontCameraHwlLevel = RequiredMeasurement
                     .<Integer>builder()
@@ -3448,6 +3451,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
                     .addRequiredValue(
                             Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.VANILLA_ICE_CREAM,
                             CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
                     .build();
             return new PrimaryCameraHwLevelReq(RequirementConstants.R7_5__H_1_3,
