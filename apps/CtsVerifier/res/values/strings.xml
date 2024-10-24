@@ -1890,6 +1890,7 @@
 
     <string name="wifi_ssid_label">SSID for network</string>
     <string name="wifi_psk_label">Passphrase for network (leave empty for open network)</string>
+    <string name="wifi_psk_label_required">Passphrase for network (required)</string>
     <string name="wifi_start_test_label">Start test</string>
 
     <string name="wifi_status_need_psk">Need a psk network for this test.</string>
