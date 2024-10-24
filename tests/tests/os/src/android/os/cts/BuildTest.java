@@ -33,6 +33,8 @@ import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
 
+import com.google.common.truth.Truth;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -348,15 +350,12 @@ public class BuildTest {
             return;
         }
 
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at least VERSION_CODES.R",
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS >= Build.VERSION_CODES.R);
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at most VERSION.SDK_INT",
-                // we use RESOURCES_SDK_INT to account for active development versions
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS <= Build.VERSION.RESOURCES_SDK_INT);
+        Truth.assertWithMessage(
+                "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in the "
+                        + "CDD for Media Performance Class.").that(
+                Build.VERSION.MEDIA_PERFORMANCE_CLASS).isAnyOf(
+                        // TODO: b/374814872 autogenerate this list.
+                        30, 31, 33, 34, 35);
     }
 
     private void assertNotEmpty(String value) {
