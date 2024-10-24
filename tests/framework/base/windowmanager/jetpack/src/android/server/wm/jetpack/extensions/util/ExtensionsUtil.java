@@ -61,9 +61,6 @@ public class ExtensionsUtil {
      * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
      * Extensions versions</a>.
      */
-    // TODO(b/354597584): Clean up use of Extensions v6 after AE animation customization is
-    // released. Activity Embedding animation customization is the only major feature for v7.
-    public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V6 = 6;
     public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V7 = 7;
     public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V8 = 8;
     public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V9 = 9;
@@ -106,10 +103,8 @@ public class ExtensionsUtil {
             return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V9);
         } else if (Flags.aeBackStackRestore()) {
             return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V8);
-        } else if (Flags.activityEmbeddingAnimationCustomizationFlag()) {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V7);
         } else {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V6);
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V7);
         }
     }
 
