@@ -25,7 +25,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
@@ -40,13 +39,12 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.NonMainlineTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
@@ -133,7 +131,6 @@ public class DevicesForAttributesTest {
     @Test
     public void testListenerRegistration() {
         DevicesForAttributesListener listener = new DevicesForAttributesListener();
-        List<AudioDeviceAttributes> devices;
 
         mAudioManager.addOnDevicesForAttributesChangedListener(
                 MEDIA_ATTR, Executors.newSingleThreadExecutor(), listener);
@@ -143,6 +140,17 @@ public class DevicesForAttributesTest {
         assertFalse("listener should not be called on register", listener.mCalled);
 
         mAudioManager.removeOnDevicesForAttributesChangedListener(listener);
+    }
+
+    @Test
+    public void testListenerRegistrationNoPermission() {
+        // drop MODIFY_AUDIO_ROUTING which is required for addOnDevicesForAttributesChangedListener
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertThrows("addOnDevicesForAttributesChangedListener must throw SE w/o permission",
+                SecurityException.class,
+                () -> mAudioManager.addOnDevicesForAttributesChangedListener(
+                        MEDIA_ATTR, Executors.newSingleThreadExecutor(),
+                        new DevicesForAttributesListener()));
     }
 
     @Test
