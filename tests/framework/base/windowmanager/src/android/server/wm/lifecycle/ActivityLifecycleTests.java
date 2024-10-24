@@ -783,7 +783,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Wait for the first activity to become occluded, or in case of multi-window environments,
         // to be pushed out of their top position.
-        if (secondActivity.isInMultiWindowMode()) {
+        boolean isNonOverlappingMultiWindowMode = isNonOverlappingMultiWindowMode(secondActivity);
+        if (isNonOverlappingMultiWindowMode) {
             waitAndAssertActivityStates(state(recreatingActivity, ON_TOP_POSITION_LOST));
         } else {
             waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
@@ -801,7 +802,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Wait for activity to relaunch and resume
         final List<String> expectedRelaunchSequence;
-        if (secondActivity.isInMultiWindowMode()) {
+        if (isNonOverlappingMultiWindowMode) {
             // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
             expectedRelaunchSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
                     ON_PAUSE, ON_STOP, ON_DESTROY, ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME);
@@ -857,7 +858,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Wait for the first activity to become occluded, or in case of multi-window environments,
         // to be pushed out of their top position.
-        if (secondActivity.isInMultiWindowMode()) {
+        boolean isNonOverlappingMultiWindowMode = isNonOverlappingMultiWindowMode(secondActivity);
+        if (isNonOverlappingMultiWindowMode) {
             waitAndAssertActivityStates(state(singleTopActivity, ON_TOP_POSITION_LOST));
         } else {
             waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
@@ -872,7 +874,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Verify that the first activity was restarted, new intent was delivered and resumed again
         final List<String> expectedSequence;
-        if (secondActivity.isInMultiWindowMode()) {
+        if (isNonOverlappingMultiWindowMode) {
             // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
             expectedSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
                     ON_TOP_POSITION_GAINED);
