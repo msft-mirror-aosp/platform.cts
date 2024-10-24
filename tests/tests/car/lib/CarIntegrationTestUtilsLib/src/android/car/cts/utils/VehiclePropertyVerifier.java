@@ -138,6 +138,10 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
 
+    private static final CarPropertyValueCallback FAKE_CALLBACK = new CarPropertyValueCallback(
+            /* propertyName= */ "", new int[]{}, /* totalCarPropertyValuesPerAreaId= */ 0,
+            /* timeoutMillis= */ 0);
+
     private static Class<?> sExceptionClassOnGet;
     private static Class<?> sExceptionClassOnSet;
 
@@ -623,6 +627,32 @@ public class VehiclePropertyVerifier<T> {
                                     + " permissions.",
                             SecurityException.class,
                             () -> verifyGetPropertiesAsync());
+
+                    // If the caller only has write permission, registerCallback throws
+                    // SecurityException.
+                    assertThrows(
+                                mPropertyName
+                                        + " - property ID: "
+                                        + mPropertyId
+                                        + " should not be able to be listened to without read"
+                                        + " permission.",
+                                SecurityException.class,
+                                () ->  mCarPropertyManager.registerCallback(
+                                        FAKE_CALLBACK, mPropertyId, 0f));
+
+                    if (isAtLeastV() && Flags.variableUpdateRate()) {
+                        // For the new API, if the caller does not read permission, it throws
+                        // SecurityException.
+                        assertThrows(
+                                mPropertyName
+                                        + " - property ID: "
+                                        + mPropertyId
+                                        + " should not be able to be listened to without read"
+                                        + " permission.",
+                                SecurityException.class,
+                                () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId,
+                                        areaId, FAKE_CALLBACK));
+                    }
                 }, writePermissions.toArray(new String[0]));
     }
 
@@ -1373,7 +1403,9 @@ public class VehiclePropertyVerifier<T> {
         if ((Flags.areaIdConfigAccess() ? carPropertyConfig.getAreaIdConfigs().get(0).getAccess()
                 : carPropertyConfig.getAccess())
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
-            verifyCallbackFails();
+            // This means we specify read permission for one property, but the OEM specify it as
+            // write-only. This will only happen for properties that we allow READ_WRITE or WRITE.
+            // We currently do not have such system property.
             return;
         }
         int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
@@ -1408,23 +1440,6 @@ public class VehiclePropertyVerifier<T> {
                 }
             }
         }
-    }
-
-    private void verifyCallbackFails() {
-        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
-        long timeoutMillis = getRegisterCallbackTimeoutMillis(mChangeMode,
-                carPropertyConfig.getMinSampleRate());
-
-        CarPropertyValueCallback carPropertyValueCallback = new CarPropertyValueCallback(
-                mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
-        assertThrows(
-                mPropertyName
-                        + " is a write_only property so registerCallback should throw an"
-                        + " IllegalArgumentException.",
-                IllegalArgumentException.class,
-                () -> mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
-                    carPropertyConfig.getMaxSampleRate()));
     }
 
     private void verifyAccess_isSubsetOfOtherAccess(int subAccess, int superAccess) {
@@ -2050,12 +2065,6 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        int updatesPerAreaId = getUpdatesPerAreaId(mChangeMode);
-        long timeoutMillis = getRegisterCallbackTimeoutMillis(mChangeMode,
-                carPropertyConfig.getMinSampleRate());
-        CarPropertyValueCallback carPropertyValueCallback = new CarPropertyValueCallback(
-                mPropertyName, carPropertyConfig.getAreaIds(), updatesPerAreaId, timeoutMillis);
-
         // We expect a return value of false and not a SecurityException thrown.
         // This is because registerCallback first tries to get the CarPropertyConfig for the
         // property, but since no permissions have been granted it can't find the CarPropertyConfig,
@@ -2066,9 +2075,20 @@ public class VehiclePropertyVerifier<T> {
                             + mPropertyId
                             + " should not be able to be listened to without permissions.")
                 .that(
-                        mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
-                                carPropertyConfig.getMaxSampleRate()))
+                        mCarPropertyManager.registerCallback(FAKE_CALLBACK, mPropertyId, 0f))
                 .isFalse();
+
+        if (isAtLeastV() && Flags.variableUpdateRate()) {
+            // For the new API, if the caller does not have read and write permission, it throws
+            // SecurityException.
+            assertThrows(
+                    mPropertyName
+                            + " - property ID: "
+                            + mPropertyId
+                            + " should not be able to be listened to without permissions.",
+                    SecurityException.class,
+                    () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId, FAKE_CALLBACK));
+        }
     }
 
     private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
