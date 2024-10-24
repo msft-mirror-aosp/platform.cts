@@ -1290,6 +1290,18 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mCollector.expectLessOrEqual("Version too long: " + version, MAX_VERSION_LENGTH,
                         version.length());
             }
+
+            // Verify COLOR_CORRECTION_AVAILABLE_MODES is populated if color correction
+            // mode is supported
+            if (Flags.colorTemperature()) {
+                List<CaptureRequest.Key<?>> availableRequestKeys =
+                        c.getAvailableCaptureRequestKeys();
+                if (availableRequestKeys.contains(CaptureRequest.COLOR_CORRECTION_MODE)) {
+                    mCollector.expectNotNull("COLOR_CORRECTION_AVAILABLE_MODES must be advertised"
+                            + " if COLOR_CORRECTION_MODE is supported",
+                            c.get(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES));
+                }
+            }
         }
     }
 
