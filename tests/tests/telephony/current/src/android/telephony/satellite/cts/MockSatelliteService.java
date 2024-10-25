@@ -308,9 +308,9 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     @Override
-    public void enableCellularModemWhileSatelliteModeIsOn(
+    public void enableTerrestrialNetworkScanWhileSatelliteModeIsOn(
             boolean enabled, @NonNull IIntegerConsumer errorCallback) {
-        logd("enableCellularModemWhileSatelliteModeIsOn: enabled=" + enabled);
+        logd("enableTerrestrialNetworkScanWhileSatelliteModeIsOn: enabled=" + enabled);
         runWithExecutor(() -> errorCallback.accept(mEnableCellularScanningErrorCode));
     }
 

@@ -197,10 +197,7 @@ public class VerifierServiceTest {
         } catch (IllegalArgumentException e) {
             // ignored
         }
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mPackageInstaller.setVerificationPolicy(mDefaultPolicy),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
+        setDefaultVerificationPolicy(mDefaultPolicy);
         setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
                 mRequestTimeoutMillis);
         setTimeoutValueInDeviceConfig(PROPERTY_VERIFIER_CONNECTION_TIMEOUT_MILLIS,
@@ -208,21 +205,16 @@ public class VerifierServiceTest {
     }
 
     private int getDefaultVerificationPolicy() {
-        return SystemUtil.runWithShellPermissionIdentity(
-                () -> mPackageInstaller.getVerificationPolicy(),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
+        String policyStr = SystemUtil.runShellCommand("pm get-verification-policy --user "
+                + ActivityManager.getCurrentUser()).trim();
+        return Integer.parseInt(policyStr);
     }
 
     private void setDefaultVerificationPolicy(
             @PackageInstaller.VerificationPolicy int policy) {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    assertThat(mPackageInstaller.setVerificationPolicy(policy)).isTrue();
-                    assertThat(mPackageInstaller.getVerificationPolicy()).isEqualTo(policy);
-                },
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
+        SystemUtil.runShellCommand("pm set-verification-policy " + policy + " --user "
+                + ActivityManager.getCurrentUser());
+        assertThat(getDefaultVerificationPolicy()).isEqualTo(policy);
     }
 
     @Test
@@ -524,15 +516,34 @@ public class VerifierServiceTest {
     @Test
     @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testSetVerificationPolicyFails() throws Exception {
-        // set without permission
+        // Test without permission
         expectThrows(SecurityException.class,
                 () -> mPackageInstaller.setVerificationPolicy(
                         VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
-        // set an invalid value
-        assertThat(SystemUtil.runWithShellPermissionIdentity(
-                () -> mPackageInstaller.setVerificationPolicy(-1),
+        // Test with permission
+        SystemUtil.runWithShellPermissionIdentity(
+                // This throws because the system isn't connected to a verifier
+                () -> expectThrows(IllegalStateException.class,
+                        () -> mPackageInstaller.setVerificationPolicy(
+                                VERIFICATION_POLICY_BLOCK_FAIL_CLOSED)),
                 android.Manifest.permission.VERIFICATION_AGENT
-        )).isEqualTo(false);
+        );
+        // Let the system connect to a verifier
+        installPackageWithAdb(VERIFIER_APP_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+        // Test with permission again
+        SystemUtil.runWithShellPermissionIdentity(
+                // This throws because the caller isn't the verifier
+                () -> expectThrows(IllegalStateException.class,
+                        () -> mPackageInstaller.setVerificationPolicy(
+                                VERIFICATION_POLICY_BLOCK_FAIL_CLOSED)),
+                android.Manifest.permission.VERIFICATION_AGENT
+        );
+        // Setting an invalid policy with shell command should fail
+        int invalidPolicy = 100;
+        assertThat(SystemUtil.runShellCommand("pm set-verification-policy " + invalidPolicy
+                + " --user " + ActivityManager.getCurrentUser())).startsWith("Failure");
+        assertThat(getDefaultVerificationPolicy()).isEqualTo(mDefaultPolicy);
     }
 
     @Test
@@ -548,33 +559,21 @@ public class VerifierServiceTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
-    public void testVerificationSessionAPIsThrowAfterFinish() throws Exception {
+    public void testVerificationSessionAPIsThrowsForNonVerifier() throws Exception {
         assertInstallPackageWithSession(
                 EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
         VerificationSession session =
                 mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> expectThrows(IllegalStateException.class,
-                        () -> session.extendTimeRemaining(100)),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> expectThrows(IllegalStateException.class,
-                        () -> session.setVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN)),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> expectThrows(IllegalStateException.class,
-                        () -> session.reportVerificationIncomplete(
-                                VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE)),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
+        expectThrows(IllegalStateException.class,
+                () -> session.extendTimeRemaining(100));
+        expectThrows(IllegalStateException.class,
+                () -> session.setVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
+        expectThrows(IllegalStateException.class,
+                () -> session.reportVerificationIncomplete(
+                        VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE));
         VerificationStatus status = new VerificationStatus.Builder().build();
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> expectThrows(IllegalStateException.class,
-                        () -> session.reportVerificationComplete(status)),
-                android.Manifest.permission.VERIFICATION_AGENT
-        );
+        expectThrows(IllegalStateException.class,
+                () -> session.reportVerificationComplete(status));
     }
 
     @Test
