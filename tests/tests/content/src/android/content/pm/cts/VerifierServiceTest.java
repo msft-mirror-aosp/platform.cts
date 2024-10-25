@@ -81,6 +81,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 @AppModeNonSdkSandbox
+@RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
 public class VerifierServiceTest {
     private static final String VERIFIER_APP_PACKAGE_NAME = "com.android.cts.testverifierapp";
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
@@ -218,7 +219,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testInstallSuccess() throws Exception {
         assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
         assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
@@ -242,7 +242,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testInstallSuccessWithDynamicLib() throws Exception {
         assertInstallPackageWithSession(EMPTY_APP_APK_DECLARING_LIBRARY, EMPTY_APP_PACKAGE_NAME);
         VerificationSession session =
@@ -255,7 +254,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testInstallSuccessWithSdkLib() throws Exception {
         assertInstallPackageWithSession(
                 EMPTY_APP_APK_DECLARING_SDK_LIBRARY, EMPTY_APP_PACKAGE_NAME);
@@ -270,7 +268,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testInstallSuccessWithStaticLib() throws Exception {
         assertInstallPackageWithSession(
                 EMPTY_APP_APK_DECLARING_STATIC_LIBRARY, EMPTY_APP_PACKAGE_NAME);
@@ -290,7 +287,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testSessionAbandon() throws Exception {
         PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL);
@@ -305,7 +301,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierCrashWithPolicyNone() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the crash version of the verifier
@@ -315,21 +310,18 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierCrashWithPolicyOpen() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
         assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierCrashWithPolicyWarning() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
         assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierCrashWithPolicyClosed() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         // Install the crash version of the verifier
@@ -343,7 +335,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierRejectWithPolicyNone() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the reject version of the verifier
@@ -356,7 +347,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierRejectWithPolicyOpen() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
@@ -371,7 +361,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierRejectWithPolicyWarning() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
@@ -385,7 +374,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierRejectPolicyClosed() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
@@ -399,7 +387,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierTimeoutPolicyNone() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
@@ -407,7 +394,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierTimeoutPolicyOpen() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
         installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
@@ -415,7 +401,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierTimeoutPolicyWarning() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
         installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
@@ -423,7 +408,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierTimeoutPolicyClosed() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
@@ -436,7 +420,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteUnknownPolicyNone() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the incomplete-unknown version of the verifier
@@ -446,7 +429,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteUnknownPolicyOpen() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
@@ -454,7 +436,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteUnknownPolicyWarning() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
@@ -462,7 +443,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteUnknownPolicyClosed() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
@@ -475,7 +455,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteNetworkUnavailablePolicyNone() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the incomplete-unknown version of the verifier
@@ -485,7 +464,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteNetworkUnavailablePolicyOpen() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
@@ -493,7 +471,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteNetworkUnavailablePolicyWarning() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
@@ -501,7 +478,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierIncompleteNetworkUnavailablePolicyClosed() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
@@ -514,7 +490,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testSetVerificationPolicyFails() throws Exception {
         // Test without permission
         expectThrows(SecurityException.class,
@@ -547,7 +522,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerifierOverridingPolicy() throws Exception {
         // Set the default policy to closed
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
@@ -558,7 +532,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testVerificationSessionAPIsThrowsForNonVerifier() throws Exception {
         assertInstallPackageWithSession(
                 EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
@@ -577,7 +550,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testAdbInstallBypassesVerifier() {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
@@ -585,7 +557,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testAdbInstallForcesVerifier() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
@@ -595,7 +566,6 @@ public class VerifierServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testUpdateVerifierBypassesVerifier() throws Exception {
         setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
         installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
