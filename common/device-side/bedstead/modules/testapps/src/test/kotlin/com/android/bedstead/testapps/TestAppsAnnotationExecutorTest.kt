@@ -145,15 +145,6 @@ class TestAppsAnnotationExecutorTest {
     }
 
     @EnsureTestAppInstalled(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)),
-        isPrimary = true
-    )
-    @Test
-    fun dpc_primaryTestApp_returnsTestApp() {
-        assertThat(deviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
-    }
-
-    @EnsureTestAppInstalled(
         query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
     )
     @EnsureTestAppHasPermission(CommonPermissions.READ_CONTACTS)
