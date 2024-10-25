@@ -3419,4 +3419,21 @@ public abstract class ActivityManagerTestBase {
     protected int getMainDisplayId() {
         return mUserHelper.getMainDisplayId();
     }
+
+    /**
+     * Checks whether the device has non-overlapping multitasking feature enabled.
+     *
+     * When this is true, we expect the Task to not occlude other Task below it,
+     * which means both Tasks can be resumed and visible.
+     */
+    protected boolean isNonOverlappingMultiWindowMode(Activity activity) {
+        if (!activity.isInMultiWindowMode()) {
+            return false;
+        }
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // Automotive SplitScreen Multitasking devices overlap the windows.
+            return false;
+        }
+        return true;
+    }
 }
