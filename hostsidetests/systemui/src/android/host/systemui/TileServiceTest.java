@@ -14,9 +14,8 @@
 
 package android.host.systemui;
 
-import com.android.tradefed.util.RunUtil;
-
 import com.android.compatibility.common.util.ApiTest;
+import com.android.tradefed.util.RunUtil;
 
 /**
  * Tests the lifecycle of a TileService by adding/removing it and opening/closing
@@ -201,23 +200,28 @@ public class TileServiceTest extends BaseTileServiceTest {
         addTile();
         // Wait for the tile to be added.
         assertTrue(waitFor("onTileAdded"));
+        clearLogcat();
 
         // Open the quick settings and make sure the tile gets a chance to listen.
         openSettings();
         assertTrue(waitFor("onStartListening"));
+        clearLogcat();
 
         // Set the pending intent with a valid activity
         setActivityForLaunch();
         assertTrue(waitFor("handleSetPendingIntent"));
+        clearLogcat();
         RunUtil.getDefault().sleep(500);
 
         // Collapse the shade and make sure the listening ends.
         collapse();
         assertTrue(waitFor("onStopListening"));
+        clearLogcat();
 
         // Open the quick settings and make sure the tile gets a chance to listen.
         openSettings();
         assertTrue(waitFor("onStartListening"));
+        clearLogcat();
 
         // Click on the tile and verify the onClick is not called.
         clickTile();
