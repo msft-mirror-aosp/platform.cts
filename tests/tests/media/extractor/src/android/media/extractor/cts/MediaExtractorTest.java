@@ -18,6 +18,8 @@ package android.media.extractor.cts;
 
 import static android.media.MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION;
 
+import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_APV;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +43,7 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Display;
 import android.view.Display.HdrCapabilities;
@@ -135,6 +138,19 @@ public class MediaExtractorTest {
         } catch (IOException e) {
             // Expected.
         }
+    }
+
+    @CddTest(requirement = "5.3.8")
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_APV)
+    @Test
+    public void testApvMediaExtractor() throws Exception {
+        TestMediaDataSource dataSource =
+                setDataSource("pattern_640x480_30fps_8213kbps_apv_10bit.mp4");
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("video/apv", mimeType);
     }
 
     private boolean advertisesDolbyVision() {
