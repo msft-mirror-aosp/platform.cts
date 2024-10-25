@@ -977,7 +977,7 @@ public class VehiclePropertyVerifier<T> {
         return null;
     }
 
-    private static boolean isAtLeastU() {
+    public static boolean isAtLeastU() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     }
 
