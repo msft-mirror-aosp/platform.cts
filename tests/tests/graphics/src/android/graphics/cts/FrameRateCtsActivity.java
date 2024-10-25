@@ -273,13 +273,19 @@ public class FrameRateCtsActivity extends Activity {
                 }
             } else if (mApi == Api.SURFACE_CONTROL) {
                 try (SurfaceControl.Transaction transaction = new SurfaceControl.Transaction()) {
-                    if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
-                        transaction
-                                .setFrameRate(mSurfaceControl, frameRate, compatibility);
+                    if (mUseArrVersionApi) {
+                        Surface.FrameRateParams params = createFrameRateParams(
+                                frameRate, compatibility, changeFrameRateStrategy);
+                        transaction.setFrameRate(mSurfaceControl, params);
                     } else {
-                        transaction
-                                .setFrameRate(mSurfaceControl, frameRate, compatibility,
-                                        changeFrameRateStrategy);
+                        if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
+                            transaction
+                                    .setFrameRate(mSurfaceControl, frameRate, compatibility);
+                        } else {
+                            transaction
+                                    .setFrameRate(mSurfaceControl, frameRate, compatibility,
+                                            changeFrameRateStrategy);
+                        }
                     }
                     transaction.apply();
                 }
