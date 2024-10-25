@@ -2824,6 +2824,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
+
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                assertEquals(currentConfig.isClientIsolationEnabled(),
+                        testSoftApConfig.isClientIsolationEnabled());
+            }
         }
     }
 
@@ -3199,7 +3204,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
                 softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
             }
-
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                softApConfigBuilder.setClientIsolationEnabled(true);
+            }
             // Test SoftApConfiguration set and get
             verifySetGetSoftApConfig(softApConfigBuilder.build());
 
@@ -3262,7 +3269,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 softApConfigBuilder.setBridgedModeOpportunisticShutdownEnabled(false);
                 verifySetGetSoftApConfig(softApConfigBuilder.build());
             }
-
         } finally {
             sWifiManager.unregisterSoftApCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
