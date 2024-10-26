@@ -31,7 +31,7 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
     ],
-    data: [
+    device_common_data: [
         ":CtsAbiOverrideTestApp",
     ],
     per_testcase_directory: true,
