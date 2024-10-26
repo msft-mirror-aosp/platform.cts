@@ -849,7 +849,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 new NotificationChannel(
                         UUID.randomUUID().toString(), "name4", IMPORTANCE_MIN);
 
-        Set<String> reservedChannels = new HashSet<>();
         Map<String, NotificationChannel> channelMap = new HashMap<>();
         channelMap.put(channel1.getId(), channel1);
         channelMap.put(channel2.getId(), channel2);
@@ -861,43 +860,20 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mNotificationManager.createNotificationChannel(channel3);
         mNotificationManager.createNotificationChannel(channel4);
 
-        if (Flags.notificationClassification()) {
-            reservedChannels.add(SOCIAL_MEDIA_ID);
-            reservedChannels.add(PROMOTIONS_ID);
-            reservedChannels.add(NEWS_ID);
-            reservedChannels.add(RECS_ID);
-        }
-
         mNotificationManager.deleteNotificationChannel(channel3.getId());
 
         List<NotificationChannel> channels = mNotificationManager.getNotificationChannels();
         for (NotificationChannel nc : channels) {
             assertFalse(channel3.getId().equals(nc.getId()));
-            if (Flags.notificationClassification()) {
-                if (!channelMap.containsKey(nc.getId()) && !reservedChannels.contains(nc.getId())) {
-                    fail("Found extra channel " + nc.getId());
-                }
-                if (reservedChannels.contains(nc.getId())) {
-                    assertThat(nc.getImportance()).isEqualTo(IMPORTANCE_LOW);
-                } else {
-                    compareChannels(channelMap.get(nc.getId()), nc);
-                }
-            } else {
-                if (!channelMap.containsKey(nc.getId())) {
-                    fail("Found extra channel " + nc.getId());
-                }
-                compareChannels(channelMap.get(nc.getId()), nc);
+            if (!channelMap.containsKey(nc.getId())) {
+                fail("Found extra channel " + nc.getId());
             }
+            compareChannels(channelMap.get(nc.getId()), nc);
         }
-        if (Flags.notificationClassification()) {
-            // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
-            // test + 4 system reserved bundle channels
-            assertEquals(8, channels.size());
-        } else {
-            // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
-            // test
-            assertEquals(4, channels.size());
-        }
+
+        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
+        // test
+        assertEquals(4, channels.size());
     }
 
     @Test
