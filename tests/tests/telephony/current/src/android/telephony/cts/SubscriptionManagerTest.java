@@ -472,7 +472,7 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testSubscriptionInfoRecord() {
-        if (!isAutomotive()) return;
+        assumeTrue("Remote SIM is only supported on automotive", isAutomotive());
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
@@ -480,7 +480,8 @@ public class SubscriptionManagerTest {
         final String displayName = "device_name";
         uiAutomation.adoptShellPermissionIdentity();
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
             mSm.removeSubscriptionInfoRecord(uniqueId,
@@ -492,7 +493,8 @@ public class SubscriptionManagerTest {
 
         // Testing permission fail
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             mSm.removeSubscriptionInfoRecord(uniqueId,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);

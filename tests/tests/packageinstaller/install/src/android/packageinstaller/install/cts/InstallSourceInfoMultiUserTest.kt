@@ -23,6 +23,7 @@ import androidx.test.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.users.UserReference
 import com.google.common.truth.Truth.assertThat
 import org.junit.After

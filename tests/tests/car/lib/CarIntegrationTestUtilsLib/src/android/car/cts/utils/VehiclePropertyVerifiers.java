@@ -31,7 +31,6 @@ import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.LocationCharacterization;
-import android.os.Build;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -104,7 +103,7 @@ public class VehiclePropertyVerifiers {
             int propertyId, String readPermission) {
         var builder = getLocationCharacterizationVerifierBuilder(
                 carPropertyManager, propertyId, readPermission);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.requireProperty();
         }
         return builder.build();
@@ -167,7 +166,7 @@ public class VehiclePropertyVerifiers {
      */
     public static VehiclePropertyVerifier<Integer> getHvacTemperatureDisplayUnitsVerifier(
             CarPropertyManager carPropertyManager) {
-        return VehiclePropertyVerifier.newBuilder(
+        VehiclePropertyVerifier.Builder builder = VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_TEMPERATURE_DISPLAY_UNITS,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
@@ -178,8 +177,12 @@ public class VehiclePropertyVerifiers {
                 .requirePropertyValueTobeInConfigArray()
                 .verifySetterWithConfigArrayValues()
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build();
+                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+
+        if (VehiclePropertyVerifier.isAtLeastU()) {
+            builder.addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS);
+        }
+        return builder.build();
     }
 
     /**
@@ -374,7 +377,7 @@ public class VehiclePropertyVerifiers {
      */
     public static VehiclePropertyVerifier<Integer> getHvacFanDirectionVerifier(
             CarPropertyManager carPropertyManager) {
-        return VehiclePropertyVerifier.newBuilder(
+        VehiclePropertyVerifier.Builder builder = VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.HVAC_FAN_DIRECTION,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
                         VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
@@ -429,10 +432,13 @@ public class VehiclePropertyVerifiers {
                                                     hvacFanDirectionAvailableCarPropertyValue
                                                             .getValue()));
                         })
-                .setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
-                .build();
+                .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
+
+        if (VehiclePropertyVerifier.isAtLeastU()) {
+            builder.setAllPossibleUnwritableValues(CAR_HVAC_FAN_DIRECTION_UNWRITABLE_STATES);
+        }
+        return builder.build();
     }
 
     /**

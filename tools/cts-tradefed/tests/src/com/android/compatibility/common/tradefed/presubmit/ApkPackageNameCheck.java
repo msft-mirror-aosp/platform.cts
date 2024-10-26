@@ -29,6 +29,8 @@ import com.android.tradefed.targetprep.PushFilePreparer;
 import com.android.tradefed.targetprep.TestAppInstallSetup;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.InstrumentationTest;
+import com.android.tradefed.testtype.suite.ITestSuite;
+import com.android.tradefed.testtype.suite.params.ModuleParameters;
 import com.android.tradefed.util.AaptParser;
 import com.android.tradefed.util.FileUtil;
 
@@ -46,13 +48,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Class to validate tests Apks in testcases/
- */
+/** Class to validate tests Apks in testcases/ */
 @RunWith(JUnit4.class)
 public class ApkPackageNameCheck {
 
     private static final Set<String> EXCEPTION_LIST = new HashSet<>();
+
     static {
         // TODO: Remove exception when their package have been fixed.
         EXCEPTION_LIST.add("android.app.cts");
@@ -101,8 +102,9 @@ public class ApkPackageNameCheck {
         List<String> errors = new ArrayList<>();
 
         for (File config : listConfigs) {
-            IConfiguration c = ConfigurationFactory.getInstance()
-                    .createConfigurationFromArgs(new String[] {config.getAbsolutePath()});
+            IConfiguration c =
+                    ConfigurationFactory.getInstance()
+                            .createConfigurationFromArgs(new String[] {config.getAbsolutePath()});
             // For each config, we check all the apk it's going to install
             List<File> apkNames = new ArrayList<>();
             List<String> packageListNames = new ArrayList<>();
@@ -114,13 +116,16 @@ public class ApkPackageNameCheck {
                     // Ensure the files requested to be pushed exist.
                     if (prep instanceof FilePusher && ((FilePusher) prep).shouldAppendBitness()) {
                         if (!((FilePusher) prep).shouldAbortOnFailure()) {
-                            errors.add(String.format("Config %s should not disable abort-on-push-failure", config.getName()));
+                            errors.add(
+                                    String.format(
+                                            "Config %s should not disable abort-on-push-failure",
+                                            config.getName()));
                         }
                         for (File f : ((PushFilePreparer) prep).getPushSpecs(null).values()) {
                             String path = f.getPath();
                             File file32 = FileUtil.findFile(config.getParentFile(), path + "32");
                             File file64 = FileUtil.findFile(config.getParentFile(), path + "64");
-                            if (file32 == null || file64 == null) {
+                            if (file32 == null && file64 == null) {
                                 errors.add(
                                         String.format(
                                                 "File %s[32/64] wasn't found in module "
@@ -129,26 +134,52 @@ public class ApkPackageNameCheck {
                                                         + "that it's added in the Android.bp "
                                                         + "file of the module under "
                                                         + "'data_device_bins_both' field.",
-                                                        path, config.getName()));
+                                                path, config.getName()));
                                 continue;
+                            } else if (file32 == null || file64 == null) {
+                                // if either binary is missing, make sure the config
+                                // specifies it in the metadata
+                                List<String> parameters =
+                                        c.getConfigurationDescription()
+                                                .getMetaData(ITestSuite.PARAMETER_KEY);
+                                if (parameters == null
+                                        || !parameters.contains(
+                                                ModuleParameters.NOT_MULTI_ABI.toString())) {
+                                    String missingVersion = file32 == null ? "32" : "64";
+                                    throw new ConfigurationException(
+                                            String.format(
+                                                    "File %s is missing a binary version in module"
+                                                        + " dependencies while it's expected to be"
+                                                        + " pushed as part of %s. Make  sure that"
+                                                        + " it's added in the Android.bp file of"
+                                                        + " the module under"
+                                                        + " 'data_device_bins_both' field or that"
+                                                        + " the module specifies the parameter"
+                                                        + " 'not_multi_abi'. Missing version: %s",
+                                                    path, config.getName(), missingVersion));
+                                }
                             }
                         }
                     } else if (prep instanceof PushFilePreparer) {
                         if (!((PushFilePreparer) prep).shouldAbortOnFailure()) {
-                            errors.add(String.format("Config %s should not disable abort-on-push-failure", config.getName()));
+                            errors.add(
+                                    String.format(
+                                            "Config %s should not disable abort-on-push-failure",
+                                            config.getName()));
                         }
                         for (File f : ((PushFilePreparer) prep).getPushSpecs(null).values()) {
                             String path = f.getPath();
                             // Use findFiles to also match top-level dir, which is a valid push spec
-                            Set<String> toBePushed = FileUtil.findFiles(config.getParentFile(),
-                                                                        path);
+                            Set<String> toBePushed =
+                                    FileUtil.findFiles(config.getParentFile(), path);
                             if (toBePushed.isEmpty()) {
                                 errors.add(
                                         String.format(
-                                                "File %s wasn't found in module dependencies "
-                                                        + "while it's expected to be pushed "
-                                                        + "as part of %s. Make sure that it's added in the Android.bp file of the module under 'data' field.",
-                                                        path, config.getName()));
+                                                "File %s wasn't found in module dependencies while"
+                                                    + " it's expected to be pushed as part of %s."
+                                                    + " Make sure that it's added in the Android.bp"
+                                                    + " file of the module under 'data' field.",
+                                                path, config.getName()));
                                 continue;
                             }
                         }
@@ -161,10 +192,12 @@ public class ApkPackageNameCheck {
                     File apkFile = FileUtil.findFile(config.getParentFile(), apkName);
                     if (apkFile == null || !apkFile.exists()) {
                         errors.add(
-                                String.format("Module %s is trying to install %s which does not "
+                                String.format(
+                                        "Module %s is trying to install %s which does not "
                                                 + "exists in testcases/. Make sure that it's added "
                                                 + "in the Android.bp file of the module under "
-                                                + "'data' field.", config.getName(), apkName));
+                                                + "'data' field.",
+                                        config.getName(), apkName));
                         continue;
                     }
                     AaptParser res = AaptParser.parse(apkFile);
@@ -173,9 +206,12 @@ public class ApkPackageNameCheck {
                     String put = packageNames.put(packageName, apkName);
                     packageListNames.add(packageName);
                     // The package already exists and it's a different apk
-                    if (put != null && !apkName.equals(put) && !EXCEPTION_LIST.contains(packageName)) {
+                    if (put != null
+                            && !apkName.equals(put)
+                            && !EXCEPTION_LIST.contains(packageName)) {
                         errors.add(
-                                String.format("Module %s: Package name '%s' from apk '%s' was "
+                                String.format(
+                                        "Module %s: Package name '%s' from apk '%s' was "
                                                 + "already added by previous apk '%s'.",
                                         config.getName(), packageName, apkName, put));
                         continue;
@@ -190,9 +226,11 @@ public class ApkPackageNameCheck {
                     if (instrumentationTest.getPackageName() != null) {
                         if (!packageListNames.contains(instrumentationTest.getPackageName())) {
                             errors.add(
-                                    String.format("Module %s requests to run '%s' but it's not "
-                                        + "part of any apks.",
-                                        config.getName(), instrumentationTest.getPackageName()));
+                                    String.format(
+                                            "Module %s requests to run '%s' but it's not "
+                                                    + "part of any apks.",
+                                            config.getName(),
+                                            instrumentationTest.getPackageName()));
                             continue;
                         }
                     }

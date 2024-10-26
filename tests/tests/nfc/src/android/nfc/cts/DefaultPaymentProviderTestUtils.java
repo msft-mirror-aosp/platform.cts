@@ -98,7 +98,7 @@ public final class DefaultPaymentProviderTestUtils {
             CommonTestUtils.waitUntil("Default service hasn't updated", 6,
                     () -> serviceDesc.equals(
                             cardEmulation.getDescriptionForPreferredPaymentService()));
-        } catch (InterruptedException ie) { }
+        } catch (InterruptedException|AssertionError e) { }
     }
 
     static void runWithDefaultPaymentService(Context context,

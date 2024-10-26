@@ -37,17 +37,23 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.Context;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,6 +65,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothLeAudioTest {
+    @Rule public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = BluetoothLeAudioTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
@@ -228,7 +236,8 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void getAudioLocation() {
+    @RequiresFlagsDisabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
+    public void getAudioLocation_Old() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -238,6 +247,22 @@ public class BluetoothLeAudioTest {
 
         // Verify returns false if bluetooth is not enabled
         assertEquals(BluetoothLeAudio.AUDIO_LOCATION_INVALID,
+                mBluetoothLeAudio.getAudioLocation(mTestDevice));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
+    public void getAudioLocation() {
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeAudio);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns false if bluetooth is not enabled
+        assertEquals(BluetoothLeAudio.AUDIO_LOCATION_UNKNOWN,
                 mBluetoothLeAudio.getAudioLocation(mTestDevice));
     }
 

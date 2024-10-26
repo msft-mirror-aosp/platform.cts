@@ -51,7 +51,7 @@ java_test_host {
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomApp",
         ":CtsCarApp",
         ":CtsCarWatchdogSharedApp",

@@ -23,6 +23,7 @@ android_test {
     test_config: "AndroidTest.xml",
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
         "helper/**/*.java",
         ":CtsMediaProviderTestUtils",
     ],

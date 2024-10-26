@@ -44,6 +44,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -882,7 +883,7 @@ public class TelephonyRegistryManagerTest {
                 (tm) -> tm.unregisterTelephonyCallback(testCb));
     }
 
-    private class TestTelephonyCallback extends TelephonyCallback
+    private static class TestTelephonyCallback extends TelephonyCallback
             implements TelephonyCallback.CallAttributesListener,
             TelephonyCallback.OutgoingEmergencyCallListener {
         public Semaphore mCallbackSemaphore = new Semaphore(0);
@@ -921,9 +922,9 @@ public class TelephonyRegistryManagerTest {
     private static class CarrierRoamingNtnModeListener extends TelephonyCallback
             implements TelephonyCallback.CarrierRoamingNtnModeListener {
 
-        private final LinkedBlockingQueue<Boolean> mQueue;
+        private final LinkedBlockingQueue<Object> mQueue;
 
-        CarrierRoamingNtnModeListener(LinkedBlockingQueue<Boolean> queue) {
+        CarrierRoamingNtnModeListener(LinkedBlockingQueue<Object> queue) {
             mQueue = queue;
         }
 
@@ -936,12 +937,17 @@ public class TelephonyRegistryManagerTest {
         public void onCarrierRoamingNtnEligibleStateChanged(boolean eligible) {
             mQueue.offer(eligible);
         }
+
+        @Override
+        public void onCarrierRoamingNtnAvailableServicesChanged(List<Integer> services) {
+            mQueue.offer(services);
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeChanged() throws Exception {
-        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        LinkedBlockingQueue<Object> queue = new LinkedBlockingQueue<>(1);
         CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener(queue);
 
         Context context = InstrumentationRegistry.getContext();
@@ -954,28 +960,32 @@ public class TelephonyRegistryManagerTest {
                 "android.permission.READ_PRIVILEGED_PHONE_STATE");
 
         // Get the current value
-        boolean initialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        Object objectInitialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
-                    (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
-                            SubscriptionManager.getDefaultSubscriptionId(), true));
-            boolean resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-            assertTrue(resultVal);
-        } finally {
-            // set back the initial value so that we do not cause an invalid value to be returned.
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
-                    (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
-                            SubscriptionManager.getDefaultSubscriptionId(), initialValue));
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
-                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        if (objectInitialValue instanceof Boolean) {
+            boolean initialValue = (Boolean) objectInitialValue;
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), true));
+                Object resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                assertTrue((boolean) resultVal);
+            } finally {
+                // set back the initial value so that we do not cause an invalid value to be
+                // returned.
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), initialValue));
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                        (tm) -> tm.unregisterTelephonyCallback(listener));
+            }
         }
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
-        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        LinkedBlockingQueue<Object> queue = new LinkedBlockingQueue<>(1);
         CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener(queue);
 
         Context context = InstrumentationRegistry.getContext();
@@ -988,21 +998,64 @@ public class TelephonyRegistryManagerTest {
                 "android.permission.READ_PRIVILEGED_PHONE_STATE");
 
         // Get the current value
-        boolean initialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        Object objectInitialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
-                    (trm) -> trm.notifyCarrierRoamingNtnEligibleStateChanged(
-                            SubscriptionManager.getDefaultSubscriptionId(), true));
-            boolean resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-            assertTrue(resultVal);
-        } finally {
-            // set back the initial value so that we do not cause an invalid value to be returned.
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
-                    (trm) -> trm.notifyCarrierRoamingNtnEligibleStateChanged(
-                            SubscriptionManager.getDefaultSubscriptionId(), initialValue));
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
-                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        if (objectInitialValue instanceof Boolean) {
+            boolean initialValue = (Boolean) objectInitialValue;
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnEligibleStateChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), true));
+                Object resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                assertTrue((boolean) resultVal);
+            } finally {
+                // set back the initial value so that we do not cause an invalid value to be
+                // returned.
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnEligibleStateChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), initialValue));
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                        (tm) -> tm.unregisterTelephonyCallback(listener));
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testCarrierRoamingNtnAvailableServices() throws Exception {
+        LinkedBlockingQueue<Object> queue = new LinkedBlockingQueue<>(1);
+        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener(queue);
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        telephonyManager = telephonyManager.createForSubscriptionId(
+                SubscriptionManager.getDefaultSubscriptionId());
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        // Get the current value
+        Object objectInitialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        if (objectInitialValue instanceof int[]) {
+            int[] initialValue = (int[]) objectInitialValue;
+            int[] testServices = {3, 6};
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnAvailableServicesChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), testServices));
+                Object resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                assertTrue(Arrays.equals(testServices, (int[]) resultVal));
+            } finally {
+                // set back the initial value so that we do not cause an invalid value to be
+                // returned.
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                        (trm) -> trm.notifyCarrierRoamingNtnAvailableServicesChanged(
+                                SubscriptionManager.getDefaultSubscriptionId(), initialValue));
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                        (tm) -> tm.unregisterTelephonyCallback(listener));
+            }
         }
     }
 }

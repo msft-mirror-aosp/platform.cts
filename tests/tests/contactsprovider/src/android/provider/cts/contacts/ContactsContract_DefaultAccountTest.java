@@ -61,14 +61,14 @@ import java.util.Set;
 public class ContactsContract_DefaultAccountTest {
     // Using unique account name and type because these tests may break or be broken by
     // other tests running. No other tests should use the following accounts.
-    private static final Account ACCT_1 = new Account("test for default account1",
+    private static final Account ACCT_1 = new Account("DAT test for default account1",
             StaticAccountAuthenticator.TYPE);
-    private static final Account ACCT_2 = new Account("test for default account2",
+    private static final Account ACCT_2 = new Account("DAT test for default account2",
             StaticAccountAuthenticator.TYPE);
-    private static final Account ACCT_NOT_PRESENT = new Account("test for account not signed in",
+    private static final Account ACCT_NOT_PRESENT = new Account("DAT test for account not signed in",
             StaticAccountAuthenticator.TYPE);
-    private static final String SIM_ACCT_NAME = "sim account name for default account test";
-    private static final String SIM_ACCT_TYPE = "sim account type for default account test";
+    private static final String SIM_ACCT_NAME = "sim account name for DAT test";
+    private static final String SIM_ACCT_TYPE = "sim account type for DAT test";
     private static final Account SIM_ACCT = new Account(SIM_ACCT_NAME, SIM_ACCT_TYPE);
     private static final int SIM_SLOT_0 = 0;
     @Rule

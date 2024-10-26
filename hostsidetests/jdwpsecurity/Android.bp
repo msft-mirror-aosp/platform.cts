@@ -30,5 +30,5 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [":CtsJdwpApp"],
+    device_common_data: [":CtsJdwpApp"],
 }

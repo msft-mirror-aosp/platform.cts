@@ -68,6 +68,7 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermissi
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
@@ -270,9 +271,16 @@ public final class Policy {
 
     @AutoAnnotation
     private static EnsureTestAppInstalled ensureTestAppInstalled(
-            String key, Query query, UserType onUser, boolean isPrimary) {
+            String key, Query query, UserType onUser) {
         return new AutoAnnotation_Policy_ensureTestAppInstalled(
-                key, query, onUser, isPrimary);
+                key, query, onUser);
+    }
+
+    @AutoAnnotation
+    private static EnsureTestAppInstalledAsPrimaryDPC ensureTestAppInstalledAsPrimaryDPC(
+            String key, Query query, UserType onUser) {
+        return new AutoAnnotation_Policy_ensureTestAppInstalledAsPrimaryDPC(
+                key, query, onUser);
     }
 
     @AutoAnnotation
@@ -621,10 +629,10 @@ public final class Policy {
         for (AppOp appOp : enterprisePolicy.appOps()) {
             // TODO(b/219750042): Currently we only test that app ops apply to the current user
             Annotation[] withAppOpAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY, queryBuilder()
+                    ensureTestAppInstalledAsPrimaryDPC(DELEGATE_KEY, queryBuilder()
                                     .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
                                     .toAnnotation(),
-                            INSTRUMENTED_USER, /* isPrimary= */ true),
+                            INSTRUMENTED_USER),
                     ensureTestAppHasAppOp(DELEGATE_KEY, new String[]{appOp.appliedWith()})
             };
             annotations.add(
@@ -636,14 +644,13 @@ public final class Policy {
             // TODO(b/219750042): Currently we only test that permissions apply to the current user
             Annotation[] withPermissionAnnotations =
                     new Annotation[] {
-                        ensureTestAppInstalled(
+                        ensureTestAppInstalledAsPrimaryDPC(
                                 DELEGATE_KEY,
                                 queryBuilder()
                                         .wherePackageName()
                                         .isEqualTo(DELEGATE_PACKAGE_NAME)
                                         .toAnnotation(),
-                                INSTRUMENTED_USER,
-                                /* isPrimary= */ true),
+                                INSTRUMENTED_USER),
                         ensureTestAppHasPermission(
                                 DELEGATE_KEY,
                                 new String[] {permission.appliedWith()},
@@ -845,11 +852,10 @@ public final class Policy {
         for (AppOp appOp : enterprisePolicy.appOps()) {
             // TODO(b/219750042): Currently we only test that app ops can be set as the primary user
             Annotation[] withAppOpAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY,
+                    ensureTestAppInstalledAsPrimaryDPC(DELEGATE_KEY,
                             queryBuilder()
                                     .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(), INSTRUMENTED_USER,
-                            /* isPrimary= */ true),
+                                    .toAnnotation(), INSTRUMENTED_USER),
                     ensureTestAppHasAppOp(DELEGATE_KEY, new String[]{appOp.appliedWith()})
             };
             annotations.add(
@@ -862,14 +868,13 @@ public final class Policy {
             // user
             Annotation[] withPermissionAnnotations =
                     new Annotation[] {
-                        ensureTestAppInstalled(
+                        ensureTestAppInstalledAsPrimaryDPC(
                                 DELEGATE_KEY,
                                 queryBuilder()
                                         .wherePackageName()
                                         .isEqualTo(DELEGATE_PACKAGE_NAME)
                                         .toAnnotation(),
-                                INSTRUMENTED_USER,
-                                /* isPrimary= */ true),
+                                INSTRUMENTED_USER),
                         ensureTestAppHasPermission(
                                 DELEGATE_KEY,
                                 new String[] {permission.appliedWith()},

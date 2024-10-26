@@ -15,7 +15,6 @@
  */
 package com.android.bedstead.testapps
 
-import com.android.bedstead.enterprise.EnterpriseComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.BedsteadServiceLocator
@@ -45,7 +44,6 @@ import org.junit.Assume
  */
 class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val enterpriseComponent: EnterpriseComponent by locator
     private val testApps: MutableMap<String, TestAppInstance> = HashMap()
     private val installedTestApps: MutableSet<TestAppInstance> = HashSet()
     private val uninstalledTestApps: MutableSet<TestAppInstance> = HashSet()
@@ -202,27 +200,20 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     /**
      * See [EnsureTestAppInstalled]
      */
+    @CanIgnoreReturnValue
     fun ensureTestAppInstalled(
         key: String,
         query: Query,
-        user: UserReference,
-        isPrimary: Boolean
-    ) {
+        user: UserReference
+    ): TestAppInstance? {
         val testApp: TestApp = testAppProvider.query(query).applyAnnotation(
             additionalQueryParameters.getOrDefault(key, null)
         ).get()
-        val testAppInstance: TestAppInstance? = ensureTestAppInstalled(
+        return ensureTestAppInstalled(
             key,
             testApp,
             user
         )
-        if (isPrimary) {
-            check(enterpriseComponent.primaryPolicyManager == null) {
-                ("Only one DPC can be marked as primary per test (current primary is " +
-                        enterpriseComponent.primaryPolicyManager + ")")
-            }
-            enterpriseComponent.primaryPolicyManager = RemoteTestApp(testAppInstance)
-        }
     }
 
     override fun prepareTestState() {

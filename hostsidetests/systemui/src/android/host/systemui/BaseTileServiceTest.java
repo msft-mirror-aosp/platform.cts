@@ -53,7 +53,7 @@ public class BaseTileServiceTest extends DeviceTestCase {
     // Time between checks for logs we expect.
     private static final long CHECK_DELAY = 500;
     // Number of times to check before failing.
-    private static final long CHECK_RETRIES = 30;
+    private static final int CHECK_RETRIES_DEFAULT = 30;
 
     private final String mService;
     private final String mComponent;
@@ -132,10 +132,26 @@ public class BaseTileServiceTest extends DeviceTestCase {
         RunUtil.getDefault().sleep(100);
     }
 
+    /**
+     * Searches {@code CHECK_RETRIES_DEFAULT} times, {@code CHECK_DELAY} milliseconds between each
+     * time, to see if the input string appears in logcats. Stops search as soon as the input string
+     * is found.
+     */
     protected boolean waitFor(String str) throws DeviceNotAvailableException, InterruptedException {
+        return waitFor(str, CHECK_RETRIES_DEFAULT);
+    }
+
+    /**
+     * Search in the logs repeatedly every 500 ms to see if a target string appears.
+     * @param str the target string
+     * @param numAttempts number of attempts
+     * @return whether input string was found
+     */
+    protected boolean waitFor(String str, int numAttempts) throws DeviceNotAvailableException,
+            InterruptedException {
         final String searchStr = TEST_PREFIX + str;
         int ct = 0;
-        while (!hasLog(searchStr) && (ct++ < CHECK_RETRIES)) {
+        while (!hasLog(searchStr) && (ct++ < numAttempts)) {
             RunUtil.getDefault().sleep(CHECK_DELAY);
         }
         return hasLog(searchStr);

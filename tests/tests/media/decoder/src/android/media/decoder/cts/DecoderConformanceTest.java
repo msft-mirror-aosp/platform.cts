@@ -31,6 +31,7 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
@@ -49,7 +50,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -205,6 +205,17 @@ public class DecoderConformanceTest {
         }
     }
 
+    // In this test, the input clip is decoded in byteBuffer mode and the result is compared
+    // against reference. The test makes use of several media codec api but the ones that are
+    // majorly responsible for validating the decoded output are mentioned in the annotation.
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#isFormatSupported",
+            "android.graphics.ImageFormat#YUV_420_888",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
+            "android.media.MediaCodec#dequeueInputBuffer",
+            "android.media.MediaCodec#queueInputBuffer",
+            "android.media.MediaCodec#dequeueOutputBuffer",
+            "android.media.MediaCodec#getOutputImage",
+            "android.media.MediaCodec#releaseOutputBuffer"})
     @Test
     public void testDecoderConformance() {
         Log.d(TAG, "Decode vector " + mTestVector + " with " + mDecoderName);

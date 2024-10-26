@@ -981,6 +981,31 @@ def draw_green_boxes_around_faces(img, faces_cropped, img_name):
   image_processing_utils.write_image(img, img_name)
 
 
+def version_agnostic_detect_markers(image):
+  """Detects ArUco markers with compatibility across cv2 versions.
+
+  Args:
+    image: numpy image in BGR channel order with ArUco markers to be detected.
+  Returns:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+    rejected_params: list of rejected corners.
+  """
+  # ArUco markers used are 4x4
+  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+  parameters = cv2.aruco.DetectorParameters()
+  aruco_detector = None
+  if hasattr(cv2.aruco, ARUCO_DETECTOR_ATTRIBUTE_NAME):
+    aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+  # Use ArucoDetector object if available, else fall back to detectMarkers()
+  if aruco_detector is not None:
+    return aruco_detector.detectMarkers(image)
+  else:
+    return cv2.aruco.detectMarkers(
+        image, aruco_dict, parameters=parameters
+    )
+
+
 def find_aruco_markers(
     input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT,
     force_greyscale=False):
@@ -1001,19 +1026,7 @@ def find_aruco_markers(
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  # ArUco markers used are 4x4
-  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  parameters = cv2.aruco.DetectorParameters()
-  aruco_detector = None
-  if hasattr(cv2.aruco, ARUCO_DETECTOR_ATTRIBUTE_NAME):
-    aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-  # Use ArucoDetector object if available, else fall back to detectMarkers()
-  if aruco_detector is not None:
-    corners, ids, rejected_params = aruco_detector.detectMarkers(input_img)
-  else:
-    corners, ids, rejected_params = cv2.aruco.detectMarkers(
-        input_img, aruco_dict, parameters=parameters
-    )
+  corners, ids, rejected_params = version_agnostic_detect_markers(input_img)
   # Early return if sufficient markers found and greyscale detection not needed
   if ids is not None and len(ids) >= aruco_marker_count and not force_greyscale:
     logging.debug('All ArUco markers detected.')
@@ -1023,13 +1036,7 @@ def find_aruco_markers(
   # Try with high-contrast greyscale if needed
   logging.debug('Trying ArUco marker detection with greyscale image.')
   bw_img = convert_image_to_high_contrast_black_white(input_img)
-  # Use ArucoDetector object if available, else fall back to detectMarkers()
-  if aruco_detector is not None:
-    corners, ids, rejected_params = aruco_detector.detectMarkers(bw_img)
-  else:
-    corners, ids, rejected_params = cv2.aruco.detectMarkers(
-        bw_img, aruco_dict, parameters=parameters
-    )
+  corners, ids, rejected_params = version_agnostic_detect_markers(bw_img)
   if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected with greyscale image.')
   # Handle case where no markers are found

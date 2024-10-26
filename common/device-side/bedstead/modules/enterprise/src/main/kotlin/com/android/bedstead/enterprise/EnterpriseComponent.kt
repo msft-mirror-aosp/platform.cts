@@ -21,6 +21,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
@@ -36,6 +37,8 @@ import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.remotedpc.RemotePolicyManager
+import com.android.bedstead.remotedpc.RemoteTestApp
+import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapps.TestAppsComponent
 
@@ -298,6 +301,20 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME,
             forUser
         )
+    }
+
+    fun ensureTestAppInstalledAsPrimaryDPC(annotation: EnsureTestAppInstalledAsPrimaryDPC) {
+        val testAppInstance: TestAppInstance? = testAppsComponent.ensureTestAppInstalled(
+            annotation.key,
+            annotation.query,
+            userTypeResolver.toUser(annotation.onUser)
+        )
+
+        check(primaryPolicyManager == null) {
+            ("Only one DPC can be marked as primary per test (current primary is " +
+                    primaryPolicyManager + ")")
+        }
+        primaryPolicyManager = RemoteTestApp(testAppInstance)
     }
 
     companion object {

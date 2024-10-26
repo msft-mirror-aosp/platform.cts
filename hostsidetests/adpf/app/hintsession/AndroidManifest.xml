@@ -19,7 +19,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="android.adpf.hintsession.app">
 
-    <application
+    <application android:appCategory="game"
         android:theme="@style/Theme.HintSessionTest"
         android:label="HintSessionTest">
         <activity android:name=".ADPFHintSessionDeviceActivity"

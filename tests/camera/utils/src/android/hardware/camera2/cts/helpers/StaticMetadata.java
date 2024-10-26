@@ -1506,6 +1506,16 @@ public class StaticMetadata {
     }
 
     /**
+     * Get supported YCBCR_P210 output sizes and do the check.
+     *
+     * @return Empty size array if YCBCR_P210 output is not supported
+     */
+    public Size[] getP210OutputSizesChecked() {
+        return getAvailableSizesForFormatChecked(ImageFormat.YCBCR_P210,
+                StreamDirection.Output);
+    }
+
+    /**
      * Used to determine the stream direction for various helpers that look up
      * format or size information.
      */

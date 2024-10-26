@@ -42,6 +42,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.PropertyUtil;
 
@@ -57,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@FrameworkSpecificTest
 @Presubmit
 @SmallTest
 @RequiresDevice

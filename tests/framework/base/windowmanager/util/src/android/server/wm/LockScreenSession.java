@@ -148,6 +148,7 @@ public class LockScreenSession implements AutoCloseable {
         // Ensure focus will switch to default display. Meanwhile we cannot tap on center area,
         // which may tap on input credential area.
         mTouchHelper.touchAndCancelOnDisplayCenterSync(DEFAULT_DISPLAY);
+        mWmState.waitForNonActivityWindowFocused();
 
         waitForDeviceIdle(3000);
         SystemUtil.runWithShellPermissionIdentity(

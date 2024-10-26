@@ -28,10 +28,14 @@ import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAp
 import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppClone;
 import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppMain;
 
+import static junit.framework.Assert.assertEquals;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,8 +49,10 @@ import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
+import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
@@ -931,6 +937,139 @@ public class SingleCallingTest extends BaseAppVerifier {
         } finally {
             releaseAudioFocusForMusic();
             tearDownApp(transactionalApp);
+        }
+    }
+
+    /**
+     * Test the scenario where a new transactional outgoing call is created and another app tries to
+     * get communication focus.  We want to ensure that Telecom retains exclusive audio focus and
+     * no other app is able to take it away.
+     *
+     * <h3> Test Steps: </h3>
+     * <ol>
+     *     <li>
+     *          create a VoIP call using transactional APIs.
+     *     </li>
+     *     <li>
+     *         transition the call to ACTIVE via
+     *     </li>
+     *     <li>
+     *         attempt to request focus for communication using
+     *         {@link AudioManager#requestAudioFocus(AudioFocusRequest)}.
+     *     </li>
+     *     <li>
+     *         transition the call to DISCONNECTED
+     *     </li>
+     * </ol>
+     *  Assert the call was successfully added and transitioned to the ACTIVE state without errors,
+     *  and that communication focus cannot be obtained outside of Telecom.
+     */
+    @Test
+    public void testTelecomLocksFocus_TransactionalVoipAppMain() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        performFocusLockTest(TransactionalVoipAppMain);
+    }
+
+    /**
+     * Test the scenario where a new self-managed outgoing call is created and another app tries to
+     * get communication focus.  We want to ensure that Telecom retains exclusive audio focus and
+     * no other app is able to take it away.
+     *
+     * <h3> Test Steps: </h3>
+     * <ol>
+     *     <li>
+     *          create a VoIP call using self-managed APIs.
+     *     </li>
+     *     <li>
+     *         transition the call to ACTIVE
+     *     </li>
+     *     <li>
+     *         attempt to request focus for communication using
+     *         {@link AudioManager#requestAudioFocus(AudioFocusRequest)}.
+     *     </li>
+     *     <li>
+     *         transition the call to DISCONNECTED
+     *     </li>
+     * </ol>
+     *  Assert the call was successfully added and transitioned to the ACTIVE state without errors,
+     *  and that communication focus cannot be obtained outside of Telecom.
+     */
+    public void testTelecomLocksFocus_ConnectionServiceVoipAppMain() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        performFocusLockTest(ConnectionServiceVoipAppMain);
+    }
+
+    /**
+     * Test the scenario where a new managed outgoing call is created and another app tries to
+     * get communication focus.  We want to ensure that Telecom retains exclusive audio focus and
+     * no other app is able to take it away.
+     *
+     * <h3> Test Steps: </h3>
+     * <ol>
+     *     <li>
+     *          create a VoIP call using managed ConnectionService APIs.
+     *     </li>
+     *     <li>
+     *         transition the call to ACTIVE
+     *     </li>
+     *     <li>
+     *         attempt to request focus for communication using
+     *         {@link AudioManager#requestAudioFocus(AudioFocusRequest)}.
+     *     </li>
+     *     <li>
+     *         transition the call to DISCONNECTED
+     *     </li>
+     * </ol>
+     *  Assert the call was successfully added and transitioned to the ACTIVE state without errors,
+     *  and that communication focus cannot be obtained outside of Telecom.
+     */
+    public void testTelecomLocksFocus_ManagedConnectionServiceVoipAppMain() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        performFocusLockTest(ManagedConnectionServiceApp);
+    }
+
+    /**
+     * Common functionality for determining if Telecom can hold focus and retain it even if another
+     * app wants to steal it.
+     * @param appInstance
+     * @throws Exception
+     */
+    private void performFocusLockTest(TelecomTestApp appInstance) throws Exception {
+        AppControlWrapper appControl = null;
+
+        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
+                .build();
+        AudioFocusRequest audioFocusRequest = new AudioFocusRequest
+                .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(audioAttributes).build();
+
+        try {
+            appControl = bindToApp(appInstance);
+            verifyOutgoingCallStateTransitions(appControl, false);
+
+            // Try to get communication focus -- this emulates another communication app which does
+            // not use the Telecom APIs trying to steal focus away.  The request should be denied if
+            // Telecom has obtained audio focus with focus lock.
+            ShellIdentityUtils.invokeWithShellPermissions(() -> {
+                int focusResult = audioManager.requestAudioFocus(audioFocusRequest);
+                assertEquals("Failed; another app should not be able to get communication focus if"
+                        + " Telecom already has it; result=" + focusResult,
+                        AudioManager.AUDIOFOCUS_REQUEST_FAILED, focusResult);
+            });
+        } finally {
+            // In case we WERE franted focus, make sure we abandon it.
+            audioManager.abandonAudioFocusRequest(audioFocusRequest);
+            tearDownApp(appControl);
         }
     }
 

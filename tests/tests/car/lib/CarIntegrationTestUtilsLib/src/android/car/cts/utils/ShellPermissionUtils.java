@@ -21,18 +21,18 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.IntDef;
-import android.app.UiAutomation;
-import android.content.pm.PackageManager;
-import android.support.v4.content.ContextCompat;
+import android.util.ArraySet;
 
-import androidx.test.platform.app.InstrumentationRegistry;
-
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
 import org.junit.AssumptionViolatedException;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Arrays;
+import java.util.Set;
 
 /**
  * Class contains static methods to adopt all or a subset of the shell's permissions while invoking
@@ -40,27 +40,8 @@ import java.lang.annotation.RetentionPolicy;
  * executing {@link ThrowingRunnable}, it will pass it through to the test infrastructure.
  */
 public final class ShellPermissionUtils {
-    private ShellPermissionUtils() {
-    }
 
-    /**
-     * Run {@code throwingRunnable} with all the shell's permissions adopted.
-     *
-     * <p>It is possible that the adoption failed.
-     */
-    public static void runWithShellPermissionIdentity(ThrowingRunnable throwingRunnable) {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity();
-        try {
-            throwingRunnable.run();
-        } catch (AssumptionViolatedException e) {
-            // Make sure we allow AssumptionViolatedExceptions through.
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Caught exception", e);
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
-        }
+    private ShellPermissionUtils() {
     }
 
     /**
@@ -88,6 +69,18 @@ public final class ShellPermissionUtils {
     public @interface PermissionCheckMode {}
 
     /**
+     * Run {@code throwingRunnable} with all the shell's permissions adopted.
+     *
+     * <p>This function allows nesting. It is guaranteed to restore the previous permission after
+     * return.
+     */
+    public static void runWithShellPermissionIdentity(ThrowingRunnable throwingRunnable) {
+        Set<String> adoptablePermissions = TestApis.permissions().adoptablePermissions();
+        runWithShellPermissionIdentity(throwingRunnable, CHECK_MODE_NONE,
+                adoptablePermissions.toArray(new String[0]));
+    }
+
+    /**
      * Run {@code throwingRunnable} with a subset, {@code permissions}, of the shell's permissions
      * adopted.
      *
@@ -105,34 +98,32 @@ public final class ShellPermissionUtils {
      *
      * <p>The {@code checkMode} specified whether to skip/fail/do nothing if failed to adopt the
      * required permissions.
+     *
+     * <p>This function allows nesting. It is guaranteed to restore the previous permission after
+     * return.
      */
     public static void runWithShellPermissionIdentity(ThrowingRunnable throwingRunnable,
             @PermissionCheckMode int checkMode, String... permissions) {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity(permissions);
-        try {
-            if (checkMode != CHECK_MODE_NONE) {
-                for (String permission : permissions) {
-                    boolean adopted = ContextCompat.checkSelfPermission(
-                            InstrumentationRegistry.getInstrumentation().getTargetContext(),
-                            permission) == PackageManager.PERMISSION_GRANTED;
-                    String msg = "Unable to adopt shell permission: " + permission;
-                    if (checkMode == CHECK_MODE_ASSUME) {
-                        assumeTrue(msg, adopted);
-                    }
-                    if (checkMode == CHECK_MODE_ASSERT) {
-                        assertWithMessage(msg).that(adopted).isTrue();
-                    }
-                }
-            }
+        Set<String> permissionsSet = new ArraySet<>();
+        for (int i = 0; i < permissions.length; i++) {
+            permissionsSet.add(permissions[i]);
+        }
+        Set<String> adoptablePermissions = TestApis.permissions().adoptablePermissions();
+        String msg = "Unable to adopt shell permission: " + Arrays.toString(permissions);
+        if (checkMode == CHECK_MODE_ASSERT) {
+            assertWithMessage(msg).that(adoptablePermissions).containsAtLeastElementsIn(
+                    permissionsSet);
+        } else if (checkMode == CHECK_MODE_ASSUME) {
+            assumeTrue(msg, adoptablePermissions.containsAll(permissionsSet));
+        }
+
+        try (PermissionContext p = TestApis.permissions().withPermission(permissions)) {
             throwingRunnable.run();
         } catch (AssumptionViolatedException e) {
             // Make sure we allow AssumptionViolatedExceptions through.
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Caught exception", e);
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
         }
     }
 }

@@ -34,6 +34,7 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.policies.DeprecatedResetPassword
 import com.android.bedstead.harrier.policies.FailedPasswordAttempts
 import com.android.bedstead.harrier.policies.PasswordExpirationTimeout

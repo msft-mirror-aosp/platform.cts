@@ -20,11 +20,11 @@ package {
 java_defaults {
     name: "CompilationTestCases_defaults",
     srcs: ["src/**/*.java"],
-    data: [
+    device_common_data: [
         ":StatusCheckerApp",
     ],
     java_resource_dirs: ["assets/"],
-    java_resources: [
+    device_common_java_resources: [
         ":AppUsedByOtherApp",
         ":AppUsedByOtherApp_1_disable_embedded_profile_dm",
         ":AppUsedByOtherApp_1_dm",
@@ -101,7 +101,7 @@ genrule_defaults {
     cmd: "$(location generate_dm) $(location soong_zip) $(out) $(in)",
 }
 
-genrule {
+java_genrule {
     name: "CtsCompilationApp_profile",
     defaults: ["profile_defaults"],
     srcs: [
@@ -111,7 +111,7 @@ genrule {
     out: ["CtsCompilationApp.prof"],
 }
 
-genrule {
+java_genrule {
     name: "CtsCompilationApp_dm",
     defaults: ["dm_defaults"],
     srcs: [
@@ -120,7 +120,7 @@ genrule {
     out: ["CtsCompilationApp.dm"],
 }
 
-genrule {
+java_genrule {
     name: "AppUsedByOtherApp_1_prof",
     defaults: ["profile_defaults"],
     srcs: [
@@ -130,7 +130,7 @@ genrule {
     out: ["AppUsedByOtherApp_1.prof"],
 }
 
-genrule {
+java_genrule {
     name: "AppUsedByOtherApp_1_dm",
     defaults: ["dm_defaults"],
     srcs: [
@@ -139,7 +139,7 @@ genrule {
     out: ["AppUsedByOtherApp_1.dm"],
 }
 
-genrule {
+java_genrule {
     name: "AppUsedByOtherApp_2_prof",
     defaults: ["profile_defaults"],
     srcs: [
@@ -207,7 +207,7 @@ genrule {
     out: ["disable_embedded_profile.dm"],
 }
 
-genrule {
+java_genrule {
     name: "AppUsedByOtherApp_1_disable_embedded_profile_dm",
     defaults: ["dm_defaults"],
     srcs: [

@@ -40,6 +40,8 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Before;
@@ -130,6 +132,12 @@ public class DecoderTestXheAac {
     /**
      * Verify the correct decoding of USAC bitstreams with different MPEG-D DRC effect types.
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE"})
     @Test
     public void testDecodeUsacDrcEffectTypeM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacDrcEffectTypeM4a");
@@ -261,6 +269,13 @@ public class DecoderTestXheAac {
     /**
      * Verify the correct decoding of USAC bitstreams with album mode.
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE",
+            "android.media.MediaFormat#KEY_AAC_DRC_ALBUM_MODE"})
     @Test
     public void testDecodeUsacDrcAlbumModeM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacDrcAlbumModeM4a");
@@ -298,6 +313,12 @@ public class DecoderTestXheAac {
     /**
      * Verify the correct decoding of USAC bitstreams with config changes.
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE"})
     @Test
     public void testDecodeUsacStreamSwitchingM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacStreamSwitchingM4a");
@@ -363,6 +384,12 @@ public class DecoderTestXheAac {
     /**
      * Verify the correct decoding of USAC bitstreams with various sampling rates.
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE"})
     @Test
     public void testDecodeUsacSamplingRatesM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacSamplingRatesM4a");
@@ -396,6 +423,13 @@ public class DecoderTestXheAac {
     /**
      * Verify the correct decoding of USAC bitstreams with different boost and attenuation settings
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE",
+            "android.media.MediaFormat#KEY_AAC_DRC_ALBUM_MODE"})
     @Test
     public void testDecodeUsacDrcBoostAndAttenuationM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacDrcBoostAndAttenuationM4a");
@@ -465,6 +499,13 @@ public class DecoderTestXheAac {
      * verify the correct decoding of USAC bitstreams when different kinds of loudness values
      * are present
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE",
+            "android.media.MediaFormat#KEY_AAC_DRC_ALBUM_MODE"})
     @Test
     public void testDecodeUsacDrcLoudnessPreferenceM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacDrcLoudnessPreferenceM4a");
@@ -517,6 +558,13 @@ public class DecoderTestXheAac {
     /**
      * Verify that the correct output loudness values are returned when decoding USAC bitstreams
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE",
+            "android.media.MediaFormat#KEY_AAC_DRC_ALBUM_MODE"})
     @Test
     public void testDecodeUsacDrcOutputLoudnessM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacDrcOutputLoudnessM4a");
@@ -595,6 +643,13 @@ public class DecoderTestXheAac {
      * Verify that seeking works correctly for USAC.
      * Sync samples have to be taken into consideration.
      */
+    @CddTest(requirements = {"5.1.2/C-3-1", "5.1.2/C-3-2"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_AAC_DRC_HEAVY_COMPRESSION",
+            "android.media.MediaFormat#KEY_AAC_DRC_BOOST_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_ATTENUATION_FACTOR",
+            "android.media.MediaFormat#KEY_AAC_DRC_TARGET_REFERENCE_LEVEL",
+            "android.media.MediaFormat#KEY_AAC_DRC_EFFECT_TYPE",
+            "android.media.MediaFormat#KEY_AAC_DRC_ALBUM_MODE"})
     @Test
     public void testDecodeUsacSyncSampleSeekingM4a() throws Exception {
         Log.v(TAG, "START testDecodeUsacSyncSampleSeekingM4a");

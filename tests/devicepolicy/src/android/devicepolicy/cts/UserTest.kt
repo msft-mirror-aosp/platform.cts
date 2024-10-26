@@ -30,9 +30,11 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.policies.DisallowRemoveUser
 import com.android.bedstead.harrier.policies.DisallowUserSwitch
 import com.android.bedstead.harrier.policies.ReceiveUserCallbacks
+import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.types.OptionalBoolean.ANY

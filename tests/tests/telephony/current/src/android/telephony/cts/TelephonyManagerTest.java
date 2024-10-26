@@ -222,6 +222,7 @@ public class TelephonyManagerTest {
     private static final int WAIT_FOR_CONDITION = 3000;
     private static final int TOLERANCE = 1000;
     private static final int TIMEOUT_FOR_NETWORK_OPS = TOLERANCE * 180;
+    private static final int LOCATION_SETTING_CHANGE_WAIT_MS = 1000;
 
     private static final int TIMEOUT_FOR_CARRIER_STATUS_FILE_CHECK = TOLERANCE * 180;
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
@@ -794,10 +795,38 @@ public class TelephonyManagerTest {
     public static boolean setLocationEnabled(boolean setEnabled) {
         Context ctx = getContext();
         LocationManager locationManager = ctx.getSystemService(LocationManager.class);
-        boolean wasEnabled = locationManager.isLocationEnabled();
-        if (wasEnabled != setEnabled) {
-            locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+        boolean wasEnabled = locationManager.isLocationEnabledForUser(ctx.getUser());
+        if (wasEnabled == setEnabled) return wasEnabled;
+
+        CountDownLatch locationChangeLatch = new CountDownLatch(1);
+        BroadcastReceiver locationModeChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (!LocationManager.MODE_CHANGED_ACTION.equals(intent.getAction())) return;
+                if (setEnabled == intent.getBooleanExtra(LocationManager.EXTRA_LOCATION_ENABLED,
+                        !setEnabled)) {
+                    locationChangeLatch.countDown();
+                }
+            }
+        };
+
+        Log.d(TAG, "Setting location " + (setEnabled ? "enabled" : "disabled"));
+
+        ctx.registerReceiver(locationModeChangeReceiver,
+                new IntentFilter(LocationManager.MODE_CHANGED_ACTION));
+        try {
+            runWithShellPermissionIdentity(() -> {
+                locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+            });
+            assertThat(locationChangeLatch.await(LOCATION_SETTING_CHANGE_WAIT_MS,
+                    TimeUnit.MILLISECONDS)).isTrue();
+        } catch (InterruptedException e) {
+            Log.w(TAG, "Interrupted while waiting for location settings change. Test results"
+                    + " may not be accurate.");
+        } finally {
+            ctx.unregisterReceiver(locationModeChangeReceiver);
         }
+
         return wasEnabled;
     }
 
@@ -1266,6 +1295,8 @@ public class TelephonyManagerTest {
                 mTelephonyManager.getSubscriberId();
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            } catch (UnsupportedOperationException ex) {
+                // EAP-AKA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1278,6 +1309,8 @@ public class TelephonyManagerTest {
 
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_GBA_BOOTSTRAP, "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1292,6 +1325,8 @@ public class TelephonyManagerTest {
                         TelephonyManager.APPTYPE_USIM,
                         TelephonyManager.AUTHTYPE_GBA_NAF_KEY_EXTERNAL,
                         "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }

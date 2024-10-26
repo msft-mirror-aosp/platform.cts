@@ -28,6 +28,7 @@ import static android.media.AudioManager.ADJUST_UNMUTE;
 import static android.media.AudioManager.STREAM_NOTIFICATION;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_APP_OPS;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_CLIENT_VOLUME;
+import static android.media.AudioPlaybackConfiguration.MUTED_BY_PORT_VOLUME;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_STREAM_VOLUME;
 import static android.media.AudioPlaybackConfiguration.MUTED_BY_VOLUME_SHAPER;
 import static android.media.AudioTrack.WRITE_NON_BLOCKING;
@@ -38,6 +39,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.AppOpsUtils.getOpMode;
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
+import static com.android.media.audio.Flags.ringMyCar;
+import static com.android.media.audioserver.Flags.portidVolumeManagement;
 
 import android.Manifest;
 import android.annotation.Nullable;
@@ -601,10 +604,21 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return;
         }
 
+        if (!ringMyCar() && portidVolumeManagement()) {
+            Log.w(TAG,
+                    "Skipping testMuteFromStreamVolumeNotification, portIdVolumeManagement flag "
+                            + "active but not ringMyCar.");
+            return;
+        }
+
+        int mutedBy = MUTED_BY_STREAM_VOLUME;
+        if (ringMyCar() && portidVolumeManagement()) {
+            mutedBy = MUTED_BY_PORT_VOLUME;
+        }
         verifyMuteUnmuteNotifications(/*start=*/player.mPlay,
                 /*mute=*/ () -> adjustMuteStreamVolume(am),
                 /*unmute=*/ () -> adjustUnMuteStreamVolume(am),
-                /*muteChangesActiveState=*/ false, MUTED_BY_STREAM_VOLUME);
+                /*muteChangesActiveState=*/ false, mutedBy);
     }
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",

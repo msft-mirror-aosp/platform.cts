@@ -32,7 +32,7 @@ java_test_host {
         "compatibility-host-util",
     ],
     static_libs: ["platform-test-annotations-host"],
-    data: [
+    device_common_data: [
         ":CtsGpuToolsRootlessGpuDebugApp-DEBUG",
         ":CtsGpuToolsRootlessGpuDebugApp-RELEASE",
         ":CtsGpuToolsRootlessGpuDebugApp-INJECT",

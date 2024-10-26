@@ -134,6 +134,13 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because FEATURE_TELEPHONY is not available");
             return false;
         }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            // Satellite test against mock service should pass on satellite-less devices, but it's
+            // still too flaky.
+            logd("Skipping tests because FEATURE_TELEPHONY_SATELLITE is not available");
+            return false;
+        }
         try {
             getContext().getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);

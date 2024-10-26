@@ -39,7 +39,7 @@ python_test_host {
     main: "cts_nfc_hce_multi_device_test.py",
     srcs: ["cts_nfc_hce_multi_device_test.py"],
     test_config: "AndroidTest.xml",
-    data: [
+    device_common_data: [
         ":NfcReaderTestApp",
         ":NfcEmulatorTestApp",
     ],

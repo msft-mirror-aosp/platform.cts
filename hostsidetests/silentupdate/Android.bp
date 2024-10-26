@@ -32,7 +32,7 @@ java_test_host {
         "compatibility-host-util",
     ],
     per_testcase_directory: true,
-    data: [
+    device_common_data: [
         ":CtsSilentUpdateTestCases",
         ":SilentInstallCurrent",
         ":SilentInstallS",

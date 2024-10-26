@@ -37,7 +37,7 @@ java_defaults {
         "flag-junit-host",
         "android.content.pm.flags-aconfig-java-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomEmptyApp",
         ":CtsStatsdAtomEmptyAppV2",
         ":CtsStatsdAtomEmptyApp2",

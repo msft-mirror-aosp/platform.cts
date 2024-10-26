@@ -45,7 +45,7 @@ java_test_host {
         "flag-junit-host",
         "modules-utils-build-testing",
     ],
-    data: [
+    device_common_data: [
         ":CtsAudioHostTestApp",
         ":CtsMediaExtractorHostTestApp",
         ":CtsMediaMetricsHostTestApp",

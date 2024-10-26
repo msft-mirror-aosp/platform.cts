@@ -1015,8 +1015,9 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
     }
 
     private void dragFromTopToCenter(View view) {
-        dragOnDisplay(view.getWidth() / 2f, 0 /* downY */,
-                view.getWidth() / 2f, view.getHeight() / 2f);
+        // Use 1/4 view width to avoid interacting with desktop windowing elements.
+        dragOnDisplay(view.getWidth() / 4f, 0 /* downY */,
+                view.getWidth() / 4f, view.getHeight() / 2f);
     }
 
     private void dragFromRightToCenter(View view) {

@@ -16,6 +16,7 @@
 
 package android.cts.statsdatom.coregraphics;
 
+import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.SURFACE_CONTROL_EVENT_FIELD_NUMBER;
 import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.TEXTURE_VIEW_EVENT_FIELD_NUMBER;
 import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.HARDWARE_RENDERER_EVENT_FIELD_NUMBER;
 
@@ -33,6 +34,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import com.android.os.StatsLog;
 import com.android.os.coregraphics.CoregraphicsExtensionAtoms;
 import com.android.os.coregraphics.HardwareRendererEvent;
+import com.android.os.coregraphics.SurfaceControlEvent;
 import com.android.os.coregraphics.TextureViewEvent;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -152,5 +154,37 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         }
 
         assertThat(seenSdrColorMode).isTrue();
+    }
+
+    @Test
+    public void surfaceControlDataspaceEvents() throws Exception {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        CoregraphicsExtensionAtoms.registerAllExtensions(registry);
+        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                SURFACE_CONTROL_EVENT_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
+        DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                "SurfaceViewActivity", null, null);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+
+        assertThat(data.size()).isAtLeast(2);
+
+        // Just assert the atoms coming from the SurfaceView
+        SurfaceControlEvent firstAtom = data.get(0).getAtom()
+                .getExtension(CoregraphicsExtensionAtoms.surfaceControlEvent);
+
+        assertThat(firstAtom.getUid()).isGreaterThan(10000);
+        assertThat(firstAtom.getTimeSinceLastEventMillis()).isGreaterThan(0);
+        assertThat(firstAtom.getPreviousDataspace()).isEqualTo(DATASPACE_SRGB);
+
+        SurfaceControlEvent secondAtom = data.get(1).getAtom()
+                .getExtension(CoregraphicsExtensionAtoms.surfaceControlEvent);
+
+        assertThat(secondAtom.getUid()).isGreaterThan(10000);
+        assertThat(secondAtom.getTimeSinceLastEventMillis()).isGreaterThan(0);
+        assertThat(secondAtom.getPreviousDataspace()).isEqualTo(DATASPACE_P3);
+
+        assertThat(firstAtom.getUid()).isEqualTo(secondAtom.getUid());
     }
 }

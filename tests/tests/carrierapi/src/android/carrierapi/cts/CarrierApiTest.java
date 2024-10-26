@@ -19,7 +19,9 @@ package android.carrierapi.cts;
 import static android.carrierapi.cts.FcpTemplate.FILE_IDENTIFIER;
 import static android.carrierapi.cts.IccUtils.bytesToHexString;
 import static android.carrierapi.cts.IccUtils.hexStringToBytes;
+import static android.carrierapi.cts.IccUtils.isSeriouslyLetterOrDigit;
 import static android.telephony.IccOpenLogicalChannelResponse.INVALID_CHANNEL;
+import static android.telephony.IccOpenLogicalChannelResponse.STATUS_MISSING_RESOURCE;
 import static android.telephony.IccOpenLogicalChannelResponse.STATUS_NO_ERROR;
 import static android.telephony.SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER;
 import static android.telephony.TelephonyManager.DATA_ENABLED_REASON_THERMAL;
@@ -135,11 +137,13 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private ImsManager mImsManager;
     private ImsMmTelManager mMmTelManager;
 
+    private static final int MAX_RETRIES = 10;
     // The minimum allocatable logical channel number, per TS 102 221 Section 11.1.17.1
     private static final int MIN_LOGICAL_CHANNEL = 1;
     // The maximum allocatable logical channel number in the standard range, per TS 102 221 Section
     // 11.1.17.1
     private static final int MAX_LOGICAL_CHANNEL = 3;
+    private static final int MAX_LOGICAL_CHANNEL_EXTENDED = 19;
     // Class bytes. The logical channel used should be included for bits b2b1. TS 102 221 Table 11.5
     private static final int CLA_GET_RESPONSE = 0x00;
     private static final int CLA_MANAGE_CHANNEL = 0x00;
@@ -168,6 +172,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final String STATUS_WRONG_CLASS = "6e00";
     // File ID for the EF ICCID. TS 102 221
     private static final String ICCID_FILE_ID = "2FE2";
+    // File ID for the EF_PL. TS 131 102 Annex A
+    private static final String PL_FILE_ID = "2F05";
     // File ID for the master file. TS 102 221
     private static final String MF_FILE_ID = "3F00";
     private static final int MF_FILE_ID_HEX = 0x3F00;
@@ -178,6 +184,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final String NUMBER_A = "1234567890";
     private static final String NUMBER_B = "0987654321";
     private static final String TESTING_PLMN = "12345";
+    private static final int PL_ENTRY_LENGTH = 2;
+    private static final int HEX_BYTES_PER_CHAR = 2;
 
     private static final String EAP_SIM_AKA_RAND = "11111111111111111111111111111111";
 
@@ -884,6 +892,41 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         }
     }
 
+    @Test
+    public void testIccOpenTooManyLogicalChannels() {
+        Set<Integer> channels = new HashSet<Integer>();
+        boolean failedOnce = false;
+        try {
+            for (int i = MIN_LOGICAL_CHANNEL; i <= MAX_LOGICAL_CHANNEL_EXTENDED + 1; i++) {
+                IccOpenLogicalChannelResponse response =
+                        mTelephonyManager.iccOpenLogicalChannel("");
+                int channel = response.getChannel();
+                if (channel > 0) {
+                    assertWithMessage("Logical channel " + channel + " was returned twice")
+                            .that(channels.add(channel)).isTrue();
+                }
+                if (response.getStatus() == STATUS_MISSING_RESOURCE) {
+                    assertThat(response.getSelectResponse()).isNull();
+                    assertThat(channel).isEqualTo(INVALID_CHANNEL);
+                    failedOnce = true;
+                    break;
+                }
+                assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
+                assertThat(response.getSelectResponse()).isEqualTo(STATUS_NORMAL);
+                assertThat(channel).isIn(Range.closed(MIN_LOGICAL_CHANNEL,
+                        MAX_LOGICAL_CHANNEL_EXTENDED));
+            }
+        } finally {
+            for (Integer channel : channels) {
+                mTelephonyManager.iccCloseLogicalChannel(channel);
+            }
+        }
+        assertTrue(failedOnce);
+
+        // Make sure you can open logical channel after closing old ones.
+        testIccOpenLogicalChannel();
+    }
+
     /**
      * Test that it's possible to close logical channels to the ICC. This follows the Manage Channel
      * command described in TS 102 221 Section 11.1.17.
@@ -1106,6 +1149,94 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             assertThat(response).endsWith(STATUS_NORMAL_STRING);
         } finally {
             mTelephonyManager.iccCloseLogicalChannel(logicalChannel);
+        }
+    }
+
+    // ETSI TS 102 221 13.2
+    private void verifyValidIccId(String iccid) {
+        assertThat(iccid).hasLength(20);
+    }
+
+    // ETSI TS 102 221 13.3
+    private void verifyValidPl(String pl) {
+        final int hexEntryLength = PL_ENTRY_LENGTH * HEX_BYTES_PER_CHAR;
+        assertThat(pl.length() % hexEntryLength).isEqualTo(0);
+        assertThat(pl.length()).isAtLeast(hexEntryLength);
+        for (int i = 0; i < pl.length(); i += hexEntryLength) {
+            String langHex = pl.substring(i, i + hexEntryLength);
+            assertThat(langHex).hasLength(hexEntryLength);
+
+            byte[] lang = hexStringToBytes(langHex);
+            assertThat(lang).hasLength(PL_ENTRY_LENGTH);
+            int ch1 = Byte.toUnsignedInt(lang[0]);
+            int ch2 = Byte.toUnsignedInt(lang[1]);
+            if (ch1 == 0xFF && ch2 == 0xFF) continue;
+
+            assertTrue("Language code is not alphanumeric: " + langHex,
+                    isSeriouslyLetterOrDigit(ch1) && isSeriouslyLetterOrDigit(ch2));
+        }
+    }
+
+    private IccOpenLogicalChannelResponse openLogicalChannelWithRetries(String aid) {
+        for (int retries = 0; retries < MAX_RETRIES; retries++) {
+            IccOpenLogicalChannelResponse response = mTelephonyManager.iccOpenLogicalChannel(aid);
+            if (response.getStatus() != STATUS_MISSING_RESOURCE) return response;
+            assertThat(response.getChannel()).isEqualTo(INVALID_CHANNEL);
+            try {
+                // Let's give other processes time to finish and release occupied channels.
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
+                break;
+            }
+        }
+        fail("Couldn't open logical channel: no resources");
+        return null;
+    }
+
+    /**
+     * This test verifies if two files can be read off the UICC at the same time through two
+     * different channels.
+     */
+    @Test
+    public void testApduFileReadTwoChannels() {
+        int channel1 = INVALID_CHANNEL;
+        int channel2 = INVALID_CHANNEL;
+        try {
+            IccOpenLogicalChannelResponse channel1rsp = openLogicalChannelWithRetries("");
+            verifyValidIccOpenLogicalChannelResponse(channel1rsp);
+            channel1 = channel1rsp.getChannel();
+
+            IccOpenLogicalChannelResponse channel2rsp = openLogicalChannelWithRetries("");
+            verifyValidIccOpenLogicalChannelResponse(channel2rsp);
+            channel2 = channel2rsp.getChannel();
+
+            assertThat(channel2).isNotEqualTo(channel1);
+
+            // p1, p2, p3 - see testApduFileRead
+            String selResponse = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel1, CLA_SELECT, COMMAND_SELECT, 0, 0x0C, 2, PL_FILE_ID);
+            assertThat(selResponse).isEqualTo(STATUS_NORMAL_STRING);
+
+            selResponse = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel2, CLA_SELECT, COMMAND_SELECT, 0, 0x0C, 2, ICCID_FILE_ID);
+            assertThat(selResponse).isEqualTo(STATUS_NORMAL_STRING);
+
+            // Read from two channels out of order -- SELECT command shouldn't affect other channels
+            String contents2 = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel2, CLA_READ_BINARY, COMMAND_READ_BINARY, 0, 0, 0, "");
+            assertThat(contents2).endsWith(STATUS_NORMAL_STRING);
+
+            String contents1 = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel1, CLA_READ_BINARY, COMMAND_READ_BINARY, 0, 0, 0, "");
+            assertThat(contents1).endsWith(STATUS_NORMAL_STRING);
+
+            assertWithMessage("Contents of EF_PL and EF_ICCID shouldn't be the same")
+                    .that(contents1).isNotEqualTo(contents2);
+            verifyValidPl(contents1.substring(0, contents1.length() - 4));
+            verifyValidIccId(contents2.substring(0, contents2.length() - 4));
+        } finally {
+            if (channel1 != INVALID_CHANNEL) mTelephonyManager.iccCloseLogicalChannel(channel1);
+            if (channel2 != INVALID_CHANNEL) mTelephonyManager.iccCloseLogicalChannel(channel2);
         }
     }
 

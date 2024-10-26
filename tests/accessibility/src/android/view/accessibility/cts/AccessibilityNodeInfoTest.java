@@ -431,7 +431,9 @@ public class AccessibilityNodeInfoTest {
         populateTouchDelegateTargetMap(info);
 
         // Populate 1 int field
-        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        if (Flags.triStateChecked()) {
+            info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        }
 
         // And Boolean properties are another field. Total is 38
 
@@ -647,8 +649,10 @@ public class AccessibilityNodeInfoTest {
                 receivedInfo.getTouchDelegateInfo());
 
         // Check 1 int field
-        assertEquals("Checked state has incorrect value",
-                expectedInfo.getChecked(), receivedInfo.getChecked());
+        if (Flags.triStateChecked()) {
+            assertEquals("Checked state has incorrect value",
+                    expectedInfo.getChecked(), receivedInfo.getChecked());
+        }
 
         // And the boolean properties are another field, for a total of 28
         // Missing parent: Tested end-to-end in AccessibilityWindowTraversalTest#testObjectContract

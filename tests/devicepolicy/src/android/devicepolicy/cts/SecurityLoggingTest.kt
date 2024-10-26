@@ -25,6 +25,7 @@ import android.security.keystore.KeyProperties
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpcOnly
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -35,6 +36,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.harrier.policies.GlobalSecurityLogging
 import com.android.bedstead.harrier.policies.SecurityLogging
+import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference

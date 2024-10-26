@@ -165,8 +165,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
         # Find the center ArUco marker in img and check if it's cropped
         corners, ids, _ = opencv_processing_utils.find_aruco_markers(
             img_bgr,
-            f'{img_name_stem}_{fmt}_{z_result:.2f}_ArUco.jpg',
-            aruco_marker_count=1
+            f'{img_name_stem}_{fmt}_{i}_{z_result:.2f}_ArUco.jpg',
+            aruco_marker_count=1,
+            force_greyscale=True,
         )
 
         all_aruco_corners.append([corner[0] for corner in corners])

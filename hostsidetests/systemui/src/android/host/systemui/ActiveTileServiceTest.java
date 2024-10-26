@@ -28,6 +28,9 @@ public class ActiveTileServiceTest extends BaseTileServiceTest {
     private static final String REQUEST_LISTENING = "am broadcast -a " + ACTION_REQUEST_LISTENING
             + " " + PACKAGE;
 
+    // this is smaller than default for cases where we expect the log to not show up
+    private static final int MAX_RETRIES_BEFORE_GIVING_UP = 10;
+
     public ActiveTileServiceTest() {
         super(SERVICE);
     }
@@ -42,7 +45,7 @@ public class ActiveTileServiceTest extends BaseTileServiceTest {
 
         clearLogcat();
         openSettings();
-        assertFalse(waitFor("onStartListening"));
+        assertFalse(waitFor("onStartListening", MAX_RETRIES_BEFORE_GIVING_UP));
     }
 
     public void testRequestListening() throws Exception {

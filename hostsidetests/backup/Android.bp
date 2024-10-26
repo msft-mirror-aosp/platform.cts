@@ -36,7 +36,7 @@ java_test_host {
         "truth",
         "platformprotos",
     ],
-    data: [
+    device_common_data: [
         ":AdbBackupApp",
         ":BackupAllowedApp",
         ":BackupNotAllowedApp",

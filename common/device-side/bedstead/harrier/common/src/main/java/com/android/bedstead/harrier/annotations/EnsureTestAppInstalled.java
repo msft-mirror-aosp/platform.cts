@@ -58,13 +58,6 @@ public @interface EnsureTestAppInstalled {
     /** The user the testApp should be installed on. */
     UserType onUser() default UserType.INSTRUMENTED_USER;
 
-    /**
-     * Whether this testApp should be returned by calls to {@code DeviceState#dpc()}.
-     *
-     * <p>Only one policy manager per test should be marked as primary.
-     */
-    boolean isPrimary() default false;
-
      /**
      * Priority sets the order that annotations will be resolved.
      *
