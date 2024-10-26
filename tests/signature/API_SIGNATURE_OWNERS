@@ -1,2 +1,5 @@
 # List of owners of API signature tests
-include platform/packages/modules/common:/OWNERS
+amhk@google.com
+dembski@google.com
+michaelwr@google.com
+paulduffin@google.com
