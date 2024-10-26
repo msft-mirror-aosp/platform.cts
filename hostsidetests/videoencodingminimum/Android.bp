@@ -33,7 +33,7 @@ java_test_host {
     test_suites: [
         "cts",
     ],
-    data: [
+    device_common_data: [
         ":VideoEncodingMinApp",
     ],
 }

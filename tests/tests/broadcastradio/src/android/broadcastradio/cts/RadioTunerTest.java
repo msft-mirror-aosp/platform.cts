@@ -26,6 +26,7 @@ import android.graphics.Bitmap;
 import android.hardware.radio.Flags;
 import android.hardware.radio.ProgramList;
 import android.hardware.radio.ProgramSelector;
+import android.hardware.radio.RadioAlert;
 import android.hardware.radio.RadioManager;
 import android.hardware.radio.RadioMetadata;
 import android.hardware.radio.RadioTuner;
@@ -34,6 +35,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
+
+import com.google.common.collect.Range;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -293,6 +296,56 @@ public final class RadioTunerTest extends AbstractRadioTestCase {
     }
 
     @Test
+    @ApiTest(apis = {"android.hardware.radio.RadioManager.ProgramInfo#getAlert",
+            "android.hardware.radio.RadioAlert#getMessageType",
+            "android.hardware.radio.RadioAlert#getStatus",
+            "android.hardware.radio.RadioAlert#getInfoList",
+            "android.hardware.radio.RadioAlert.AlertInfo#getCategories",
+            "android.hardware.radio.RadioAlert.AlertInfo#getUrgency",
+            "android.hardware.radio.RadioAlert.AlertInfo#getSeverity",
+            "android.hardware.radio.RadioAlert.AlertInfo#getDescription",
+            "android.hardware.radio.RadioAlert.AlertInfo#getLanguage",
+            "android.hardware.radio.RadioAlert.AlertInfo#getAreas",
+            "android.hardware.radio.RadioAlert.AlertArea#getGeocodes",
+            "android.hardware.radio.RadioAlert.AlertArea#getPolygons",
+            "android.hardware.radio.RadioAlert.Geocode#getValueName",
+            "android.hardware.radio.RadioAlert.Geocode#getValue",
+            "android.hardware.radio.RadioAlert.Polygon#getCoordinates",
+            "android.hardware.radio.RadioAlert.Coordinate#getLatitude",
+            "android.hardware.radio.RadioAlert.Coordinate#getLongitude"})
+    @RequiresFlagsEnabled(Flags.FLAG_HD_RADIO_EMERGENCY_ALERT_SYSTEM)
+    public void getAlert_forDynamicProgramListAndCurrentProgramInfo() throws Exception {
+        openAmFmTuner();
+        TestOnCompleteListener completeListener = new TestOnCompleteListener();
+        ProgramList list = assumeNonNullProgramList();
+        try {
+            list.addOnCompleteListener(completeListener);
+            mExpect.withMessage("List update completion before getting program info")
+                    .that(completeListener.waitForCallback()).isTrue();
+            List<RadioManager.ProgramInfo> programInfoList = list.toList();
+            int alertCount = 0;
+
+            for (int i = 0; i < programInfoList.size(); i++) {
+                RadioAlert alert = programInfoList.get(i).getAlert();
+                if (alert == null) {
+                    continue;
+                }
+                alertCount++;
+                verifyRadioAlert(alert);
+            }
+            if (mCallback.currentProgramInfo != null
+                    && mCallback.currentProgramInfo.getAlert() != null) {
+                verifyRadioAlert(mCallback.currentProgramInfo.getAlert());
+                alertCount++;
+            }
+            assume().withMessage("Non-null alert in program list and current program info")
+                    .that(alertCount).isNotEqualTo(0);
+        } finally {
+            list.close();
+        }
+    }
+
+    @Test
     @ApiTest(apis = {"android.hardware.radio.RadioTuner#getDynamicProgramList",
             "android.hardware.radio.RadioTuner#tune"})
     public void tune_withHdSelectorFromDynamicProgramList() throws Exception {
@@ -448,6 +501,75 @@ public final class RadioTunerTest extends AbstractRadioTestCase {
             return iconId;
         } else {
             return artId;
+        }
+    }
+
+    private void verifyRadioAlert(RadioAlert alert) {
+        mExpect.withMessage("Alert message type").that(alert.getMessageType())
+                .isIn(Range.closed(RadioAlert.MESSAGE_TYPE_ALERT,
+                        RadioAlert.MESSAGE_TYPE_CANCEL));
+        mExpect.withMessage("Alert status").that(alert.getStatus())
+                .isIn(Range.closed(RadioAlert.STATUS_ACTUAL, RadioAlert.STATUS_TEST));
+        List<RadioAlert.AlertInfo> alertInfos = alert.getInfoList();
+        for (int infoIdx = 0; infoIdx < alertInfos.size(); infoIdx++) {
+            RadioAlert.AlertInfo alertInfo = alertInfos.get(infoIdx);
+            int[] categories = alertInfo.getCategories();
+            mExpect.withMessage("Non-empty category array")
+                    .that(categories.length).isNotEqualTo(0);
+            for (int categoryIdx = 0; categoryIdx < categories.length; categoryIdx++) {
+                mExpect.withMessage("Alert category").that(categories[categoryIdx])
+                        .isIn(Range.closed(RadioAlert.CERTAINTY_OBSERVED,
+                                RadioAlert.CATEGORY_OTHER));
+            }
+            mExpect.withMessage("Alert urgency").that(alertInfo.getUrgency())
+                    .isIn(Range.closed(RadioAlert.URGENCY_IMMEDIATE,
+                            RadioAlert.URGENCY_UNKNOWN));
+            mExpect.withMessage("Alert severity").that(alertInfo.getSeverity())
+                    .isIn(Range.closed(RadioAlert.SEVERITY_EXTREME,
+                            RadioAlert.SEVERITY_UNKNOWN));
+            mExpect.withMessage("Alert certainty").that(alertInfo.getCertainty())
+                    .isIn(Range.closed(RadioAlert.CERTAINTY_OBSERVED,
+                            RadioAlert.CERTAINTY_UNKNOWN));
+            String alertLanguage = alertInfo.getLanguage();
+            mExpect.withMessage("Alert description").that(alertInfo.toString())
+                    .contains(alertInfo.getDescription());
+            if (alertLanguage != null) {
+                mExpect.withMessage("Non-empty alert language").that(alertLanguage)
+                        .isNotEmpty();
+            }
+            List<RadioAlert.AlertArea> alertAreas = alertInfo.getAreas();
+            for (int areaIdx = 0; areaIdx < alertAreas.size(); areaIdx++) {
+                RadioAlert.AlertArea alertArea = alertAreas.get(areaIdx);
+                for (int geocodeIdx = 0; geocodeIdx < alertArea.getGeocodes().size();
+                        geocodeIdx++) {
+                    mExpect.withMessage("Non-empty geocode value name").that(alertArea
+                            .getGeocodes().get(geocodeIdx).getValueName()).isNotEmpty();
+                    mExpect.withMessage("Non-empty geocode value").that(alertArea
+                            .getGeocodes().get(geocodeIdx).getValue()).isNotEmpty();
+                }
+                for (int polygonIdx = 0; polygonIdx < alertArea.getPolygons().size();
+                        polygonIdx++) {
+                    List<RadioAlert.Coordinate> coordinates = alertArea.getPolygons()
+                            .get(polygonIdx).getCoordinates();
+                    mExpect.withMessage("Polygon coordinate counts")
+                            .that(coordinates.size()).isAtLeast(4);
+                    mExpect.withMessage("Latitude for the first and last coordinate")
+                            .that(coordinates.getFirst().getLatitude())
+                            .isEqualTo(coordinates.getLast().getLatitude());
+                    mExpect.withMessage("Longitude for the first and last coordinate")
+                            .that(coordinates.getFirst().getLongitude())
+                            .isEqualTo(coordinates.getLast().getLongitude());
+                    for (int coordinateIdx = 0; coordinateIdx < coordinates.size();
+                            coordinateIdx++) {
+                        mExpect.withMessage("Latitude of polygon area")
+                                .that(coordinates.get(coordinateIdx).getLatitude())
+                                .isIn(Range.closed(-90.0, 90.0));
+                        mExpect.withMessage("Longitude of polygon area")
+                                .that(coordinates.get(coordinateIdx).getLongitude())
+                                .isIn(Range.closed(-180.0, 180.0));
+                    }
+                }
+            }
         }
     }
 
