@@ -18,12 +18,15 @@ package android.appsecurity.cts;
 
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,6 +49,10 @@ public final class KeyStoreManagerTest extends BaseHostJUnit4Test {
      * The class containing test methods used to verify APIs related to the granting of keys.
       */
     private static final String GRANT_TEST_CLASS = GRANT_TEST_PKG + ".KeyStoreManagerGrantTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Test
     @ApiTest(apis = {"android.security.keystore.KeyStoreManager#grantKeyAccess",

@@ -99,8 +99,6 @@ public class MediaActivityTest {
 
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.HDMI_CEC);
 
         mContext = mInstrumentation.getContext();
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
@@ -132,6 +130,9 @@ public class MediaActivityTest {
                 () -> mActivityScenario = ActivityScenario.launch(intent),
                 Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX
         );
+        // Add permission after runWithShellPermissionIdentity else it gets removed.
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.HDMI_CEC);
         ConditionVariable activityReferenceObtained = new ConditionVariable();
         mActivityScenario.onActivity(activity -> {
             mActivity = activity;

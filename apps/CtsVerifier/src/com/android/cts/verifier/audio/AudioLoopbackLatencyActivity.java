@@ -607,7 +607,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mConnectListener = new ConnectListener();
 
         // WAV Capture
-        mFilesDir = mContext.getFilesDir();
+        String folderName = getDataDir().getAbsolutePath() + "/WavFiles";
+        mFilesDir = new File(folderName);
+        if (!mFilesDir.exists()) {
+            mFilesDir.mkdir();
+        }
+
         mWavFileCapture = new WavFileCapture();
 
         showRouteStatus();

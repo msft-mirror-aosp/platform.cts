@@ -40,7 +40,7 @@ java_test_host {
         "general-tests",
         "sts",
     ],
-    data: [
+    device_common_data: [
         ":CtsHostsideNetworkPolicyTestsApp",
         ":CtsHostsideNetworkPolicyTestsApp2",
     ],
