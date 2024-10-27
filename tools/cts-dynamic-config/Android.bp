@@ -34,7 +34,6 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-media",
-        "mcts-media",
     ],
     java_resources: [
         ":cts-dynamic-config.dynamic",
