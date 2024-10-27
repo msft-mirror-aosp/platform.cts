@@ -41,6 +41,7 @@ import android.view.Surface;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.ResultType;
@@ -162,6 +163,9 @@ public class DecoderLowLatencyTest extends MediaTestBase {
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_LowLatency",
+            "android.media.MediaCodecInfo.CodecCapabilities#isFeatureSupported",
+            "android.media.MediaFormat#KEY_LOW_LATENCY"})
     @Test
     public void testLowLatencyVideoSdk() throws Exception {
         MediaCodecWrapper decoder = new SdkMediaCodec(MediaCodec.createByCodecName(mDecoderName));
@@ -169,6 +173,9 @@ public class DecoderLowLatencyTest extends MediaTestBase {
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_LowLatency",
+            "android.media.MediaCodecInfo.CodecCapabilities#isFeatureSupported",
+            "android.media.MediaFormat#KEY_LOW_LATENCY"})
     @Test
     public void testLowLatencyVideoNdk() throws Exception {
         MediaCodecWrapper decoder = new NdkMediaCodec(mDecoderName);

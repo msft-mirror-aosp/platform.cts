@@ -1,6 +1,4 @@
 # Bug component: 533273
 set noparent
 
-suprabh@google.com
-omakoto@google.com
-ctate@google.com
+include platform/frameworks/base:/apex/jobscheduler/ALARM_OWNERS

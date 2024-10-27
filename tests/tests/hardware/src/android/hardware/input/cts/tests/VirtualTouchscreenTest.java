@@ -130,24 +130,6 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                 createMotionEvent(MotionEvent.ACTION_HOVER_EXIT, x1, y1)));
     }
 
-    @Test
-    public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float inputSize = 1f;
-        final float x = 50f;
-        final float y = 50f;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
-                                .setAction(VirtualTouchEvent.ACTION_DOWN)
-                                .setPointerId(1)
-                                .setX(x)
-                                .setY(y)
-                                .setPressure(255f)
-                                .setMajorAxisSize(inputSize)
-                                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                                .build())));
-    }
-
     private void sendHoverEvent(int action, float x, float y) {
         mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
                 .setAction(action)

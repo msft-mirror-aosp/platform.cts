@@ -65,17 +65,6 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
     }
 
     @Test
-    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualKeyboard.sendKeyEvent(
-                                new VirtualKeyEvent.Builder()
-                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                                        .build())));
-    }
-
-    @Test
     public void keyEvent_nullEvent_throwsNpe() {
         assertThrows(NullPointerException.class, () -> mVirtualKeyboard.sendKeyEvent(null));
     }

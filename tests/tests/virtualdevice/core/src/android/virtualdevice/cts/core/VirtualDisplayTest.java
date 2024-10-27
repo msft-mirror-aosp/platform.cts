@@ -16,7 +16,6 @@
 
 package android.virtualdevice.cts.core;
 
-import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
 import static android.Manifest.permission.CAPTURE_VIDEO_OUTPUT;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
@@ -52,8 +51,7 @@ import java.util.function.BooleanSupplier;
 public class VirtualDisplayTest {
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            ADD_ALWAYS_UNLOCKED_DISPLAY);
+    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
     private VirtualDeviceManager mVirtualDeviceManager;
     private VirtualDevice mVirtualDevice;
