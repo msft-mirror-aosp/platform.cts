@@ -19,6 +19,7 @@ package android.app.notification.legacy29.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.app.NotificationChannel.NEWS_ID;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.NotificationAssistantService.FEEDBACK_RATING;
 
@@ -72,6 +73,7 @@ import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgrou
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -517,7 +519,7 @@ public class NotificationAssistantServiceTest {
 
         mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
-        assertEquals(NotificationChannel.NEWS_ID, out.getChannel().getId());
+        assertEquals(NEWS_ID, out.getChannel().getId());
 
         // and can move it later
         signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_PROMOTION);
@@ -917,5 +919,67 @@ public class NotificationAssistantServiceTest {
             mNotificationManager.allowAssistantAdjustment(KEY_IMPORTANCE);
             mUi.dropShellPermissionIdentity();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testCannotPostToReservedChannel() throws Exception {
+        setUpListeners();
+
+        // trigger creation of reserved channel
+        sendNotification(1, null, ICON_ID);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        Bundle signals = new Bundle();
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_NEWS);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.adjustNotification(adjustment);
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        assertEquals(NEWS_ID, out.getChannel().getId());
+
+        int id = 99;
+        final Notification notification =
+                new Notification.Builder(mContext, NEWS_ID)
+                        .setSmallIcon(ICON_ID)
+                        .build();
+        mNotificationManager.notify(id, notification);
+
+        StatusBarNotification sbnInvalid = mHelper.findPostedNotification(null, id,
+                NotificationHelper.SEARCH_TYPE.APP);
+        Assert.assertNull(sbnInvalid);
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testCannotDeleteReservedChannel() throws Exception {
+
+        setUpListeners();
+
+        // trigger creation of reserved channel
+        sendNotification(1, null, ICON_ID);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        Bundle signals = new Bundle();
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_NEWS);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.adjustNotification(adjustment);
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        assertEquals(NEWS_ID, out.getChannel().getId());
+
+        mNotificationManager.deleteNotificationChannel(NEWS_ID);
+        assertThat(mNotificationManager.getNotificationChannel(NEWS_ID)).isNotNull();
     }
 }
