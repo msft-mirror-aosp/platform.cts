@@ -34,7 +34,7 @@ sh_test_host {
 
 filegroup {
     name: "sepolicy-cil-files",
-    srcs: [
+    device_first_srcs: [
         ":plat_sepolicy.cil",
         ":plat_pub_versioned.cil",
         ":system_ext_sepolicy.cil",

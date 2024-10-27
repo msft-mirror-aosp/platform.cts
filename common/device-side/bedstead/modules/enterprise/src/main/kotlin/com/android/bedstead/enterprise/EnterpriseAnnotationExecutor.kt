@@ -26,6 +26,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps
@@ -101,6 +102,10 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
             is EnsureHasNoWorkProfile -> usersComponent.ensureHasNoProfile(
                 EnsureHasNoWorkProfile.PROFILE_TYPE,
                 annotation.forUser
+            )
+
+            is EnsureTestAppInstalledAsPrimaryDPC -> enterpriseComponent.ensureTestAppInstalledAsPrimaryDPC(
+                annotation
             )
         }
     }
