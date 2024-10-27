@@ -16,11 +16,8 @@
 
 package android.input.cts
 
-import android.Manifest.permission.CREATE_VIRTUAL_DEVICE
 import android.Manifest.permission.INJECT_EVENTS
-import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
-import android.companion.virtual.VirtualDeviceParams
 import android.content.Context
 import android.cts.input.EventVerifier
 import android.graphics.Bitmap
@@ -34,10 +31,9 @@ import android.os.SystemProperties
 import android.view.Display
 import android.view.MotionEvent
 import android.view.PointerIcon
-import android.virtualdevice.cts.common.FakeAssociationRule
+import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
@@ -80,9 +76,9 @@ class PointerIconTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(INJECT_EVENTS)
     @get:Rule
-    val fakeAssociationRule = FakeAssociationRule()
+    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
     @get:Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
     @get:Rule
@@ -105,7 +101,7 @@ class PointerIconTest {
             activity.window.decorView.rootView.setBackgroundColor(Color.WHITE)
         }
 
-        device.setUp(context, virtualDisplayRule.virtualDisplay.display, fakeAssociationRule)
+        device.setUp(context, virtualDisplayRule.virtualDisplay.display, virtualDeviceRule)
 
         verifier = EventVerifier(activity::getInputEvent)
 
@@ -247,44 +243,27 @@ enum class PointerDevice {
         override fun setUp(
             context: Context,
             display: Display,
-            fakeAssociationRule: FakeAssociationRule
+            virtualDeviceRule: VirtualDeviceRule
         ) {
-            val virtualDeviceManager =
-                context.getSystemService(VirtualDeviceManager::class.java)!!
-            runWithShellPermissionIdentity({
-                virtualDevice =
-                    virtualDeviceManager.createVirtualDevice(fakeAssociationRule.associationInfo.id,
-                        VirtualDeviceParams.Builder().build())
-                virtualMouse =
-                    virtualDevice.createVirtualMouse(VirtualMouseConfig.Builder()
-                            .setVendorId(TEST_VENDOR_ID)
-                            .setProductId(TEST_PRODUCT_ID)
-                            .setInputDeviceName("Pointer Icon Test Mouse")
-                            .setAssociatedDisplayId(display.displayId).build())
-            }, CREATE_VIRTUAL_DEVICE, INJECT_EVENTS)
+            virtualDevice = virtualDeviceRule.createManagedVirtualDevice()
+            virtualMouse =
+                virtualDevice.createVirtualMouse(VirtualMouseConfig.Builder()
+                    .setVendorId(TEST_VENDOR_ID)
+                    .setProductId(TEST_PRODUCT_ID)
+                    .setInputDeviceName("Pointer Icon Test Mouse")
+                    .setAssociatedDisplayId(display.displayId).build())
         }
 
         override fun hoverMove(dx: Int, dy: Int) {
-            runWithShellPermissionIdentity({
-                virtualMouse.sendRelativeEvent(
-                    VirtualMouseRelativeEvent.Builder()
-                            .setRelativeX(dx.toFloat())
-                            .setRelativeY(dy.toFloat())
-                            .build()
-                )
-            }, CREATE_VIRTUAL_DEVICE)
+            virtualMouse.sendRelativeEvent(
+                VirtualMouseRelativeEvent.Builder()
+                    .setRelativeX(dx.toFloat())
+                    .setRelativeY(dy.toFloat())
+                    .build()
+            )
         }
 
-        override fun tearDown() {
-            runWithShellPermissionIdentity({
-                if (this::virtualMouse.isInitialized) {
-                    virtualMouse.close()
-                }
-                if (this::virtualDevice.isInitialized) {
-                    virtualDevice.close()
-                }
-            }, CREATE_VIRTUAL_DEVICE)
-        }
+        override fun tearDown() {}
 
         override fun toString(): String = "MOUSE"
     },
@@ -297,7 +276,7 @@ enum class PointerDevice {
         override fun setUp(
             context: Context,
             display: Display,
-            fakeAssociationRule: FakeAssociationRule
+            virtualDeviceRule: VirtualDeviceRule
         ) {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             drawingTablet = UinputDrawingTablet(instrumentation, display)
@@ -328,7 +307,7 @@ enum class PointerDevice {
     abstract fun setUp(
         context: Context,
         display: Display,
-        fakeAssociationRule: FakeAssociationRule
+        virtualDeviceRule: VirtualDeviceRule
     )
 
     abstract fun hoverMove(dx: Int, dy: Int)

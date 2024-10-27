@@ -24,10 +24,6 @@ import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_I
 
 import static com.google.android.attestation.ParsedAttestationRecord.createParsedAttestationRecord;
 
-import static org.junit.Assert.assertTrue;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import android.content.pm.PackageManager;
 import android.security.keystore.DeviceIdAttestationException;
 import android.security.keystore.KeyGenParameterSpec;
@@ -50,10 +46,8 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Feature Keystore Attestation device info collector. Collector collects information from the
@@ -78,8 +72,8 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
 
     private void generateKeyPair(String algorithm, KeyGenParameterSpec spec)
             throws NoSuchAlgorithmException,
-                    NoSuchProviderException,
-                    InvalidAlgorithmParameterException {
+            NoSuchProviderException,
+            InvalidAlgorithmParameterException {
         KeyPairGenerator keyPairGenerator =
                 KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore");
         keyPairGenerator.initialize(spec);
@@ -157,39 +151,36 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
     private static void collectStoredInformation(
             DeviceInfoStore localStore, AuthorizationList keyDetailsList)
             throws DeviceIdAttestationException, IOException {
-        if (keyDetailsList.rootOfTrust.isPresent()) {
-            collectRootOfTrust(keyDetailsList.rootOfTrust, localStore);
-        }
         if (keyDetailsList.osVersion.isPresent()) {
             localStore.addResult("os_version", keyDetailsList.osVersion.get());
         }
         if (keyDetailsList.osPatchLevel.isPresent()) {
-            localStore.addResult("patch_level", keyDetailsList.osPatchLevel.get());
+            localStore.addResult("os_patch_level", keyDetailsList.osPatchLevel.get());
         }
         if (keyDetailsList.attestationIdBrand.isPresent()) {
-            localStore.addResult(
+            localStore.addBytesResult(
                     "attestation_id_brand",
-                    new String(keyDetailsList.attestationIdBrand.get(), UTF_8));
+                    keyDetailsList.attestationIdBrand.get());
         }
         if (keyDetailsList.attestationIdDevice.isPresent()) {
-            localStore.addResult(
+            localStore.addBytesResult(
                     "attestation_id_device",
-                    new String(keyDetailsList.attestationIdDevice.get(), UTF_8));
+                    keyDetailsList.attestationIdDevice.get());
         }
         if (keyDetailsList.attestationIdProduct.isPresent()) {
-            localStore.addResult(
+            localStore.addBytesResult(
                     "attestation_id_product",
-                    new String(keyDetailsList.attestationIdProduct.get(), UTF_8));
+                    keyDetailsList.attestationIdProduct.get());
         }
         if (keyDetailsList.attestationIdManufacturer.isPresent()) {
-            localStore.addResult(
+            localStore.addBytesResult(
                     "attestation_id_manufacturer",
-                    new String(keyDetailsList.attestationIdManufacturer.get(), UTF_8));
+                    keyDetailsList.attestationIdManufacturer.get());
         }
         if (keyDetailsList.attestationIdModel.isPresent()) {
-            localStore.addResult(
+            localStore.addBytesResult(
                     "attestation_id_model",
-                    new String(keyDetailsList.attestationIdModel.get(), UTF_8));
+                    keyDetailsList.attestationIdModel.get());
         }
         if (keyDetailsList.vendorPatchLevel.isPresent()) {
             localStore.addResult("vendor_patch_level", keyDetailsList.vendorPatchLevel.get());
@@ -197,19 +188,22 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
         if (keyDetailsList.bootPatchLevel.isPresent()) {
             localStore.addResult("boot_patch_level", keyDetailsList.bootPatchLevel.get());
         }
+        if (keyDetailsList.rootOfTrust.isPresent()) {
+            collectRootOfTrust(keyDetailsList.rootOfTrust.get(), localStore);
+        }
     }
 
     private static void collectRootOfTrust(
-            Optional<RootOfTrust> rootOfTrust, DeviceInfoStore localStore) throws IOException {
-        if (rootOfTrust.isPresent()) {
-            localStore.addResult(
-                    "verified_boot_key",
-                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootKey));
-            localStore.addResult("device_locked", rootOfTrust.get().deviceLocked);
-            localStore.addResult("verified_boot_state", rootOfTrust.get().verifiedBootState.name());
-            localStore.addResult(
-                    "verified_boot_hash",
-                    Base64.getEncoder().encodeToString(rootOfTrust.get().verifiedBootHash));
-        }
+            RootOfTrust rootOfTrust, DeviceInfoStore localStore) throws IOException {
+        localStore.startGroup("root_of_trust");
+        localStore.addBytesResult(
+                "verified_boot_key",
+                rootOfTrust.verifiedBootKey);
+        localStore.addResult("device_locked", rootOfTrust.deviceLocked);
+        localStore.addResult("verified_boot_state", rootOfTrust.verifiedBootState.name());
+        localStore.addBytesResult(
+                "verified_boot_hash",
+                rootOfTrust.verifiedBootHash);
+        localStore.endGroup();
     }
 }

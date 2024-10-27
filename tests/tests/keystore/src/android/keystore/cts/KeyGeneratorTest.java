@@ -28,11 +28,13 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
+import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.test.MoreAsserts;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -74,6 +76,7 @@ import javax.crypto.spec.IvParameterSpec;
 @RunWith(JUnitParamsRunner.class)
 public class KeyGeneratorTest {
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_PROVIDER_NAME;
+    private static final String TAG = KeyGeneratorTest.class.getSimpleName();
 
     static String[] EXPECTED_ALGORITHMS = {
         "AES",
@@ -868,6 +871,14 @@ public class KeyGeneratorTest {
                 // Add generated mac signature to HashSet so that unique signatures will be counted
                 results.add(new String(macSign));
             }
+
+            if ((msg == null || msg.length == 0)
+                    && TestUtils.getVendorApiLevel() <= Build.VERSION_CODES.P) {
+                // Skip empty and null inputs on older devices as HAL is unable to handle them.
+                Log.d(TAG, "Skipping test for unsupported input on pre-Q launch device.");
+                continue;
+            }
+
             // Verify unique MAC is generated for all different keys
             assertEquals(TextUtils.formatSimple("%d different MACs should have been generated for "
                                          + "%d different keys over message |%s|",
