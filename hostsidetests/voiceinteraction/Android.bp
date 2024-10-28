@@ -33,7 +33,7 @@ java_test_host {
         "vts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":CtsHostsideVoiceInteractionTestsApp",
     ],
     per_testcase_directory: true,

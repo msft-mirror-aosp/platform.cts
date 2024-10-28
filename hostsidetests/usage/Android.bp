@@ -31,7 +31,7 @@ java_test_host {
         "general-tests",
         "mts",
     ],
-    data: [
+    device_common_data: [
         ":CtsAppUsageTestApp",
         ":CtsAppUsageTestAppToo",
     ],
