@@ -43,7 +43,7 @@ java_test_host {
         "android.permission.flags-aconfig-java-host",
     ],
     java_resource_dirs: ["res"],
-    data: [
+    device_common_data: [
         ":cts-current-api-gz",
         ":CtsCertInstallerApp",
         ":CtsContactDirectoryProvider",
