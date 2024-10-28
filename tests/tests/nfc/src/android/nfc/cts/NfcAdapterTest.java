@@ -907,6 +907,11 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeListenActivated(boolean isActivated) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
