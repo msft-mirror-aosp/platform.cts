@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -358,6 +359,46 @@ public class AccessibilityNodeInfoTest {
         assertThat(info.isChecked()).isFalse();
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setUsingApi() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setInvalidExpectException() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    info.setExpandedState(5);
+                });
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
@@ -471,6 +512,11 @@ public class AccessibilityNodeInfoTest {
         info.setTextSelectable(true);
         info.setRequestInitialAccessibilityFocus(true);
         info.setAccessibilityDataSensitive(true);
+
+        // 1 Integer property
+        if (Flags.a11yExpansionStateApi()) {
+            info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        }
     }
 
     /**
@@ -736,6 +782,14 @@ public class AccessibilityNodeInfoTest {
         assertSame("isAccessibilityDataSensitive has incorrect value",
                 expectedInfo.isAccessibilityDataSensitive(),
                 receivedInfo.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "Expanded state has incorrect value",
+                    expectedInfo.getExpandedState(),
+                    receivedInfo.getExpandedState());
+        }
     }
 
     /**
@@ -840,6 +894,14 @@ public class AccessibilityNodeInfoTest {
                 info.hasRequestInitialAccessibilityFocus());
         assertFalse("isAccessibilityDataSensitive not properly reset",
                 info.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "expandedState not properly reset",
+                    info.getExpandedState(),
+                    AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        }
     }
 
     private static void replaceSpan(
