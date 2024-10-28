@@ -23,6 +23,7 @@ import android.app.Instrumentation
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.PixelFormat
+import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -75,6 +76,7 @@ class TouchModeTest {
     // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @get:Rule
     val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
+
     @get:Rule
     val activityRule = ActivityScenarioRule<Activity>(Activity::class.java)
     private lateinit var activity: Activity
@@ -130,8 +132,7 @@ class TouchModeTest {
     @Test
     fun testFocusedWindowOwnerCanChangeTouchMode() {
         instrumentation.setInTouchMode(true)
-        PollingCheck.waitFor { isInTouchMode() }
-        assertThat(isInTouchMode()).isTrue()
+        PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")
     }
 
     @Test
@@ -173,7 +174,11 @@ class TouchModeTest {
         // Due to the 2 expected touch mode events to occur, this test may take few seconds to run.
         uiDevice.pressHome()
         WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(activity.display.displayId)
-        PollingCheck.waitFor(WindowUtil.WINDOW_FOCUS_TIMEOUT_MILLIS) { !activity.hasWindowFocus() }
+        PollingCheck.waitFor(
+            WindowUtil.WINDOW_FOCUS_TIMEOUT_MILLIS,
+            { !activity.hasWindowFocus() },
+            "Activity expected to not receive focus"
+        )
 
         instrumentation.setInTouchMode(true)
 
@@ -185,7 +190,7 @@ class TouchModeTest {
     fun testDetachedViewReturnsDefaultTouchMode() {
         val context = instrumentation.targetContext
         val defaultInTouchMode = context.resources.getBoolean(
-            context.resources.getIdentifier("config_defaultInTouchMode", "bool", "android")
+                context.resources.getIdentifier("config_defaultInTouchMode", "bool", "android")
         )
 
         val detachedView = View(activity)
@@ -216,7 +221,7 @@ class TouchModeTest {
         val secondaryDisplayId = findOrCreateSecondaryDisplay()
 
         touchDownOnDefaultDisplay().use {
-            assertThat(isInTouchMode()).isTrue()
+            PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")
             assertSecondaryDisplayTouchModeState(secondaryDisplayId, isInTouch = true)
         }
     }
@@ -241,13 +246,12 @@ class TouchModeTest {
         )
 
         val secondaryDisplayId = findOrCreateSecondaryDisplay()
-
         touchDownOnDefaultDisplay().use {
-            assertThat(isInTouchMode()).isTrue()
+            PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")
             assertSecondaryDisplayTouchModeState(
-                secondaryDisplayId,
-                isInTouch = false,
-                delayBeforeChecking = true
+                    secondaryDisplayId,
+                    isInTouch = false,
+                    delayBeforeChecking = true
             )
         }
     }
@@ -268,11 +272,11 @@ class TouchModeTest {
         )
 
         touchDownOnDefaultDisplay().use {
-            assertThat(isInTouchMode()).isTrue()
+            PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")
             assertSecondaryDisplayTouchModeState(
-                secondaryDisplayId,
-                isInTouch = false,
-                delayBeforeChecking = true
+                    secondaryDisplayId,
+                    isInTouch = false,
+                    delayBeforeChecking = true
             )
         }
     }
@@ -300,7 +304,6 @@ class TouchModeTest {
         PollingCheck.waitFor(TOUCH_MODE_PROPAGATION_TIMEOUT_MILLIS) {
             isSecondaryDisplayInTouchMode(displayId) == isInTouch
         }
-        assertThat(isSecondaryDisplayInTouchMode(displayId)).isEqualTo(isInTouch)
     }
 
     private fun isSecondaryDisplayInTouchMode(displayId: Int): Boolean {
@@ -329,13 +332,17 @@ class TouchModeTest {
 
     private fun touchDownOnDefaultDisplay(): AutoCloseable {
         val downTime = SystemClock.uptimeMillis()
+        val location = IntArray(2)
+        activity.getWindow().getDecorView().getLocationOnScreen(location)
+        val windowLocationOnScreen = Point(location[0], location[1])
+
         val down = MotionEvent.obtain(
-            downTime,
-            downTime,
-            ACTION_DOWN,
-            100f, // x
-            100f, // y
-            0 // metaState
+                downTime,
+                downTime,
+                ACTION_DOWN,
+                windowLocationOnScreen.x.toFloat(),
+                windowLocationOnScreen.y.toFloat(),
+                0 // metaState
         )
         down.source = InputDevice.SOURCE_TOUCHSCREEN
         val sync = true
@@ -345,12 +352,12 @@ class TouchModeTest {
         return AutoCloseable {
             val upEventTime = SystemClock.uptimeMillis()
             val up = MotionEvent.obtain(
-                downTime,
-                upEventTime,
-                ACTION_UP,
-                100f, // x
-                100f, // y
-                0 // metaState
+                    downTime,
+                    upEventTime,
+                    ACTION_UP,
+                    windowLocationOnScreen.x.toFloat(),
+                    windowLocationOnScreen.y.toFloat(),
+                    0 // metaState
             )
             up.source = InputDevice.SOURCE_TOUCHSCREEN
             instrumentation.uiAutomation.injectInputEvent(up, sync)
