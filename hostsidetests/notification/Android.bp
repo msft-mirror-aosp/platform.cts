@@ -40,7 +40,7 @@ java_test_host {
         "cts-multi-user-test-utils",
         "flag-junit-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsNotificationListenerApp",
     ],
 }
