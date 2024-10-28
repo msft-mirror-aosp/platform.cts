@@ -69,9 +69,9 @@ EXPECTED_BY_SRGB = 0.066
 
 # Color conversion matrix for DISPLAY P3 to CIEXYZ
 P3_TO_XYZ = numpy.array([
-  [0.5151187,  0.2919778,  0.1571035],
-  [0.2411892,  0.6922441,  0.0665668],
-  [-0.0010505, 0.0418791,  0.7840713]
+    [0.5151187, 0.2919778, 0.1571035],
+    [0.2411892, 0.6922441, 0.0665668],
+    [-0.0010505, 0.0418791, 0.7840713]
 ]).transpose()
 
 # Chosen empirically - tolerance for the point in triangle test for colorspace
@@ -1469,9 +1469,9 @@ def srgb_eotf(img):
   # Source:
   # https://developer.android.com/reference/android/graphics/ColorSpace.Named#DISPLAY_P3
   return numpy.where(
-    img < 0.04045,
-    img / 12.92,
-    numpy.pow((img + 0.055) / 1.055, 2.4)
+      img < 0.04045,
+      img / 12.92,
+      numpy.pow((img + 0.055) / 1.055, 2.4)
   )
 
 
@@ -1486,9 +1486,9 @@ def ciexyz_to_xy(img):
   """
   img_sums = img.sum(axis=2)
   img_sums[img_sums == 0] = 1
-  img[:,:,0] = img[:,:,0] / img_sums
-  img[:,:,1] = img[:,:,1] / img_sums
-  return img[:,:,:2]
+  img[:, :, 0] = img[:, :, 0] / img_sums
+  img[:, :, 1] = img[:, :, 1] / img_sums
+  return img[:, :, :2]
 
 
 def p3_img_has_wide_gamut(wide_img):
