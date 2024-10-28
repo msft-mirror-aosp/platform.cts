@@ -24,7 +24,6 @@ import os
 import sys
 
 import capture_request_utils
-import colour
 import error_util
 import noise_model_constants
 import numpy
@@ -68,9 +67,16 @@ EXPECTED_GY_SRGB = 0.598
 EXPECTED_BX_SRGB = 0.156
 EXPECTED_BY_SRGB = 0.066
 
+# Color conversion matrix for DISPLAY P3 to CIEXYZ
+P3_TO_XYZ = numpy.array([
+  [0.5151187,  0.2919778,  0.1571035],
+  [0.2411892,  0.6922441,  0.0665668],
+  [-0.0010505, 0.0418791,  0.7840713]
+]).transpose()
+
 # Chosen empirically - tolerance for the point in triangle test for colorspace
 # chromaticities
-COLORSPACE_TRIANGLE_AREA_TOL = 0.00028
+COLORSPACE_TRIANGLE_AREA_TOL = 0.00039
 
 
 def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
@@ -1450,6 +1456,41 @@ def distance(p, q):
   return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q)))
 
 
+def srgb_eotf(img):
+  """Returns the input sRGB-transferred image with a linear transfer function.
+
+  Args:
+    img: The input image as a numpy array.
+
+  Returns:
+    numpy.array: The same image with a linear transfer.
+  """
+
+  # Source:
+  # https://developer.android.com/reference/android/graphics/ColorSpace.Named#DISPLAY_P3
+  return numpy.where(
+    img < 0.04045,
+    img / 12.92,
+    numpy.pow((img + 0.055) / 1.055, 2.4)
+  )
+
+
+def ciexyz_to_xy(img):
+  """Returns the input CIE XYZ image in the CIE xy colorspace.
+
+  Args:
+    img: The input image as a numpy array
+
+  Returns:
+    numpy.array: The same image in the CIE xy colorspace.
+  """
+  img_sums = img.sum(axis=2)
+  img_sums[img_sums == 0] = 1
+  img[:,:,0] = img[:,:,0] / img_sums
+  img[:,:,1] = img[:,:,1] / img_sums
+  return img[:,:,:2]
+
+
 def p3_img_has_wide_gamut(wide_img):
   """Check if a DISPLAY_P3 image contains wide gamut pixels.
 
@@ -1468,18 +1509,10 @@ def p3_img_has_wide_gamut(wide_img):
   w = wide_img.size[0]
   h = wide_img.size[1]
   wide_arr = numpy.array(wide_img)
+  linear_arr = srgb_eotf(wide_arr / float(numpy.iinfo(numpy.uint8).max))
 
-  img_arr = colour.RGB_to_XYZ(
-      wide_arr / 255.0,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.whitepoint,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.whitepoint,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.matrix_RGB_to_XYZ,
-      'Bradford', lambda x: colour.eotf(x, 'sRGB'))
-
-  xy_arr = colour.XYZ_to_xy(img_arr)
-
-  srgb_colorspace = colour.models.RGB_COLOURSPACE_sRGB
-  srgb_primaries = srgb_colorspace.primaries
+  xyz_arr = numpy.matmul(linear_arr, P3_TO_XYZ)
+  xy_arr = ciexyz_to_xy(xyz_arr)
 
   for y in range(h):
     for x in range(w):
@@ -1487,9 +1520,11 @@ def p3_img_has_wide_gamut(wide_img):
       # This check is not guaranteed not to emit false positives / negatives,
       # however the probability of either on an arbitrary DISPLAY_P3 camera
       # capture is exceedingly unlikely.
-      if not point_in_triangle(*srgb_primaries.reshape(6),
-                               xy_arr[y][x][0], xy_arr[y][x][1],
-                               COLORSPACE_TRIANGLE_AREA_TOL):
+      if not point_in_triangle(x1=EXPECTED_RX_SRGB, y1=EXPECTED_RY_SRGB,
+                               x2=EXPECTED_GX_SRGB, y2=EXPECTED_GY_SRGB,
+                               x3=EXPECTED_BX_SRGB, y3=EXPECTED_BY_SRGB,
+                               xp=xy_arr[y][x][0], yp=xy_arr[y][x][1],
+                               abs_tol=COLORSPACE_TRIANGLE_AREA_TOL):
         return True
 
   return False

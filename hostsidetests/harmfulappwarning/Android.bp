@@ -30,7 +30,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":CtsHarmfulAppWarningTestApp",
         ":CtsHarmfulAppWarningSampleApp",
     ],
