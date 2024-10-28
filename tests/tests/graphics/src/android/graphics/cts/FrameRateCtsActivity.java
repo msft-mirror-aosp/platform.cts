@@ -284,8 +284,17 @@ public class FrameRateCtsActivity extends Activity {
                     transaction.apply();
                 }
             } else if (mApi == Api.NATIVE_SURFACE_CONTROL) {
-                nativeSurfaceControlSetFrameRate(mNativeSurfaceControl, frameRate, compatibility,
-                        changeFrameRateStrategy);
+                if (mUseArrVersionApi) {
+                    Surface.FrameRateParams params = createFrameRateParams(
+                            frameRate, compatibility, changeFrameRateStrategy);
+                    nativeSurfaceControlSetFrameRateParams(mNativeSurfaceControl,
+                            params.getDesiredMinRate(),
+                            params.getDesiredMaxRate(), params.getFixedSourceRate(),
+                            changeFrameRateStrategy);
+                } else {
+                    nativeSurfaceControlSetFrameRate(mNativeSurfaceControl, frameRate,
+                            compatibility, changeFrameRateStrategy);
+                }
             }
             return rc;
         }
@@ -1077,6 +1086,9 @@ public class FrameRateCtsActivity extends Activity {
     private static native void nativeSurfaceControlDestroy(long surfaceControl);
     private static native void nativeSurfaceControlSetFrameRate(
             long surfaceControl, float frameRate, int compatibility, int changeFrameRateStrategy);
+    private static native void nativeSurfaceControlSetFrameRateParams(
+            long surfaceControl, float desiredMinRate,
+            float desiredMaxRate, float fixedSourceRate, int changeFrameRateStrategy);
     private static native void nativeSurfaceControlSetVisibility(
             long surfaceControl, boolean visible);
     private static native boolean nativeSurfaceControlPostBuffer(long surfaceControl, int color);
