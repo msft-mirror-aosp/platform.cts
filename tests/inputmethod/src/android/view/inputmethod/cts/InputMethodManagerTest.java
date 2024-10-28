@@ -108,8 +108,10 @@ public class InputMethodManagerTest {
     // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
     private static final long SCROLL_TIMEOUT_MS = 500;
 
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
+
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private Instrumentation mInstrumentation;
     private Context mContext;
@@ -293,7 +295,7 @@ public class InputMethodManagerTest {
         startActivityAndShowInputMethodPicker();
 
         final UiDevice uiDevice = getUiDevice();
-        if (Flags.imeSwitcherRevamp()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP)) {
             final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
             assertNotNull("List view should be found.", list);
 
