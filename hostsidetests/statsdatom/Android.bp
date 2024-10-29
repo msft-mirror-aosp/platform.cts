@@ -93,7 +93,7 @@ java_test_host {
         "cts_adpf_atom_common-host2",
     ],
 
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomApp",
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",

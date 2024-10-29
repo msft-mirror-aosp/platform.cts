@@ -35,10 +35,10 @@ java_test_host {
         "cts-host-utils",
         "CtsDomainVerificationJavaConstantsLibraryHost",
     ],
-    data: [
+    device_common_data: [
         ":CtsDomainVerificationTestCallingApp",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsDomainVerificationTestDeclaringApp1",
         ":CtsDomainVerificationTestDeclaringApp2",
     ],

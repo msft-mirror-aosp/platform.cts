@@ -34,6 +34,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
@@ -80,6 +81,7 @@ import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.IntegerSetQuery
 import com.android.queryable.annotations.Query
+import com.android.queryable.annotations.StringQuery
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert
@@ -801,11 +803,20 @@ class EnterpriseAnnotationExecutorTest {
         ).isTrue()
     }
 
+    @EnsureTestAppInstalledAsPrimaryDPC(
+        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)))
+    @Test
+    fun dpc_primaryTestApp_returnsTestApp() {
+        assertThat(sDeviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
+    }
+
     companion object {
         @ClassRule
         @Rule
         @JvmField
         val sDeviceState = DeviceState()
+
+        private const val TEST_APP_PACKAGE_NAME: String = "com.android.bedstead.testapp.LockTaskApp"
 
         private const val CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE"
         private const val PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE"

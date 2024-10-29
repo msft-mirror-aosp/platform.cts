@@ -328,6 +328,7 @@ public class TelephonyManagerTest {
     private static final int RADIO_HAL_VERSION_2_0 = makeRadioVersion(2, 0);
     private static final int RADIO_HAL_VERSION_2_1 = makeRadioVersion(2, 1);
     private static final int RADIO_HAL_VERSION_2_2 = makeRadioVersion(2, 2);
+    private static final int RADIO_HAL_VERSION_2_3 = makeRadioVersion(2, 3);
 
     static {
         EMERGENCY_NUMBER_SOURCE_SET = new HashSet<Integer>();
@@ -1295,6 +1296,8 @@ public class TelephonyManagerTest {
                 mTelephonyManager.getSubscriberId();
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_EAP_AKA, "");
+            } catch (UnsupportedOperationException ex) {
+                // EAP-AKA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1307,6 +1310,8 @@ public class TelephonyManagerTest {
 
                 mTelephonyManager.getIccAuthentication(
                         TelephonyManager.APPTYPE_USIM, TelephonyManager.AUTHTYPE_GBA_BOOTSTRAP, "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -1321,6 +1326,8 @@ public class TelephonyManagerTest {
                         TelephonyManager.APPTYPE_USIM,
                         TelephonyManager.AUTHTYPE_GBA_NAF_KEY_EXTERNAL,
                         "");
+            } catch (UnsupportedOperationException ex) {
+                // GBA not supported on this device
             } finally {
                 setAppOpsPermissionAllowed(false, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
             }
@@ -2487,7 +2494,7 @@ public class TelephonyManagerTest {
     @Test
     public void testRebootRadio() throws Throwable {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        if (mModemHalVersion <= RADIO_HAL_VERSION_2_2) {
+        if (mModemHalVersion < RADIO_HAL_VERSION_2_3) {
             Log.d(TAG,
                     "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.");
             return;

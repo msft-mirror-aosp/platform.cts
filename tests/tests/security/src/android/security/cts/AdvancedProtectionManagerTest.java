@@ -19,11 +19,13 @@ package android.security.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -56,6 +58,7 @@ public class AdvancedProtectionManagerTest {
 
     @Before
     public void setup() {
+        assumeTrue(shouldTestAdvancedProtection(mInstrumentation.getContext()));
         mManager = (AdvancedProtectionManager) mInstrumentation
                 .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
@@ -65,8 +68,25 @@ public class AdvancedProtectionManagerTest {
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
     }
 
+    private static boolean shouldTestAdvancedProtection(Context context) {
+        PackageManager pm = context.getPackageManager();
+        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            return false;
+        }
+        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            return false;
+        }
+        if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+            return false;
+        }
+        return true;
+    }
+
     @After
     public void teardown() {
+        if (mManager == null) {
+            return;
+        }
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);
