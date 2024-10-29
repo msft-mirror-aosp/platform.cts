@@ -65,7 +65,7 @@ java_test_host {
         "general-tests",
     ],
     // All APKs required by the tests
-    data: [
+    device_common_data: [
         ":CtsOverlayResApp",
         ":CtsOverlayResRRO",
         ":CtsOverlayLayoutRRO",
