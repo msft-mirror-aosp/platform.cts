@@ -55,6 +55,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -164,6 +165,27 @@ public class VirtualDeviceParamsTest {
         VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
         assertThat(params).isEqualTo(originalParams);
         assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
+    }
+
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void customTimeouts_parcelable_shouldRecreateSuccessfully() {
+        final Duration dimDuration = Duration.ofMinutes(2);
+        final Duration screenOffTimeout = Duration.ofMinutes(5);
+        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
+                .setDimDuration(dimDuration)
+                .setScreenOffTimeout(screenOffTimeout)
+                .build();
+
+        Parcel parcel = Parcel.obtain();
+        originalParams.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
+        assertThat(params).isEqualTo(originalParams);
+        assertThat(params.getDimDuration()).isEqualTo(dimDuration);
+        assertThat(params.getScreenOffTimeout()).isEqualTo(screenOffTimeout);
     }
 
     @Test
@@ -527,5 +549,30 @@ public class VirtualDeviceParamsTest {
         assertThrows(IllegalArgumentException.class, () -> new VirtualDeviceParams.Builder()
                 .setAudioRecordingSessionId(recordingSessionId).build());
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    public void invalidTimeouts_throwsException() {
+        assertThrows(NullPointerException.class, () ->
+                new VirtualDeviceParams.Builder().setScreenOffTimeout(null));
+        assertThrows(NullPointerException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(null));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setScreenOffTimeout(Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(Duration.ofMillis(-1)));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(Duration.ofMillis(1000)).build());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder()
+                        .setDimDuration(Duration.ofMillis(1000))
+                        .setScreenOffTimeout(Duration.ofMillis(500))
+                        .build());
+    }
+
 }
 
