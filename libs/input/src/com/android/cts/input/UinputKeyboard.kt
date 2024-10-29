@@ -49,5 +49,6 @@ class UinputKeyboard(
 ) : UinputDevice(
     instrumentation,
     SOURCE_KEYBOARD,
-    createKeyboardRegisterCommand(keys)
+    createKeyboardRegisterCommand(keys),
+    null // display
 )

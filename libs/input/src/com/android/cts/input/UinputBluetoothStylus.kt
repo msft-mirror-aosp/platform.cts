@@ -45,4 +45,5 @@ class UinputBluetoothStylus(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
     SOURCE_KEYBOARD or SOURCE_STYLUS,
     createBluetoothStylusRegisterCommand(),
+    null // display
 )
