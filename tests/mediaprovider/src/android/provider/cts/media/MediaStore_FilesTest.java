@@ -203,7 +203,6 @@ public class MediaStore_FilesTest {
     }
 
     @Test
-    @Ignore("b/364840943")
     @RequiresFlagsEnabled(Flags.FLAG_INFERRED_MEDIA_DATE)
     public void testStandardSorting() throws Exception {
         mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
@@ -230,13 +229,13 @@ public class MediaStore_FilesTest {
 
                 c.moveToFirst();
                 assertEquals(fileC.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
                 c.moveToNext();
                 assertEquals(fileB.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
                 c.moveToNext();
                 assertEquals(fileA.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
             }
         } finally {
             mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
