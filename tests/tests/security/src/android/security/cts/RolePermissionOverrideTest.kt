@@ -67,11 +67,7 @@ class RolePermissionOverrideTest : StsExtraBusinessLogicTestCase {
         )
         assumeTrue(roleManager.isRoleAvailable(ROLE_SYSTEM_SPEECH_RECOGNIZER))
         val systemSpeechRecognizerPackageName = getRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER)
-        if (systemSpeechRecognizerPackageName != null) {
-            assertPermissionState(
-                systemSpeechRecognizerPackageName, android.Manifest.permission.RECORD_AUDIO, true
-            )
-        }
+        assertThat(TEST_APP_PACKAGE_NAME).isNotEqualTo(systemSpeechRecognizerPackageName)
         assertPermissionState(
             TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
         )
@@ -91,6 +87,9 @@ class RolePermissionOverrideTest : StsExtraBusinessLogicTestCase {
                 TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
             )
         } finally {
+            if (systemSpeechRecognizerPackageName != null) {
+                addRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER, systemSpeechRecognizerPackageName)
+            }
             setBypassingRoleQualification(false)
         }
     }
@@ -128,6 +127,9 @@ class RolePermissionOverrideTest : StsExtraBusinessLogicTestCase {
                     TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
             )
         } finally {
+            if (systemSpeechRecognizerPackageName != null) {
+                addRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER, systemSpeechRecognizerPackageName)
+            }
             setBypassingRoleQualification(false)
         }
     }
