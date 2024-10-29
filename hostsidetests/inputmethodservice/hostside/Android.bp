@@ -35,7 +35,7 @@ java_test_host {
         "cts-inputmethodservice-common-host",
         "CompatChangeGatingTestBase",
     ],
-    data: [
+    device_common_data: [
         ":CtsInputMethodServiceEventProvider",
         ":CtsInputMethodServiceDeviceTests",
         ":EditTextApp",
