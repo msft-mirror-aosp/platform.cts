@@ -165,11 +165,11 @@ public final class HdmiCecClientWrapper extends ExternalResource {
 
         commands.add("cec-client");
 
-        /* "-p 2" starts the client as if it is connected to HDMI port 2, taking the physical
-         * address 2.0.0.0 */
+        /* "-p 1" starts the client as if it is connected to HDMI port 1, taking the physical
+         * address 1.0.0.0 */
         commands.add("-p");
-        commands.add("2");
-        physicalAddress = 0x2000;
+        commands.add("1");
+        physicalAddress = 0x1000;
         if (startAsTv) {
             commands.add("-t");
             commands.add("x");

@@ -97,7 +97,7 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
         final long alternateAddress;
         int dumpsysPhysicalAddress = getDumpsysPhysicalAddress();
         if (dumpsysPhysicalAddress == 0x1000) {
-            alternateAddress = 0x2000;
+            alternateAddress = 0x1200;
         } else {
             alternateAddress = 0x1000;
         }
