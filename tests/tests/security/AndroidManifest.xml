@@ -345,6 +345,8 @@
             </intent-filter>
         </service>
 
+        <service android:name="android.security.cts.CVE_2024_34734.PocBackgroundService"/>
+
         <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
 
     </application>
