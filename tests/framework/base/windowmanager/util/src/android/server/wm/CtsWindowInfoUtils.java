@@ -156,7 +156,6 @@ public class CtsWindowInfoUtils {
      *
      * @param predicate           The predicate tested each time window infos change.
      * @param timeout             The amount of time to wait for the predicate to be satisfied.
-     * @param unit                The units associated with timeout.
      * @param windowTokenSupplier Supplies the window token for the window to
      *                            call the predicate on. The supplier is called each time window
      *                            info change. If the supplier returns null, the predicate is
@@ -358,10 +357,8 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param predicate           Supplies the window token for the window to wait on. The
-     *                            supplier is called each time window infos change. If the
-     *                            supplier returns null, the window is assumed not visible
-     *                            yet.
+     * @param predicate           A predicate identifying the target window we are waiting for,
+     *                            will be tested each time window infos change.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
@@ -384,10 +381,8 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout                  The amount of time to wait for the window to be visible.
-     * @param predicate                Supplies the window token for the window to wait on. The
-     *                                 supplier is called each time window infos change. If the
-     *                                 supplier returns null, the window is assumed not visible
-     *                                 yet.
+     * @param predicate                A predicate identifying the target window we are waiting
+     *                                 for, will be tested each time window infos change.
      * @param expectedCompositionOrder The expected z order of the surface control we are looking
      *                                 for.
      * @return True if the window satisfies the visibility requirements before the timeout is
@@ -557,7 +552,7 @@ public class CtsWindowInfoUtils {
      *                                 supplier returns null, the window is assumed not visible
      *                                 yet.
      * @param expectedCompositionOrder The expected z order of the surface control we are looking
-     *                                  for.
+     *                                 for.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
