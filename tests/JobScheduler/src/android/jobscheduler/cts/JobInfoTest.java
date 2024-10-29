@@ -32,6 +32,7 @@ import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
@@ -103,7 +104,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
         JobInfo ji = builder.build();
         // Confirm JobScheduler rejects the JobInfo object.
-        // TODO(309023462): create separate tests for target SDK gated changes
+        // TODO(b/309023462): create separate tests for target SDK gated changes
         if (CompatChanges.isChangeEnabled(THROW_ON_UNSUPPORTED_BIAS_USAGE)) {
             assertScheduleFailsWithException(
                     "Successfully scheduled a job with a modified bias",
@@ -157,7 +158,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
-    // TODO(315035390): migrate to JUnit4
+    // TODO(b/315035390): migrate to JUnit4
     @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
     public void testDebugTags() {
         if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
@@ -356,10 +357,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setExpedited(true)
-                        .setImportantWhileForeground(true));
-        assertBuildFails(failureMessage,
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setExpedited(true)
                         .setPrefetch(true));
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -386,8 +383,13 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .addTriggerContentUri(tcu));
     }
 
+    // TODO(b/315035390): migrate to JUnit4
     @SuppressWarnings("deprecation")
-    public void testImportantWhileForeground() {
+    @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    public void testImportantWhileForeground_Legacy() {
+        if (isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
+            return;
+        }
         // Assert the default value is false
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .build();
@@ -407,6 +409,46 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                 .setImportantWhileForeground(false)
                 .build();
         assertFalse(ji.isImportantWhileForeground());
+        // Confirm JobScheduler accepts the JobInfo object.
+        mJobScheduler.schedule(ji);
+
+
+        //noinspection deprecation
+        assertBuildFails("Successfully built a low-priority JobInfo object with"
+                + " disallowed important while foreground flag",
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setPriority(JobInfo.PRIORITY_LOW)
+                        .setImportantWhileForeground(true));
+
+        assertBuildFails("Successfully built a user-initiated JobInfo object with"
+                + " disallowed important while foreground flag",
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setUserInitiated(true)
+                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                        .setImportantWhileForeground(true));
+
+        assertBuildFails("Successfully built an expedited JobInfo object with"
+                + " disallowed important while foreground flag",
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setExpedited(true)
+                        .setImportantWhileForeground(true));
+    }
+
+    @SuppressWarnings("deprecation")
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    public void testImportantWhileForeground_Ignored() {
+        if (!isAconfigFlagEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)) {
+            return;
+        }
+
+        // Assert the value is false always
+        final JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setImportantWhileForeground(true)
+                .setPriority(JobInfo.PRIORITY_LOW)
+                .build();
+        assertFalse(ji.isImportantWhileForeground());
+        // No priority change.
+        assertEquals(JobInfo.PRIORITY_LOW, ji.getPriority());
         // Confirm JobScheduler accepts the JobInfo object.
         mJobScheduler.schedule(ji);
     }
@@ -473,7 +515,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setMinimumLatency(-1);
 
-        // TODO(309023462): create separate tests for target SDK gated changes
+        // TODO(b/309023462): create separate tests for target SDK gated changes
         if (CompatChanges.isChangeEnabled(REJECT_NEGATIVE_DELAYS_AND_DEADLINES)) {
             assertBuildFails("Successfully scheduled a job with a negative latency", jiBuilder);
         } else {
@@ -512,7 +554,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setMinimumLatency(MINUTE_IN_MILLIS)
                         .setOverrideDeadline(16 * MINUTE_IN_MILLIS);
 
-        // TODO(309023462): create separate tests for target SDK gated changes
+        // TODO(b/309023462): create separate tests for target SDK gated changes
         if (CompatChanges.isChangeEnabled(ENFORCE_MINIMUM_TIME_WINDOWS) && isAconfigFlagEnabled(
                 "android.app.job.enforce_minimum_time_windows")) {
             // Confirm JobScheduler rejects the bad JobInfo objects.
@@ -533,7 +575,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setOverrideDeadline(-1);
 
-        // TODO(309023462): create separate tests for target SDK gated changes
+        // TODO(b/309023462): create separate tests for target SDK gated changes
         if (CompatChanges.isChangeEnabled(REJECT_NEGATIVE_DELAYS_AND_DEADLINES)) {
             assertBuildFails("Successfully scheduled a job with a negative deadline", jiBuilder);
         } else {
@@ -674,11 +716,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_MAX));
-        //noinspection deprecation
-        assertBuildFails(failureMessage,
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setPriority(JobInfo.PRIORITY_LOW)
-                        .setImportantWhileForeground(true));
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setPriority(JobInfo.PRIORITY_HIGH)
@@ -804,7 +841,7 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
-    // TODO(315035390): migrate to JUnit4
+    // TODO(b/315035390): migrate to JUnit4
     @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS) // Doesn't work for JUnit3
     public void testTraceTag() {
         if (!isAconfigFlagEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)) {
@@ -998,11 +1035,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
                         .setUserInitiated(true)
                         .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                         .setPriority(JobInfo.PRIORITY_DEFAULT));
-        assertBuildFails(failureMessage,
-                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                        .setUserInitiated(true)
-                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                        .setImportantWhileForeground(true));
         assertBuildFails(failureMessage,
                 new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                         .setUserInitiated(true)
