@@ -24,6 +24,7 @@ import capture_request_utils
 import its_session_utils
 
 _HYPERFOCAL_MIN = 0.02
+_M_TO_CM = 100
 
 
 class MetadataTest(its_base_test.ItsBaseTest):
@@ -157,8 +158,11 @@ class MetadataTest(its_base_test.ItsBaseTest):
               raise AssertionError('hyperfocal distance error: '
                                    f'{hyperfocal:.2f}, MIN: {_HYPERFOCAL_MIN}')
 
-        logging.debug('Minimum focus distance: %3.f',
-                      props['android.lens.info.minimumFocusDistance'])
+        min_focus_distance = props['android.lens.info.minimumFocusDistance']
+        min_focus_distance_cm = _M_TO_CM / min_focus_distance
+        logging.debug('Minimum focus distance: %.3f diopters (%.2f cm)',
+                      min_focus_distance, min_focus_distance_cm
+                     )
 
 
 def check(self, expr, msg):
