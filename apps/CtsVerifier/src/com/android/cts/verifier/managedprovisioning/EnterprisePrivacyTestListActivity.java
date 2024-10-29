@@ -22,6 +22,7 @@ import android.Manifest;
 import android.app.admin.DevicePolicyManager;
 import android.content.Intent;
 import android.database.DataSetObserver;
+import android.net.VpnManager;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
@@ -201,18 +202,21 @@ public class EnterprisePrivacyTestListActivity extends PassFailButtons.TestListA
                                 buildCommandIntentForCurrentUser(
                                         CommandReceiverActivity.COMMAND_CLEAR_DEFAULT_IME))
                 }));
-        adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_ALWAYS_ON_VPN,
-                R.string.enterprise_privacy_always_on_vpn,
-                R.string.enterprise_privacy_always_on_vpn_info,
-                new ButtonInfo[] {
-                        new ButtonInfo(R.string.enterprise_privacy_open_settings,
-                                new Intent(Settings.ACTION_ENTERPRISE_PRIVACY_SETTINGS)),
-                        new ButtonInfo(R.string.enterprise_privacy_set_always_on_vpn,
-                                buildCommandIntentForCurrentUser(
-                                        CommandReceiverActivity.COMMAND_SET_ALWAYS_ON_VPN)),
-                        new ButtonInfo(R.string.enterprise_privacy_finish,
-                                buildCommandIntentForCurrentUser(
-                                        CommandReceiverActivity.COMMAND_CLEAR_ALWAYS_ON_VPN))}));
+        if (getSystemService(VpnManager.class) != null) {
+            adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_ALWAYS_ON_VPN,
+                    R.string.enterprise_privacy_always_on_vpn,
+                    R.string.enterprise_privacy_always_on_vpn_info,
+                    new ButtonInfo[] {
+                            new ButtonInfo(R.string.enterprise_privacy_open_settings,
+                                    new Intent(Settings.ACTION_ENTERPRISE_PRIVACY_SETTINGS)),
+                            new ButtonInfo(R.string.enterprise_privacy_set_always_on_vpn,
+                                    buildCommandIntentForCurrentUser(
+                                            CommandReceiverActivity.COMMAND_SET_ALWAYS_ON_VPN)),
+                            new ButtonInfo(R.string.enterprise_privacy_finish,
+                                    buildCommandIntentForCurrentUser(
+                                            CommandReceiverActivity.COMMAND_CLEAR_ALWAYS_ON_VPN))
+                    }));
+        }
 
         adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_GLOBAL_HTTP_PROXY,
                 R.string.enterprise_privacy_global_http_proxy,
