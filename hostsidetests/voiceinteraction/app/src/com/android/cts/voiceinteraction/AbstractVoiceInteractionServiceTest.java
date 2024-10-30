@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.hardware.soundtrigger.SoundTrigger;
 import android.os.ConditionVariable;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.util.Log;
@@ -142,7 +143,7 @@ public abstract class AbstractVoiceInteractionServiceTest {
                     mTestServiceInterface.createKeyphraseModelManager();
             SoundTrigger.Keyphrase testKeyphrase = new SoundTrigger.Keyphrase(1 /* id */,
                     AlwaysOnHotwordDetector.RECOGNITION_MODE_VOICE_TRIGGER,
-                    locale, TEST_DETECTOR_KEYPHRASE, new int[]{0});
+                    locale, TEST_DETECTOR_KEYPHRASE, new int[]{UserHandle.myUserId()});
             SoundTrigger.KeyphraseSoundModel soundModel = new SoundTrigger.KeyphraseSoundModel(
                     UUID.randomUUID(),
                     UUID.randomUUID(), null /* data */,
