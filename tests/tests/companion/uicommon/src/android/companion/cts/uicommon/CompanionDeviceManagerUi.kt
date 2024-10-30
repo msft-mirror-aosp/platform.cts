@@ -40,19 +40,23 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
     }
 
     fun waitUntilVisible(timeout: Duration = 3.seconds) = ui.wait(
-        Until.hasObject(CONFIRMATION_UI), "CDM UI has not appeared.", timeout)
+        Until.hasObject(CONFIRMATION_UI),
+        "CDM UI has not appeared.",
+        timeout
+    )
 
     fun waitUntilNotificationVisible(isAuto: Boolean = false) = ui.wait(
         if (isAuto) Until.hasObject(NOTIFICATION_UI_AUTO) else Until.hasObject(NOTIFICATION_UI),
-        "NOTIFICATION UI has not appeared.")
+        "NOTIFICATION UI has not appeared."
+    )
 
     fun waitUntilGone() = ui.waitShort(Until.gone(CONFIRMATION_UI), "CDM UI has not disappeared")
 
     fun waitAndClickOnFirstFoundDevice() {
         val firstDevice = ui.waitLongAndFind(
-                Until.findObject(
-                        DEVICE_LIST_WITH_ITEMS), "The item in the Device List not found or empty")
-                .children[0]
+                Until.findObject(DEVICE_LIST_WITH_ITEMS),
+                "The item in the Device List not found or empty"
+        ).children[0]
 
         val startTime = SystemClock.uptimeMillis()
         var elapsedTime = 0L
@@ -66,12 +70,14 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
     }
 
     fun waitUntilPositiveButtonIsEnabledAndClick() = ui.waitLongAndFind(
-        Until.findObject(POSITIVE_BUTTON), "Positive button not found or not clickable")
-            .click()
+        Until.findObject(POSITIVE_BUTTON),
+        "Positive button not found or not clickable"
+    ).click()
 
     fun waitUntilSystemDataTransferConfirmationVisible() = ui.wait(
             Until.hasObject(SYSTEM_DATA_TRANSFER_CONFIRMATION_UI),
-            "System data transfer dialog has not appeared.")
+            "System data transfer dialog has not appeared."
+    )
 
     fun clickPositiveButton() = click(POSITIVE_BUTTON, "Positive button")
 
@@ -83,8 +89,9 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
             val startTime = SystemClock.uptimeMillis()
             var elapsedTime = 0L
             // UiDevice.hasObject() takes a long time for some reason so wait at least 10 seconds
-            while (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES)
-                    && elapsedTime < 10.seconds.inWholeMilliseconds) {
+            while (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES) &&
+                elapsedTime < 10.seconds.inWholeMilliseconds
+            ) {
                 it.swipe(Direction.UP, 1.0F)
                 elapsedTime = SystemClock.uptimeMillis() - startTime
             }
@@ -92,34 +99,40 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         click(NEGATIVE_BUTTON_MULTIPLE_DEVICES, "Negative button for multiple devices")
     }
 
-    fun waitUntilAppAppeared() = ui.wait(Until.hasObject(ASSOCIATION_REVOKE_APP_UI),
-        "The test app has not appeared.")
+    fun waitUntilAppAppeared() = ui.wait(
+        Until.hasObject(ASSOCIATION_REVOKE_APP_UI),
+        "The test app has not appeared."
+    )
 
     fun waitUntilPositiveButtonAppeared() = ui.waitLongAndFind(
-        Until.findObject(POSITIVE_BUTTON), "Positive button")
+        Until.findObject(POSITIVE_BUTTON),
+        "Positive button"
+    )
 
     fun scrollToBottom() {
         ui.wait(Until.findObject(SCROLLABLE_PERMISSION_LIST), 2.seconds.inWholeMilliseconds)?.let {
-            val positiveButton = waitUntilPositiveButtonAppeared()
-
             // swipe up (or scroll down) until "Allow" button is enabled
             val startTime = SystemClock.uptimeMillis()
             var elapsedTime = 0L
-            while (!positiveButton.isEnabled && elapsedTime < 5.seconds.inWholeMilliseconds) {
+            var positiveButton: UiObject2
+            while (elapsedTime < 5.seconds.inWholeMilliseconds) {
                 it.swipe(Direction.UP, 1.0F)
-
-                // Wait before consecutive swipes
-                if (!positiveButton.isEnabled) {
-                    sleep(0.2.seconds.inWholeMilliseconds)
+                // Try to find the button in each iteration
+                if (ui.hasObject(POSITIVE_BUTTON)) {
+                    positiveButton = waitUntilPositiveButtonAppeared()
+                    if (positiveButton.isEnabled == true) break
                 }
+                // Wait before consecutive swipes
+                sleep(0.2.seconds.inWholeMilliseconds)
                 elapsedTime = SystemClock.uptimeMillis() - startTime
             }
         }
     }
 
     protected fun click(selector: BySelector, description: String) = ui.waitShortAndFind(
-            Until.findObject(selector), "$description is not found")
-            .click()
+        Until.findObject(selector),
+        "$description is not found"
+    ).click()
 
     companion object {
         private const val PACKAGE_NAME = "com.android.companiondevicemanager"
