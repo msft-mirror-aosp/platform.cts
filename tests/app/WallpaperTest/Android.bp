@@ -25,6 +25,7 @@ android_test {
         "cts-wm-util",
         "TestParameterInjector",
         "com.android.window.flags.window-aconfig-java",
+        "android.app.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
