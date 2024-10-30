@@ -755,6 +755,14 @@ public class FrameRateCtsActivity extends Activity {
 
     private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy,
             boolean useArrVersionApi) throws InterruptedException {
+        if (useArrVersionApi && api == Api.SURFACE_CONTROL
+                && !com.android.graphics.surfaceflinger.flags.Flags
+                        .arrSurfacecontrolSetframerateApi()) {
+            Log.w(TAG,
+                    "Skipping ARR SurfaceControl test due to flag "
+                    + "arr_surfacecontrol_setframerate_api disabled");
+            return;
+        }
         runOneSurfaceTest(api, useArrVersionApi, (TestSurface surface) -> {
             Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
             Display.Mode currentMode = display.getMode();
@@ -821,6 +829,15 @@ public class FrameRateCtsActivity extends Activity {
 
     private void testFixedSource(Api api, int changeFrameRateStrategy, boolean useArrVersionApi)
             throws InterruptedException {
+        if (useArrVersionApi && api == Api.SURFACE_CONTROL
+                && !com.android.graphics.surfaceflinger.flags.Flags
+                        .arrSurfacecontrolSetframerateApi()) {
+            Log.w(TAG,
+                    "Skipping ARR SurfaceControl test due to flag "
+                    + "arr_surfacecontrol_setframerate_api disabled");
+            return;
+        }
+
         Display display = getDisplay();
         float[] incompatibleFrameRates = getIncompatibleFrameRates(display);
         if (incompatibleFrameRates == null) {
