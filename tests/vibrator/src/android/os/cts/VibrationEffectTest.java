@@ -653,6 +653,67 @@ public class VibrationEffectTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffect() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertThat(getRepeatIndex(repeatingEffect)).isEqualTo(1);
+        assertAmplitude(TEST_FLOAT_AMPLITUDE, repeatingEffect, 0);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[0], repeatingEffect, 1);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[1], repeatingEffect, 2);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[2], repeatingEffect, 3);
+
+        VibrationEffect envelopeEffect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 100.0f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.5f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 1.0f, /*frequencyHz=*/ 200.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 0.2f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 50)
+                .build();
+        VibrationEffect primitiveEffect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
+                .compose();
+        repeatingEffect = VibrationEffect.createRepeatingEffect(primitiveEffect, envelopeEffect);
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertThat(getRepeatIndex(repeatingEffect)).isEqualTo(1);
+        assertPrimitiveId(VibrationEffect.Composition.PRIMITIVE_TICK, repeatingEffect, 0);
+        assertPwleSegment(repeatingEffect, 1);
+
+        repeatingEffect = VibrationEffect.createRepeatingEffect(
+                VibrationEffect.get(VibrationEffect.EFFECT_THUD));
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertPrebakedEffectId(VibrationEffect.EFFECT_THUD, repeatingEffect, 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithRepeatingEffectIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_WAVEFORM);
+        VibrationEffect.createRepeatingEffect(repeatingEffect);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithPreambleAndRepeatingEffectIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        // RepeatingEffect is already created as repeating.
+        VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT, repeatingEffect);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithRepeatingPreambleIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        VibrationEffect.createRepeatingEffect(repeatingEffect, TEST_WAVEFORM);
+    }
+
+    @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
     public void testWaveformEnvelopeDescribeContents() {
         getTestWaveformEnvelope().describeContents();

@@ -229,7 +229,10 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
             formats_means.append(_get_mean(cap, props))
         check_mean = True
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-        if ae_mode == 1 and first_api_level <= its_session_utils.ANDROID15_API_LEVEL:
+        if (
+            ae_mode == 1 and
+            first_api_level <= its_session_utils.ANDROID15_API_LEVEL
+        ):
           check_mean = False
         # Compare means and assert PASS/FAIL
         if check_mean:
