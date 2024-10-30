@@ -77,8 +77,10 @@ public class InputMethodInfoTest {
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
 
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
+
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private Context mContext;
     private InputMethodManager mImManager;
@@ -186,7 +188,7 @@ public class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (Flags.imeSwitcherRevampApi()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
             assertEquals(mLanguageSettingsActivity,
                     info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         }
@@ -265,7 +267,7 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (Flags.imeSwitcherRevampApi()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
             assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
                             .getClassName(),
                     imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
