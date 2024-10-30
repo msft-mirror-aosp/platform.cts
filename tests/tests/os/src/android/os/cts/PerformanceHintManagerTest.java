@@ -363,7 +363,26 @@ public class PerformanceHintManagerTest {
         assertNotEquals(0, nativeSession);
     }
 
+    public void testNativeCreateHintSessionUsingConfig() {
+        final String resultMessage = nativeTestCreateHintSessionUsingConfig();
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
+
+    @Test
+    public void testNativeCreateGraphicsPipelineSessionOverLimit() {
+        final String resultMessage = nativeTestCreateGraphicsPipelineSessionOverLimit();
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
+
+
+    private native String nativeTestCreateGraphicsPipelineSessionOverLimit();
     private native String nativeTestCreateHintSession();
+    private native String nativeTestCreateHintSessionUsingConfig();
+    private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
     private native String nativeTestGetPreferredUpdateRateNanos();
     private native String nativeUpdateTargetWorkDuration();
     private native String nativeUpdateTargetWorkDurationWithNegativeDuration();
