@@ -155,7 +155,11 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) { e: ExecuteAppFunctionResponse
+        mManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+            CancellationSignal()
+        ) { e: ExecuteAppFunctionResponse
             ->
             blockingQueue.add(e)
         }
@@ -453,7 +457,7 @@ class AppFunctionManagerTest {
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
                 )
             )
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+            .isEqualTo(3)
         assertServiceDestroyed()
     }
 
