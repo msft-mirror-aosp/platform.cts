@@ -3680,22 +3680,6 @@ public class ParcelTest extends AndroidTestCase {
         p.readFixedArray(readSignatures, Signature.CREATOR);
         assertArrayEquals(signatures, readSignatures);
 
-        // test IInterface[2][3]
-        p.setDataPosition(0);
-        MockIInterface[][] interfaces = {
-            {new MockIInterface(), new MockIInterface(), new MockIInterface()},
-            {new MockIInterface(), new MockIInterface(), new MockIInterface()}};
-        p.writeFixedArray(interfaces, 0, new int[]{2, 3});
-        p.setDataPosition(0);
-        MockIInterface[][] interfacesRead = p.createFixedArray(MockIInterface[][].class,
-            MockIInterface::asInterface, new int[]{2, 3});
-        assertEquals(2, interfacesRead.length);
-        assertEquals(3, interfacesRead[0].length);
-        MockIInterface[][] mockInterfaces = new MockIInterface[2][3];
-        p.setDataPosition(0);
-        p.readFixedArray(mockInterfaces, MockIInterface::asInterface);
-        assertArrayEquals(interfaces, mockInterfaces);
-
         // test null
         p.setDataPosition(0);
         int[][] nullInts = null;
@@ -3718,6 +3702,23 @@ public class ParcelTest extends AndroidTestCase {
         p.setDataPosition(0);
         assertThrows(BadParcelableException.class, () -> p.createFixedArray(int[][].class, 1, 3));
         assertThrows(BadParcelableException.class, () -> p.createFixedArray(int[][].class, 2, 2));
+
+        // test IInterface[2][3]
+        p.setDataPosition(0);
+        MockIInterface[][] interfaces = {
+            {new MockIInterface(), new MockIInterface(), new MockIInterface()},
+            {new MockIInterface(), new MockIInterface(), new MockIInterface()}};
+        p.writeFixedArray(interfaces, 0, new int[]{2, 3});
+        p.setDataPosition(0);
+        MockIInterface[][] interfacesRead = p.createFixedArray(MockIInterface[][].class,
+                MockIInterface::asInterface, new int[]{2, 3});
+        assertEquals(2, interfacesRead.length);
+        assertEquals(3, interfacesRead[0].length);
+        MockIInterface[][] mockInterfaces = new MockIInterface[2][3];
+        p.setDataPosition(0);
+        p.readFixedArray(mockInterfaces, MockIInterface::asInterface);
+        assertArrayEquals(interfaces, mockInterfaces);
+
 
         p.recycle();
     }
