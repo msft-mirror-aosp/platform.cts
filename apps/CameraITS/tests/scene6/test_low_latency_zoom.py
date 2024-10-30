@@ -147,7 +147,6 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       for i, cap in enumerate(caps):
         z_result = cap['metadata']['android.control.zoomRatio']
         af_state = cap['metadata']['android.control.afState']
-        scaled_zoom = min(z_list[i], z_result)
         logging.debug('Result[%d]: zoom ratio %.2f, afState %d',
                       i, z_result, af_state)
         img = image_processing_utils.convert_capture_to_rgb_image(
