@@ -893,6 +893,10 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onRoutingTableFull() {
+        }
+
+        @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
         }
     }
