@@ -84,6 +84,9 @@ public class AdvancedProtectionManagerTest {
 
     @After
     public void teardown() {
+        if (mManager == null) {
+            return;
+        }
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);
