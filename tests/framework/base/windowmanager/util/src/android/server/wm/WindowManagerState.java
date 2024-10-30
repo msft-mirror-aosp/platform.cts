@@ -2310,6 +2310,7 @@ public class WindowManagerState {
         private List<Rect> mUnrestrictedKeepClearRects;
         private List<InsetsSource> mMergedLocalInsetsSources;
         private int mFlags;
+        private Rect mDimBounds;
 
         WindowState(WindowStateProto proto) {
             super(proto.windowContainer);
@@ -2365,6 +2366,7 @@ public class WindowManagerState {
             for (InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
                 mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
+            mDimBounds = extract(proto.dimBounds);
         }
 
         boolean isStartingWindow() {
@@ -2449,6 +2451,11 @@ public class WindowManagerState {
 
         public int getFlags() {
             return mFlags;
+        }
+
+        @Nullable
+        public Rect getDimBounds() {
+            return mDimBounds;
         }
 
         private String getWindowTypeSuffix(int windowType) {
