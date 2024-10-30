@@ -44,6 +44,9 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
+import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -59,9 +62,6 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
@@ -285,7 +285,7 @@ class SidecarManagerTest {
         CtsTestUtil.assumeSidecarAvailable()
 
         val functionUnderTest = "add"
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        assertThat(sidecarIsAppFunctionEnabled(functionUnderTest)).isTrue()
         sidecarSetAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
@@ -304,13 +304,26 @@ class SidecarManagerTest {
                     request,
                     Runnable::run,
                     cancellationSignal,
-                    { response: SidecarExecuteAppFunctionResponse -> continuation.resume(response) },
+                    { response: SidecarExecuteAppFunctionResponse -> continuation.resume(
+                        response
+                    ) },
                 )
         }
     }
 
     private fun assertCancelListenerTriggered() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+    }
+
+    private suspend fun sidecarIsAppFunctionEnabled(
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context)
+            .isAppFunctionEnabled(
+                functionIdentifier,
+                Runnable::run,
+                continuation.asOutcomeReceiver(),
+            )
     }
 
     private suspend fun sidecarIsAppFunctionEnabled(
