@@ -1,1 +1,2 @@
 per-file ThermalPowerManagerTests* = file:platform/frameworks/base:/THERMAL_OWNERS
+per-file PowerManagerTests* = file:platform/frameworks/base:/services/core/java/com/android/server/power/OWNERS
