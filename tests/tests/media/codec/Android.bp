@@ -21,8 +21,8 @@ package {
     ],
 }
 
-android_test {
-    name: "CtsMediaCodecTestCases",
+java_defaults {
+    name: "MediaCodecTestCases_defaults",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -53,10 +53,6 @@ android_test {
     libs: [
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
-    ],
-    test_suites: [
-        "cts",
-        "general-tests",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
@@ -64,38 +60,18 @@ android_test {
 }
 
 android_test {
+    name: "CtsMediaCodecTestCases",
+    defaults: ["MediaCodecTestCases_defaults"],
+    test_config: "AndroidTest.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test {
     name: "MctsMediaCodecTestCases",
-    defaults: ["cts_defaults"],
-    // include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "ctstestrunner-axt",
-        "cts-media-common",
-        "testng",
-    ],
-    jni_libs: [
-        "libctsmediacommon_jni",
-    ],
-    aaptflags: [
-        // Do not compress these files:
-        "-0 .vp9",
-        "-0 .ts",
-        "-0 .heic",
-        "-0 .trp",
-        "-0 .ota",
-        "-0 .mxmf",
-    ],
-    srcs: [
-        "src/**/*.java",
-        "aidl/**/*.aidl",
-    ],
-    // This test uses private APIs
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    libs: [
-        "android.test.base.stubs.system",
-        "android.test.runner.stubs.system",
-    ],
+    defaults: ["MediaCodecTestCases_defaults"],
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "cts",
@@ -103,9 +79,6 @@ android_test {
         "mcts-media",
         "mts-media",
     ],
-    host_required: ["cts-dynamic-config"],
-    min_sdk_version: "29",
-    target_sdk_version: "31",
 }
 
 test_module_config {

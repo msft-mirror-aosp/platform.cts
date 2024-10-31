@@ -36,7 +36,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -54,7 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests of MediaPlayer streaming capabilities.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class StreamingMediaPlayerTest extends MediaPlayerTestBase {

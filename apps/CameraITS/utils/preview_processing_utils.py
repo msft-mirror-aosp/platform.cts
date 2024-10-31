@@ -40,7 +40,7 @@ _PREVIEW_DURATION = 400  # milliseconds
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
-_RED_BLUE_TOL = 15  # 15 out of 255 Red or Blue value in RGB
+_RED_BLUE_TOL = 20  # 20 out of 255 Red or Blue value in RGB
 _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
@@ -320,23 +320,29 @@ def is_aspect_ratio_match(size_str, target_ratio):
   return abs(width / height - target_ratio) < _ASPECT_TOL
 
 
-def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
+def get_max_preview_test_size(cam, camera_id, aspect_ratio=None,
+                              max_tested_area=_PREVIEW_MAX_TESTED_AREA):
   """Finds the max preview size to be tested.
 
   If the device supports the _HIGH_RES_SIZE preview size then
   it uses that for testing, otherwise uses the max supported
-  preview size capped at _PREVIEW_MAX_TESTED_AREA.
+  preview size capped at max_tested_area.
 
   Args:
     cam: camera object
     camera_id: str; camera device id under test
     aspect_ratio: preferred aspect_ratio For example: '4/3'
+    max_tested_area: area of max preview resolution
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
   resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = cam.get_all_supported_preview_sizes(
+      camera_id, filter_recordable=True)
+  logging.debug('Resolutions supported by preview and MediaRecorder: %s',
+                supported_preview_sizes)
+
   if aspect_ratio is None:
     supported_preview_sizes = [size for size in supported_preview_sizes
                                if resolution_to_area(size)
@@ -356,10 +362,12 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
         size
         for size in supported_preview_sizes
         if (
-            resolution_to_area(size) <= _PREVIEW_MAX_TESTED_AREA
+            resolution_to_area(size) <= max_tested_area
             and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
         )
     ]
+    logging.debug('Capped preview resolutions: %s',
+                  capped_supported_preview_sizes)
     preview_test_size = capped_supported_preview_sizes[-1]
 
   logging.debug('Selected preview resolution: %s', preview_test_size)

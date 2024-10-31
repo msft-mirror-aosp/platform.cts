@@ -117,6 +117,21 @@ public class TestUtils {
                 packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE));
     }
 
+    static public enum KmType {
+        TEE,
+        SB
+    }
+
+    static public void assumeKmSupport(KmType kmType) {
+        if (isStrongboxKeyMint(kmType)) {
+            TestUtils.assumeStrongBox();
+        }
+    }
+
+    static public boolean isStrongboxKeyMint(KmType kmType) {
+        return kmType == KmType.SB;
+    }
+
     /**
      * Returns 0 if not implemented. Otherwise returns the feature version.
      */
@@ -1233,7 +1248,9 @@ public class TestUtils {
     }
 
     public static boolean isAttestationSupported() {
-        return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.O;
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.O
+                && hasSecureLockScreen(context);
     }
 
     public static boolean isPropertyEmptyOrUnknown(String property) {

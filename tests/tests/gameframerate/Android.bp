@@ -42,6 +42,8 @@ android_test {
         "SurfaceFlingerProperties",
         "androidx.core_core",
         "framework_graphics_flags_java_lib",
+        "android.view.flags-aconfig-java",
+        "GameManagerTestLib",
     ],
     // tag this module as a cts test artifact
     test_suites: [

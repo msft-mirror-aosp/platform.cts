@@ -16,11 +16,13 @@
 
 package com.android.bedstead.nene.accounts;
 
+import static com.android.bedstead.accounts.AccountsDeviceStateExtensionsKt.account;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
+import com.android.bedstead.accounts.annotations.EnsureHasAccount;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -36,12 +38,12 @@ public final class AccountReferenceTest {
     @Test
     @EnsureHasAccount(features = "feature")
     public void hasFeature_accountHasFeature_returnsTrue() {
-        assertThat(sDeviceState.account().hasFeature("feature")).isTrue();
+        assertThat(account(sDeviceState).hasFeature("feature")).isTrue();
     }
 
     @Test
     @EnsureHasAccount(features = {})
     public void hasFeature_accountDoesNotHaveFeature_returnsFalse() {
-        assertThat(sDeviceState.account().hasFeature("feature")).isFalse();
+        assertThat(account(sDeviceState).hasFeature("feature")).isFalse();
     }
 }

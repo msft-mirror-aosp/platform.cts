@@ -16,12 +16,14 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported;
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
@@ -46,15 +48,15 @@ public final class StorageEncryptionTest {
     @RequireStorageEncryptionSupported
     public void setStorageEncryption_runOnSystemUser_enable_isEnabled() {
         try {
-            assertThat(sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                    sDeviceState.dpc().componentName(), /* encrypt= */ true))
+            assertThat(dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                    dpc(sDeviceState).componentName(), /* encrypt= */ true))
                     .isEqualTo(ENCRYPTION_STATUS_ACTIVE);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getStorageEncryption(
-                    sDeviceState.dpc().componentName())).isTrue();
+            assertThat(dpc(sDeviceState).devicePolicyManager().getStorageEncryption(
+                    dpc(sDeviceState).componentName())).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                    sDeviceState.dpc().componentName(), /* encrypt= */ false);
+            dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                    dpc(sDeviceState).componentName(), /* encrypt= */ false);
         }
     }
 
@@ -62,15 +64,15 @@ public final class StorageEncryptionTest {
     @RequireRunOnAdditionalUser
     public void setStorageEncryption_runOnNonSystemUser_enable_isNotSupported() {
         try {
-            assertThat(sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                    sDeviceState.dpc().componentName(), /* encrypt= */ true))
+            assertThat(dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                    dpc(sDeviceState).componentName(), /* encrypt= */ true))
                     .isEqualTo(ENCRYPTION_STATUS_UNSUPPORTED);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getStorageEncryption(
-                    sDeviceState.dpc().componentName())).isFalse();
+            assertThat(dpc(sDeviceState).devicePolicyManager().getStorageEncryption(
+                    dpc(sDeviceState).componentName())).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                    sDeviceState.dpc().componentName(), /* encrypt= */ false);
+            dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                    dpc(sDeviceState).componentName(), /* encrypt= */ false);
         }
     }
 
@@ -78,31 +80,31 @@ public final class StorageEncryptionTest {
     @RequireRunOnSystemUser
     @RequireStorageEncryptionSupported
     public void setStorageEncryption_runOnSystemUser_disable_isDisabled() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                sDeviceState.dpc().componentName(), /* encrypt= */ false))
+        assertThat(dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                dpc(sDeviceState).componentName(), /* encrypt= */ false))
                 .isEqualTo(ENCRYPTION_STATUS_INACTIVE);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().getStorageEncryption(
-                sDeviceState.dpc().componentName())).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().getStorageEncryption(
+                dpc(sDeviceState).componentName())).isFalse();
     }
 
     @CanSetPolicyTest(policy = StorageEncryption.class)
     @RequireRunOnSystemUser
     @RequireStorageEncryptionUnsupported
     public void setStorageEncryption_runOnSystemUser_isNotSupported_isDisabled() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().getStorageEncryption(
-                sDeviceState.dpc().componentName())).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().getStorageEncryption(
+                dpc(sDeviceState).componentName())).isFalse();
     }
 
     @CanSetPolicyTest(policy = StorageEncryption.class)
     @RequireRunOnAdditionalUser
     public void setStorageEncryption_runOnNonSystemUser_disable_isNotSupported() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().setStorageEncryption(
-                sDeviceState.dpc().componentName(), /* encrypt= */ false))
+        assertThat(dpc(sDeviceState).devicePolicyManager().setStorageEncryption(
+                dpc(sDeviceState).componentName(), /* encrypt= */ false))
                 .isEqualTo(ENCRYPTION_STATUS_UNSUPPORTED);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().getStorageEncryption(
-                sDeviceState.dpc().componentName())).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().getStorageEncryption(
+                dpc(sDeviceState).componentName())).isFalse();
     }
 
 }

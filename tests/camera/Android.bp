@@ -78,6 +78,7 @@ android_test {
         "androidx.camera_camera-lifecycle",
         "modules-utils-native-coverage-listener",
         "camera_platform_flags_java_lib",
+        "android.media.codec-aconfig-java",
         "flag-junit",
     ],
     jni_libs: [
@@ -109,4 +110,11 @@ filegroup {
     srcs: [
         "src/android/hardware/camera2/cts/rs/BitmapUtils.java",
     ],
+}
+
+test_module_config {
+    name: "CtsCameraTestCases_cts_fastbasicstest",
+    base: "CtsCameraTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.camera2.cts.FastBasicsTest"],
 }

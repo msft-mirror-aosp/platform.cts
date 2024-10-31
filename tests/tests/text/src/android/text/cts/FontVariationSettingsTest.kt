@@ -43,7 +43,7 @@ class FontVariationSettingsTest {
         val w = ceil(Layout.getDesiredWidth(text, paint)).toInt()
         val layout = Layout.Builder(text, 0, text.length, paint, w).build()
         val bmp = Bitmap.createBitmap(w, layout.height, Bitmap.Config.ALPHA_8)
-        Canvas(bmp).drawText(text, 0, text.length, 0f, layout.getLineAscent(0).toFloat(), paint)
+        Canvas(bmp).drawText(text, 0, text.length, 0f, -layout.getLineAscent(0).toFloat(), paint)
         return bmp
     }
 

@@ -216,7 +216,8 @@ public class VirtualDeviceManagerBasicTest {
 
     @Test
     public void createVirtualDevice_noPermission_shouldThrowSecurityException() {
-        mRule.runWithTemporaryPermission(
+        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
+        SystemUtil.runWithShellPermissionIdentity(
                 () -> assertThrows(SecurityException.class,
                         () -> mRule.createManagedVirtualDevice()));
     }

@@ -92,6 +92,7 @@ public class DisplaySizeTest extends ActivityManagerTestBase {
         // Launch another activity.
         final CommandSession.ActivitySession activity = createManagedActivityClientSession()
                 .startActivity(getLaunchActivityBuilder().setUseInstrumentation()
+                        .setDisplayId(getMainDisplayId())
                         .setTargetActivity(TEST_ACTIVITY));
         mWmState.assertActivityDisplayed(TEST_ACTIVITY);
         separateTestJournal();
@@ -164,12 +165,18 @@ public class DisplaySizeTest extends ActivityManagerTestBase {
     }
 
     protected ScreenDensitySession createManagedScreenDensitySession() {
-        return mObjectTracker.manage(new ScreenDensitySession());
+        return mObjectTracker.manage(new ScreenDensitySession(getMainDisplayId()));
     }
 
     private static class ScreenDensitySession implements AutoCloseable {
         private static final String DENSITY_PROP_DEVICE = "ro.sf.lcd_density";
         private static final String DENSITY_PROP_EMULATOR = "qemu.sf.lcd_density";
+        private final int mTargetDisplay;
+
+        public ScreenDensitySession(int targetDisplay) {
+            super();
+            mTargetDisplay = targetDisplay;
+        }
 
         void setUnsupportedDensity() {
             // Set device to 0.85 zoom. It doesn't matter that we're zooming out
@@ -197,17 +204,18 @@ public class DisplaySizeTest extends ActivityManagerTestBase {
         }
 
         private void setDensity(int targetDensity) {
-            executeShellCommand("wm density " + targetDensity);
+            executeShellCommand("wm density " + targetDensity + " -d " + mTargetDisplay);
 
             // Verify that the density is changed.
-            final String output = executeShellCommandAndGetStdout("wm density");
+            final String output
+                    = executeShellCommandAndGetStdout("wm density -d " + mTargetDisplay);
             final boolean success = output.contains("Override density: " + targetDensity);
 
             assertTrue("Failed to set density to " + targetDensity, success);
         }
 
         private void resetDensity() {
-            executeShellCommand("wm density reset");
+            executeShellCommand("wm density reset -d " + mTargetDisplay);
         }
     }
 }

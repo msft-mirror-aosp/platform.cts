@@ -20,9 +20,4 @@ java_test_helper_library {
     name: "AngleIntegrationTestCommon",
     srcs: ["src/**/*.java"],
     sdk_version: "current",
-    // Tag this module as test artifact for gts, ats
-    test_suites: [
-        "gts",
-        "ats",
-    ],
 }
