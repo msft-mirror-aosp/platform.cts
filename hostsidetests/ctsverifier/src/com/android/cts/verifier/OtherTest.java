@@ -76,7 +76,11 @@ public final class OtherTest extends CtsVerifierTest {
     public void WidgetTest() throws Exception {
         // This test should probably be migrated because as is it's unclear
         requireFeatures("android.software.app_widgets");
-        excludeFeatures("android.hardware.type.automotive", "android.hardware.ram.low");
+        excludeFeatures(
+            "android.hardware.type.automotive",
+            "android.hardware.ram.low",
+            "android.hardware.type.television",
+            "android.software.leanback");
 
         runTest(".widget.WidgetTestActivity");
     }

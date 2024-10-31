@@ -28,7 +28,6 @@ import static android.graphics.text.LineBreaker.JUSTIFICATION_MODE_NONE;
 import static android.graphics.text.LineBreaker.ParagraphConstraints;
 import static android.graphics.text.LineBreaker.Result;
 
-import static com.android.text.flags.Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN;
 import static com.android.text.flags.Flags.FLAG_MISSING_GETTER_APIS;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -757,7 +756,6 @@ public class LineBreakerTest {
      * Test for no hyphenation span
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     public void testLineBreak_HighQuality_Hyphenation_NoHyphenation() {
         // The visual High Quality line break output is like
         // |This is Android.|

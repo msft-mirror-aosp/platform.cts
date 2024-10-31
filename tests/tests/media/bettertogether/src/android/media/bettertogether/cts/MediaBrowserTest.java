@@ -31,7 +31,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
 import com.google.common.truth.Correspondence;
@@ -50,7 +49,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Test {@link android.media.browse.MediaBrowser}.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not need MediaBrowser.")
 public class MediaBrowserTest {

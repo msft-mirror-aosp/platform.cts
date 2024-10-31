@@ -16,7 +16,13 @@
 
 package com.android.cts.verifier.libs.ui;
 
+import android.util.Log;
 import android.view.View;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * An interface for formatting text out for various View Types.
@@ -24,6 +30,7 @@ import android.view.View;
  */
 public abstract class TextFormatter {
     protected StringBuilder mSB = new StringBuilder();
+    private static final String TAG = "TextFormatter";
 
     /**
      * Clear any accumulated text
@@ -198,10 +205,33 @@ public abstract class TextFormatter {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return mSB.toString();
+    }
+
     /**
      * Loads the formatted text into a view.
      *
      * @param view The View into which the formatted text will is to be displayed.
      */
     public abstract void put(View view);
+
+    /**
+     *
+     */
+    public void put(File file) {
+        try {
+            FileOutputStream stream = new FileOutputStream(file);
+            try {
+                stream.write(toString().getBytes());
+            } finally {
+                stream.close();
+            }
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "FileNotFoundException: " + e);
+        } catch (IOException e) {
+            Log.e(TAG, "IOException: " + e);
+        }
+    }
 }

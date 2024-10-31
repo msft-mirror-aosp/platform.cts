@@ -324,6 +324,22 @@ public class CapturedActivity extends Activity {
                 + " incorrect frames observed - incorrect positioning", 0, result.failFrames);
     }
 
+    public void verifyTest(ISurfaceValidatorTestCase testCase, TestName name,
+            int maxExpectedFailFrames) throws Throwable {
+        CapturedActivity.TestResult result = runTest(testCase);
+        saveFailureCaptures(result.failures, name);
+
+        float failRatio = 1.0f * result.failFrames / (result.failFrames + result.passFrames);
+        assertTrue("Error: " + failRatio + " fail ratio - extremely high, is activity obstructed?",
+                failRatio < 0.95f);
+        assertTrue("Error: " + result.failFrames
+                        + " incorrect frames observed - incorrect positioning. "
+                        + "maxExpectedFailFrames="
+                        + maxExpectedFailFrames + " passFrames=" + result.passFrames,
+                maxExpectedFailFrames >= result.failFrames);
+    }
+
+
     public void restoreSettings() {
         // Adding try/catch due to bug with UiAutomation crashing the test b/272370325
         try {

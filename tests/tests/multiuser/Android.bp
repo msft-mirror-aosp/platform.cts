@@ -38,5 +38,6 @@ android_test {
         "flag-junit",
     ],
     libs: ["android.test.base.stubs.test"],
+    min_sdk_version: "29",
     sdk_version: "test_current",
 }

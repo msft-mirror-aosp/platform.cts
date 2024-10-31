@@ -22,7 +22,6 @@ import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
-import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
@@ -67,6 +66,10 @@ import androidx.test.rule.ActivityTestRule;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SynchronousPixelCopy;
 import com.android.compatibility.common.util.WidgetTestUtils;
+import com.android.graphics.flags.Flags;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,9 +83,6 @@ import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @MediumTest
 @RunWith(JUnitParamsRunner.class)
@@ -144,15 +144,11 @@ public class TextureViewTest {
         activity.waitForSurface();
         activity.initGl();
         int updatedCount;
-        // If the caption bar is present, the surface update counts increase by 1
-        int extraSurfaceOffset =
-                window.getDecorView().getRootWindowInsets().getInsets(captionBar()).top == 0
-                ? 0 : 1;
-        updatedCount = activity.waitForSurfaceUpdateCount(0 + extraSurfaceOffset);
-        assertEquals(0 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(0);
+        assertEquals(0, updatedCount);
         activity.drawColor(Color.GREEN);
-        updatedCount = activity.waitForSurfaceUpdateCount(1 + extraSurfaceOffset);
-        assertEquals(1 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(1);
+        assertEquals(1, updatedCount);
         assertEquals(Color.WHITE, getPixel(window, center));
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule,
                 activity.findViewById(android.R.id.content), () -> activity.removeCover());
@@ -160,8 +156,8 @@ public class TextureViewTest {
         int color = waitForChange(window, center, Color.WHITE);
         assertEquals(Color.GREEN, color);
         activity.drawColor(Color.BLUE);
-        updatedCount = activity.waitForSurfaceUpdateCount(2 + extraSurfaceOffset);
-        assertEquals(2 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(2);
+        assertEquals(2, updatedCount);
         color = waitForChange(window, center, color);
         assertEquals(Color.BLUE, color);
     }
@@ -280,15 +276,28 @@ public class TextureViewTest {
     // TODO(b/230400473): Add in BT2020 and BT709 and BT601 once SurfaceFlinger reliably color
     // converts.
     private static Object[] testDataSpaces() {
-        return new Integer[]{
-            DataSpace.DATASPACE_SCRGB_LINEAR,
-            DataSpace.DATASPACE_SRGB,
-            DataSpace.DATASPACE_SCRGB,
-            DataSpace.DATASPACE_DISPLAY_P3,
-            DataSpace.DATASPACE_ADOBE_RGB,
-            DataSpace.DATASPACE_DCI_P3,
-            DataSpace.DATASPACE_SRGB_LINEAR
-        };
+        if (Flags.displayBt2020Colorspace()) {
+            return new Integer[]{
+                DataSpace.DATASPACE_SCRGB_LINEAR,
+                DataSpace.DATASPACE_SRGB,
+                DataSpace.DATASPACE_SCRGB,
+                DataSpace.DATASPACE_DISPLAY_P3,
+                DataSpace.DATASPACE_ADOBE_RGB,
+                DataSpace.DATASPACE_DCI_P3,
+                DataSpace.DATASPACE_SRGB_LINEAR,
+                DataSpace.DATASPACE_DISPLAY_BT2020
+            };
+        } else {
+            return new Integer[]{
+                DataSpace.DATASPACE_SCRGB_LINEAR,
+                DataSpace.DATASPACE_SRGB,
+                DataSpace.DATASPACE_SCRGB,
+                DataSpace.DATASPACE_DISPLAY_P3,
+                DataSpace.DATASPACE_ADOBE_RGB,
+                DataSpace.DATASPACE_DCI_P3,
+                DataSpace.DATASPACE_SRGB_LINEAR
+            };
+        }
     }
 
     @Test

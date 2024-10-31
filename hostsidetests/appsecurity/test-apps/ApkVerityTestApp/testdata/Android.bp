@@ -18,7 +18,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-genrule {
+java_genrule {
     name: "CtsApkVerityTestDebugFiles",
     srcs: [
         ":CtsApkVerityTestApp",
@@ -37,7 +37,7 @@ genrule {
 
 // This is a rather complicated way to keep only APKs.
 // exclude_srcs does not work because it uses paths local to Android.bp.
-genrule {
+java_genrule {
     name: "CtsApkVerityTestAppApk",
     srcs: [":CtsApkVerityTestApp"],
     cmd: "for file in $(in); do " +
@@ -81,7 +81,7 @@ genrule_defaults {
         "> /dev/null",
 }
 
-genrule {
+java_genrule {
     name: "CtsApkVerityTestAppFsvSig",
     defaults: ["cts_apk_verity_sig_gen_default"],
     srcs: [":CtsApkVerityTestAppApk"],
@@ -95,7 +95,7 @@ genrule {
     out: ["CtsApkVerityTestApp.dm.fsv_sig"],
 }
 
-genrule {
+java_genrule {
     name: "CtsApkVerityTestAppSplitFsvSig",
     defaults: ["cts_apk_verity_sig_gen_default"],
     srcs: [":CtsApkVerityTestAppSplit"],

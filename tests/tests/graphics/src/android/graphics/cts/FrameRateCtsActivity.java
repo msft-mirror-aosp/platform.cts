@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.graphics.Canvas;
@@ -192,12 +193,17 @@ public class FrameRateCtsActivity extends Activity {
         private int mColor;
         private boolean mLastBufferPostTimeValid;
         private long mLastBufferPostTime;
+        // True in 2 cases:
+        // 1. SDK: Turned on via various API trunk staging flags
+        // 2. NDK: Unflagged due to NDK, but it needs to be tested.
+        private boolean mUseArrVersionApi;
 
         TestSurface(Api api, SurfaceControl parentSurfaceControl, Surface parentSurface,
-                String name, Rect destFrame, boolean visible, int color) {
+                String name, Rect destFrame, boolean visible, int color, boolean useArrVersionApi) {
             mApi = api;
             mName = name;
             mColor = color;
+            mUseArrVersionApi = useArrVersionApi;
 
             if (mApi == Api.SURFACE || mApi == Api.ANATIVE_WINDOW || mApi == Api.SURFACE_CONTROL) {
                 assertNotNull("No parent surface", parentSurfaceControl);
@@ -223,36 +229,78 @@ public class FrameRateCtsActivity extends Activity {
             postBuffer();
         }
 
+        private Surface.FrameRateParams createFrameRateParams(
+                float frameRate, int compatibility, int changeFrameRateStrategy) {
+            Surface.FrameRateParams.Builder frameRateParamsBuilder =
+                    new Surface.FrameRateParams.Builder().setChangeFrameRateStrategy(
+                            changeFrameRateStrategy);
+            if (compatibility == Surface.FRAME_RATE_COMPATIBILITY_DEFAULT) {
+                frameRateParamsBuilder.setDesiredRateRange(frameRate, Float.MAX_VALUE);
+            } else if (compatibility == Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE) {
+                frameRateParamsBuilder.setFixedSourceRate(frameRate);
+            } else {
+                fail("Invalid compatibility for test: " + compatibility);
+            }
+            return frameRateParamsBuilder.build();
+        }
+
         public int setFrameRate(float frameRate, int compatibility, int changeFrameRateStrategy) {
             Log.i(TAG,
                     String.format("Setting frame rate for %s: fps=%.2f compatibility=%s", mName,
                             frameRate, frameRateCompatibilityToString(compatibility)));
-
             int rc = 0;
             if (mApi == Api.SURFACE) {
-                if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
-                    mSurface.setFrameRate(frameRate, compatibility);
+                if (mUseArrVersionApi) {
+                    mSurface.setFrameRate(createFrameRateParams(
+                            frameRate, compatibility, changeFrameRateStrategy));
                 } else {
-                    mSurface.setFrameRate(frameRate, compatibility, changeFrameRateStrategy);
+                    if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
+                        mSurface.setFrameRate(frameRate, compatibility);
+                    } else {
+                        mSurface.setFrameRate(frameRate, compatibility, changeFrameRateStrategy);
+                    }
                 }
             } else if (mApi == Api.ANATIVE_WINDOW) {
-                rc = nativeWindowSetFrameRate(mSurface, frameRate, compatibility,
-                        changeFrameRateStrategy);
+                if (mUseArrVersionApi) {
+                    Surface.FrameRateParams params = createFrameRateParams(
+                            frameRate, compatibility, changeFrameRateStrategy);
+                    rc = nativeWindowSetFrameRateParams(mSurface, params.getDesiredMinRate(),
+                            params.getDesiredMaxRate(), params.getFixedSourceRate(),
+                            changeFrameRateStrategy);
+                } else {
+                    rc = nativeWindowSetFrameRate(
+                            mSurface, frameRate, compatibility, changeFrameRateStrategy);
+                }
             } else if (mApi == Api.SURFACE_CONTROL) {
                 try (SurfaceControl.Transaction transaction = new SurfaceControl.Transaction()) {
-                    if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
-                        transaction
-                                .setFrameRate(mSurfaceControl, frameRate, compatibility);
+                    if (mUseArrVersionApi) {
+                        Surface.FrameRateParams params = createFrameRateParams(
+                                frameRate, compatibility, changeFrameRateStrategy);
+                        transaction.setFrameRate(mSurfaceControl, params);
                     } else {
-                        transaction
-                                .setFrameRate(mSurfaceControl, frameRate, compatibility,
-                                        changeFrameRateStrategy);
+                        if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
+                            transaction
+                                    .setFrameRate(mSurfaceControl, frameRate, compatibility);
+                        } else {
+                            transaction
+                                    .setFrameRate(mSurfaceControl, frameRate, compatibility,
+                                            changeFrameRateStrategy);
+                        }
                     }
                     transaction.apply();
                 }
             } else if (mApi == Api.NATIVE_SURFACE_CONTROL) {
-                nativeSurfaceControlSetFrameRate(mNativeSurfaceControl, frameRate, compatibility,
-                        changeFrameRateStrategy);
+                if (mUseArrVersionApi) {
+                    Surface.FrameRateParams params = createFrameRateParams(
+                            frameRate, compatibility, changeFrameRateStrategy);
+                    nativeSurfaceControlSetFrameRateParams(mNativeSurfaceControl,
+                            params.getDesiredMinRate(),
+                            params.getDesiredMaxRate(), params.getFixedSourceRate(),
+                            changeFrameRateStrategy);
+                } else {
+                    nativeSurfaceControlSetFrameRate(mNativeSurfaceControl, frameRate,
+                            compatibility, changeFrameRateStrategy);
+                }
             }
             return rc;
         }
@@ -701,20 +749,30 @@ public class FrameRateCtsActivity extends Activity {
         }
     }
 
-    public void testExactFrameRateMatch(int changeFrameRateStrategy) throws InterruptedException {
+    public void testExactFrameRateMatch(int changeFrameRateStrategy, boolean useArrVersionApi)
+            throws InterruptedException {
         String type = changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
                 ? "seamless" : "always";
-        runTestsWithPreconditions(api -> testExactFrameRateMatch(api, changeFrameRateStrategy),
-                type + " exact frame rate match");
+        runTestsWithPreconditions(api
+                -> testExactFrameRateMatch(api, changeFrameRateStrategy, useArrVersionApi),
+                type + " exact frame rate match" + (useArrVersionApi ? " (ARR)" : ""));
     }
 
     public void testClearFrameRate() throws InterruptedException {
         runTestsWithPreconditions(this::testClearFrameRate, "clear frame rate");
     }
 
-    private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy)
-            throws InterruptedException {
-        runOneSurfaceTest(api, (TestSurface surface) -> {
+    private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy,
+            boolean useArrVersionApi) throws InterruptedException {
+        if (useArrVersionApi && api == Api.SURFACE_CONTROL
+                && !com.android.graphics.surfaceflinger.flags.Flags
+                        .arrSurfacecontrolSetframerateApi()) {
+            Log.w(TAG,
+                    "Skipping ARR SurfaceControl test due to flag "
+                    + "arr_surfacecontrol_setframerate_api disabled");
+            return;
+        }
+        runOneSurfaceTest(api, useArrVersionApi, (TestSurface surface) -> {
             Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
             Display.Mode currentMode = display.getMode();
 
@@ -778,7 +836,17 @@ public class FrameRateCtsActivity extends Activity {
         return string;
     }
 
-    private void testFixedSource(Api api, int changeFrameRateStrategy) throws InterruptedException {
+    private void testFixedSource(Api api, int changeFrameRateStrategy, boolean useArrVersionApi)
+            throws InterruptedException {
+        if (useArrVersionApi && api == Api.SURFACE_CONTROL
+                && !com.android.graphics.surfaceflinger.flags.Flags
+                        .arrSurfacecontrolSetframerateApi()) {
+            Log.w(TAG,
+                    "Skipping ARR SurfaceControl test due to flag "
+                    + "arr_surfacecontrol_setframerate_api disabled");
+            return;
+        }
+
         Display display = getDisplay();
         float[] incompatibleFrameRates = getIncompatibleFrameRates(display);
         if (incompatibleFrameRates == null) {
@@ -799,11 +867,11 @@ public class FrameRateCtsActivity extends Activity {
             int height = mSurfaceView.getHolder().getSurfaceFrame().height() / 2;
             Rect destFrameA = new Rect(/*left=*/0, /*top=*/0, /*right=*/width, /*bottom=*/height);
             surfaceA = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface, "surfaceA",
-                    destFrameA, /*visible=*/true, Color.RED);
+                    destFrameA, /*visible=*/true, Color.RED, useArrVersionApi);
             Rect destFrameB = new Rect(
                     /*left=*/0, /*top=*/height, /*right=*/width, /*bottom=*/height * 2);
             surfaceB = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface, "surfaceB",
-                    destFrameB, /*visible=*/false, Color.GREEN);
+                    destFrameB, /*visible=*/false, Color.GREEN, useArrVersionApi);
 
             int initialNumEvents = mModeChangedEvents.size();
             surfaceA.setFrameRate(frameRateA, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
@@ -842,11 +910,13 @@ public class FrameRateCtsActivity extends Activity {
         }
     }
 
-    public void testFixedSource(int changeFrameRateStrategy) throws InterruptedException {
+    public void testFixedSource(int changeFrameRateStrategy, boolean useArrVersionApi)
+            throws InterruptedException {
         String type = changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
                 ? "seamless" : "always";
-        runTestsWithPreconditions(api -> testFixedSource(api, changeFrameRateStrategy),
-                type + " fixed source behavior");
+        runTestsWithPreconditions(api
+                -> testFixedSource(api, changeFrameRateStrategy, useArrVersionApi),
+                type + " fixed source behavior" + (useArrVersionApi ? " (ARR)" : ""));
     }
 
     private void testInvalidParams(Api api) {
@@ -855,7 +925,7 @@ public class FrameRateCtsActivity extends Activity {
         try {
             surface = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface,
                     "testSurface", mSurfaceView.getHolder().getSurfaceFrame(),
-                    /*visible=*/true, Color.RED);
+                    /*visible=*/true, Color.RED, /*useArrVersionApi=*/false);
             int initialNumEvents = mModeChangedEvents.size();
             surface.setInvalidFrameRate(-100.f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
                     changeStrategy);
@@ -883,11 +953,16 @@ public class FrameRateCtsActivity extends Activity {
 
     private void runOneSurfaceTest(Api api, OneSurfaceTestInterface test)
             throws InterruptedException {
+        runOneSurfaceTest(api, false, test);
+    }
+
+    private void runOneSurfaceTest(Api api, boolean useArrVersionApi, OneSurfaceTestInterface test)
+            throws InterruptedException {
         TestSurface surface = null;
         try {
             surface = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface,
                     "testSurface", mSurfaceView.getHolder().getSurfaceFrame(),
-                    /*visible=*/true, Color.RED);
+                    /*visible=*/true, Color.RED, useArrVersionApi);
 
             test.run(surface);
         } finally {
@@ -989,7 +1064,7 @@ public class FrameRateCtsActivity extends Activity {
         int height = mSurfaceView.getHolder().getSurfaceFrame().height() / 2;
         Rect destFrameA = new Rect(/*left=*/0, /*top=*/0, /*right=*/width, /*bottom=*/height);
         TestSurface surface = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface,
-                "surface", destFrameA, /*visible=*/true, Color.RED);
+                "surface", destFrameA, /*visible=*/true, Color.RED, /*useArrVersionApi=*/false);
 
         // Verify clear frame rate if set frame rate is seamless
         List<Float> seamlessRefreshRates =
@@ -1027,11 +1102,16 @@ public class FrameRateCtsActivity extends Activity {
 
     private static native int nativeWindowSetFrameRate(
             Surface surface, float frameRate, int compatibility, int changeFrameRateStrategy);
+    private static native int nativeWindowSetFrameRateParams(Surface surface, float desiredMinRate,
+            float desiredMaxRate, float fixedSourceRate, int changeFrameRateStrategy);
     private static native long nativeSurfaceControlCreate(
             Surface parentSurface, String name, int left, int top, int right, int bottom);
     private static native void nativeSurfaceControlDestroy(long surfaceControl);
     private static native void nativeSurfaceControlSetFrameRate(
             long surfaceControl, float frameRate, int compatibility, int changeFrameRateStrategy);
+    private static native void nativeSurfaceControlSetFrameRateParams(
+            long surfaceControl, float desiredMinRate,
+            float desiredMaxRate, float fixedSourceRate, int changeFrameRateStrategy);
     private static native void nativeSurfaceControlSetVisibility(
             long surfaceControl, boolean visible);
     private static native boolean nativeSurfaceControlPostBuffer(long surfaceControl, int color);

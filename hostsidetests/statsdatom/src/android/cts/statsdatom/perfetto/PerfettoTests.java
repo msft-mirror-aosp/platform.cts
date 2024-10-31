@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.perfetto;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -46,17 +45,17 @@ import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
+import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ByteString;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
 
 import perfetto.protos.PerfettoConfig.DataSourceConfig;
 import perfetto.protos.PerfettoConfig.FtraceConfig;
 import perfetto.protos.PerfettoConfig.TraceConfig;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
 
@@ -184,7 +183,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
     public void testPerfettoTriggerAtoms() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), DeviceUtils.FEATURE_WATCH)) return;
 
-        StatsdConfig.Builder config = ConfigUtils.createConfigBuilder("AID_SHELL");
+        StatsdConfig.Builder config = ConfigUtils.createConfigBuilder("AID_NOBODY");
         ConfigUtils.addEventMetric(config, AtomsProto.Atom.PERFETTO_TRIGGER_FIELD_NUMBER);
         ConfigUtils.uploadConfig(getDevice(), config);
 
@@ -195,7 +194,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
         assertThat(data).hasSize(1);
         assertThat(extractPerfettoTriggerEvents(data))
                 .containsExactly(
-                        PerfettoTrigger.Event.PERFETTO_TRIGGER_PERFETTO_TRIGGER);
+                        PerfettoTrigger.Event.PERFETTO_TRACED_TRIGGER);
     }
 
     private ByteString getPerfettoIncidentConfig() {
@@ -322,7 +321,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
                 .executeShellCommand(
                         String.format(
                                 "cmd stats log-app-breadcrumb %d %d",
-                                1, AppBreadcrumbReported.State.START.ordinal()));
+                                1, AppBreadcrumbReported.State.START.getNumber()));
     }
 
     private final StatsdConfig.Builder getStatsdConfig(ByteString config) throws Exception {
@@ -363,7 +362,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
                                                                 .setEqInt(
                                                                         AppBreadcrumbReported.State
                                                                                 .START
-                                                                                .ordinal()))))
+                                                                                .getNumber()))))
                 .addAlert(
                         Alert.newBuilder()
                                 .setId(ALERT_ID)

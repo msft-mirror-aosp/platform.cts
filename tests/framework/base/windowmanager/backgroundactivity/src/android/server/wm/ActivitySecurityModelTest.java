@@ -16,9 +16,12 @@
 
 package android.server.wm;
 
+import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.server.wm.backgroundactivity.common.CommonComponents.COMMON_FOREGROUND_ACTIVITY_EXTRAS;
 
 import android.content.ComponentName;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -26,13 +29,52 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.security.Flags;
 
+import androidx.annotation.NonNull;
+
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Objects;
+
+@Ignore
 public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @NonNull
+    private String mSettingsPackage;
+
+    @Override
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        final PackageManager packageManager = mContext.getPackageManager();
+        final Intent settingsIntent = new Intent(Settings.ACTION_SETTINGS);
+        mSettingsPackage = Objects.requireNonNull(
+                packageManager.resolveActivity(settingsIntent, MATCH_DEFAULT_ONLY))
+                .activityInfo.packageName;
+    }
+
+    @Override
+    @After
+    public void tearDown() throws Exception {
+        // Force stop the settings app launched during testActivitySandwichWithSystem.
+        stopTestPackage(mSettingsPackage);
+        super.tearDown();
+    }
+
     /*
      * Targets: A(curr), B(curr)
      * Setup: A B | (bottom -- top)
@@ -337,6 +379,7 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
     public void testActivitySandwichWithSystem_launchBlocked() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 
@@ -370,6 +413,7 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
      */
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
     public void testActivitySandwichWithSystem_launchAllowed() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 

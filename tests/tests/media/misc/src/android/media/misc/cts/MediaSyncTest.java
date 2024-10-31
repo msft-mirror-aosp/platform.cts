@@ -39,7 +39,7 @@ import android.view.Surface;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import java.io.IOException;
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Blender Foundation / www.bigbuckbunny.org, and are licensed under the Creative Commons
  * Attribution 3.0 License at http://creativecommons.org/licenses/by/3.0/us/.
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 @SmallTest
 @RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")

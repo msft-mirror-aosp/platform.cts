@@ -73,6 +73,7 @@ public class AudioTrackSurroundTest extends CtsAndroidTestCase {
     private final static int RES_AC3_SPDIF_VOICE_44100 = R.raw.voice12_44k_128kbps_15s_ac3_spdif;
     private final static int RES_AC3_SPDIF_VOICE_48000 = R.raw.voice12_48k_128kbps_15s_ac3_spdif;
     private final static int RES_AC3_VOICE_48000 = R.raw.voice12_48k_128kbps_15s_ac3;
+    private final static int RES_AC4_L4_SAMPLE_48000 = R.raw.ajoc_fri_13_dmx_10_umx_21_lfe1_ac4;
 
     private static int mLastPlayedEncoding = AudioFormat.ENCODING_INVALID;
 
@@ -80,6 +81,8 @@ public class AudioTrackSurroundTest extends CtsAndroidTestCase {
     private static AudioProfile mProfilePCM16 = null;
     private static AudioProfile mProfileAC3 = null;
     private static AudioProfile mProfileE_AC3 = null;
+    private static AudioProfile mProfileAC4_L4 = null;
+
     private static AudioProfile mProfileDTS = null;
     private static AudioProfile mProfileDTS_HD = null;
     private static AudioProfile mProfileIEC61937 = null;
@@ -139,6 +142,10 @@ public class AudioTrackSurroundTest extends CtsAndroidTestCase {
                     case AudioFormat.ENCODING_E_AC3:
                         mProfileE_AC3 = profile;
                         log(MTAG, "mProfileE_AC3 set to " + profile);
+                        break;
+                    case AudioFormat.ENCODING_AC4_L4:
+                        mProfileAC4_L4 = profile;
+                        log(MTAG, "mProfileAC4_L4 set to " + profile);
                         break;
                     case AudioFormat.ENCODING_DTS:
                         mProfileDTS = profile;
@@ -498,6 +505,15 @@ public class AudioTrackSurroundTest extends CtsAndroidTestCase {
             SamplePlayerShorts player = new SamplePlayerShorts(
                     48000, AudioFormat.ENCODING_AC3, AudioFormat.CHANNEL_OUT_STEREO,
                     RES_AC3_VOICE_48000);
+            player.playAndMeasureRate(SAMPLE_RATE_LONG_TEST_DURATION_MILLIS);
+        }
+    }
+
+    public void testPlayAC4L4Bytes() throws Exception {
+        if (mProfileAC4_L4 != null) {
+            SamplePlayerBytes player = new SamplePlayerBytes(
+                    48000, AudioFormat.ENCODING_AC4_L4, AudioFormat.CHANNEL_OUT_STEREO,
+                    RES_AC4_L4_SAMPLE_48000);
             player.playAndMeasureRate(SAMPLE_RATE_LONG_TEST_DURATION_MILLIS);
         }
     }

@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_FEATURES_NONE;
 import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_TRUST_AGENTS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_SECURE_LOCK_SCREEN;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -71,19 +72,19 @@ public final class TrustAgentInfoTest {
     @CanSetPolicyTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, sConfig);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, sConfig);
 
             List<PersistableBundle> configs =
-                    sDeviceState.dpc().devicePolicyManager().getTrustAgentConfiguration(
-                            sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT);
+                    dpc(sDeviceState).devicePolicyManager().getTrustAgentConfiguration(
+                            dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT);
 
             assertThat(configs).hasSize(1);
             PersistableBundle actual = configs.get(0);
             assertThat(actual.getString(BUNDLE_KEY)).isEqualTo(BUNDLE_VALUE);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -94,15 +95,15 @@ public final class TrustAgentInfoTest {
     @PolicyAppliesTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_componentNotConfigured_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
 
             assertThat(TestApis.devicePolicy().getTrustAgentConfiguration(
                     NOT_CONFIGURED_TRUST_AGENT_COMPONENT)).isEmpty();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -113,8 +114,8 @@ public final class TrustAgentInfoTest {
     @PolicyAppliesTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_trustAgentIsEnabled_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
 
             Set<PersistableBundle> configs =
@@ -122,8 +123,8 @@ public final class TrustAgentInfoTest {
             assertThat(configs.stream().noneMatch(
                     c -> c.getString(BUNDLE_KEY).equals(BUNDLE_VALUE))).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -134,22 +135,22 @@ public final class TrustAgentInfoTest {
     @PolicyAppliesTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_trustAgentIsDisabled_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
 
             Set<PersistableBundle> configs =
                     TestApis.devicePolicy().getTrustAgentConfiguration(TRUST_AGENT_COMPONENT);
             assertThat(configs.stream().anyMatch(
                     c -> c.getString(BUNDLE_KEY).equals(BUNDLE_VALUE))).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
 
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -160,22 +161,22 @@ public final class TrustAgentInfoTest {
     @PolicyAppliesTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_trustAgentIsConfigured_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
 
             Set<PersistableBundle> configs =
                     TestApis.devicePolicy().getTrustAgentConfiguration(TRUST_AGENT_COMPONENT);
             assertThat(configs.stream().anyMatch(
                     c -> c.getString(BUNDLE_KEY).equals(BUNDLE_VALUE))).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
 
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -186,15 +187,15 @@ public final class TrustAgentInfoTest {
     @PolicyDoesNotApplyTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
 
             assertThat(TestApis.devicePolicy().getTrustAgentConfiguration(TRUST_AGENT_COMPONENT))
                     .isEmpty();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -205,22 +206,22 @@ public final class TrustAgentInfoTest {
     @PolicyDoesNotApplyTest(policy = TrustAgentInfo.class)
     public void setTrustAgentConfiguration_doesNotApply_trustAgentIsConfigured_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                     sConfig);
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
 
             Set<PersistableBundle> configs =
                     TestApis.devicePolicy().getTrustAgentConfiguration(TRUST_AGENT_COMPONENT);
             assertThat(configs.stream().noneMatch(
                     c -> c.getString(BUNDLE_KEY).equals(BUNDLE_VALUE))).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FEATURES_NONE);
 
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT, null);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT, null);
         }
     }
 
@@ -231,8 +232,8 @@ public final class TrustAgentInfoTest {
     @CannotSetPolicyTest(policy = TrustAgentInfo.class, includeNonDeviceAdminStates = false)
     public void setTrustAgentConfiguration_cannotSet_throwsException() {
         assertThrows(SecurityException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT_COMPONENT,
+                dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                        dpc(sDeviceState).componentName(), TRUST_AGENT_COMPONENT,
                         sConfig));
     }
 

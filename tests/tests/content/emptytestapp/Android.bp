@@ -161,3 +161,39 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsContentDeclaringLibrary",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    manifest: "AndroidManifestDeclaringLibrary.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsContentDeclaringStaticLibrary",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    manifest: "AndroidManifestDeclaringStaticLibrary.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsContentDeclaringSdkLibrary",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    manifest: "AndroidManifestDeclaringSdkLibrary.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}

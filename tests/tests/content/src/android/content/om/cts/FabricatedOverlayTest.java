@@ -24,13 +24,19 @@ import android.content.Context;
 import android.content.cts.R;
 import android.content.om.FabricatedOverlay;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.Flags;
 import android.graphics.Color;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.TypedValue;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,11 +45,12 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 public class FabricatedOverlayTest {
     private Context mContext;
 
     @Rule public TestName mTestName = new TestName();
+    @Rule public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -257,6 +264,33 @@ public class FabricatedOverlayTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DIMENSION_FRRO)
+    public void setResourceValue_forDimension_withInvalidUnit_shouldFail() {
+        final FabricatedOverlay overlay =
+                new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        overlay.setResourceValue(
+                                "dimen/demo",
+                                20f /* dimensionValue */,
+                                -1 /* dimensionUnit */,
+                                null /* configuration */));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DIMENSION_FRRO)
+    @Parameters(method = "allDimensionUnits")
+    public void setResourceValue_forDimension_withValidUnit_shouldSucceed(int unit) {
+        final FabricatedOverlay overlay =
+                new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
+
+        overlay.setResourceValue("dimen/demo", 20f /* dimensionValue */, unit,
+                null /* configuration */);
+    }
+
+    @Test
     public void setResourceValue_multipleEntries_shouldSucceed() {
         final FabricatedOverlay overlay =
                 new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
@@ -303,5 +337,16 @@ public class FabricatedOverlayTest {
                 new FabricatedOverlay(mTestName.getMethodName(), mContext.getPackageName());
 
         assertThat(overlay.getIdentifier()).isNotNull();
+    }
+
+    private static Integer[] allDimensionUnits() {
+        return new Integer[]{
+                TypedValue.COMPLEX_UNIT_DIP,
+                TypedValue.COMPLEX_UNIT_SP,
+                TypedValue.COMPLEX_UNIT_PX,
+                TypedValue.COMPLEX_UNIT_PT,
+                TypedValue.COMPLEX_UNIT_IN,
+                TypedValue.COMPLEX_UNIT_MM,
+        };
     }
 }
