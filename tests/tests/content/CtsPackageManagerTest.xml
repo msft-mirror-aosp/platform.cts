@@ -88,6 +88,7 @@
         <option name="push" value="CtsContentDeclaringLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringLibrary.apk" />
         <option name="push" value="CtsContentDeclaringSdkLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringSdkLibrary.apk" />
         <option name="push" value="CtsContentDeclaringStaticLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringStaticLibrary.apk" />
+        <option name="push" value="CtsPackageChangedTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedTestApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
