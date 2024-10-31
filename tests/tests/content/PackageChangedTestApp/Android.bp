@@ -1,4 +1,4 @@
-// Copyright (C) 2016 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,21 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package {
-    default_team: "trendy_team_platform_security",
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library {
-    name: "tests-tests-networksecurityconfig-lib",
-    srcs: ["src/**/*.java"],
-    defaults: ["cts_defaults"],
-    libs: [
-        "compatibility-device-util-axt",
-        "org.apache.http.legacy.stubs.system",
-        "android.test.base.stubs.system",
+android_test_helper_app {
+    name: "CtsPackageChangedTestApp",
+    defaults: [
+        "cts_defaults",
     ],
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
     sdk_version: "test_current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
 }
