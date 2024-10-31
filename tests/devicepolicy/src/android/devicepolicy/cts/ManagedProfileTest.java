@@ -16,7 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -26,16 +28,16 @@ import android.content.Context;
 import android.os.UserHandle;
 import android.os.UserManager;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -63,7 +65,7 @@ public final class ManagedProfileTest {
     public void startActivityInManagedProfile_activityStarts() {
         // We want a fresh - properly created work profile
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile();
-             TestAppInstance testApp = sDeviceState.testApps().query()
+             TestAppInstance testApp = testApps(sDeviceState).query()
                      .whereActivities().contains(activity().where().exported().isTrue())
                      .get().install()) {
 
@@ -100,7 +102,7 @@ public final class ManagedProfileTest {
     @Test
     @RequireRunOnWorkProfile
     public void isManagedProfile_runOnWorkProfile_returnsTrue() {
-        assertThat(sDeviceState.dpc().userManager().isManagedProfile()).isTrue();
+        assertThat(dpc(sDeviceState).userManager().isManagedProfile()).isTrue();
     }
 
     @ApiTest(apis = "android.os.UserManager#isManagedProfile")

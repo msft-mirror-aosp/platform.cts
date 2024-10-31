@@ -26,6 +26,8 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "android.provider.flags-aconfig-java",
+        "contactsprovider_flags_java_lib",
         "androidx.test.rules",
     ],
 

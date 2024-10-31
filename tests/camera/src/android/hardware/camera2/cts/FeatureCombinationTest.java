@@ -108,7 +108,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * resolutions smaller than 1080P.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testIsSessionConfigurationSupported() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticInfo = mAllStaticInfo.get(id);
@@ -474,7 +474,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
     @CddTest(requirements = {"2.2.7.2/7.5/H-1-19"})
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testVPerfClassRequirements() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);

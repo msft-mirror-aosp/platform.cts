@@ -32,7 +32,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +45,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class JetPlayerTest {
     private OnJetEventListener mOnJetEventListener;

@@ -16,9 +16,13 @@
 
 package android.gameframerate.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.compat.CompatChanges;
+import android.content.Context;
 import android.gameframerate.cts.GameFrameRateCtsActivity.FrameRateObserver;
+import android.gamemanager.cts.util.TestUtil;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -36,6 +40,8 @@ import android.view.WindowManager;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +72,9 @@ public final class GameFrameRateTest {
     // The tolerance within which we consider refresh rates are equal
     private static final float REFRESH_RATE_TOLERANCE = 0.01f;
 
+    // Needs to be in sync with RefreshRateSelector::kMinSupportedFrameRate
+    private static final float MIN_SUPPORTED_FRAME_RATE_HZ = 20.0f;
+
     private int mInitialMatchContentFrameRate;
     private DisplayManager mDisplayManager;
     private UiDevice mUiDevice;
@@ -74,13 +83,22 @@ public final class GameFrameRateTest {
     private static final int[] refreshRateDivisorsToTest =
             {120, 110, 100, 90, 80, 70, 60, 50, 40, 30};
 
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
-    @Rule
+
+    @Rule(order = 1)
     public ActivityTestRule<GameFrameRateCtsActivity> mActivityRule =
             new ActivityTestRule<>(GameFrameRateCtsActivity.class);
 
     @Before
     public void setUp() throws Exception {
+        Context context = mActivityRule.getActivity();
+        assumeTrue(TestUtil.shouldTestGameFeatures(context));
+
         mUiDevice = UiDevice.getInstance(
                 androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
         mUiDevice.wakeUp();
@@ -111,6 +129,7 @@ public final class GameFrameRateTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mUiDevice == null) return;
         mUiDevice.executeShellCommand("device_config delete game_overlay " + TEST_PKG);
         mDisplayManager.setRefreshRateSwitchingType(mInitialMatchContentFrameRate);
         mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
@@ -165,9 +184,24 @@ public final class GameFrameRateTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
+            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
+            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
+            // in the test setup, this is not communicated and thus not handled.
+            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
+
+                // Do not add refresh rates that are too low as those will be discarded by SF
+                if (mode.getRefreshRate() / 2
+                        < MIN_SUPPORTED_FRAME_RATE_HZ + REFRESH_RATE_TOLERANCE) {
+                    continue;
+                }
                 modesWithSameResolution.add(mode);
+                Log.i(TAG, "Mode added: " + mode.toString());
             }
         }
 

@@ -25,6 +25,7 @@ import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getAc
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getResumedActivityById;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.isActivityResumed;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityFromActivity;
+import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,12 +45,14 @@ import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.util.Log;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.core.util.function.Predicate;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.DividerAttributes;
 import androidx.window.extensions.embedding.SplitAttributes;
 import androidx.window.extensions.embedding.SplitAttributes.LayoutDirection;
 import androidx.window.extensions.embedding.SplitAttributes.SplitType;
@@ -592,26 +595,34 @@ public class ActivityEmbeddingUtil {
 
         // Calculate the container bounds
         final boolean isHorizontal = isHorizontal(layoutDir);
+        final int dividerOffsetLeftOrTop = getBoundsOffsetForDivider(
+                activity, splitAttributes, true /* isLeftOrTop */);
+        final int dividerOffsetRightOrBottom = getBoundsOffsetForDivider(
+                activity, splitAttributes, false /* isLeftOrTop */);
         final Rect leftOrTopContainerBounds = isHorizontal
                 ? new Rect(
                         parentTaskBounds.left,
                         parentTaskBounds.top,
                         parentTaskBounds.right,
                         (int) (parentTaskBounds.top + parentTaskBounds.height() * splitRatio)
+                                + dividerOffsetLeftOrTop
                 ) : new Rect(
                         parentTaskBounds.left,
                         parentTaskBounds.top,
-                        (int) (parentTaskBounds.left + parentTaskBounds.width() * splitRatio),
+                        (int) (parentTaskBounds.left + parentTaskBounds.width() * splitRatio)
+                                + dividerOffsetLeftOrTop,
                         parentTaskBounds.bottom);
 
         final Rect rightOrBottomContainerBounds = isHorizontal
                 ? new Rect(
                         parentTaskBounds.left,
-                        (int) (parentTaskBounds.top + parentTaskBounds.height() * splitRatio),
+                        (int) (parentTaskBounds.top + parentTaskBounds.height() * splitRatio)
+                                + dividerOffsetRightOrBottom,
                         parentTaskBounds.right,
                         parentTaskBounds.bottom
                 ) : new Rect(
-                        (int) (parentTaskBounds.left + parentTaskBounds.width() * splitRatio),
+                        (int) (parentTaskBounds.left + parentTaskBounds.width() * splitRatio)
+                                + dividerOffsetRightOrBottom,
                         parentTaskBounds.top,
                         parentTaskBounds.right,
                         parentTaskBounds.bottom);
@@ -623,6 +634,34 @@ public class ActivityEmbeddingUtil {
             return new Pair<>(leftOrTopContainerBounds, rightOrBottomContainerBounds);
         }
     }
+
+    private static int getBoundsOffsetForDivider(
+            @NonNull Activity activity,
+            @NonNull SplitAttributes splitAttributes,
+            boolean isLeftOrTop) {
+        final DividerAttributes dividerAttributes = splitAttributes.getDividerAttributes();
+        if (dividerAttributes == null) {
+            return 0;
+        }
+        final int dividerWidthPx = (int) TypedValue.applyDimension(
+                COMPLEX_UNIT_DIP, dividerAttributes.getWidthDp(),
+                activity.getResources().getDisplayMetrics());
+        final SplitType splitType = splitAttributes.getSplitType();
+
+        if (splitType instanceof SplitType.ExpandContainersSplitType) {
+            // No divider offset is needed for the ExpandContainersSplitType.
+            return 0;
+        }
+        int primaryOffset;
+        if (splitType instanceof final SplitType.RatioSplitType splitRatio) {
+            primaryOffset = (int) (dividerWidthPx * splitRatio.getRatio());
+        } else {
+            primaryOffset = dividerWidthPx / 2;
+        }
+        final int secondaryOffset = dividerWidthPx - primaryOffset;
+        return isLeftOrTop ? -primaryOffset : secondaryOffset;
+    }
+
     private static boolean isHorizontal(int layoutDirection) {
         switch (layoutDirection) {
             case LayoutDirection.TOP_TO_BOTTOM:

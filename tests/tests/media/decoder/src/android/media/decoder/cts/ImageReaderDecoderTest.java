@@ -33,7 +33,6 @@ import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaExtractor;
@@ -44,13 +43,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -82,7 +81,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Presubmit
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class ImageReaderDecoderTest {
@@ -336,6 +334,19 @@ public class ImageReaderDecoderTest {
         return false;
     }
 
+    @ApiTest(apis = {"android.graphics.ImageFormat#YUV_420_888",
+            "android.graphics.ImageFormat#YCBCR_P010",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUVP010",
+            "android.media.MediaCodecInfo.CodecCapabilities#isFormatSupported",
+            "android.media.MediaCodecInfo.VideoCapabilities#areSizeAndRateSupported",
+            "android.media.MediaCodec#releaseOutputBuffer",
+            "android.media.ImageReader#newInstance",
+            "android.media.ImageReader.OnImageAvailableListener#onImageAvailable",
+            "android.media.ImageReader#getSurface",
+            "android.media.ImageReader#acquireNextImage",
+            "android.media.ImageReader#acquireLatestImage",
+            "android.media.ImageReader#close"})
     @Test
     public void decodeTest() throws Exception {
         int imageFormat = ImageFormat.YUV_420_888;
@@ -663,11 +674,13 @@ public class ImageReaderDecoderTest {
     private static void validateYuvData(byte[] yuvData, int width, int height, int format,
             long ts) {
 
-        assertTrue("YUV format must be one of the YUV_420_888, NV21, YV12 or YCBCR_P010",
-                format == ImageFormat.YUV_420_888 ||
-                format == ImageFormat.NV21 ||
-                format == ImageFormat.YV12 ||
-                format == ImageFormat.YCBCR_P010);
+        assertTrue(
+                "YUV format must be one of the YUV_420_888, NV21, YV12, YCBCR_P010, or YCBCr_P210",
+                format == ImageFormat.YUV_420_888
+                || format == ImageFormat.NV21
+                || format == ImageFormat.YV12
+                || format == ImageFormat.YCBCR_P010
+                || format == ImageFormat.YCBCR_P210);
 
         if (VERBOSE) Log.v(TAG, "Validating YUV data");
         int expectedSize = width * height * ImageFormat.getBitsPerPixel(format) / 8;
@@ -675,10 +688,11 @@ public class ImageReaderDecoderTest {
     }
 
     private static void checkYuvFormat(int format) {
-        if ((format != ImageFormat.YUV_420_888) &&
-                (format != ImageFormat.NV21) &&
-                (format != ImageFormat.YV12) &&
-                (format != ImageFormat.YCBCR_P010)) {
+        if ((format != ImageFormat.YUV_420_888)
+                && (format != ImageFormat.NV21)
+                && (format != ImageFormat.YV12)
+                && (format != ImageFormat.YCBCR_P010)
+                && (format != ImageFormat.YCBCR_P210))  {
             fail("Wrong formats: " + format);
         }
     }
@@ -695,7 +709,8 @@ public class ImageReaderDecoderTest {
             case ImageFormat.NV21:
             case ImageFormat.YV12:
             case ImageFormat.YCBCR_P010:
-                assertEquals("YUV420 format Images should have 3 planes", 3, planes.length);
+            case ImageFormat.YCBCR_P210:
+                assertEquals("YUV420/422 format Images should have 3 planes", 3, planes.length);
                 break;
             default:
                 fail("Unsupported Image Format: " + format);
@@ -705,10 +720,10 @@ public class ImageReaderDecoderTest {
     /**
      * Get a byte array image data from an Image object.
      * <p>
-     * Read data from all planes of an Image into a contiguous unpadded,
-     * unpacked 1-D linear byte array, such that it can be write into disk, or
-     * accessed by software conveniently. It supports YUV_420_888/NV21/YV12/P010
-     * input Image format.
+     * Read data from all planes of an Image into a contiguous
+     * unpadded, unpacked 1-D linear byte array, such that it can be
+     * write into disk, or accessed by software conveniently. It
+     * supports YUV_420_888/NV21/YV12/P010/P210 input Image format.
      * </p>
      * <p>
      * For YUV_420_888/NV21/YV12/Y8/Y16, it returns a byte array that contains
@@ -739,7 +754,8 @@ public class ImageReaderDecoderTest {
         byte[] rowData = new byte[planes[0].getRowStride()];
         if(VERBOSE) Log.v(TAG, "get data from " + planes.length + " planes");
         for (int i = 0; i < planes.length; i++) {
-            int shift = (i == 0) ? 0 : 1;
+            int hshift = (i == 0) ? 0 : 1;
+            int vshift = (format == ImageFormat.YCBCR_P210) ? 0 : hshift;
             buffer = planes[i].getBuffer();
             assertNotNull("Fail to get bytebuffer from plane", buffer);
             rowStride = planes[i].getRowStride();
@@ -751,10 +767,11 @@ public class ImageReaderDecoderTest {
                 Log.v(TAG, "width " + width);
                 Log.v(TAG, "height " + height);
             }
-            // For multi-planar yuv images, assuming yuv420 with 2x2 chroma subsampling.
-            int w = crop.width() >> shift;
-            int h = crop.height() >> shift;
-            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
+            // For multi-planar yuv images, assuming yuv420 with 2x2
+            // chroma subsampling or yuv422 with 2x1 chroma subsampling
+            int w = crop.width() >> hshift;
+            int h = crop.height() >> vshift;
+            buffer.position(rowStride * (crop.top >> vshift) + pixelStride * (crop.left >> hshift));
             assertTrue("rowStride " + rowStride + " should be >= width " + w , rowStride >= w);
             for (int row = 0; row < h; row++) {
                 // ImageFormat.getBitsPerPixel() returns total bits per pixel, which is 12 for

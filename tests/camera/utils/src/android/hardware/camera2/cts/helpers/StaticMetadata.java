@@ -624,16 +624,14 @@ public class StaticMetadata {
     }
 
     public Boolean isManualFlashStrengthControlSupported() {
-        if (Flags.cameraManualFlashStrengthControl()) {
-            Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
-            Boolean hasFlash = getValueFromKeyNonNull(key);
-            Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
-            Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
-            Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
-            Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
-            if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
-                return true;
-            }
+        Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
+        Boolean hasFlash = getValueFromKeyNonNull(key);
+        Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
+        Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
+        Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
+        Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
+        if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
+            return true;
         }
         return false;
     }
@@ -1504,6 +1502,16 @@ public class StaticMetadata {
      */
     public Size[] getHeicOutputSizesChecked() {
         return getAvailableSizesForFormatChecked(ImageFormat.HEIC,
+                StreamDirection.Output);
+    }
+
+    /**
+     * Get supported YCBCR_P210 output sizes and do the check.
+     *
+     * @return Empty size array if YCBCR_P210 output is not supported
+     */
+    public Size[] getP210OutputSizesChecked() {
+        return getAvailableSizesForFormatChecked(ImageFormat.YCBCR_P210,
                 StreamDirection.Output);
     }
 

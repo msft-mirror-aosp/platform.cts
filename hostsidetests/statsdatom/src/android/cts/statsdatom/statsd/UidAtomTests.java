@@ -76,8 +76,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String TAG = "Statsd.UidAtomTests";
 
-    private static final String TEST_PACKAGE_NAME = "com.android.server.cts.device.statsd";
-
     private static final String ACTION_SHOW_APPLICATION_OVERLAY = "action.show_application_overlay";
 
     private static final String FEATURE_AUDIO_OUTPUT = "android.hardware.audio.output";

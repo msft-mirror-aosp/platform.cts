@@ -19,10 +19,6 @@ package android.server.wm;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.app.Instrumentation.ActivityMonitor;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -60,7 +56,6 @@ import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
-import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -203,11 +198,6 @@ public abstract class ActivityManagerTestBase {
     // Use one of the test tags as a separator
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
 
-    protected static final int[] ALL_ACTIVITY_TYPE_BUT_HOME = {
-            ACTIVITY_TYPE_STANDARD, ACTIVITY_TYPE_ASSISTANT, ACTIVITY_TYPE_RECENTS,
-            ACTIVITY_TYPE_UNDEFINED
-    };
-
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
     private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
@@ -229,6 +219,12 @@ public abstract class ActivityManagerTestBase {
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
+
+    private static final String ASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service assign-extra-display ";
+
+    private static final String UNASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service unassign-extra-display ";
 
     protected static final String LOCK_CREDENTIAL = "1234";
 
@@ -255,6 +251,7 @@ public abstract class ActivityManagerTestBase {
     protected final DisplayManager mDm = mContext.getSystemService(DisplayManager.class);
     protected final WindowManager mWm = mContext.getSystemService(WindowManager.class);
     protected final KeyguardManager mKm = mContext.getSystemService(KeyguardManager.class);
+    private final UserHelper mUserHelper = new UserHelper(mContext);
 
     /** The tracker to manage objects (especially {@link AutoCloseable}) in a test method. */
     protected final ObjectTracker mObjectTracker = new ObjectTracker();
@@ -275,7 +272,6 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
-    private UserHelper mUserHelper;
     protected int mUserId;
 
     @NonNull
@@ -689,14 +685,9 @@ public abstract class ActivityManagerTestBase {
 
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            // Remove all tasks and then wait for allActivitiesResumed.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        } else {
-            // Stop any residual tasks from the test package.
-            forceStopAllTestPackages();
-        }
+        finishAndRemoveCurrentTestActivityTasks();
+        // Stop any residual tasks from the test package.
+        forceStopAllTestPackages();
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -707,17 +698,6 @@ public abstract class ActivityManagerTestBase {
         });
         mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
 
-        // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
-        // the systemUI might have a few tasks that need to be displayed all the time.
-        // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
-        // restarts can interfere with the test state. To avoid that, its better to wait for all
-        // the activities to come in the resumed state.
-        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
-                    "Root Tasks should be either empty or resumed");
-        }
-        mUserHelper = new UserHelper(mContext);
         mUserId = mContext.getUserId();
     }
 
@@ -728,17 +708,15 @@ public abstract class ActivityManagerTestBase {
         if (mTaskOrganizer != null) {
             mTaskOrganizer.unregisterOrganizerIfNeeded();
         }
-        // Synchronous execution of removeRootTasksWithActivityTypes() ensures that all
-        // activities but home are cleaned up from the root task at the end of each test. Am force
-        // stop shell commands might be asynchronous and could interrupt the task cleanup
-        // process if executed first.
+
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        }
+        // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that activity
+        // tasks associated with this test package are cleaned up at the end of each test. Am force
+        // stop shell commands might be asynchronous and could interrupt the task cleanup process
+        // if executed first.
+        finishAndRemoveCurrentTestActivityTasks();
         forceStopAllTestPackages();
 
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
@@ -816,17 +794,17 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected Intent createHomeIntent(String category) {
-        int resId = Resources.getSystem().getIdentifier(
-                "config_secondaryHomePackage", "string", "android");
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(category);
-        intent.setPackage(mContext.getResources().getString(resId));
         return intent;
     }
 
     protected ComponentName getDefaultSecondaryHomeComponent() {
         assumeTrue(supportsMultiDisplay());
         final Intent intent = createHomeIntent(Intent.CATEGORY_SECONDARY_HOME);
+        int resId = Resources.getSystem().getIdentifier(
+                "config_secondaryHomePackage", "string", "android");
+        intent.setPackage(mContext.getResources().getString(resId));
         final ResolveInfo resolveInfo =
                 mContext.getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull("Should have default secondary home activity", resolveInfo);
@@ -874,13 +852,20 @@ public abstract class ActivityManagerTestBase {
         TouchHelper.injectKey(keyCode, longPress, sync);
     }
 
-    protected void removeRootTasksWithActivityTypes(int... activityTypes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksWithActivityTypes(activityTypes));
-        waitForIdle();
-    }
-
-    protected void removeRootTasksInWindowingModes(int... windowingModes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksInWindowingModes(windowingModes));
+    /**
+     * Finishes and removes the activity tasks associated with this test package.
+     * <p>
+     * This method is intended for self-instrumenting tests bundled with activities.
+     * It finishes all activities in each task and removes them from the recent tasks list,
+     * ensuring a clean state for test execution.
+     * <p>
+     * For test app packages, consider using {@link #stopTestPackage} instead.
+     *
+     * @see ActivityManager#getAppTasks()
+     * @see ActivityManager.AppTask#finishAndRemoveTask()
+     */
+    protected void finishAndRemoveCurrentTestActivityTasks() {
+        mAm.getAppTasks().forEach(ActivityManager.AppTask::finishAndRemoveTask);
         waitForIdle();
     }
 
@@ -911,6 +896,14 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityNoWait(final ComponentName activityName,
             final CliIntentExtra... extras) {
         executeShellCommand(getAmStartCmd(activityName, extras));
+    }
+
+    protected void assignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(ASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
+    }
+
+    protected void unassignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(UNASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
     }
 
     protected void launchActivityInNewTask(final ComponentName activityName) {
@@ -1253,11 +1246,13 @@ public abstract class ActivityManagerTestBase {
 
     public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
             String message) {
+
         final String activityClassName = getActivityName(activityName);
-        mWmState.waitForWithAmState(state -> activityClassName.equals(state.getFocusedActivity()),
+        mWmState.waitForWithAmState(state ->
+                activityClassName.equals(state.getFocusedActivityOnDisplay(displayId)),
                 "activity to be on top");
         waitAndAssertResumedActivity(activityName, "Activity must be resumed");
-        mWmState.assertFocusedActivity(message, activityName);
+        mWmState.assertFocusedActivityOnDisplay(message, activityName, displayId);
 
         final int frontRootTaskId = mWmState.getFrontRootTaskId(displayId);
         Task frontRootTaskOnDisplay = mWmState.getRootTask(frontRootTaskId);
@@ -1266,8 +1261,8 @@ public abstract class ActivityManagerTestBase {
                 activityClassName,
                 frontRootTaskOnDisplay.isLeafTask() ? frontRootTaskOnDisplay.mResumedActivity
                         : frontRootTaskOnDisplay.getTopTask().mResumedActivity);
-        mWmState.assertFocusedRootTask("Top activity's rootTask must also be on top",
-                frontRootTaskId);
+        mWmState.assertFocusedRootTaskOnDisplay("Top activity's rootTask must also be on top",
+                frontRootTaskId, displayId);
     }
 
     /**
@@ -1513,7 +1508,7 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new LockScreenSession(mInstrumentation, mWmState) {
             @Override
             public void close() {
-                removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+                finishAndRemoveCurrentTestActivityTasks();
                 super.close();
             }
         });
@@ -2996,11 +2991,41 @@ public abstract class ActivityManagerTestBase {
     }
 
     /**
+     * Checks whether the device supports the visible background user.
+     *
+     * <p>The visible background user feature allows full users to be started in background
+     * visible on their assigned displays.
+     *
+     * <p>Note that this feature is typically only supported on automotive system with passenger
+     * displays. For most devices, this method returns {@code false}.
+     */
+    protected boolean isVisibleBackgroundUserSupported() {
+        return mUserHelper.isVisibleBackgroundUserSupported();
+    }
+
+    /**
      * Returns the main display assigned to the user.
      * Note that this returns the DEFAULT_DISPLAY for the current user, and returns the display
      * assigned to the user if it is a visible background user.
      */
     protected int getMainDisplayId() {
         return mUserHelper.getMainDisplayId();
+    }
+
+    /**
+     * Checks whether the device has non-overlapping multitasking feature enabled.
+     *
+     * When this is true, we expect the Task to not occlude other Task below it,
+     * which means both Tasks can be resumed and visible.
+     */
+    protected boolean isNonOverlappingMultiWindowMode(Activity activity) {
+        if (!activity.isInMultiWindowMode()) {
+            return false;
+        }
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // Automotive SplitScreen Multitasking devices overlap the windows.
+            return false;
+        }
+        return true;
     }
 }

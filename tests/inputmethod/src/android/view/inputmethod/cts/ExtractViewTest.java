@@ -30,7 +30,6 @@ import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -48,14 +47,12 @@ import com.android.cts.mockime.MockImeSession;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
-public class ExtractViewTest extends EndToEndImeTestBase {
+public final class ExtractViewTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long START_INPUT_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
 

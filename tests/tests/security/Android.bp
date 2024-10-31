@@ -40,6 +40,7 @@ android_test {
         "sts-device-util",
         "hamcrest-library",
         "NeneInternal",
+        "CameraPermissionTestLib",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -47,6 +48,8 @@ android_test {
         "android.test.base.stubs.system",
     ],
     java_resources: [
+        ":CameraProxyApp",
+        ":OpenCameraApp",
         ":PackageInstallerTestApp",
     ],
     jni_libs: [
@@ -288,4 +291,11 @@ test_module_config {
     base: "CtsSecurityTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.security.cts.MotionEventTest"],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_cts_advancedprotectiontest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.AdvancedProtectionManagerTest"],
 }

@@ -20,7 +20,8 @@ java_test_host {
     name: "CtsMediaBitstreamsTestCases",
     srcs: [
         "src/**/*.java",
-	"common/src/**/*.java"],
+        "common/src/**/*.java",
+    ],
     libs: [
         "compatibility-host-util",
         "cts-tradefed",
@@ -36,7 +37,7 @@ java_test_host {
     ],
     java_resources: ["DynamicConfig.xml"],
     required: ["cts-dynamic-config"],
-    data: [
+    device_common_data: [
         ":CtsMediaBitstreamsDeviceSideTestApp",
     ],
     per_testcase_directory: true,

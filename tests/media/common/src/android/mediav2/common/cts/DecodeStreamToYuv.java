@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import org.junit.AssumptionViolatedException;
+
 /**
  * Class to decode a video track of a clip and write the result to a file.
  */
@@ -93,6 +95,9 @@ public class DecodeStreamToYuv extends CodecDecoderTestBase {
                 decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
                         mFrameLimit);
             }
+        } catch (AssumptionViolatedException e) {
+            // Make sure we allow AssumptionViolatedExceptions through.
+            throw e;
         } catch (Exception e) {
             if (tmp != null && tmp.exists()) assertTrue(tmp.delete());
             throw new RuntimeException(e.getMessage());

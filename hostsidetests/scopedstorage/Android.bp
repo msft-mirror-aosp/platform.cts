@@ -22,7 +22,7 @@ android_test_helper_app {
     manifest: "ScopedStorageTestHelper/TestAppA.xml",
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "36",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -67,7 +67,7 @@ android_test_helper_app {
     manifest: "ScopedStorageTestHelper/TestAppB.xml",
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "36",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -112,7 +112,7 @@ android_test_helper_app {
     manifest: "ScopedStorageTestHelper/TestAppFileManager.xml",
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "35",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -127,7 +127,7 @@ android_test_helper_app {
     manifest: "ScopedStorageTestHelper/TestAppFileManagerBypassDB.xml",
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "35",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -144,7 +144,7 @@ android_test_helper_app {
     manifest: "ScopedStorageTestHelper/TestAppSystemGalleryBypassDB.xml",
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
-    target_sdk_version: "33",
+    target_sdk_version: "35",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -426,7 +426,7 @@ java_test_host {
         "cts",
     ],
     test_config: "CoreTest.xml",
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppA31",
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppB",
@@ -457,7 +457,7 @@ java_test_host {
     ],
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppB",
         ":CtsScopedStorageTestAppDLegacy",
@@ -491,7 +491,7 @@ java_test_host {
     ],
     test_config: "AndroidTestAppCloning.xml",
     per_testcase_directory: true,
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppB",
         ":AppCloningDeviceTest",
     ],
@@ -517,7 +517,7 @@ java_test_host {
         "gts",
     ],
     test_config: "AndroidPreserveLegacyTest.xml",
-    data: [
+    device_common_data: [
         ":CtsLegacyStorageTestAppRequestLegacy",
         ":CtsLegacyStorageTestAppPreserveLegacy",
     ],
@@ -541,7 +541,7 @@ java_test_host {
     ],
     test_config: "PublicVolumeTest.xml",
     per_testcase_directory: true,
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppA31",
         ":CtsScopedStorageTestAppB",
@@ -590,7 +590,7 @@ android_test {
         ":CtsTestAppWithQueriesTag",
         ":CtsScopedStorageTestAppVUSelected",
     ],
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppFileManager",
         ":CtsScopedStorageTestAppA34",
         ":CtsScopedStorageTestAppB",
@@ -630,7 +630,7 @@ android_test {
         "android.test.mock.stubs.test",
         "android.test.runner.stubs.test",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppSystemGalleryBypassDB",
         ":CtsScopedStorageTestAppE30",
@@ -639,7 +639,7 @@ android_test {
         ":CtsScopedStorageTestAppFileManager",
         ":CtsScopedStorageTestAppFileManagerBypassDB",
     ],
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppSystemGalleryBypassDB",
         ":CtsScopedStorageTestAppE30",
@@ -677,7 +677,7 @@ android_test {
         "android.test.mock.stubs.test",
         "android.test.runner.stubs.test",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppB",
         ":CtsScopedStorageTestAppFileManager",
@@ -686,7 +686,7 @@ android_test {
         ":CtsScopedStorageTestAppE",
         ":CtsScopedStorageTestAppELegacy",
     ],
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppA",
         ":CtsScopedStorageTestAppB",
         ":CtsScopedStorageTestAppFileManager",
@@ -724,11 +724,11 @@ android_test {
         "android.test.mock.stubs.test",
         "android.test.runner.stubs.test",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsScopedStorageTestAppB",
         ":CtsScopedStorageTestAppE",
     ],
-    data: [
+    device_common_data: [
         ":CtsScopedStorageTestAppB",
         ":CtsScopedStorageTestAppE",
     ],

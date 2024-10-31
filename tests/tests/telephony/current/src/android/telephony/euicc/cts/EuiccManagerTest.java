@@ -27,6 +27,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -95,7 +96,7 @@ public class EuiccManagerTest {
     private static final String COMMAND_UPDATE_EUICC_UI_PACKAGE =
             "cmd phone euicc set-euicc-uicomponent ";
     private static final String TEST_EUICC_UI_COMPONENT =
-            "android.telephony.euicc.cts.EuiccTestServiceActionResolutionActivity ";
+            "android.telephony.euicc.cts.EuiccTestServiceActionResolutionActivity";
 
     private static final String[] sCallbackActions =
             new String[]{
@@ -115,13 +116,16 @@ public class EuiccManagerTest {
     private EuiccManager mEuiccManager;
     private CallbackReceiver mCallbackReceiver;
 
+    private TelephonyManager mTelephonyManager;
+
     @Before
     public void setUp() throws Exception {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(EuiccUtil.hasEuiccFeature());
         }
 
-        mEuiccManager = (EuiccManager) getContext().getSystemService(Context.EUICC_SERVICE);
+        mEuiccManager = getContext().getSystemService(EuiccManager.class);
+        mTelephonyManager = getContext().getSystemService(TelephonyManager.class);
 
         if (!Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeNotNull(mEuiccManager);
@@ -724,26 +728,30 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
-        setTestEuiccUiComponent();
-        // set up CountDownLatch and receiver
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        mCallbackReceiver = new CallbackReceiver(countDownLatch);
-        getContext()
-                .registerReceiver(
-                        mCallbackReceiver,
-                        new IntentFilter(ACTION_PROVISION_EMBEDDED_SUBSCRIPTION),
-                        Context.RECEIVER_EXPORTED_UNAUDITED);
-        // This confirms EuiccManager Action handled
-        assertTrue(launchActivity(new
-                Intent(EuiccManager.ACTION_PROVISION_EMBEDDED_SUBSCRIPTION)));
-        // wait for callback
         try {
-            countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail(e.toString());
+            setTestEuiccUiComponent();
+            // set up CountDownLatch and receiver
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            mCallbackReceiver = new CallbackReceiver(countDownLatch);
+            getContext()
+                    .registerReceiver(
+                            mCallbackReceiver,
+                            new IntentFilter(ACTION_PROVISION_EMBEDDED_SUBSCRIPTION),
+                            Context.RECEIVER_EXPORTED_UNAUDITED);
+            // This confirms EuiccManager Action handled
+            assertTrue(launchActivity(new
+                    Intent(EuiccManager.ACTION_PROVISION_EMBEDDED_SUBSCRIPTION)));
+            // wait for callback
+            try {
+                countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                fail(e.toString());
+            }
+            // This confirms the EuiccService action mapped with the respective EuiccManager action
+            assertEquals(ACTION_PROVISION_EMBEDDED_SUBSCRIPTION, mCallbackReceiver.getResultData());
+        } finally {
+            resetTestEuiccUiComponent();
         }
-        // This confirms the EuiccService action mapped with the respective EuiccManager action
-        assertEquals(ACTION_PROVISION_EMBEDDED_SUBSCRIPTION, mCallbackReceiver.getResultData());
     }
 
     @Test
@@ -752,26 +760,30 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
-        setTestEuiccUiComponent();
-        // set up CountDownLatch and receiver
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        mCallbackReceiver = new CallbackReceiver(countDownLatch);
-        getContext()
-                .registerReceiver(
-                        mCallbackReceiver,
-                        new IntentFilter(ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS),
-                        Context.RECEIVER_EXPORTED_UNAUDITED);
-        // This confirms EuiccManager Action handled
-        assertTrue(launchActivity(new
-                Intent(EuiccManager.ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS)));
-        // wait for callback
         try {
-            countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail(e.toString());
+            setTestEuiccUiComponent();
+            // set up CountDownLatch and receiver
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            mCallbackReceiver = new CallbackReceiver(countDownLatch);
+            getContext()
+                    .registerReceiver(
+                            mCallbackReceiver,
+                            new IntentFilter(ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS),
+                            Context.RECEIVER_EXPORTED_UNAUDITED);
+            // This confirms EuiccManager Action handled
+            assertTrue(launchActivity(new
+                    Intent(EuiccManager.ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS)));
+            // wait for callback
+            try {
+                countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                fail(e.toString());
+            }
+            // This confirms the EuiccService action mapped with the respective EuiccManager action
+            assertEquals(ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
+        } finally {
+            resetTestEuiccUiComponent();
         }
-        // This confirms the EuiccService action mapped with the respective EuiccManager action
-        assertEquals(ACTION_MANAGE_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
     }
 
     @Test
@@ -780,26 +792,30 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
-        setTestEuiccUiComponent();
-        // set up CountDownLatch and receiver
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        mCallbackReceiver = new CallbackReceiver(countDownLatch);
-        getContext()
-                .registerReceiver(
-                        mCallbackReceiver,
-                        new IntentFilter(ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS),
-                        Context.RECEIVER_EXPORTED_UNAUDITED);
-        // This confirms EuiccManager Action handled
-        assertTrue(launchActivity(new
-                Intent(EuiccManager.ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS)));
-        // wait for callback
         try {
-            countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail(e.toString());
+            setTestEuiccUiComponent();
+            // set up CountDownLatch and receiver
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            mCallbackReceiver = new CallbackReceiver(countDownLatch);
+            getContext()
+                    .registerReceiver(
+                            mCallbackReceiver,
+                            new IntentFilter(ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS),
+                            Context.RECEIVER_EXPORTED_UNAUDITED);
+            // This confirms EuiccManager Action handled
+            assertTrue(launchActivity(new
+                    Intent(EuiccManager.ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS)));
+            // wait for callback
+            try {
+                countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                fail(e.toString());
+            }
+            // This confirms the EuiccService action mapped with the respective EuiccManager action
+            assertEquals(ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
+        } finally {
+            resetTestEuiccUiComponent();
         }
-        // This confirms the EuiccService action mapped with the respective EuiccManager action
-        assertEquals(ACTION_TRANSFER_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
     }
 
     @Test
@@ -808,26 +824,31 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
-        setTestEuiccUiComponent();
-        // set up CountDownLatch and receiver
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        mCallbackReceiver = new CallbackReceiver(countDownLatch);
-        getContext()
-                .registerReceiver(
-                        mCallbackReceiver,
-                        new IntentFilter(ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTIONS),
-                        Context.RECEIVER_EXPORTED_UNAUDITED);
-        // This confirms EuiccManager Action handled
-        assertTrue(launchActivity(new
-                Intent(EuiccManager.ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTION)));
-        // wait for callback
         try {
-            countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail(e.toString());
+            setTestEuiccUiComponent();
+            // set up CountDownLatch and receiver
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            mCallbackReceiver = new CallbackReceiver(countDownLatch);
+            getContext()
+                    .registerReceiver(
+                            mCallbackReceiver,
+                            new IntentFilter(ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTIONS),
+                            Context.RECEIVER_EXPORTED_UNAUDITED);
+            // This confirms EuiccManager Action handled
+            assertTrue(launchActivity(new
+                    Intent(EuiccManager.ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTION)));
+            // wait for callback
+            try {
+                countDownLatch.await(CALLBACK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                fail(e.toString());
+            }
+            // This confirms the EuiccService action mapped with the respective EuiccManager action
+            assertEquals(ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTIONS,
+                    mCallbackReceiver.getResultData());
+        } finally {
+            resetTestEuiccUiComponent();
         }
-        // This confirms the EuiccService action mapped with the respective EuiccManager action
-        assertEquals(ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
     }
 
     @Test
@@ -856,11 +877,19 @@ public class EuiccManagerTest {
 
     private void setTestEuiccUiComponent() {
         try {
-            TelephonyUtils.executeShellCommand(InstrumentationRegistry.getInstrumentation(),
-                    COMMAND_UPDATE_EUICC_UI_PACKAGE  +
-                            TEST_EUICC_UI_COMPONENT + getContext().getPackageName());
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setTestEuiccUiComponent(new ComponentName(
+                            getContext().getPackageName(), TEST_EUICC_UI_COMPONENT)));
+        } catch (Exception e) {
+            fail(e.toString());
+        }
+    }
 
-        } catch (Exception e){
+    private void resetTestEuiccUiComponent() {
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setTestEuiccUiComponent(null));
+        } catch (Exception e) {
             fail(e.toString());
         }
     }
