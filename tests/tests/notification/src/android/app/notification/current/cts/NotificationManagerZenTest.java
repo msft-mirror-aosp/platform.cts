@@ -54,6 +54,8 @@ import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_PEEK;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_OFF;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_ON;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_STATUS_BAR;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.service.notification.Condition.STATE_FALSE;
 import static android.service.notification.Condition.STATE_TRUE;
@@ -116,7 +118,8 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -710,7 +713,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
-        assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        if (mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
+            assertFalse(mNotificationManager.areAutomaticZenRulesUserManaged());
+        } else {
+            assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        }
     }
 
     @Test
@@ -2811,6 +2819,13 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Visible background user devices (primarily Android auto) currently don't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported on MUMD. relevant bugs: b/370631032")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithNightMode_appliedOnScreenOff() throws Exception {
@@ -2998,11 +3013,14 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void testIndividualRuleIntent_resolvesToActivity() {
+        assumeTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+
         AutomaticZenRule ruleToCreate = createRule("testIndividualRuleIntent_resolvesToActivity");
         String id = mNotificationManager.addAutomaticZenRule(ruleToCreate);
         final PackageManager pm = mContext.getPackageManager();
         final Intent intent = new Intent(Settings.ACTION_AUTOMATIC_ZEN_RULE_SETTINGS);
         intent.putExtra(EXTRA_AUTOMATIC_ZEN_RULE_ID, id);
+
         final ResolveInfo resolveInfo = pm.resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull(resolveInfo);
     }

@@ -18,8 +18,6 @@ package android.server.wm.jetpack;
 
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
-import static com.android.window.flags.Flags.FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -30,8 +28,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
@@ -91,27 +87,6 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * to be used by Window Manager Jetpack library, and declares the window extension
      * is enabled.
      */
-    @RequiresFlagsDisabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
-    @ApiTest(apis = {
-            "androidx.window.extensions.WindowExtensionsProvider#getWindowExtensions",
-            "androidx.window.extensions.WindowExtensions#getVendorApiLevel",
-            "android.view.WindowManager#hasWindowExtensionsEnabled"
-    })
-    @Test
-    public void testWindowExtensionsAvailability() {
-        assumeHasLargeScreenDisplayOrExtensionEnabled();
-        assertTrue("WindowExtension version is not latest",
-                ExtensionsUtil.isExtensionVersionLatest());
-        assertTrue("Device must declared that the WindowExtension is enabled",
-                WindowManager.hasWindowExtensionsEnabled());
-    }
-
-    /**
-     * MUST implement the latest available stable version of the extensions API
-     * to be used by Window Manager Jetpack library, and declares the window extension
-     * is enabled.
-     */
-    @RequiresFlagsEnabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
     @ApiTest(apis = {
             "androidx.window.extensions.WindowExtensionsProvider#getWindowExtensions",
             "androidx.window.extensions.WindowExtensions#getVendorApiLevel",
@@ -129,23 +104,6 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
      * MUST support Activity Embedding APIs and make ActivityEmbeddingComponent available via
      * WindowExtensions interface.
      */
-    @RequiresFlagsDisabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
-    @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getActivityEmbeddingComponent"})
-    @Test
-    public void testActivityEmbeddingAvailability() {
-        assumeHasLargeScreenDisplay();
-        WindowExtensions windowExtensions = ExtensionsUtil.getWindowExtensions();
-        assertNotNull("WindowExtensions is not available", windowExtensions);
-        ActivityEmbeddingComponent activityEmbeddingComponent =
-                windowExtensions.getActivityEmbeddingComponent();
-        assertNotNull("ActivityEmbeddingComponent is not available", activityEmbeddingComponent);
-    }
-
-    /**
-     * MUST support Activity Embedding APIs and make ActivityEmbeddingComponent available via
-     * WindowExtensions interface.
-     */
-    @RequiresFlagsEnabled(FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG)
     @ApiTest(apis = {"androidx.window.extensions.WindowExtensions#getActivityEmbeddingComponent"})
     @Test
     public void testActivityEmbeddingOnAllDevices() {

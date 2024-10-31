@@ -16,6 +16,8 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -132,6 +134,13 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because FEATURE_TELEPHONY is not available");
             return false;
         }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            // Satellite test against mock service should pass on satellite-less devices, but it's
+            // still too flaky.
+            logd("Skipping tests because FEATURE_TELEPHONY_SATELLITE is not available");
+            return false;
+        }
         try {
             getContext().getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
@@ -195,6 +204,10 @@ public class SatelliteManagerTestBase {
         private List<DatagramStateChangeArgument> mReceiveDatagramStateChanges = new ArrayList<>();
         private final Object mReceiveDatagramStateChangesLock = new Object();
         private final Semaphore mReceiveSemaphore = new Semaphore(0);
+        private final Object mSendDatagramRequestedLock = new Object();
+        private final Semaphore mSendDatagramRequestedSemaphore = new Semaphore(0);
+        @SatelliteManager.DatagramType
+        private List<Integer> mSendDatagramRequestedList = new ArrayList<>();
 
         @Override
         public void onSatellitePositionChanged(PointingInfo pointingInfo) {
@@ -248,6 +261,20 @@ public class SatelliteManagerTestBase {
             }
         }
 
+        @Override
+        public void onSendDatagramRequested(int datagramType) {
+            logd("onSendDatagramRequested: datagramType=" + datagramType);
+            synchronized (mSendDatagramRequestedLock) {
+                mSendDatagramRequestedList.add(datagramType);
+            }
+
+            try {
+                mSendDatagramRequestedSemaphore.release();
+            } catch (Exception e) {
+                loge("onSendDatagramRequested: Got exception, ex=" + e);
+            }
+        }
+
         public boolean waitUntilOnSatellitePositionChanged(int expectedNumberOfEvents) {
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
@@ -297,6 +324,25 @@ public class SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilOnSendDatagramRequested(int expectedNumberOfEvents) {
+            logd("waitUntilOnSendDatagramRequested expectedNumberOfEvents:"
+                    + expectedNumberOfEvents);
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSendDatagramRequestedSemaphore.tryAcquire(
+                            TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSendDatagramRequested() callback");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("SatelliteTransmissionUpdateCallback "
+                            + "waitUntilOnSendDatagramRequested: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void clearPointingInfo() {
             mPointingInfo = null;
             mPositionChangeSemaphore.drainPermits();
@@ -315,6 +361,14 @@ public class SatelliteManagerTestBase {
                 logd("clearReceiveDatagramStateChanges");
                 mReceiveDatagramStateChanges.clear();
                 mReceiveSemaphore.drainPermits();
+            }
+        }
+
+        public void clearSendDatagramRequested() {
+            synchronized (mSendDatagramRequestedLock) {
+                logd("clearSendDatagramRequested");
+                mSendDatagramRequestedList.clear();
+                mSendDatagramRequestedSemaphore.drainPermits();
             }
         }
 
@@ -356,6 +410,26 @@ public class SatelliteManagerTestBase {
         public int getNumOfReceiveDatagramStateChanges() {
             synchronized (mReceiveDatagramStateChangesLock) {
                 return mReceiveDatagramStateChanges.size();
+            }
+        }
+
+        @SatelliteManager.DatagramType
+        public int getSendDatagramRequestedType(int index) {
+            synchronized (mSendDatagramRequestedLock) {
+                if (index < mSendDatagramRequestedList.size()) {
+                    return mSendDatagramRequestedList.get(index);
+                } else {
+                    Log.e(TAG, "getSendDatagramRequestedType: invalid index= " + index
+                            + " mSendDatagramRequestedList.size= "
+                            + mSendDatagramRequestedList.size());
+                    return DATAGRAM_TYPE_UNKNOWN;
+                }
+            }
+        }
+
+        public int getNumOfSendDatagramRequestedChanges() {
+            synchronized (mSendDatagramRequestedLock) {
+                return mSendDatagramRequestedList.size();
             }
         }
     }
@@ -778,6 +852,10 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
     }
 
     protected static class SatelliteModeRadiosUpdater extends ContentObserver implements
@@ -917,12 +995,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
+                        logd("isSatelliteProvisioned: result=" + result);
                         provisioned.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("isSatelliteProvisioned: onError, exception=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -940,6 +1020,7 @@ public class SatelliteManagerTestBase {
         Integer error = errorCode.get();
         Boolean isProvisioned = provisioned.get();
         if (error == null) {
+            logd("isSatelliteProvisioned isProvisioned=" + isProvisioned);
             assertNotNull(isProvisioned);
             return isProvisioned;
         } else {
@@ -1033,6 +1114,25 @@ public class SatelliteManagerTestBase {
     protected static void requestSatelliteEnabled(boolean enabled) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
         sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
+                getContext().getMainExecutor(), error::offer);
+        Integer errorCode;
+        try {
+            errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+            return;
+        }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
+        assertNotNull(errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
+    }
+
+    protected static void requestSatelliteEnabled(boolean enabled, boolean emergency) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled)
+                        .setEmergencyMode(emergency)
+                        .build(),
                 getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
@@ -1537,7 +1637,7 @@ public class SatelliteManagerTestBase {
     }
 
     // Get default active subscription ID.
-    protected int getActiveSubIDForCarrierSatelliteTest() {
+    protected static int getActiveSubIDForCarrierSatelliteTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
@@ -1563,6 +1663,24 @@ public class SatelliteManagerTestBase {
         loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    protected static int getNtnOnlySubscriptionId() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+
+        int subId = infoList.stream()
+                .filter(info -> info.isOnlyNonTerrestrialNetwork())
+                .mapToInt(SubscriptionInfo::getSubscriptionId)
+                .findFirst()
+                .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID && !infoList.isEmpty()) {
+            subId = infoList.get(0).getSubscriptionId();
+        }
+        logd("getNtnOnlySubscriptionId: subId=" + subId);
+        return subId;
     }
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
@@ -1619,14 +1737,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
-                        logd("onResult: result=" + result);
+                        logd("provisionSatellite: onResult: result=" + result);
                         requestResult.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
-                        logd("onError: onError=" + exception);
+                        logd("provisionSatellite: onError: onError=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -1641,8 +1759,39 @@ public class SatelliteManagerTestBase {
         return new Pair<>(requestResult.get(), errorCode.get());
     }
 
+    protected static Pair<Boolean, Integer> deprovisionSatellite(
+            List<SatelliteSubscriberInfo> list) {
+        final AtomicReference<Boolean> requestResult = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        logd("deprovisionSatellite: onResult: result=" + result);
+                        requestResult.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("deprovisionSatellite: onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.deprovisionSatellite(list, getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(requestResult.get(), errorCode.get());
+    }
+
     @NonNull
-    protected PersistableBundle getConfigForSubId(Context context, int subId, String key) {
+    protected static PersistableBundle getConfigForSubId(Context context, int subId, String key) {
         PersistableBundle config = null;
         CarrierConfigManager carrierConfigManager = context.getSystemService(
                 CarrierConfigManager.class);

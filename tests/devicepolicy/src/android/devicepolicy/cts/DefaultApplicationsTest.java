@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_DEFAULT_APPS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -49,8 +50,8 @@ public final class DefaultApplicationsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
     public void addUserRestriction_disallowConfigDefaultApps_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigDefaultApps.class)
@@ -58,15 +59,15 @@ public final class DefaultApplicationsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
     public void addUserRestriction_disallowConfigDefaultApps_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_CONFIG_DEFAULT_APPS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
         }
     }
 
@@ -75,18 +76,18 @@ public final class DefaultApplicationsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
     public void clearUserRestriction_disallowConfigDefaultApps_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_CONFIG_DEFAULT_APPS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_DEFAULT_APPS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
         }
     }
 
@@ -99,15 +100,15 @@ public final class DefaultApplicationsTest {
     @Ignore
     public void addUserRestrictionGlobally_disallowConfigDefaultApps_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_CONFIG_DEFAULT_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_CONFIG_DEFAULT_APPS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
         }
     }
 
@@ -120,18 +121,18 @@ public final class DefaultApplicationsTest {
     @Ignore
     public void clearGlobalUserRestriction_disallowConfigDefaultApps_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_CONFIG_DEFAULT_APPS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_CONFIG_DEFAULT_APPS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
         }
     }
 

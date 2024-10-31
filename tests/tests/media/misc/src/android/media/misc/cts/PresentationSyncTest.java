@@ -30,7 +30,6 @@ import android.view.Choreographer;
 import android.view.SurfaceHolder;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 
 /**
@@ -38,9 +37,24 @@ import com.android.compatibility.common.util.NonMainlineTest;
  *
  * SurfaceFlinger allows a "desired presentation time" value to be passed along with buffers of
  * data.  This exercises that feature.
+ *
+ *
+ * Tests whether the output frame rate can be limited by the presentation time.
+ * <p>
+ * Generates and displays the same series of images multiple times.  The first run uses "now"
+ * as the desired presentation time to establish an estimate of the refresh time.  Later
+ * runs set the presentation time to (start_time + frame_number * refresh_time * multiplier),
+ * with the expectation that a multiplier of 2 will cause the animation to render at
+ * half speed.
+ * <p>
+ * This test does not use Choreographer.  The longer the test runs, the farther out of
+ * phase the test will become with respect to the actual vsync timing.
+ * <p>
+ * Setting the presentation time for a frame is most easily done through an EGL extension,
+ * so we render each frame through GL.
+ *
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class PresentationSyncTest extends ActivityInstrumentationTestCase2<MediaStubActivity>
         implements SurfaceHolder.Callback {
@@ -60,24 +74,47 @@ public class PresentationSyncTest extends ActivityInstrumentationTestCase2<Media
         super(MediaStubActivity.class);
     }
 
+    // Run tests with times specified, at 1.3x, 1x, 1/2x, and 1/4x speed.
+    //
+    // One particular device is overly aggressive at reducing clock frequencies, and it
+    // will slow things to the point where we can't push frames quickly enough in the
+    // faster test.  By adding an artificial workload in a second thread we can make the
+    // system run faster.  (This could have a detrimental effect on a single-core CPU,
+    // so it's a no-op there.)
+    //
+    // Tests with mult < 1.0f are flaky, for two reasons:
+    //
+    // (a) They assume that the GPU can render the test scene in less than mult*refreshNsec.
+    //     It's a simple scene, but CTS/CDD don't currently require being able to do more
+    //     than a full-screen clear in refreshNsec.
+    //
+    // (b) More importantly, it assumes that the only rate-limiting happening is
+    //     backpressure from the buffer queue. If the EGL implementation is doing its own
+    //     rate-limiting (to limit the amount of work queued to the GPU at any time), then
+    //     depending on how that's implemented the buffer queue may not have two frames
+    //     pending very often. So the consumer won't be able to drop many frames, and the
+    //     throughput won't be much better than with mult=1.0.
+    //
+    // so we won't do runThroughputTest(0.75f); (which is 1.3x speed)
+
+    public void testThroughput1x() throws Exception {
+        singleThroughput(1.0f);
+    }
+    public void testThroughput2x() throws Exception {
+        singleThroughput(2.0f);
+    }
+    public void testThroughput4x() throws Exception {
+        singleThroughput(4.0f);
+    }
+
     /**
      * Tests whether the output frame rate can be limited by the presentation time.
-     * <p>
-     * Generates and displays the same series of images three times.  The first run uses "now"
-     * as the desired presentation time to establish an estimate of the refresh time.  Later
-     * runs set the presentation time to (start_time + frame_number * refresh_time * multiplier),
-     * with the expectation that a multiplier of 2 will cause the animation to render at
-     * half speed.
-     * <p>
-     * This test does not use Choreographer.  The longer the test runs, the farther out of
-     * phase the test will become with respect to the actual vsync timing.
-     * <p>
-     * Setting the presentation time for a frame is most easily done through an EGL extension,
-     * so we render each frame through GL.
+     *
+     * Detailed description is provided in the class.
      *
      * @throws Exception
      */
-    public void testThroughput() throws Exception {
+    private void singleThroughput(float multiplier) throws Exception {
         // Get the Surface from the SurfaceView.
         // TODO: is it safe to assume that it's ready?
         SurfaceHolder holder = getActivity().getSurfaceHolder();
@@ -107,34 +144,13 @@ public class PresentationSyncTest extends ActivityInstrumentationTestCase2<Media
         long refreshNsec = baseTimeNsec / FRAME_COUNT;
         Log.i(TAG, "Using " + refreshNsec + "ns as refresh rate");
 
-        // Run tests with times specified, at 1.3x, 1x, 1/2x, and 1/4x speed.
-        //
-        // One particular device is overly aggressive at reducing clock frequencies, and it
-        // will slow things to the point where we can't push frames quickly enough in the
-        // faster test.  By adding an artificial workload in a second thread we can make the
-        // system run faster.  (This could have a detrimental effect on a single-core CPU,
-        // so it's a no-op there.)
         CpuWaster cpuWaster = new CpuWaster();
         try {
+            // this simple workload spins up the CPU clocks for us
             cpuWaster.start();
-            // Tests with mult < 1.0f are flaky, for two reasons:
-            //
-            // (a) They assume that the GPU can render the test scene in less than mult*refreshNsec.
-            //     It's a simple scene, but CTS/CDD don't currently require being able to do more
-            //     than a full-screen clear in refreshNsec.
-            //
-            // (b) More importantly, it assumes that the only rate-limiting happening is
-            //     backpressure from the buffer queue. If the EGL implementation is doing its own
-            //     rate-limiting (to limit the amount of work queued to the GPU at any time), then
-            //     depending on how that's implemented the buffer queue may not have two frames
-            //     pending very often. So the consumer won't be able to drop many frames, and the
-            //     throughput won't be much better than with mult=1.0.
-            //
-            // runThroughputTest(output, refreshNsec, 0.75f);
             cpuWaster.stop();
-            runThroughputTest(output, refreshNsec, 1.0f);
-            runThroughputTest(output, refreshNsec, 2.0f);
-            runThroughputTest(output, refreshNsec, 4.0f);
+
+            runThroughputTest(output, refreshNsec, multiplier);
         } finally {
             cpuWaster.stop();
         }

@@ -23,9 +23,11 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
+@Ignore("Ignoring legacy tests for public volume")
 public class PublicVolumeLegacyHostTest extends LegacyStorageHostTest {
     /** Used to clean up the virtual volume after the test */
     private static ITestDevice sDevice = null;

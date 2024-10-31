@@ -249,7 +249,8 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       # dump IMU events
       sensor_events = cam.get_sensor_events()
       gyro_events = sensor_events['gyro']  # raw gyro output
-      rv_events = sensor_events['rv']  # rotation vector
+      if 'rv' in sensor_events.keys():
+        rv_events = sensor_events['rv']  # rotation vector
 
     # process gyro data
     x_gyro, y_gyro, z_gyro, times = convert_events_to_arrays(
@@ -261,14 +262,15 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     x_gyro_drift, y_gyro_drift, z_gyro_drift = do_riemann_sums(
         x_gyro, y_gyro, z_gyro, times, self.log_path)
 
-    # process rotation vector data
-    x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
-        rv_events, _NSEC_TO_SEC, 1)
-    # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
-    calc_effective_sampling_rate(t_rv, 'rv')
+    if rv_events:
+      # process rotation vector data
+      x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
+          rv_events, _NSEC_TO_SEC, 1)
+      # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
+      calc_effective_sampling_rate(t_rv, 'rv')
 
-    # plot rotation vector data
-    plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
+      # plot rotation vector data
+      plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
 
     # assert correct gyro behavior
     gyro_var_atol = _GYRO_VAR_ATOL * gyro_sampling_rate * _RAD_TO_DEG**2

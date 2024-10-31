@@ -18,27 +18,27 @@ package android.devicepolicy.cts
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
 import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
@@ -46,6 +46,7 @@ import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
@@ -347,8 +348,14 @@ class DeviceOwnerTest {
         }
     }
 
+
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#ACTION_DEVICE_OWNER_CHANGED"])
     @EnsureHasNoDpc
+    //Not allowed to set the device owner as long as there are already some accounts on the device. (b/347418954)
+    @EnsureHasNoAccounts(
+        onUser = UserType.ANY,
+        failureMode = FailureMode.SKIP
+    )
     @Postsubmit(reason = "new test")
     @Test
     fun setDeviceOwner_receivesOwnerChangedBroadcast() {

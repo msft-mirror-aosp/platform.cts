@@ -5,10 +5,8 @@ package {
 filegroup {
     name: "bedstead-enterprise-common-srcs",
     srcs: [
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/*.java",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/parameterized/*.kt",
-        "src/main/kotlin/com/android/bedstead/enterprise/annotations/parameterized/*.java",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.kt",
+        "src/main/kotlin/com/android/bedstead/enterprise/annotations/**/*.java",
     ],
 }
 
@@ -33,6 +31,8 @@ android_library {
         "bedstead-multiuser",
         "Harrier",
         "Nene",
+        "bedstead-testapps",
+        "bedstead-accounts",
     ],
 }
 
@@ -52,6 +52,7 @@ android_test {
         "bedstead-enterprise",
         "truth",
         "testng", // used for assertThrows
+        "bedstead-root",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",

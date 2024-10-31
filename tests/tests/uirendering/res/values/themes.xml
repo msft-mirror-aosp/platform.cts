@@ -26,6 +26,7 @@ limitations under the License.
         <item name="android:ambientShadowAlpha">0.039</item>
         <item name="android:spotShadowAlpha">0.19</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="android:textColorHighlight">#99ff0099</item>
     </style>
     <style name="AutoDarkTheme" parent="@style/DefaultTheme">
         <item name="android:forceDarkAllowed">true</item>

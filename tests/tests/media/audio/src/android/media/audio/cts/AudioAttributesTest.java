@@ -16,8 +16,9 @@
 
 package android.media.audio.cts;
 
+import static android.media.audio.Flags.speakerCleanupUsage;
+
 import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.expectThrows;
 
 import android.audio.policy.configuration.V7_0.AudioUsage;
 import android.media.AudioAttributes;
@@ -28,13 +29,35 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.NonMainlineTest;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 @NonMainlineTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioAttributesTest extends CtsAndroidTestCase {
+
+    /**
+     *  Array of @SystemApi usages
+     *  see {@link #setUp()} for the initialization which is to be moved back to the declaration
+     *  of the array, and made final, once the flag check speakerCleanupUsage() is removed */
+    private static int[] sSystemUsages;
+
+    @Override
+    protected void setUp() throws Exception {
+        if (speakerCleanupUsage()) {
+            int[] newSystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
+                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
+                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT,
+                    // new usage under flag
+                    AudioAttributes.USAGE_SPEAKER_CLEANUP };
+            sSystemUsages = newSystemUsages;
+
+        } else {
+            int[] legacySystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
+                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
+                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT };
+            sSystemUsages = legacySystemUsages;
+        }
+    }
 
     // -----------------------------------------------------------------
     // AUDIOATTRIBUTES TESTS:
@@ -136,36 +159,38 @@ public class AudioAttributesTest extends CtsAndroidTestCase {
 
     public void testSetUsage_throwsWhenPassedSystemUsage()
             throws NoSuchFieldException, IllegalAccessException {
-        int emergencySystemUsage = getEmergencySystemUsage();
-        AudioAttributes.Builder builder = new AudioAttributes.Builder();
-
-        assertThrows(IllegalArgumentException.class, () -> builder.setUsage(emergencySystemUsage));
+        for (int sysUsage : sSystemUsages) {
+            AudioAttributes.Builder builder = new AudioAttributes.Builder();
+            assertThrows(IllegalArgumentException.class, () -> builder.setUsage(sysUsage));
+        }
     }
 
     public void testSetSystemUsage_throwsWhenPassedSdkUsage() {
-        InvocationTargetException e = expectThrows(InvocationTargetException.class, () -> {
-            setSystemUsage(new AudioAttributes.Builder(), AudioAttributes.USAGE_MEDIA);
-        });
-
-        assertEquals(IllegalArgumentException.class, e.getTargetException().getClass());
+        assertThrows(IllegalArgumentException.class,
+                () -> new AudioAttributes.Builder().setSystemUsage(AudioAttributes.USAGE_MEDIA)
+        );
     }
 
     public void testBuild_throwsWhenSettingBothSystemAndSdkUsages()
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
             InvocationTargetException {
-        AudioAttributes.Builder builder = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA);
-        builder = setEmergencySystemUsage(builder);
-
-        assertThrows(IllegalArgumentException.class, builder::build);
+        for (int sysUsage : sSystemUsages) {
+            AudioAttributes.Builder builder = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setSystemUsage(sysUsage);
+            assertThrows(IllegalArgumentException.class, builder::build);
+        }
     }
 
     public void testGetUsage_returnsUnknownWhenSystemUsageSet()
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
             InvocationTargetException {
-        AudioAttributes attributes = getAudioAttributesWithEmergencySystemUsage();
-
-        assertEquals(AudioAttributes.USAGE_UNKNOWN, attributes.getUsage());
+        for (int sysUsage : sSystemUsages) {
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setSystemUsage(sysUsage)
+                    .build();
+            assertEquals(AudioAttributes.USAGE_UNKNOWN, attributes.getUsage());
+        }
     }
 
     public void testGetSystemUsage_returnsSetUsage()
@@ -174,9 +199,12 @@ public class AudioAttributesTest extends CtsAndroidTestCase {
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .build();
 
-        assertEquals(AudioAttributes.USAGE_MEDIA, getSystemUsage(attributes));
+        assertEquals(AudioAttributes.USAGE_MEDIA, attributes.getSystemUsage());
     }
 
+    // -----------------------------------------------------------------
+    // Spatialization behavior tests
+    // ----------------------------------
     public void testSpatializationAttr() {
         for (int virtBehavior : new int[] { AudioAttributes.SPATIALIZATION_BEHAVIOR_AUTO,
                                             AudioAttributes.SPATIALIZATION_BEHAVIOR_NEVER}) {
@@ -322,43 +350,5 @@ public class AudioAttributesTest extends CtsAndroidTestCase {
         String xsdUsage = AudioAttributes.usageToXsdString(AudioAttributes.USAGE_MEDIA);
 
         assertEquals(AudioUsage.AUDIO_USAGE_MEDIA.toString(), xsdUsage);
-    }
-
-    // -------------------------------------------------------------------
-    // Reflection helpers for accessing system usage methods and fields
-    // -------------------------------------------------------------------
-    private static AudioAttributes getAudioAttributesWithEmergencySystemUsage()
-            throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
-            InvocationTargetException {
-        AudioAttributes.Builder builder = new AudioAttributes.Builder();
-        builder = setEmergencySystemUsage(builder);
-        return builder.build();
-    }
-
-    private static AudioAttributes.Builder setEmergencySystemUsage(AudioAttributes.Builder builder)
-            throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
-            InvocationTargetException {
-        int emergencySystemUsage = getEmergencySystemUsage();
-        return setSystemUsage(builder, emergencySystemUsage);
-    }
-
-    private static AudioAttributes.Builder setSystemUsage(AudioAttributes.Builder builder,
-            int systemUsage)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method setSystemUsageMethod = AudioAttributes.Builder.class
-                .getMethod("setSystemUsage", int.class);
-        return (AudioAttributes.Builder) setSystemUsageMethod.invoke(builder, systemUsage);
-    }
-
-    private static int getEmergencySystemUsage()
-            throws IllegalAccessException, NoSuchFieldException {
-        Field emergencyField = AudioAttributes.class.getDeclaredField("USAGE_EMERGENCY");
-        return emergencyField.getInt(null);
-    }
-
-    private static int getSystemUsage(AudioAttributes attributes)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method getSystemUsageMethod = AudioAttributes.class.getMethod("getSystemUsage");
-        return (int) getSystemUsageMethod.invoke(attributes);
     }
 }
