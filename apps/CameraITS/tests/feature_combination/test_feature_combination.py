@@ -391,7 +391,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         result = future.result()
         logging.debug('Verification result: %s', result)
         if 'stabilization_failure' in result:
-          failure_msg = f"{name}: {result['stabilization_failure']}"
+          failure_msg = f"{result['name']}: {result['stabilization_failure']}"
           test_failures.append(failure_msg)
 
         if log_feature_combo_support:
