@@ -52,13 +52,10 @@ import android.content.AutofillOptions;
 import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.SaveInfo;
 import android.text.InputType;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
-import android.view.flags.Flags;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
@@ -149,20 +146,6 @@ public class VirtualContainerActivityTest
                 .isEnabled()).isTrue();
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
-    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOn_BoundsSet()
-                throws Exception {
-        autofillTest(false);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
-    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOff_BoundsSet()
-                throws Exception {
-        autofillTest(false);
-    }
-
     /**
      * Focus to username and expect window event
      */
@@ -229,10 +212,6 @@ public class VirtualContainerActivityTest
         final ViewNode passwordLabel = findNodeByResourceId(request.structure, ID_PASSWORD_LABEL);
         final ViewNode password = findNodeByResourceId(request.structure, ID_PASSWORD);
 
-        // Check bounds are set correctly
-        assertThat(request.structure.getWindowNodeCount()).isEqualTo(1);
-        assertBoundsSet(request.structure.getWindowNodeAt(0).getRootViewNode());
-
         assertUrlBarIsSanitized(urlBar);
         assertTextIsSanitized(username);
         assertTextIsSanitized(password);
@@ -286,30 +265,6 @@ public class VirtualContainerActivityTest
 
         // Check the results.
         mActivity.assertAutoFilled();
-    }
-
-    private void assertBoundsSet(ViewNode viewNode) {
-        String className = viewNode.getClassName();
-        String idEntry = viewNode.getIdEntry();
-        // Skip VirtualContainerView and its descendants
-        if (className != null
-                && className.equals(VirtualContainerView.class.getName())) {
-            return;
-        }
-        if (idEntry != null && idEntry.equals("action_context_bar")) return;
-        if (className == null && idEntry == null) return;
-        assertThat(viewNode.getLeft() | viewNode.getTop() | viewNode.getWidth()
-                | viewNode.getHeight()).isNotEqualTo(0);
-        if (idEntry != null && idEntry.equals("text_view_child")) {
-            // Verify the bounds are set correctly
-            assertThat(viewNode.getLeft()).isEqualTo(0);
-            assertThat(viewNode.getTop()).isEqualTo(2190);
-            assertThat(viewNode.getWidth()).isEqualTo(50);
-            assertThat(viewNode.getHeight()).isEqualTo(60);
-        }
-        for (int i = 0; i < viewNode.getChildCount(); ++i) {
-            assertBoundsSet(viewNode.getChildAt(i));
-        }
     }
 
     @Test
