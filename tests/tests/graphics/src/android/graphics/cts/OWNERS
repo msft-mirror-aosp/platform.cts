@@ -1,7 +1,8 @@
 per-file BitmapColorSpaceTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS
 per-file ColorSpaceTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS
 per-file ColorTest.java = arteiro@google.com, dupin@google.com
-per-file FrameRateOverrideTest.java = adyabr@google.com, rnlee@google.com
+per-file FrameRateOverrideTest.java = adyabr@google.com, ramindani@google.com, rnlee@google.com
+per-file SetFrameRateTest.java = adyabr@google.com, ramindani@google.com, rnlee@google.com
 per-file GainmapTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS
 per-file ImageDecoderTest.java = scroggo@google.com, dichenzhang@google.com
 per-file ParcelableColorSpaceTest.java = file:platform/frameworks/native:/libs/shaders/OWNERS

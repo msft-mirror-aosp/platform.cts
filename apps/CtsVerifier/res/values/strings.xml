@@ -1529,6 +1529,16 @@
     <!-- String for DynamicSensorDiscoveryTest -->
     <string name="snsr_dynamic_sensor_discovery_test">Dynamic Sensor Discovery Test</string>
 
+<!-- String for Barometer sensor tests -->
+    <string name="snsr_baro_m_test">Barometer Measurement Test</string>
+    <string name="snsr_baro_not_implemented">This device does not have a high quality barometer, skipping tests.</string>
+    <string name="snsr_baro_flashlight_test_prep_instruction">Put the device under test on a flat surface in a dark room, and have a ~100 lumens flashlight ready. Do not turn on the flashlight yet.</string>
+    <string name="snsr_baro_flashlight_instruction">After clicking the Next button, pick up the device and turn on the flashlight, and shine it on the device for ~10 seconds each side, you will get 90 seconds for this step. Do not exert any extra force on the device or block any openings on the device; if you need to rotate it, do so slowly and steadily.</string>
+    <string name="snsr_baro_wait">Please wait while the device collects readings.</string>
+    <string name="snsr_baro_restore_to_default">Collection has completed, please turn off the flashlight, and return device back to flat surface.</string>
+    <string name="snsr_baro_proceed">The test has finished running, please press next to proceed to the results.</string>
+
+
     <!-- Strings for Sample Test Activities -->
     <string name="share_button_text">Share</string>
     <string name="sample_framework_test">Sample Framework Test</string>
@@ -2409,9 +2419,9 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait for a notification to appear on the screen with a pill button.\n
-        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
-        Fail the test if the notification does not appear as described.
+        Wait about 5 seconds to observe the behavior, then unlock screen to return to this page.\n
+        Pass the test if a notification appears on the screen with a pill button, or if a notification icon appears.\n
+        Fail the test if a page automatically launched with the message \"This page is a full screen intent.\".\n
     </string>
     <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
