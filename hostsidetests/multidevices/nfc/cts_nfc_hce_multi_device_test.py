@@ -1037,6 +1037,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             "frames_received": [frame.to_dict() for frame in frames],
         }
 
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            frames_sent_received_error_extra
+        )
+
         # For each event, calculate the amount of time elapsed since the previous one
         # Subtract the resulting host/device time delta values
         # Verify that the difference does not exceed the threshold
@@ -1092,13 +1099,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                     **frames_sent_received_error_extra,
                 }
             )
-
-        # Check that there are as many polling loop events as frames sent
-        asserts.assert_equal(
-            len(testcases), len(frames),
-            _FAILED_MISSING_POLLING_FRAMES_MSG,
-            frames_sent_received_error_extra
-        )
 
     def test_polling_frame_vendor_specific_gain(self):
         """Tests that PollingFrame object vendorSpecificGain value
