@@ -135,7 +135,7 @@ class AppHibernationIntegrationTest {
 
     @After
     fun cleanUp() {
-        goHome()
+        goBack()
         runWithShellPermissionIdentity {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
@@ -361,7 +361,7 @@ class AppHibernationIntegrationTest {
 
     private fun leaveApp(packageName: String) {
         eventually {
-            goHome()
+            goBack()
             SystemUtil.runWithShellPermissionIdentity {
                 val packageImportance = context
                     .getSystemService(ActivityManager::class.java)!!

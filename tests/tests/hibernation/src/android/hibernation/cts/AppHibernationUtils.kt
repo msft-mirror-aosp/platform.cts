@@ -274,8 +274,8 @@ fun startApp(packageName: String) {
     waitForIdle()
 }
 
-fun goHome() {
-    runShellCommandOrThrow("input keyevent KEYCODE_HOME")
+fun goBack() {
+    runShellCommandOrThrow("input keyevent KEYCODE_BACK")
     waitForIdle()
 }
 
@@ -365,7 +365,6 @@ private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: R
         swipe(0, y, displayWidth, y, 5)
 
         clickRunnable.run()
-
     }
 }
 
@@ -435,8 +434,8 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
             node.viewIdResourceName?.contains("alertTitle") == true
         }
         val okCloseButton = ui.depthFirstSearch { node ->
-            (node.textAsString?.equals("OK", ignoreCase = true) ?: false)  ||
-                (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
+            (node.textAsString?.equals("OK", ignoreCase = true) ?: false) ||
+            (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
         }
         val titleString = title?.text?.toString()
         if (okCloseButton != null &&
