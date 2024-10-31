@@ -50,7 +50,8 @@ public class WindowUntrustedTouchTestSdk35 extends WindowUntrustedTouchTestBase 
     @Test
     public void testWhenOneActivityWindowWithZeroOpacityNoOptIn_compat_allowsTouch()
             throws Exception {
-        addActivityOverlay(APP_A, /* opacity */ 0f, /* allowPassThrough */ false);
+        // No touch pass-through opt-in by default.
+        addActivityOverlay(APP_A, /* opacity */ 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
 

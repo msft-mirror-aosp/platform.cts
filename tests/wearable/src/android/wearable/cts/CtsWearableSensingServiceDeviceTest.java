@@ -35,7 +35,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import android.Manifest;
 import android.app.PendingIntent;
 import android.app.ambientcontext.AmbientContextManager;
-import android.app.wearable.Flags;
 import android.app.wearable.WearableSensingDataRequest;
 import android.app.wearable.WearableSensingManager;
 import android.content.Context;
@@ -48,7 +47,6 @@ import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.wearable.WearableSensingDataRequester;
@@ -77,8 +75,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * bound to a WearableSensingService implementation.
  */
 @RunWith(AndroidJUnit4.class)
-@AppModeFull(
-        reason = "PM will not recognize CtsWearableSensingService in instantMode.")
+@AppModeFull(reason = "PM will not recognize CtsWearableSensingService in instantMode.")
 public class CtsWearableSensingServiceDeviceTest {
     private static final String NAMESPACE_wearable_sensing = "wearable_sensing";
     private static final String NAMESPACE_ambient_context = "ambient_context";
@@ -87,8 +84,8 @@ public class CtsWearableSensingServiceDeviceTest {
     private static final String FAKE_APP_PACKAGE = "foo.bar.baz";
     private static final String CTS_PACKAGE_NAME =
             CtsWearableSensingService.class.getPackage().getName();
-    private static final String CTS_SERVICE_NAME = CTS_PACKAGE_NAME + "/."
-            + CtsWearableSensingService.class.getSimpleName();
+    private static final String CTS_SERVICE_NAME =
+            CTS_PACKAGE_NAME + "/." + CtsWearableSensingService.class.getSimpleName();
     private static final int USER_ID = UserHandle.myUserId();
     private static final int TEMPORARY_SERVICE_DURATION = 30000; // ms
 
@@ -113,14 +110,16 @@ public class CtsWearableSensingServiceDeviceTest {
 
     @Rule
     public final DeviceConfigStateChangerRule mLookAllTheseRules =
-            new DeviceConfigStateChangerRule(getInstrumentation().getTargetContext(),
+            new DeviceConfigStateChangerRule(
+                    getInstrumentation().getTargetContext(),
                     NAMESPACE_wearable_sensing,
                     KEY_SERVICE_ENABLED,
                     "true");
 
     @Rule
     public final DeviceConfigStateChangerRule mAmbientContextRules =
-            new DeviceConfigStateChangerRule(getInstrumentation().getTargetContext(),
+            new DeviceConfigStateChangerRule(
+                    getInstrumentation().getTargetContext(),
                     NAMESPACE_ambient_context,
                     KEY_SERVICE_ENABLED,
                     "true");
@@ -130,10 +129,11 @@ public class CtsWearableSensingServiceDeviceTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT,
+        assumeTrue(
+                "VERSION.SDK_INT=" + VERSION.SDK_INT,
                 VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE);
         mContext = getInstrumentation().getContext();
-        assumeFalse(isWatch(mContext));  // WearableSensingManagerService is not supported on WearOS
+        assumeFalse(isWatch(mContext)); // WearableSensingManagerService is not supported on WearOS
         mWearableSensingManager = mContext.getSystemService(WearableSensingManager.class);
         mDataRequestObserverPendingIntent = createDataRequestPendingIntent(mContext);
         PersistableBundle dataRequestDetails = new PersistableBundle();
@@ -178,8 +178,8 @@ public class CtsWearableSensingServiceDeviceTest {
         provideDataStream();
         CtsWearableSensingService.awaitResult();
 
-        assertThat(getLastStatusCode()).isEqualTo(
-                WearableSensingManager.STATUS_SERVICE_UNAVAILABLE);
+        assertThat(getLastStatusCode())
+                .isEqualTo(WearableSensingManager.STATUS_SERVICE_UNAVAILABLE);
     }
 
     @Test
@@ -210,8 +210,8 @@ public class CtsWearableSensingServiceDeviceTest {
         provideData();
         CtsWearableSensingService.awaitResult();
 
-        assertThat(getLastStatusCode()).isEqualTo(
-                WearableSensingManager.STATUS_SERVICE_UNAVAILABLE);
+        assertThat(getLastStatusCode())
+                .isEqualTo(WearableSensingManager.STATUS_SERVICE_UNAVAILABLE);
     }
 
     @Test
@@ -311,7 +311,6 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void sendDataRequest_isReceivedByObserver() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -348,7 +347,6 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void sendDataRequest_requestTooLarge_notReceivedByObserver() throws Exception {
         assumeTrue(
                 "Data request is not larger than size limit, skipping test.",
@@ -379,13 +377,11 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void sendDataRequestsAtRateLimit_allReceivedByObserver() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE);
-        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(
-                getRateLimit());
+        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(getRateLimit());
         WearableSensingDataRequester dataRequester = registerAndGetDataRequester();
 
         for (int i = 0; i < getRateLimit(); i++) {
@@ -399,13 +395,11 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void sendDataRequests_tooFrequent_notReceivedByObserver() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE);
-        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(
-                getRateLimit());
+        CtsWearableSensingDataRequestBroadcastReceiver.setResultCountToAwait(getRateLimit());
         WearableSensingDataRequester dataRequester = registerAndGetDataRequester();
         AtomicInteger dataRequestStatusRef =
                 new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
@@ -421,8 +415,8 @@ public class CtsWearableSensingServiceDeviceTest {
         dataRequester.requestData(
                 mDataRequest,
                 (status) -> {
-                        dataRequestStatusRef.set(status);
-                        dataRequestStatusLatch.countDown();
+                    dataRequestStatusRef.set(status);
+                    dataRequestStatusLatch.countDown();
                 });
 
         // CtsWearableSensingDataRequestBroadcastReceiver throws an AssertionError on timeout
@@ -437,7 +431,6 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void sendDataRequestsAtRateLimit_waitForOnePeriodThenSendAgain_isReceivedByObserver()
             throws Exception {
         getInstrumentation()
@@ -499,7 +492,8 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private void setTestableWearableSensingService(String service) {
-        runShellCommand("cmd wearable_sensing set-temporary-service %d %s %d",
+        runShellCommand(
+                "cmd wearable_sensing set-temporary-service %d %s %d",
                 USER_ID, service, TEMPORARY_SERVICE_DURATION);
     }
 
@@ -508,18 +502,17 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private void callStartDetection() {
-        runShellCommand("cmd ambient_context start-detection-wearable %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand(
+                "cmd ambient_context start-detection-wearable %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void callStartDetectionMixed() {
-        runShellCommand("cmd ambient_context start-detection-mixed %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand(
+                "cmd ambient_context start-detection-mixed %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void callStartDetectionDefault() {
-        runShellCommand("cmd ambient_context start-detection %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand("cmd ambient_context start-detection %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void createDataStream() {
@@ -531,8 +524,7 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private void callStopDetection() {
-        runShellCommand("cmd ambient_context stop-detection %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand("cmd ambient_context stop-detection %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void provideDataStream() {
@@ -540,7 +532,8 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private void provideData() {
-        runShellCommand("cmd wearable_sensing provide-data %d %s %d",
+        runShellCommand(
+                "cmd wearable_sensing provide-data %d %s %d",
                 USER_ID, KEY_FOR_PROVIDE_DATA, VALUE_TO_SEND);
     }
 
@@ -557,8 +550,7 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private int getLastStatusCode() {
-        return Integer.parseInt(runShellCommand(
-                "cmd wearable_sensing get-last-status-code"));
+        return Integer.parseInt(runShellCommand("cmd wearable_sensing get-last-status-code"));
     }
 
     // This method will also reset the rate limit
@@ -572,28 +564,29 @@ public class CtsWearableSensingServiceDeviceTest {
     }
 
     private int getLastStatusCodeAmbientDetectionService() {
-        return Integer.parseInt(runShellCommand(
-                "cmd ambient_context get-last-status-code"));
+        return Integer.parseInt(runShellCommand("cmd ambient_context get-last-status-code"));
     }
 
     private void setTestableAmbientContextDetectionService(String service) {
-        runShellCommand("cmd ambient_context set-temporary-services %d %s %s %d",
+        runShellCommand(
+                "cmd ambient_context set-temporary-services %d %s %s %d",
                 USER_ID, service, service, TEMPORARY_SERVICE_DURATION);
     }
 
     private void callQueryServiceStatus() {
-        runShellCommand("cmd ambient_context query-service-status %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand(
+                "cmd ambient_context query-service-status %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void callQueryWearableServiceStatus() {
-        runShellCommand("cmd ambient_context query-wearable-service-status %d %s",
+        runShellCommand(
+                "cmd ambient_context query-wearable-service-status %d %s",
                 USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void callQueryMixedServiceStatus() {
-        runShellCommand("cmd ambient_context query-mixed-service-status %d %s",
-                USER_ID, FAKE_APP_PACKAGE);
+        runShellCommand(
+                "cmd ambient_context query-mixed-service-status %d %s", USER_ID, FAKE_APP_PACKAGE);
     }
 
     private void clearTestableAmbientContextDetectionService() {
