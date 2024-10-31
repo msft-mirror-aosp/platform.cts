@@ -23,8 +23,6 @@ import android.hardware.camera2.CameraExtensionCharacteristics;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.ExtensionCaptureRequest;
-import android.hardware.camera2.ExtensionCaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestRule;
 import android.hardware.camera2.params.StreamConfigurationMap;
@@ -70,13 +68,6 @@ public class CameraExtensionCharacteristicsTest {
 
     private final Context mContext = InstrumentationRegistry.getTargetContext();
 
-    private CaptureRequest.Key[] EYES_FREE_AUTO_ZOOM_REQUEST_SET = new CaptureRequest.Key[0];
-    private CaptureResult.Key[] EYES_FREE_AUTO_ZOOM_RESULT_SET =  new CaptureResult.Key[0];
-    private CaptureRequest.Key[] EYES_FREE_REQUEST_SET = new CaptureRequest.Key[0];
-    private CaptureResult.Key[] EYES_FREE_RESULT_SET = new CaptureResult.Key[0];
-
-    private static final boolean EFV_API_SUPPORTED =
-            Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE && Flags.concertModeApi();
     @Rule
     public final Camera2AndroidTestRule mTestRule = new Camera2AndroidTestRule(mContext);
 
@@ -88,28 +79,6 @@ public class CameraExtensionCharacteristicsTest {
                 CameraExtensionCharacteristics.EXTENSION_BOKEH,
                 CameraExtensionCharacteristics.EXTENSION_HDR,
                 CameraExtensionCharacteristics.EXTENSION_NIGHT));
-        if (EFV_API_SUPPORTED) {
-            mExtensionList.add(CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY);
-            EYES_FREE_AUTO_ZOOM_REQUEST_SET = new CaptureRequest.Key[] {
-                    ExtensionCaptureRequest.EFV_AUTO_ZOOM,
-                    ExtensionCaptureRequest.EFV_MAX_PADDING_ZOOM_FACTOR};
-            EYES_FREE_AUTO_ZOOM_RESULT_SET = new CaptureResult.Key[] {
-                    ExtensionCaptureResult.EFV_AUTO_ZOOM,
-                    ExtensionCaptureResult.EFV_AUTO_ZOOM_PADDING_REGION,
-                    ExtensionCaptureResult.EFV_MAX_PADDING_ZOOM_FACTOR};
-            EYES_FREE_REQUEST_SET = new CaptureRequest.Key[] {
-                    ExtensionCaptureRequest.EFV_PADDING_ZOOM_FACTOR,
-                    ExtensionCaptureRequest.EFV_STABILIZATION_MODE,
-                    ExtensionCaptureRequest.EFV_TRANSLATE_VIEWPORT,
-                    ExtensionCaptureRequest.EFV_ROTATE_VIEWPORT};
-            EYES_FREE_RESULT_SET = new CaptureResult.Key[] {
-            ExtensionCaptureResult.EFV_PADDING_REGION,
-                    ExtensionCaptureResult.EFV_TARGET_COORDINATES,
-                    ExtensionCaptureResult.EFV_PADDING_ZOOM_FACTOR,
-                    ExtensionCaptureResult.EFV_STABILIZATION_MODE,
-                    ExtensionCaptureResult.EFV_ROTATE_VIEWPORT,
-                    ExtensionCaptureResult.EFV_TRANSLATE_VIEWPORT};
-        }
     }
 
     @After
@@ -305,8 +274,6 @@ public class CameraExtensionCharacteristicsTest {
     public void testExtensionRequestKeys() throws Exception {
         ArraySet<CaptureRequest.Key> extensionRequestKeys = new ArraySet<>();
         extensionRequestKeys.add(CaptureRequest.EXTENSION_STRENGTH);
-        extensionRequestKeys.addAll(Arrays.asList(EYES_FREE_REQUEST_SET));
-        extensionRequestKeys.addAll(Arrays.asList(EYES_FREE_AUTO_ZOOM_REQUEST_SET));
 
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
@@ -336,12 +303,6 @@ public class CameraExtensionCharacteristicsTest {
                             extensionRequestKeys.contains(captureKey));
                 }
 
-                // Ensure eyes-free specific keys are only supported for eyes-free extension
-                if (EFV_API_SUPPORTED && extension
-                        != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
-                    CameraTestUtils.checkKeysAreSupported(Arrays.asList(EYES_FREE_REQUEST_SET,
-                            EYES_FREE_AUTO_ZOOM_REQUEST_SET), captureKeySet, false);
-                }
             }
         }
     }
@@ -351,8 +312,6 @@ public class CameraExtensionCharacteristicsTest {
         ArraySet<CaptureResult.Key> extensionResultKeys = new ArraySet<>();
         extensionResultKeys.add(CaptureResult.EXTENSION_STRENGTH);
         extensionResultKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
-        extensionResultKeys.addAll(Arrays.asList(EYES_FREE_RESULT_SET));
-        extensionResultKeys.addAll(Arrays.asList(EYES_FREE_AUTO_ZOOM_RESULT_SET));
 
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
@@ -400,12 +359,6 @@ public class CameraExtensionCharacteristicsTest {
                     assertTrue(msg, resultKeyNames.contains(requestKey.getName()));
                 }
 
-                // Ensure eyes-free specific keys are only supported for eyes-free extension
-                if (EFV_API_SUPPORTED && extension
-                        != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
-                    CameraTestUtils.checkKeysAreSupported(Arrays.asList(EYES_FREE_RESULT_SET,
-                            EYES_FREE_AUTO_ZOOM_RESULT_SET), resultKeySet, false);
-                }
             }
         }
     }

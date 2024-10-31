@@ -63,7 +63,7 @@
       <item name="android:taskCloseEnterAnimation">@anim/alpha</item>
       <item name="android:taskCloseExitAnimation">@anim/alpha</item>
     </style>
-    <style name="BackgroundImage" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+    <style name="BackgroundImage" parent="Theme.TranslucentBars">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:windowSoftInputMode">stateHidden</item>

@@ -27,7 +27,15 @@ public class PlainTextFormatter extends TextFormatter {
      * Closes a paragraph block.
      * @return this TextFormatter to allow for cascading calls.
      */
+
+    public TextFormatter closeHeading(int level) {
+        mSB.append("\n");
+
+        return this;
+    }
+
     public TextFormatter closeParagraph() {
+        mSB.append("\n");
         mSB.append("\n");
 
         return this;

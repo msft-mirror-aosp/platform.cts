@@ -36,7 +36,6 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -60,7 +59,6 @@ import java.util.function.Supplier;
 @Presubmit
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 public class SurfaceEncodeTimestampTest {
     private static final String TAG = SurfaceEncodeTimestampTest.class.getSimpleName();

@@ -97,6 +97,7 @@ android_test {
         "testng", // for assertThrows
         "modules-utils-binary-xml",
         "TestApisReflection",
+        "bedstead-bluetooth",
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",
@@ -123,6 +124,7 @@ android_test {
         "compatibility-device-util-axt",
         "truth",
         "testng", // for assertThrows
+        "bedstead-bluetooth",
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",

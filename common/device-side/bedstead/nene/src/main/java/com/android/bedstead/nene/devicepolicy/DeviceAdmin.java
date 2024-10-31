@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.forceRemoveActiveAdmin;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import android.app.admin.DevicePolicyManager;
@@ -69,7 +70,7 @@ public final class DeviceAdmin extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            devicePolicyManager.forceRemoveActiveAdmin(mComponentName, mUser.id());
+            forceRemoveActiveAdmin(devicePolicyManager, mComponentName, mUser.id());
         } catch (SecurityException e) {
             if (e.getMessage().contains("Attempt to remove non-test admin")
                     && TEST_APP_APP_COMPONENT_FACTORY.equals(mPackage.appComponentFactory())) {

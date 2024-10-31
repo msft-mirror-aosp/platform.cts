@@ -42,6 +42,10 @@ class BedsteadServiceLocator : DeviceStateComponent {
         } else {
             createDependencyByReflection(clazz.java).also {
                 dependenciesMap[clazz] = it
+                if (it is DeviceStateComponent) {
+                    Log.v(LOG_TAG, "prepareTestState (after creation): " + it.javaClass)
+                    it.prepareTestState()
+                }
             }
         }
     }
@@ -63,6 +67,22 @@ class BedsteadServiceLocator : DeviceStateComponent {
      * See [BedsteadServiceLocator.get]
      */
     fun <T : Any> get(clazz: Class<T>): T = get(clazz.kotlin)
+
+    /**
+     * Obtains the instance of the given [className]
+     * @param className – the fully qualified name of the desired class.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> get(className: String): T {
+        try {
+            return (get(Class.forName(className))) as T
+        } catch (e: ClassNotFoundException) {
+            throw IllegalStateException(
+                "Could not find dependency: $className. " +
+                        "Make sure it is on the classpath and the appropriate module is loaded"
+            )
+        }
+    }
 
     private fun <T : Any> createDependencyByReflection(clazz: Class<T>): T {
         return try {
@@ -145,6 +165,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
 
     override fun prepareTestState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            Log.v(LOG_TAG, "prepareTestState: " + it.javaClass)
             it.prepareTestState()
         }
     }

@@ -27,7 +27,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.compatibility.common.util.ShellUtils
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.inputeventmatchers.withKeyCode

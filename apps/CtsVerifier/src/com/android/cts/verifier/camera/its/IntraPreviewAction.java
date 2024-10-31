@@ -22,6 +22,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.MeteringRectangle;
+import android.os.ConditionVariable;
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
@@ -29,6 +30,7 @@ import androidx.annotation.NonNull;
 import org.json.JSONArray;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.Locale;
 
 /**
@@ -42,9 +44,14 @@ abstract class IntraPreviewAction {
     static final long PREVIEW_RECORDING_FINAL_SLEEP_MS = 200;
 
     /**
-     * Time to sleep for AutoFocus to converge.
+     * Time to wait for {@link CameraCaptureSession} initialization.
      */
-    static final long PREVIEW_AUTOFOCUS_SLEEP_MS = 400;
+    static final long SESSION_INITIALIZATION_WAIT_MS = 500;
+
+    /**
+     * Time to wait for {@link CaptureRequest.Builder} initialization.
+     */
+    static final long CAPTURE_REQUEST_BUILDER_INITIALIZATION_WAIT_MS = 500;
 
     /**
      * Initialized after {@link ItsService} configures and creates the session.
@@ -52,9 +59,21 @@ abstract class IntraPreviewAction {
     volatile CameraCaptureSession mSession;
 
     /**
+     * {@link ConditionVariable} that tracks when the {@link CameraCaptureSession}
+     * has been initialized.
+     */
+    ConditionVariable mSessionInitialized = new ConditionVariable();
+
+    /**
      * Initialized after {@link ItsService} configures and creates the session.
      */
     volatile CaptureRequest.Builder mCaptureRequestBuilder;
+
+    /**
+     * {@link ConditionVariable} that tracks when the {@link CaptureRequest.Builder}
+     * has been initialized.
+     */
+    ConditionVariable mCaptureRequestBuilderInitialized = new ConditionVariable();
 
     /**
      * {@link CameraCharacteristics} that are initialized when the camera is opened.
@@ -87,6 +106,7 @@ abstract class IntraPreviewAction {
      */
     void setSession(@NonNull CameraCaptureSession session) {
         mSession = session;
+        mSessionInitialized.open();
     }
 
     /**
@@ -96,6 +116,7 @@ abstract class IntraPreviewAction {
      */
     void setCaptureRequestBuilder(@NonNull CaptureRequest.Builder builder) {
         mCaptureRequestBuilder = builder;
+        mCaptureRequestBuilderInitialized.open();
     }
 
     /**
@@ -163,10 +184,18 @@ class PreviewDynamicZoomAction extends IntraPreviewAction {
     }
 
     @Override
-    public void execute() throws InterruptedException, CameraAccessException {
-        // Allow autofocus to converge
-        // TODO: b/333791992 - replace with waiting for desired AF state in CaptureResult
-        Thread.sleep(PREVIEW_AUTOFOCUS_SLEEP_MS);
+    public void execute() throws ItsException, InterruptedException, CameraAccessException {
+        mSessionInitialized.block(SESSION_INITIALIZATION_WAIT_MS);
+        mCaptureRequestBuilderInitialized.block(CAPTURE_REQUEST_BUILDER_INITIALIZATION_WAIT_MS);
+        mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+        mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                mRecordingResultListener, mCameraHandler);
+        // Wait for autofocus to converge
+        if (!mRecordingResultListener.waitForAfConvergence()) {
+            throw new ItsException(
+                    "AF failed to converge before dynamic zoom requests sent.");
+        }
         for (double z = mZoomStart; z <= mZoomEnd; z += mStepSize) {
             Logt.i(ItsService.TAG, String.format(
                     Locale.getDefault(),
@@ -212,10 +241,18 @@ class PreviewDynamicMeteringAction extends IntraPreviewAction {
     }
 
     @Override
-    public void execute() throws InterruptedException, CameraAccessException, ItsException {
-        // Allow autofocus to converge
-        // TODO: b/333791992 - replace with waiting for desired AF state in CaptureResult
-        Thread.sleep(PREVIEW_AUTOFOCUS_SLEEP_MS);
+    public void execute() throws ItsException, InterruptedException, CameraAccessException {
+        mSessionInitialized.block(SESSION_INITIALIZATION_WAIT_MS);
+        mCaptureRequestBuilderInitialized.block(CAPTURE_REQUEST_BUILDER_INITIALIZATION_WAIT_MS);
+        mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+        mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
+                mRecordingResultListener, mCameraHandler);
+        // Wait for autofocus to converge
+        if (!mRecordingResultListener.waitForAfConvergence()) {
+            throw new ItsException(
+                    "AF failed to converge before dynamic metering requests sent.");
+        }
         Rect activeArray = mCameraCharacteristics.get(
                 CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
         assert activeArray != null;

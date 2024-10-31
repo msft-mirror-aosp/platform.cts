@@ -90,7 +90,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -113,7 +112,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -132,13 +130,11 @@ import java.util.function.Function;
  * atest CtsInputMethodTestCases:InputMethodServiceTest
  */
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodServiceTest extends EndToEndImeTestBase {
+public final class InputMethodServiceTest extends EndToEndImeTestBase {
     private static final String TAG = "InputMethodServiceTest";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
     private static final long EXPECTED_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
-    private static final long ACTIVITY_LAUNCH_INTERVAL = 500;  // msec
 
     private static final String OTHER_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme";
 
@@ -175,11 +171,6 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private TestActivity createTestActivity(int windowFlags) {
         return TestActivity.startSync(activity -> createLayout(windowFlags, activity));
-    }
-
-    private TestActivity createTestActivity(int windowFlags, int displayId) {
-        return new TestActivity.Starter().withDisplayId(displayId).startSync(
-                activity -> createLayout(windowFlags, activity), TestActivity.class);
     }
 
     private TestActivity createTestActivity2(int windowFlags) {
@@ -1088,9 +1079,8 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             fail("DisapproveInputMethodService binding timeout.");
         }
 
-        boolean result = false;
         try {
-            result = serviceCreateLatch.await(EXPECTED_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean result = serviceCreateLatch.await(EXPECTED_TIMEOUT, TimeUnit.MILLISECONDS);
             if (!result) {
                 fail("Timeout before receiving the result.");
             }

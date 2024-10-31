@@ -333,8 +333,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mTestCallStateListener = new TestCallStateListener();
         CountDownLatch latch = mTestCallStateListener.getCountDownLatch();
         mTelephonyManager.registerTelephonyCallback(r -> r.run(), mTestCallStateListener);
-        latch.await(
-                TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            // Without telephony, we shouldn't expect any callback to fire, but we should still try
+            // registering telephony callback to at least make sure it doesn't crash.
+            latch.await(
+                    TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        }
         // Create a new thread for the telephony callback.
         mTelephonyCallbackThread = new HandlerThread("PhoneStateListenerThread");
         mTelephonyCallbackThread.start();
@@ -379,6 +383,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.revokeRuntimePermissionAsUser(PKG_NAME, PERMISSION_PROCESS_OUTGOING_CALLS,
                 UserHandle.CURRENT);
+        // Verify that not phone accounts were left behind after the test.
+        checkForCrossTestIsolationIssues();
     }
 
     public void unregisterTelephonyCallbacks() {
@@ -2472,14 +2478,47 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mContext.registerReceiver(br, filter, RECEIVER_EXPORTED);
         try {
             mContext.getPackageManager().setComponentEnabledSettings(List.of(enabledSettings));
-            if (!latch.await(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            long TIMEOUT_MS = 10000;
+            if ((enabledSettings.getEnabledFlags() & PackageManager.DONT_KILL_APP) == 0) {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+            } else {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + 10000;
+            }
+            if (!latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                 throw new TimeoutException("Package changed broadcasts for " + enabledSettings
-                        + " not received in " + WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + "ms");
+                        + " not received in " + TIMEOUT_MS + "ms");
             }
             assertEquals(packageManager.getComponentEnabledSetting(
                     enabledSettings.getComponentName()), enabledSettings.getEnabledState());
         } finally {
             mContext.unregisterReceiver(br);
         }
+    }
+
+    /**
+     * Make sure we don't have any registered phone accounts from the Telecom CTS tests lingering
+     * around.
+     */
+    private void checkForCrossTestIsolationIssues() {
+        TelecomManager telecomManager =  mContext.getSystemService(TelecomManager.class);
+        // Use shell identity so we can clean up some of the other test ones from the sub-apps that
+        // are part of Telecom CTS.  This gives us modify phone state so we can unregister anything.
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            List<PhoneAccount> allPhoneAccounts = telecomManager.getAllPhoneAccounts();
+            StringBuilder failures = new StringBuilder();
+            allPhoneAccounts.stream()
+                    .filter(a -> TestUtils.TEST_PACKAGES.contains(
+                            a.getAccountHandle().getComponentName().getPackageName()))
+                    .forEach(fa -> {
+                        // We will unregister it so other tests can continue.
+                        telecomManager.unregisterPhoneAccount(fa.getAccountHandle());
+                        // And we will mark this test a failure so that we can clean up this mess.
+                        failures.append("Cross test isolation issue; phone account " + fa
+                                + " was still registered at the test end test.\n");
+                    });
+            if (!failures.isEmpty()) {
+                fail(failures.toString());
+            }
+        });
     }
 }

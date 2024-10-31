@@ -55,6 +55,7 @@ import androidx.test.filters.SdkSuppress;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -228,13 +229,13 @@ public class MediaStore_FilesTest {
 
                 c.moveToFirst();
                 assertEquals(fileC.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
                 c.moveToNext();
                 assertEquals(fileB.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
                 c.moveToNext();
                 assertEquals(fileA.getAbsolutePath(), c.getString(0));
-                assertTrue(c.getInt(1) > 0);
+                assertTrue(c.getLong(1) > 0);
             }
         } finally {
             mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),

@@ -36,7 +36,7 @@ java_test_host {
         "truth",
         "platformprotos",
     ],
-    data: [
+    device_common_data: [
         ":AdbBackupApp",
         ":BackupAllowedApp",
         ":BackupNotAllowedApp",
@@ -69,4 +69,11 @@ java_test_host {
         ":NonDebuggableApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config_host {
+    name: "CtsBackupHostTestCases_backup_othersoundssettingshostsidetest",
+    base: "CtsBackupHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.backup.OtherSoundsSettingsHostSideTest"],
 }

@@ -19,6 +19,9 @@ package com.android.bedstead.remotedpc;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -26,19 +29,19 @@ import static org.testng.Assert.assertThrows;
 import android.content.ComponentName;
 import android.os.UserHandle;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
@@ -64,7 +67,7 @@ public class RemoteDpcTest {
     @ClassRule @Rule
     public static DeviceState sDeviceState = new DeviceState();
 
-    private static TestApp sNonRemoteDpcTestApp = sDeviceState.testApps().query()
+    private static TestApp sNonRemoteDpcTestApp = testApps(sDeviceState).query()
     // TODO(180478924): Query by feature not package name
             .wherePackageName().isEqualTo(DEVICE_ADMIN_TESTAPP_PACKAGE_NAME)
             .get();
@@ -726,7 +729,7 @@ public class RemoteDpcTest {
     @Test
     @EnsureHasDeviceOwner
     public void frameworkCall_makesCall() {
-        sDeviceState.dpc().devicePolicyManager().getCurrentFailedPasswordAttempts();
+        dpc(sDeviceState).devicePolicyManager().getCurrentFailedPasswordAttempts();
     }
 
     @Test
@@ -816,9 +819,9 @@ public class RemoteDpcTest {
     public void setAsProfileOwner_alreadySetToDifferentRemoteDpc_replacesRemoteDpc() {
         try {
             RemoteDpc.setAsProfileOwner(sUser,
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isLessThan(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isLessThan(28));
             RemoteDpc.setAsProfileOwner(sUser,
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isGreaterThan(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isGreaterThan(28));
 
             assertThat(TestApis.devicePolicy().getProfileOwner()
                     .pkg().targetSdkVersion()).isGreaterThan(28);
@@ -834,9 +837,9 @@ public class RemoteDpcTest {
     public void setAsDeviceOwner_alreadySetToDifferentRemoteDpc_replacesRemoteDpc() {
         try {
             RemoteDpc.setAsDeviceOwner(
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isLessThan(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isLessThan(28));
             RemoteDpc.setAsDeviceOwner(
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isGreaterThan(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isGreaterThan(28));
 
             assertThat(TestApis.devicePolicy().getDeviceOwner()
                     .pkg().targetSdkVersion()).isGreaterThan(28);
@@ -852,9 +855,9 @@ public class RemoteDpcTest {
     public void setAsProfileOwner_matchesExistingRemoteDpc_doesNotReplace() {
         try {
             RemoteDpc.setAsProfileOwner(sUser,
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isEqualTo(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isEqualTo(28));
             RemoteDpc.setAsProfileOwner(sUser,
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isEqualTo(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isEqualTo(28));
 
             assertThat(TestApis.devicePolicy().getProfileOwner()
                     .pkg().targetSdkVersion()).isEqualTo(28);
@@ -870,9 +873,9 @@ public class RemoteDpcTest {
     public void setAsDeviceOwner_matchesExistingRemoteDpc_doesNotReplace() {
         try {
             RemoteDpc.setAsDeviceOwner(
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isEqualTo(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isEqualTo(28));
             RemoteDpc.setAsDeviceOwner(
-                    sDeviceState.testApps().query().whereTargetSdkVersion().isEqualTo(28));
+                    testApps(sDeviceState).query().whereTargetSdkVersion().isEqualTo(28));
 
             assertThat(TestApis.devicePolicy().getDeviceOwner()
                     .pkg().targetSdkVersion()).isEqualTo(28);

@@ -816,8 +816,8 @@ INSTANTIATE_TEST_CASE_P(AAudioTestAttributes, SystemUsageTest,
  * PermissionGatedInputPresetTest
  *****************************************************************************/
 
-using PermissionGatedInputPresetParam = std::tuple<aaudio_performance_mode_t,
-                                                   aaudio_input_preset_t>;
+using PermissionGatedInputPresetParam =
+        std::tuple<aaudio_performance_mode_t, aaudio_input_preset_t, aaudio_sharing_mode_t>;
 class PermissionGatedInputPresetTest : public AAudioCtsBase,
                         public ::testing::WithParamInterface<PermissionGatedInputPresetParam> {
 public:
@@ -836,6 +836,17 @@ public:
             default:
                 break;
         }
+        ss << "_";
+        switch (std::get<2>(info.param)) {
+            case AAUDIO_SHARING_MODE_EXCLUSIVE:
+                ss << "exclusive";
+                break;
+            case AAUDIO_SHARING_MODE_SHARED:
+                ss << "shared";
+                break;
+            default:
+                break;
+        }
         return ss.str();
     }
 };
@@ -843,38 +854,52 @@ public:
 TEST_P(PermissionGatedInputPresetTest, openStreamFails) {
     if (!deviceSupportsFeature(FEATURE_RECORDING)) return;
 
-    disablePermissions();
-
-    std::unique_ptr<float[]> buffer(new float[kNumFrames * kChannelCount]);
-
-    const auto param = GetParam();
-    AAudioStreamBuilder *aaudioBuilder = nullptr;
-    AAudioStream *aaudioStream = nullptr;
+    const auto performanceMode = std::get<0>(GetParam());
+    const auto inputPreset = std::get<1>(GetParam());
+    const auto sharingMode = std::get<2>(GetParam());
+    AAudioStreamBuilder* aaudioBuilder = nullptr;
 
     // Use an AAudioStreamBuilder to contain requested parameters.
     ASSERT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&aaudioBuilder));
 
-    AAudioStreamBuilder_setPerformanceMode(aaudioBuilder, std::get<0>(param));
-    AAudioStreamBuilder_setInputPreset(aaudioBuilder, std::get<1>(param));
+    AAudioStreamBuilder_setPerformanceMode(aaudioBuilder, performanceMode);
+    AAudioStreamBuilder_setInputPreset(aaudioBuilder, inputPreset);
+    AAudioStreamBuilder_setSharingMode(aaudioBuilder, sharingMode);
     AAudioStreamBuilder_setDirection(aaudioBuilder, AAUDIO_DIRECTION_INPUT);
+
+    disablePermissions();
+    AAudioStream* aaudioStream = nullptr;
 
     aaudio_result_t result = AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream);
 
-    // openStream should not return AAUDIO_OK. If it does, close the stream.
     if (result == AAUDIO_OK) {
+        if (performanceMode == AAUDIO_PERFORMANCE_MODE_LOW_LATENCY) {
+            // When the performance mode is low latency, it will try mmap path, which can result in
+            // opening a shared stream. For a shared stream, aaudio service will open an exclusive
+            // stream from the service side using the uid of audio server. That will succeed as it
+            // is from the aaudio service. The client's uid will be used for permission check when
+            // starting the stream. In that case, the client should fail when starting if it
+            // successfully open the stream.
+            result = AAudioStream_requestStart(aaudioStream);
+        }
+        // If the performance mode is not low latency, it will use legacy path, which must not
+        // succeed when opening.
+        // Close the stream and release the resource if the open succeed.
         AAudioStream_close(aaudioStream);
     }
+
     AAudioStreamBuilder_delete(aaudioBuilder);
 
     // The test should not have the correct permission required to use the preset.
     ASSERT_NE(result, AAUDIO_OK);
 }
 
-INSTANTIATE_TEST_CASE_P(AAudioTestAttributes, PermissionGatedInputPresetTest,
-                        ::testing::Combine(
-                                ::testing::Values(AAUDIO_PERFORMANCE_MODE_NONE,
-                                                  AAUDIO_PERFORMANCE_MODE_LOW_LATENCY,
-                                                  AAUDIO_PERFORMANCE_MODE_POWER_SAVING),
-                                ::testing::Values(AAUDIO_INPUT_PRESET_SYSTEM_ECHO_REFERENCE,
-                                                  AAUDIO_INPUT_PRESET_SYSTEM_HOTWORD)),
-                        &PermissionGatedInputPresetTest::getTestName);
+INSTANTIATE_TEST_CASE_P(
+        AAudioTestAttributes, PermissionGatedInputPresetTest,
+        ::testing::Combine(
+                ::testing::Values(AAUDIO_PERFORMANCE_MODE_NONE, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY,
+                                  AAUDIO_PERFORMANCE_MODE_POWER_SAVING),
+                ::testing::Values(AAUDIO_INPUT_PRESET_SYSTEM_ECHO_REFERENCE,
+                                  AAUDIO_INPUT_PRESET_SYSTEM_HOTWORD),
+                ::testing::Values(AAUDIO_SHARING_MODE_SHARED, AAUDIO_SHARING_MODE_EXCLUSIVE)),
+        &PermissionGatedInputPresetTest::getTestName);

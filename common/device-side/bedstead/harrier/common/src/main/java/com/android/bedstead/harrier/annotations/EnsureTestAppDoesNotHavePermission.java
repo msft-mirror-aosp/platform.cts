@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureTestAppDoesNotHavePermissionGroup.class)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.TEST_APPS)
 public @interface EnsureTestAppDoesNotHavePermission {
     String[] value();
 

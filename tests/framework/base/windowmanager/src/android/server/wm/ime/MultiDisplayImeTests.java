@@ -136,19 +136,21 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // virtual display.
         assertImeWindowAndDisplayConfiguration(mWmState.getImeWindowState(), newDisplay);
 
-        // Launch another activity on the default display.
+        // Launch another activity on the main display of the user. When the test runs on the
+        // current user, the display will be the default display.
         imeTestActivitySession2.launchTestActivityOnDisplaySync(
-                ImeTestActivity2.class, DEFAULT_DISPLAY);
+                ImeTestActivity2.class, getMainDisplayId());
         expectEvent(stream, editorMatcher("onStartInput",
                 imeTestActivitySession2.getActivity().mEditText.getPrivateImeOptions()), TIMEOUT);
 
         // Make the activity to show soft input.
-        showSoftInputAndAssertImeShownOnDisplay(DEFAULT_DISPLAY, imeTestActivitySession2, stream);
+        showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), imeTestActivitySession2,
+                stream);
 
         // Assert the configuration of the IME window is the same as the configuration of the
-        // default display.
+        // main display of the user.
         assertImeWindowAndDisplayConfiguration(mWmState.getImeWindowState(),
-                mWmState.getDisplay(DEFAULT_DISPLAY));
+                mWmState.getDisplay(getMainDisplayId()));
     }
 
     /**

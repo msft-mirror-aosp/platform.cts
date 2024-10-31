@@ -78,6 +78,7 @@ import java.util.function.Consumer;
 public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
 
     private static final String TAG = TransactionalApisTest.class.getSimpleName();
+    private static final String TRANSACTIONAL_CLASS = "TestClass";
     private static final String TEST_NAME_1 = "Alan Turing";
     private static final Uri TEST_URI_1 = Uri.parse("tel:123-TEST");
     private static final String TEST_NAME_2 = "Mike Tyson";
@@ -203,10 +204,10 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
 
     // Call constants
     public final PhoneAccountHandle DEFAULT_T_HANDLE =
-            new PhoneAccountHandle(new ComponentName(PACKAGE, PACKAGE), "1");
+            new PhoneAccountHandle(new ComponentName(PACKAGE, TRANSACTIONAL_CLASS), "1");
 
     public final PhoneAccountHandle NO_VIDEO_CAPABILITIES_T_HANDLE =
-            new PhoneAccountHandle(new ComponentName(PACKAGE, PACKAGE), "2");
+            new PhoneAccountHandle(new ComponentName(PACKAGE, TRANSACTIONAL_CLASS), "2");
 
     public final PhoneAccount DEFAULT_TRANSACTIONAL_ACCOUNT =
             PhoneAccount.builder(DEFAULT_T_HANDLE, "TransactionalApisTest default acct")
@@ -261,6 +262,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         Log.i(TAG, "tearDown");
         if (mShouldTestTelecom) {
             cleanup();
+            mTelecomManager.unregisterPhoneAccount(
+                    DEFAULT_TRANSACTIONAL_ACCOUNT.getAccountHandle());
             try {
                 mNotificationManager.deleteNotificationChannel(CALL_CHANNEL_ID);
             } catch (Exception e) {
@@ -592,6 +595,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
         } finally {
+            mTelecomManager.unregisterPhoneAccount(
+                    NO_VIDEO_CAPABILITIES_ACCOUNT.getAccountHandle());
             cleanup();
         }
     }

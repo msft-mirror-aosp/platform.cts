@@ -19,7 +19,6 @@ import android.content.Context
 import android.graphics.Typeface
 import android.graphics.text.LineBreakConfig
 import android.graphics.text.LineBreaker
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.StaticLayout
@@ -27,7 +26,6 @@ import android.text.TextPaint
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
-import com.android.text.flags.Flags
 import java.util.Locale
 import org.junit.Assert
 import org.junit.Rule
@@ -122,7 +120,6 @@ class StaticLayoutLineBreakAutoTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_WORD_STYLE_AUTO)
     @Test
     fun testAuto_JapaneseNone() {
         val config = LineBreakConfig.Builder()
@@ -187,7 +184,6 @@ class StaticLayoutLineBreakAutoTest {
         )
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_WORD_STYLE_AUTO)
     @Test
     fun testAuto_JapanesePhrase() {
         val config = LineBreakConfig.Builder()
@@ -259,7 +255,6 @@ class StaticLayoutLineBreakAutoTest {
         )
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_WORD_STYLE_AUTO)
     @Test
     fun testAuto_JapaneseAuto() {
         val config = LineBreakConfig.Builder()
@@ -330,7 +325,6 @@ class StaticLayoutLineBreakAutoTest {
         )
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_WORD_STYLE_AUTO)
     @Test
     fun testAuto_JapaneseStyleAutoStrict() {
         val normal = LineBreakConfig.Builder()
@@ -376,7 +370,6 @@ class StaticLayoutLineBreakAutoTest {
         )
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_WORD_STYLE_AUTO)
     @Test
     fun testAuto_Korean() {
         val none = LineBreakConfig.Builder()

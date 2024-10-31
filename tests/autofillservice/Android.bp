@@ -21,6 +21,7 @@ android_test {
     name: "CtsAutoFillServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.view.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "androidx.test.ext.junit",
@@ -28,6 +29,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "truth",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.espresso.core",
@@ -56,4 +58,68 @@ android_test {
             "-Xep:BareDotMetacharacter:WARN",
         ],
     },
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_autofillsavedialogtest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.AutofillSaveDialogTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_presimplesaveactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.PreSimpleSaveActivityTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_simplesaveactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.SimpleSaveActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_cts_inline_ExcludeAppModeFull",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.inline"],
+    exclude_annotations: [
+        "android.platform.test.annotations.AppModeFull",
+        "androidx.test.filters.LargeTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_dropdown_loginactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.dropdown.LoginActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_dropdown_checkoutactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.dropdown.CheckoutActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_cts_inline",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.inline"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_android_server_autofill_Presubmit",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

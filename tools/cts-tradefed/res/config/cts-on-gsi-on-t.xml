@@ -68,4 +68,7 @@
     <!-- b/355055754, b/265405707, b/293943253, b/341364053 -->
     <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderTest" />
 
+    <!-- b/361205166 -->
+    <option name="compatibility:exclude-filter" value="CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest" />
+
 </configuration>

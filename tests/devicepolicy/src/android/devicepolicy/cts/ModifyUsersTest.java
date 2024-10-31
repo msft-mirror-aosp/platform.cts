@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_USER;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -49,8 +50,8 @@ public class ModifyUsersTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_USER")
     public void setUserRestriction_disallowAddUser_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(),
                         DISALLOW_ADD_USER));
     }
 
@@ -59,15 +60,15 @@ public class ModifyUsersTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_USER")
     public void setUserRestriction_disallowAddUser_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_USER);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_USER);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(
                     DISALLOW_ADD_USER))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_USER);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_USER);
         }
     }
 
@@ -76,16 +77,16 @@ public class ModifyUsersTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ADD_USER")
     public void setUserRestriction_disallowAddUser_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_USER);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_USER);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(
                     DISALLOW_ADD_USER))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ADD_USER);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ADD_USER);
         }
     }
 }

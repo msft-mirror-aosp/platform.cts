@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("CheckReturnValue")
 public class SetQueryHelper<E extends Queryable, F> implements SetQuery<E, F>, Serializable {
 
     private static final long serialVersionUID = 1;

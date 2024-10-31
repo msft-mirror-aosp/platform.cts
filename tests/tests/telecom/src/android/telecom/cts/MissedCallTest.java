@@ -20,6 +20,7 @@ import android.app.role.RoleManager;
 import android.content.Intent;
 import android.os.Process;
 import android.net.Uri;
+import android.os.UserHandle;
 import android.telecom.Call;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
@@ -36,6 +37,7 @@ public class MissedCallTest extends BaseTelecomTestWithMockServices {
             new TestUtils.InvokeCounter("ShowMissedCallNotificationIntent");
 
     private static final String CMD_DEVICE_IDLE_TEMP_EXEMPTIONS = "cmd deviceidle tempwhitelist";
+    private static final String LOG_TAG = "MissedCallTest";
 
     @Override
     protected void setUp() throws Exception {
@@ -99,7 +101,15 @@ public class MissedCallTest extends BaseTelecomTestWithMockServices {
     private boolean isOnTemporaryPowerExemption() throws Exception {
         String exemptions = TestUtils.executeShellCommand(
                 getInstrumentation(), CMD_DEVICE_IDLE_TEMP_EXEMPTIONS);
-        // Just check that this process's UID is in the result.
-        return exemptions.contains(String.valueOf(Process.myUid()));
+
+        boolean result = exemptions.contains(String.valueOf(UserHandle.getAppId(Process.myUid())));
+
+        if (!result) {
+            Log.i(LOG_TAG, "isOnTemporaryPowerExemption: exemptions = [" + exemptions +
+                    "] does not contain app ID = [" + UserHandle.getAppId(Process.myUid()) + "]");
+        }
+
+        // Just check that the current app ID is in the result.
+        return result;
     }
 }

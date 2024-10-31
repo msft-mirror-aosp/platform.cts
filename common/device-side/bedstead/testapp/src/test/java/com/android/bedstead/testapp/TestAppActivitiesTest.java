@@ -16,6 +16,7 @@
 
 package com.android.bedstead.testapp;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -44,7 +45,7 @@ public final class TestAppActivitiesTest {
     private static final String EXISTING_ACTIVITY = "android.testapp.activity";
     private static final String NON_EXISTING_ACTIVITY = "non.existing.activity";
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().activityClass().className().isEqualTo(EXISTING_ACTIVITY)
             ).whereActivities().doesNotContain(

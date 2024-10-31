@@ -43,6 +43,7 @@ import android.telecom.VideoProfile;
 
 import androidx.test.InstrumentationRegistry;
 
+import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
 import java.io.BufferedReader;
@@ -51,6 +52,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -74,6 +76,13 @@ public class TestUtils {
     // tests in the Telecom2 test package.
     public static String PACKAGE = "android.telecom.cts";
     public static String SELF_MANAGED_PACKAGE = "android.telecom.cts.selfmanagedcstestappone";
+    // Note: Please add new test packages to the list below:
+    public static List<String> TEST_PACKAGES;
+    static {
+        TEST_PACKAGES = new ArrayList<>();
+        TEST_PACKAGES.add(PACKAGE);
+        TEST_PACKAGES.add(SELF_MANAGED_PACKAGE);
+    }
     public static final String TEST_URI_SCHEME = "foobuzz";
     public static final String COMPONENT = "android.telecom.cts.CtsConnectionService";
     public static final String INCALL_COMPONENT = "android.telecom.cts/.MockInCallService";
@@ -490,9 +499,11 @@ public class TestUtils {
 
     public static String setCtsPhoneAccountSuggestionService(Instrumentation instrumentation,
             ComponentName componentName) throws Exception {
+        final long currentUserSerial = getCurrentUserSerialNumber(instrumentation);
         return executeShellCommand(instrumentation,
                 COMMAND_SET_ACCT_SUGGESTION
-                        + (componentName == null ? "" : componentName.flattenToString()));
+                        + (componentName == null ? "" : componentName.flattenToString())
+                            + " " + currentUserSerial);
     }
 
     public static String getDefaultDialer(Instrumentation instrumentation) throws Exception {
@@ -849,16 +860,6 @@ public class TestUtils {
             waitForCount(count, timeoutMillis, null);
         }
 
-        public void waitForCount(long timeoutMillis) {
-             synchronized (mLock) {
-             try {
-                  mLock.wait(timeoutMillis);
-             }catch (InterruptedException ex) {
-                  ex.printStackTrace();
-             }
-           }
-        }
-
         public void waitForCount(int count, long timeoutMillis, String message) {
             synchronized (mLock) {
                 final long startTimeMillis = SystemClock.uptimeMillis();
@@ -879,6 +880,19 @@ public class TestUtils {
                         /* ignore */
                     }
                 }
+            }
+        }
+
+        /**
+         * Try waiting for count to reach desired number, but instead of failing test on timeout,
+         * return false silently.
+         */
+        public boolean tryWaitForCount(int count, long timeoutMillis) {
+            try {
+                waitForCount(count, timeoutMillis);
+                return true;
+            } catch (AssertionFailedError e) {
+                return false;
             }
         }
 

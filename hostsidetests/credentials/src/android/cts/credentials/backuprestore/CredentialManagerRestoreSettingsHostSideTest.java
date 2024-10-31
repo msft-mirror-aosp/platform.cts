@@ -199,6 +199,16 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
     }
 
     private static String normalizedString(String str) {
+        int sep = str.indexOf(':');
+        if (sep < 0 || (sep + 1) >= str.length()) {
+            return normalizedSingleString(str);
+        }
+        String p1 = str.substring(0, sep);
+        String p2 = str.substring(sep + 1);
+        return normalizedSingleString(p1) + ":" + normalizedSingleString(p2);
+    }
+
+    private static String normalizedSingleString(String str) {
         int sep = str.indexOf('/');
         if (sep < 0 || (sep + 1) >= str.length()) {
             return "";

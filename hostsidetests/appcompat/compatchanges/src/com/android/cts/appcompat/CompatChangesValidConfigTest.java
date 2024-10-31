@@ -78,6 +78,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "FGS_SAW_RESTRICTIONS",
             "FORCE_NON_RESIZE_APP",
             "FORCE_RESIZE_APP",
+            "UNIVERSAL_RESIZABLE_BY_DEFAULT",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP_DEFAULTS",
             "OVERRIDE_CAMERA_RESIZABLE_AND_SDK_CHECK",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP",
@@ -120,7 +121,10 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "BLOCK_NULL_ACTION_INTENTS",
             "ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS",
             "SEND_CHOOSER_RESULT",
-            "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION"
+            "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION",
+            "RO_DCL_CHANGE_ID",
+            "ENABLE_PREVENT_INTENT_REDIRECT",
+            "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION"
     );
 
     /**

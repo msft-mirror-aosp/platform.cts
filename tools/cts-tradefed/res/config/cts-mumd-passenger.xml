@@ -23,7 +23,6 @@
     <option name="compatibility:include-filter" value="CtsAccelerationTestCases" />
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsAccountsHostTestCases" />
-    <option name="compatibility:include-filter" value="CtsAdminPackageInstallerTestCases" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases" />
     <option name="compatibility:include-filter" value="CtsAdServicesTopicsConnectionTests" />
     <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases" />
@@ -39,13 +38,12 @@
     <option name="compatibility:include-filter" value="CtsApacheHttpLegacyCurrentApiSignatureTestCases" />
     <option name="compatibility:include-filter" value="CtsApacheHttpLegacyUsesLibraryApiSignatureTestCases" />
     <option name="compatibility:include-filter" value="CtsApacheHttpTestCases" />
-    <option name="compatibility:include-filter" value="CtsApexTestCases" />
     <option name="compatibility:include-filter" value="CtsAppCloningDeviceTestCases" />
     <option name="compatibility:include-filter" value="CtsAppComponentFactoryTestCases" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases" />
     <option name="compatibility:include-filter" value="CtsAppExitTestCases" />
     <option name="compatibility:include-filter" value="CtsAppFgsStartTestCases" />
-    <option name="compatibility:include-filter" value="CtsAppIntegrityDeviceTestCases" />
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases" />
     <option name="compatibility:include-filter" value="CtsAppOps2TestCases" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases" />
     <option name="compatibility:include-filter" value="CtsAppPredictionServiceTestCases" />
@@ -56,12 +54,13 @@
     <option name="compatibility:include-filter" value="CtsAslrMallocTestCases" />
     <option name="compatibility:include-filter" value="CtsAtomicInstallTestCases" />
     <option name="compatibility:include-filter" value="CtsAttentionServiceDeviceTestCases" />
+    <option name="compatibility:include-filter" value="CtsAttributionSourceTestCases" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases" />
     <option name="compatibility:include-filter" value="CtsBackgroundRestrictionsTestCases" />
     <option name="compatibility:include-filter" value="CtsBatteryHealthTestCases" />
     <option name="compatibility:include-filter" value="CtsBionicAppTestCases" />
+    <option name="compatibility:include-filter" value="CtsBionicTestCases" />
     <option name="compatibility:include-filter" value="CtsBlobStoreTestCases" />
-    <option name="compatibility:include-filter" value="CtsBootStatsTestCases" />
     <option name="compatibility:include-filter" value="CtsBroadcastTestCases" />
     <option name="compatibility:include-filter" value="CtsBRSTestCases" />
     <option name="compatibility:include-filter" value="CtsCalendarcommon2TestCases" />
@@ -69,8 +68,11 @@
     <option name="compatibility:include-filter" value="CtsCarTestCases" />
     <option name="compatibility:include-filter" value="CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases" />
     <option name="compatibility:include-filter" value="CtsClassLoaderFactoryPathClassLoaderTestCases" />
-    <option name="compatibility:include-filter" value="CtsCompilationTestCases" />
+    <option name="compatibility:include-filter" value="CtsClasspathsTestCases" />
+    <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerMultiProcessTestCases" />
+    <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerNoCompanionServicesTestCases" />
     <option name="compatibility:include-filter" value="CtsContactKeysManagerTestCases" />
+    <option name="compatibility:include-filter" value="CtsContactKeysProviderPrivilegedApp" />
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases" />
     <option name="compatibility:include-filter" value="CtsContactsProviderWipe" />
     <option name="compatibility:include-filter" value="CtsContentCaptureServiceTestCases" />
@@ -80,12 +82,13 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases" />
     <option name="compatibility:include-filter" value="CtsContextualSearchServiceTestCases" />
     <option name="compatibility:include-filter" value="CtsControlsDeviceTestCases" />
-    <option name="compatibility:include-filter" value="CtsCppToolsTestCases" />
     <option name="compatibility:include-filter" value="CtsCrashDetailHostTestCases" />
+    <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsCurrentApiSignatureTestCases" />
     <option name="compatibility:include-filter" value="CtsDatabaseTestCases" />
     <option name="compatibility:include-filter" value="CtsDeqpTestCases" />
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases" />
+    <option name="compatibility:include-filter" value="CtsDeviceStateManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases" />
     <option name="compatibility:include-filter" value="CtsDpiTestCases" />
     <option name="compatibility:include-filter" value="CtsDpiTestCases2" />
@@ -93,29 +96,29 @@
     <option name="compatibility:include-filter" value="CtsDynamicLinkerTestCases" />
     <option name="compatibility:include-filter" value="CtsEffectTestCases" />
     <option name="compatibility:include-filter" value="CtsExternalServiceTestCases" />
+    <option name="compatibility:include-filter" value="CtsFgsTimeoutTestCases" />
     <option name="compatibility:include-filter" value="CtsFileSystemTestCases" />
     <option name="compatibility:include-filter" value="CtsFragmentTestCases" />
     <option name="compatibility:include-filter" value="CtsFragmentTestCasesSdk26" />
     <option name="compatibility:include-filter" value="CtsFsMgrTestCases" />
     <option name="compatibility:include-filter" value="CtsGestureTestCases" />
-    <option name="compatibility:include-filter" value="CtsGrammaticalInflectionTestCases" />
-    <option name="compatibility:include-filter" value="CtsHarmfulAppWarningHostTestCases" />
-    <option name="compatibility:include-filter" value="CtsHiddenApiKillswitchDebugClassTestCases" />
-    <option name="compatibility:include-filter" value="CtsHiddenApiKillswitchWildcardTestCases" />
+    <option name="compatibility:include-filter" value="CtsGetBindingUidImportanceTest" />
+    <option name="compatibility:include-filter" value="CtsGraphicsTestCases" />
     <option name="compatibility:include-filter" value="CtsHostsideWebViewTests" />
+    <option name="compatibility:include-filter" value="CtsIcu4cTestCases" />
     <option name="compatibility:include-filter" value="CtsIcuTestCases" />
-    <option name="compatibility:include-filter" value="CtsInputMethodInstallTestCases" />
-    <option name="compatibility:include-filter" value="CtsInputMethodServiceHostTestCases" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases" />
+    <option name="compatibility:include-filter" value="CtsIkeTestCases" />
     <option name="compatibility:include-filter" value="CtsInputMethodTestCases" />
     <option name="compatibility:include-filter" value="CtsInputMethodTestCases32" />
     <option name="compatibility:include-filter" value="CtsInputTestCases" />
     <option name="compatibility:include-filter" value="CtsInstantAppTests" />
     <option name="compatibility:include-filter" value="CtsIntentSignatureTestCases" />
     <option name="compatibility:include-filter" value="CtsJdwpTestCases" />
+    <option name="compatibility:include-filter" value="CtsJobSchedulerSharedUidTestCases" />
     <option name="compatibility:include-filter" value="CtsKeystorePerformanceTestCases" />
     <option name="compatibility:include-filter" value="CtsKeystoreTestCases" />
     <option name="compatibility:include-filter" value="CtsLeanbackJankTestCases" />
-    <option name="compatibility:include-filter" value="CtsLegacyNotification20TestCases" />
     <option name="compatibility:include-filter" value="CtsLegacyNotification27TestCases" />
     <option name="compatibility:include-filter" value="CtsLegacyNotification28TestCases" />
     <option name="compatibility:include-filter" value="CtsLegacyNotification29TestCases" />
@@ -123,15 +126,17 @@
     <option name="compatibility:include-filter" value="CtsLegacyNotification34TestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreApiEvolutionTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreFileIOTestCases" />
+    <option name="compatibility:include-filter" value="CtsLibcoreJsr166TestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreLegacy22TestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreOkHttpTestCases" />
+    <option name="compatibility:include-filter" value="CtsLibcoreOkHttpTestCases (duplicate)" />
+    <option name="compatibility:include-filter" value="CtsLibcoreTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreWycheproofBCTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreWycheproofConscryptTestCases" />
     <option name="compatibility:include-filter" value="CtsLiblogTestCases" />
     <option name="compatibility:include-filter" value="CtsLibnativehelperTestCases" />
     <option name="compatibility:include-filter" value="CtsLocaleConfigTestCases" />
-    <option name="compatibility:include-filter" value="CtsLocaleManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsLocationCoarseTestCases" />
     <option name="compatibility:include-filter" value="CtsLocationFineTestCases" />
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases" />
@@ -140,6 +145,7 @@
     <option name="compatibility:include-filter" value="CtsLogdTestCases" />
     <option name="compatibility:include-filter" value="CtsMatchFlagTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases" />
+    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaCodecTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaCUJLargeTest" />
     <option name="compatibility:include-filter" value="CtsMediaCUJSmallTest" />
@@ -148,11 +154,14 @@
     <option name="compatibility:include-filter" value="CtsMediaEditingTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaEncoderTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaExtractorTestCases" />
+    <option name="compatibility:include-filter" value="CtsMediaMiscTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaParserTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaPlayerTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaProjectionSDK33TestCases" />
     <option name="compatibility:include-filter" value="CtsMediaProjectionSDK34TestCases" />
+    <option name="compatibility:include-filter" value="CtsMediaProjectionTestCases" />
+    <option name="compatibility:include-filter" value="CtsMediaProviderTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaStressTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases" />
@@ -161,6 +170,7 @@
     <option name="compatibility:include-filter" value="CtsMimeMapTestCases" />
     <option name="compatibility:include-filter" value="CtsMusicRecognitionTestCases" />
     <option name="compatibility:include-filter" value="CtsNativeEncryptionTestCases" />
+    <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases" />
     <option name="compatibility:include-filter" value="CtsNativeMediaMetricsTestCases" />
     <option name="compatibility:include-filter" value="CtsNativeMediaSlTestCases" />
     <option name="compatibility:include-filter" value="CtsNativeMediaXaTestCases" />
@@ -169,6 +179,9 @@
     <option name="compatibility:include-filter" value="CtsNativeResourcesTestCases" />
     <option name="compatibility:include-filter" value="CtsNdefTestCases" />
     <option name="compatibility:include-filter" value="CtsNdkBinderTestCases" />
+    <option name="compatibility:include-filter" value="CtsNearbyFastPairTestCases" />
+    <option name="compatibility:include-filter" value="CtsNetApi23TestCases" />
+    <option name="compatibility:include-filter" value="CtsNetHttpTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecConfigAttributeTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecConfigBasicDebugDisabledTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecConfigBasicDebugEnabledTestCases" />
@@ -183,29 +196,34 @@
     <option name="compatibility:include-filter" value="CtsNetSecConfigResourcesSrcTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficFalseTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases" />
-    <option name="compatibility:include-filter" value="CtsNetTestCasesInternetPermission" />
+    <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesLegacyApi22" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesLegacyPermission22" />
+    <option name="compatibility:include-filter" value="CtsNetTestCasesMaxTargetSdk33" />
     <option name="compatibility:include-filter" value="CtsNfcTestCases" />
     <option name="compatibility:include-filter" value="CtsNNAPIJavaTestCases" />
+    <option name="compatibility:include-filter" value="CtsNNAPITestCases" />
     <option name="compatibility:include-filter" value="CtsNoPermissionTestCases" />
     <option name="compatibility:include-filter" value="CtsNoPermissionTestCases25" />
     <option name="compatibility:include-filter" value="CtsNotificationExtendersTestCases" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases" />
+    <option name="compatibility:include-filter" value="CtsOnDevicePersonalizationE2ETests" />
     <option name="compatibility:include-filter" value="CtsOpenGlPerf2TestCases" />
     <option name="compatibility:include-filter" value="CtsOpenGlPerfTestCases" />
     <option name="compatibility:include-filter" value="CtsOpenGLTestCases" />
-    <option name="compatibility:include-filter" value="CtsOsTestCase" />
     <option name="compatibility:include-filter" value="CtsOsTestCases" />
     <option name="compatibility:include-filter" value="CtsPackageInstallAppOpDefaultTestCases" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallAppOpDeniedTestCases" />
     <option name="compatibility:include-filter" value="CtsPackageInstallerTapjackingTestCases" />
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases" />
     <option name="compatibility:include-filter" value="CtsPackageManagerTestCases" />
-    <option name="compatibility:include-filter" value="CtsPackageUninstallTestCases" />
+    <option name="compatibility:include-filter" value="CtsPackageSchemeTestsWithoutVisibility" />
     <option name="compatibility:include-filter" value="CtsPackageWatchdogTestCases" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases" />
     <option name="compatibility:include-filter" value="CtsPdfTestCases" />
     <option name="compatibility:include-filter" value="CtsPendingIntentApi33TestCases" />
+    <option name="compatibility:include-filter" value="CtsPermission3TestCases" />
+    <option name="compatibility:include-filter" value="CtsPermissionManagerNativeTestCases" />
+    <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases" />
     <option name="compatibility:include-filter" value="CtsPermissionTestCases" />
     <option name="compatibility:include-filter" value="CtsPermissionUiTestCases" />
     <option name="compatibility:include-filter" value="CtsPersistentDataBlockManagerTestCases" />
@@ -214,21 +232,24 @@
     <option name="compatibility:include-filter" value="CtsProtoTestCases" />
     <option name="compatibility:include-filter" value="CtsProviderTestCases" />
     <option name="compatibility:include-filter" value="CtsQuickAccessWalletTestCases" />
+    <option name="compatibility:include-filter" value="CtsRenderscriptTestCases" />
     <option name="compatibility:include-filter" value="CtsResolverServiceTestCases" />
     <option name="compatibility:include-filter" value="CtsResourcesLoaderTests" />
+    <option name="compatibility:include-filter" value="CtsResourcesTestCases" />
+    <option name="compatibility:include-filter" value="CtsRoleTestCases" />
     <option name="compatibility:include-filter" value="CtsRollbackManagerTestCases" />
-    <option name="compatibility:include-filter" value="CtsRsBlasTestCases" />
     <option name="compatibility:include-filter" value="CtsRsCppTestCases" />
     <option name="compatibility:include-filter" value="CtsSampleDeviceTestCases" />
     <option name="compatibility:include-filter" value="CtsSandboxedAdIdManagerTests" />
     <option name="compatibility:include-filter" value="CtsSandboxedAppSetIdManagerTests" />
     <option name="compatibility:include-filter" value="CtsSaxTestCases" />
-    <option name="compatibility:include-filter" value="CtsScopedStorageGeneralTest" />
+    <option name="compatibility:include-filter" value="CtsScopedStorageRedactUriTest" />
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases" />
+    <option name="compatibility:include-filter" value="CtsSdkSandboxWebkitTestCases" />
     <option name="compatibility:include-filter" value="CtsSearchUiServiceTestCases" />
     <option name="compatibility:include-filter" value="CtsSecureElementTestCases" />
     <option name="compatibility:include-filter" value="CtsSecureFrpInstallTestCases" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases" />
-    <option name="compatibility:include-filter" value="CtsSelinuxEphemeralTestCases" />
     <option name="compatibility:include-filter" value="CtsSelinuxTargetSdk25TestCases" />
     <option name="compatibility:include-filter" value="CtsSelinuxTargetSdk27TestCases" />
     <option name="compatibility:include-filter" value="CtsSelinuxTargetSdk28TestCases" />
@@ -242,13 +263,13 @@
     <option name="compatibility:include-filter" value="CtsSharedLibsApiSignatureTestCases" />
     <option name="compatibility:include-filter" value="CtsSharedUserMigrationTestCases" />
     <option name="compatibility:include-filter" value="CtsSharesheetTestCases" />
+    <option name="compatibility:include-filter" value="CtsShortcutManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsShortFgsTestCases" />
     <option name="compatibility:include-filter" value="CtsSimpleCpuTestCases" />
-    <option name="compatibility:include-filter" value="CtsSimpleperfTestCases" />
+    <option name="compatibility:include-filter" value="CtsSkQPTestCases" />
     <option name="compatibility:include-filter" value="CtsSliceTestCases" />
     <option name="compatibility:include-filter" value="CtsSmartspaceServiceTestCases" />
-    <option name="compatibility:include-filter" value="CtsStorageAccessTestCases" />
-    <option name="compatibility:include-filter" value="CtsStrictJavaPackagesTestCases" />
+    <option name="compatibility:include-filter" value="CtsSurfaceControlTests" />
     <option name="compatibility:include-filter" value="CtsSuspendAppsPermissionTestCases" />
     <option name="compatibility:include-filter" value="CtsSuspendAppsTestCases" />
     <option name="compatibility:include-filter" value="CtsSyncAccountAccessOtherCertTestCases" />
@@ -262,6 +283,7 @@
     <option name="compatibility:include-filter" value="CtsTfliteNnapiDelegateTestCases" />
     <option name="compatibility:include-filter" value="CtsThemeDeviceTestCases" />
     <option name="compatibility:include-filter" value="CtsThermalTestCases" />
+    <option name="compatibility:include-filter" value="CtsThreadNetworkTestCases" />
     <option name="compatibility:include-filter" value="CtsTimeTestCases" />
     <option name="compatibility:include-filter" value="CtsToastLegacyTestCases" />
     <option name="compatibility:include-filter" value="CtsToastTestCases" />
@@ -271,14 +293,17 @@
     <option name="compatibility:include-filter" value="CtsUiAutomationTestCases" />
     <option name="compatibility:include-filter" value="CtsUidIsolationTestCases" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases27" />
+    <option name="compatibility:include-filter" value="CtsUsageStatsTestCases" />
     <option name="compatibility:include-filter" value="CtsUtilTestCases" />
     <option name="compatibility:include-filter" value="CtsVcnTestCases" />
+    <option name="compatibility:include-filter" value="CtsVideoCodecTestCases" />
     <option name="compatibility:include-filter" value="CtsVideoTestCases" />
     <option name="compatibility:include-filter" value="CtsViewInspectorAnnotationProcessorTestCases" />
     <option name="compatibility:include-filter" value="CtsViewReceiveContentTestCases" />
     <option name="compatibility:include-filter" value="CtsViewTestCases" />
     <option name="compatibility:include-filter" value="CtsViewTestCasesSdk28" />
     <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases" />
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases29" />
     <option name="compatibility:include-filter" value="CtsWindowManagerBackgroundActivityTestCases" />
@@ -302,6 +327,21 @@
     <option name="compatibility:include-filter" value="CtsWrapNoWrapTestCases" />
     <option name="compatibility:include-filter" value="CtsWrapWrapDebugTestCases" />
     <option name="compatibility:include-filter" value="CtsWrapWrapNoDebugTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaBetterTogetherTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaCodecTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaDecoderTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaDrmFrameworkTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaEncoderTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaExtractorTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaMiscTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaMuxerTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaParserTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaPlayerTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaRecorderTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaStressTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaTranscodingTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaV2TestCases" />
+    <option name="compatibility:include-filter" value="MctsTextClassifierTestCases" />
     <option name="compatibility:include-filter" value="ResourceObserverNativeTest" />
     <option name="compatibility:include-filter" value="SdkSandboxManagerDisabledTests" />
     <option name="compatibility:include-filter" value="SdkSandboxManagerTests" />

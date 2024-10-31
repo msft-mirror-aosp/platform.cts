@@ -50,8 +50,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-import static java.lang.Byte.toUnsignedInt;
-
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtual.camera.VirtualCameraStreamConfig;
@@ -71,6 +69,8 @@ import android.net.Uri;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
@@ -94,7 +94,6 @@ public final class VirtualCameraUtils {
     static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
-    private static final float EPSILON = 0.3f;
     private static final int TEST_VIDEO_SEEK_TIME_MS = 2000;
     private static final String TAG = "VirtualCameraUtils";
 
@@ -132,88 +131,6 @@ public final class VirtualCameraUtils {
 
     static void paintSurfaceRed(Surface surface) {
         paintSurface(surface, Color.RED);
-    }
-
-    // Converts YUV to ARGB int representation,
-    // using BT601 full-range matrix.
-    // See https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion
-    private static int yuv2rgb(int y, int u, int v) {
-        int r = (int) (y + 1.402f * (v - 128f));
-        int g = (int) (y - 0.344136f * (u - 128f) - 0.714136 * (v - 128f));
-        int b = (int) (y + 1.772 * (u - 128f));
-        return 0xff000000 | (r << 16) | (g << 8) | b;
-    }
-
-    // Compares two ARGB colors and returns true if they are approximately
-    // the same color.
-    private static boolean areColorsAlmostIdentical(int colorA, int colorB) {
-        float a1 = ((colorA >> 24) & 0xff) / 255f;
-        float r1 = ((colorA >> 16) & 0xff) / 255f;
-        float g1 = ((colorA >> 4) & 0xff) / 255f;
-        float b1 = (colorA & 0xff) / 255f;
-
-        float a2 = ((colorB >> 24) & 0xff) / 255f;
-        float r2 = ((colorB >> 16) & 0xff) / 255f;
-        float g2 = ((colorB >> 4) & 0xff) / 255f;
-        float b2 = (colorB & 0xff) / 255f;
-
-        float mse = ((a1 - a2) * (a1 - a2)
-                + (r1 - r2) * (r1 - r2)
-                + (g1 - g2) * (g1 - g2)
-                + (b1 - b2) * (b1 - b2)) / 4;
-
-        return mse < EPSILON;
-    }
-
-    private static boolean yuv420ImageHasColor(Image image, int color) {
-        final int width = image.getWidth();
-        final int height = image.getHeight();
-        final Image.Plane[] planes = image.getPlanes();
-        for (int j = 0; j < height; ++j) {
-            int jChroma = j / 2;
-            for (int i = 0; i < width; ++i) {
-                int iChroma = i / 2;
-                int y = toUnsignedInt(planes[0].getBuffer().get(
-                        j * planes[0].getRowStride() + i * planes[0].getPixelStride()));
-                int u = toUnsignedInt(planes[1].getBuffer().get(
-                        jChroma * planes[1].getRowStride() + iChroma * planes[1].getPixelStride()));
-                int v = toUnsignedInt(planes[2].getBuffer().get(
-                        jChroma * planes[2].getRowStride() + iChroma * planes[2].getPixelStride()));
-                int argb = yuv2rgb(y, u, v);
-                if (!areColorsAlmostIdentical(argb, color)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private static boolean jpegImageHasColor(Image image, int color) throws IOException {
-        Bitmap bitmap = ImageDecoder.decodeBitmap(
-                ImageDecoder.createSource(image.getPlanes()[0].getBuffer())).copy(
-                Bitmap.Config.ARGB_8888, false);
-        final int width = bitmap.getWidth();
-        final int height = bitmap.getHeight();
-        for (int j = 0; j < height; ++j) {
-            for (int i = 0; i < width; ++i) {
-                if (!areColorsAlmostIdentical(bitmap.getColor(i, j).toArgb(), color)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    // TODO(b/316326725) Turn this into proper custom matcher.
-    static boolean imageHasColor(Image image, int color) throws IOException {
-        return switch (image.getFormat()) {
-            case YUV_420_888 -> yuv420ImageHasColor(image, color);
-            case JPEG -> jpegImageHasColor(image, color);
-            default -> {
-                fail("Encountered unsupported image format: " + image.getFormat());
-                yield false;
-            }
-        };
     }
 
     static int toFormat(String str) {
@@ -375,6 +292,15 @@ public final class VirtualCameraUtils {
         eglDestroyContext(eglDisplay, eglContext);
 
         return maxSize[0];
+    }
+
+    /**
+     * Creates a new Handler with a thread named with the provided suffix.
+     */
+    public static Handler createHandler(String threadSuffix) {
+        HandlerThread handlerThread = new HandlerThread("VirtualCameraTestHandler_" + threadSuffix);
+        handlerThread.start();
+        return new Handler(handlerThread.getLooper());
     }
 
     private VirtualCameraUtils() {}

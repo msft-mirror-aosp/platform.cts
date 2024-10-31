@@ -7418,6 +7418,45 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_AUTOJOIN_RESTRICTION_SECURITY_TYPES_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
+    @ApiTest(apis = {"android.net.wifi.WifiManager#setAutojoinDisallowedSecurityTypes",
+            "android.net.wifi.WifiManager#getAutojoinDisallowedSecurityTypes"})
+    public void testAutojoinDisallowed() throws Exception {
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        long now, deadline;
+        int[] restrictionTypes = { WifiInfo.SECURITY_TYPE_OPEN, WifiInfo.SECURITY_TYPE_OWE };
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.setAutojoinDisallowedSecurityTypes(restrictionTypes);
+            sWifiManager.getAutojoinDisallowedSecurityTypes(mExecutor,
+                    new Consumer<int[]>() {
+                        @Override
+                        public void accept(int[] values) {
+                            synchronized (mLock) {
+                                isQuerySucceeded.value = true;
+                                assertArrayEquals("Set and get results mismatch", restrictionTypes,
+                                        values);
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("get autojoin restrictions query fail", isQuerySucceeded.value);
+        } finally {
+            sWifiManager.setAutojoinDisallowedSecurityTypes(new int[0]);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     /**
      * Tests {@link WifiManager#getBssidBlocklist(List, Executor, Consumer)}
      */

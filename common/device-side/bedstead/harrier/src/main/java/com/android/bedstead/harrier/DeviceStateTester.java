@@ -16,11 +16,7 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.users.UserReference;
-import com.android.bedstead.remotedpc.RemoteDpc;
-import com.android.bedstead.testapp.TestAppProvider;
 
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -37,6 +33,10 @@ public final class DeviceStateTester implements AutoCloseable {
 
     /** This value can be overridden using {@code stepName()}. */
     private String mStepName = "deviceStateInternalTest";
+
+    public DeviceState getDeviceState() {
+        return mDeviceState;
+    }
 
     /**
      * Apply bedstead {@code annotations} to a dynamically generated test.
@@ -95,21 +95,6 @@ public final class DeviceStateTester implements AutoCloseable {
                 mDeviceState.prepareTestState(description);
             }
         };
-    }
-
-    /** See {@link DeviceState#profileOwner()}. */
-    public RemoteDpc profileOwner() {
-        return mDeviceState.profileOwner();
-    }
-
-    /** See {@link DeviceState#workProfile()}. */
-    public UserReference workProfile() {
-        return mDeviceState.workProfile(TestApis.users().instrumented());
-    }
-
-    /** See {@link DeviceState#testApps()}. */
-    public TestAppProvider testApps() {
-        return mDeviceState.testApps();
     }
 
     @Override

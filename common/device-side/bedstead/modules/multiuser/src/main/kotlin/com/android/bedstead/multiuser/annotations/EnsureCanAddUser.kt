@@ -17,7 +17,6 @@ package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**

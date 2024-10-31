@@ -19,15 +19,12 @@ package android.text.cts;
 import static android.graphics.text.LineBreaker.BREAK_STRATEGY_HIGH_QUALITY;
 import static android.graphics.text.LineBreaker.BREAK_STRATEGY_SIMPLE;
 
-import static com.android.text.flags.Flags.FLAG_PHRASE_STRICT_FALLBACK;
-
 import static org.junit.Assert.assertEquals;
 
 import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.text.LineBreakConfig;
 import android.os.LocaleList;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.StaticLayout;
@@ -365,7 +362,6 @@ public class StaticLayoutLineBreakingVariantsTest {
                 "\u30FC");
     }
 
-    @RequiresFlagsEnabled(FLAG_PHRASE_STRICT_FALLBACK)
     @Test
     public void testBreakVariant_phrase_text2() {
         LineBreakConfig config = new LineBreakConfig.Builder()
@@ -428,7 +424,6 @@ public class StaticLayoutLineBreakingVariantsTest {
                 "\u3002");
     }
 
-    @RequiresFlagsEnabled(FLAG_PHRASE_STRICT_FALLBACK)
     @Test
     public void testPhraseFallback_Strict_Greedy() {
         LineBreakConfig config = new LineBreakConfig.Builder()
@@ -469,7 +464,6 @@ public class StaticLayoutLineBreakingVariantsTest {
                 "\u30B8");
     }
 
-    @RequiresFlagsEnabled(FLAG_PHRASE_STRICT_FALLBACK)
     @Test
     public void testPhraseFallback_Strict_Optimal() {
         LineBreakConfig config = new LineBreakConfig.Builder()

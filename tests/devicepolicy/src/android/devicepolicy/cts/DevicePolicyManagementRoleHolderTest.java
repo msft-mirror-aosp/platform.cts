@@ -21,9 +21,13 @@ import static android.content.Intent.ACTION_MANAGED_PROFILE_REMOVED;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
+import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
 
@@ -42,14 +46,15 @@ import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
+import com.android.bedstead.accounts.annotations.EnsureHasAccount;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -101,7 +106,7 @@ public class DevicePolicyManagementRoleHolderTest {
                         MANAGED_PROFILE_PROVISIONING_PARAMS))) {
             Poll.forValue(() -> TestApis.packages().installedForUser(profile))
                     .toMeet(packages -> packages.contains(
-                            Package.of(sDeviceState.dpmRoleHolder().packageName())))
+                            Package.of(dpmRoleHolder(sDeviceState).packageName())))
                     .errorOnFail("Role holder package not installed on the managed profile.")
                     .await();
             }
@@ -116,15 +121,15 @@ public class DevicePolicyManagementRoleHolderTest {
     @CddTest(requirements = {"3.9.4/C-3-1"})
     public void createAndManageUser_roleHolderIsInManagedUser() {
         try (UserReference userReference = UserReference.of(
-                sDeviceState.dpc().devicePolicyManager().createAndManageUser(
-                        sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager().createAndManageUser(
+                        dpc(sDeviceState).componentName(),
                         MANAGED_USER_NAME,
-                        sDeviceState.dpc().componentName(),
+                        dpc(sDeviceState).componentName(),
                         /* adminExtras= */ null,
                         /* flags= */ 0))) {
             Poll.forValue(() -> TestApis.packages().installedForUser(userReference))
                     .toMeet(packages -> packages.contains(Package.of(
-                            sDeviceState.dpmRoleHolder().packageName())))
+                            dpmRoleHolder(sDeviceState).packageName())))
                     .errorOnFail("Role holder package not installed on the managed user.")
                     .await();
         }
@@ -142,7 +147,7 @@ public class DevicePolicyManagementRoleHolderTest {
 
         TestApis.users().find(profile).remove();
 
-        EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+        EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                         .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_REMOVED))
                 .eventOccurred();
     }
@@ -159,7 +164,7 @@ public class DevicePolicyManagementRoleHolderTest {
                         MANAGED_PROFILE_PROVISIONING_PARAMS))) {
             profile.setQuietMode(true);
 
-            EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+            EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                             .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_UNAVAILABLE))
                     .eventOccurred();
         }
@@ -179,7 +184,7 @@ public class DevicePolicyManagementRoleHolderTest {
 
             profile.setQuietMode(false);
 
-            EventLogsSubject.assertThat(sDeviceState.dpmRoleHolder().events().broadcastReceived()
+            EventLogsSubject.assertThat(dpmRoleHolder(sDeviceState).events().broadcastReceived()
                             .whereIntent().action().isEqualTo(ACTION_MANAGED_PROFILE_AVAILABLE))
                     .eventOccurred();
         }
@@ -294,24 +299,65 @@ public class DevicePolicyManagementRoleHolderTest {
                 PROFILE_OWNER_NAME);
     }
 
+    /**
+     * Verify that a non-preinstalled DMRH can be uninstalled when there is no management.
+     */
     @Postsubmit(reason = "new test")
     @EnsureHasNoDpc
     @EnsureHasDevicePolicyManagerRoleHolder
     @Test
     public void uninstallAllowedForNonPreinstalledDmrhWhenUnmanaged() {
-        // Uninstall must succeed and must not throw.
-        sDeviceState.dpmRoleHolder().pkg().uninstall(TestApis.users().instrumented());
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser()).isFalse();
+        dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented());
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isFalse();
     }
 
+    /**
+     * Verify that DMRH can't be uninstalled from managed user.
+     */
     @Postsubmit(reason = "new test")
     @EnsureHasDeviceOwner
     @EnsureHasDevicePolicyManagerRoleHolder
     @Test
     public void uninstallNotAllowedForNonPreinstalledDmrhWhenManaged() {
         assertThrows(NeneException.class, () ->
-                sDeviceState.dpmRoleHolder().pkg().uninstall(TestApis.users().instrumented()));
-        assertThat(sDeviceState.dpmRoleHolder().pkg().installedOnUser()).isTrue();
+                dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented()));
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isTrue();
     }
 
+    /**
+     * Verifies that a non-preinstalled DMRH on the work profile can be uninstalled from the
+     * personal user.
+     * If the DMRH is preinstalled, the behaviour will be different that the ability for the
+     * personal side to "uninstall updates" is blocked. Ideally we want to test this scenario as
+     * well but getting a preinstalled DMRH in CTS is not possible right now.
+     */
+    @Postsubmit(reason = "new test")
+    @EnsureHasWorkProfile
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = WORK_PROFILE)
+    @Test
+    public void workProfileDmrhCanBeUninstalledFromPersonal() {
+        Package dmrhPackage = dpmRoleHolder(sDeviceState).pkg();
+
+        if (!dmrhPackage.installedOnUser()) {
+            dmrhPackage.installExisting(TestApis.users().instrumented());
+        }
+
+        dpmRoleHolder(sDeviceState).pkg().uninstall(TestApis.users().instrumented());
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser()).isFalse();
+    }
+
+    /**
+     * Verifies that a non-preinstalled DMRH on the work profile can't be uninstalled from the
+     * profile.
+     */
+    @Postsubmit(reason = "new test")
+    @EnsureHasWorkProfile
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = WORK_PROFILE)
+    @Test
+    public void workProfileDmrhCantBeUninstalledFromWork() {
+        assertThrows(NeneException.class, () ->
+                dpmRoleHolder(sDeviceState).pkg().uninstall(workProfile(sDeviceState)));
+        assertThat(dpmRoleHolder(sDeviceState).pkg().installedOnUser(workProfile(sDeviceState)))
+                .isTrue();
+    }
 }

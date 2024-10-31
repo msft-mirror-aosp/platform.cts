@@ -37,6 +37,8 @@ import android.view.accessibility.AccessibilityManager;
 import androidx.annotation.CallSuper;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class InstrumentedAccessibilityService extends AccessibilityService {
     private static final String LOG_TAG = "InstrumentedA11yService";
+    private static final long POLLING_CHECK_TIMEOUT_MILLIS = 5000L;
 
     private static final boolean DEBUG = false;
 
@@ -108,6 +111,16 @@ public class InstrumentedAccessibilityService extends AccessibilityService {
 
         synchronized (sInstances) {
             sInstances.remove(getClass());
+        }
+
+        // Ensure that the service in this test is disabled in case it affects the next test.
+        // See b/358334508.
+        try {
+            PollingCheck.check("Service is not disabled ",
+                    POLLING_CHECK_TIMEOUT_MILLIS,
+                    () -> (!isAccessibilityServiceEnabled(this.getClass().getName())));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -207,10 +220,7 @@ public class InstrumentedAccessibilityService extends AccessibilityService {
     public static <T extends InstrumentedAccessibilityService> T enableService(
             Class<T> clazz) {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        final String enabledServices =
-                Settings.Secure.getString(
-                        instrumentation.getContext().getContentResolver(),
-                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        final String enabledServices = getEnabledAccessibilityServices();
 
         enableServiceWithoutWait(clazz, instrumentation, enabledServices);
 
@@ -290,5 +300,17 @@ public class InstrumentedAccessibilityService extends AccessibilityService {
 
         waitOn(waitLockForA11yOff, () -> !accessibilityEnabled.get(), TIMEOUT_SERVICE_ENABLE,
                 "Accessibility turns off");
+    }
+
+    private static boolean isAccessibilityServiceEnabled(String serviceName) {
+        final String enabledAccessibilityServices = getEnabledAccessibilityServices();
+        return enabledAccessibilityServices != null
+                && enabledAccessibilityServices.contains(serviceName);
+    }
+
+    private static String getEnabledAccessibilityServices() {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        return Settings.Secure.getString(instrumentation.getContext().getContentResolver(),
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
     }
 }

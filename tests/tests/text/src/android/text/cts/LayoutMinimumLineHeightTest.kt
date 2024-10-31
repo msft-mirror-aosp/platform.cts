@@ -17,7 +17,6 @@ package android.text.cts
 
 import android.graphics.Paint
 import android.os.LocaleList
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.DynamicLayout
 import android.text.Layout
@@ -25,7 +24,6 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -53,7 +51,6 @@ class LayoutMinimumLineHeightTest {
         return Pair(l.getLineAscent(0), l.getLineDescent(0))
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun layout_SetGetMinimumFontMetrics() {
         val text = "Hello, World."
@@ -68,7 +65,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.minimumFontMetrics).isEqualTo(metrics)
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun StaticLayout_SetGetMinimumFontMetrics() {
         val text = "Hello, World."
@@ -83,7 +79,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.minimumFontMetrics).isEqualTo(metrics)
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun DynamicLayout_SetGetMinimumFontMetrics() {
         val text = "Hello, World."
@@ -98,7 +93,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.minimumFontMetrics).isEqualTo(metrics)
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun Layout_expandToReserveMinimumFontMetrics() {
         val text = "Hello, World."
@@ -118,7 +112,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.getLineDescent(0)).isEqualTo(ceil(requestMetrics.descent).toInt())
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun StaticLayout_expandToReserveMinimumFontMetrics() {
         val text = "Hello, World."
@@ -138,7 +131,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.getLineDescent(0)).isEqualTo(ceil(requestMetrics.descent).toInt())
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun DynamicLayout_expandToReserveMinimumFontMetrics() {
         val text = "Hello, World."
@@ -158,7 +150,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.getLineDescent(0)).isEqualTo(ceil(requestMetrics.descent).toInt())
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun Layout_useActualFont() {
         val text = "Hello, World."
@@ -178,7 +169,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.getLineDescent(0)).isEqualTo(originalMetrics.second)
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun StaticLayout_useActualFont() {
         val text = "Hello, World."
@@ -198,7 +188,6 @@ class LayoutMinimumLineHeightTest {
         assertThat(layout.getLineDescent(0)).isEqualTo(originalMetrics.second)
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun DynamicLayout_useActualFont() {
         val text = "Hello, World."

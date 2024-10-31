@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -34,6 +35,9 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.InputType;
 import android.text.NoCopySpan;
 import android.text.Spannable;
@@ -56,6 +60,8 @@ import android.view.accessibility.Flags;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,6 +81,9 @@ public class AccessibilityNodeInfoTest {
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @SmallTest
     @Test
@@ -294,6 +303,102 @@ public class AccessibilityNodeInfoTest {
         assertFalse(info.isHeading());
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testDefaultCheckedState() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#isChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testCheckedState_setUsingTriStateAPI() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        assertThat(info.isChecked()).isFalse();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.isChecked()).isTrue();
+
+        info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.isChecked()).isFalse();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getChecked",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked(boolean)",
+            "android.view.accessibility.AccessibilityNodeInfo#setChecked(int)",
+            "android.view.accessibility.AccessibilityNodeInfo#isChecked"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testCheckedState_setUsingBooleanAPI() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setChecked(true);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_TRUE);
+        assertThat(info.isChecked()).isTrue();
+
+        info.setChecked(false);
+        assertThat(info.getChecked()).isEqualTo(AccessibilityNodeInfo.CHECKED_STATE_FALSE);
+        assertThat(info.isChecked()).isFalse();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setUsingApi() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setInvalidExpectException() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    info.setExpandedState(5);
+                });
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
@@ -366,6 +471,11 @@ public class AccessibilityNodeInfoTest {
         info.setLabelFor(new View(getContext()));
         populateTouchDelegateTargetMap(info);
 
+        // Populate 1 int field
+        if (Flags.triStateChecked()) {
+            info.setChecked(AccessibilityNodeInfo.CHECKED_STATE_PARTIAL);
+        }
+
         // And Boolean properties are another field. Total is 38
 
         // 11 Boolean properties
@@ -402,6 +512,11 @@ public class AccessibilityNodeInfoTest {
         info.setTextSelectable(true);
         info.setRequestInitialAccessibilityFocus(true);
         info.setAccessibilityDataSensitive(true);
+
+        // 1 Integer property
+        if (Flags.a11yExpansionStateApi()) {
+            info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        }
     }
 
     /**
@@ -579,6 +694,12 @@ public class AccessibilityNodeInfoTest {
                 expectedInfo.getTouchDelegateInfo(),
                 receivedInfo.getTouchDelegateInfo());
 
+        // Check 1 int field
+        if (Flags.triStateChecked()) {
+            assertEquals("Checked state has incorrect value",
+                    expectedInfo.getChecked(), receivedInfo.getChecked());
+        }
+
         // And the boolean properties are another field, for a total of 28
         // Missing parent: Tested end-to-end in AccessibilityWindowTraversalTest#testObjectContract
         //                 (getting a child is also checked there)
@@ -661,6 +782,14 @@ public class AccessibilityNodeInfoTest {
         assertSame("isAccessibilityDataSensitive has incorrect value",
                 expectedInfo.isAccessibilityDataSensitive(),
                 receivedInfo.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "Expanded state has incorrect value",
+                    expectedInfo.getExpandedState(),
+                    receivedInfo.getExpandedState());
+        }
     }
 
     /**
@@ -765,6 +894,14 @@ public class AccessibilityNodeInfoTest {
                 info.hasRequestInitialAccessibilityFocus());
         assertFalse("isAccessibilityDataSensitive not properly reset",
                 info.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "expandedState not properly reset",
+                    info.getExpandedState(),
+                    AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        }
     }
 
     private static void replaceSpan(

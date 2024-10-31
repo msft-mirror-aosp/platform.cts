@@ -55,16 +55,29 @@ java_test_host {
     test_config: "CtsIcu4cTestCases.xml",
     per_testcase_directory: true,
     data: [
-        ":CtsIcu4cTestApp",
-        ":cintltst32",
-        ":cintltst64",
-        ":intltest32",
-        ":intltest64",
         ":icu4c_test_data",
         ":ICU4CTestRunner",
+    ],
+    device_common_data: [
+        ":CtsIcu4cTestApp",
+    ],
+    device_first_data: [
+        ":cintltst64",
+        ":intltest64",
+    ],
+    device_first_prefer32_data: [
+        ":cintltst32",
+        ":intltest32",
     ],
     test_suites: [
         "cts",
         "general-tests",
     ],
+}
+
+test_module_config {
+    name: "CtsIcuTestCases_android_i18n",
+    base: "CtsIcuTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.i18n"],
 }

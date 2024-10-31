@@ -75,6 +75,7 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
+    'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
 )
@@ -84,6 +85,7 @@ TABLET_LEGACY_NAME = 'dragon'
 # List entries must be entered in lowercase
 TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
+    'nabu_tw': ANDROID13_API_LEVEL,
     'yunluo': ANDROID14_API_LEVEL
     })
 TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist'
@@ -144,10 +146,16 @@ def validate_tablet(tablet_name, brightness, device_id):
   """
   tablet_name = tablet_name.lower()
   if tablet_name not in TABLET_ALLOWLIST:
-    raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    raise AssertionError(
+        f'Tablet product name: {tablet_name}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+    )
   if tablet_name in TABLET_OS_VERSION:
-    if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
-      raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    if (device_sdk := get_build_sdk_version(
+        device_id)) < TABLET_OS_VERSION[tablet_name]:
+      raise AssertionError(
+          f' Tablet product name: {tablet_name}. '
+          f'Android version: {device_sdk}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+      )
   name_to_brightness = {
       TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
   }
@@ -178,6 +186,23 @@ def check_apk_installed(device_id, package_name):
     raise AssertionError(
         f'{package_name} not installed on device {device_id}!'
     )
+
+
+def get_array_size(buffer):
+  """Get array size based on different NumPy versions' functions.
+
+  Args:
+    buffer: A NumPy array.
+
+  Returns:
+    buffer_size: The size of the buffer.
+  """
+  np_version = numpy.__version__
+  if np_version.startswith(('1.25', '1.26', '2.')):
+    buffer_size = numpy.prod(buffer.shape)
+  else:
+    buffer_size = numpy.product(buffer.shape)
+  return buffer_size
 
 
 class ItsSession(object):
@@ -370,9 +395,9 @@ class ItsSession(object):
     time.sleep(1)
 
     its_device_utils.run(
-        f'{self.adb} shell am force-stop --user 0 {self.PACKAGE}')
+        f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
     its_device_utils.run(
-        f'{self.adb} shell am start-foreground-service --user 0 '
+        f'{self.adb} shell am start-foreground-service --user cur '
         f'-t text/plain -a {self.INTENT_START}'
     )
 
@@ -1133,7 +1158,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_all_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id, filter_recordable=False):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1142,13 +1167,16 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+      filter_recordable: filter preview sizes if supported for video recording
+                       using MediaRecorder
 
     Returns:
       List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
-        _CAMERA_ID_STR: camera_id
+        _CAMERA_ID_STR: camera_id,
+        'filter_recordable': filter_recordable,
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
@@ -1482,7 +1510,7 @@ class ItsSession(object):
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[self._camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -1513,7 +1541,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -1643,8 +1671,9 @@ class ItsSession(object):
     cmd['previewRequestIdle'] = [preview_request_idle]
     cmd['stillCaptureRequest'] = [still_capture_req]
     cmd['outputSurfaces'] = [out_surface]
-
-    logging.debug('Capturing image with ON_AUTO_FLASH.')
+    if 'android.control.aeMode' in still_capture_req:
+      logging.debug('Capturing image with aeMode: %d',
+                    still_capture_req['android.control.aeMode'])
     return self.do_simple_capture(cmd, out_surface)
 
   def do_capture_with_extensions(self,
@@ -2032,7 +2061,7 @@ class ItsSession(object):
         # and cannot be accessed.
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -2050,7 +2079,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2812,6 +2841,17 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
     else:
       raise AssertionError('Invalid lighting state string. '
                            "Valid strings: 'ON', 'OFF'.")
+
+
+def get_build_fingerprint(device_id):
+  """Return the build fingerprint of the device."""
+  cmd = f'adb -s {device_id} shell getprop ro.build.fingerprint'
+  try:
+    build_fingerprint = subprocess.check_output(cmd.split()).decode('utf-8').strip()
+    logging.debug('Build fingerprint: %s', build_fingerprint)
+  except (subprocess.CalledProcessError, ValueError) as exp_errors:
+    raise AssertionError('No build_fingerprint.') from exp_errors
+  return build_fingerprint
 
 
 def get_build_sdk_version(device_id):

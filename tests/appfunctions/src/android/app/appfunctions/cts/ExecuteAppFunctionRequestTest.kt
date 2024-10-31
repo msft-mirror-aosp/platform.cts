@@ -33,27 +33,24 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(
-    FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC,
-    FLAG_ENABLE_APP_FUNCTION_MANAGER
-)
+@RequiresFlagsEnabled(FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC, FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class ExecuteAppFunctionRequestTest {
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @ApiTest(
-        apis = [
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
-        ]
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
+            ]
     )
     @Test
     fun build() {
@@ -61,7 +58,8 @@ class ExecuteAppFunctionRequestTest {
         extras.putString("extra", "value")
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("testLong", 23).build()
+                .setPropertyLong("testLong", 23)
+                .build()
         val request: ExecuteAppFunctionRequest =
             ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
                 .setExtras(extras)
@@ -78,24 +76,24 @@ class ExecuteAppFunctionRequestTest {
     }
 
     @ApiTest(
-        apis = [
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
-            "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
-            "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
-        ]
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#Builder",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setParameter",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#setExtras",
+                "android.app.appfunctions.ExecuteAppFunctionRequest.Builder#build",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
+            ]
     )
     @Test
     fun emptyBuild() {
         val request: ExecuteAppFunctionRequest =
-            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
-                .build()
+            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId").build()
 
         val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
 
@@ -105,9 +103,7 @@ class ExecuteAppFunctionRequestTest {
         assertThat(restoredRequest.extras).isNotNull()
     }
 
-    private fun parcelAndUnparcel(
-        original: ExecuteAppFunctionRequest
-    ): ExecuteAppFunctionRequest {
+    private fun parcelAndUnparcel(original: ExecuteAppFunctionRequest): ExecuteAppFunctionRequest {
         val parcel = Parcel.obtain()
         try {
             original.writeToParcel(parcel, 0)

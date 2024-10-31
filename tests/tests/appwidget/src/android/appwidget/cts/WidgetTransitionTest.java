@@ -21,10 +21,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import android.app.PendingIntent;
 import android.app.SharedElementCallback;
@@ -200,6 +196,54 @@ public class WidgetTransitionTest extends AppWidgetTestCase {
         assertArrayEquals(new String[] {"green_square"}, elements);
     }
 
+    private RemoteViewsService.RemoteViewsFactory newRemoteViewsFactory() {
+        return new RemoteViewsService.RemoteViewsFactory() {
+            @Override
+            public int getCount() {
+                return 3;
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return position;
+            }
+
+            @Override
+            public RemoteViews getViewAt(int position) {
+                RemoteViews remoteViews =
+                        getViewsForResponse(
+                                RemoteViews.RemoteResponse.fromFillInIntent(
+                                        new Intent().putExtra("item_id", position)));
+                remoteViews.setTextViewText(R.id.hello, "Text " + position);
+                return remoteViews;
+            }
+
+            @Override
+            public int getViewTypeCount() {
+                return 1;
+            }
+
+            @Override
+            public boolean hasStableIds() {
+                return false;
+            }
+
+            @Override
+            public RemoteViews getLoadingView() {
+                return null;
+            }
+
+            @Override
+            public void onCreate() {}
+
+            @Override
+            public void onDataSetChanged() {}
+
+            @Override
+            public void onDestroy() {}
+        };
+    }
+
     @Test
     public void testCollection_sendBroadcast() throws Throwable {
         if (!mHasAppWidgets) {
@@ -207,18 +251,7 @@ public class WidgetTransitionTest extends AppWidgetTestCase {
         }
 
         // Configure the app widget service behavior
-        RemoteViewsService.RemoteViewsFactory factory =
-                mock(RemoteViewsService.RemoteViewsFactory.class);
-        when(factory.getCount()).thenReturn(3);
-        doAnswer(invocation -> {
-            final int position = (Integer) invocation.getArguments()[0];
-            RemoteViews remoteViews = getViewsForResponse(RemoteViews.RemoteResponse
-                    .fromFillInIntent(new Intent().putExtra("item_id", position)));
-            remoteViews.setTextViewText(R.id.hello, "Text " + position);
-            return remoteViews;
-        }).when(factory).getViewAt(any(int.class));
-        when(factory.getViewTypeCount()).thenReturn(1);
-        MyAppWidgetService.setFactory(factory);
+        MyAppWidgetService.setFactory(newRemoteViewsFactory());
 
         // Push update
         RemoteViews views = new RemoteViews(mActivity.getPackageName(),
