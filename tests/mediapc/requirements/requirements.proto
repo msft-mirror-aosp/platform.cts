@@ -145,8 +145,7 @@ message VariantSpec {
 }
 
 message TestConfig {
-  // The id is a field name safe string.
-  optional string id = 1 [deprecated = true];
+  reserved 1;  // id
   optional string description = 2;
   // The proto field number of the test config. Must be unique across all
   // requirements.

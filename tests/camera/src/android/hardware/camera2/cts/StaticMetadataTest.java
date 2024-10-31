@@ -595,7 +595,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      * Verifies that valid session characteristic keys can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristicsKeys() throws Exception {
         String[] cameraIds = getCameraIdsUnderTest();
         for (String cameraId : cameraIds) {

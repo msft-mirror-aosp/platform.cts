@@ -20,6 +20,8 @@ import static android.Manifest.permission.THREAD_NETWORK_PRIVILEGED;
 import static android.net.thread.ThreadNetworkException.ERROR_FAILED_PRECONDITION;
 import static android.os.UserManager.DISALLOW_THREAD_NETWORK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -35,10 +37,9 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -80,8 +81,8 @@ public final class ThreadNetworkTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_THREAD_NETWORK")
     public void setUserRestriction_disallowThreadNetwork_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_THREAD_NETWORK));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_THREAD_NETWORK));
     }
 
     @PolicyAppliesTest(policy = DisallowThreadNetwork.class)
@@ -89,14 +90,14 @@ public final class ThreadNetworkTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_THREAD_NETWORK")
     public void setUserRestriction_disallowThreadNetwork_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_THREAD_NETWORK);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_THREAD_NETWORK);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_THREAD_NETWORK))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_THREAD_NETWORK);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_THREAD_NETWORK);
         }
     }
 
@@ -105,15 +106,15 @@ public final class ThreadNetworkTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_THREAD_NETWORK")
     public void setUserRestriction_disallowThreadNetwork_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_THREAD_NETWORK);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_THREAD_NETWORK);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_THREAD_NETWORK))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_THREAD_NETWORK);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_THREAD_NETWORK);
         }
     }
 

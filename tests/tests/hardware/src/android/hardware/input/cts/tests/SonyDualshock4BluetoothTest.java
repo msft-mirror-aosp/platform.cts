@@ -16,22 +16,31 @@
 
 package android.hardware.input.cts.tests;
 
+import static com.android.input.flags.Flags.FLAG_INCLUDE_RELATIVE_AXIS_VALUES_FOR_CAPTURED_TOUCHPADS;
+
 import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
 
 import android.hardware.cts.R;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class SonyDualshock4BluetoothTest extends InputHidTestCase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Simulates the behavior of PlayStation DualShock4 gamepad (model CUH-ZCT1U)
     public SonyDualshock4BluetoothTest() {
@@ -64,6 +73,7 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_INCLUDE_RELATIVE_AXIS_VALUES_FOR_CAPTURED_TOUCHPADS)
     public void testAllTouch() throws Throwable {
         assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
                 KernelInfo.isKernelVersionGreaterThan("6.2"));

@@ -20,11 +20,9 @@ import android.graphics.Paint.FontMetrics
 import android.graphics.Paint.FontMetricsInt
 import android.graphics.text.TextRunShaper
 import android.os.LocaleList
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.roundToInt
 import org.junit.Rule
@@ -56,7 +54,6 @@ class PaintFontMetricsForLocaleTest {
         val JP_DESCENT = Math.max(latinExtent.descent, glyphs.descent)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun testExtentForLocale() {
         val paint = Paint(PAINT).apply {
@@ -68,7 +65,6 @@ class PaintFontMetricsForLocaleTest {
         assertThat(metrics.descent).isEqualTo(JP_DESCENT)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun testExtentIntForLocale() {
         val paint = Paint(PAINT).apply {
@@ -80,7 +76,6 @@ class PaintFontMetricsForLocaleTest {
         assertThat(metrics.descent).isEqualTo(JP_DESCENT.roundToInt())
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun testExtentForRoboto() {
         val paint = Paint(PAINT).apply {
@@ -97,7 +92,6 @@ class PaintFontMetricsForLocaleTest {
         assertThat(metrics.descent).isEqualTo(expectedMetrics.descent)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     fun testExtentIntForRoboto() {
         val paint = Paint(PAINT).apply {

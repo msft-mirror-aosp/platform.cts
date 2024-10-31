@@ -65,7 +65,6 @@ import android.os.Looper;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
@@ -79,7 +78,6 @@ import android.telephony.satellite.SatelliteManager;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -753,7 +751,6 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {"android.telephony"
             + ".CarrierConfigManager#KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY",
             "android.telephony.SubscriptionInfo#getServiceCapabilities"})

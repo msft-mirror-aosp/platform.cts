@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +20,50 @@ import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
 import android.os.PowerManager;
+import android.os.WorkSource;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Test;
 
 public class PowerManagerTests {
-    @Test
-    public void testGetCurrentThermalStatus() {
-        Context context = InstrumentationRegistry.getContext();
-        PowerManager powerManager = context.getSystemService(PowerManager.class);
-        assertNotNull(powerManager);
-        powerManager.getCurrentThermalStatus();
-    }
+    public static String TAG = "PowerManagerTests";
+    public static String WAKELOCK_TAG = "TestWakelockForCts";
 
     @Test
-    public void testGetThermalHeadroom() {
+    public void testAcquireModifyAndReleasedWakelock() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
         assertNotNull(powerManager);
-        powerManager.getThermalHeadroom(10);
-    }
+        PowerManager.WakeLock wakelock = powerManager
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKELOCK_TAG);
 
-    @Test
-    public void testGetThermalHeadroomThresholds() {
-        Context context = InstrumentationRegistry.getContext();
-        PowerManager powerManager = context.getSystemService(PowerManager.class);
-        assertNotNull(powerManager);
-        powerManager.getThermalHeadroomThresholds();
+        Log.i(TAG, "Acquiring the wakelock");
+        wakelock.acquire(10000);
+
+        WorkSource workSource = new WorkSource();
+        workSource.add(1010);
+        workSource.add(2010);
+        Log.i(TAG, "Changing the worksource of the acquired wakelock");
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> wakelock.setWorkSource(workSource));
+
+        WorkSource newWorksource = new WorkSource();
+        newWorksource.add(3010);
+
+        Log.i(TAG, "Changing the worksource again of the acquired wakelock");
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> wakelock.setWorkSource(newWorksource));
+
+        try {
+            Log.i(TAG, "Releasing the wakelock");
+            wakelock.release();
+        } catch (RuntimeException ex) {
+            Log.e(TAG, "Failed to release wakelock", ex);
+            throw ex;
+        }
     }
 }

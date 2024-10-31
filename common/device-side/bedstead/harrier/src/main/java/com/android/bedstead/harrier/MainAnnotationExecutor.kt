@@ -15,30 +15,16 @@
  */
 package com.android.bedstead.harrier
 
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
-import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
-import com.android.bedstead.harrier.annotations.EnsureHasAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
-import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
 import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.harrier.annotations.EnsurePolicyOperationUnsafe
 import com.android.bedstead.harrier.annotations.EnsurePropertySet
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme
 import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation
@@ -65,10 +51,6 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
-import com.android.bedstead.harrier.components.AccountsComponent
-import com.android.bedstead.harrier.components.BluetoothComponent
-import com.android.bedstead.harrier.components.ContentSuggestionsComponent
 import com.android.bedstead.harrier.components.DisplayThemeComponent
 import com.android.bedstead.harrier.components.GlobalSettingsComponent
 import com.android.bedstead.harrier.components.InstrumentationComponent
@@ -76,18 +58,17 @@ import com.android.bedstead.harrier.components.PolicyOperationUnsafeComponent
 import com.android.bedstead.harrier.components.PropertiesComponent
 import com.android.bedstead.harrier.components.ScreenOrientationComponent
 import com.android.bedstead.harrier.components.SecureSettingsComponent
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.harrier.components.UserPasswordComponent
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.harrier.components.WifiComponent
-import com.android.bedstead.multiuser.UserTypeResolver
 
+/**
+ * [AnnotationExecutor] for annotations that don't belong to specific modules
+ */
 @Suppress("unused")
 class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
-    private val testAppsComponent: TestAppsComponent by locator
     private val userPasswordComponent: UserPasswordComponent by locator
-    private val contentSuggestionsComponent: ContentSuggestionsComponent by locator
-    private val bluetoothComponent: BluetoothComponent by locator
     private val wifiComponent: WifiComponent by locator
     private val userTypeResolver: UserTypeResolver by locator
     private val globalSettingsComponent: GlobalSettingsComponent by locator
@@ -96,7 +77,6 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     private val displayThemeComponent: DisplayThemeComponent by locator
     private val screenOrientationComponent: ScreenOrientationComponent by locator
     private val policyOperationUnsafeComponent: PolicyOperationUnsafeComponent by locator
-    private val accountsComponent: AccountsComponent by locator
     private val instrumentationComponent: InstrumentationComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
@@ -122,12 +102,9 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is RequireQuickSettingsSupport -> logic()
             is RequireHasDefaultBrowser -> logic(userTypeResolver)
             is RequireTelephonySupport -> logic()
-            is EnsurePackageRespondsToIntent -> logic(testAppsComponent, userTypeResolver)
             is EnsureNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequireNoPackageRespondsToIntent -> logic(userTypeResolver)
             is RequirePackageRespondsToIntent -> logic(userTypeResolver)
-            is EnsureBluetoothEnabled -> bluetoothComponent.ensureBluetoothEnabled()
-            is EnsureBluetoothDisabled -> bluetoothComponent.ensureBluetoothDisabled()
             is EnsureWifiEnabled -> wifiComponent.ensureWifiEnabled()
             is EnsureWifiDisabled -> wifiComponent.ensureWifiDisabled()
             is EnsureGlobalSettingSet -> globalSettingsComponent.ensureGlobalSettingSet(key, value)
@@ -142,66 +119,9 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is EnsureUsingScreenOrientation ->
                 screenOrientationComponent.ensureUsingScreenOrientation(orientation)
 
-            is AdditionalQueryParameters -> testAppsComponent.addQueryParameters(this)
-            is EnsureTestAppInstalled -> testAppsComponent.ensureTestAppInstalled(
-                key,
-                query,
-                userTypeResolver.toUser(onUser),
-                isPrimary
-            )
-
-            is EnsureTestAppHasPermission -> testAppsComponent.ensureTestAppHasPermission(
-                testAppKey,
-                permissions = value,
-                minVersion,
-                maxVersion,
-                failureMode
-            )
-
-            is EnsureTestAppDoesNotHavePermission ->
-                testAppsComponent.ensureTestAppDoesNotHavePermission(
-                    testAppKey,
-                    value,
-                    failureMode
-                )
-
-            is EnsureTestAppHasAppOp -> testAppsComponent.ensureTestAppHasAppOp(
-                testAppKey,
-                value,
-                minVersion,
-                maxVersion
-            )
-
             is EnsurePasswordSet -> userPasswordComponent.ensurePasswordSet(forUser, password)
             is EnsurePasswordNotSet -> userPasswordComponent.ensurePasswordNotSet(forUser)
             is TestTag -> logic()
-            is EnsureDefaultContentSuggestionsServiceEnabled ->
-                contentSuggestionsComponent.ensureDefaultContentSuggestionsServiceEnabled(
-                    user = onUser,
-                    enabled = true
-                )
-
-            is EnsureDefaultContentSuggestionsServiceDisabled ->
-                contentSuggestionsComponent.ensureDefaultContentSuggestionsServiceEnabled(
-                    user = onUser,
-                    enabled = false
-                )
-
-            is EnsureHasTestContentSuggestionsService ->
-                contentSuggestionsComponent.ensureHasTestContentSuggestionsService(onUser)
-
-            //region TODO(b/334882463) move it into a new "bedstead-accounts" module
-            is EnsureHasAccount -> accountsComponent.ensureHasAccount(onUser, key, features)
-            is EnsureHasAccounts -> accountsComponent.ensureHasAccounts(value)
-            is EnsureHasNoAccounts -> accountsComponent.ensureHasNoAccounts(
-                onUser,
-                allowPreCreatedAccounts,
-                failureMode
-            )
-
-            is EnsureHasAccountAuthenticator ->
-                accountsComponent.ensureHasAccountAuthenticator(onUser)
-            //endregion
 
             is EnsureInstrumented -> instrumentationComponent.ensureInstrumented(this)
         }

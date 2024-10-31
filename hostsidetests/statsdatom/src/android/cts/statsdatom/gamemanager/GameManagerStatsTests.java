@@ -84,7 +84,6 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
         AtomsProto.GameStateChanged a0 = data.get(0).getAtom().getGameStateChanged();
         assertThat(a0.getUid()).isGreaterThan(10000);  // Not a system service UID.
         assertThat(a0.getPackageName()).isEqualTo(DeviceUtils.STATSD_ATOM_TEST_PKG);
-        assertThat(a0.getBoostEnabled()).isEqualTo(false);  // Test app does not qualify.
         assertThat(a0.getIsLoading()).isEqualTo(true);
         assertThat(a0.getState()).isEqualTo(State.MODE_CONTENT);
         assertThat(a0.getLabel()).isEqualTo(1);

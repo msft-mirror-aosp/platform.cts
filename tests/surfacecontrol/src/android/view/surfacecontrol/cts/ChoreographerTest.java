@@ -303,23 +303,37 @@ public class ChoreographerTest {
     }
 
     private class BasicVsyncCallback implements Choreographer.VsyncCallback {
+        final long mPostTimeNanos = System.nanoTime();
         long mFrameTimeNanos;
         CountDownLatch mCallbackComplete;
 
+        // Save status of assertions passing and error messages to pass to test thread to assert.
+        boolean mAssertionPassed = true;
+        String mErrorMessages = "";
+
         BasicVsyncCallback() {
-            resetCountDown();
+            reset();
         }
 
-        void resetCountDown() {
+        void reset() {
             mCallbackComplete = new CountDownLatch(1);
+            mAssertionPassed = true;
+            mErrorMessages = "";
+        }
+
+        boolean conditionPasses(String error, boolean conditionPassed) {
+            if (!conditionPassed) {
+                mAssertionPassed = false;
+                mErrorMessages = (mErrorMessages.isEmpty() ? "" : "\n") + mErrorMessages + error;
+                return mAssertionPassed;
+            }
+            return true;
         }
 
         @Override
         public void onVsync(Choreographer.FrameData frameData) {
             mFrameTimeNanos = frameData.getFrameTimeNanos();
-            if (mCallbackComplete.getCount() == 0) {
-                fail("Callback invoked more than once!");
-            }
+            conditionPasses("Callback invoked more than once!", mCallbackComplete.getCount() == 1);
             mCallbackComplete.countDown();
         }
     }
@@ -340,19 +354,23 @@ public class ChoreographerTest {
 
         // We expect the remaining callbacks to have been invoked once.
         awaitCountDown(addedCallback1.mCallbackComplete);
+        assertTrue(addedCallback1.mErrorMessages, addedCallback1.mAssertionPassed);
         awaitCountDown(addedCallback2.mCallbackComplete);
+        assertTrue(addedCallback2.mErrorMessages, addedCallback2.mAssertionPassed);
         verifyZeroInteractions(removedCallback);
+
         assertTimeDeltaLessThan(addedCallback1.mFrameTimeNanos - postTimeNanos,
                 NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
         assertTimeDeltaLessThan(addedCallback2.mFrameTimeNanos - postTimeNanos,
                 NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
 
         // If we post a callback again, then it should be invoked again.
-        addedCallback1.resetCountDown();
+        addedCallback1.reset();
         postTimeNanos = System.nanoTime();
         mChoreographer.postVsyncCallback(addedCallback1);
 
         awaitCountDown(addedCallback1.mCallbackComplete);
+        assertTrue(addedCallback1.mErrorMessages, addedCallback1.mAssertionPassed);
         verifyZeroInteractions(removedCallback);
         assertTimeDeltaLessThan(addedCallback1.mFrameTimeNanos - postTimeNanos,
                 NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
@@ -361,122 +379,168 @@ public class ChoreographerTest {
 
     @Test
     public void testPostVsyncCallbackFrameDataPreferredFrameTimelineValid() {
-        CountDownLatch callbackComplete = new CountDownLatch(1);
-        long postTimeNanos = System.nanoTime();
-        mChoreographer.postVsyncCallback(frameData -> {
-            assertTrue("Number of frame timelines should be greater than 0",
-                    frameData.getFrameTimelines().length > 0);
-            Set<Choreographer.FrameTimeline> frameTimelines = Set.of(frameData.getFrameTimelines());
-            assertTrue("Preferred frame timeline is not included in frame timelines",
-                    frameTimelines.contains(frameData.getPreferredFrameTimeline()));
-            callbackComplete.countDown();
-        });
+        BasicVsyncCallback callback = new BasicVsyncCallback() {
+            @Override
+            public void onVsync(Choreographer.FrameData frameData) {
+                if (!conditionPasses("Number of frame timelines should be greater than 0",
+                            frameData.getFrameTimelines().length > 0)) {
+                    mCallbackComplete.countDown();
+                    return;
+                }
 
-        awaitCountDown(callbackComplete);
+                Set<Choreographer.FrameTimeline> frameTimelines =
+                        Set.of(frameData.getFrameTimelines());
+                conditionPasses("Preferred frame timeline is not included in frame timelines",
+                        frameTimelines.contains(frameData.getPreferredFrameTimeline()));
+                mCallbackComplete.countDown();
+            }
+        };
+        mChoreographer.postVsyncCallback(callback);
+        awaitCountDown(callback.mCallbackComplete);
+        assertTrue(callback.mErrorMessages, callback.mAssertionPassed);
     }
 
     @Test
     public void testPostVsyncCallbackFrameDataVsyncIdValid() {
-        CountDownLatch callbackComplete = new CountDownLatch(1);
-        long postTimeNanos = System.nanoTime();
-        mChoreographer.postVsyncCallback(frameData -> {
-            assertTrue("Number of frame timelines should be greater than 0",
-                    frameData.getFrameTimelines().length > 0);
-            HashSet<Long> pastVsyncIds = new HashSet();
-            for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
-                long vsyncId = frameTimeline.getVsyncId();
-                assertTrue("Invalid vsync ID " + vsyncId + " on index " + pastVsyncIds.size(),
-                        vsyncId > 0);
-                assertTrue("Vsync ID should be unique", !pastVsyncIds.contains(vsyncId));
-                pastVsyncIds.add(vsyncId);
+        BasicVsyncCallback callback = new BasicVsyncCallback() {
+            @Override
+            public void onVsync(Choreographer.FrameData frameData) {
+                if (!conditionPasses("Number of frame timelines should be greater than 0",
+                            frameData.getFrameTimelines().length > 0)) {
+                    mCallbackComplete.countDown();
+                    return;
+                }
+                HashSet<Long> pastVsyncIds = new HashSet();
+                for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
+                    long vsyncId = frameTimeline.getVsyncId();
+                    if (!conditionPasses(
+                                "Invalid vsync ID " + vsyncId + " on index " + pastVsyncIds.size(),
+                                vsyncId > 0)
+                            || !conditionPasses(
+                                    "Vsync ID should be unique", !pastVsyncIds.contains(vsyncId))) {
+                        break;
+                    }
+                    pastVsyncIds.add(vsyncId);
+                }
+                mCallbackComplete.countDown();
             }
-            callbackComplete.countDown();
-        });
-
-        awaitCountDown(callbackComplete);
-    }
-
-    private static class DeadlineInFutureVsyncCallback implements Choreographer.VsyncCallback {
-        CountDownLatch mCallbackComplete = new CountDownLatch(1);
-        boolean mDeadlineAssertPassed = true;
-        final long mPostTimeNanos = System.nanoTime();
-
-        @Override
-        public void onVsync(Choreographer.FrameData frameData) {
-            assertTrue("Number of frame timelines " + frameData.getFrameTimelines().length
-                            + " should be greater than 0",
-                    frameData.getFrameTimelines().length > 0);
-            long previousDeadline = 0;
-            for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
-                long deadline = frameTimeline.getDeadlineNanos();
-                assertTrue("Deadline " + deadline + " must be after start time " + mPostTimeNanos,
-                        deadline > mPostTimeNanos);
-                mDeadlineAssertPassed = mDeadlineAssertPassed
-                        && deadline > frameData.getFrameTimeNanos();
-                assertTrue("Deadline " + deadline + " must be after the previous frame deadline "
-                                + previousDeadline,
-                        deadline > previousDeadline);
-                previousDeadline = deadline;
-            }
-            mCallbackComplete.countDown();
-        }
+        };
+        mChoreographer.postVsyncCallback(callback);
+        awaitCountDown(callback.mCallbackComplete);
+        assertTrue(callback.mErrorMessages, callback.mAssertionPassed);
     }
 
     @Test
     public void testPostVsyncCallbackFrameDataDeadlineInFuture() {
         // Run multiple attempts in case the system calls the choreographer callback too late, which
         // may cause the frame time to be later than the frame deadline.
+        StringBuilder error = new StringBuilder("");
         for (int i = 0; i < 5; i++) {
-            DeadlineInFutureVsyncCallback callback = new DeadlineInFutureVsyncCallback();
+            BasicVsyncCallback callback = new BasicVsyncCallback() {
+                @Override
+                public void onVsync(Choreographer.FrameData frameData) {
+                    if (!conditionPasses("Number of frame timelines "
+                                        + frameData.getFrameTimelines().length
+                                        + " should be greater than 0",
+                                frameData.getFrameTimelines().length > 0)) {
+                        mCallbackComplete.countDown();
+                        return;
+                    }
+
+                    long previousDeadline = 0;
+                    for (Choreographer.FrameTimeline frameTimeline :
+                            frameData.getFrameTimelines()) {
+                        long deadline = frameTimeline.getDeadlineNanos();
+                        if (!conditionPasses("Deadline " + deadline + " must be after start time "
+                                            + mPostTimeNanos,
+                                    deadline > mPostTimeNanos)) {
+                            break;
+                        }
+                        mAssertionPassed =
+                                mAssertionPassed && deadline > frameData.getFrameTimeNanos();
+                        if (!conditionPasses("Deadline " + deadline
+                                            + " must be after the previous frame deadline "
+                                            + previousDeadline,
+                                    deadline > previousDeadline)) {
+                            break;
+                        }
+                        previousDeadline = deadline;
+                    }
+                    mCallbackComplete.countDown();
+                }
+            };
             mChoreographer.postVsyncCallback(callback);
             awaitCountDown(callback.mCallbackComplete);
-            if (callback.mDeadlineAssertPassed) {
+            if (callback.mAssertionPassed) {
                 return; // Pass
+            } else {
+                error.append("Attempt " + i + ": "
+                        + (callback.mErrorMessages.isEmpty() ? "Deadline must be after frame time"
+                                                             : callback.mErrorMessages)
+                        + ".\n");
             }
         }
-        fail("Deadline must be after frame time");
+        fail(error.toString());
     }
 
     @Test
     public void testPostVsyncCallbackFrameDataExpectedPresentationTimeInFuture() {
-        CountDownLatch callbackComplete = new CountDownLatch(1);
-        long postTimeNanos = System.nanoTime();
-        mChoreographer.postVsyncCallback(frameData -> {
-            assertTrue("Number of frame timelines should be greater than 0",
-                    frameData.getFrameTimelines().length > 0);
-            long lastValue = frameData.getFrameTimeNanos();
-            for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
-                long expectedPresentationTime = frameTimeline.getExpectedPresentationTimeNanos();
-                assertTrue("Expected presentation time must be after start time",
-                        expectedPresentationTime > postTimeNanos);
-                assertTrue("Expected presentation time must be after frame time",
-                        expectedPresentationTime > frameData.getFrameTimeNanos());
-                assertTrue("Expected presentation time must be after the previous frame expected "
-                                + "presentation time",
-                        expectedPresentationTime > lastValue);
-                lastValue = expectedPresentationTime;
+        BasicVsyncCallback callback = new BasicVsyncCallback() {
+            @Override
+            public void onVsync(Choreographer.FrameData frameData) {
+                if (!conditionPasses("Number of frame timelines should be greater than 0",
+                            frameData.getFrameTimelines().length > 0)) {
+                    mCallbackComplete.countDown();
+                    return;
+                }
+                long lastValue = frameData.getFrameTimeNanos();
+                for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
+                    long expectedPresentationTime =
+                            frameTimeline.getExpectedPresentationTimeNanos();
+                    if (!conditionPasses("Expected presentation time must be after start time",
+                                expectedPresentationTime > mPostTimeNanos)
+                            || !conditionPasses(
+                                    "Expected presentation time must be after frame time",
+                                    expectedPresentationTime > frameData.getFrameTimeNanos())
+                            || !conditionPasses("Expected presentation time must be after the "
+                                                + "previous frame expected "
+                                            + "presentation time",
+                                    expectedPresentationTime > lastValue)) {
+                        break;
+                    }
+                    lastValue = expectedPresentationTime;
+                }
+                mCallbackComplete.countDown();
             }
-            callbackComplete.countDown();
-        });
+        };
 
-        awaitCountDown(callbackComplete);
+        mChoreographer.postVsyncCallback(callback);
+        awaitCountDown(callback.mCallbackComplete);
+        assertTrue(callback.mErrorMessages, callback.mAssertionPassed);
     }
 
     @Test
     public void testPostVsyncCallbackFrameDelayed() {
-        CountDownLatch callbackComplete = new CountDownLatch(1);
-        long postTimeNanos = System.nanoTime();
-        long sleepTimeMs = NOMINAL_VSYNC_PERIOD * 3;
-        final Choreographer.VsyncCallback addedCallback = frameData -> {
-            long frameInterval = NOMINAL_VSYNC_PERIOD * NANOS_PER_MS;
-            assertTrue("Frame time should be later",
-                    frameData.getFrameTimeNanos()
-                            > postTimeNanos + sleepTimeMs * NANOS_PER_MS - frameInterval);
-            assertTrue("Deadline should be after frame time",
-                    frameData.getPreferredFrameTimeline().getDeadlineNanos()
-                            > frameData.getFrameTimeNanos());
-            callbackComplete.countDown();
+        final long sleepTimeMs = NOMINAL_VSYNC_PERIOD * 3;
+
+        final BasicVsyncCallback addedCallback = new BasicVsyncCallback() {
+            static final long FRAME_INTERVAL = NOMINAL_VSYNC_PERIOD * NANOS_PER_MS;
+
+            @Override
+            public void onVsync(Choreographer.FrameData frameData) {
+                if (!conditionPasses("Frame time should be later",
+                            frameData.getFrameTimeNanos() > mPostTimeNanos
+                                            + sleepTimeMs * NANOS_PER_MS - FRAME_INTERVAL)
+                        || !conditionPasses("Deadline should be after frame time",
+                                frameData.getPreferredFrameTimeline().getDeadlineNanos()
+                                        > frameData.getFrameTimeNanos())) {
+                    // Intentionally empty, if-statement is only to short circuit on first failing
+                    // statement, if any.
+                }
+                mCallbackComplete.countDown();
+            }
         };
+
         mChoreographer.postVsyncCallback(addedCallback);
 
         // The callback is posted and pending. Wait using the handler which is using the same UI
@@ -492,7 +556,7 @@ public class ChoreographerTest {
             }
         });
 
-        awaitCountDown(callbackComplete);
+        awaitCountDown(addedCallback.mCallbackComplete);
     }
 
     /** For testing an exception is thrown if accessing data outside of onVsync(). */

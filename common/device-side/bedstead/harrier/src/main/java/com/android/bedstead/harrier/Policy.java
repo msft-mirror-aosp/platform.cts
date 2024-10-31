@@ -68,6 +68,7 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermissi
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
@@ -270,9 +271,16 @@ public final class Policy {
 
     @AutoAnnotation
     private static EnsureTestAppInstalled ensureTestAppInstalled(
-            String key, Query query, UserType onUser, boolean isPrimary) {
+            String key, Query query, UserType onUser) {
         return new AutoAnnotation_Policy_ensureTestAppInstalled(
-                key, query, onUser, isPrimary);
+                key, query, onUser);
+    }
+
+    @AutoAnnotation
+    private static EnsureTestAppInstalledAsPrimaryDPC ensureTestAppInstalledAsPrimaryDPC(
+            String key, Query query, UserType onUser) {
+        return new AutoAnnotation_Policy_ensureTestAppInstalledAsPrimaryDPC(
+                key, query, onUser);
     }
 
     @AutoAnnotation
@@ -299,12 +307,12 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnSystemDeviceOwnerUser includeRunOnSystemDeviceOwnerUser() {
+    public static IncludeRunOnSystemDeviceOwnerUser includeRunOnSystemDeviceOwnerUser() {
         return new AutoAnnotation_Policy_includeRunOnSystemDeviceOwnerUser();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnSingleDeviceOwnerUser includeRunOnSingleDeviceOwnerUser() {
+    public static IncludeRunOnSingleDeviceOwnerUser includeRunOnSingleDeviceOwnerUser() {
         return new AutoAnnotation_Policy_includeRunOnSingleDeviceOwnerUser();
     }
 
@@ -314,22 +322,22 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnAffiliatedDeviceOwnerSecondaryUser includeRunOnAffiliatedDeviceOwnerSecondaryUser() {
+    public static IncludeRunOnAffiliatedDeviceOwnerSecondaryUser includeRunOnAffiliatedDeviceOwnerSecondaryUser() {
         return new AutoAnnotation_Policy_includeRunOnAffiliatedDeviceOwnerSecondaryUser();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnAffiliatedProfileOwnerAdditionalUser includeRunOnAffiliatedProfileOwnerAdditionalUser() {
+    public static IncludeRunOnAffiliatedProfileOwnerAdditionalUser includeRunOnAffiliatedProfileOwnerAdditionalUser() {
         return new AutoAnnotation_Policy_includeRunOnAffiliatedProfileOwnerAdditionalUser();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser includeRunOnUnaffiliatedProfileOwnerAdditionalUser() {
+    public static IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser includeRunOnUnaffiliatedProfileOwnerAdditionalUser() {
         return new AutoAnnotation_Policy_includeRunOnUnaffiliatedProfileOwnerAdditionalUser();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnProfileOwnerProfileWithNoDeviceOwner includeRunOnProfileOwnerProfileWithNoDeviceOwner() {
+    public static IncludeRunOnProfileOwnerProfileWithNoDeviceOwner includeRunOnProfileOwnerProfileWithNoDeviceOwner() {
         return new AutoAnnotation_Policy_includeRunOnProfileOwnerProfileWithNoDeviceOwner();
     }
 
@@ -354,12 +362,12 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnParentOfOrganizationOwnedProfileOwner includeRunOnParentOfOrganizationOwnedProfileOwner() {
+    public static IncludeRunOnParentOfOrganizationOwnedProfileOwner includeRunOnParentOfOrganizationOwnedProfileOwner() {
         return new AutoAnnotation_Policy_includeRunOnParentOfOrganizationOwnedProfileOwner();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnProfileOwnerPrimaryUser includeRunOnProfileOwnerPrimaryUser() {
+    public static IncludeRunOnProfileOwnerPrimaryUser includeRunOnProfileOwnerPrimaryUser() {
         return new AutoAnnotation_Policy_includeRunOnProfileOwnerPrimaryUser();
     }
 
@@ -386,12 +394,12 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
+    public static IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
         return new AutoAnnotation_Policy_includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance();
     }
 
     @AutoAnnotation
-    private static IncludeRunOnFinancedDeviceOwnerUser includeRunOnFinancedDeviceOwnerUser() {
+    public static IncludeRunOnFinancedDeviceOwnerUser includeRunOnFinancedDeviceOwnerUser() {
         return new AutoAnnotation_Policy_includeRunOnFinancedDeviceOwnerUser();
     }
 
@@ -411,7 +419,7 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile includeRunOnCloneProfileAlongsideOrganizationOwnedProfile() {
+    public static IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile includeRunOnCloneProfileAlongsideOrganizationOwnedProfile() {
         return new AutoAnnotation_Policy_includeRunOnCloneProfileAlongsideOrganizationOwnedProfile();
     }
 
@@ -431,7 +439,7 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile() {
+    public static IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile() {
         return new AutoAnnotation_Policy_includeRunOnPrivateProfileAlongsideOrganizationOwnedProfile();
     }
 
@@ -621,10 +629,10 @@ public final class Policy {
         for (AppOp appOp : enterprisePolicy.appOps()) {
             // TODO(b/219750042): Currently we only test that app ops apply to the current user
             Annotation[] withAppOpAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY, queryBuilder()
+                    ensureTestAppInstalledAsPrimaryDPC(DELEGATE_KEY, queryBuilder()
                                     .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
                                     .toAnnotation(),
-                            INSTRUMENTED_USER, /* isPrimary= */ true),
+                            INSTRUMENTED_USER),
                     ensureTestAppHasAppOp(DELEGATE_KEY, new String[]{appOp.appliedWith()})
             };
             annotations.add(
@@ -636,14 +644,13 @@ public final class Policy {
             // TODO(b/219750042): Currently we only test that permissions apply to the current user
             Annotation[] withPermissionAnnotations =
                     new Annotation[] {
-                        ensureTestAppInstalled(
+                        ensureTestAppInstalledAsPrimaryDPC(
                                 DELEGATE_KEY,
                                 queryBuilder()
                                         .wherePackageName()
                                         .isEqualTo(DELEGATE_PACKAGE_NAME)
                                         .toAnnotation(),
-                                INSTRUMENTED_USER,
-                                /* isPrimary= */ true),
+                                INSTRUMENTED_USER),
                         ensureTestAppHasPermission(
                                 DELEGATE_KEY,
                                 new String[] {permission.appliedWith()},
@@ -845,11 +852,10 @@ public final class Policy {
         for (AppOp appOp : enterprisePolicy.appOps()) {
             // TODO(b/219750042): Currently we only test that app ops can be set as the primary user
             Annotation[] withAppOpAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY,
+                    ensureTestAppInstalledAsPrimaryDPC(DELEGATE_KEY,
                             queryBuilder()
                                     .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(), INSTRUMENTED_USER,
-                            /* isPrimary= */ true),
+                                    .toAnnotation(), INSTRUMENTED_USER),
                     ensureTestAppHasAppOp(DELEGATE_KEY, new String[]{appOp.appliedWith()})
             };
             annotations.add(
@@ -862,14 +868,13 @@ public final class Policy {
             // user
             Annotation[] withPermissionAnnotations =
                     new Annotation[] {
-                        ensureTestAppInstalled(
+                        ensureTestAppInstalledAsPrimaryDPC(
                                 DELEGATE_KEY,
                                 queryBuilder()
                                         .wherePackageName()
                                         .isEqualTo(DELEGATE_PACKAGE_NAME)
                                         .toAnnotation(),
-                                INSTRUMENTED_USER,
-                                /* isPrimary= */ true),
+                                INSTRUMENTED_USER),
                         ensureTestAppHasPermission(
                                 DELEGATE_KEY,
                                 new String[] {permission.appliedWith()},

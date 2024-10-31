@@ -28,6 +28,8 @@ java_library {
         javacflags: [
             "-Xep:IdentityBinaryExpression:WARN",
             "-Xep:BadShiftAmount:WARN",
+            "-Xep:UnusedMethod:WARN",
+            "-Xep:UnusedVariable:WARN",
         ],
     },
 }
@@ -142,11 +144,13 @@ java_genrule_host {
         "src/**/*",
         ":cts-tf-dalvik-buildutil",
         ":vmtests-generated-resources",
-        ":vmtests-mains",
         ":cts-vmtests-dot",
         ":junit",
         ":d8",
         ":android-smali",
+    ],
+    device_common_srcs: [
+        ":vmtests-mains",
     ],
     cmd: "echo Generating BuildDalvikSuite tests" +
         " && mkdir -p $(genDir)/classes" +

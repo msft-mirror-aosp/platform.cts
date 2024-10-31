@@ -27,7 +27,7 @@ import android.util.Log;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.ClassRule;

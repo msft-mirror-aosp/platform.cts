@@ -24,9 +24,10 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Assert.fail
 
 class EventVerifier(val getInputEvent: () -> InputEvent?) {
-    fun assertReceivedMotion(matcher: Matcher<MotionEvent>) {
+    @JvmOverloads
+    fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null) {
         val event = getMotionEvent()
-        assertThat("Additional MotionEvent checks", event, matcher)
+        assertThat(msg ?: "Additional MotionEvent checks", event, matcher)
     }
 
     private fun getMotionEvent(): MotionEvent {

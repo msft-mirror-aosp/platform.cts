@@ -34,6 +34,7 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -149,7 +150,7 @@ public class MediaSession2ServiceTest {
     @Test
     public void testOnGetSession_returnsSession() throws InterruptedException {
         final List<ControllerInfo> controllerInfoList = new ArrayList<>();
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(2);
 
         try (MediaSession2 testSession = new MediaSession2.Builder(mContext)
                 .setId("testOnGetSession_returnsSession")
@@ -180,7 +181,16 @@ public class MediaSession2ServiceTest {
             MediaController2 controller = new MediaController2.Builder(mContext, mToken)
                     .setConnectionHints(testHints)
                     .setControllerCallback(sHandlerExecutor,
-                            new MediaController2.ControllerCallback() {})
+                            new MediaController2.ControllerCallback() {
+                                @Override
+                                public void onConnected(@NonNull MediaController2 controller,
+                                        @NonNull Session2CommandGroup commandGroup) {
+                                    // Wait until connection is confirmed on the controller side
+                                    // else there is a race whether the connected token is available
+                                    // in the controller for assertion further down.
+                                    latch.countDown();
+                                }
+                            })
                     .build();
             mControllers.add(controller);
 

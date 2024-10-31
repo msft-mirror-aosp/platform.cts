@@ -50,6 +50,8 @@ public class MultiDisplayLockedKeyguardTests extends MultiDisplayTestBase {
 
         assumeTrue(supportsMultiDisplay());
         assumeTrue(supportsSecureLock());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     /**

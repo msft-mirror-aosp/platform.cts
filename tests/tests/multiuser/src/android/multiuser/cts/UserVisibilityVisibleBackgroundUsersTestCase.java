@@ -20,6 +20,8 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.multiuser.cts.TestingUtils.sContext;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
@@ -29,13 +31,14 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -52,7 +55,7 @@ import java.util.Collection;
  * as cars with passenger displays), whether or not such users can be started on default display.
  *
  * <p>NOTE: subclasses still need to explicitly add the
- * {@link com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers}
+ * {@link RequireVisibleBackgroundUsers}
  * annotation, as {@code DeviceState} doesn't scan annotations from superclasses (TODO(b/266571920):
  * remove this comment and annotations from subclasses if that's changed).
  */
@@ -239,7 +242,7 @@ abstract class UserVisibilityVisibleBackgroundUsersTestCase extends UserVisibili
         }
 
         // Stop the profile as it was initially running in the same display as parent
-        UserReference profile = sDeviceState.workProfile();
+        UserReference profile = workProfile(sDeviceState);
         Log.d(TAG, "Stopping profile " + profile + " (called from " + sContext.getUser() + ")");
         profile.stop();
 

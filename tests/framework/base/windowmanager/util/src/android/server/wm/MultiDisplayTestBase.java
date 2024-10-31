@@ -549,6 +549,11 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
                         waitForOrFail("display config show-IME to be set",
                                 () -> (mWm.getDisplayImePolicy(display.mId) == imePolicy));
                     }
+                    if (isVisibleBackgroundUserSupported()) {
+                        // Ensure that the user who is running the test is assigned to the 
+                        // overlay display during its configuration when it is created.
+                        assignUserToExtraDisplay(mUserId, display.mId);
+                    }
                 }
             });
         }
@@ -560,6 +565,9 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
                 // Only need to wait the last flag to be set.
                 waitForOrFail("display config show-IME to be restored",
                         () -> (mWm.getDisplayImePolicy(state.mId) == state.mImePolicy));
+                if (isVisibleBackgroundUserSupported()) {
+                    unassignUserToExtraDisplay(mUserId, state.mId);
+                }
             }));
         }
 

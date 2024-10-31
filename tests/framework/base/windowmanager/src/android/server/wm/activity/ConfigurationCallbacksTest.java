@@ -77,7 +77,7 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
 
-        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(Display.DEFAULT_DISPLAY);
+        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(getMainDisplayId());
 
         mDisplayListenerTracker = new WindowConfigTracker("DisplayListener");
         mActivityOnConfigurationChangedTracker = new WindowConfigTracker(
@@ -129,6 +129,8 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
         // Devices that always launch activities in multi-window may not be able to update
         // Task bounds in the same transaction with display bounds (maxBounds) changed.
         assumeFalse(mActivity.isInMultiWindowMode());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Display rotation not supported for visible background user");
 
         final RotationSession rotationSession = createManagedRotationSession();
         int rotation = rotationSession.get();
