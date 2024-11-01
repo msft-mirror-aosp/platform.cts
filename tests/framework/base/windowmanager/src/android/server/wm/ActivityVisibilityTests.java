@@ -299,10 +299,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FREEFORM);
         mWmState.waitForValidState(
                 new WaitForValidActivityState.Builder(TURN_SCREEN_ON_ACTIVITY)
-                        .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                         .build());
-        assertTrue(mWmState.containsActivityInWindowingMode(
-                TURN_SCREEN_ON_ACTIVITY, WINDOWING_MODE_FULLSCREEN));
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
         assertTrue("Display should be turned on by flags.", isDisplayOn(DEFAULT_DISPLAY));
         activity.finish();
@@ -716,7 +713,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testChangeToFullscreenWhenLockWithAttrInFreeform() {
+    public void testTurnScreenOnWhenLockWithAttrInFreeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
 
@@ -727,10 +724,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchActivityNoWait(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, WINDOWING_MODE_FREEFORM);
         mWmState.waitForValidState(
                 new WaitForValidActivityState.Builder(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY)
-                        .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                         .build());
-        assertTrue(mWmState.containsActivityInWindowingMode(
-                TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, WINDOWING_MODE_FULLSCREEN));
         mWmState.assertVisibility(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
     }
