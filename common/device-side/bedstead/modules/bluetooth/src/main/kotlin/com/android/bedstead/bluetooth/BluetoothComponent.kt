@@ -15,13 +15,12 @@
  */
 package com.android.bedstead.bluetooth
 
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothDisabled
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothEnabled
+import com.android.bedstead.enterprise.UserRestrictionsComponent
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.harrier.UserType
-import com.android.bedstead.bluetooth.annotations.EnsureBluetoothDisabled
-import com.android.bedstead.bluetooth.annotations.EnsureBluetoothEnabled
-import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.nene.TestApis.bluetooth
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
@@ -47,8 +46,7 @@ class BluetoothComponent(locator: BedsteadServiceLocator) : DeviceStateComponent
             users().instrumented().isForeground()
         )
         userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
-            CommonUserRestrictions.DISALLOW_BLUETOOTH,
-            UserType.ANY
+            CommonUserRestrictions.DISALLOW_BLUETOOTH
         )
         if (originalBluetoothEnabled == null) {
             originalBluetoothEnabled = bluetooth().isEnabled
