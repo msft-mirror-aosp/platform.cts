@@ -26,6 +26,7 @@ import static android.permission.cts.PermissionUtils.revokePermission;
 import static android.permission.cts.PermissionUtils.uninstallApp;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -38,12 +39,14 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -81,22 +84,41 @@ public class NearbyDevicesPermissionTest {
         UNKNOWN, EXCEPTION, EMPTY, FILTERED, FULL
     }
 
-    private Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
-    private BluetoothAdapter mBluetoothAdapter;
-    private boolean mBluetoothAdapterWasEnabled;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final LocationManager mLocationManager =
+            mContext.getSystemService(LocationManager.class);
+    private final BluetoothManager mBluetoothManager =
+            mContext.getSystemService(BluetoothManager.class);
+    private final BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
+    private boolean mBluetoothAdapterWasEnabled = true;
+    private boolean mLocationWasEnabled = true;
 
-    @Before
-    public void enableBluetooth() {
-        assumeTrue(supportsBluetooth());
-        mBluetoothAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
-        mBluetoothAdapterWasEnabled = mBluetoothAdapter.isEnabled();
-        assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
-        enableTestMode();
+    private boolean enableLocation() throws Exception {
+        boolean locationWasEnabled = mLocationManager.isLocationEnabled();
+        if (!locationWasEnabled) {
+            runWithShellPermissionIdentity(() -> {
+                mLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
+            });
+        }
+        return locationWasEnabled;
     }
 
-    @After
-    public void disableBluetooth() {
-        assumeTrue(supportsBluetooth());
+    private void disableLocation() throws Exception {
+        runWithShellPermissionIdentity(() -> {
+            mLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+        });
+    }
+
+    private boolean enableBluetooth() {
+        boolean bluetoothAdapterWasEnabled = mBluetoothAdapter.isEnabled();
+        if (!bluetoothAdapterWasEnabled) {
+            assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
+        }
+        enableTestMode();
+        return bluetoothAdapterWasEnabled;
+    }
+
+    private void disableBluetooth() {
         disableTestMode();
         if (!mBluetoothAdapterWasEnabled) {
             assertTrue(BTAdapterUtils.disableAdapter(mBluetoothAdapter, mContext));
@@ -104,10 +126,25 @@ public class NearbyDevicesPermissionTest {
     }
 
     @Before
+    public void setUp() throws Exception {
+        assumeTrue(supportsBluetooth());
+        uninstallApp(DISAVOWAL_APP_PKG);
+        uninstallApp(TEST_APP_PKG);
+        mLocationWasEnabled = enableLocation();
+        mBluetoothAdapterWasEnabled = enableBluetooth();
+    }
+
     @After
-    public void uninstallTestApp() {
+    public void tearDown() throws Exception {
+        assumeTrue(supportsBluetooth());
         uninstallApp(TEST_APP_PKG);
         uninstallApp(DISAVOWAL_APP_PKG);
+        if (!mBluetoothAdapterWasEnabled) {
+            disableBluetooth();
+        }
+        if (!mLocationWasEnabled) {
+            disableLocation();
+        }
     }
 
     @Test
@@ -278,8 +315,8 @@ public class NearbyDevicesPermissionTest {
 
     private void assertScanBluetoothResult(String arg, Result expected) {
         SystemClock.sleep(1000); // Wait for location permissions to propagate
-        final ContentResolver resolver = InstrumentationRegistry.getTargetContext()
-                .getContentResolver();
+        final ContentResolver resolver = InstrumentationRegistry.getInstrumentation()
+                .getTargetContext().getContentResolver();
         final Bundle res = resolver.call(TEST_APP_AUTHORITY, "", arg, null);
         Result actual = Result.values()[res.getInt(Intent.EXTRA_INDEX)];
         assertEquals(expected, actual);
