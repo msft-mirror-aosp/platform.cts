@@ -64,6 +64,7 @@ TABLET_BRIGHTNESS = {
     'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
     'nabu': ('8', '14'),  # Xiaomi Pad 5
     'nabu_tw': ('8', '14'),  # Xiaomi Pad 5
+    'xun': ('6', '12'),  # Xiaomi Redmi Pad SE
 }
 
 
