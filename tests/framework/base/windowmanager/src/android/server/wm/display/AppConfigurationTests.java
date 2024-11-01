@@ -60,6 +60,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
@@ -777,7 +778,15 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         // Check if overrides applied correctly
         ReportedDisplayMetrics changedBaseDisplayMetrics =
                 baseDisplayMetricsSession.getDisplayMetrics();
-        assertEquals(overrideSize, changedBaseDisplayMetrics.getSize());
+        final int configMaxUiWidth = mContext.getResources().getInteger(Resources.getSystem()
+                .getIdentifier("config_maxUiWidth", "integer", "android"));
+        if (configMaxUiWidth == 0) {
+            assertEquals(overrideSize, changedBaseDisplayMetrics.getSize());
+        } else {
+            // If there is a maximum width constraint, check if the size of the base display has
+            // changed, as it may not be overridden to the requested size.
+            assertNotEquals(origBaseDisplaySize, changedBaseDisplayMetrics.getSize());
+        }
         assertEquals(overrideDensity, changedBaseDisplayMetrics.getDensity());
 
         // Check that the DisplayMetrics-related config of the base display context has changed
