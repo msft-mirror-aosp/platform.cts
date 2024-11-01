@@ -16,7 +16,6 @@
 
 package android.telephony.satellite.cts;
 
-import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_TURN_OFF_SESSION_FOR_EMERGENCY_CALL_BOOL;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ACCESS_BARRED;
@@ -90,6 +89,7 @@ import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSessionStats;
+import android.telephony.satellite.SatelliteStateChangeListener;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.stub.NTRadioTechnology;
@@ -138,6 +138,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final long TEST_DATAGRAM_DELAY_IN_DEMO_MODE_TIMEOUT_MILLIS = 100;
     private static final long TEST_DATAGRAM_DELAY_IN_DEMO_MODE_TIMEOUT_LONG_MILLIS = 1000;
     private static final long WAIT_FOREVER_TIMEOUT_MILLIS = Duration.ofMinutes(10).toMillis();
+    private static final long MAX_WAIT_FOR_STATE_CHANGED_SECONDS = 5;
 
     private static MockSatelliteServiceManager sMockSatelliteServiceManager;
 
@@ -186,6 +187,20 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @SuppressWarnings("StaticAssignmentOfThrowable")
     static AssertionError sInitError = null;
 
+    // Latch to prevent race condition between mIsEnabled state change and verification
+    private CountDownLatch mIsEnabledStateChangedLatch;
+    private boolean mIsEnabled;
+    public class TestSatelliteStateChangeListener implements SatelliteStateChangeListener {
+        @Override
+        public void onEnabledStateChanged(boolean isEnabled) {
+            final boolean isEnabledStateChanged = isEnabled != mIsEnabled;
+            mIsEnabled = isEnabled;
+            if (mIsEnabledStateChangedLatch != null && mIsEnabledStateChangedLatch.getCount() > 0
+                    && isEnabledStateChanged) {
+                mIsEnabledStateChangedLatch.countDown();
+            }
+        }
+    }
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -343,6 +358,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertTrue(callback.waitUntilResult(1));
             assertTrue(isSatelliteEnabled());
             sSatelliteManager.unregisterForModemStateChanged(callback);
+            // Set initial mIsEnabled to match the actual satellite state
+            mIsEnabled = true;
+            mIsEnabledStateChangedLatch = new CountDownLatch(1);
         }
         revokeSatellitePermission();
     }
@@ -391,6 +409,125 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
         restoreESOSSupportForActiveSubscription();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testServiceIsPublicAccessible() {
+        if (!shouldTestSatellite()) {
+            return;
+        }
+        SatelliteManager satelliteManager = (SatelliteManager) getContext().getSystemService(
+                Context.SATELLITE_SERVICE);
+        assertThat(satelliteManager).isNotNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testRegisterStateChangeListener_unregisterNotRegistered_noOp() {
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+        SatelliteStateChangeListener listener = new TestSatelliteStateChangeListener();
+        // listener is not registered, unregistering is no-op
+        sSatelliteManager.unregisterStateChangeListener(listener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testRegisterStateChangeListener_withReadPhoneStatePermission_noThrows() {
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+
+        // READ_PHONE_STATE has been granted for this test suite in AndroidManifest
+        assertThat(getContext().checkSelfPermission(Manifest.permission.READ_PHONE_STATE))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+        SatelliteStateChangeListener listener = new TestSatelliteStateChangeListener();
+
+        try {
+            sSatelliteManager.registerStateChangeListener(getContext().getMainExecutor(), listener);
+        } finally {
+            sSatelliteManager.unregisterStateChangeListener(listener);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testStateChangeListener_onRegistration_getNotified() {
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+
+        assertThat(mIsEnabled).isTrue();
+        SatelliteStateChangeListener listener = new TestSatelliteStateChangeListener();
+        try {
+            grantSatelliteAndReadBasicPhoneStatePermissions();
+            requestSatelliteEnabled(false);
+            assertThat(isSatelliteEnabled()).isFalse();
+
+            sSatelliteManager.registerStateChangeListener(getContext().getMainExecutor(), listener);
+
+            assertIsEnabledState(true /* expectedIsEnabledStateChanged */,
+                    false /* expectedIsEnabledState */);
+        } finally {
+            // Clean up
+            sSatelliteManager.unregisterStateChangeListener(listener);
+            requestSatelliteEnabled(true);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testStateChangeListener_duringRegistration_getNotified() {
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+
+        assertThat(mIsEnabled).isTrue();
+        SatelliteStateChangeListener listener = new TestSatelliteStateChangeListener();
+        try {
+            grantSatelliteAndReadBasicPhoneStatePermissions();
+            sSatelliteManager.registerStateChangeListener(getContext().getMainExecutor(), listener);
+
+            requestSatelliteEnabled(false);
+            assertThat(isSatelliteEnabled()).isFalse();
+
+            assertIsEnabledState(true /* expectedIsEnabledStateChanged */,
+                    false /* expectedIsEnabledState */);
+        } finally {
+            sSatelliteManager.unregisterStateChangeListener(listener);
+            requestSatelliteEnabled(true);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_STATE_CHANGE_LISTENER)
+    public void testStateChangeListener_afterRegistration_notNotified() {
+        if (!shouldTestSatelliteWithMockService()) {
+            return;
+        }
+
+        assertThat(mIsEnabled).isTrue();
+        SatelliteStateChangeListener listener = new TestSatelliteStateChangeListener();
+        try {
+            grantSatelliteAndReadBasicPhoneStatePermissions();
+            sSatelliteManager.registerStateChangeListener(getContext().getMainExecutor(), listener);
+            sSatelliteManager.unregisterStateChangeListener(listener);
+
+            requestSatelliteEnabled(false);
+            assertThat(isSatelliteEnabled()).isFalse();
+
+            assertIsEnabledState(false /* expectedIsEnabledStateChanged */,
+                    true /* expectedIsEnabledState */);
+        } finally {
+            // Clean up. If listener has been unregistered, redo it is a no-op
+            sSatelliteManager.unregisterStateChangeListener(listener);
+            requestSatelliteEnabled(true);
+            revokeSatellitePermission();
+        }
     }
 
     @Test
@@ -7576,5 +7713,19 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         Pair<Boolean, Integer> pairResult = deprovisionSatellite(provisionedSubscriberList);
         assertNotNull(pairResult);
         assertTrue(pairResult.first);
+    }
+
+    private void assertIsEnabledState(boolean expectedIsEnabledStateChanged,
+            boolean expectedIsEnabledState) {
+        try {
+            final boolean isEnabledStateChanged = mIsEnabledStateChangedLatch.await(
+                    MAX_WAIT_FOR_STATE_CHANGED_SECONDS, TimeUnit.SECONDS);
+
+            assertThat(isEnabledStateChanged).isEqualTo(expectedIsEnabledStateChanged);
+            assertThat(mIsEnabled).isEqualTo(expectedIsEnabledState);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("InterruptedException while waiting for state change.");
+        }
     }
 }
