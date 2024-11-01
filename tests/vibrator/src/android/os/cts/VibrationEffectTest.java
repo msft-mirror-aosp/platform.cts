@@ -733,21 +733,40 @@ public class VibrationEffectTest {
                 .build();
 
         assertArrayEquals(new long[]{20, 100, 100, 50}, getTimings(effect));
-        assertPwleSegment(effect, 0);
-        assertPwleAmplitude(0.0f, effect, 0);
-        assertPwleFrequency(100f, effect, 0);
+        assertPwleAmplitude(0.0f, 0.0f, effect, 0);
+        assertPwleAmplitude(0.0f, 0.5f, effect, 1);
+        assertPwleAmplitude(0.5f, 1.0f, effect, 2);
+        assertPwleAmplitude(1.0f, 0.2f, effect, 3);
 
-        assertPwleSegment(effect, 1);
-        assertPwleAmplitude(0.5f, effect, 1);
-        assertPwleFrequency(150f, effect, 1);
+        assertPwleFrequency(100f, 100f, effect, 0);
+        assertPwleFrequency(100f, 150f, effect, 1);
+        assertPwleFrequency(150f, 200f, effect, 2);
+        assertPwleFrequency(200f, 150f, effect, 3);
+    }
 
-        assertPwleSegment(effect, 2);
-        assertPwleAmplitude(1.0f, effect, 2);
-        assertPwleFrequency(200f, effect, 2);
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequency() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 60)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 100.0f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.5f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 1.0f, /*frequencyHz=*/ 200.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 0.2f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 50)
+                .build();
 
-        assertPwleSegment(effect, 3);
-        assertPwleAmplitude(0.2f, effect, 3);
-        assertPwleFrequency(150f, effect, 3);
+        assertArrayEquals(new long[]{20, 100, 100, 50}, getTimings(effect));
+        assertPwleAmplitude(0.0f, 0.0f, effect, 0);
+        assertPwleAmplitude(0.0f, 0.5f, effect, 1);
+        assertPwleAmplitude(0.5f, 1.0f, effect, 2);
+        assertPwleAmplitude(1.0f, 0.2f, effect, 3);
+
+        assertPwleFrequency(60f,  100f, effect, 0);
+        assertPwleFrequency(100f, 150f, effect, 1);
+        assertPwleFrequency(150f, 200f, effect, 2);
+        assertPwleFrequency(200f, 150f, effect, 3);
     }
 
     @Test
@@ -768,6 +787,19 @@ public class VibrationEffectTest {
                 .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+
+        assertThat(other).isEqualTo(effect);
+        assertThat(other.hashCode()).isEqualTo(effect.hashCode());
+
+        effect = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+
+        other = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
                 .build();
 
         assertThat(other).isEqualTo(effect);
@@ -793,6 +825,16 @@ public class VibrationEffectTest {
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
                 .build();
         assertThat(other).isNotEqualTo(effect);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.0f, 60f, 20)
+                        .addControlPoint(0.3f, 100f, 50)
+                        .addControlPoint(0.4f, 120f, 80)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
     }
 
     @Test
@@ -801,15 +843,23 @@ public class VibrationEffectTest {
             "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
             "VibrationEffect.WaveformEnvelopeBuilder#build"})
     public void testStartWaveformEnvelopeNotEqualsDifferentAmplitudes() {
-        VibrationEffect first = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
                 .build();
-        VibrationEffect second = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.1f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
                 .build();
-        assertThat(first).isNotEqualTo(second);
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
     }
 
     @Test
@@ -818,15 +868,24 @@ public class VibrationEffectTest {
             "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
             "VibrationEffect.WaveformEnvelopeBuilder#build"})
     public void testStartWaveformEnvelopeNotEqualsDifferentFrequency() {
-        VibrationEffect first = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
                 .build();
-        VibrationEffect second = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 121f, /*timeMillis=*/ 40)
                 .build();
-        assertThat(first).isNotEqualTo(second);
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 40)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
     }
 
     @Test
@@ -835,15 +894,24 @@ public class VibrationEffectTest {
             "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
             "VibrationEffect.WaveformEnvelopeBuilder#build"})
     public void testStartWaveformEnvelopeNotEqualsDifferentDuration() {
-        VibrationEffect first = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
                 .build();
-        VibrationEffect second = VibrationEffect.startWaveformEnvelope()
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
                 .build();
-        assertThat(first).isNotEqualTo(second);
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -894,6 +962,58 @@ public class VibrationEffectTest {
             "VibrationEffect.WaveformEnvelopeBuilder#build"})
     public void testStartWaveformEnvelopeZeroDurationIsInvalid() {
         VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 0)
+                .build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyEmptyBuilderIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30).build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyNegativeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ -0.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyOutOfRangeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 1.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyZeroFrequencyIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 0.0f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyZeroDurationIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
                 .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 0)
                 .build();
     }
@@ -1140,29 +1260,37 @@ public class VibrationEffectTest {
         assertThat(composed.getSegments().get(index)).isInstanceOf(PwleSegment.class);
     }
 
-    private void assertPwleAmplitude(float expected, VibrationEffect effect, int index) {
+    private void assertPwleAmplitude(float expectedStartAmplitude, float expectedEndAmplitude,
+            VibrationEffect effect, int index) {
         assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
         assertThat(index).isLessThan(composed.getSegments().size());
         VibrationEffectSegment segment = composed.getSegments().get(index);
         if (segment instanceof PwleSegment) {
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getStartAmplitude())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedStartAmplitude);
             assertThat(((PwleSegment) composed.getSegments().get(index)).getEndAmplitude())
                     .isWithin(TEST_TOLERANCE)
-                    .of(expected);
+                    .of(expectedEndAmplitude);
         } else {
             fail("Expected a pwle segment at index " + index + " of " + effect);
         }
     }
 
-    private void assertPwleFrequency(float expected, VibrationEffect effect, int index) {
+    private void assertPwleFrequency(float expectedStartFrequency, float expectedEndFrequency,
+            VibrationEffect effect, int index) {
         assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
         assertThat(index).isLessThan(composed.getSegments().size());
         VibrationEffectSegment segment = composed.getSegments().get(index);
         if (segment instanceof PwleSegment) {
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getStartFrequencyHz())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedStartFrequency);
             assertThat(((PwleSegment) composed.getSegments().get(index)).getEndFrequencyHz())
                     .isWithin(TEST_TOLERANCE)
-                    .of(expected);
+                    .of(expectedEndFrequency);
         } else {
             fail("Expected a pwle segment at index " + index + " of " + effect);
         }
