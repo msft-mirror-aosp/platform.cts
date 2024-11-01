@@ -14,7 +14,7 @@
 """Verify feature combinations for stabilization, 10-bit, and frame rate."""
 
 import concurrent.futures
-from datetime import datetime
+from datetime import datetime  # pylint: disable=g-importing-member
 from google.protobuf import text_format
 import logging
 import os
@@ -75,7 +75,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       self._test_feature_combination(executor)
 
   def _create_feature_combo_proto(self):
-    """Start logging feature combination info for a particular camera in proto"""
+    """Start logging feature combination info for camera in proto."""
     feature_combo_for_camera = (
         feature_combination_info_pb2.FeatureCombinationForCamera())
     feature_combo_for_camera.camera_id = self.camera_id
@@ -83,11 +83,11 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     return feature_combo_for_camera
 
   def _add_feature_combo_entry_to_proto(self, feature_combo_for_camera,
-                                output_surfaces,
-                                is_supported,
-                                fps_range,
-                                stabilization):
-    """Log whether a feature combination is supported"""
+                                        output_surfaces,
+                                        is_supported,
+                                        fps_range,
+                                        stabilization):
+    """Log whether a feature combination is supported."""
     entry = feature_combination_info_pb2.FeatureCombinationEntry()
     entry.is_supported = is_supported
     for surface in output_surfaces:
@@ -108,8 +108,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     feature_combo_for_camera.entries.append(entry)
 
-  def _write_feature_combo_proto_to_file(self, file_name, feature_combo_for_camera):
-    """Finish logging feature combination info and write to file"""
+  def _write_feature_combo_proto_to_file(
+      self, file_name, feature_combo_for_camera):
+    """Finish logging feature combination info and write to file."""
     debug_mode = self.debug_mode
     database = feature_combination_info_pb2.FeatureCombinationDatabase()
     database.build_fingerprint = (
@@ -117,26 +118,29 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     database.timestamp_in_sec = int(time.time())
     database.feature_combination_for_camera.append(feature_combo_for_camera)
 
-    with open(file_name, "wb") as f:
+    with open(file_name, 'wb') as f:
       f.write(database.SerializeToString())
 
     if debug_mode:
-      txtpb_file_name = file_name.replace(".pb", ".txtpb")
-      with open(txtpb_file_name, "w") as tf:
+      txtpb_file_name = file_name.replace('.pb', '.txtpb')
+      with open(txtpb_file_name, 'w') as tf:
         tf.write(text_format.MessageToString(database))
 
   def _finish_combination(self, combination_name, is_stabilized, passed,
-                          recording_obj, gyro_events, test_name, log_path, facing,
-                          output_surfaces, fps_range):
-    """Finish verifying a feature combination, verifying preview stabilization if necessary."""
+                          recording_obj, gyro_events, test_name, log_path,
+                          facing, output_surfaces, fps_range):
+    """Finish verifying a feature combo & preview stabilization if necessary."""
     result = {'name': combination_name,
               'output_surfaces': output_surfaces,
               'fps_range': fps_range,
               'is_stabilized': is_stabilized,
               'passed': passed}
     if is_stabilized:
-      stabilization_result = preview_processing_utils.verify_preview_stabilization(
-          recording_obj, gyro_events, test_name, log_path, facing)
+      stabilization_result = (
+          preview_processing_utils.verify_preview_stabilization(
+              recording_obj, gyro_events, test_name, log_path, facing
+          )
+      )
       if stabilization_result['failure']:
         result['stabilization_failure'] = stabilization_result['failure']
         result['passed'] = False
@@ -207,9 +211,11 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
       test_failures = []
       feature_verification_futures = []
-      current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-      proto_file_name = f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
-      logging.debug("proto_file_name " + proto_file_name)
+      current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+      proto_file_name = (
+          f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
+      )
+      logging.debug('proto_file_name %s', proto_file_name)
       if log_feature_combo_support:
         database = self._create_feature_combo_proto()
       for stream_combination in combinations:
@@ -274,11 +280,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             for configured_stream in configured_streams:
               hlg10_stream = (configured_stream['formatStr'] ==
                               its_session_utils.PRIVATE_FORMAT and hlg10)
-              output_surfaces.append({'format': configured_stream['formatStr'],
-                                      'format_code': configured_stream['format'],
-                                      'width': configured_stream['width'],
-                                      'height': configured_stream['height'],
-                                      'hlg10': hlg10_stream})
+              output_surfaces.append(
+                  {'format': configured_stream['formatStr'],
+                   'format_code': configured_stream['format'],
+                   'width': configured_stream['width'],
+                   'height': configured_stream['height'],
+                   'hlg10': hlg10_stream}
+              )
 
             for stabilize in stabilization_params:
               settings = {
@@ -381,9 +389,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Schedule finishing up of verification to run asynchronously
               future = executor.submit(
-                  self._finish_combination, combination_name, is_stabilized, passed,
-                  recording_obj, gyro_events, _NAME, log_path, facing, output_surfaces,
-                  fps_range)
+                  self._finish_combination, combination_name, is_stabilized,
+                  passed, recording_obj, gyro_events, _NAME, log_path, facing,
+                  output_surfaces, fps_range
+              )
               feature_verification_futures.append(future)
 
       # Verify feature combination results

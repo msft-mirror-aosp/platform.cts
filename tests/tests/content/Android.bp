@@ -324,6 +324,7 @@ android_test {
         ":CtsContentDeclaringLibrary",
         ":CtsContentDeclaringSdkLibrary",
         ":CtsContentDeclaringStaticLibrary",
+        ":CtsPackageChangedTestApp",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",

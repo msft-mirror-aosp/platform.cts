@@ -243,6 +243,9 @@ public class WearableSensingManagerIsolatedServiceTest {
     @After
     public void tearDown() throws Exception {
         Log.i(TAG, "#tearDown");
+        if (mWearableSensingManager == null) {
+            return; // Skip tear down if the test has not been set up.
+        }
         if (Flags.enableConcurrentWearableConnections()) {
             mWearableSensingManager.removeAllConnections();
         }

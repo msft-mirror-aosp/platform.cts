@@ -84,8 +84,10 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "collapsePanels(), "
@@ -495,7 +497,7 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testAdjustNotification_typeKey() throws Exception {
         setUpListeners();
 
@@ -790,6 +792,57 @@ public class NotificationAssistantServiceTest {
         if (reason != NotificationListenerService.REASON_LISTENER_CANCEL) {
             fail("Failed cancellation from assistant: reason=" + reason);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CONVERSATION_CHANNEL_MANAGEMENT)
+    public void testCreateConversationNotificationChannel() throws Exception {
+        setUpListeners(); // also enables assistant
+
+        // Send a conversation notification.
+        sendConversationNotification(mAssistant.mNotificationId);
+        StatusBarNotification sbn =
+                mHelper.findPostedNotification(
+                        null, mAssistant.mNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
+        String parentChannelId = sbn.getNotification().getChannelId();
+        String conversationId = sbn.getNotification().getShortcutId();
+
+        // Get a copy of the parent channel.
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        NotificationChannel parentCopy = out.getChannel().copy();
+        assertThat(parentCopy.getId()).isEqualTo(parentChannelId);
+
+        // Verify that the conversation channel does not exist initially.
+        List<NotificationChannel> channels =
+                mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser()).stream()
+                        .filter(channel -> parentChannelId.equals(channel.getParentChannelId())
+                                && conversationId.equals(channel.getConversationId()))
+                        .collect(Collectors.toList());
+        assertThat(channels).hasSize(0);
+
+        // Create the conversation notification channel.
+        NotificationChannel createdChannel =
+                mAssistant.createConversationNotificationChannelForPackage(
+                        mContext.getPackageName(), Process.myUserHandle(), parentChannelId, conversationId);
+
+        // Verify that the conversation channel now exists.
+        channels =
+                mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser()).stream()
+                        .filter(channel -> parentChannelId.equals(channel.getParentChannelId())
+                                && conversationId.equals(channel.getConversationId()))
+                        .collect(Collectors.toList());
+        assertThat(channels).hasSize(1);
+        assertThat(channels.get(0)).isEqualTo(createdChannel);
+
+        // Verify that there is no duplicate channels.
+        Map<String, List<NotificationChannel>> grouped =
+                mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser()).stream()
+                        .collect(Collectors.groupingBy(NotificationChannel::getId));
+        grouped.forEach((id, cns) -> assertThat(cns).hasSize(1));
+
+        // Verify that the content of parent channel is not changed.
+        assertThat(grouped.get(parentCopy.getId()).get(0)).isEqualTo(parentCopy);
     }
 
     @Test
