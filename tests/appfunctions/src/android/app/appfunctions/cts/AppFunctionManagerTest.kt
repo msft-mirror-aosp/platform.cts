@@ -155,7 +155,11 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) { e: ExecuteAppFunctionResponse
+        mManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+            CancellationSignal()
+        ) { e: ExecuteAppFunctionResponse
             ->
             blockingQueue.add(e)
         }
@@ -453,7 +457,7 @@ class AppFunctionManagerTest {
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
                 )
             )
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+            .isEqualTo(3)
         assertServiceDestroyed()
     }
 
@@ -637,7 +641,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     fun isAppFunctionEnabled_functionDefaultEnabled() = doBlocking {
-        assertThat(isAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+        assertThat(isAppFunctionEnabled("add")).isTrue()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
@@ -646,7 +650,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
-        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "add_disabledByDefault"))
+        assertThat(isAppFunctionEnabled(functionIdentifier = "add_disabledByDefault"))
             .isFalse()
     }
 
@@ -655,7 +659,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionNotExist() = doBlocking {
         assertFailsWith<IllegalArgumentException>("function not found") {
-            isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "notExist")
+            isAppFunctionEnabled(functionIdentifier = "notExist")
         }
     }
 
@@ -786,6 +790,16 @@ class AppFunctionManagerTest {
 
     private fun assertCancelListenerTriggered() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+    }
+
+    private suspend fun isAppFunctionEnabled(
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        mManager.isAppFunctionEnabled(
+            functionIdentifier,
+            context.mainExecutor,
+            continuation.asOutcomeReceiver(),
+        )
     }
 
     private suspend fun isAppFunctionEnabled(
