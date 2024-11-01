@@ -38,7 +38,8 @@ public class RecordingResult {
             CaptureResult.SENSOR_TIMESTAMP,
             CaptureResult.CONTROL_AE_STATE,
             CaptureResult.CONTROL_AF_STATE,
-            CaptureResult.CONTROL_AWB_STATE
+            CaptureResult.CONTROL_AWB_STATE,
+            CaptureResult.STATISTICS_FACES
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;
