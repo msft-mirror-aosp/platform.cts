@@ -16,8 +16,6 @@
 
 package android.media.audio.cts;
 
-import static android.media.audio.Flags.speakerCleanupUsage;
-
 import static org.testng.Assert.assertThrows;
 
 import android.audio.policy.configuration.V7_0.AudioUsage;
@@ -34,30 +32,6 @@ import java.lang.reflect.InvocationTargetException;
 @NonMainlineTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioAttributesTest extends CtsAndroidTestCase {
-
-    /**
-     *  Array of @SystemApi usages
-     *  see {@link #setUp()} for the initialization which is to be moved back to the declaration
-     *  of the array, and made final, once the flag check speakerCleanupUsage() is removed */
-    private static int[] sSystemUsages;
-
-    @Override
-    protected void setUp() throws Exception {
-        if (speakerCleanupUsage()) {
-            int[] newSystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
-                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
-                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT,
-                    // new usage under flag
-                    AudioAttributes.USAGE_SPEAKER_CLEANUP };
-            sSystemUsages = newSystemUsages;
-
-        } else {
-            int[] legacySystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
-                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
-                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT };
-            sSystemUsages = legacySystemUsages;
-        }
-    }
 
     // -----------------------------------------------------------------
     // AUDIOATTRIBUTES TESTS:
@@ -156,6 +130,10 @@ public class AudioAttributesTest extends CtsAndroidTestCase {
     // -----------------------------------------------------------------
     // System usage tests
     // ----------------------------------
+
+    private static final int[] sSystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
+            AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
+            AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT };
 
     public void testSetUsage_throwsWhenPassedSystemUsage()
             throws NoSuchFieldException, IllegalAccessException {
