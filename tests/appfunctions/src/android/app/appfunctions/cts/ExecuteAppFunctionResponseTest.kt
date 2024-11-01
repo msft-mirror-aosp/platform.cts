@@ -109,7 +109,7 @@ class ExecuteAppFunctionResponseTest {
         val emptyGd = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
         val response =
             ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
+                ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR,
                 null,
                 null,
             )
@@ -121,7 +121,7 @@ class ExecuteAppFunctionResponseTest {
         assertThat(restoredResponse.resultDocument.id).isEqualTo(emptyGd.id)
         assertThat(restoredResponse.resultDocument.schemaType).isEqualTo(emptyGd.schemaType)
         assertThat(restoredResponse.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
         assertThat(restoredResponse.errorMessage).isNull()
     }
 
@@ -147,7 +147,7 @@ class ExecuteAppFunctionResponseTest {
         extras.putString("testKey", "testValue")
         val response =
             ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
+                ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR,
                 "test error message",
                 extras,
             )
@@ -166,7 +166,7 @@ class ExecuteAppFunctionResponseTest {
             .isNull()
         assertThat(restoredResponse.extras.getString("testKey")).isEqualTo("testValue")
         assertThat(restoredResponse.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
         assertThat(restoredResponse.errorMessage).isNotNull()
         assertThat(restoredResponse.errorMessage).isEqualTo("test error message")
     }
@@ -185,6 +185,7 @@ class ExecuteAppFunctionResponseTest {
             "android.app.appfunctions.ExecuteAppFunctionResponse#RESULT_DISABLED",
             "android.app.appfunctions.ExecuteAppFunctionResponse#RESULT_INTERNAL_ERROR",
             "android.app.appfunctions.ExecuteAppFunctionResponse#RESULT_INVALID_ARGUMENT",
+            "android.app.appfunctions.ExecuteAppFunctionResponse#RESULT_FUNCTION_NOT_FOUND",
             "android.app.appfunctions.ExecuteAppFunctionResponse#RESULT_OK",
 
         ]
@@ -210,9 +211,15 @@ class ExecuteAppFunctionResponseTest {
                 "test error message",
                 null
             )
+        val requestErrorCategoryResponse4 =
+            ExecuteAppFunctionResponse.newFailure(
+                ExecuteAppFunctionResponse.RESULT_FUNCTION_NOT_FOUND,
+                "test error message",
+                null
+            )
         val systemErrorCategoryResponse =
             ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
+                ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR,
                 "test error message",
                 null
             )
@@ -241,6 +248,9 @@ class ExecuteAppFunctionResponseTest {
         ).isEqualTo(ExecuteAppFunctionResponse.ERROR_CATEGORY_REQUEST_ERROR)
         assertThat(
             requestErrorCategoryResponse3.errorCategory
+        ).isEqualTo(ExecuteAppFunctionResponse.ERROR_CATEGORY_REQUEST_ERROR)
+        assertThat(
+            requestErrorCategoryResponse4.errorCategory
         ).isEqualTo(ExecuteAppFunctionResponse.ERROR_CATEGORY_REQUEST_ERROR)
         assertThat(
             systemErrorCategoryResponse.errorCategory

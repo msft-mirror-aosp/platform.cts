@@ -362,7 +362,7 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
         assertServiceWasNotCreated()
     }
 
@@ -427,7 +427,7 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
         assertServiceWasNotCreated()
     }
 
@@ -510,7 +510,7 @@ class AppFunctionManagerTest {
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.resultCode)
-                    .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+                    .isEqualTo(ExecuteAppFunctionResponse.RESULT_FUNCTION_NOT_FOUND)
                 assertThat(response.errorMessage)
                     .contains(
                         "Document (android\$apps-db/app_functions," +
