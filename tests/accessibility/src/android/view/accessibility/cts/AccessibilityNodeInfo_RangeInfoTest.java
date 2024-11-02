@@ -17,11 +17,15 @@
 package android.view.accessibility.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static java.lang.Float.NaN;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.platform.test.annotations.Presubmit;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
+import android.view.accessibility.Flags;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -66,5 +70,13 @@ public class AccessibilityNodeInfo_RangeInfoTest {
         assertEquals(0.0f, r.getMin(), FLOAT_TOLERANCE);
         assertEquals(100.0f, r.getMax(), FLOAT_TOLERANCE);
         assertEquals(50.0f, r.getCurrent(), FLOAT_TOLERANCE);
+
+        if (Flags.indeterminateRangeInfo()) {
+            r = RangeInfo.obtain(RangeInfo.RANGE_TYPE_INDETERMINATE, NaN, NaN, NaN);
+            assertEquals(RangeInfo.RANGE_TYPE_INDETERMINATE, r.getType());
+            assertTrue(Double.isNaN(r.getMin()));
+            assertTrue(Double.isNaN(r.getMax()));
+            assertTrue(Double.isNaN(r.getCurrent()));
+        }
     }
 }
