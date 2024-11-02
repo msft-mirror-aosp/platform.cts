@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.multiuser
+package com.android.bedstead.enterprise
 
 import android.util.Log
-import com.android.bedstead.enterprise.DeviceOwnerComponent
-import com.android.bedstead.enterprise.ProfileOwnersComponent
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
@@ -278,7 +276,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
     /**
      * See [EnsureDoesNotHaveUserRestriction]
      */
-    fun ensureDoesNotHaveUserRestriction(restriction: String, onUser: UserType) {
+    fun ensureDoesNotHaveUserRestriction(restriction: String, onUser: UserType = UserType.ANY) {
         if (onUser == UserType.ANY) {
             for (userReference in users().all()) {
                 ensureDoesNotHaveUserRestriction(restriction, userReference)

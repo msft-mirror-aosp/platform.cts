@@ -39,6 +39,7 @@ android_test {
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "androidx.test.uiautomator_uiautomator",
+        "cts-input-lib",
         "cts-wm-util",
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",

@@ -155,13 +155,17 @@ class AppOpsMultiUserTest {
         val user = preExistingUsers[0]
         val testUid = packageManager.getPackageUidAsUser(SHARED_UID_PKG1, user.id)
 
-        runWithShellPermissionIdentity {
-            val mode = appOpsManager.noteOpNoThrow(
-                AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
-                testUid,
-                SHARED_UID_PKG1
-            )
-            Assert.assertEquals(AppOpsManager.MODE_ALLOWED, mode)
+        eventually {
+            // Current implementation of AppOpsService may receive package added broadcast late
+            // TODO(b/376345874): Move to PackageMonitor and remove this eventually block
+            runWithShellPermissionIdentity {
+                val mode = appOpsManager.noteOpNoThrow(
+                    AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
+                    testUid,
+                    SHARED_UID_PKG1
+                )
+                Assert.assertEquals(AppOpsManager.MODE_ALLOWED, mode)
+            }
         }
 
         SystemUtil.runShellCommandOrThrow("pm uninstall --user ${user.id} $SHARED_UID_PKG2")

@@ -25,6 +25,7 @@ import android.os.Looper
 import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display
+import android.view.Surface
 import android.view.View
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
@@ -53,10 +54,21 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
     val inverseTransform = Matrix()
     displayTransform.invert(inverseTransform)
 
-    val point = floatArrayOf(x.toFloat(), y.toFloat())
-    inverseTransform.mapPoints(point)
+    val p = floatArrayOf(x.toFloat(), y.toFloat())
+    inverseTransform.mapPoints(p)
 
-    return Point(round(point[0]).toInt(), round(point[1]).toInt())
+    val point = Point(round(p[0]).toInt(), round(p[1]).toInt())
+
+    // We need to apply offset to correctly map the point to discrete coordinate space, this is done
+    // to account for the disparity between continuous and discrete coordinates during rotation
+    // Refer to frameworks/native/services/inputflinger/docs/input_coordinates.md
+    return when (display.rotation) {
+        Surface.ROTATION_0 -> point
+        Surface.ROTATION_90 -> point.apply { offset(-1, 0) }
+        Surface.ROTATION_180 -> point.apply { offset(-1, -1) }
+        Surface.ROTATION_270 -> point.apply { offset(0, -1) }
+        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+    }
 }
 
 /**

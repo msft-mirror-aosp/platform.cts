@@ -1585,9 +1585,10 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("unchecked")
     private void checkAttestationSecurityLevelDependentParams(Attestation attestation) {
-        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300}",
+        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
                 attestation.getAttestationVersion(),
-                either(is(1)).or(is(2)).or(is(3)).or(is(4)).or(is(100)).or(is(200)).or(is(300)));
+                either(is(1)).or(is(2)).or(is(3)).or(is(4))
+                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1602,7 +1603,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                            either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                           .or(is(100)).or(is(200)).or(is(300)));
+                           .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("TEE enforced OS version and system OS version must be same.",
@@ -1616,7 +1617,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_STRONG_BOX));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                         either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)));
+                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("StrongBox enforced OS version and system OS version must be same.",

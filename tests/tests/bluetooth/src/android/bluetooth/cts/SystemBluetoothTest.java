@@ -72,31 +72,30 @@ public class SystemBluetoothTest {
     private static final long DEFAULT_DISCOVERY_TIMEOUT_MS = 12800;
     private static final int DISCOVERY_START_TIMEOUT = 500;
 
-    private static final Context sContext =
-            InstrumentationRegistry.getInstrumentation().getContext();
-    private static final BluetoothAdapter sAdapter = BlockingBluetoothAdapter.getAdapter();
-    private static final UiAutomation sUiAutomation =
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final UiAutomation mUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
 
-        sUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @After
     public void tearDown() {
-        sUiAutomation.dropShellPermissionIdentity();
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     /** Test enable/disable silence mode and check whether the device is in correct state. */
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void silenceMode() {
-        BluetoothDevice device = sAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertThat(device.setSilenceMode(true)).isTrue();
         assertThat(device.isInSilenceMode()).isFalse();
 
@@ -111,27 +110,36 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMetadata() {
-        byte[] testByteData = "Test Data".getBytes();
-        BluetoothDevice device = sAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        BluetoothAdapter.OnMetadataChangedListener listener =
-                new BluetoothAdapter.OnMetadataChangedListener() {
+        final byte[] testByteData = "Test Data".getBytes();
+        final BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        final Executor executor =
+                new Executor() {
                     @Override
-                    public void onMetadataChanged(BluetoothDevice dev, int key, byte[] value) {
-                        assertThat(dev).isEqualTo(device);
-                        assertThat(key).isEqualTo(BluetoothDevice.METADATA_MANUFACTURER_NAME);
-                        assertThat(value).isEqualTo(testByteData);
+                    public void execute(Runnable command) {
+                        command.run();
                     }
                 };
+        BluetoothAdapter.OnMetadataChangedListener listener =
+                mock(BluetoothAdapter.OnMetadataChangedListener.class);
 
-        assertThat(
-                        sAdapter.addOnMetadataChangedListener(
-                                device, sContext.getMainExecutor(), listener))
-                .isTrue();
+        assertThat(mAdapter.addOnMetadataChangedListener(device, executor, listener)).isTrue();
+        // prevent register device twice
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mAdapter.addOnMetadataChangedListener(device, executor, listener));
+
         assertThat(device.setMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME, testByteData))
                 .isTrue();
-        assertThat(testByteData)
-                .isEqualTo(device.getMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME));
-        assertThat(sAdapter.removeOnMetadataChangedListener(device, listener)).isTrue();
+        assertThat(device.getMetadata(BluetoothDevice.METADATA_MANUFACTURER_NAME))
+                .isEqualTo(testByteData);
+
+        verify(listener, timeout(1_000))
+                .onMetadataChanged(
+                        eq(device),
+                        eq(BluetoothDevice.METADATA_MANUFACTURER_NAME),
+                        eq(testByteData));
+
+        assertThat(mAdapter.removeOnMetadataChangedListener(device, listener)).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -139,10 +147,10 @@ public class SystemBluetoothTest {
     public void discoveryEndMillis() {
         boolean recoverOffState = false;
         try {
-            if (!TestUtils.isLocationOn(sContext)) {
+            if (!TestUtils.isLocationOn(mContext)) {
                 recoverOffState = true;
-                TestUtils.enableLocation(sContext);
-                sUiAutomation.grantRuntimePermission(
+                TestUtils.enableLocation(mContext);
+                mUiAutomation.grantRuntimePermission(
                         "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
 
@@ -151,24 +159,24 @@ public class SystemBluetoothTest {
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
 
             BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
-            sContext.registerReceiver(mockReceiver, filter);
+            mContext.registerReceiver(mockReceiver, filter);
 
             try (var p = Permissions.withPermissions(BLUETOOTH_SCAN)) {
-                sAdapter.startDiscovery();
+                mAdapter.startDiscovery();
                 // Wait for any of ACTION_DISCOVERY_STARTED intent, while holding BLUETOOTH_SCAN
                 verify(mockReceiver, timeout(DISCOVERY_START_TIMEOUT)).onReceive(any(), any());
             }
 
-            long discoveryEndTime = sAdapter.getDiscoveryEndMillis();
+            long discoveryEndTime = mAdapter.getDiscoveryEndMillis();
             long currentTime = System.currentTimeMillis();
             assertThat(discoveryEndTime > currentTime).isTrue();
             assertThat(discoveryEndTime - currentTime < DEFAULT_DISCOVERY_TIMEOUT_MS).isTrue();
 
-            sContext.unregisterReceiver(mockReceiver);
+            mContext.unregisterReceiver(mockReceiver);
         } finally {
             if (recoverOffState) {
-                TestUtils.disableLocation(sContext);
-                sUiAutomation.revokeRuntimePermission(
+                TestUtils.disableLocation(mContext);
+                mUiAutomation.revokeRuntimePermission(
                         "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
         }
@@ -259,14 +267,14 @@ public class SystemBluetoothTest {
     @Test
     public void canBondWithoutDialog() {
         // Verify the method returns false on a device that doesn't meet the criteria
-        BluetoothDevice testDevice = sAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertThat(testDevice.canBondWithoutDialog()).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void bleOnlyMode() {
-        assumeTrue(TestUtils.isBleSupported(sContext));
+        assumeTrue(TestUtils.isBleSupported(mContext));
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(BlockingBluetoothAdapter.enableBLE(false)).isFalse();
@@ -277,14 +285,14 @@ public class SystemBluetoothTest {
         } finally {
             // Tests are running with the scan disabled (See AndroidTest.xml)
             Settings.Global.putInt(
-                    sContext.getContentResolver(), Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
+                    mContext.getContentResolver(), Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
         }
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetOwnAddressType() {
-        assumeTrue(TestUtils.isBleSupported(sContext));
+        assumeTrue(TestUtils.isBleSupported(mContext));
 
         AdvertisingSetParameters.Builder paramsBuilder = new AdvertisingSetParameters.Builder();
         assertThat(paramsBuilder.setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT))
@@ -324,20 +332,20 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getSupportedProfiles() {
-        assertThat(sAdapter.getSupportedProfiles()).isNotNull();
+        assertThat(mAdapter.getSupportedProfiles()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void enableNoAutoConnect() {
         // Assert that when Bluetooth is already enabled, the method immediately returns true
-        assertThat(sAdapter.enableNoAutoConnect()).isTrue();
+        assertThat(mAdapter.enableNoAutoConnect()).isTrue();
     }
 
     private boolean isBluetoothPersistedOff() {
         // A value of "0" in Settings.Global.BLUETOOTH_ON means the OFF state was persisted
         return (Settings.Global.getInt(
-                        sContext.getContentResolver(), Settings.Global.BLUETOOTH_ON, -1)
+                        mContext.getContentResolver(), Settings.Global.BLUETOOTH_ON, -1)
                 == 0);
     }
 
@@ -358,7 +366,7 @@ public class SystemBluetoothTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setLowLatencyAudioAllowed() {
-        BluetoothDevice device = sAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(device.setLowLatencyAudioAllowed(true)).isTrue();
         assertThat(device.setLowLatencyAudioAllowed(false)).isTrue();
@@ -384,21 +392,21 @@ public class SystemBluetoothTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        sAdapter.generateLocalOobData(
+                        mAdapter.generateLocalOobData(
                                 BluetoothDevice.TRANSPORT_AUTO, executor, callback));
 
         // Null callback
         assertThrows(
                 NullPointerException.class,
                 () ->
-                        sAdapter.generateLocalOobData(
+                        mAdapter.generateLocalOobData(
                                 BluetoothDevice.TRANSPORT_BREDR, executor, null));
 
-        sAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
+        mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
         verify(callback, timeout(OOB_TIMEOUT.toMillis())).onOobData(anyInt(), any());
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-        sAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
+        mAdapter.generateLocalOobData(BluetoothDevice.TRANSPORT_BREDR, executor, callback);
         verify(callback, timeout(OOB_TIMEOUT.toMillis()))
                 .onError(eq(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED));
     }
@@ -407,32 +415,32 @@ public class SystemBluetoothTest {
     @Test
     public void setScanMode() {
 
-        assertThrows(IllegalArgumentException.class, () -> sAdapter.setScanMode(0));
+        assertThrows(IllegalArgumentException.class, () -> mAdapter.setScanMode(0));
 
         /* TODO(rahulsabnis): Fix the callback system so these work as intended
-        assertThat(sAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_NONE))
+        assertThat(mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_NONE))
                 .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(sAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_NONE);
-        assertThat(sAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE))
+        assertThat(mAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_NONE);
+        assertThat(mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE))
                 .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(sAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_CONNECTABLE);
+        assertThat(mAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_CONNECTABLE);
 
-        assertThat(sAdapter.setDiscoverableTimeout(Duration.ofSeconds(1)))
+        assertThat(mAdapter.setDiscoverableTimeout(Duration.ofSeconds(1)))
                 .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(sAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE))
+        assertThat(mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE))
                 .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(sAdapter.getScanMode())
+        assertThat(mAdapter.getScanMode())
                 .isEqualTo(BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        assertThat(sAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_CONNECTABLE);
+        assertThat(mAdapter.getScanMode()).isEqualTo(BluetoothAdapter.SCAN_MODE_CONNECTABLE);
         */
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-        assertThat(sAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE))
+        assertThat(mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE))
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
     }
 }

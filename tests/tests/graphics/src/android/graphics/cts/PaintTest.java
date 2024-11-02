@@ -2359,4 +2359,18 @@ public class PaintTest {
 
         assertThat(typeface2).isNotEqualTo(typeface);
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_ELEGANT_TEXT_HEIGHT_API)
+    public void testDeprecateElegantTextHeight() {
+        final Paint p = new Paint();
+
+        // Elegant Text Height is now true by default.
+        assertThat(p.isElegantTextHeight()).isTrue();
+
+        p.setElegantTextHeight(false);
+
+        // Calling setElegantTextHeight is now no-op.
+        assertThat(p.isElegantTextHeight()).isTrue();
+    }
 }

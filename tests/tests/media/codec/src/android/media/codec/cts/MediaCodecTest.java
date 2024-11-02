@@ -57,7 +57,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 import android.util.Range;
 import android.view.Surface;
@@ -95,7 +94,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Presubmit
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class MediaCodecTest {

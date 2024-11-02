@@ -670,6 +670,12 @@ public final class CameraDeviceInfo extends DeviceInfo {
     private static HashSet<String> getAllCharacteristicsKeyNames() {
         HashSet<String> charsKeyNames = new HashSet<String>();
         charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES.getName());
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_COLOR_TEMPERATURE_RANGE.getName());
+        }
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES.getName());
+        }
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_ANTIBANDING_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES.getName());

@@ -46,14 +46,12 @@ import android.view.inputmethod.PreviewableHandwritingGesture;
 import android.view.inputmethod.SelectGesture;
 import android.view.inputmethod.SurroundingText;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,9 +62,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class EditorInfoTest {
+public final class EditorInfoTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =

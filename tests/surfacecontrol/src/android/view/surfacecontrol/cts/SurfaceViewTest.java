@@ -227,7 +227,7 @@ public class SurfaceViewTest {
             mTestSurfaceView.setChildSurfacePackage(mSurfacePackage);
         });
 
-        assertTrue(CtsWindowInfoUtils.waitForWindowOnTopWithZ(
+        assertTrue(CtsWindowInfoUtils.waitForNthWindowFromTop(
                 Duration.ofSeconds(WAIT_TIME_SECONDS),
                 () -> mSurfaceControlViewHost.getView().getWindowToken(), 1));
 
@@ -254,7 +254,7 @@ public class SurfaceViewTest {
             mTestSurfaceView.setChildSurfacePackage(mSurfacePackage);
         });
 
-        assertTrue(CtsWindowInfoUtils.waitForWindowOnTopWithZ(
+        assertTrue(CtsWindowInfoUtils.waitForNthWindowFromTop(
                 Duration.ofSeconds(WAIT_TIME_SECONDS),
                 () -> mSurfaceControlViewHost.getView().getWindowToken(), 1));
 

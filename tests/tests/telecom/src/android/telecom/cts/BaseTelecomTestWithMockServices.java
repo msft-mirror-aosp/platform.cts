@@ -2478,9 +2478,15 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mContext.registerReceiver(br, filter, RECEIVER_EXPORTED);
         try {
             mContext.getPackageManager().setComponentEnabledSettings(List.of(enabledSettings));
-            if (!latch.await(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            long TIMEOUT_MS = 10000;
+            if ((enabledSettings.getEnabledFlags() & PackageManager.DONT_KILL_APP) == 0) {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+            } else {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + 10000;
+            }
+            if (!latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                 throw new TimeoutException("Package changed broadcasts for " + enabledSettings
-                        + " not received in " + WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + "ms");
+                        + " not received in " + TIMEOUT_MS + "ms");
             }
             assertEquals(packageManager.getComponentEnabledSetting(
                     enabledSettings.getComponentName()), enabledSettings.getEnabledState());

@@ -36,7 +36,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.IntDef;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -45,7 +44,6 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -53,9 +51,8 @@ import java.util.concurrent.TimeUnit;
 
 /** Tests for verifying {@link StrictMode} violations on {@link InputMethodService} APIs. */
 @LargeTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
+public final class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long EXPECTED_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 

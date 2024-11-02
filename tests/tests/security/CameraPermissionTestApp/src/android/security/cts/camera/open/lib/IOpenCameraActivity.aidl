@@ -20,7 +20,11 @@ import android.content.AttributionSource;
 import android.content.Intent;
 
 interface IOpenCameraActivity {
-    Intent openCamera1(in AttributionSource attributionSource);
+    Intent openCamera1(in AttributionSource attributionSource, boolean shouldStream,
+            boolean shouldRepeat);
 
-    Intent openCamera2(in AttributionSource attributionSource);
+    Intent openCamera2(in AttributionSource attributionSource, boolean shouldStream,
+            boolean shouldRepeat);
+
+    void stopRepeating();
 }

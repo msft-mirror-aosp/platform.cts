@@ -29,6 +29,7 @@ android_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "android-support-v4",
+        "bluetooth-test-util-lib",
         "car-integration-test-utils-lib",
         "compatibility-device-util-axt",
         "truth",

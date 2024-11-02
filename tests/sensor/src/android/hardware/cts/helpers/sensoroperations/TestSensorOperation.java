@@ -69,6 +69,7 @@ public class TestSensorOperation extends SensorOperation {
     private long mDeviceWakeUpTimeMs = -1;
     private long mStartTimeMs = -1;
     private long mStopTimeMs = -1;
+    private List<TestSensorEvent> mCollectedEvents;
 
     /**
      * An interface that defines an abstraction for operations to be performed by the
@@ -155,9 +156,9 @@ public class TestSensorOperation extends SensorOperation {
 
         boolean failed = false;
         StringBuilder sb = new StringBuilder();
-        List<TestSensorEvent> collectedEvents = listener.getCollectedEvents();
+        mCollectedEvents = listener.getCollectedEvents();
         for (ISensorVerification verification : mVerifications) {
-            failed |= evaluateResults(collectedEvents, verification, sb);
+            failed |= evaluateResults(mCollectedEvents, verification, sb);
         }
 
         trySaveCollectedEvents(parent, listener);
@@ -450,5 +451,10 @@ public class TestSensorOperation extends SensorOperation {
             }
         };
         return new TestSensorOperation(environment, executor);
+    }
+
+    /** Returns the list of events collected by the operation. */
+    public List<TestSensorEvent> getCollectedEvents() {
+        return mCollectedEvents;
     }
 }

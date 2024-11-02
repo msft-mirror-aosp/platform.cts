@@ -55,7 +55,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -66,7 +65,6 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -81,9 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>TODO: Add more tests.</p>
  */
 @LargeTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputConnectionHandlerTest extends EndToEndImeTestBase {
+public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     /**

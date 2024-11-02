@@ -131,8 +131,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene6': 'A grid of ArUco markers on a white background. '
               'See tests/scene6/scene6.png',
     'scene6_tele': 'A grid of ArUco markers on a white background. Identical '
-              'to scene6, but for tele cameras. '
-              'See tests/scene6_tele/scene6_tele.png',
+                   'to scene6, but for tele cameras. '
+                   'See tests/scene6_tele/scene6_tele.png',
     'scene7': 'The picture with 4 different colors, slanted edge and'
               '4 ArUco markers. See tests/scene7/scene7.png',
     'scene8': 'The picture with 4 faces in 4 different colors overlay.'

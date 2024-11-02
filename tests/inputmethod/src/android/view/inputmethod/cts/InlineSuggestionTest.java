@@ -31,20 +31,17 @@ import android.view.inputmethod.InlineSuggestionInfo;
 import android.widget.inline.InlineContentView;
 import android.widget.inline.InlinePresentationSpec;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InlineSuggestionTest {
+public final class InlineSuggestionTest {
 
     private InlinePresentationSpec mInlinePresentationSpec = new InlinePresentationSpec.Builder(
             new Size(100, 100), new Size(400, 100)).build();

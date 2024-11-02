@@ -23,19 +23,16 @@ import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.inputmethod.TextAttribute;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.Collections;
 import java.util.List;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class TextAttributeTest {
+public final class TextAttributeTest {
     private static final String SUGGESTION = "suggestion";
     private static final String EXTRAS_KEY = "extras_key";
     private static final String EXTRAS_VALUE = "extras_value";

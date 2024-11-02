@@ -39,6 +39,7 @@ import java.lang.annotation.Target;
  * <p>Note that when relying on {@code DeviceState} to enforce this policy, it will make use of a
  * Profile Owner. This should not be used in states where no profile owner is wanted on the
  * user the restriction is required on.
+ * TODO(b/336991736) move it into enterprise module
  */
 // TODO(264844667): Enforce no use of @EnsureHasNoProfileOwner
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
@@ -46,7 +47,7 @@ import java.lang.annotation.Target;
 @Repeatable(EnsureHasUserRestrictionGroup.class)
 // This is only required because the user restrictions are applied by a Device Admin.
 @RequireFeature(FEATURE_DEVICE_ADMIN)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureHasUserRestriction {
 
     int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;

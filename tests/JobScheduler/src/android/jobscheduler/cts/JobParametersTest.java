@@ -16,6 +16,8 @@
 
 package android.jobscheduler.cts;
 
+import static android.app.job.Flags.FLAG_HANDLE_ABANDONED_JOBS;
+
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
@@ -24,6 +26,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -216,6 +219,20 @@ public class JobParametersTest extends BaseJobSchedulerTest {
                         .setRequiresStorageNotLow(true).build(),
                 JobParameters.STOP_REASON_CONSTRAINT_STORAGE_NOT_LOW,
                 () -> setStorageStateLow(true));
+    }
+
+    @RequiresFlagsEnabled(FLAG_HANDLE_ABANDONED_JOBS)
+    public void testStopReasonAbandonedJob() throws Exception {
+        verifyStopReason(
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent).build(),
+                JobParameters.STOP_REASON_TIMEOUT_ABANDONED,
+                () -> SystemUtil.runShellCommand(getInstrumentation(),
+                        "cmd jobscheduler stop -s "
+                                + JobParameters.STOP_REASON_TIMEOUT_ABANDONED + " -i "
+                                + JobParameters.INTERNAL_STOP_REASON_TIMEOUT_ABANDONED
+                                + " -u " + UserHandle.myUserId()
+                                + " " + kJobServiceComponent.getPackageName()
+                                + " " + JOB_ID));
     }
 
     private void verifyStopReason(JobInfo ji, int stopReason, ExceptionRunnable stopCode)

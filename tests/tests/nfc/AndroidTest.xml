@@ -21,7 +21,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
     <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.nfcservices.apex" />
     <option name="not-shardable" value="true" />
     <option name="install-arg" value="-t" />
@@ -35,8 +34,6 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.nfc.cts"/>
         <option name="runtime-hint" value="10m10s"/>
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
     </test>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.nfcservices" />

@@ -56,6 +56,8 @@ public class VirtualDisplayConfigTest {
         final boolean customHomeEnabled = android.companion.virtual.flags.Flags.vdmCustomHome();
         final boolean cutoutEnabled =
                 android.companion.virtualdevice.flags.Flags.virtualDisplayInsets();
+        final boolean forceAppUniversalResizableEnabled =
+                com.android.window.flags.Flags.vdmForceAppUniversalResizableApi();
         DisplayCutout displayCutout = new DisplayCutout(
                 /* safeInsets= */ Insets.of(1, 2, 3, 4),
                 /* boundLeft= */ new Rect(5, 6, 7, 8),
@@ -77,6 +79,9 @@ public class VirtualDisplayConfigTest {
         if (cutoutEnabled) {
             builder.setDisplayCutout(displayCutout);
         }
+        if (forceAppUniversalResizableEnabled) {
+            builder.setIgnoreActivitySizeRestrictions(true);
+        }
         final VirtualDisplayConfig originalConfig = builder.build();
 
         assertThat(originalConfig.getName()).isEqualTo(NAME);
@@ -92,6 +97,9 @@ public class VirtualDisplayConfigTest {
         }
         if (cutoutEnabled) {
             assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
+        }
+        if (forceAppUniversalResizableEnabled) {
+            assertThat(originalConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
         }
 
         final Parcel parcel = Parcel.obtain();
@@ -114,6 +122,9 @@ public class VirtualDisplayConfigTest {
         if (cutoutEnabled) {
             assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
         }
+        if (forceAppUniversalResizableEnabled) {
+            assertThat(recreatedConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
+        }
     }
 
     @Test
@@ -131,6 +142,9 @@ public class VirtualDisplayConfigTest {
         }
         if (android.companion.virtualdevice.flags.Flags.virtualDisplayInsets()) {
             assertThat(config.getDisplayCutout()).isNull();
+        }
+        if (com.android.window.flags.Flags.vdmForceAppUniversalResizableApi()) {
+            assertThat(config.isIgnoreActivitySizeRestrictions()).isFalse();
         }
     }
 

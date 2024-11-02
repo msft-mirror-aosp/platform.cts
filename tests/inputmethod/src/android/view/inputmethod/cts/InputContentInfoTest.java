@@ -25,18 +25,15 @@ import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.inputmethod.InputContentInfo;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.security.InvalidParameterException;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputContentInfoTest {
+public final class InputContentInfoTest {
     @Test
     public void testInputContentInfo() {
         InputContentInfo info = new InputContentInfo(

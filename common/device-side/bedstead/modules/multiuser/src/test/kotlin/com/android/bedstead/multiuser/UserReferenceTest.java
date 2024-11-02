@@ -21,8 +21,8 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
 
-import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.cloneProfile;
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 
@@ -40,17 +40,17 @@ import android.view.Display;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -119,11 +119,11 @@ public class UserReferenceTest {
     }
 
     @Test
-    @EnsureHasWorkProfile(isOrganizationOwned = true)
-    public void remove_copeUser_removeUser() {
-        workProfile(sDeviceState).remove();
+    @EnsureHasCloneProfile()
+    public void remove_cloneProfile_removeUser() {
+        cloneProfile(sDeviceState).remove();
 
-        assertThat(workProfile(sDeviceState).exists()).isFalse();
+        assertThat(cloneProfile(sDeviceState).exists()).isFalse();
     }
 
     @Test
@@ -238,20 +238,20 @@ public class UserReferenceTest {
     }
 
     @Test
-    @RequireRunOnWorkProfile(switchedToParentUser = FALSE)
+    @RequireRunOnCloneProfile(switchedToParentUser = FALSE)
     public void switchTo_profile_switchesToParent() {
-        workProfile(sDeviceState).switchTo();
+        cloneProfile(sDeviceState).switchTo();
 
-        assertThat(TestApis.users().current()).isEqualTo(workProfile(sDeviceState).parent());
+        assertThat(TestApis.users().current()).isEqualTo(cloneProfile(sDeviceState).parent());
     }
 
     @Test
     @RequireRunOnInitialUser
-    @EnsureHasWorkProfile
-    public void stop_isWorkProfileOfCurrentUser_stops() {
-        workProfile(sDeviceState).stop();
+    @EnsureHasCloneProfile
+    public void stop_isCloneProfileOfCurrentUser_stops() {
+        cloneProfile(sDeviceState).stop();
 
-        assertThat(workProfile(sDeviceState).isRunning()).isFalse();
+        assertThat(cloneProfile(sDeviceState).isRunning()).isFalse();
     }
 
     @Test
@@ -444,11 +444,10 @@ public class UserReferenceTest {
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
     }
 
-    // TODO(b/239961027): should be @EnsureHasProfile instead of @EnsureHasWorkProfile
     @Test
-    @EnsureHasWorkProfile
+    @EnsureHasCloneProfile
     public void isVisibleBagroundNonProfileUser_profileUser_returnsFalse() {
-        UserReference user = workProfile(sDeviceState).start();
+        UserReference user = cloneProfile(sDeviceState).start();
 
         assertWithMessage("%s is visible bg user", user)
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
@@ -518,9 +517,9 @@ public class UserReferenceTest {
     }
 
     @Test
-    @EnsureHasWorkProfile
+    @EnsureHasCloneProfile
     public void parent_returnsParent() {
-        assertThat(workProfile(sDeviceState).parent()).isNotNull();
+        assertThat(cloneProfile(sDeviceState).parent()).isNotNull();
     }
 
     @Test

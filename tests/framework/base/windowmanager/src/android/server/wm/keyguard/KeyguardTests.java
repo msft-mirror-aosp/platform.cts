@@ -804,9 +804,10 @@ public class KeyguardTests extends KeyguardTestBase {
             separateTestJournal();
             lockScreenSession.gotoKeyguard();
             mWmState.assertKeyguardShowingAndNotOccluded();
-            launchActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
-            waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY, DEFAULT_DISPLAY,
-                    "Activity with showWhenLocked attribute should be resumed.");
+            // TODO(b/375543394): use SHOW_WHEN_LOCKED_ATTR_ACTIVITY once no extra config change
+            launchActivity(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
+            waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY,
+                    DEFAULT_DISPLAY, "Activity with showWhenLocked attribute should be resumed.");
             mWmState.assertKeyguardShowingAndOccluded();
             if (assertAod) {
                 mWmState.assertAodNotShowing();
@@ -816,7 +817,7 @@ public class KeyguardTests extends KeyguardTestBase {
                 mWmState.assertAodShowing();
             }
             mWmState.waitForAllStoppedActivities();
-            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
+            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
         }
     }
 

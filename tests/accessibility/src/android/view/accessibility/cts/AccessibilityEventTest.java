@@ -47,6 +47,7 @@ import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityRecord;
+import android.view.accessibility.Flags;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -315,6 +316,28 @@ public class AccessibilityEventTest {
                 DEFAULT_TIMEOUT_MS);
         assertThat(awaitedEvent.getContentChangeTypes()).isEqualTo(
                 AccessibilityEvent.CONTENT_CHANGE_TYPE_CHECKED);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityEvent#CONTENT_CHANGE_TYPE_EXPANDED"})
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testContentChangeTypeExpandedEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+                            event.setContentChangeTypes(
+                                    AccessibilityEvent.CONTENT_CHANGE_TYPE_EXPANDED);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event ->
+                                event.getEventType()
+                                        == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getContentChangeTypes())
+                .isEqualTo(AccessibilityEvent.CONTENT_CHANGE_TYPE_EXPANDED);
     }
 
     @Test

@@ -627,6 +627,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
         }
 
+        // Only present when COLOR_CORRECTION_MODE_CCT is on
+        if (Flags.colorTemperature()) {
+            waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
+            waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
+        }
+
         // Only present on devices capable of reporting intra-frame statistics
         waiverKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         // Only present on logical cameras that switch between lenses when going trhough zoom ratios
@@ -1004,6 +1010,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.COLOR_CORRECTION_TRANSFORM);
         resultKeys.add(CaptureResult.COLOR_CORRECTION_GAINS);
         resultKeys.add(CaptureResult.COLOR_CORRECTION_ABERRATION_MODE);
+        if (Flags.colorTemperature()) {
+            resultKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
+        }
+        if (Flags.colorTemperature()) {
+            resultKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
+        }
         resultKeys.add(CaptureResult.CONTROL_AE_ANTIBANDING_MODE);
         resultKeys.add(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION);
         resultKeys.add(CaptureResult.CONTROL_AE_LOCK);

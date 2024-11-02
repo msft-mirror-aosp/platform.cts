@@ -53,6 +53,7 @@ TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
+    'xun',  # Xiaomi Redmi Pad SE
 )
 
 # Tablet brightness mapping strings for (rear, front) facing camera tests
@@ -65,6 +66,7 @@ TABLET_BRIGHTNESS = {
     'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
     'nabu': ('8', '14'),  # Xiaomi Pad 5
     'nabu_tw': ('8', '14'),  # Xiaomi Pad 5
+    'xun': ('6', '12'),  # Xiaomi Redmi Pad SE
 }
 
 

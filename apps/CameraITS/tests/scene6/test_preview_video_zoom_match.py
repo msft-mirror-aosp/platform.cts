@@ -66,7 +66,6 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
-      debug = self.debug_mode
 
       def _do_preview_recording(cam, resolution, zoom_ratio):
         """Record a new set of data from the device.

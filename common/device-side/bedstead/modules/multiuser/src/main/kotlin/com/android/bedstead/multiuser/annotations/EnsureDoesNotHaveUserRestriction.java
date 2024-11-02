@@ -33,11 +33,12 @@ import java.lang.annotation.Target;
  *
  * <p>You should use {@code DeviceState} to ensure that the device enters
  * the correct state for the method.
+ * TODO(b/336991736) move it into enterprise module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureDoesNotHaveUserRestrictionGroup.class)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureDoesNotHaveUserRestriction {
     /** The restriction to be set. */
     String value();

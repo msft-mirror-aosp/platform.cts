@@ -15,23 +15,25 @@
  */
 package com.android.bedstead.multiuser
 
-import android.os.UserManager
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction
+import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasNoPrivateProfile
-import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoTvProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasTvProfile
-import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.multiuser.annotations.OtherUser
+import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
+import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
+import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
@@ -39,7 +41,6 @@ import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUse
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
@@ -49,11 +50,6 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundN
 import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
-import com.android.bedstead.multiuser.annotations.RequireGuestUserIsEphemeral
-import com.android.bedstead.multiuser.annotations.RequireGuestUserIsNotEphemeral
-import com.android.bedstead.multiuser.annotations.RequireHasMainUser
-import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.resources
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.types.OptionalBoolean
@@ -94,52 +90,6 @@ class MultiUserAnnotationExecutorTest {
     @RequireHasMainUser(reason = "Test")
     fun requireHasMainUser_hasMainUser() {
         assertThat(users().main()).isNotNull()
-    }
-
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @Test
-    fun ensureHasUserRestrictionAnnotation_userRestrictionIsSet() {
-        assertThat(devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue()
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @Test
-    fun ensureDoesNotHaveUserRestrictionAnnotation_userRestrictionIsNotSet() {
-        assertThat(devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse()
-    }
-
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @EnsureHasUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    fun ensureHasUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreSet() {
-        assertThat(devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue()
-        assertThat(devicePolicy().userRestrictions().isSet(SECOND_USER_RESTRICTION)).isTrue()
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @EnsureDoesNotHaveUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    fun ensureDoesNotHaveUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreNotSet() {
-        assertThat(devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse()
-        assertThat(devicePolicy().userRestrictions().isSet(SECOND_USER_RESTRICTION)).isFalse()
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureHasUserRestriction(value = USER_RESTRICTION, onUser = UserType.ADDITIONAL_USER)
-    @Test
-    fun ensureHasUserRestrictionAnnotation_differentUser_userRestrictionIsSet() {
-        assertThat(
-            devicePolicy().userRestrictions(deviceState.additionalUser()).isSet(USER_RESTRICTION)
-        ).isTrue()
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureDoesNotHaveUserRestriction(value = USER_RESTRICTION, onUser = UserType.ADDITIONAL_USER)
-    @Test
-    fun ensureDoesNotHaveUserRestrictionAnnotation_differentUser_userRestrictionIsNotSet() {
-        assertThat(
-            devicePolicy().userRestrictions(deviceState.additionalUser()).isSet(USER_RESTRICTION)
-        ).isFalse()
     }
 
     @Test
@@ -517,8 +467,6 @@ class MultiUserAnnotationExecutorTest {
         @Rule
         val deviceState = DeviceState()
 
-        private const val USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL
-        private const val SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE
         private const val TV_PROFILE_TYPE_NAME: String = "com.android.tv.profile"
         private const val CLONE_PROFILE_TYPE_NAME: String = "android.os.usertype.profile.CLONE"
         private const val PRIVATE_PROFILE_TYPE_NAME: String = "android.os.usertype.profile.PRIVATE"

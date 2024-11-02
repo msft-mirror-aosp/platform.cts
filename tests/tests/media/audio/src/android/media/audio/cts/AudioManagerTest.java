@@ -109,6 +109,7 @@ import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.UserSettings.Namespace;
 import com.android.internal.annotations.GuardedBy;
 import com.android.media.mediatestutils.CancelAllFuturesRule;
@@ -207,6 +208,8 @@ public class AudioManagerTest {
     private boolean mDoNotCheckUnmute;
     private boolean mAppsBypassingDnd;
 
+    private UserHelper mUserHelper;
+
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundFormatsSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
@@ -248,6 +251,8 @@ public class AudioManagerTest {
             // volume SDK APIs are no-ops
             mSkipAutoVolumeTests = true;
         }
+
+        mUserHelper = new UserHelper(mContext);
 
         // TODO (b/294941969) pull out volume/ringer/zen state setting/resetting into test rule
         // Store the original volumes that that they can be recovered in tearDown().
@@ -336,6 +341,8 @@ public class AudioManagerTest {
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
     @Test
     public void testMicrophoneMute() throws Exception {
+        assumeFalse("Microphone is not supported on a visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         mAudioManager.setMicrophoneMute(true);
         assertTrue(mAudioManager.isMicrophoneMute());
         mAudioManager.setMicrophoneMute(false);
@@ -345,6 +352,8 @@ public class AudioManagerTest {
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
     @Test
     public void testMicrophoneMuteIntent() throws Exception {
+        assumeFalse("Microphone is not supported on a visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         assumeFalse(mDoNotCheckUnmute);
 
         final boolean initialMicMute = mAudioManager.isMicrophoneMute();

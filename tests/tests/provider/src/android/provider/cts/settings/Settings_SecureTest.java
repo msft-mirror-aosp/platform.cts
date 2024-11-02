@@ -26,6 +26,7 @@ import static org.junit.Assert.fail;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.provider.Settings.SettingNotFoundException;
@@ -38,6 +39,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import com.android.compatibility.common.util.FeatureUtil;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,6 +48,7 @@ import org.junit.runner.RunWith;
 public class Settings_SecureTest {
 
     private static final String NO_SUCH_SETTING = "NoSuchSetting";
+    private static final String UNSET_SETTING = "some_random_setting";
 
     /**
      * Setting that will have a string value to trigger SettingNotFoundException caused by
@@ -60,6 +63,25 @@ public class Settings_SecureTest {
         cr = InstrumentationRegistry.getInstrumentation().getTargetContext().getContentResolver();
         assertNotNull(cr);
         assertSettingsForTests();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        // Restore settings if setted in the test.
+        final UiDevice uiDevice = UiDevice.getInstance(
+                InstrumentationRegistry.getInstrumentation());
+        runWithShellPermissionIdentity(() -> {
+            Bundle arg = new Bundle();
+            arg.putInt(Settings.CALL_METHOD_USER_KEY, cr.getUserId());
+            cr.acquireProvider(Secure.CONTENT_URI.getAuthority()).call(
+                    cr.getAttributionSource(),
+                    Secure.CONTENT_URI.getAuthority(),
+                    Settings.CALL_METHOD_DELETE_SECURE,
+                    UNSET_SETTING,
+                    arg);
+        });
+
+        uiDevice.waitForIdle();
     }
 
     /** Check that the settings that will be used for testing have proper values. */
@@ -245,18 +267,17 @@ public class Settings_SecureTest {
     public void testUnsetSetting() {
         final UiDevice uiDevice = UiDevice.getInstance(
                 InstrumentationRegistry.getInstrumentation());
-        final String unsetSetting = "some_random_setting";
-        String value = Settings.Secure.getString(cr, unsetSetting);
+        String value = Settings.Secure.getString(cr, UNSET_SETTING);
         assertNull(value);
         runWithShellPermissionIdentity(
-                () -> Settings.Secure.putString(cr, unsetSetting, "1"));
+                () -> Settings.Secure.putString(cr, UNSET_SETTING, "1"));
         uiDevice.waitForIdle();
-        value = Settings.Secure.getString(cr, unsetSetting);
+        value = Settings.Secure.getString(cr, UNSET_SETTING);
         assertEquals("1", value);
         runWithShellPermissionIdentity(
-                () -> Settings.Secure.putString(cr, unsetSetting, "0"));
+                () -> Settings.Secure.putString(cr, UNSET_SETTING, "0"));
         uiDevice.waitForIdle();
-        value = Settings.Secure.getString(cr, unsetSetting);
+        value = Settings.Secure.getString(cr, UNSET_SETTING);
         assertEquals("0", value);
     }
 }

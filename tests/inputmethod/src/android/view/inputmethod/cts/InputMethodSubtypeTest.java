@@ -34,19 +34,16 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.Objects;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodSubtypeTest {
+public final class InputMethodSubtypeTest {
 
     private static final CharSequence SUBTYPE_UNTRANSLATABLE_NAME = "my_new_subtype";
 

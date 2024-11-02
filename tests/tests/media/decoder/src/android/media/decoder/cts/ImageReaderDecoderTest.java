@@ -43,7 +43,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -82,7 +81,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Presubmit
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class ImageReaderDecoderTest {

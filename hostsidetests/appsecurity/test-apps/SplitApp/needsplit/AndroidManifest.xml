@@ -24,7 +24,7 @@
          to pass the build error, since tests need to use minSdkVersion 4. -->
     <uses-sdk android:minSdkVersion="4" tools:overrideLibrary="androidx.test.runner,
         androidx.test.rules, androidx.test.monitor, androidx.test.services.storage,
-        androidx.test.annotation, androidx.annotation.experimental androidx.tracing"
+        androidx.test.annotation, androidx.annotation.experimental, androidx.tracing"
         android:targetSdkVersion="27"/>
 
     <uses-permission android:name="android.permission.CAMERA"/>

@@ -19,6 +19,7 @@ package android.security.cts
 import android.Manifest
 import android.app.Activity
 import android.app.ActivityManager
+import android.app.AppOpsManager
 import android.app.Instrumentation
 import android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT
 import android.content.AttributionSourceState
@@ -27,9 +28,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.hardware.Camera
 import android.hardware.ICameraClient
 import android.hardware.ICameraService
+import android.hardware.SensorPrivacyManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.ICameraDeviceCallbacks
 import android.hardware.camera2.impl.CameraMetadataNative
 import android.hardware.camera2.impl.CaptureResultExtras
@@ -50,6 +56,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.bedstead.nene.TestApis
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.cts.install.lib.Install
 import com.android.cts.install.lib.TestApp
 import com.android.cts.install.lib.Uninstall
@@ -75,8 +82,7 @@ import org.junit.runner.RunWith
 class CameraPermissionTest {
   @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-  private val openCameraAppKeys = IntentKeys(OPEN_CAMERA_APP.packageName)
-  private val cameraProxyAppKeys = IntentKeys(CAMERA_PROXY_APP.packageName)
+  private val onTearDown = mutableListOf<() -> Unit>()
 
   class DummyCameraDeviceCallbacks : ICameraDeviceCallbacks.Stub() {
     override fun onDeviceError(errorCode: Int, resultExtras: CaptureResultExtras) {
@@ -122,8 +128,10 @@ class CameraPermissionTest {
 
   private lateinit var broadcastReceiver: BroadcastReceiver
   private lateinit var openCameraAppInterface: IOpenCameraActivity
-  private val onResumeFuture = CompletableFuture<Boolean>()
+  private val onResumeFuture = CompletableFuture<Intent>()
+  private val streamOpenedFuture = CompletableFuture<Intent>()
   private var openCameraResultFuture: CompletableFuture<Instrumentation.ActivityResult>? = null
+  private var restoreSensorPrivacy: (() -> Unit)? = null
 
   private lateinit var cameraManager: CameraManager
 
@@ -146,14 +154,22 @@ class CameraPermissionTest {
           override fun onReceive(context: Context, intent: Intent) {
             Log.i(TAG, "onReceive")
             when (intent.action) {
-              openCameraAppKeys.onResume -> {
-                onResumeFuture.complete(true)
+              OPEN_CAMERA_APP.keys.onResume -> {
+                onResumeFuture.complete(intent)
+              }
+
+              OPEN_CAMERA_APP.keys.streamOpened -> {
+                streamOpenedFuture.complete(intent)
               }
             }
           }
         }
 
-    val filter = IntentFilter(openCameraAppKeys.onResume)
+    val filter =
+        IntentFilter().apply {
+          addAction(OPEN_CAMERA_APP.keys.onResume)
+          addAction(OPEN_CAMERA_APP.keys.streamOpened)
+        }
     context.registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
   }
 
@@ -164,6 +180,12 @@ class CameraPermissionTest {
     if (this::broadcastReceiver.isInitialized) {
       instrumentation.context.unregisterReceiver(broadcastReceiver)
     }
+
+    for (callback in onTearDown) {
+      callback()
+    }
+
+    restoreSensorPrivacy?.let { it() }
   }
 
   @Test
@@ -190,66 +212,218 @@ class CameraPermissionTest {
     testConnect(expectDenial = false)
   }
 
-  @Test
-  fun testAppConnectDevice() {
-    openCameraResultFuture = startOpenCameraActivity(openCamera2 = true)
-    checkAppOpenedCamera(openCameraAppKeys.cameraOpened2)
+  @Test fun testAppConnectDevice() = testAppOpenCamera(ApiLevel.API_2)
+
+  @Test fun testAppConnect() = testAppOpenCamera(ApiLevel.API_1)
+
+  private fun testAppOpenCamera(apiLevel: ApiLevel) {
+    openCameraResultFuture = startOpenCameraActivityForOpenCamera(apiLevel)
+    checkAppOpenedCamera(cameraOpenedKey(apiLevel))
   }
 
-  @Test
-  fun testAppConnectDevice_noPermission() {
+  @Test fun testAppConnectDevice_noPermission() = testAppOpenCamera_noPermission(ApiLevel.API_2)
+
+  @Test fun testAppConnect_noPermission() = testAppOpenCamera_noPermission(ApiLevel.API_1)
+
+  private fun testAppOpenCamera_noPermission(apiLevel: ApiLevel) {
     denyAppPermission(OPEN_CAMERA_APP)
-    openCameraResultFuture = startOpenCameraActivity(openCamera2 = true)
-    checkAppFailedToOpenCamera(openCameraAppKeys.cameraOpened2)
+    openCameraResultFuture = startOpenCameraActivityForOpenCamera(apiLevel)
+    checkAppFailedToOpenCamera(cameraOpenedKey(apiLevel))
+  }
+
+  @Test fun testAppStreaming2() = testAppStreaming(ApiLevel.API_2)
+
+  @Test fun testAppStreaming1() = testAppStreaming(ApiLevel.API_1)
+
+  private fun testAppStreaming(apiLevel: ApiLevel, shouldRestoreSensorPrivacy: Boolean = false) {
+    openCameraResultFuture = startOpenCameraActivityForOpenCamera(apiLevel, shouldStream = true)
+    assertStreamOpened()
+    if (shouldRestoreSensorPrivacy) {
+      restoreSensorPrivacy!!()
+    }
+    checkAppOpenedCamera(cameraOpenedKey(apiLevel), expectStreamOpened = true)
   }
 
   @Test
-  fun testAppConnect() {
-    openCameraResultFuture = startOpenCameraActivity(openCamera1 = true)
-    checkAppOpenedCamera(openCameraAppKeys.cameraOpened1)
+  fun testAppStreaming2_softDenial_cameraMute() =
+      testAppStreaming_softDenial_cameraMute(ApiLevel.API_2)
+
+  @Test
+  fun testAppStreaming1_softDenial_cameraMute() =
+      testAppStreaming_softDenial_cameraMute(ApiLevel.API_1)
+
+  private fun testAppStreaming_softDenial_cameraMute(apiLevel: ApiLevel) {
+    assumeTrue(supportsCameraMute())
+    setSensorPrivacy(enabled = true)
+    testAppStreaming(apiLevel, shouldRestoreSensorPrivacy = true)
   }
 
   @Test
-  fun testAppConnect_noPermission() {
-    denyAppPermission(OPEN_CAMERA_APP)
-    openCameraResultFuture = startOpenCameraActivity(openCamera1 = true)
-    checkAppFailedToOpenCamera(openCameraAppKeys.cameraOpened1)
+  fun testAppStreaming2_opChanged_softDenial_block() =
+      testAppStreaming_opChanged_softDenial_block(ApiLevel.API_2)
+
+  @Test
+  fun testAppStreaming1_opChanged_softDenial_block() =
+      testAppStreaming_opChanged_softDenial_block(ApiLevel.API_1)
+
+  private fun testAppStreaming_opChanged_softDenial_block(apiLevel: ApiLevel) {
+    setSensorPrivacy(enabled = false)
+    openCameraResultFuture =
+        startOpenCameraActivityForOpenCamera(apiLevel, shouldStream = true, shouldRepeat = true)
+
+    assertStreamOpened()
+
+    setOpMode(OPEN_CAMERA_APP, AppOpsManager.MODE_IGNORED)
+
+    checkAppOpenedCamera(
+        cameraOpenedKey(apiLevel),
+        expectStreamOpened = true,
+        expectError = cameraBlockedError(apiLevel))
   }
 
   @Test
-  fun testProxyConnectDevice() {
-    openCameraByProxy(openCameraAppKeys.openCamera2ByProxy)
-    checkAppOpenedCameraByProxy(openCameraAppKeys.cameraOpened2)
+  fun testAppStreaming2_opChanged_softDenial_cameraMute() =
+      testAppStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_2)
+
+  @Test
+  fun testAppStreaming1_opChanged_softDenial_cameraMute() =
+      testAppStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_1)
+
+  private fun testAppStreaming_opChanged_softDenial_cameraMute(apiLevel: ApiLevel) {
+    assumeTrue(supportsCameraMute())
+    openCameraResultFuture =
+        startOpenCameraActivityForOpenCamera(apiLevel, shouldStream = true, shouldRepeat = true)
+
+    assertStreamOpened()
+
+    val am = instrumentation.context.getSystemService(ActivityManager::class.java)
+    val importance = am.getPackageImportance(OPEN_CAMERA_APP.packageName)
+    Log.v(TAG, "OpenCameraApp importance: ${importance}")
+
+    setSensorPrivacy(enabled = true)
+
+    // Wait for any potential block()
+    Thread.sleep(1000)
+
+    sendStopRepeating(OPEN_CAMERA_APP)
+    checkAppOpenedCamera(
+        cameraOpenedKey(apiLevel), expectStreamOpened = true, expectStoppedRepeating = true)
+  }
+
+  @Test fun testProxyConnectDevice() = testProxyOpenCamera(ApiLevel.API_2)
+
+  @Test fun testProxyConnect() = testProxyOpenCamera(ApiLevel.API_1)
+
+  private fun testProxyOpenCamera(apiLevel: ApiLevel) {
+    openCameraByProxy(openCameraByProxyKey(apiLevel))
+    checkAppOpenedCameraByProxy(cameraOpenedKey(apiLevel))
   }
 
   @Test
-  fun testProxyConnectDevice_noOpenCameraPermission() {
-    denyAppPermission(OPEN_CAMERA_APP)
-    openCameraByProxy(openCameraAppKeys.openCamera2ByProxy)
-    checkAppFailedToOpenCameraByProxy(openCameraAppKeys.cameraOpened2)
-  }
+  fun testProxyConnectDevice_noOpenCameraPermission() =
+      testProxyOpenCamera_noPermission(ApiLevel.API_2, OPEN_CAMERA_APP)
 
   @Test
   @RequiresFlagsEnabled(
       Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
-  fun testProxyConnectDevice_noCameraProxyPermission() {
-    denyAppPermission(CAMERA_PROXY_APP)
-    openCameraByProxy(openCameraAppKeys.openCamera2ByProxy)
-    checkAppFailedToOpenCameraByProxy(openCameraAppKeys.cameraOpened2)
+  fun testProxyConnectDevice_noCameraProxyPermission() =
+      testProxyOpenCamera_noPermission(ApiLevel.API_2, CAMERA_PROXY_APP)
+
+  private fun testProxyOpenCamera_noPermission(apiLevel: ApiLevel, deniedApp: TestApp) {
+    denyAppPermission(deniedApp)
+    openCameraByProxy(openCameraByProxyKey(apiLevel))
+    checkAppFailedToOpenCameraByProxy(cameraOpenedKey(apiLevel))
   }
 
   @Test
   @RequiresFlagsDisabled(Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
   fun testProxyConnectDevice_noCameraProxyPermission_checkFullAttributionSourceChain_off() {
     denyAppPermission(CAMERA_PROXY_APP)
-    openCameraByProxy(openCameraAppKeys.openCamera2ByProxy)
-    checkAppOpenedCameraByProxy(openCameraAppKeys.cameraOpened2)
+    openCameraByProxy(OPEN_CAMERA_APP.keys.openCamera2ByProxy)
+    checkAppOpenedCameraByProxy(OPEN_CAMERA_APP.keys.cameraOpened2)
+  }
+
+  @Test fun testProxyStreaming2() = testProxyStreaming(ApiLevel.API_2)
+
+  @Test fun testProxyStreaming1() = testProxyStreaming(ApiLevel.API_1)
+
+  private fun testProxyStreaming(apiLevel: ApiLevel) {
+    openCameraByProxy(openCameraByProxyKey(apiLevel), shouldStream = true)
+    assertStreamOpened()
+    checkAppOpenedCameraByProxy(cameraOpenedKey(apiLevel), expectStreamOpened = true)
   }
 
   @Test
-  fun testProxyConnect() {
-    openCameraByProxy(openCameraAppKeys.openCamera1ByProxy)
-    checkAppOpenedCameraByProxy(openCameraAppKeys.cameraOpened1)
+  @RequiresFlagsEnabled(
+      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  fun testProxyStreaming2_opChanged_softDenial_cameraMute() =
+      testProxyStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_2, expectBlock = false)
+
+  // Even though camera mute is enabled, when not using the data delivery permission checks the
+  // full AttributionSource chain is not considered and OpenCameraApp will be blocked due to
+  // entering the background
+  @Test
+  @RequiresFlagsDisabled(Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  fun testProxyStreaming2_opChanged_softDenial_cameraMute_dataDeliveryPermissionChecks_off() =
+      testProxyStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_2, expectBlock = true)
+
+  // Even though camera mute is enabled, Camera1 is not capable of AttributionSource chains and
+  // so will be blocked due to OpenCameraApp entering the background
+  @Test
+  fun testProxyStreaming1_opChanged_softDenial_cameraMute() =
+      testProxyStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_1, expectBlock = true)
+
+  private fun testProxyStreaming_opChanged_softDenial_cameraMute(
+      apiLevel: ApiLevel,
+      expectBlock: Boolean
+  ) {
+    assumeTrue(supportsCameraMute())
+    openCameraByProxy(openCameraByProxyKey(apiLevel), shouldStream = true, shouldRepeat = true)
+
+    val pid =
+        onResumeFuture
+            .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .getIntExtra(OPEN_CAMERA_APP.keys.pid, -1)
+
+    assertStreamOpened()
+
+    val am = instrumentation.context.getSystemService(ActivityManager::class.java)
+
+    // Wait until OpenCameraApp is no longer visible according to ActivityManager
+    for (i in 0..7) { // 7s
+      val importance = am.getPackageImportance(OPEN_CAMERA_APP.packageName)
+      Log.v(TAG, "OpenCameraApp importance: ${importance}")
+      if (importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE) {
+        break
+      }
+      Thread.sleep(1000)
+    }
+
+    setSensorPrivacy(enabled = true)
+
+    // Wait for any potential block()
+    Thread.sleep(1000)
+
+    sendStopRepeating(CAMERA_PROXY_APP)
+    checkAppOpenedCameraByProxy(
+        cameraOpenedKey(apiLevel),
+        expectStreamOpened = true,
+        expectStoppedRepeating = !expectBlock,
+        expectError = if (expectBlock) cameraBlockedError(apiLevel) else 0)
+  }
+
+  @Test
+  @RequiresFlagsEnabled(
+      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  fun testProxyStreaming2_noOpenCameraPermission_opChanged_softDenial_block() {
+    testProxyStreaming2_opChanged_softDenial_block(OPEN_CAMERA_APP)
+  }
+
+  @Test
+  @RequiresFlagsEnabled(
+      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  fun testProxyStreaming2_noCameraProxyPermission_opChanged_softDenial_block() {
+    testProxyStreaming2_opChanged_softDenial_block(CAMERA_PROXY_APP)
   }
 
   @Test
@@ -264,11 +438,23 @@ class CameraPermissionTest {
     testConnectWithAttribution(clientAttribution, ICameraService.ERROR_PERMISSION_DENIED)
   }
 
-  private fun openCameraByProxy(openCameraKey: String) {
+  private fun openCameraByProxy(
+      openCameraKey: String,
+      shouldStream: Boolean = false,
+      shouldRepeat: Boolean = false
+  ): Int {
     openCameraResultFuture = startOpenCameraActivity()
-    assertTrue(onResumeFuture.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+    val pid =
+        onResumeFuture
+            .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .getIntExtra(OPEN_CAMERA_APP.keys.pid, -1)
     instrumentation.context.sendBroadcast(
-        Intent(openCameraKey).apply { setPackage(OPEN_CAMERA_APP.packageName) })
+        Intent(openCameraKey).apply {
+          putExtra(OPEN_CAMERA_APP.keys.shouldStream, shouldStream)
+          putExtra(OPEN_CAMERA_APP.keys.shouldRepeat, shouldRepeat)
+          setPackage(OPEN_CAMERA_APP.packageName)
+        })
+    return pid
   }
 
   private fun requireActivityResultData() =
@@ -277,27 +463,48 @@ class CameraPermissionTest {
           .apply { assertEquals(Activity.RESULT_OK, resultCode) }
           .resultData!!
 
-  private fun checkAppOpenedCamera(openCameraKey: String) {
+  private fun checkAppOpenedCamera(
+      openCameraKey: String,
+      expectStreamOpened: Boolean = false,
+      expectStoppedRepeating: Boolean = false,
+      expectError: Int = 0,
+  ) {
     requireActivityResultData().let {
       maybePrintAttributionSource(it)
       Log.v(TAG, "checkAppOpenedCamera Intent:")
       Log.v(TAG, "${it.getExtras().toString()}")
-      assumeFalse(it.getBooleanExtra(openCameraAppKeys.noCamera, false))
-      assertEquals(null, it.getStringExtra(openCameraAppKeys.exception))
-      assertEquals(0, it.getIntExtra(openCameraAppKeys.error, 0))
-      assertEquals(true, it.getBooleanExtra(openCameraKey, false))
+      OPEN_CAMERA_APP.keys.apply {
+        assumeFalse(it.getBooleanExtra(noCamera, false))
+        assertEquals(true, it.getBooleanExtra(openCameraKey, false))
+        assertEquals(null, it.getStringExtra(exception))
+        assertEquals(expectStreamOpened, it.getBooleanExtra(streamOpened, false))
+        assertEquals(expectError, it.getIntExtra(error, 0))
+        assertEquals(expectStoppedRepeating, it.getBooleanExtra(stoppedRepeating, false))
+      }
     }
   }
 
-  private fun checkAppOpenedCameraByProxy(openCameraKey: String) {
+  private fun checkAppOpenedCameraByProxy(
+      openCameraKey: String,
+      expectStreamOpened: Boolean = false,
+      expectStoppedRepeating: Boolean = false,
+      expectError: Int = 0
+  ) {
     requireActivityResultData().let {
       maybePrintAttributionSource(it)
       Log.v(TAG, "checkAppOpenedCameraByProxy Intent:")
       Log.v(TAG, "${it.getExtras().toString()}")
-      assumeFalse(it.getBooleanExtra(openCameraAppKeys.noCamera, false))
-      assertEquals(null, it.getStringExtra(openCameraAppKeys.exception))
-      assertEquals(null, it.getStringExtra(cameraProxyAppKeys.exception))
-      assertEquals(0, it.getIntExtra(openCameraAppKeys.error, 0))
+
+      assertEquals(null, it.getStringExtra(CAMERA_PROXY_APP.keys.exception))
+
+      OPEN_CAMERA_APP.keys.apply {
+        assumeFalse(it.getBooleanExtra(noCamera, false))
+        assertEquals(null, it.getStringExtra(exception))
+        assertEquals(expectStreamOpened, it.getBooleanExtra(streamOpened, false))
+        assertEquals(expectError, it.getIntExtra(error, 0))
+        assertEquals(expectStoppedRepeating, it.getBooleanExtra(stoppedRepeating, false))
+      }
+
       assertEquals(true, it.getBooleanExtra(openCameraKey, false))
     }
   }
@@ -305,8 +512,8 @@ class CameraPermissionTest {
   private fun checkAppFailedToOpenCamera(openCameraKey: String) {
     requireActivityResultData().let {
       maybePrintAttributionSource(it)
-      assumeFalse(it.getBooleanExtra(openCameraAppKeys.noCamera, false))
-      assertNotNull(it.getStringExtra(openCameraAppKeys.exception))
+      assumeFalse(it.getBooleanExtra(OPEN_CAMERA_APP.keys.noCamera, false))
+      assertNotNull(it.getStringExtra(OPEN_CAMERA_APP.keys.exception))
       assertEquals(false, it.getBooleanExtra(openCameraKey, false))
     }
   }
@@ -316,9 +523,9 @@ class CameraPermissionTest {
       maybePrintAttributionSource(it)
       Log.v(TAG, "testProxyConnectDevice_noOpenCameraPermission Intent:")
       Log.v(TAG, "${it.getExtras().toString()}")
-      assumeFalse(it.getBooleanExtra(openCameraAppKeys.noCamera, false))
-      assertNotNull(it.getStringExtra(openCameraAppKeys.exception))
-      assertEquals(null, it.getStringExtra(cameraProxyAppKeys.exception))
+      assumeFalse(it.getBooleanExtra(OPEN_CAMERA_APP.keys.noCamera, false))
+      assertNotNull(it.getStringExtra(OPEN_CAMERA_APP.keys.exception))
+      assertEquals(null, it.getStringExtra(CAMERA_PROXY_APP.keys.exception))
       assertEquals(false, it.getBooleanExtra(openCameraKey, false))
     }
   }
@@ -408,23 +615,14 @@ class CameraPermissionTest {
   private fun startActivityForSpoofing(): AttributionSourceState {
     openCameraResultFuture = startOpenCameraActivity()
 
-    assertTrue(onResumeFuture.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
-
+    val pid =
+        onResumeFuture
+            .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .getIntExtra(OPEN_CAMERA_APP.keys.pid, Process.INVALID_PID)
     val uid =
         instrumentation.context.packageManager
             .getApplicationInfo(OPEN_CAMERA_APP.packageName, 0)
             .uid
-
-    val activityManager =
-        instrumentation.context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    val runningAppList = activityManager.getRunningAppProcesses()
-
-    var pid = -1
-    for (process in runningAppList) {
-      if (process.processName.contains(OPEN_CAMERA_APP.packageName)) {
-        pid = process.pid
-      }
-    }
 
     val context = instrumentation.context
     val contextAttribution = context.getAttributionSource().asState()
@@ -454,18 +652,17 @@ class CameraPermissionTest {
 
   private fun finishActivity() {
     openCameraResultFuture?.let {
-      val finishIntent = Intent(openCameraAppKeys.finish)
+      val finishIntent = Intent(OPEN_CAMERA_APP.keys.finish)
       finishIntent.setPackage(OPEN_CAMERA_APP.packageName)
       instrumentation.context.sendBroadcast(finishIntent)
-
-      val activityResult = it.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
-      assertEquals(Activity.RESULT_OK, activityResult.resultCode)
     }
   }
 
   private fun startOpenCameraActivity(
       openCamera1: Boolean = false,
       openCamera2: Boolean = false,
+      shouldStream: Boolean = false,
+      shouldRepeat: Boolean = false,
   ): CompletableFuture<Instrumentation.ActivityResult> =
       CompletableFuture<Instrumentation.ActivityResult>().also {
         ActivityScenario.launch(StartForFutureActivity::class.java).onActivity {
@@ -473,33 +670,181 @@ class CameraPermissionTest {
           startForFutureActivity.startActivityForFuture(
               Intent().apply {
                 component = ComponentName(OPEN_CAMERA_APP.packageName, OPEN_CAMERA_ACTIVITY)
-                putExtra(openCameraAppKeys.shouldOpenCamera1, openCamera1)
-                putExtra(openCameraAppKeys.shouldOpenCamera2, openCamera2)
+                putExtra(OPEN_CAMERA_APP.keys.shouldOpenCamera1, openCamera1)
+                putExtra(OPEN_CAMERA_APP.keys.shouldOpenCamera2, openCamera2)
+                putExtra(OPEN_CAMERA_APP.keys.shouldStream, shouldStream)
+                putExtra(OPEN_CAMERA_APP.keys.shouldRepeat, shouldRepeat)
               },
               it)
         }
       }
 
+  private fun startOpenCameraActivityForOpenCamera(
+      apiLevel: ApiLevel,
+      shouldStream: Boolean = false,
+      shouldRepeat: Boolean = false
+  ) =
+      startOpenCameraActivity(
+          openCamera1 = (apiLevel == ApiLevel.API_1),
+          openCamera2 = (apiLevel == ApiLevel.API_2),
+          shouldStream = shouldStream,
+          shouldRepeat = shouldRepeat)
+
   private fun maybePrintAttributionSource(intent: Intent) {
-    intent.getStringExtra(openCameraAppKeys.attributionSource)?.let { Log.i(TAG, it) }
+    intent.getStringExtra(OPEN_CAMERA_APP.keys.attributionSource)?.let { Log.i(TAG, it) }
   }
 
   private fun denyAppPermission(app: TestApp) {
     TestApis.packages().find(app.packageName).denyPermission(Manifest.permission.CAMERA)
   }
 
-  companion object {
-    private val TAG = CameraPermissionTest::class.java.simpleName
-    private val OPEN_CAMERA_APP =
+  private fun setSensorPrivacy(enabled: Boolean) {
+    val spm = instrumentation.context.getSystemService(SensorPrivacyManager::class.java)!!
+    val supportsToggle = supportsSoftwarePrivacyToggle(spm)
+    if (enabled) {
+      assumeTrue(supportsToggle)
+    } else if (!supportsToggle) {
+      return // No need to do anything if enabled = false and the software toggle is not supported
+    }
+
+    TestApis.permissions()
+        .withPermission(
+            Manifest.permission.OBSERVE_SENSOR_PRIVACY, Manifest.permission.MANAGE_SENSOR_PRIVACY)
+        .use {
+          val newState =
+              if (enabled) SensorPrivacyManager.StateTypes.ENABLED
+              else SensorPrivacyManager.StateTypes.DISABLED
+          val stateStr = if (enabled) "Enabled" else "Disabled"
+          val oldState =
+              spm.getSensorPrivacyState(
+                  SensorPrivacyManager.TOGGLE_TYPE_SOFTWARE, TOGGLE_SENSOR_CAMERA)
+
+          spm.setSensorPrivacyState(TOGGLE_SENSOR_CAMERA, newState)
+          Log.v(TAG, "${stateStr} sensor privacy")
+          restoreSensorPrivacy = {
+            TestApis.permissions()
+                .withPermission(
+                    Manifest.permission.OBSERVE_SENSOR_PRIVACY,
+                    Manifest.permission.MANAGE_SENSOR_PRIVACY)
+                .use { spm.setSensorPrivacyState(TOGGLE_SENSOR_CAMERA, oldState) }
+            restoreSensorPrivacy = null
+          }
+        }
+  }
+
+  private fun supportsSoftwarePrivacyToggle(spm: SensorPrivacyManager): Boolean =
+      spm.supportsSensorToggle(SensorPrivacyManager.TOGGLE_TYPE_SOFTWARE, TOGGLE_SENSOR_CAMERA)
+
+  private fun supportsCameraMute(): Boolean {
+    val cameraIdList = cameraManager.cameraIdList
+    assumeFalse(cameraIdList.isEmpty())
+
+    val cameraId = cameraManager.cameraIdList[0]
+    val availableTestPatternModes =
+        cameraManager
+            .getCameraCharacteristics(cameraId)
+            .get(CameraCharacteristics.SENSOR_AVAILABLE_TEST_PATTERN_MODES) ?: return false
+    for (mode in availableTestPatternModes) {
+      if ((mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_SOLID_COLOR) ||
+          (mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_BLACK)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private fun setOpMode(app: TestApp, @AppOpsManager.Mode mode: Int) {
+    runWithShellPermissionIdentity {
+      val uid = instrumentation.context.packageManager.getApplicationInfo(app.packageName, 0).uid
+      val appOpsManager = instrumentation.context.getSystemService(AppOpsManager::class.java)
+
+      val oldMode =
+          appOpsManager.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_CAMERA, uid, app.packageName)
+
+      appOpsManager.setUidMode(AppOpsManager.OP_CAMERA, uid, mode)
+
+      onTearDown.add({
+        runWithShellPermissionIdentity {
+          appOpsManager.setUidMode(AppOpsManager.OP_CAMERA, uid, oldMode)
+        }
+      })
+
+      val currentMode =
+          appOpsManager.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_CAMERA, uid, app.packageName)
+      assertEquals(mode, currentMode)
+    }
+  }
+
+  private fun assertStreamOpened() =
+      assertTrue(
+          streamOpenedFuture
+              .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+              .getBooleanExtra(OPEN_CAMERA_APP.keys.streamOpened, false))
+
+  private fun testProxyStreaming2_opChanged_softDenial_block(deniedApp: TestApp) {
+    setSensorPrivacy(enabled = false)
+    openCameraByProxy(
+        OPEN_CAMERA_APP.keys.openCamera2ByProxy, shouldStream = true, shouldRepeat = true)
+
+    assertStreamOpened()
+
+    setOpMode(deniedApp, AppOpsManager.MODE_IGNORED)
+
+    checkAppOpenedCameraByProxy(
+        OPEN_CAMERA_APP.keys.cameraOpened2,
+        expectStreamOpened = true,
+        expectError = CameraDevice.StateCallback.ERROR_CAMERA_DISABLED)
+  }
+
+  private fun sendStopRepeating(app: TestApp) {
+    val stopRepeatingIntent = Intent(app.keys.stopRepeating)
+    stopRepeatingIntent.setPackage(app.packageName)
+    instrumentation.context.sendBroadcast(stopRepeatingIntent)
+  }
+
+  private companion object {
+    val TAG = CameraPermissionTest::class.java.simpleName
+    val OPEN_CAMERA_APP =
         TestApp("OpenCameraApp", "android.security.cts.camera.open", 30, false, "OpenCameraApp.apk")
-    private val CAMERA_PROXY_APP =
+    val CAMERA_PROXY_APP =
         TestApp(
             "CameraProxyApp", "android.security.cts.camera.proxy", 30, false, "CameraProxyApp.apk")
-    private val OPEN_CAMERA_ACTIVITY = "${OPEN_CAMERA_APP.packageName}.OpenCameraActivity"
-    private val CAMERA_PROXY_ACTIVITY = "${CAMERA_PROXY_APP.packageName}.CameraProxyActivity"
+    val OPEN_CAMERA_APP_KEYS = IntentKeys(OPEN_CAMERA_APP.packageName)
+    val CAMERA_PROXY_APP_KEYS = IntentKeys(CAMERA_PROXY_APP.packageName)
+    val APP_TO_KEYS =
+        mapOf(OPEN_CAMERA_APP to OPEN_CAMERA_APP_KEYS, CAMERA_PROXY_APP to CAMERA_PROXY_APP_KEYS)
+    val OPEN_CAMERA_ACTIVITY = "${OPEN_CAMERA_APP.packageName}.OpenCameraActivity"
+    val CAMERA_PROXY_ACTIVITY = "${CAMERA_PROXY_APP.packageName}.CameraProxyActivity"
     const val TIMEOUT_MILLIS: Long = 10000
+    const val TOGGLE_SENSOR_CAMERA = SensorPrivacyManager.Sensors.CAMERA
 
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    enum class ApiLevel {
+      API_1,
+      API_2,
+    }
+
+    val TestApp.keys: IntentKeys
+      get() = APP_TO_KEYS.getValue(this)
+
+    val instrumentation = InstrumentationRegistry.getInstrumentation()
+
+    fun cameraOpenedKey(apiLevel: ApiLevel) =
+        when (apiLevel) {
+          ApiLevel.API_1 -> OPEN_CAMERA_APP.keys.cameraOpened1
+          ApiLevel.API_2 -> OPEN_CAMERA_APP.keys.cameraOpened2
+        }
+
+    fun cameraBlockedError(apiLevel: ApiLevel) =
+        when (apiLevel) {
+          ApiLevel.API_1 -> Camera.CAMERA_ERROR_UNKNOWN
+          ApiLevel.API_2 -> CameraDevice.StateCallback.ERROR_CAMERA_DISABLED
+        }
+
+    fun openCameraByProxyKey(apiLevel: ApiLevel) =
+        when (apiLevel) {
+          ApiLevel.API_1 -> OPEN_CAMERA_APP.keys.openCamera1ByProxy
+          ApiLevel.API_2 -> OPEN_CAMERA_APP.keys.openCamera2ByProxy
+        }
 
     @BeforeClass
     @JvmStatic

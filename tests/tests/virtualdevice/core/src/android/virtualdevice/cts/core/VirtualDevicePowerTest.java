@@ -21,6 +21,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -197,7 +198,7 @@ public class VirtualDevicePowerTest {
     @Test
     @RequiresFlagsEnabled(
             {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
-    public void testGoToSleepAndWakeUp_turnsOffAndOnVirtualDisplay() {
+    public void goToSleepAndWakeUp_turnsOffAndOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
@@ -252,6 +253,85 @@ public class VirtualDevicePowerTest {
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
     }
 
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void turnScreenOn_turnsOnVirtualDisplay() {
+        createVirtualDeviceAndDisplay();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        mVirtualDevice.goToSleep();
+        UiDeviceUtils.pressSleepButton();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(
+                mDisplay.getDisplayId(), TurnScreenOnShowWhenLockedActivity.class);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onResumed();
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
+    }
+
+    /**
+     * Virtual device displays never show keyguard and are always considered "insecure" and
+     * "unlocked", so android:showWhenLocked is ignored for such displays.
+     */
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void turnScreenOnWithoutShowWhenLocked_turnsOnVirtualDisplay() {
+        createVirtualDeviceAndDisplay();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        UiDeviceUtils.pressSleepButton();
+        mVirtualDevice.goToSleep();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(
+                mDisplay.getDisplayId(), TurnScreenOnActivity.class);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onResumed();
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void turnScreenOnWithoutShowWhenLocked_turnsOnAlwaysUnlockedVirtualDisplay() {
+        createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
+                .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
+                .build(),
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        mVirtualDevice.goToSleep();
+        UiDeviceUtils.pressSleepButton();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(
+                mDisplay.getDisplayId(), TurnScreenOnActivity.class);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onResumed();
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
+    }
+
     private void assumeScreenOffSupported() {
         assumeFalse("Skipping test: Automotive main display is always on",
                 FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
@@ -289,4 +369,8 @@ public class VirtualDevicePowerTest {
         Context virtualDisplayContext = mContext.createDisplayContext(mDisplay);
         mVirtualDisplayPowerManager = virtualDisplayContext.getSystemService(PowerManager.class);
     }
+
+    public static final class TurnScreenOnActivity extends Activity {}
+
+    public static final class TurnScreenOnShowWhenLockedActivity extends Activity {}
 }

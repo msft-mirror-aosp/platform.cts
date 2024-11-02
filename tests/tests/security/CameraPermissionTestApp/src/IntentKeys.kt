@@ -23,6 +23,12 @@ class IntentKeys(private val packageName: String) {
     val shouldOpenCamera2: String
         get() = "$packageName.SHOULD_OPEN_CAMERA2"
 
+    val shouldStream: String
+        get() = "$packageName.SHOULD_STREAM"
+
+    val shouldRepeat: String // Should set a repeating request on the stream
+        get() = "$packageName.SHOULD_REPEAT"
+
     val finish: String
         get() = "$packageName.FINISH"
 
@@ -34,6 +40,9 @@ class IntentKeys(private val packageName: String) {
 
     val cameraOpened2: String
         get() = "$packageName.CAMERA_OPENED2"
+
+    val streamOpened: String
+        get() = "$packageName.STREAM_OPENED"
 
     val error: String
         get() = "$packageName.ERROR"
@@ -55,4 +64,13 @@ class IntentKeys(private val packageName: String) {
 
     val openCamera2ByProxy: String
         get() = "$packageName.OPEN_CAMERA2_BY_PROXY"
+
+    val stopRepeating: String
+        get() = "$packageName.STOP_REPEATING"
+
+    val stoppedRepeating: String
+        get() = "$packageName.STOPPED_REPEATING"
+
+    val pid: String
+        get() = "$packageName.PID"
 }
