@@ -553,6 +553,11 @@ public class AccessibilityNodeInfoTest {
         if (Flags.a11yExpansionStateApi()) {
             info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
         }
+
+        // 1 Boolean property
+        if (Flags.a11yIsRequiredApi()) {
+            info.setFieldRequired(true);
+        }
     }
 
     /**
@@ -831,6 +836,14 @@ public class AccessibilityNodeInfoTest {
                     expectedInfo.getExpandedState(),
                     receivedInfo.getExpandedState());
         }
+
+        // 1 Boolean Property
+        if (Flags.a11yIsRequiredApi()) {
+            assertSame(
+                    "isFieldRequired has incorrect value",
+                    expectedInfo.isFieldRequired(),
+                    receivedInfo.isFieldRequired());
+        }
     }
 
     /**
@@ -946,6 +959,11 @@ public class AccessibilityNodeInfoTest {
                     "expandedState not properly reset",
                     info.getExpandedState(),
                     AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        }
+
+        // 1 Boolean Proptery
+        if (Flags.a11yIsRequiredApi()) {
+            assertFalse("isFieldRequired not properly reset", info.isFieldRequired());
         }
     }
 
