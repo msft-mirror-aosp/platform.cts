@@ -30,7 +30,6 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.cts.TestArgs;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -59,7 +58,6 @@ import java.util.Map;
 import java.util.Random;
 
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class EncoderTest {

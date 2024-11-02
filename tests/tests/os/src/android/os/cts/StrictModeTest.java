@@ -71,6 +71,9 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.Os;
 import android.system.OsConstants;
 import android.util.Log;
@@ -87,9 +90,11 @@ import androidx.test.rule.ServiceTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -121,6 +126,10 @@ import java.util.zip.GZIPOutputStream;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StrictModeTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "StrictModeTest";
     private static final String REMOTE_SERVICE_ACTION = "android.app.REMOTESERVICE";
     private static final String UNSAFE_INTENT_LAUNCH = "UnsafeIntentLaunch";
@@ -1453,6 +1462,7 @@ public class StrictModeTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_ThrowsViolation() throws Exception {
 
         StrictMode.setVmPolicy(
