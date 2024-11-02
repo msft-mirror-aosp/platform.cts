@@ -159,7 +159,10 @@ class MetadataTest(its_base_test.ItsBaseTest):
                                    f'{hyperfocal:.2f}, MIN: {_HYPERFOCAL_MIN}')
 
         min_focus_distance = props['android.lens.info.minimumFocusDistance']
-        min_focus_distance_cm = _M_TO_CM / min_focus_distance
+        if min_focus_distance:
+          min_focus_distance_cm = _M_TO_CM / min_focus_distance
+        else:
+          min_focus_distance_cm = 0
         logging.debug('Minimum focus distance: %.3f diopters (%.2f cm)',
                       min_focus_distance, min_focus_distance_cm
                      )

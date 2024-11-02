@@ -2478,6 +2478,27 @@ public class StaticMetadata {
         return getValueFromKeyNonNull(CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE);
     }
 
+    /*
+     * Determine if camera device supports CCT mode for color correction
+     *
+     * @return {@code true} if CCT mode is supported
+     */
+    public boolean isCctModeSupported() {
+        int[] availableColorCorrectionModes = mCharacteristics.get(
+                CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES);
+
+        if (availableColorCorrectionModes == null) {
+            return false;
+        }
+
+        for (int mode : availableColorCorrectionModes) {
+            if (mode == CameraMetadata.COLOR_CORRECTION_MODE_CCT) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /*
      * Determine if camera device support manual lens shading map control
