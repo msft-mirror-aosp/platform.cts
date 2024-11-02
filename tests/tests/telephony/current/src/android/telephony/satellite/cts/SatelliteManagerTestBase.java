@@ -165,6 +165,12 @@ public class SatelliteManagerTestBase {
                 .dropShellPermissionIdentity();
     }
 
+    protected static void grantSatelliteAndReadBasicPhoneStatePermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.READ_BASIC_PHONE_STATE);
+    }
+
     protected static class SatelliteTransmissionUpdateCallbackTest implements
             SatelliteTransmissionUpdateCallback {
 
