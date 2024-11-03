@@ -21,6 +21,11 @@
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
         <activity android:name="android.app.Activity" />
+        <activity android:name=".VirtualDevicePowerTest$TurnScreenOnActivity"
+                  android:turnScreenOn="true" />
+        <activity android:name=".VirtualDevicePowerTest$TurnScreenOnShowWhenLockedActivity"
+                  android:turnScreenOn="true"
+                  android:showWhenLocked="true" />
     </application>
 
     <uses-feature android:name="android.software.companion_device_setup" />

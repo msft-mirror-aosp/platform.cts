@@ -188,10 +188,10 @@ public class EnvironmentTest {
     }
 
     @Test
-    @ApiTest(apis = "android.os.Environment#getDataSystemDeDirectory")
+    @ApiTest(apis = "android.os.Environment#getDataSystemDeviceProtectedDirectory")
     @RequiresFlagsEnabled(android.crashrecovery.flags.Flags.FLAG_ENABLE_CRASHRECOVERY)
-    public void testGetDataSystemDeDirectory() {
-        assertTrue(Environment.getDataSystemDeDirectory().isDirectory());
+    public void testGetDataSystemDeviceProtectedDirectory() {
+        assertTrue(Environment.getDataSystemDeviceProtectedDirectory().isDirectory());
     }
 
     private void testDataPackageDirectoryForUser(
