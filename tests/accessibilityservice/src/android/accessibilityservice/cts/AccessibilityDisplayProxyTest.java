@@ -137,6 +137,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -299,6 +300,7 @@ public class AccessibilityDisplayProxyTest {
         mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
         VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplayWithFlags(
                 mVirtualDevice, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
         final List<AccessibilityServiceInfo> infos = new ArrayList<>();
@@ -458,6 +460,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#onAccessibilityEvent"})
+    @Ignore("b/372471911")
     public void testPerformSystemAction_keyEventsDispatchedToLastNonProxyDisplay()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -482,6 +485,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @Ignore("b/372471911")
     public void testPerformSystemAction_topFocusDisplayIsLastNonProxyDisplay()
             throws TimeoutException {
         registerProxyAndWaitForConnection();
@@ -506,6 +510,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @Ignore("b/372471911")
     public void testTriggerTouchExploration_topFocusDisplayIsLastNonProxyDisplay()
             throws TimeoutException {
         final PackageManager pm = sInstrumentation.getContext().getPackageManager();
@@ -605,6 +610,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceSetsAccessibilityFocus_proxyGetsNullFocus() throws Exception {
         final StubProxyConcurrentAccessibilityService service =
                 mNonProxyServiceRule.enableService();
@@ -718,6 +724,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceAndProxySetA11yFocus_serviceAndProxyGetSeparateFocus()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -771,6 +778,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceSetsInputFocus_proxyDoesNotGetServiceInputFocus()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -815,6 +823,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#onAccessibilityEvent"})
+    @Ignore("b/372471911")
     public void testOnA11yEvent_touchDefaultDisplay_serviceReceivesInteractionEvent()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =

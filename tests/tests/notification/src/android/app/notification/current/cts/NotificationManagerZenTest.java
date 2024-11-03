@@ -54,6 +54,8 @@ import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_PEEK;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_OFF;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_ON;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_STATUS_BAR;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.service.notification.Condition.STATE_FALSE;
 import static android.service.notification.Condition.STATE_TRUE;
@@ -711,7 +713,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
-        assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        if (mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
+            assertFalse(mNotificationManager.areAutomaticZenRulesUserManaged());
+        } else {
+            assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        }
     }
 
     @Test
@@ -3006,11 +3013,14 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void testIndividualRuleIntent_resolvesToActivity() {
+        assumeTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+
         AutomaticZenRule ruleToCreate = createRule("testIndividualRuleIntent_resolvesToActivity");
         String id = mNotificationManager.addAutomaticZenRule(ruleToCreate);
         final PackageManager pm = mContext.getPackageManager();
         final Intent intent = new Intent(Settings.ACTION_AUTOMATIC_ZEN_RULE_SETTINGS);
         intent.putExtra(EXTRA_AUTOMATIC_ZEN_RULE_ID, id);
+
         final ResolveInfo resolveInfo = pm.resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull(resolveInfo);
     }

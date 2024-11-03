@@ -15,21 +15,19 @@
  */
 package com.android.bedstead.multiuser
 
-import android.os.Build
 import android.os.Process
 import android.os.UserHandle
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile
+import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
-import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.types.OptionalBoolean
@@ -37,7 +35,6 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.nene.utils.Poll
 import com.google.common.truth.Truth.assertThat
-import org.junit.Assume
 import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
@@ -47,34 +44,16 @@ import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 class UsersTest {
+
     private val mSecondaryUserType = TestApis
-            .users()
-            .supportedType(UserType.SECONDARY_USER_TYPE_NAME)
-    private val mManagedProfileType = TestApis
-            .users()
-            .supportedType(UserType.MANAGED_PROFILE_TYPE_NAME)
+        .users()
+        .supportedType(UserType.SECONDARY_USER_TYPE_NAME)
+    private val mCloneProfileType = TestApis
+        .users()
+        .supportedType(UserType.CLONE_PROFILE_TYPE_NAME)
     private val mInstrumentedUser = TestApis
-            .users()
-            .instrumented()
-
-    // We don't want to test the exact list of any specific device, so we check that it returns
-    // some known types which will exist on the emulators (used for presubmit tests).
-    @Test
-    fun supportedTypes_containsManagedProfile() {
-        val managedProfileUserType = TestApis
-                .users()
-                .supportedTypes()
-                .first { ut: UserType -> ut.name() == UserType.MANAGED_PROFILE_TYPE_NAME }
-
-        assertThat(
-                managedProfileUserType.baseType()
-        ).containsExactly(UserType.BaseType.PROFILE)
-        assertThat(managedProfileUserType.enabled()).isTrue()
-        assertThat(managedProfileUserType.maxAllowed()).isEqualTo(MAX_MANAGED_PROFILES)
-        assertThat(
-                managedProfileUserType.maxAllowedPerParent()
-        ).isEqualTo(MAX_MANAGED_PROFILES_PER_PARENT)
-    }
+        .users()
+        .instrumented()
 
     @Test
     fun supportedTypes_containsSystemUser() {
@@ -90,23 +69,6 @@ class UsersTest {
         assertThat(
                 systemUserType.maxAllowedPerParent()
         ).isEqualTo(MAX_SYSTEM_USERS_PER_PARENT)
-    }
-
-    @Test
-    fun supportedType_validType_returnsType() {
-        val managedProfileUserType = TestApis
-                .users()
-                .supportedType(UserType.MANAGED_PROFILE_TYPE_NAME)
-
-        assertThat(
-                managedProfileUserType!!.baseType()
-        ).containsExactly(UserType.BaseType.PROFILE)
-        assertThat(managedProfileUserType.enabled()).isTrue()
-        assertThat(
-                managedProfileUserType.maxAllowed()
-        ).isEqualTo(MAX_MANAGED_PROFILES)
-        assertThat(managedProfileUserType.maxAllowedPerParent())
-                .isEqualTo(MAX_MANAGED_PROFILES_PER_PARENT)
     }
 
     @Test
@@ -275,33 +237,14 @@ class UsersTest {
     }
 
     @Test
-    @EnsureHasNoDeviceOwner // Device Owners can disable managed profiles
-    @EnsureHasNoWorkProfile
-    @EnsureCanAddUser
-    fun createUser_specifiesManagedProfileUserType_createsUser() {
-        val personalUser = TestApis.users().instrumented()
-        val user = TestApis.users()
-                .createUser()
-                .type(mManagedProfileType)
-                .parent(personalUser)
-                .create()
-
-        try {
-            assertThat(user.exists()).isTrue()
-        } finally {
-            user.remove()
-        }
-    }
-
-    @Test
-    @EnsureHasNoWorkProfile
+    @EnsureHasNoCloneProfile
     @EnsureCanAddUser
     fun createUser_createsProfile_parentIsSet() {
         val personalUser = TestApis.users().instrumented()
         val user = TestApis
                 .users()
                 .createUser()
-                .type(mManagedProfileType)
+                .type(mCloneProfileType)
                 .parent(personalUser)
                 .create()
 
@@ -326,28 +269,9 @@ class UsersTest {
     @Test
     @EnsureCanAddUser
     fun createUser_specifiesProfileTypeWithoutParent_throwsException() {
-        val userBuilder = TestApis.users().createUser().type(mManagedProfileType)
+        val userBuilder = TestApis.users().createUser().type(mCloneProfileType)
 
         assertThrows(NeneException::class.java) { userBuilder.create() }
-    }
-
-    @Test
-    @EnsureCanAddUser
-    fun createUser_androidLessThanS_createsManagedProfileNotOnSystemUser_throwsException() {
-        Assume.assumeTrue(
-                "After Android S, managed profiles may be a profile of a non-system user",
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.S
-        )
-        val nonSystemUser = TestApis.users().createUser().create()
-        try {
-            val userBuilder = TestApis.users().createUser()
-                    .type(mManagedProfileType)
-                    .parent(nonSystemUser)
-
-            assertThrows(NeneException::class.java) { userBuilder.create() }
-        } finally {
-            nonSystemUser.remove()
-        }
     }
 
     @Test
@@ -405,7 +329,7 @@ class UsersTest {
     @Test
     fun findUsersOfType_profileType_throwsException() {
         assertThrows(NeneException::class.java) {
-            TestApis.users().findUsersOfType(mManagedProfileType)
+            TestApis.users().findUsersOfType(mCloneProfileType)
         }
     }
 
@@ -450,15 +374,15 @@ class UsersTest {
     @Test
     fun findUserOfType_profileType_throwsException() {
         assertThrows(NeneException::class.java) {
-            TestApis.users().findUserOfType(mManagedProfileType)
+            TestApis.users().findUserOfType(mCloneProfileType)
         }
     }
 
     @Test
-    @EnsureHasNoWorkProfile
+    @EnsureHasNoCloneProfile
     fun findProfilesOfType_noMatching_returnsEmptySet() {
         assertThat(
-                TestApis.users().findProfilesOfType(mManagedProfileType, mInstrumentedUser)
+                TestApis.users().findProfilesOfType(mCloneProfileType, mInstrumentedUser)
         ).isEmpty()
     }
 
@@ -472,16 +396,16 @@ class UsersTest {
     @Test
     fun findProfilesOfType_nullParent_throwsException() {
         assertThrows(NullPointerException::class.java) {
-            TestApis.users().findProfilesOfType(mManagedProfileType, null)
+            TestApis.users().findProfilesOfType(mCloneProfileType, null)
         }
     }
 
     // TODO(scottjonathan): Once we have profiles which support more than one instance, test this
     @Test
-    @EnsureHasNoWorkProfile
+    @EnsureHasNoCloneProfile
     fun findProfileOfType_noMatching_returnsNull() {
         assertThat(
-                TestApis.users().findProfileOfType(mManagedProfileType, mInstrumentedUser)
+                TestApis.users().findProfileOfType(mCloneProfileType, mInstrumentedUser)
         ).isNull()
     }
 
@@ -509,15 +433,15 @@ class UsersTest {
     @Test
     fun findProfileOfType_nullParent_throwsException() {
         assertThrows(NullPointerException::class.java) {
-            TestApis.users().findProfileOfType(mManagedProfileType, null)
+            TestApis.users().findProfileOfType(mCloneProfileType, null)
         }
     }
 
     @Test // TODO(scottjonathan): This should have a way of specifying exactly 1
-    @EnsureHasWorkProfile
+    @EnsureHasCloneProfile
     fun findProfileOfType_oneMatchingUser_returnsUser() {
         assertThat(
-                TestApis.users().findProfileOfType(mManagedProfileType, mInstrumentedUser)
+                TestApis.users().findProfileOfType(mCloneProfileType, mInstrumentedUser)
         ).isNotNull()
     }
 
@@ -606,8 +530,6 @@ class UsersTest {
         private const val MAX_SYSTEM_USERS = 1
         private const val MAX_SYSTEM_USERS_PER_PARENT = UserType.UNLIMITED
         private const val INVALID_TYPE_NAME = "invalidTypeName"
-        private const val MAX_MANAGED_PROFILES = UserType.UNLIMITED
-        private const val MAX_MANAGED_PROFILES_PER_PARENT = 1
         private const val NON_EXISTING_USER_ID = 10000
         private const val USER_ID = NON_EXISTING_USER_ID
         private const val USER_NAME = "userName"

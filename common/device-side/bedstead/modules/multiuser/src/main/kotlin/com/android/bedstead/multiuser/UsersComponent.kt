@@ -18,8 +18,6 @@ package com.android.bedstead.multiuser
 import android.content.pm.PackageManager
 import android.os.UserManager
 import android.util.Log
-import com.android.bedstead.enterprise.DeviceOwnerComponent
-import com.android.bedstead.enterprise.ProfileOwnersComponent
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
@@ -55,9 +53,9 @@ import org.junit.AssumptionViolatedException
  */
 class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val userRestrictionsComponent: UserRestrictionsComponent by locator
-    private val profileOwnersComponent: ProfileOwnersComponent by locator
-    private val deviceOwnerComponent: DeviceOwnerComponent by locator
+    private val enterpriseMediator: MultiUserToEnterpriseMediator? by lazy {
+        locator.getOrNull("com.android.bedstead.enterprise.MultiUserToEnterpriseMediatorImpl")
+    }
     private val userTypeResolver: UserTypeResolver by locator
     private val context = context().instrumentedContext()
     private val createdUsers: MutableList<UserReference> = mutableListOf()
@@ -276,10 +274,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
      */
     @CanIgnoreReturnValue
     fun createUser(userType: UserType, parent: UserReference? = null): UserReference {
-        userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
-            UserManager.DISALLOW_ADD_USER,
-            com.android.bedstead.harrier.UserType.ANY
-        )
+        enterpriseMediator?.ensureDoesNotHaveUserRestriction(
+            UserManager.DISALLOW_ADD_USER
+        ) ?: noEnterpriseLog("ensureDoesNotHaveUserRestriction")
         EnsureCanAddUser().logic()
         return try {
             val user = users().createUser()
@@ -442,7 +439,8 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
             userType,
             installInstrumentedAppInParent
         )
-        profileOwnersComponent.ensureHasNoProfileOwner(instrumentedUser)
+        enterpriseMediator?.ensureHasNoProfileOwner(instrumentedUser)
+            ?: noEnterpriseLog("ensureHasNoProfileOwner")
         ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent()!!)
     }
 
@@ -632,8 +630,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
                 requireFeature(PackageManager.FEATURE_MANAGED_USERS, FailureMode.SKIP)
 
                 // DO + work profile isn't a valid state
-                deviceOwnerComponent.ensureHasNoDeviceOwner()
-                userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
+                enterpriseMediator?.ensureHasNoDeviceOwner()
+                    ?: noEnterpriseLog("ensureHasNoDeviceOwner")
+                ensureDoesNotHaveUserRestriction(
                     CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE,
                     forUserReference
                 )
@@ -671,13 +670,13 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         ensureCanAddProfile(parent, profileType)
         if (profileType.name() == "android.os.usertype.profile.CLONE") {
             // Special case - we can't create a clone profile if this is set
-            userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
+            ensureDoesNotHaveUserRestriction(
                 CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE,
                 parent
             )
         } else if (profileType.name() == "android.os.usertype.profile.PRIVATE") {
             // Special case - we can't create a private profile if this is set
-            userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
+            ensureDoesNotHaveUserRestriction(
                 CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE,
                 parent
             )
@@ -723,6 +722,18 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
             }
             removeAndRecordUser(profile)
         }
+    }
+
+    private fun ensureDoesNotHaveUserRestriction(restriction: String, onUser: UserReference?) {
+        enterpriseMediator?.ensureDoesNotHaveUserRestriction(restriction, onUser)
+            ?: noEnterpriseLog("ensureDoesNotHaveUserRestriction")
+    }
+
+    private fun noEnterpriseLog(methodName: String) {
+        Log.i(
+            LOG_TAG,
+            "bedstead-enterprise module is not loaded, $methodName will not be executed"
+        )
     }
 
     companion object {

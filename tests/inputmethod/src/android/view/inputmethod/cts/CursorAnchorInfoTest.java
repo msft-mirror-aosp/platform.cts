@@ -40,13 +40,11 @@ import android.view.inputmethod.CursorAnchorInfo.Builder;
 import android.view.inputmethod.EditorBoundsInfo;
 import android.view.inputmethod.TextAppearanceInfo;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,9 +52,8 @@ import java.util.Collections;
 import java.util.List;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class CursorAnchorInfoTest {
+public final class CursorAnchorInfoTest {
     private static final float EPSILON = 0.0000001f;
 
     private static final RectF[] MANY_BOUNDS = new RectF[] {

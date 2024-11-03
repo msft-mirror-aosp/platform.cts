@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_API)
 public class AdvancedProtectionManagerTest {
-    private static final int TIMEOUT_S = 2;
+    private static final int TIMEOUT_S = 1;
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private AdvancedProtectionManager mManager;
     private boolean mInitialApmState;
@@ -84,6 +84,9 @@ public class AdvancedProtectionManagerTest {
 
     @After
     public void teardown() {
+        if (mManager == null) {
+            return;
+        }
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);
@@ -152,11 +155,18 @@ public class AdvancedProtectionManagerTest {
             fail("Callback not called on register");
         }
         mManager.unregisterAdvancedProtectionCallback(callback);
+        Thread.sleep(TIMEOUT_S * 1000);
         mManager.setAdvancedProtectionEnabled(false);
 
         if (onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback called on set after unregister");
         }
+    }
+
+    @Test
+    public void testGetFeatures() {
+        // To be updated once we start adding in features;
+        assertTrue(mManager.getAdvancedProtectionFeatures().isEmpty());
     }
 
     @Test
@@ -177,6 +187,16 @@ public class AdvancedProtectionManagerTest {
         mInstrumentation.getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.isAdvancedProtectionEnabled());
+    }
+
+    @Test
+    public void testGetFeatures_withoutPermission() {
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertThrows(SecurityException.class, () -> mManager.getAdvancedProtectionFeatures());
+
+        mInstrumentation.getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
+        assertDoesNotThrow(() -> mManager.getAdvancedProtectionFeatures());
     }
 
     private static void assertDoesNotThrow(ThrowingRunnable runnable) {
