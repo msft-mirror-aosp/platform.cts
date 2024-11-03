@@ -69,6 +69,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.DropBoxManager;
 import android.os.Looper;
+import android.os.OutcomeReceiver;
 import android.os.Parcel;
 import android.os.PersistableBundle;
 import android.os.Process;
@@ -328,6 +329,7 @@ public class TelephonyManagerTest {
     private static final int RADIO_HAL_VERSION_2_0 = makeRadioVersion(2, 0);
     private static final int RADIO_HAL_VERSION_2_1 = makeRadioVersion(2, 1);
     private static final int RADIO_HAL_VERSION_2_2 = makeRadioVersion(2, 2);
+    private static final int RADIO_HAL_VERSION_2_3 = makeRadioVersion(2, 3);
 
     static {
         EMERGENCY_NUMBER_SOURCE_SET = new HashSet<Integer>();
@@ -2493,7 +2495,7 @@ public class TelephonyManagerTest {
     @Test
     public void testRebootRadio() throws Throwable {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        if (mModemHalVersion <= RADIO_HAL_VERSION_2_2) {
+        if (mModemHalVersion < RADIO_HAL_VERSION_2_3) {
             Log.d(TAG,
                     "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.");
             return;
@@ -6660,8 +6662,8 @@ public class TelephonyManagerTest {
      * Verifies that {@link TelephonyManager#getImsPrivateUserIdentity()} does not throw any
      * exception when called and has the correct permissions.
      */
-    @Ignore("TelephonyManager#getImsPrivateUserIdentity()" + " is hidden. Internal use only.")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPrivateUserIdentity() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6681,8 +6683,8 @@ public class TelephonyManagerTest {
      * Verifies that {@link TelephonyManager#getImsPrivateUserIdentity()} does throw
      * SecurityException when required permissions are not granted.
      */
-    @Ignore("TelephonyManager#getImsPrivateUserIdentity()" + " is hidden. Internal use only.")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPrivateUserIdentity_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
@@ -6699,8 +6701,8 @@ public class TelephonyManagerTest {
      * Verifies that {@link TelephonyManager#getImsPublicUserIdentities()} does not throw any
      * exception when granted with READ_PRIVILEGED_PHONE_STATE permission.
      */
-    @Ignore("TelephonyManager#getImsPublicUserIdentities()" + " is hidden. Internal use only.")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPublicUserIdentities_ReadPrivilegedPermission() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
@@ -6713,30 +6715,7 @@ public class TelephonyManagerTest {
                 assertTrue(impu.getScheme().equalsIgnoreCase("sip"));
             }
         } catch (IllegalStateException e) {
-            // expected in case SIM do not support ISIM
-            fail();
-        }
-    }
-
-    /**
-     * Verifies that {@link TelephonyManager#getImsPublicUserIdentities()} does not throw any
-     * exception when granted with READ_PHONE_NUMBERS permission.
-     */
-    @Ignore("TelephonyManager#getImsPublicUserIdentities()" + " is hidden. Internal use only.")
-    @Test
-    public void getImsPublicUserIdentities_ReadPhoneNumberPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-        // make sure not to face any permission problem while calling the API
-        try {
-            List<Uri> impuList = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, tm -> tm.getImsPublicUserIdentities(),
-                    Manifest.permission.READ_PHONE_NUMBERS);
-            assertNotNull(impuList);
-            for (Uri impu : impuList) {
-                assertTrue(impu.getScheme().equalsIgnoreCase("sip"));
-            }
-        } catch (IllegalStateException e) {
-            // expected in case SIM do not support ISIM
+            assumeNoException("Skipping test in case SIM do not support ISIM", e);
         }
     }
 
@@ -6744,17 +6723,12 @@ public class TelephonyManagerTest {
      * Verifies that {@link TelephonyManager#getImsPublicUserIdentities()} does throw
      * SecurityException when called with out any permissions granted.
      */
-    @Ignore("TelephonyManager#getImsPublicUserIdentities()" + " is hidden. Internal use only.")
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
     public void getImsPublicUserIdentities_NoPermissionGranted() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
-            if (hasReadContactsPermission(mSelfPackageName)) {
-                InstrumentationRegistry.getInstrumentation().getUiAutomation().
-                        revokeRuntimePermission(mSelfPackageName,
-                                "android.permission.READ_PHONE_NUMBERS");
-            }
-            List<Uri> impuList = mTelephonyManager.getImsPublicUserIdentities();
+            mTelephonyManager.getImsPublicUserIdentities();
             fail(); // if no SecurityException then it fails()
         } catch (IllegalStateException e) {
             // expected in case SIM do not support ISIM
@@ -6763,9 +6737,102 @@ public class TelephonyManagerTest {
         }
     }
 
-    private boolean hasReadContactsPermission(String pkgName) {
-        return mPackageManager.checkPermission(Manifest.permission.READ_CONTACTS, pkgName)
-                == PackageManager.PERMISSION_GRANTED;
+    /**
+     * Verifies that {@link TelephonyManager#getImsPcscfAddresses()} does not cause
+     * SecurityException when granted with READ_PRIVILEGED_PHONE_STATE permission.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
+    public void getImsPcscfAddresses_WithReadPrivilegedPermission() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        // make sure not to face any permission problem while calling the API
+        try {
+            List<String> pcscfList = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, tm -> tm.getImsPcscfAddresses(),
+                    Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+            assertNotNull(pcscfList);
+        } catch (IllegalStateException e) {
+            assumeNoException("Skipping test in case SIM do not support ISIM", e);
+        }
+    }
+
+    /**
+     * Verifies that {@link TelephonyManager#getImsPcscfAddresses()} cause SecurityException
+     * when called without any permissions granted.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
+    public void getImsPcscfAddresses_NoPermissionGranted() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        try {
+            mTelephonyManager.getImsPcscfAddresses();
+            fail(); // if no SecurityException then it fails()
+        } catch (IllegalStateException e) {
+            assumeNoException("Skipping test in case SIM do not support ISIM", e);
+        } catch (SecurityException secExp) {
+            // expected as caller is not granted with required permissions
+        }
+    }
+
+    /**
+     * Verifies that {@link TelephonyManager#getSimServiceTable()} does not cause
+     * SecurityException when granted with READ_PRIVILEGED_PHONE_STATE permission.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
+    public void getSimServiceTable_WithReadPrivilegedPermission() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        // make sure not to face any permission problem while calling the API
+        OutcomeReceiver<byte[], Exception> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(byte[] serviceTable) { }
+
+                    @Override
+                    public void onError(Exception ex) {
+                        if (ex instanceof SecurityException) {
+                            fail();
+                        } else if (ex instanceof IllegalStateException) {
+                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
+                        } else {
+                            Log.i(TAG, "Skipping test: " + ex.getMessage());
+                        }
+                    }
+                };
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager, tm -> tm.getSimServiceTable(
+                        TelephonyManager.APPTYPE_ISIM, getContext().getMainExecutor(), callback),
+                Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+    }
+
+    /**
+     * Verifies that {@link TelephonyManager#getSimServiceTable()} cause SecurityException
+     * when called without any permissions granted.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_ISIM_RECORD)
+    public void getSimServiceTable_NoPermissionGranted() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        OutcomeReceiver<byte[], Exception> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(byte[] serviceTable) {
+                        fail(); // if no SecurityException then it fails()
+                    }
+                    @Override
+                    public void onError(Exception ex) {
+                        if (ex instanceof SecurityException) {
+                            // SecurityException is expected
+                        } else if (ex instanceof IllegalStateException) {
+                            assumeNoException("Skipping test in case SIM do not support ISIM", ex);
+                        } else {
+                            Log.i(TAG, "Skipping test: " + ex.getMessage());
+                        }
+                    }
+                };
+        mTelephonyManager.getSimServiceTable(
+                TelephonyManager.APPTYPE_ISIM, getContext().getMainExecutor(), callback);
     }
 
     @Test

@@ -165,6 +165,12 @@ public class SatelliteManagerTestBase {
                 .dropShellPermissionIdentity();
     }
 
+    protected static void grantSatelliteAndReadBasicPhoneStatePermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.READ_BASIC_PHONE_STATE);
+    }
+
     protected static class SatelliteTransmissionUpdateCallbackTest implements
             SatelliteTransmissionUpdateCallback {
 
@@ -995,12 +1001,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
+                        logd("isSatelliteProvisioned: result=" + result);
                         provisioned.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("isSatelliteProvisioned: onError, exception=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -1018,6 +1026,7 @@ public class SatelliteManagerTestBase {
         Integer error = errorCode.get();
         Boolean isProvisioned = provisioned.get();
         if (error == null) {
+            logd("isSatelliteProvisioned isProvisioned=" + isProvisioned);
             assertNotNull(isProvisioned);
             return isProvisioned;
         } else {
@@ -1634,7 +1643,7 @@ public class SatelliteManagerTestBase {
     }
 
     // Get default active subscription ID.
-    protected int getActiveSubIDForCarrierSatelliteTest() {
+    protected static int getActiveSubIDForCarrierSatelliteTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
@@ -1788,7 +1797,7 @@ public class SatelliteManagerTestBase {
     }
 
     @NonNull
-    protected PersistableBundle getConfigForSubId(Context context, int subId, String key) {
+    protected static PersistableBundle getConfigForSubId(Context context, int subId, String key) {
         PersistableBundle config = null;
         CarrierConfigManager carrierConfigManager = context.getSystemService(
                 CarrierConfigManager.class);

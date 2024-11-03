@@ -21,7 +21,6 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import android.content.ComponentName;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
-import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
@@ -362,6 +361,6 @@ public class Utils {
      */
     public static boolean shouldShowBpWithoutIconForCredential(
             boolean isVerticalContentView, boolean isBiometricAllowed) {
-        return Flags.customBiometricPrompt() && !isBiometricAllowed && isVerticalContentView;
+        return !isBiometricAllowed && isVerticalContentView;
     }
 }
