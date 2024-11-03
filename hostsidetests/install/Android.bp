@@ -30,7 +30,7 @@ java_test_host {
         "hamcrest",
         "hamcrest-library",
     ],
-    data: [
+    device_common_data: [
         ":InstallTest",
     ],
     test_suites: [
