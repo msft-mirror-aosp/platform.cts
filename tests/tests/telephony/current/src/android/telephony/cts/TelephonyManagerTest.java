@@ -331,6 +331,7 @@ public class TelephonyManagerTest {
     private static final int RADIO_HAL_VERSION_2_0 = makeRadioVersion(2, 0);
     private static final int RADIO_HAL_VERSION_2_1 = makeRadioVersion(2, 1);
     private static final int RADIO_HAL_VERSION_2_2 = makeRadioVersion(2, 2);
+    private static final int RADIO_HAL_VERSION_2_3 = makeRadioVersion(2, 3);
 
     static {
         EMERGENCY_NUMBER_SOURCE_SET = new HashSet<Integer>();
@@ -2397,7 +2398,7 @@ public class TelephonyManagerTest {
     @Test
     public void testRebootRadio() throws Throwable {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        if (mModemHalVersion <= RADIO_HAL_VERSION_2_2) {
+        if (mModemHalVersion < RADIO_HAL_VERSION_2_3) {
             Log.d(TAG,
                     "Skipping test since rebootModem is not supported/enforced until IRadio 2.3.");
             return;
