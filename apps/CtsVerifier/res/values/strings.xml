@@ -5954,7 +5954,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
     <string name="audio_mixdown_analogheadset">Analog Headset Jack + Loopback</string>
     <string name="audio_mixdown_usbdevice">USB Interface + Loopback</string>
-    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Looback</string>
+    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Loopback</string>
 
     <!-- Mixdown status strings -->
     <string name="audio_mixdown_invalidinput">Invalid Input.</string>
