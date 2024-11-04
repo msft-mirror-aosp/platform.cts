@@ -27,6 +27,7 @@ import static android.view.inputmethod.cts.util.ConstantsUtils.DISAPPROVE_IME_PA
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
+import static android.view.inputmethod.cts.util.TestUtils.injectKeyEvent;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
@@ -1161,6 +1162,28 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     @Test
     public void testImeNavigationBarInsets_FullscreenMode() throws Exception {
         runImeNavigationBarTest(true /* useFullscreenMode */);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.inputmethodservice.InputMethodService#onShouldVerifyKeyEvent"})
+    @RequiresFlagsEnabled(Flags.FLAG_VERIFY_KEY_EVENT)
+    public void testOnShouldVerifyKeyEvent() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final int injectedKeyCode = KeyEvent.KEYCODE_1;
+            injectKeyEvent(injectedKeyCode, mInstrumentation);
+
+            final Bundle arguments = expectEvent(stream,
+                    eventMatcher("onShouldVerifyKeyEvent"),
+                    TIMEOUT).getArguments();
+            KeyEvent receivedEvent = arguments.getParcelable("keyEvent", KeyEvent.class);
+            assertNotNull(receivedEvent);
+            assertEquals(receivedEvent.getKeyCode(), injectedKeyCode);
+        }
     }
 
     /**
