@@ -22,6 +22,7 @@ import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Context.RECEIVER_NOT_EXPORTED;
 import static android.content.IntentFilter.BLOCK_NULL_ACTION_INTENTS;
 import static android.security.Flags.FLAG_BLOCK_NULL_ACTION_INTENTS;
+import static android.security.Flags.FLAG_ENABLE_INTENT_MATCHING_FLAGS;
 import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 
 import static org.junit.Assert.assertEquals;
@@ -91,20 +92,36 @@ public class SaferIntentTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final long ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID = 161252188;
     private static final long IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID = 229362273;
 
     private static final String ACTIVITY_NAME = "android.content.pm.cts.TestPmActivity";
+    private static final String ACTIVITY_THAT_ALLOWS_NULL_ACTION =
+            "android.content.pm.cts.TestPmActivityAllowsNullAction";
     private static final String SERVICE_NAME = "android.content.pm.cts.TestPmService";
+    private static final String SERVICE_NAME_2 = "android.content.pm.cts.TestAnotherPmService";
     private static final String RECEIVER_NAME = "android.content.pm.cts.PmTestReceiver";
+    private static final String RECEIVER_NAME_2 = "android.content.pm.cts.TestAnotherPmReceiver";
 
     private static final String EXPORTED_ACTION = "android.intent.action.cts.EXPORTED_ACTION";
     private static final String NON_EXPORTED_ACTION =
             "android.intent.action.cts.NON_EXPORTED_ACTION";
 
     private static final String NON_EXISTENT_ACTION_NAME = "android.intent.action.cts.NON_EXISTENT";
+
+    // An app that does not have any safer intent enforcement
     private static final String RESOLUTION_TEST_PKG_NAME =
             "android.content.cts.IntentResolutionTest";
+
+    // An app that is similar to RESOLUTION_TEST_PKG_NAME but has "enforceIntentFilter" flag at
+    // the application level
+    private static final String RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME =
+            "android.content.cts.CtsIntentResolutionApplicationOverrideTestApp";
+
+    // An app that has "enforceIntentFilter" flag on the application level, but has overrides on
+    // the intent-filters
+    private static final String RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME =
+            "android.content.cts.CtsIntentResolutionComponentOverrideTestApp";
+
     private static final String ACTION_RECEIVING_INTENT = "android.content.cts.RECEIVING_INTENT";
     private static final String SELECTOR_ACTION_NAME = "android.intent.action.SELECTORTEST";
     private static final String FILE_PROVIDER_AUTHORITY = "android.content.cts.fileprovider";
@@ -152,22 +169,27 @@ public class SaferIntentTest {
         mViolations = new LinkedBlockingQueue<>();
         StrictMode.setViolationLogger(mViolations::offer);
 
-        // Bring test app out of the stopped state so that it can receive broadcasts
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                AppGlobals.getPackageManager().setPackageStoppedState(
-                        RESOLUTION_TEST_PKG_NAME, false, Process.myUserHandle().getIdentifier()),
-                Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
-        );
-        // Exempt test app so we can start its services
-        SystemUtil.runShellCommand("cmd deviceidle whitelist +" + RESOLUTION_TEST_PKG_NAME);
+        List<String> testApps = List.of(RESOLUTION_TEST_PKG_NAME,
+                RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME,
+                RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME);
+        for (String testApp : testApps) {
+            // Bring test app out of the stopped state so that it can receive broadcasts
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                            AppGlobals.getPackageManager().setPackageStoppedState(
+                                    testApp, false,
+                                    Process.myUserHandle().getIdentifier()),
+                    Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
+            );
+            // Exempt test app so we can start its services
+            SystemUtil.runShellCommand("cmd deviceidle whitelist +" + testApp);
+        }
     }
 
     @After
     public void tearDown() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(() ->
                 CompatChanges.removePackageOverrides(mContext.getPackageName(),
-                        Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                                IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID,
+                        Set.of(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID,
                                 BLOCK_NULL_ACTION_INTENTS)),
                 OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
         for (BroadcastReceiver receiver : mRegisteredReceiverList) {
@@ -280,10 +302,8 @@ public class SaferIntentTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    @RequiresFlagsEnabled({FLAG_ENFORCE_INTENT_FILTER_MATCH, FLAG_ENABLE_INTENT_MATCHING_FLAGS})
     public void testQueryEnforceIntentFilterMatch() {
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
-
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
         final var activityFlags = PackageManager.ResolveInfoFlags.of(
                 PackageManager.MATCH_DEFAULT_ONLY);
@@ -293,7 +313,7 @@ public class SaferIntentTest {
 
         /* Non-component intent tests */
 
-        intent.setPackage(RESOLUTION_TEST_PKG_NAME);
+        intent.setPackage(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME);
 
         // Package intents with matching intent filter
         intent.setAction(RESOLUTION_TEST_ACTION_NAME);
@@ -323,40 +343,40 @@ public class SaferIntentTest {
 
         // Component intents with matching intent filter
         intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, ACTIVITY_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryIntentActivities(intent, emptyFlags);
         assertEquals(1, results.size());
         // MATCH_DEFAULT_ONLY shall NOT change the result
         results = mPackageManager.queryIntentActivities(intent, activityFlags);
         assertEquals(1, results.size());
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, SERVICE_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryIntentServices(intent, emptyFlags);
         assertEquals(1, results.size());
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
         assertEquals(1, results.size());
 
         // Component intents with non-matching intent filter
         intent.setAction(NON_EXISTENT_ACTION_NAME);
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, ACTIVITY_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryIntentActivities(intent, emptyFlags);
         assertEquals(0, results.size());
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, SERVICE_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryIntentServices(intent, emptyFlags);
         assertEquals(0, results.size());
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME);
         intent.setComponent(comp);
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
         assertEquals(0, results.size());
 
         // More comprehensive intent matching tests
         intent = new Intent();
-        comp = new ComponentName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        comp = new ComponentName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME);
         intent.setComponent(comp);
         intent.setAction(RESOLUTION_TEST_ACTION_NAME + "2");
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
@@ -403,7 +423,7 @@ public class SaferIntentTest {
         /* Intent selector tests */
 
         Intent selector = new Intent();
-        selector.setPackage(RESOLUTION_TEST_PKG_NAME);
+        selector.setPackage(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME);
         intent = new Intent();
         intent.setSelector(selector);
 
@@ -442,20 +462,18 @@ public class SaferIntentTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    @RequiresFlagsEnabled({FLAG_ENFORCE_INTENT_FILTER_MATCH, FLAG_ENABLE_INTENT_MATCHING_FLAGS})
     public void testQueryEnforcePendingIntentFilterMatch() {
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
-
         // Non-matching intent cannot be resolved in our package
         var intent = new Intent(NON_EXISTENT_ACTION_NAME)
-                .setClassName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+                .setClassName(RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME);
         List<ResolveInfo> results = mPackageManager.queryBroadcastReceivers(intent, 0);
         assertEquals(0, results.size());
 
         // Send this intent over to the owner to create PI
         Bundle extras = new Bundle();
         extras.putParcelable(Intent.EXTRA_INTENT, intent);
-        var authority = RESOLUTION_TEST_PKG_NAME + ".provider";
+        var authority = RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME + ".provider";
         Bundle b = mContext.getContentResolver().call(authority, "", null, extras);
         assertNotNull(b);
         PendingIntent pi = b.getParcelable(Intent.EXTRA_INTENT, PendingIntent.class);
@@ -473,8 +491,6 @@ public class SaferIntentTest {
 
     @Test
     public void testQueryLegacyIntentFilterMatch() {
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
-
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
 
         Intent intent = new Intent();
@@ -551,62 +567,53 @@ public class SaferIntentTest {
         assertTrue(results.isEmpty());
     }
 
-    private void testComponentMismatch(LaunchType type) throws InterruptedException {
+    private void testComponentMismatchOnEnforcedApp(LaunchType type) throws InterruptedException {
+        if (!android.security.Flags.enableIntentMatchingFlags()) {
+            return;
+        }
         final var retriever = new IntentRetriever();
         final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
         mContext.registerReceiver(retriever, filter, Context.RECEIVER_EXPORTED);
         mRegisteredReceiverList.add(retriever);
         enableStrictMode();
 
-        // Set up intent with non matching action
-        final var compIntent = new Intent(NON_EXISTENT_ACTION_NAME);
-        switch (type) {
-            case ACTIVITY -> compIntent
-                    .setClassName(RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            case SERVICE -> compIntent.setClassName(RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
-            case BROADCAST -> compIntent.setClassName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
-        }
+        // Set up intent with non matching action that targets app that has enforcements
+        final var nonMatchingActionTargetEnforced = createComponentIntent(
+                NON_EXISTENT_ACTION_NAME,
+                type, RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME);
 
         // Intent should be blocked
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
         retriever.reset();
         switch (type) {
             case ACTIVITY -> assertThrows(
                     ActivityNotFoundException.class,
-                    () -> mContext.startActivity(compIntent));
-            case SERVICE -> mContext.startService(compIntent);
-            case BROADCAST -> mContext.sendBroadcast(compIntent);
+                    () -> mContext.startActivity(nonMatchingActionTargetEnforced));
+            case SERVICE -> mContext.startService(nonMatchingActionTargetEnforced);
+            case BROADCAST -> mContext.sendBroadcast(nonMatchingActionTargetEnforced);
         }
         assertFalse(retriever.waitOnReceive());
         assertViolation(true);
-        Thread.sleep(500);
 
-        // Intent should not be blocked, but still marked as non-matching
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
-        retriever.reset();
-        switch (type) {
-            case ACTIVITY -> mContext.startActivity(compIntent);
-            case SERVICE -> mContext.startService(compIntent);
-            case BROADCAST -> mContext.sendBroadcast(compIntent);
-        }
-        assertTrue(retriever.waitOnReceive());
-        assertTrue(retriever.mIntent.isMismatchingFilter());
-        assertViolation(true);
-        Thread.sleep(500);
+        // Test matching actions
+        final var matchingActionTargetEnforced = createComponentIntent(
+                RESOLUTION_TEST_ACTION_NAME,
+                type, RESOLUTION_APPLICATION_OVERRIDE_TEST_PKG_NAME);
 
-        // Set up intent with matching action
-        compIntent.setAction(RESOLUTION_TEST_ACTION_NAME);
+        // Should not be blocked and should not be marked as non-matching
         retriever.reset();
-        switch (type) {
-            case ACTIVITY -> mContext.startActivity(compIntent);
-            case SERVICE -> mContext.startService(compIntent);
-            case BROADCAST -> mContext.sendBroadcast(compIntent);
-        }
+        startIntent(matchingActionTargetEnforced, type);
+
         assertTrue(retriever.waitOnReceive());
         assertFalse(retriever.mIntent.isMismatchingFilter());
         assertViolation(false);
-        Thread.sleep(500);
+    }
+
+    private void testComponentMismatchOnUnenforcedApp(LaunchType type) throws InterruptedException {
+        final var retriever = new IntentRetriever();
+        final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
+        mContext.registerReceiver(retriever, filter, Context.RECEIVER_EXPORTED);
+        mRegisteredReceiverList.add(retriever);
+        enableStrictMode();
 
         // Package intents should always match
         var packageIntent = new Intent(RESOLUTION_TEST_ACTION_NAME)
@@ -616,44 +623,86 @@ public class SaferIntentTest {
         }
 
         retriever.reset();
-        switch (type) {
-            case ACTIVITY -> mContext.startActivity(packageIntent);
-            case SERVICE -> mContext.startService(packageIntent);
-            case BROADCAST -> mContext.sendBroadcast(packageIntent);
-        }
+        startIntent(packageIntent, type);
         assertTrue(retriever.waitOnReceive());
         assertFalse(retriever.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
 
-        // Test whether the flag is cleared when matching
-        packageIntent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
+        // Set up intent with non matching action that targets app that does not enforce
+        final var nonMatchingActionTargetUnEnforced = createComponentIntent(
+                NON_EXISTENT_ACTION_NAME, type, RESOLUTION_TEST_PKG_NAME);
+
+        // Intent should not be blocked, but still marked as non-matching
+        retriever.reset();
+        startIntent(nonMatchingActionTargetUnEnforced, type);
+
+        assertTrue(retriever.waitOnReceive());
+        assertTrue(retriever.mIntent.isMismatchingFilter());
+        assertViolation(true);
+
+        // Test matching actions
+        final var matchingActionTargetUnEnforced = createComponentIntent(
+                RESOLUTION_TEST_ACTION_NAME, type, RESOLUTION_TEST_PKG_NAME);
+        // Should not be blocked and should not be marked as non-matching
+        retriever.reset();
+        startIntent(matchingActionTargetUnEnforced, type);
+
+        assertTrue(retriever.waitOnReceive());
+        assertFalse(retriever.mIntent.isMismatchingFilter());
+        assertViolation(false);
+
+        // Test whether the flag is cleared when matching package intents
+        var packageIntentWithMismatchFlag = new Intent(RESOLUTION_TEST_ACTION_NAME)
+                .setPackage(RESOLUTION_TEST_PKG_NAME)
+                .addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
+        if (type.equals(LaunchType.ACTIVITY)) {
+            packageIntentWithMismatchFlag.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
 
         retriever.reset();
-        switch (type) {
-            case ACTIVITY -> mContext.startActivity(packageIntent);
-            case SERVICE -> mContext.startService(packageIntent);
-            case BROADCAST -> mContext.sendBroadcast(packageIntent);
-        }
+        startIntent(packageIntentWithMismatchFlag, type);
         assertTrue(retriever.waitOnReceive());
         assertFalse(retriever.mIntent.isMismatchingFilter());
+    }
+
+    private Intent createComponentIntent(String action, LaunchType type, String packageName) {
+        final var compIntent = new Intent(action);
+        switch (type) {
+            case ACTIVITY -> compIntent
+                    .setClassName(packageName, ACTIVITY_NAME)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            case SERVICE -> compIntent.setClassName(packageName, SERVICE_NAME);
+            case BROADCAST -> compIntent.setClassName(packageName, RECEIVER_NAME);
+        }
+        return compIntent;
+    }
+
+    private void startIntent(Intent intent, LaunchType type) {
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(intent);
+            case SERVICE -> mContext.startService(intent);
+            case BROADCAST -> mContext.sendBroadcast(intent);
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
     public void testActivityIntentMismatch() throws InterruptedException {
-        testComponentMismatch(LaunchType.ACTIVITY);
+        testComponentMismatchOnEnforcedApp(LaunchType.ACTIVITY);
+        testComponentMismatchOnUnenforcedApp(LaunchType.ACTIVITY);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
     public void testServiceIntentMismatch() throws InterruptedException {
-        testComponentMismatch(LaunchType.SERVICE);
+        testComponentMismatchOnEnforcedApp(LaunchType.SERVICE);
+        testComponentMismatchOnUnenforcedApp(LaunchType.SERVICE);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
     public void testBroadcastIntentMismatch() throws InterruptedException {
-        testComponentMismatch(LaunchType.BROADCAST);
+        testComponentMismatchOnEnforcedApp(LaunchType.BROADCAST);
+        testComponentMismatchOnUnenforcedApp(LaunchType.BROADCAST);
     }
 
     private void testComponentNullActionMatch(Intent intent, LaunchType type)
@@ -736,5 +785,84 @@ public class SaferIntentTest {
                 .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
 
         testComponentNullActionMatch(intent, LaunchType.BROADCAST);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_INTENT_MATCHING_FLAGS)
+    public void testIntentFilterFlagsOverrideApplicationForActivity() {
+        testComponentFlagsOverrideApplicationFlags(LaunchType.ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_INTENT_MATCHING_FLAGS)
+    public void testIntentFilterFlagsOverrideApplicationForService() {
+        testComponentFlagsOverrideApplicationFlags(LaunchType.SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_INTENT_MATCHING_FLAGS)
+    public void testIntentFilterFlagsOverrideApplicationForBroadcast() {
+        testComponentFlagsOverrideApplicationFlags(LaunchType.BROADCAST);
+    }
+
+    private void testComponentFlagsOverrideApplicationFlags(LaunchType type) {
+        final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
+
+        /* test none flag override */
+
+        List<ResolveInfo> results = null;
+
+        Intent intent = new Intent(NON_EXISTENT_ACTION_NAME);
+        switch (type) {
+            case ACTIVITY -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME, ACTIVITY_NAME);
+                results = mPackageManager.queryIntentActivities(intent, emptyFlags);
+            }
+            case SERVICE -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME, SERVICE_NAME);
+                results = mPackageManager.queryIntentServices(intent, emptyFlags);
+            }
+            case BROADCAST -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME);
+                results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+            }
+        }
+        assertEquals(1, results.size());
+
+        intent.setAction(null);
+        switch (type) {
+            case ACTIVITY -> results = mPackageManager.queryIntentActivities(intent, emptyFlags);
+            case SERVICE -> results = mPackageManager.queryIntentServices(intent, emptyFlags);
+            case BROADCAST -> results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+        }
+        assertEquals(1, results.size());
+
+        /* test allowNullAction flag override (essentially results opt-out for all) */
+
+        intent.setAction(NON_EXISTENT_ACTION_NAME);
+        switch (type) {
+            case ACTIVITY -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME,
+                        ACTIVITY_THAT_ALLOWS_NULL_ACTION);
+                results = mPackageManager.queryIntentActivities(intent, emptyFlags);
+            }
+            case SERVICE -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME, SERVICE_NAME_2);
+                results = mPackageManager.queryIntentServices(intent, emptyFlags);
+            }
+            case BROADCAST -> {
+                intent.setClassName(RESOLUTION_COMPONENT_OVERRIDE_TEST_PKG_NAME, RECEIVER_NAME_2);
+                results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+            }
+        }
+        assertEquals(1, results.size());
+
+        intent.setAction(null);
+        switch (type) {
+            case ACTIVITY -> results = mPackageManager.queryIntentActivities(intent, emptyFlags);
+            case SERVICE -> results = mPackageManager.queryIntentServices(intent, emptyFlags);
+            case BROADCAST -> results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
+        }
+        assertEquals(1, results.size());
     }
 }

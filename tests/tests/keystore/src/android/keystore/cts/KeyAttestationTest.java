@@ -1585,9 +1585,10 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("unchecked")
     private void checkAttestationSecurityLevelDependentParams(Attestation attestation) {
-        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300}",
+        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
                 attestation.getAttestationVersion(),
-                either(is(1)).or(is(2)).or(is(3)).or(is(4)).or(is(100)).or(is(200)).or(is(300)));
+                either(is(1)).or(is(2)).or(is(3)).or(is(4))
+                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1602,7 +1603,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                            either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                           .or(is(100)).or(is(200)).or(is(300)));
+                           .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("TEE enforced OS version and system OS version must be same.",
@@ -1616,7 +1617,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_STRONG_BOX));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                         either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)));
+                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("StrongBox enforced OS version and system OS version must be same.",
@@ -1679,6 +1680,9 @@ public class KeyAttestationTest {
 
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
+        assertEquals(32, verifiedBootHash.length);
+        checkEntropy(verifiedBootHash);
+
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
             hexVerifiedBootHash.append(String.format("%02x", b));
@@ -1695,22 +1699,19 @@ public class KeyAttestationTest {
         assertNotNull(rootOfTrust);
         assertNotNull(rootOfTrust.getVerifiedBootKey());
         assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                   " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
             checkEntropy(rootOfTrust.getVerifiedBootKey());
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
-            if (PropertyUtil.getFirstApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Verified boot hash was not previously checked in CTS, so set an api level check
-                // to avoid running into waiver issues.
-                return;
+
+            if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // The Verified Boot hash was not previously checked in CTS, so set an API level
+                // check to avoid running into waiver issues.
+                checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
-            assertNotNull(rootOfTrust.getVerifiedBootHash());
-            assertEquals(32, rootOfTrust.getVerifiedBootHash().length);
-            checkEntropy(rootOfTrust.getVerifiedBootHash());
-            checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
         }
     }
 

@@ -24,8 +24,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -494,6 +494,14 @@ public class BlurTests extends WindowManagerTestBase {
                 );
 
                 mInsetsToBeIgnored = Insets.add(systemBarInsets, roundedCornerInsets);
+
+                // Make the insets to be ignored symmetrical horizontally so that the later
+                // computation can assume the widths of the blue area and the red area are the same.
+                mInsetsToBeIgnored = Insets.of(
+                        Math.max(mInsetsToBeIgnored.left, mInsetsToBeIgnored.right),
+                        mInsetsToBeIgnored.top,
+                        Math.max(mInsetsToBeIgnored.left, mInsetsToBeIgnored.right),
+                        mInsetsToBeIgnored.bottom);
                 return insets;
             });
         }
@@ -519,6 +527,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
+            getWindow().getAttributes().setFitInsetsSides(0);
         }
 
         @Override
@@ -584,6 +593,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
+            getWindow().getAttributes().setFitInsetsSides(0);
         }
     }
 
