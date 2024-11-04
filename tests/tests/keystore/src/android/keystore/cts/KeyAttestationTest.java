@@ -1680,6 +1680,9 @@ public class KeyAttestationTest {
 
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
+        assertEquals(32, verifiedBootHash.length);
+        checkEntropy(verifiedBootHash);
+
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
             hexVerifiedBootHash.append(String.format("%02x", b));
@@ -1696,22 +1699,19 @@ public class KeyAttestationTest {
         assertNotNull(rootOfTrust);
         assertNotNull(rootOfTrust.getVerifiedBootKey());
         assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                   " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
             checkEntropy(rootOfTrust.getVerifiedBootKey());
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
-            if (PropertyUtil.getFirstApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Verified boot hash was not previously checked in CTS, so set an api level check
-                // to avoid running into waiver issues.
-                return;
+
+            if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // The Verified Boot hash was not previously checked in CTS, so set an API level
+                // check to avoid running into waiver issues.
+                checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
-            assertNotNull(rootOfTrust.getVerifiedBootHash());
-            assertEquals(32, rootOfTrust.getVerifiedBootHash().length);
-            checkEntropy(rootOfTrust.getVerifiedBootHash());
-            checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
         }
     }
 
