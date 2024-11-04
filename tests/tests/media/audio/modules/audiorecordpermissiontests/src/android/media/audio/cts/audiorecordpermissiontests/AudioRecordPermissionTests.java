@@ -45,9 +45,10 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.provider.Settings;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -55,7 +56,9 @@ import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -88,9 +91,34 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context mContext = mInstrumentation.getContext();
 
+    private static String sOldAppOpsConsts = "";
+
     // Used in teardown
     private Set<String> mServiceStartedPackages = new HashSet<>();
     private Set<String> mActivityStartedPackages = new HashSet<>();
+
+    @BeforeClass
+    public static void classSetup() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(()-> {
+            sOldAppOpsConsts = Settings.Global.getString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS);
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS,
+                    "top_state_settle_time=0,fg_service_state_settle_time=0,"
+                    + "bg_state_settle_time=0");
+        });
+    }
+
+    @AfterClass
+    public static void classTeardown() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(() -> {
+            // restore old AppOps settings.
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS, sOldAppOpsConsts);
+        });
+    }
 
     @Before
     public void setup() throws Exception {
