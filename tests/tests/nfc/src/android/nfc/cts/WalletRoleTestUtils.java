@@ -52,6 +52,7 @@ public final class WalletRoleTestUtils {
     static final String NON_PAYMENT_NFC_PACKAGE_NAME = "com.android.test.nonpaymentnfc";
     static final String PAYMENT_AID_1 = "A000000004101012";
     static final String PAYMENT_AID_2 = "A000000004101018";
+    static final String PAYMENT_AID_3 = "A000000005101011";
     static final String NON_PAYMENT_AID_1 = "F053414950454D";
 
     private static final String WALLET_OVERLAY_CONFIG = "config_defaultWallet";
@@ -75,6 +76,11 @@ public final class WalletRoleTestUtils {
     static ComponentName getForegroundService() {
         return new ComponentName(NFC_FOREGROUND_PACKAGE_NAME,
                 "com.android.test.foregroundnfc.ForegroundApduService");
+    }
+
+    static ComponentName getAssociatedService() {
+        return new ComponentName(NFC_FOREGROUND_PACKAGE_NAME,
+                "com.android.test.foregroundnfc.AssociatedApduService");
     }
 
     static ComponentName getNonPaymentService() {
