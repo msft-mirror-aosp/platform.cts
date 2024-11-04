@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 
 import camera_properties_utils
@@ -37,6 +38,7 @@ _TEST_FORMATS = ('yuv',)
 _WIDE_ZOOM_RATIO_MIN = 2.0
 # Empirically found zoom ratio for TELE cameras
 _TELE_TRANSITION_ZOOM_RATIO = 10.0
+_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 
 class ZoomTestTELE(its_base_test.ItsBaseTest):
@@ -134,6 +136,15 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
           cap_physical_id = (
               cap['metadata']['android.logicalMultiCamera.activePhysicalId']
           )
+          cap_zoom_ratio = float(cap['metadata']['android.control.zoomRatio'])
+          if not math.isclose(cap_zoom_ratio, z,
+                              rel_tol=_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL):
+            raise AssertionError(
+                'Request and result zoom ratios too different! '
+                f'Request zoom ratio: {z}. '
+                f'Result zoom ratio: {cap_zoom_ratio}. ',
+                f'RTOL: {_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL}'
+            )
           img = image_processing_utils.convert_capture_to_rgb_image(
               cap, props=props)
           img_name = (f'{img_name_stem}_{fmt}_{z:.2f}.'
@@ -176,7 +187,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
 
           test_data.append(
               zoom_capture_utils.ZoomTestData(
-                  result_zoom=z,
+                  result_zoom=cap_zoom_ratio,
                   radius_tol=radius_tol,
                   offset_tol=offset_tol,
                   focal_length=cap_fl,
