@@ -17,6 +17,7 @@
 package android.media.audio.cts;
 
 import android.media.AudioDeviceInfo;
+import android.media.audio.Flags;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -88,6 +89,12 @@ public class AudioDeviceInfoTest {
         AudioDeviceInfo.TYPE_BLE_BROADCAST,
         AudioDeviceInfo.TYPE_DOCK_ANALOG)
             .collect(Collectors.toCollection(HashSet::new));
+
+    {
+        if (Flags.enableMultichannelGroupDevice()) {
+            OUTPUT_TYPES.add(AudioDeviceInfo.TYPE_MULTICHANNEL_GROUP);
+        }
+    }
 
     private static int MAX_TYPE;
     private static int MIN_TYPE;

@@ -2184,7 +2184,6 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testInvalidAudioFocusRequestDelayNoListener"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testInvalidAudioFocusRequestPauseOnDuckNoListener"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testNullListenerHandlerNpe"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testAdjustUnmuteNotificationInVibrate"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testAdjustVolumeInTotalSilenceMode"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testStreamTypeAliasChange"/>
