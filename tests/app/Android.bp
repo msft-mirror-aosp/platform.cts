@@ -273,6 +273,7 @@ android_test {
         "libprotobuf-java-lite",
         "flag-junit",
         "android.content.pm.flags-aconfig-java",
+        "com.android.media.flags.bettertogether-aconfig-java",
     ],
     aidl: {
         local_include_dirs: ["app/src"],
