@@ -43,6 +43,8 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.graphics.Rect;
+import android.server.wm.WindowManagerState.Activity;
+import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.InputEvent;
 
@@ -111,12 +113,25 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitForAllStoppedActivities() {
-        if (!Condition.waitFor("all started activities have been removed", () -> {
+        Condition.waitFor("all activities to be stopped", () -> {
             computeState();
-            return !containsStartedActivities();
-        })) {
-            fail("All started activities have been removed");
-        }
+            for (Task rootTask : getRootTasks()) {
+                final Activity notStopped = rootTask.getActivity(a -> switch (a.state) {
+                    case STATE_RESUMED, STATE_STARTED, STATE_PAUSING, STATE_PAUSED, STATE_STOPPING:
+                        logAlways("Not stopped: " + a);
+                        yield true;
+                    case STATE_STOPPED, STATE_DESTROYED:
+                        yield false;
+                    default: // FINISHING, DESTROYING, INITIALIZING
+                        logE("Weird state: " + a);
+                        yield false;
+                });
+                if (notStopped != null) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     public void waitForAllNonHomeActivitiesToDestroyed() {
@@ -205,6 +220,38 @@ public class WindowManagerStateHelper extends WindowManagerState {
                     ws -> ws.isSurfaceShown() == show && ws.getType() == windowType);
             return windows.findAny().isPresent();
         }, "wait for window surface " + (show ? "show" : "hide")));
+    }
+
+    /**
+     * Wait for a non-activity window to be focused by comparing the focused window to the
+     * currently focused activity.
+     */
+    public void waitForNonActivityWindowFocused() {
+        waitFor(state -> !areFocusedStringsEqual(state.getFocusedWindow(),
+                state.getFocusedActivity()), "wait for non activity window shown");
+    }
+
+    /**
+     * Helper method for comparing strings returned from APIs such as
+     * WindowManagerState#getFocusedWindow, WindowManagerState#getFocusedApp, and
+     * WindowManagerState#getFocusedActivity
+     *
+     * Strings returned from these APIs may be in different ComponentName formats (but may also not
+     * be ComponentNames at all) so this helper will help more accurately compare these strings.
+     */
+    private boolean areFocusedStringsEqual(String focused1, String focused2) {
+        if (TextUtils.equals(focused1, focused2)) {
+            return true;
+        }
+        if (focused1 == null || focused2 == null) {
+            return false;
+        }
+        ComponentName component1 = ComponentName.unflattenFromString(focused1);
+        ComponentName component2 = ComponentName.unflattenFromString(focused2);
+        if (component1 != null && component2 != null) {
+            return component1.equals(component2);
+        }
+        return false;
     }
 
     public void waitForAodShowing() {
@@ -642,6 +689,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
         assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
+    void assertFocusedRootTaskOnDisplay(String msg, int taskId, int displayId) {
+        assertEquals(msg, taskId, getFocusedTaskIdOnDisplay(displayId));
+    }
+
     public void assertFocusedRootTask(String msg, int taskId) {
         assertEquals(msg, taskId, getFocusedTaskId());
     }
@@ -653,6 +704,14 @@ public class WindowManagerStateHelper extends WindowManagerState {
         if (activityType != ACTIVITY_TYPE_UNDEFINED) {
             assertEquals(msg, activityType, getFocusedRootTaskActivityType());
         }
+    }
+
+    /** Asserts the message on the focused app and activity on the provided display.  */
+    public void assertFocusedActivityOnDisplay(final String msg, final ComponentName activityName,
+            final int displayId) {
+        final String activityComponentName = getActivityName(activityName);
+        assertEquals(msg, activityComponentName, getFocusedActivityOnDisplay(displayId));
+        assertEquals(msg, activityComponentName, getFocusedAppOnDisplay(displayId));
     }
 
     public void assertFocusedActivity(final String msg, final ComponentName activityName) {

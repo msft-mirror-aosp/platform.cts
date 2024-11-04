@@ -25,7 +25,6 @@ java_defaults {
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "ctstestrunner-axt",
-        "cts-install-lib",
         "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
         "ravenwood-junit",
     ],
@@ -45,6 +44,9 @@ android_test {
         "cts",
         "general-tests",
     ],
+    static_libs: [
+        "cts-install-lib",
+    ],
     srcs: [
         "src/**/*.java",
     ],
@@ -60,6 +62,9 @@ android_ravenwood_test {
     srcs: [
         "src/**/*.java",
         ":CtsUtilTestCases{.aapt.srcjar}",
+    ],
+    exclude_srcs: [
+        "src/**/InstallUtilTest.java",
     ],
     auto_gen_config: true,
 }

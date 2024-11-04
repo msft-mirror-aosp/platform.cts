@@ -34,7 +34,6 @@ import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -43,13 +42,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 
-@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
-public class InputMethodRegistrationTest {
+public final class InputMethodRegistrationTest {
 
     private static final String LARGE_RESOURCE_IME_APK_PATH =
             "/data/local/tmp/cts/inputmethod/CtsMockLargeResourceInputMethod.apk";
@@ -174,20 +171,10 @@ public class InputMethodRegistrationTest {
      */
     @Test
     public void testLoadEnabledIMEsAndMore() throws InterruptedException {
-
         final var imm = mContext.getSystemService(InputMethodManager.class);
-
-        final int flags =
-                PackageManager.GET_META_DATA | PackageManager.MATCH_DISABLED_UNTIL_USED_COMPONENTS
-                        | PackageManager.MATCH_DISABLED_COMPONENTS;
-        final List<ResolveInfo> allPackageImes = mContext.getPackageManager().queryIntentServices(
-                new Intent(InputMethod.SERVICE_INTERFACE).setPackage(LARGE_RESOURCE_IME_PACKAGE),
-                PackageManager.ResolveInfoFlags.of(flags));
         final List<ComponentName> componentNamesToEnable = List.of(
                 INITIALLY_DISABLED_IME_1, INITIALLY_DISABLED_IME_2);
-
         try {
-
             // Wait until ime 19 and 20 are loaded
             final ComponentName enable_ime19 = ComponentName.createRelative(
                     LARGE_RESOURCE_IME_PACKAGE, ".services.imeservice19");

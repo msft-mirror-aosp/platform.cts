@@ -18,39 +18,39 @@ package com.android.bedstead.multiuser
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
-import com.android.bedstead.harrier.annotations.OtherUser
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
-import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser
-import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser
-import com.android.bedstead.harrier.annotations.RequireUserSupported
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation
-import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation
-import com.android.bedstead.harrier.annotations.meta.EnsureHasUserAnnotation
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.multiuser.annotations.OtherUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
+import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSingleUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireUserSupported
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoUserAnnotation
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasUserAnnotation
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation
 import com.android.bedstead.nene.types.OptionalBoolean
 
+/**
+ * [AnnotationExecutor] for multi-user annotations
+ */
 @Suppress("unused")
 class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
     private val usersComponent: UsersComponent by locator
-    private val userRestrictions: UserRestrictionsComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
@@ -81,9 +81,6 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
             is RequireNotVisibleBackgroundUsersOnDefaultDisplay -> logic()
             is RequireRunOnVisibleBackgroundNonProfileUser -> logic()
             is RequireRunNotOnVisibleBackgroundNonProfileUser -> logic()
-            is EnsureHasUserRestriction -> userRestrictions.ensureHasUserRestriction(value, onUser)
-            is EnsureDoesNotHaveUserRestriction ->
-                userRestrictions.ensureDoesNotHaveUserRestriction(value, onUser)
             else -> applyAnnotationUsingReflection(annotation)
         }
     }

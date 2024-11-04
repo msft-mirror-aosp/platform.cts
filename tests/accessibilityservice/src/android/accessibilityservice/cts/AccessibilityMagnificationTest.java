@@ -26,6 +26,9 @@ import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1401,6 +1404,42 @@ public class AccessibilityMagnificationTest {
                 mInstrumentation.getContext().getSystemService(WindowManager.class).removeView(
                         createdButton);
             }
+            mService.runOnServiceSync(() -> controller.reset(false));
+        }
+    }
+
+    @Test
+    public void testAccessibilityNodeInfo_getBoundsInWindow_noChangeWhenMagnified()
+            throws Exception {
+        Activity activity = launchActivityAndWaitForItToBeOnscreen(
+                mInstrumentation, sUiAutomation, mActivityRule);
+        final MagnificationController controller = mService.getMagnificationController();
+        final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
+        final float scale = 8.0f;
+        final Button button = activity.findViewById(R.id.button1);
+        adjustViewBoundsIfNeeded(button, scale, magnifyBounds);
+
+        final AccessibilityNodeInfo buttonNode = sUiAutomation.getRootInActiveWindow()
+                .findAccessibilityNodeInfosByViewId(
+                        "android.accessibilityservice.cts:id/button1").get(0);
+        assertWithMessage("Can't find button on the screen").that(buttonNode).isNotNull();
+
+        // Get right-bottom center position
+        final float centerX = magnifyBounds.left + (((float) magnifyBounds.width() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+        final float centerY = magnifyBounds.top + (((float) magnifyBounds.height() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+        final Rect boundsBeforeMagnify = new Rect();
+        buttonNode.getBoundsInWindow(boundsBeforeMagnify);
+
+        try {
+            waitOnMagnificationChanged(controller, scale, centerX, centerY);
+
+            // The boundsInWindow of button is not adjusted by magnification.
+            final Rect boundsAfterMagnify = new Rect();
+            buttonNode.getBoundsInWindow(boundsAfterMagnify);
+            assertThat(boundsBeforeMagnify).isEqualTo(boundsAfterMagnify);
+        } finally {
             mService.runOnServiceSync(() -> controller.reset(false));
         }
     }

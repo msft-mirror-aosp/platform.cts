@@ -45,6 +45,8 @@ import com.squareup.kotlinpoet.PropertySpec;
 import com.squareup.kotlinpoet.TypeName;
 import com.squareup.kotlinpoet.TypeSpec;
 
+import kotlin.Suppress;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,8 +58,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeMirror;
-
-import kotlin.Suppress;
 
 /**
  * Helper class to generate code for {@code TestApisReflection}.
@@ -77,7 +77,7 @@ public final class CodeGenerator {
      * Generate code for reflection method.
      */
     public void generateReflectionMethod(FileSpec.Builder fileBuilder,
-            MethodSignature methodSignature, Set<ClassSignature> testClasses) {
+            MethodSignature methodSignature, List<ClassSignature> testClasses) {
         TypeName returnTypeName = returnTypeOrProxy(methodSignature, testClasses);
 
         // explicitly add import for nested return type
@@ -118,7 +118,8 @@ public final class CodeGenerator {
     /**
      * Generate code for proxy class.
      */
-    public void generateProxyClass(ClassSignature classSignature, Set<ClassSignature> testClasses) {
+    public void generateProxyClass(
+            ClassSignature classSignature, List<ClassSignature> testClasses) {
         String testApiClassSimpleName = typeSimpleName(classSignature.getName());
         String proxyClassName = testApiClassSimpleName + "Proxy";
 
@@ -134,7 +135,7 @@ public final class CodeGenerator {
                 .addModifiers(KModifier.OPEN);
 
         // Get fields for test classes
-        Set<FieldSignature> allowlistedTestFields = getTestFieldsForClass(testApiClassSimpleName);
+        List<FieldSignature> allowlistedTestFields = getTestFieldsForClass(testApiClassSimpleName);
 
         implementParcelable(proxyClassBuilder, proxyClassName, allowlistedTestFields);
 
@@ -279,7 +280,7 @@ public final class CodeGenerator {
      */
     private void generateReflectionMethodCode(FileSpec.Builder fileBuilder,
             ClassName receiverClass, MethodSignature methodSignature, TypeName returnTypeName,
-            Set<ClassSignature> testClasses) {
+            List<ClassSignature> testClasses) {
         FunSpec.Builder methodBuilder = FunSpec.builder(methodSignature.getName())
                 .addModifiers(KModifier.PUBLIC)
                 .receiver(receiverClass)
@@ -359,7 +360,7 @@ public final class CodeGenerator {
      */
     private String[] generateParametersCode(
             MethodSignature method, FunSpec.Builder methodBuilder,
-            Set<ClassSignature> testClasses, FileSpec.Builder fileBuilder) {
+            List<ClassSignature> testClasses, FileSpec.Builder fileBuilder) {
         StringBuilder parameterNamesBuilder = new StringBuilder();
         StringBuilder parameterTypesBuilder = new StringBuilder();
         Set<String> testClassNames = testClasses.stream()
@@ -443,7 +444,7 @@ public final class CodeGenerator {
      * Common method to return the appropriate proxy type if return type is a proxy class,
      * otherwise the original type.
      */
-    private TypeName returnTypeOrProxy(MethodSignature method, Set<ClassSignature> testClasses) {
+    private TypeName returnTypeOrProxy(MethodSignature method, List<ClassSignature> testClasses) {
         TypeName returnTypeName = null;
 
         Set<String> testClassNames = testClasses.stream()
@@ -520,7 +521,7 @@ public final class CodeGenerator {
             returnTypeSimpleName = typeSimpleName(returnTypeName.toString());
         }
 
-        Set<FieldSignature> allowlistedTestFields = getTestFieldsForClass(
+        List<FieldSignature> allowlistedTestFields = getTestFieldsForClass(
                 returnTypeSimpleName.replaceAll("Proxy", ""));
 
         if (isParameterizedType(returnType)) {
@@ -583,7 +584,7 @@ public final class CodeGenerator {
     }
 
     private void implementParcelable(TypeSpec.Builder proxyClassBuilder,
-            String proxyClassName, Set<FieldSignature> allowlistedTestFields) {
+            String proxyClassName, List<FieldSignature> allowlistedTestFields) {
         FunSpec.Builder parcelConstructorBuilder = FunSpec.constructorBuilder()
                 .addModifiers(KModifier.PRIVATE)
                 .addParameter(new ParameterSpec("source",
@@ -714,12 +715,12 @@ public final class CodeGenerator {
                 .build());
     }
 
-    private Set<FieldSignature> getTestFieldsForClass(String frameworkClass) {
+    private List<FieldSignature> getTestFieldsForClass(String frameworkClass) {
         return ALLOWLISTED_TEST_FIELDS.stream()
                 .map(f -> FieldSignature.forFieldString(f, mProcessingEnvironment.getTypeUtils(),
                         mProcessingEnvironment.getElementUtils()))
                 .filter(t -> typeSimpleName(t.getFrameworkClass()).equals(frameworkClass))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableList());
     }
 
     private static String removeGetPrefix(String name) {

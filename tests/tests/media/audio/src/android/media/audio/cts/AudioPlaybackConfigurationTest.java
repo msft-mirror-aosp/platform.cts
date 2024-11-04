@@ -102,6 +102,12 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                     .setDuration(VOLUME_SHAPER_DURATION_MS)
                     .build();
 
+    /**
+     * Duplicating from {@link AudioPlaybackConfiguration} to make sure tests run properly
+     * without the newest SDK.
+     **/
+    private static final int MUTED_BY_PORT_VOLUME = (1 << 6);
+
     private VolumeShaper mMuteShaper;
 
     // not declared inside test so it can be released in case of failure
@@ -604,7 +610,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         verifyMuteUnmuteNotifications(/*start=*/player.mPlay,
                 /*mute=*/ () -> adjustMuteStreamVolume(am),
                 /*unmute=*/ () -> adjustUnMuteStreamVolume(am),
-                /*muteChangesActiveState=*/ false, MUTED_BY_STREAM_VOLUME);
+                /*muteChangesActiveState=*/ false, MUTED_BY_STREAM_VOLUME | MUTED_BY_PORT_VOLUME);
     }
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",

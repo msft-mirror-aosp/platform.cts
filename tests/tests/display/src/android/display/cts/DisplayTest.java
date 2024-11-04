@@ -19,8 +19,13 @@ package android.display.cts;
 import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.hardware.flags.Flags.FLAG_OVERLAYPROPERTIES_CLASS_API;
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.Display.FRAME_RATE_CATEGORY_HIGH;
+import static android.view.Display.FRAME_RATE_CATEGORY_NORMAL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_HAS_ARR_SUPPORT;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -80,7 +85,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DisplayStateManager;
@@ -882,7 +887,11 @@ public class DisplayTest extends TestBase {
     @Test
     public void testMode() {
         Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        assertEquals(2, display.getSupportedModes().length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
         assertEquals(display.getSupportedModes()[0], mode);
         assertEquals(SECONDARY_DISPLAY_WIDTH, mode.getPhysicalWidth());
@@ -999,11 +1008,14 @@ public class DisplayTest extends TestBase {
 
         enableAppOps();
         final Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        Display.Mode[] modes = display.getSupportedModes();
-        assertEquals(2, modes.length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
-        assertEquals(modes[0], mode);
-        final Display.Mode newMode = modes[1];
+        assertEquals(modes.get(0), mode);
+        final Display.Mode newMode = modes.get(1);
 
         Handler handler = new Handler(Looper.getMainLooper());
 
@@ -1196,6 +1208,30 @@ public class DisplayTest extends TestBase {
         assertEquals("", width);
         String height = SystemProperties.get("ro.surface_flinger.max_graphics_height");
         assertEquals("", height);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_HAS_ARR_SUPPORT)
+    public void testHasArrSupport() {
+        // TODO(b/365163281) Update the test case with more concrete behavior test
+        mDefaultDisplay.hasArrSupport();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE)
+    public void testSuggestedFrameRate() {
+        final float normal = mDefaultDisplay.getSuggestedFrameRate(FRAME_RATE_CATEGORY_NORMAL);
+        final float high = mDefaultDisplay.getSuggestedFrameRate(FRAME_RATE_CATEGORY_HIGH);
+        assertTrue(normal > 0);
+        assertTrue(high > 0);
+        assertTrue("FrameRateCategoryRate High should be greater than or equal to Normal",
+                high >= normal);
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE)
+    public void testSuggestedFrameRate_throwsIllegalArgumentException() {
+        mDefaultDisplay.getSuggestedFrameRate(2);
     }
 
     /**

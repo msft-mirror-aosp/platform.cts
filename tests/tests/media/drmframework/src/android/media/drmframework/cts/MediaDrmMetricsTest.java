@@ -24,6 +24,7 @@ import android.os.PersistableBundle;
 import android.platform.test.annotations.Presubmit;
 import android.test.AndroidTestCase;
 import android.util.Log;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.google.common.io.BaseEncoding;
 import java.lang.IllegalArgumentException;
 import java.util.Base64;
@@ -36,6 +37,7 @@ import java.util.UUID;
  * MediaDrm tests covering {@link MediaDrm#getMetrics} and related
  * functionality.
  */
+@FrameworkSpecificTest
 public class MediaDrmMetricsTest extends AndroidTestCase {
     private static final String TAG = MediaDrmMetricsTest.class.getSimpleName();
     private static final UUID CLEARKEY_SCHEME_UUID =

@@ -194,6 +194,44 @@ public class RingtoneManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RINGTONE_HAPTICS_CUSTOMIZATION)
+    public void testAccessWithVibrationMethods() {
+        if (!isSupportedDevice()) return;
+
+        assertEquals(-1, RingtoneManager.getDefaultType(null));
+
+        Uri defaultWithVibrationUri = Settings.System.DEFAULT_NOTIFICATION_URI
+                .buildUpon()
+                .appendQueryParameter(
+                        android.media.Utils.VIBRATION_URI_PARAM,
+                        "file://vibration_file")
+                .build();
+
+        assertEquals(RingtoneManager.TYPE_NOTIFICATION,
+                RingtoneManager.getDefaultType(defaultWithVibrationUri));
+
+        defaultWithVibrationUri = Settings.System.DEFAULT_RINGTONE_URI
+                .buildUpon()
+                .appendQueryParameter(
+                        android.media.Utils.VIBRATION_URI_PARAM,
+                        "file://vibration_file")
+                .build();
+
+        assertEquals(RingtoneManager.TYPE_RINGTONE,
+                RingtoneManager.getDefaultType(defaultWithVibrationUri));
+
+        defaultWithVibrationUri = Settings.System.DEFAULT_ALARM_ALERT_URI
+                .buildUpon()
+                .appendQueryParameter(
+                        android.media.Utils.VIBRATION_URI_PARAM,
+                        "file://vibration_file")
+                .build();
+
+        assertEquals(RingtoneManager.TYPE_ALARM,
+                RingtoneManager.getDefaultType(defaultWithVibrationUri));
+    }
+
+    @Test
     public void testSetType() {
         if (!isSupportedDevice()) return;
 

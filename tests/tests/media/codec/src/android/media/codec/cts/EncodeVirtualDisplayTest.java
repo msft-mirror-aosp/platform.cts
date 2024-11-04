@@ -36,7 +36,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -83,7 +82,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Presubmit
 @SmallTest
-@RequiresDevice
 @RunWith(Parameterized.class)
 public class EncodeVirtualDisplayTest {
     private static final String TAG = "EncodeVirtualTest";

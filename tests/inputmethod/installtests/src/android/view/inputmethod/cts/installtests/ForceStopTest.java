@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import android.Manifest;
@@ -36,8 +37,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
@@ -114,7 +115,7 @@ public class ForceStopTest {
     @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */);
     }
 
@@ -122,7 +123,7 @@ public class ForceStopTest {
     @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         testImeRemainsEnabledAfterForceStopMain(additionalUser, true /* selectIme */);
     }
 

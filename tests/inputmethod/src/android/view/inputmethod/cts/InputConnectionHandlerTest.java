@@ -55,7 +55,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -66,7 +65,6 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -81,9 +79,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>TODO: Add more tests.</p>
  */
 @LargeTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputConnectionHandlerTest extends EndToEndImeTestBase {
+public final class InputConnectionHandlerTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     /**
@@ -482,7 +479,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
 
             final AtomicReference<View> testEditorViewRef = new AtomicReference<>();
-            TestActivity.startSync(activity -> {
+            final var testActivity = new TestActivity.Starter().startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -509,7 +506,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                 testEditorViewRef.set(testEditor);
                 layout.addView(testEditor);
                 return layout;
-            });
+            }, TestActivity.class);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -517,8 +514,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             assertFalse("InputMethodManager#isFullscreenMode() must return false",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
 
             // In order to have an IME be shown in the fullscreen mode,
             // SOFT_INPUT_STATE_ALWAYS_VISIBLE is insufficient.  An explicit API call is necessary.
@@ -537,8 +534,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                     thread.getThreadId(), callingThreadId.get());
 
             assertTrue("InputMethodManager#isFullscreenMode() must return true",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
             assertTrue(expectCommand(stream, imeSession.callVerifyExtractViewNotNull(), TIMEOUT)
                     .getReturnBooleanValue());
         }

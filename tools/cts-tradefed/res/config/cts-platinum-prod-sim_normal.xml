@@ -393,7 +393,6 @@
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.SplitPermissionsSystemTest#validateAndroidSystem" />
 
     <!-- CtsHostsideNetworkTests -->
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests android.security.cts.ProcNetTest#testRouterSolicitations" />
     <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testGetConnectionOwnerUidSecurity" />
 
     <!-- CtsUsageStatsTestCases -->
@@ -432,7 +431,6 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testDevicePolicyApn" />
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetAidForAppType" />
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetAllNetworkTypes" />
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetCallWaitingStatus" />
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetCardIdForDefaultEuicc" />
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetCarrierPackageNamesForIntentAndPhoneEnforcesReadPrivilege" />
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetCarrierPackageNamesForIntentAndPhoneThrowsExceptionWithoutReadPrivilege" />

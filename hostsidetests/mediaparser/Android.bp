@@ -39,7 +39,7 @@ java_test_host {
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
     ],
-    data: [
-      ":CtsMediaParserTestCasesApp",
-    ]
+    device_common_data: [
+        ":CtsMediaParserTestCasesApp",
+    ],
 }

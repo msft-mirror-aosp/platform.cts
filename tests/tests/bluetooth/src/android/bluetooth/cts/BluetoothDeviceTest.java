@@ -167,7 +167,6 @@ public class BluetoothDeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_GET_ADDRESS_TYPE_API)
     public void getAddressType() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
@@ -578,7 +577,6 @@ public class BluetoothDeviceTest {
         mFakeDevice.removeBond();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_INACTIVE_AUDIO_DEVICE_UPON_CONNECTION)
     @Test
     public void setActiveAudioDevicePolicy_getActiveAudioDevicePolicy() {
         if (!mHasBluetooth || !mHasCompanionDevice) {

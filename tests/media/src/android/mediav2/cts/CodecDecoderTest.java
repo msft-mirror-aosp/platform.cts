@@ -98,7 +98,6 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 
     private final String mRefFile;
-    private final String mReconfigFile;
     private final float mRmsError;
     private final long mRefCRC;
     private final SupportClass mSupportRequirements;
@@ -108,11 +107,9 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
     }
 
     public CodecDecoderTest(String decoder, String mediaType, String testFile, String refFile,
-            String reconfigFile, float rmsError, long refCRC, SupportClass supportRequirements,
-            String allTestParams) {
+            float rmsError, long refCRC, SupportClass supportRequirements, String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
         mRefFile = MEDIA_DIR + refFile;
-        mReconfigFile = MEDIA_DIR + reconfigFile;
         mRmsError = rmsError;
         mRefCRC = refCRC;
         mSupportRequirements = supportRequirements;
@@ -169,102 +166,73 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         final boolean isEncoder = false;
         final boolean needAudio = true;
         final boolean needVideo = true;
-        // mediaType, testClip, referenceClip, reconfigureTestClip, refRmsError, refCRC32,
-        // SupportClass
+        // mediaType, testClip, referenceClip, refRmsError, refCRC32, SupportClass
         final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_8kHz_lame_cbr.mp3",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_2ch_44kHz_lame_vbr.mp3", 91.026749f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", 91.026749f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_cbr.mp3",
-                        "bbb_2ch_44kHz_s16le.raw", "bbb_1ch_16kHz_lame_vbr.mp3", 103.603081f, -1L,
-                        CODEC_ALL},
+                        "bbb_2ch_44kHz_s16le.raw", 103.603081f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_1ch_16kHz_16kbps_amrwb.3gp",
-                        "bbb_1ch_16kHz_s16le.raw", "bbb_1ch_16kHz_23kbps_amrwb.3gp", 2393.5979f,
-                        -1L, CODEC_ALL},
+                        "bbb_1ch_16kHz_s16le.raw", 2393.5979f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_1ch_8kHz_10kbps_amrnb.3gp",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_1ch_8kHz_8kbps_amrnb.3gp", -1.0f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", -1.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_1ch_16kHz_flac.mka",
-                        "bbb_1ch_16kHz_s16le.raw", "bbb_2ch_44kHz_flac.mka", 0.0f, -1L, CODEC_ALL},
+                        "bbb_1ch_16kHz_s16le.raw", 0.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_2ch_44kHz_flac.mka",
-                        "bbb_2ch_44kHz_s16le.raw", "bbb_1ch_16kHz_flac.mka", 0.0f, -1L, CODEC_ALL},
+                        "bbb_2ch_44kHz_s16le.raw", 0.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_16kHz.wav", "bbb_1ch_16kHz_s16le.raw",
-                        "bbb_2ch_44kHz.wav", 0.0f, -1L, CODEC_ALL},
+                        0.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_2ch_44kHz.wav", "bbb_2ch_44kHz_s16le.raw",
-                        "bbb_1ch_16kHz.wav", 0.0f, -1L, CODEC_ALL},
+                        0.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_1ch_8kHz_alaw.wav",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_2ch_8kHz_alaw.wav", 23.087402f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", 23.087402f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_1ch_8kHz_mulaw.wav",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_2ch_8kHz_mulaw.wav", 24.413954f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", 24.413954f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_1ch_8kHz_gsm.wav", 946.026978f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", 946.026978f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_1ch_16kHz_vorbis.mka",
-                        "bbb_1ch_8kHz_s16le.raw", "bbb_2ch_44kHz_vorbis.mka", -1.0f, -1L,
-                        CODEC_ALL},
+                        "bbb_1ch_8kHz_s16le.raw", -1.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka",
-                        "bbb_2ch_48kHz_s16le.raw", "bbb_1ch_48kHz_opus.mka", -1.0f, -1L, CODEC_ALL},
+                        "bbb_2ch_48kHz_s16le.raw", -1.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_1ch_16kHz_aac.mp4",
-                        "bbb_1ch_16kHz_s16le.raw", "bbb_2ch_44kHz_aac.mp4", -1.0f, -1L, CODEC_ALL},
+                        "bbb_1ch_16kHz_s16le.raw", -1.0f, -1L, CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2, "bbb_340x280_768kbps_30fps_mpeg2.mp4", null,
-                        "bbb_520x390_1mbps_30fps_mpeg2.mp4", -1.0f, -1L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_340x280_768kbps_30fps_avc.mp4", null,
-                        "bbb_520x390_1mbps_30fps_avc.mp4", -1.0f, 1746312400L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_520x390_1mbps_30fps_hevc.mp4", null,
-                        "bbb_340x280_768kbps_30fps_hevc.mp4", -1.0f, 3061322606L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_128x96_64kbps_12fps_mpeg4.mp4",
-                        null, "bbb_176x144_192kbps_15fps_mpeg4.mp4", -1.0f, -1L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp",
-                        null, "bbb_176x144_192kbps_10fps_h263.3gp", -1.0f, -1L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_340x280_768kbps_30fps_vp8.webm", null,
-                        "bbb_520x390_1mbps_30fps_vp8.webm", -1.0f, 2030620796L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_340x280_768kbps_30fps_vp9.webm", null,
-                        "bbb_520x390_1mbps_30fps_vp9.webm", -1.0f, 4122701060L, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4", null,
-                        "bbb_520x390_1mbps_30fps_av1.mp4", -1.0f, 400672933L, CODEC_ALL},
+                        -1.0f, -1L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_340x280_768kbps_30fps_avc.mp4", null, -1.0f,
+                        1746312400L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_520x390_1mbps_30fps_hevc.mp4", null, -1.0f,
+                        3061322606L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_128x96_64kbps_12fps_mpeg4.mp4", null, -1.0f,
+                        -1L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp", null, -1.0f,
+                        -1L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_340x280_768kbps_30fps_vp8.webm", null, -1.0f,
+                        2030620796L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_340x280_768kbps_30fps_vp9.webm", null, -1.0f,
+                        4122701060L, CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4", null, -1.0f,
+                        400672933L, CODEC_ALL},
         }));
-        // P010 support was added in Android T, hence limit the following tests to Android T and
-        // above
+        // Framework P010 support added with android T.
+        // These codecs are not required to support P010, but if they advertise support,
+        // we are going to test it.
         if (IS_AT_LEAST_T) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_340x280_24fps_crf22_avc_10bit.mkv",
-                            null, "cosmat_520x390_24fps_crf22_avc_10bit.mkv", -1.0f, 1462636611L,
-                            CODEC_OPTIONAL},
+                            null, -1.0f, 1462636611L, CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_340x280_24fps_crf22_hevc_10bit.mkv",
-                            null, "cosmat_520x390_24fps_crf22_hevc_10bit.mkv", -1.0f, 2611796790L,
-                            CODEC_OPTIONAL},
+                            null, -1.0f, 2611796790L, CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_340x280_24fps_crf22_vp9_10bit.mkv",
-                            null, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv", -1.0f, 2419292938L,
-                            CODEC_OPTIONAL},
+                            null, -1.0f, 2419292938L, CODEC_OPTIONAL},
+            }));
+        }
+        // These codecs are always required to support P010.
+        // AV1 10 bit support was mandated as of Android11 CDD 5.3, but we're unable to verify
+        // that with framework before T.
+        if (IS_AT_LEAST_T) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_340x280_24fps_512kbps_av1_10bit.mkv",
-                            null, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv", -1.0f, 1021109556L,
-                            CODEC_ALL},
-                    {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_340x280_24fps_crf22_avc_10bit.mkv",
-                            null, "bbb_520x390_1mbps_30fps_avc.mp4", -1.0f, 1462636611L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_340x280_24fps_crf22_hevc_10bit.mkv",
-                            null, "bbb_520x390_1mbps_30fps_hevc.mp4", -1.0f, 2611796790L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_340x280_24fps_crf22_vp9_10bit.mkv",
-                            null, "bbb_520x390_1mbps_30fps_vp9.webm", -1.0f, 2419292938L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_340x280_24fps_512kbps_av1_10bit.mkv",
-                            null, "bbb_520x390_1mbps_30fps_av1.mp4", -1.0f, 1021109556L,
-                            CODEC_ALL},
-                    {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_520x390_24fps_crf22_avc_10bit.mkv",
-                            null, "bbb_340x280_768kbps_30fps_avc.mp4", -1.0f, 2245243696L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_520x390_24fps_crf22_hevc_10bit.mkv"
-                            , null, "bbb_340x280_768kbps_30fps_hevc.mp4", -1.0f, 2486118612L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv",
-                            null, "bbb_340x280_768kbps_30fps_vp9.webm", -1.0f, 3677982654L,
-                            CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
-                            null, "bbb_340x280_768kbps_30fps_av1.mp4", -1.0f, 1139081423L,
-                            CODEC_ALL},
+                            null, -1.0f, 1021109556L, CODEC_ALL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
@@ -318,22 +286,6 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         } else if (refCRC >= 0) {
             assertEquals("checksum mismatch \n" + msg, refCRC, outBuff.getCheckSumImage());
         }
-    }
-
-    void doOutputFormatChecks(MediaFormat defaultFormat, MediaFormat configuredFormat) {
-        String msg = String.format("Input test file format is not same as default format of"
-                        + " component, but test did not receive INFO_OUTPUT_FORMAT_CHANGED signal"
-                        + ".\nInput file format is :- %s \nDefault format is :- %s \n",
-                configuredFormat, defaultFormat);
-        assertTrue(msg + mTestConfig + mTestEnv,
-                mIsCodecInAsyncMode ? mAsyncHandle.hasOutputFormatChanged() :
-                        mSignalledOutFormatChanged);
-        MediaFormat outputFormat =
-                mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
-        msg = String.format("Configured input format and received output format are "
-                + "not similar. \nConfigured Input format is :- %s \nReceived Output "
-                + "format is :- %s \n", configuredFormat, outputFormat);
-        assertTrue(msg + mTestConfig + mTestEnv, isFormatSimilar(configuredFormat, outputFormat));
     }
 
     @Before
@@ -579,159 +531,6 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
         boolean isPass = nativeTestFlush(mCodecName, null, mMediaType, mTestFile,
                 colorFormat, mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);
-    }
-
-    /**
-     * Verifies component and framework behaviour for resolution change in bytebuffer mode. The
-     * resolution change is not seamless (AdaptivePlayback) but done via reconfigure.
-     * <p>
-     * The reconfiguring of media codec component happens at various points :-
-     * <ul>
-     *     <li>After initial configuration (stopped state).</li>
-     *     <li>In running state, before queueing any input.</li>
-     *     <li>In running state, after queuing n frames.</li>
-     *     <li>In eos state.</li>
-     * </ul>
-     * In eos state,
-     * <ul>
-     *     <li>reconfigure with same clip.</li>
-     *     <li>reconfigure with different clip (different resolution).</li>
-     * </ul>
-     * <p>
-     * In all situations (pre-reconfigure or post-reconfigure), the test expects the output
-     * timestamps to be strictly increasing. The reconfigure call makes the output received
-     * non-deterministic even for a given input. Hence, besides timestamp checks, no additional
-     * validation is done for outputs received before reconfigure. Post reconfigure, the decode
-     * begins from a sync frame. So the test expects consistent output and this needs to be
-     * identical to the reference.
-     * <p>
-     * The test runs mediacodec in synchronous and asynchronous mode.
-     * <p>
-     * During reconfiguration, the mode of operation is toggled. That is, if first configure
-     * operates the codec in sync mode, then next configure operates the codec in async mode and
-     * so on.
-     */
-    @ApiTest(apis = "android.media.MediaCodec#configure")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testReconfigure() throws IOException, InterruptedException {
-        Assume.assumeTrue("Test needs Android 11", IS_AT_LEAST_R);
-
-        MediaFormat format = setUpSource(mTestFile);
-        mExtractor.release();
-        MediaFormat newFormat = setUpSource(mReconfigFile);
-        mExtractor.release();
-        ArrayList<MediaFormat> formatList = new ArrayList<>();
-        formatList.add(newFormat);
-        checkFormatSupport(mCodecName, mMediaType, false, formatList, null, mSupportRequirements);
-        final long startTs = 0;
-        final long seekTs = 500000;
-        final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
-        boolean[] boolStates = {true, false};
-        {
-            decodeToMemory(mTestFile, mCodecName, startTs, mode, Integer.MAX_VALUE);
-            OutputManager ref = mOutputBuff;
-            decodeToMemory(mReconfigFile, mCodecName, seekTs, mode, Integer.MAX_VALUE);
-            OutputManager configRef = mOutputBuff;
-            OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-            OutputManager configTest = new OutputManager(configRef.getSharedErrorLogs());
-            mCodec = MediaCodec.createByCodecName(mCodecName);
-            for (boolean isAsync : boolStates) {
-                mOutputBuff = test;
-                setUpSource(mTestFile);
-                mExtractor.seekTo(startTs, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                configureCodec(format, isAsync, true, false);
-                MediaFormat defFormat = mCodec.getOutputFormat();
-                boolean validateFormat = true;
-                if (isFormatSimilar(format, defFormat)) {
-                    if (ENABLE_LOGS) {
-                        Log.d("Input format is same as default for format for %s", mCodecName);
-                    }
-                    validateFormat = false;
-                }
-
-                /* test reconfigure in stopped state */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-
-                /* test reconfigure in running state before queuing input */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-                doWork(23);
-
-                if (mOutputCount != 0) {
-                    if (validateFormat) {
-                        doOutputFormatChecks(defFormat, format);
-                    }
-                    validateMetrics(mCodecName, format);
-                }
-
-                /* test reconfigure codec in running state */
-                reConfigureCodec(format, isAsync, true, false);
-                mCodec.start();
-                mSaveToMem = true;
-                test.reset();
-                mExtractor.seekTo(startTs, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                endCodecSession(mCodec);
-                if (!ref.equals(test)) {
-                    fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
-                            + test.getErrMsg());
-                }
-                if (validateFormat) {
-                    doOutputFormatChecks(defFormat, format);
-                }
-
-                /* test reconfigure codec at eos state */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-                test.reset();
-                mExtractor.seekTo(startTs, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                endCodecSession(mCodec);
-                if (!ref.equals(test)) {
-                    fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
-                            + test.getErrMsg());
-                }
-                if (validateFormat) {
-                    doOutputFormatChecks(defFormat, format);
-                }
-                mExtractor.release();
-
-                /* test reconfigure codec for new file */
-                mOutputBuff = configTest;
-                setUpSource(mReconfigFile);
-                reConfigureCodec(newFormat, isAsync, false, false);
-                if (isFormatSimilar(newFormat, defFormat)) {
-                    if (ENABLE_LOGS) {
-                        Log.d("Input format is same as default for format for %s", mCodecName);
-                    }
-                    validateFormat = false;
-                }
-                mCodec.start();
-                configTest.reset();
-                mExtractor.seekTo(seekTs, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                validateMetrics(mCodecName, newFormat);
-                endCodecSession(mCodec);
-                if (!configRef.equals(configTest)) {
-                    fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
-                            + configTest.getErrMsg());
-                }
-                if (validateFormat) {
-                    doOutputFormatChecks(defFormat, newFormat);
-                }
-                mSaveToMem = false;
-                mExtractor.release();
-            }
-            mCodec.release();
-        }
     }
 
     /**

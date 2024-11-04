@@ -25,6 +25,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AV1;
 import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
+import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
@@ -33,6 +34,7 @@ import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static java.lang.Math.max;
@@ -44,7 +46,6 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
@@ -109,9 +110,9 @@ public class VideoCodecRequirementsTest {
             ArrayList<String> hwVideoCodecs =
                     selectHardwareCodecs(codecMediaType, null, null, isEncoder);
             for (String hwVideoCodec : hwVideoCodecs) {
-                MediaCodec codec = MediaCodec.createByCodecName(hwVideoCodec);
-                CodecCapabilities capabilities =
-                        codec.getCodecInfo().getCapabilitiesForType(codecMediaType);
+                CodecCapabilities capabilities = getCodecCapabilities(hwVideoCodec, codecMediaType);
+                assertNotNull("did not receive capabilities for codec: " + hwVideoCodec
+                        + ", media type: " + codecMediaType + "\n", capabilities);
                 List<PerformancePoint> pps =
                         capabilities.getVideoCapabilities().getSupportedPerformancePoints();
                 assertTrue(hwVideoCodec + " doesn't advertise performance points", pps.size() > 0);
@@ -123,7 +124,6 @@ public class VideoCodecRequirementsTest {
                         break;
                     }
                 }
-                codec.release();
             }
         }
         return codecSet;
@@ -148,36 +148,6 @@ public class VideoCodecRequirementsTest {
             }
         }
         return null;
-    }
-
-    /**
-     * Validates AV1 hardware decoder is present and supports: Main 10, Level 4.1, Film Grain
-     */
-    @LargeTest
-    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
-    public void testAV1HwDecoderRequirements() throws Exception {
-        MediaFormat format = MediaFormat.createVideoFormat(MIMETYPE_VIDEO_AV1, 1920, 1080);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        formats.add(format);
-        ArrayList<String> av1HwDecoders =
-                selectHardwareCodecs(MIMETYPE_VIDEO_AV1, formats, null, false);
-        boolean oneCodecDecoding = false;
-        for (String codec : av1HwDecoders) {
-            Decode decode = new Decode(MIMETYPE_VIDEO_AV1, FILE_AV1_REQ_SUPPORT, codec, true);
-            double achievedRate = decode.doDecode().fps();
-            if (achievedRate > 0) {
-                oneCodecDecoding = true;
-            }
-        }
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
-                Requirements.addR5_1__H_1_14().to(pce);
-        rAV1DecoderReq.setAv1DecoderRequirementBoolean(oneCodecDecoding);
-
-        pce.submitAndCheck();
     }
 
     /**

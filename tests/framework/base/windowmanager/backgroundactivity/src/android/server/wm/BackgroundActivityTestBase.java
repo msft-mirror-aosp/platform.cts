@@ -427,9 +427,17 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         }
     }
 
-
+    /** Asserts the activity is the top focused activity among all displays before timeout. */
     protected void assertActivityFocused(ComponentName componentName) {
         assertActivityFocused(ACTIVITY_FOCUS_TIMEOUT, componentName);
+    }
+
+    /** Asserts the activity is the top focused activity on its own display before timeout. */
+    protected void assertActivityFocusedOnMainDisplay(ComponentName componentName) {
+        waitForActivityResumed(ACTIVITY_FOCUS_TIMEOUT, componentName);
+        assertWithMessage("activity should be focused within " + ACTIVITY_FOCUS_TIMEOUT)
+                .that(mWmState.getTopActivityName(getMainDisplayId()))
+                .isEqualTo(getActivityName(componentName));
     }
 
     protected void assertActivityNotFocused(ComponentName componentName) {

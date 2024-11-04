@@ -31,9 +31,9 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.devicepolicy.cts.telephony" />
         <option name="exclude-annotation"
-            value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+            value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
         <option name="exclude-annotation"
-            value="com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile" />
+            value="com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile" />
         <option name="exclude-annotation" value="com.android.interactive.annotations.Interactive" />
         <option name="hidden-api-checks" value="false" />
         <!-- test-timeout unit is ms, value = 10 min -->

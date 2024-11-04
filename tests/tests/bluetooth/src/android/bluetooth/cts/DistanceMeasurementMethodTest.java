@@ -20,6 +20,8 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -29,6 +31,9 @@ import android.bluetooth.le.DistanceMeasurementMethod;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -39,6 +44,7 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,6 +54,10 @@ import java.util.Objects;
 public class DistanceMeasurementMethodTest {
     private Context mContext;
     private BluetoothAdapter mAdapter;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -86,6 +96,26 @@ public class DistanceMeasurementMethodTest {
         }
     }
 
+    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void createFromParcelForMethodId() {
+        final Parcel parcel = Parcel.obtain();
+        try {
+            DistanceMeasurementMethod method = new DistanceMeasurementMethod
+                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                    .build();
+            method.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            DistanceMeasurementMethod methodFromParcel =
+                    DistanceMeasurementMethod.CREATOR.createFromParcel(parcel);
+            assertEquals(method.getMethodId(), methodFromParcel.getMethodId());
+        } finally {
+            parcel.recycle();
+        }
+
+    }
+
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetId() {
@@ -93,6 +123,16 @@ public class DistanceMeasurementMethodTest {
                     .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI).build();
         assertEquals(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI,
                 method.getId(), 0.0);
+    }
+
+    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setGetMethodId() {
+        DistanceMeasurementMethod method = new DistanceMeasurementMethod
+                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI).build();
+        assertEquals(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI,
+                method.getMethodId());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

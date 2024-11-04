@@ -22,6 +22,7 @@ import android.view.Display.Mode;
 
 import com.android.compatibility.common.deviceinfo.DeviceInfo;
 import com.android.compatibility.common.util.DeviceInfoStore;
+import com.android.server.display.feature.flags.Flags;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,7 @@ public class DisplayDeviceInfo extends DeviceInfo {
     private static final String MAX_LUMINANCE = "max_luminance";
     private static final String MAX_AVERAGE_LUMINANCE = "max_average_luminance";
     private static final String MIN_LUMINANCE = "min_luminance";
+    private static final String MAX_HDR_SDR_RATIO = "max_hdr_sdr_ratio";
 
     @Override
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
@@ -61,7 +63,9 @@ public class DisplayDeviceInfo extends DeviceInfo {
             store.addResult(MAX_AVERAGE_LUMINANCE,
                     hdrCapabilities.getDesiredMaxAverageLuminance());
             store.addResult(MIN_LUMINANCE, hdrCapabilities.getDesiredMinLuminance());
-            //TODO(b/329466383): add max hdr/sdr ratio to the collector
+            if (Flags.highestHdrSdrRatioApi()) {
+                store.addResult(MAX_HDR_SDR_RATIO, display.getHighestHdrSdrRatio());
+            }
             store.endGroup();
         }
 

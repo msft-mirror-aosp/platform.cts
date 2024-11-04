@@ -41,6 +41,9 @@ import android.graphics.cts.Utils;
 import android.graphics.drawable.AnimatedImageDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -52,6 +55,10 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.graphics.hwui.flags.Flags;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,9 +71,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @RunWith(JUnitParamsRunner.class)
 public class AnimatedImageDrawableTest {
@@ -89,6 +93,10 @@ public class AnimatedImageDrawableTest {
     public ActivityTestRule<AnimatedImageActivity> mActivityRule =
             new ActivityTestRule<AnimatedImageActivity>(AnimatedImageActivity.class);
     private Activity mActivity;
+
+    @Rule(order = 2)
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Resources getResources() {
         return InstrumentationRegistry.getTargetContext().getResources();
@@ -419,7 +427,7 @@ public class AnimatedImageDrawableTest {
 
         // FIXME: Now that it seems the reason for the flakiness has been solved (b/129400990),
         // reduce this extra duration workaround.
-        cb.waitForEnd(DURATION * 20);
+        cb.waitForEnd(DURATION * 30);
         cb.assertEnded(true);
 
         drawable.setRepeatCount(AnimatedImageDrawable.REPEAT_INFINITE);
@@ -841,5 +849,21 @@ public class AnimatedImageDrawableTest {
         ByteBuffer byteBuffer = getAsDirectByteBuffer();
         final AnimatedImageDrawable drawable = createFromByteBuffer(byteBuffer);
         decodeInBackground(drawable);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANIMATED_IMAGE_DRAWABLE_FILTER_BITMAP)
+    public void testSetFilterBitmap() {
+        Resources res = getResources();
+        AnimatedImageDrawable animatedImageDrawable =
+                (AnimatedImageDrawable) res.getDrawable(R.drawable.animated);
+
+        assertTrue(animatedImageDrawable.isFilterBitmap());
+
+        animatedImageDrawable.setFilterBitmap(false);
+        assertFalse(animatedImageDrawable.isFilterBitmap());
+
+        animatedImageDrawable.setFilterBitmap(true);
+        assertTrue(animatedImageDrawable.isFilterBitmap());
     }
 }

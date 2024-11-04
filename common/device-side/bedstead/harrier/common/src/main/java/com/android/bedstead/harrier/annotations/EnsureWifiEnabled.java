@@ -16,7 +16,7 @@
 
 package com.android.bedstead.harrier.annotations;
 
-import static com.android.bedstead.harrier.annotations.EnsureHasUserRestriction.ENSURE_HAS_USER_RESTRICTION_PRIORITY;
+import static com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction.ENSURE_HAS_USER_RESTRICTION_PRIORITY;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

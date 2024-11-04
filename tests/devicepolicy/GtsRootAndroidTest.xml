@@ -36,10 +36,10 @@
         <option name="include-annotation" value="com.android.xts.root.annotations.RequireRootInstrumentation" />
         <option name="include-filter" value="android.devicepolicy.cts.ApplicationHiddenTest" />
 <!--        <option name="include-filter" value="android.devicepolicy.cts.DevicePolicyManagerTest" />-->
-<!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />-->
-<!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />-->
-<!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile" />-->
-<!--        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile" />-->
+<!--        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />-->
+<!--        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />-->
+<!--        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile" />-->
+<!--        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile" />-->
 <!--        <option name="exclude-annotation" value="com.android.interactive.annotations.Interactive" />-->
         <option name="hidden-api-checks" value="false" />
         <!-- test-timeout unit is ms, value = 10 min -->
