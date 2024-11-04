@@ -59,6 +59,7 @@ public class ImsServiceConnector {
     private static final String COMMAND_CLEAR_SERVICE_OVERRIDE = "ims clear-ims-service-override";
     private static final String COMMAND_CARRIER_SERVICE_IDENTIFIER = "-c ";
     private static final String COMMAND_DEVICE_SERVICE_IDENTIFIER = "-d ";
+    private static final String COMMAND_USER_ID_IDENTIFIER = "-u ";
     private static final String COMMAND_SLOT_IDENTIFIER = "-s ";
     private static final String COMMAND_FEATURE_IDENTIFIER = "-f ";
     private static final String COMMAND_ENABLE_IMS = "ims enable ";
@@ -308,12 +309,13 @@ public class ImsServiceConnector {
         private boolean setCarrierImsService(String packageName) throws Exception {
             mFeatureTypeToPackageOverrideMap.put(ImsFeature.FEATURE_MMTEL, packageName);
             mFeatureTypeToPackageOverrideMap.put(ImsFeature.FEATURE_RCS, packageName);
-            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
-                    constructSetImsServiceOverrideCommand(true, packageName, new int[] {
-                            ImsFeature.FEATURE_EMERGENCY_MMTEL, ImsFeature.FEATURE_MMTEL,
-                            ImsFeature.FEATURE_RCS}));
+            String command = constructSetImsServiceOverrideCommand(true, packageName, new int[] {
+                    ImsFeature.FEATURE_EMERGENCY_MMTEL, ImsFeature.FEATURE_MMTEL,
+                    ImsFeature.FEATURE_RCS});
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation, command);
             if (ImsUtils.VDBG) {
-                Log.d(TAG, "setCarrierMmTelImsService result: " + result);
+                Log.d(TAG, "setCarrierMmTelImsService: command=[" + command + "], result: "
+                        + result);
             }
             return "true".equals(result);
         }
@@ -395,13 +397,12 @@ public class ImsServiceConnector {
                 throws Exception {
             getCarrierService().setFeatureConfig(config);
             boolean setCarrierImsService = setCarrierImsService(packageName);
+            Log.i("bindCarrierImsService", "setCarrierImsService = " + setCarrierImsService);
+            if (!setCarrierImsService) return false;
             boolean getCarrierService = getCarrierService().waitForLatchCountdown(
                     TestImsService.LATCH_FEATURES_READY);
-            Log.i("bindCarrierImsService", "setCarrierImsService = " + setCarrierImsService);
             Log.i("bindCarrierImsService", "getCarrierService = " + getCarrierService);
             return setCarrierImsService && getCarrierService;
-//            return setCarrierImsService(packageName) && getCarrierService().waitForLatchCountdown(
-//                            TestImsService.LATCH_FEATURES_READY);
         }
 
         private boolean bindDeviceImsService(ImsFeatureConfiguration config, String packageName)
@@ -449,7 +450,9 @@ public class ImsServiceConnector {
 
         private String constructSetImsServiceOverrideCommand(boolean isCarrierService,
                 String packageName, int[] featureTypes) {
+            int userId = mInstrumentation.getContext().getUserId();
             return COMMAND_BASE + COMMAND_SET_IMS_SERVICE + COMMAND_SLOT_IDENTIFIER + mSlotId + " "
+                    + COMMAND_USER_ID_IDENTIFIER + userId + " "
                     + (isCarrierService
                         ? COMMAND_CARRIER_SERVICE_IDENTIFIER : COMMAND_DEVICE_SERVICE_IDENTIFIER)
                     + COMMAND_FEATURE_IDENTIFIER + getFeatureTypesString(featureTypes) + " "
