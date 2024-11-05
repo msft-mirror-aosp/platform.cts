@@ -48,6 +48,8 @@ java_defaults {
         "cts-media-common",
         "ctstestrunner-axt",
         "exoplayer-mediamuxer_tests",
+        "com.android.media.flags.editing-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctsmediamuxertest_jni",
