@@ -379,6 +379,10 @@ public class SmsUsageMonitorShortCodeTest {
             new ShortCodeTest("it", "49900", SMS_CATEGORY_PREMIUM_SHORT_CODE),
             new ShortCodeTest("it", "456789", SMS_CATEGORY_NOT_SHORT_CODE),
 
+            new ShortCodeTest("jo", "990661", SMS_CATEGORY_NOT_SHORT_CODE),
+            new ShortCodeTest("jo", "99006", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("jo", "99066", SMS_CATEGORY_FREE_SHORT_CODE),
+
             new ShortCodeTest("kg", "112", SMS_CATEGORY_NOT_SHORT_CODE),
             new ShortCodeTest("kg", "5432", SMS_CATEGORY_POSSIBLE_PREMIUM_SHORT_CODE),
             new ShortCodeTest("kg", "4152", SMS_CATEGORY_PREMIUM_SHORT_CODE),
