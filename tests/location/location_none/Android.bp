@@ -27,6 +27,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "mockito-target-minus-junit4",
         // TODO: remove once Android migrates to JUnit 4.12, which provides assertThrows:
         "testng",
