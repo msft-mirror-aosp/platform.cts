@@ -142,7 +142,7 @@ class SimultaneousTouchAndStylusTest {
         // ACTION_DOWN - stylus - right window
         stylus.sendBtnTouch(true)
         stylus.sendPressure(255)
-        stylus.sendDown(pointerId, rightWindowLocation, UinputTouchDevice.MT_TOOL_PEN)
+        stylus.sendDown(pointerId, rightWindowLocation)
         stylus.sync()
 
         rightWindowVerifier.assertReceivedMotion(
@@ -241,7 +241,7 @@ class SimultaneousTouchAndStylusTest {
         val rightWindowLocation = Point(getWidth() * 3 / 4, getHeight() * 1 / 2)
 
         // ACTION_HOVER_ENTER - stylus - right window
-        stylus.sendDown(pointerId, rightWindowLocation, UinputTouchDevice.MT_TOOL_PEN)
+        stylus.sendDown(pointerId, rightWindowLocation)
         stylus.sendPressure(0)
         stylus.sync()
         rightWindowVerifier.assertReceivedMotion(

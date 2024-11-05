@@ -51,7 +51,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -62,23 +61,23 @@ import com.android.compatibility.common.util.PropertyUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.List;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodInfoTest {
+public final class InputMethodInfoTest {
     private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
 
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
+
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private Context mContext;
     private InputMethodManager mImManager;
@@ -186,7 +185,7 @@ public class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (Flags.imeSwitcherRevampApi()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
             assertEquals(mLanguageSettingsActivity,
                     info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         }
@@ -265,7 +264,7 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (Flags.imeSwitcherRevampApi()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
             assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
                             .getClassName(),
                     imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
@@ -296,6 +295,10 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodSubtype.getLocale(), subtype.getLocale());
         assertEquals(mInputMethodSubtype.getMode(), subtype.getMode());
         assertEquals(mInputMethodSubtype.getNameResId(), subtype.getNameResId());
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
+            assertEquals(mInputMethodSubtype.getLayoutLabelResource(),
+                    subtype.getLayoutLabelResource());
+        }
         assertEquals(mInputMethodSubtype.hashCode(), subtype.hashCode());
         assertEquals(mInputMethodSubtype.isAuxiliary(), subtype.isAuxiliary());
         assertEquals(mInputMethodSubtype.overridesImplicitlyEnabledSubtype(),

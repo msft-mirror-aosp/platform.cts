@@ -34,8 +34,6 @@ import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
 import static android.view.MotionEvent.ACTION_DOWN;
-import static android.view.MotionEvent.ACTION_HOVER_ENTER;
-import static android.view.MotionEvent.ACTION_HOVER_EXIT;
 import static android.view.MotionEvent.ACTION_UP;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
@@ -271,7 +269,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 // check the received event
                 @Override
                 public boolean accept(AccessibilityEvent event) {
-                    return equalsAccessiblityEvent(event, expected);
+                        return equalsAccessibilityEvent(event, expected);
                 }
             },
                     DEFAULT_TIMEOUT_MS);
@@ -311,7 +309,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 // check the received event
                 @Override
                 public boolean accept(AccessibilityEvent event) {
-                    return equalsAccessiblityEvent(event, expected);
+                        return equalsAccessibilityEvent(event, expected);
                 }
             },
                     DEFAULT_TIMEOUT_MS);
@@ -351,7 +349,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 // check the received event
                 @Override
                 public boolean accept(AccessibilityEvent event) {
-                    return equalsAccessiblityEvent(event, expected);
+                        return equalsAccessibilityEvent(event, expected);
                 }
             },
                     DEFAULT_TIMEOUT_MS);
@@ -379,7 +377,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         AccessibilityEvent awaitedEvent =
             sUiAutomation.executeAndWaitForEvent(
                     () -> mActivity.runOnUiThread(button::requestFocus),
-                    (event) -> equalsAccessiblityEvent(event, expected),
+                    (event) -> equalsAccessibilityEvent(event, expected),
                     DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
     }
@@ -449,7 +447,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 // check the received event
                 @Override
                 public boolean accept(AccessibilityEvent event) {
-                    return equalsAccessiblityEvent(event, expected);
+                        return equalsAccessibilityEvent(event, expected);
                 }
             },
                     DEFAULT_TIMEOUT_MS);
@@ -489,7 +487,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 // check the received event
                 @Override
                 public boolean accept(AccessibilityEvent event) {
-                    return equalsAccessiblityEvent(event, expected);
+                        return equalsAccessibilityEvent(event, expected);
                 }
             },
                     DEFAULT_TIMEOUT_MS);
@@ -511,7 +509,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             sUiAutomation.executeAndWaitForEvent(
                     () -> mActivity.runOnUiThread(() -> mActivity.finish()),
                     event -> event.getWindowChanges() == AccessibilityEvent.WINDOWS_CHANGE_REMOVED
-                            && equalsAccessiblityEvent(event, expected),
+                            && equalsAccessibilityEvent(event, expected),
                     DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
     }
@@ -596,7 +594,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                                 // check the received event
                                 @Override
                                 public boolean accept(AccessibilityEvent event) {
-                                    return equalsAccessiblityEvent(event, expected);
+                                    return equalsAccessibilityEvent(event, expected);
                                 }
                             },
                             DEFAULT_TIMEOUT_MS);
@@ -2195,96 +2193,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(eventCount.get()).isEqualTo(2);
     }
 
-    /**
-     * Test the case where we want to intercept but not consume motion events, but another service
-     * has already enabled touch exploration. Motion event observing should not work.
-     */
-    @Test
-    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
-    @RequiresFlagsDisabled(
-            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS)
-    public void testMotionEventObserving_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/false);
-    }
-
-    /**
-     * Test the case where we want to intercept but not consume motion events, but another service
-     * has already enabled touch exploration. Motion event observing should work.
-     */
-    @Test
-    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
-    @RequiresFlagsEnabled({
-            android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING,
-            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS})
-    public void testMotionEventObserving_observesTouchscreenEventWhenTouchExplorationEnabled() {
-        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/true);
-    }
-
-    private void testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(
-            boolean shouldObserve) {
-        // Don't run this test on systems without a touchscreen.
-        PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
-
-        sUiAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.ACCESSIBILITY_MOTION_EVENT_OBSERVING);
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
-        final StubMotionInterceptingAccessibilityService service =
-                mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        service.setObservedMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        assertThat(service.getServiceInfo().getObservedMotionEventSources())
-                .isEqualTo(requestedSource);
-        TouchExplorationStubAccessibilityService touchExplorationService =
-                enableService(TouchExplorationStubAccessibilityService.class);
-        try {
-            final Object waitObject = new Object();
-            final AtomicInteger eventCount = new AtomicInteger(0);
-            service.setOnMotionEventListener(
-                    motionEvent -> {
-                        synchronized (waitObject) {
-                            if (motionEvent.getSource() == requestedSource) {
-                                eventCount.incrementAndGet();
-                            }
-                            waitObject.notifyAll();
-                        }
-                    });
-
-            // Simulate a tap on the center of the button.
-            final Button button = (Button) mActivity.findViewById(R.id.button);
-            final EventCapturingMotionEventListener listener =
-                    new EventCapturingMotionEventListener();
-            button.setOnTouchListener(listener);
-            button.setOnHoverListener(listener);
-            int[] buttonLocation = new int[2];
-            final int midX = button.getWidth() / 2;
-            final int midY = button.getHeight() / 2;
-            button.getLocationOnScreen(buttonLocation);
-            PointF tapLocation = new PointF(buttonLocation[0] + midX, buttonLocation[1] + midY);
-            try {
-                dispatch(service, click(tapLocation));
-            } catch (RuntimeException e) {
-                // The input filter could have been rebuilt causing this gesture to cancel.
-                // Reset state and try again.
-                eventCount.set(0);
-                listener.clear();
-                dispatch(service, click(tapLocation));
-            }
-
-            // The view should have seen two hover events.
-            listener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-            if (shouldObserve) {
-                assertThat(eventCount.get()).isEqualTo(2);
-            } else {
-                assertThat(eventCount.get()).isEqualTo(0);
-            }
-        } finally {
-            touchExplorationService.disableSelfAndRemove();
-        }
-    }
-
     @AsbSecurityTest(cveBugId = 326485767)
     @Test
     public void testUpdateServiceWithoutIntent_disablesService() throws Exception {
@@ -2650,6 +2558,65 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
     }
 
+    @Test
+    @ApiTest(apis = {
+            "android.view.View#getSupplementalDescription",
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPLEMENTAL_DESCRIPTION)
+    public void testSupplementalDescriptionXmlAttribute() {
+        final Button button = mActivity.findViewById(R.id.buttonWithTooltip);
+        assertTrue(TextUtils.equals(mActivity.getString(R.string.foo_bar_baz),
+                button.getSupplementalDescription()));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.View#getSupplementalDescription",
+            "android.view.View#setSupplementalDescription",
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPLEMENTAL_DESCRIPTION)
+    public void testSetGetSupplementalDescription() {
+        final Button button = mActivity.findViewById(R.id.buttonWithTooltip);
+        final String supplementalDescription = mActivity.getString(R.string.a_b);
+        button.setSupplementalDescription(supplementalDescription);
+        assertTrue(TextUtils.equals(supplementalDescription, button.getSupplementalDescription()));
+    }
+
+    @MediumTest
+    @Test
+    @ApiTest(apis = {
+            "android.view.View#setSupplementalDescription",
+            "android.view.accessibility.AccessibilityEvent"
+                    + "#CONTENT_CHANGE_TYPE_SUPPLEMENTAL_DESCRIPTION"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPLEMENTAL_DESCRIPTION)
+    public void testSetSupplementalDescription_sendContentChangeTypeSupplementalDescriptionEvent()
+            throws Throwable {
+        // create and populate the expected event
+        final AccessibilityEvent expected = new AccessibilityEvent();
+        expected.setEventType(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+        expected.setContentChangeTypes(
+                AccessibilityEvent.CONTENT_CHANGE_TYPE_SUPPLEMENTAL_DESCRIPTION);
+        expected.setClassName(Button.class.getName());
+        expected.setPackageName(mActivity.getPackageName());
+        expected.setDisplayId(mActivity.getDisplayId());
+        expected.setEnabled(true);
+
+        final Button button = mActivity.findViewById(R.id.buttonWithTooltip);
+
+        // check the received event
+        AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            // trigger the event
+                            mActivity.runOnUiThread(() -> button.setSupplementalDescription(
+                                    mActivity.getString(R.string.a_b)));
+                        },
+                        event -> equalsAccessibilityEvent(event, expected),
+                        DEFAULT_TIMEOUT_MS);
+        assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+    }
+
     private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
         static final int LABELED_ID = 1;
         static final int LABEL_ONE_ID = 2;
@@ -2836,7 +2803,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
      * Compares all properties of the <code>first</code> and the
      * <code>second</code>.
      */
-    private boolean equalsAccessiblityEvent(AccessibilityEvent first, AccessibilityEvent second) {
+    private boolean equalsAccessibilityEvent(AccessibilityEvent first, AccessibilityEvent second) {
          return first.getEventType() == second.getEventType()
             && first.isChecked() == second.isChecked()
             && first.getCurrentItemIndex() == second.getCurrentItemIndex()

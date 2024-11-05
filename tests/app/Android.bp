@@ -93,7 +93,7 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",
@@ -354,6 +354,22 @@ test_module_config {
     base: "CtsAppTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.app.cts.DownloadManagerTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_all-except-large",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_activitymanagerprocessstatetest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }
 
 test_module_config {

@@ -44,6 +44,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Debug;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -66,7 +67,6 @@ import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -82,7 +82,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,18 +94,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodManagerTest {
+public final class InputMethodManagerTest {
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String MOCK_IME_LABEL = "Mock IME";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
     private static final String HIDDEN_FROM_PICKER_IME_LABEL = "Hidden From Picker IME";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+    private static final long SCROLL_TIMEOUT_MS = 500;
+
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     private Instrumentation mInstrumentation;
     private Context mContext;
@@ -290,7 +292,7 @@ public class InputMethodManagerTest {
         startActivityAndShowInputMethodPicker();
 
         final UiDevice uiDevice = getUiDevice();
-        if (Flags.imeSwitcherRevamp()) {
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP)) {
             final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
             assertNotNull("List view should be found.", list);
 
@@ -359,6 +361,9 @@ public class InputMethodManagerTest {
                             .hasDescendant(By.text(MOCK_IME_LABEL))));
             assertNotNull("Mock IME should be found", mockImeUiObject);
 
+            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+            SystemClock.sleep(SCROLL_TIMEOUT_MS);
+
             // Tapping on a menu item should dismiss the menu.
             mockImeUiObject.click();
             waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
@@ -405,6 +410,9 @@ public class InputMethodManagerTest {
                     Until.findObject(By.res("android:id/button1")));
             assertNotNull("Language settings button should be found",
                     languageSettingsButtonUiObject);
+
+            // TODO(b/371520375): Remove after UiAutomator scroll waits for animation to finish.
+            SystemClock.sleep(SCROLL_TIMEOUT_MS);
 
             languageSettingsButtonUiObject.click();
 

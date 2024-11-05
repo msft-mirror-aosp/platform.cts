@@ -17,6 +17,7 @@ package android.multiuser.cts;
 
 import static android.view.Display.DEFAULT_DISPLAY;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.nene.TestApis.users;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 
@@ -24,10 +25,10 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.platform.test.annotations.AppModeFull;
 
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 
@@ -71,7 +72,7 @@ public final class UserVisibilityVisibleBackgroundUsersOnDefaultDisplayTest
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @Test
     public void testStartUserInBackgroundOnSecondaryDisplay_defaultDisplay() {
-        UserReference user = sDeviceState.additionalUser();
+        UserReference user = additionalUser(sDeviceState);
 
         startVisibleBackgroundUser(user, DEFAULT_DISPLAY);
 
@@ -93,7 +94,7 @@ public final class UserVisibilityVisibleBackgroundUsersOnDefaultDisplayTest
     @Test
     public void
             testStartUserInBackgroundOnSecondaryDisplay_defaultDisplay_thereCanBeOnlyOne() {
-        UserReference user = sDeviceState.additionalUser();
+        UserReference user = additionalUser(sDeviceState);
         startVisibleBackgroundUser(user, DEFAULT_DISPLAY);
 
         try {

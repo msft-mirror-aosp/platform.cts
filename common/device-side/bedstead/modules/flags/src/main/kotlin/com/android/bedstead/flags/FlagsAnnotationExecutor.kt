@@ -22,6 +22,9 @@ import com.android.bedstead.harrier.AnnotationExecutor
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 
+/**
+ * [AnnotationExecutor] for flags annotations
+ */
 @Suppress("unused")
 class FlagsAnnotationExecutor : AnnotationExecutor {
 

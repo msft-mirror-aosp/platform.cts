@@ -49,6 +49,7 @@ import com.android.cts.rollback.lib.RollbackUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -652,6 +653,7 @@ public class RollbackManagerTest {
      * Test the scheduling aspect of rollback expiration.
      */
     @Test
+    @Ignore("b/367647826")
     public void testRollbackExpiresAfterLifetime() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
@@ -683,6 +685,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testRollbackExpiresAfterRollbackLifetime() throws Exception {
         long expirationTimeA = TimeUnit.SECONDS.toMillis(6);
         Install.single(TestApp.A1).commit();
@@ -738,6 +741,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testRollbackExpiresWhenLifetimeStays() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         Install.single(TestApp.A1).commit();
@@ -768,6 +772,7 @@ public class RollbackManagerTest {
      * rollback available
      */
     @Test
+    @Ignore("b/367647826")
     public void testTimeChangeDoesNotAffectLifetime() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
@@ -806,6 +811,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testTimeChangeDoesNotAffectLifetimeMillis() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
 

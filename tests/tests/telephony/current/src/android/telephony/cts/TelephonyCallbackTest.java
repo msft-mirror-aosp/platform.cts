@@ -75,6 +75,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -118,6 +119,7 @@ public class TelephonyCallbackTest {
     private boolean mOnEmergencyCallbackModeChangedCalled;
     private boolean mOnCarrierRoamingNtnModeChangedCalled;
     private boolean mOnCarrierRoamingNtnEligibleCalled;
+    private boolean mOnCarrierRoamingNtnAvailableServiceCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1656,18 +1658,21 @@ public class TelephonyCallbackTest {
                 mLinkCapacityEstimateChangedListener);
     }
 
-
     private EmergencyCallbackModeListener mEmergencyCallbackModeListener;
 
     private class EmergencyCallbackModeListener extends TelephonyCallback
             implements TelephonyCallback.EmergencyCallbackModeListener {
         @Override
-        public void onCallBackModeStarted(@EmergencyCallbackModeType int type) {
-
+        public void onCallbackModeStarted(@EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
         }
         @Override
-        public void onCallBackModeStopped(@EmergencyCallbackModeType int type,
-                @EmergencyCallbackModeStopReason int reason) {
+        public void onCallbackModeRestarted(@EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
+        }
+        @Override
+        public void onCallbackModeStopped(@EmergencyCallbackModeType int type,
+                @EmergencyCallbackModeStopReason int reason, int subId) {
             synchronized (mLock) {
                 mOnEmergencyCallbackModeChangedCalled = true;
                 mLock.notify();
@@ -1676,6 +1681,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnEmergencyCallbackModeListener() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -1723,6 +1729,15 @@ public class TelephonyCallbackTest {
                 mLock.notify();
             }
         }
+
+        @Override
+        public void onCarrierRoamingNtnAvailableServicesChanged(
+                @NetworkRegistrationInfo.ServiceType List<Integer> availableServices) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnAvailableServiceCalled = true;
+                mLock.notify();
+            }
+        }
     }
 
     @Test
@@ -1760,6 +1775,25 @@ public class TelephonyCallbackTest {
         assertTrue(mOnCarrierRoamingNtnEligibleCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnEligibleCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnCarrierRoamingNtnAvailableServices() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnAvailableServiceCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnAvailableServiceCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnAvailableServiceCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnAvailableServiceCalled,
                 mCarrierRoamingNtnModeListener);
     }
 }

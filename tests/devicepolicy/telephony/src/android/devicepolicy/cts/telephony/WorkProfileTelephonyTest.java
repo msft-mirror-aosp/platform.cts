@@ -28,9 +28,12 @@ import static android.app.role.RoleManager.ROLE_SMS;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_PHONE_STATE;
 import static com.android.bedstead.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -67,16 +70,16 @@ import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
 import com.android.activitycontext.ActivityContext;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.roles.RoleContext;
@@ -111,11 +114,11 @@ public final class WorkProfileTelephonyTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final TestApp sSmsApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_SENDTO))).get();
     private static final TestApp sDialerApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_DIAL))).get();
 
@@ -166,9 +169,9 @@ public final class WorkProfileTelephonyTest {
         throws ExecutionException, InterruptedException, TimeoutException {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
-                WORK_PROFILE).devicePolicyManager();
-        UserReference workProfileUser = sDeviceState.workProfile();
+        RemoteDevicePolicyManager dpm = profileOwner(sDeviceState, WORK_PROFILE)
+                .devicePolicyManager();
+        UserReference workProfileUser = workProfile(sDeviceState);
         dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
                 ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
         try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
@@ -187,8 +190,8 @@ public final class WorkProfileTelephonyTest {
                     SMS_SENT_INTENT_ACTION).whereResultCode().isEqualTo(
                     Activity.RESULT_OK)).eventOccurred();
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -206,10 +209,10 @@ public final class WorkProfileTelephonyTest {
             throws ExecutionException, InterruptedException, TimeoutException {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
-                WORK_PROFILE).devicePolicyManager();
+        RemoteDevicePolicyManager dpm = profileOwner(sDeviceState, WORK_PROFILE)
+                .devicePolicyManager();
         UserReference primaryUser = sDeviceState.primaryUser();
-        UserReference workProfileUser = sDeviceState.workProfile();
+        UserReference workProfileUser = workProfile(sDeviceState);
         try (TestAppInstance personalSmsApp = sSmsApp.install(primaryUser);
              RoleContext c1 = personalSmsApp.testApp().pkg().setAsRoleHolder(ROLE_SMS,
                      primaryUser)) {
@@ -249,8 +252,8 @@ public final class WorkProfileTelephonyTest {
                         () -> TestApis.activities().foregroundActivity()).toBeEqualTo(
                         INTENT_FORWARDER_COMPONENT).errorOnFail().await();
             } finally {
-                sDeviceState.profileOwner(
-                        WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+                profileOwner(sDeviceState, WORK_PROFILE)
+                        .devicePolicyManager().setManagedSubscriptionsPolicy(
                         new ManagedSubscriptionsPolicy(
                                 ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
             }
@@ -268,9 +271,9 @@ public final class WorkProfileTelephonyTest {
     public void allManagedSubscriptions_accessWorkMessageFromPersonalProfile_fails() {
         assumeSmsCapableDevice();
         assertValidSimCardPresent();
-        RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
-                WORK_PROFILE).devicePolicyManager();
-        UserReference workProfileUser = sDeviceState.workProfile();
+        RemoteDevicePolicyManager dpm =
+                profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager();
+        UserReference workProfileUser = workProfile(sDeviceState);
         dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
                 ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
         try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
@@ -297,8 +300,8 @@ public final class WorkProfileTelephonyTest {
                 }
             }
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -314,9 +317,9 @@ public final class WorkProfileTelephonyTest {
     public void allManagedSubscriptions_accessWorkMessageFromWorkProfile_works()
         throws ExecutionException, InterruptedException, TimeoutException  {
         assumeSmsCapableDevice();
-        RemoteDevicePolicyManager dpm = sDeviceState.profileOwner(
-                WORK_PROFILE).devicePolicyManager();
-        UserReference workProfileUser = sDeviceState.workProfile();
+        RemoteDevicePolicyManager dpm =
+                profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager();
+        UserReference workProfileUser = workProfile(sDeviceState);
         dpm.setManagedSubscriptionsPolicy(new ManagedSubscriptionsPolicy(
                 ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
         try (TestAppInstance smsApp = sSmsApp.install(workProfileUser);
@@ -348,8 +351,8 @@ public final class WorkProfileTelephonyTest {
                 }
             }
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -364,10 +367,10 @@ public final class WorkProfileTelephonyTest {
     public void placeCall_fromWorkProfile_allManagedSubscriptions_works() throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-        UserReference workProfileUser = sDeviceState.workProfile();
+        UserReference workProfileUser = workProfile(sDeviceState);
         try (TestAppInstance dialerApp = sDialerApp.install(workProfileUser);
              DefaultDialerContext dc = TestApis.telecom().setDefaultDialerForAllUsers(
                      dialerApp.testApp().pkg());
@@ -384,8 +387,8 @@ public final class WorkProfileTelephonyTest {
             assertThat(dialerApp.events().serviceBound().whereIntent().action().isEqualTo(
                     InCallService.SERVICE_INTERFACE)).eventOccurred();
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
             unsetDefaultSimForCallInWorkProfile();
@@ -402,7 +405,7 @@ public final class WorkProfileTelephonyTest {
     public void placeCall_fromPersonalProfile_allManagedSubscriptions_fails() throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
         String previousDefaultDialerPackage = getDefaultDialerPackage();
@@ -420,8 +423,8 @@ public final class WorkProfileTelephonyTest {
                     () -> TestApis.activities().foregroundActivity()).toBeEqualTo(
                     INTENT_FORWARDER_COMPONENT).errorOnFail().await();
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -438,10 +441,10 @@ public final class WorkProfileTelephonyTest {
             throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-        UserReference workProfileUser = sDeviceState.workProfile();
+        UserReference workProfileUser = workProfile(sDeviceState);
         try (TestAppInstance dialerApp = sDialerApp.install(workProfileUser);
              PermissionContext p = dialerApp.permissions().withPermission(READ_PHONE_STATE);
              DefaultDialerContext dc = TestApis.telecom().setDefaultDialerForAllUsers(
@@ -452,8 +455,8 @@ public final class WorkProfileTelephonyTest {
 
             assertThat(callCapableAccounts).isNotEmpty();
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -470,7 +473,7 @@ public final class WorkProfileTelephonyTest {
             throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
         UserReference primaryUser = sDeviceState.primaryUser();
@@ -484,8 +487,8 @@ public final class WorkProfileTelephonyTest {
 
             assertThat(callCapableAccounts).isEmpty();
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -501,10 +504,10 @@ public final class WorkProfileTelephonyTest {
     public void allManagedSubscriptions_accessWorkCallLogFromWorkProfile_works() throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-        try (TestAppInstance dialerApp = sDialerApp.install(sDeviceState.workProfile());
+        try (TestAppInstance dialerApp = sDialerApp.install(workProfile(sDeviceState));
              DefaultDialerContext dc = TestApis.telecom().setDefaultDialerForAllUsers(
                      dialerApp.testApp().pkg());
              PermissionContext p = dialerApp.permissions().withPermission(CALL_PHONE).withAppOp(
@@ -520,7 +523,7 @@ public final class WorkProfileTelephonyTest {
 
             try (PermissionContext pc = TestApis.permissions().withPermission(READ_CALL_LOG,
                     INTERACT_ACROSS_USERS_FULL)) {
-                Poll.forValue(() -> numCallLogs(sDeviceState.workProfile()))
+                Poll.forValue(() -> numCallLogs(workProfile(sDeviceState)))
                         .timeout(Duration.ofSeconds(10))
                         .toNotBeEqualTo(0).errorOnFail().await();
             }
@@ -529,8 +532,8 @@ public final class WorkProfileTelephonyTest {
                 TestApis.context().instrumentedContext().getContentResolver().delete(
                         CallLog.Calls.CONTENT_URI, null, null);
             }
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
             unsetDefaultSimForCallInWorkProfile();
@@ -548,10 +551,10 @@ public final class WorkProfileTelephonyTest {
             throws Exception {
         assumeCallCapableDevice();
         assertValidSimCardPresent();
-        sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+        profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
-        try (TestAppInstance dialerApp = sDialerApp.install(sDeviceState.workProfile());
+        try (TestAppInstance dialerApp = sDialerApp.install(workProfile(sDeviceState));
              DefaultDialerContext dc = TestApis.telecom().setDefaultDialerForAllUsers(
                      dialerApp.testApp().pkg());
              PermissionContext p = dialerApp.permissions().withPermission(CALL_PHONE).withAppOp(
@@ -567,20 +570,20 @@ public final class WorkProfileTelephonyTest {
 
             try (PermissionContext pc = TestApis.permissions().withPermission(READ_CALL_LOG,
                     CommonPermissions.INTERACT_ACROSS_USERS_FULL)) {
-                Poll.forValue(() -> numCallLogs(sDeviceState.workProfile().parent()))
+                Poll.forValue(() -> numCallLogs(workProfile(sDeviceState).parent()))
                         .timeout(Duration.ofSeconds(10))
                         .toNotBeEqualTo(0).await();
-                assertThat(numCallLogs(sDeviceState.workProfile().parent())).isEqualTo(0);
+                assertThat(numCallLogs(workProfile(sDeviceState).parent())).isEqualTo(0);
             }
         } finally {
             try (PermissionContext p2 = TestApis.permissions().withPermission(
                     WRITE_CALL_LOG).withPermission(INTERACT_ACROSS_USERS_FULL)) {
                 TestApis.context().instrumentedContextAsUser(
-                        sDeviceState.workProfile()).getContentResolver().delete(
+                        workProfile(sDeviceState)).getContentResolver().delete(
                         CallLog.Calls.CONTENT_URI, null, null);
             }
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
             unsetDefaultSimForCallInWorkProfile();

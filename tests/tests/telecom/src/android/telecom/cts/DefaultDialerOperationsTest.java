@@ -84,6 +84,10 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
             // Restore the default dialer to whatever the default dialer was before the tests
             // were started. This may or may not be the system dialer.
             TestUtils.setDefaultDialer(getInstrumentation(), mPreviousDefaultDialer);
+        } else {
+            // Worse case, we didn't know the previous, so use the system dialer.
+            TestUtils.setDefaultDialer(getInstrumentation(),
+                    TestUtils.getSystemDialer(getInstrumentation()));
         }
         super.tearDown();
     }
@@ -233,13 +237,16 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
     }
 
     public void testGetAdnForPhoneAccountPermissions() throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext) || mPhoneAccountHandle == null) {
             return;
         }
         try {
             mTelecomManager.getAdnUriForPhoneAccount(mPhoneAccountHandle);
             fail("TelecomManager.getAdnUriForPhoneAccount should throw SecurityException if "
-                    + "not default dialer");
+                    + "not default dialer; current is: "
+                    + TestUtils.getDefaultDialer(getInstrumentation())
+                    + ", system is: "
+                    + mTelecomManager.getSystemDialerPackage());
         } catch (SecurityException e) {
         }
 

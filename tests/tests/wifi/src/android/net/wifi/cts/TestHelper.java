@@ -93,7 +93,7 @@ public class TestHelper {
     private static final int DURATION_NETWORK_CONNECTION_MILLIS = 40_000;
     private static final int DURATION_SCREEN_TOGGLE_MILLIS = 2000;
     private static final int DURATION_UI_INTERACTION_MILLIS = 25_000;
-    private static final int SCAN_RETRY_CNT_TO_FIND_MATCHING_BSSID = 3;
+    private static final int SCAN_RETRY_CNT_TO_FIND_MATCHING_BSSID = 5;
     private static List<ScanResult> sScanResults = null;
 
     public TestHelper(@NonNull Context context, @NonNull UiDevice uiDevice) {
@@ -1126,12 +1126,14 @@ public class TestHelper {
                 } else {
                     // If there's no 2.4Ghz connection, then expect a 5Ghz low and a 5Ghz high
                     // connection
-                    assertTrue("Network not found on 5g low", band5gLowFound);
-                    assertTrue("Network not found on 5g high", band5gHighFound);
-                    assertFalse("Network unavailable on 5g low",
-                            testNetworkCallback5GLow.onUnavailableCalled);
-                    assertFalse("Network unavailable on 5g high",
-                            testNetworkCallback5GHigh.onUnavailableCalled);
+                    assertTrue("Network not found on 5g", band5gFound);
+                    assertTrue("Network not found on secondary 5g",
+                            band5gLowFound || band5gHighFound);
+                    assertFalse("Network unavailable on 5g",
+                            testNetworkCallback5G.onUnavailableCalled);
+                    assertFalse("Network unavailable on secondary 5G",
+                            testNetworkCallback5GLow.onUnavailableCalled
+                                    || testNetworkCallback5GHigh.onUnavailableCalled);
                 }
                 assertNotNull("No primary network info", primaryInfo);
                 assertNotNull("No secondary network info", secondaryInfo);

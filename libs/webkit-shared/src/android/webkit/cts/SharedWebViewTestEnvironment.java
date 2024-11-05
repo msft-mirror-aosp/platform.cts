@@ -24,7 +24,6 @@ import android.content.Context;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.SystemClock;
-import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -237,17 +236,15 @@ public final class SharedWebViewTestEnvironment {
             @Override
             public void sendTapSync(int x, int y) {
                 long downTime = SystemClock.uptimeMillis();
-                sendPointerSync(MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN,
-                        x, y, /* pressure= */ 1.0f, /* size= */ 1.0f, /* metaState= */ 0,
-                        /* xPrecision= */ 1.0f, /* yPrecision= */ 1.0f, /* deviceId= */ 0,
-                        /* edgeFlags= */ 0, InputDevice.SOURCE_CLASS_POINTER, mDisplayId));
-
+                MotionEvent event =
+                        MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+                event.setDisplayId(mDisplayId);
+                sendPointerSync(event);
 
                 long upTime = SystemClock.uptimeMillis();
-                sendPointerSync(MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP,
-                        x, y, /* pressure= */ 1.0f, /* size= */ 1.0f, /* metaState= */ 0,
-                        /* xPrecision= */ 1.0f, /* yPrecision= */ 1.0f, /* deviceId= */ 0,
-                        /* edgeFlags= */ 0, InputDevice.SOURCE_CLASS_POINTER, mDisplayId));
+                event = MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP, x, y, 0);
+                event.setDisplayId(mDisplayId);
+                sendPointerSync(event);
             }
 
             @Override

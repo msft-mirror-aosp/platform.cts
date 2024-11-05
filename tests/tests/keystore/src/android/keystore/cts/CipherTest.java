@@ -16,9 +16,6 @@
 
 package android.keystore.cts;
 
-import static android.os.UserHandle.USER_ALL;
-import static android.server.wm.ShellCommandHelper.executeShellCommand;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -31,10 +28,8 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -42,22 +37,15 @@ import android.keystore.cts.util.EmptyArray;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
-import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
-import android.server.wm.LockScreenSession;
-import android.server.wm.UiDeviceUtils;
-import android.server.wm.WindowManagerStateHelper;
 import android.util.Pair;
 
-import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.UserHelper;
 
 import com.google.common.collect.ObjectArrays;
 
@@ -313,74 +301,6 @@ public class CipherTest {
 
     private Context getContext() {
         return getInstrumentation().getTargetContext();
-    }
-
-    private class DeviceLockSession implements AutoCloseable {
-        protected static final String AM_START_HOME_ACTIVITY_COMMAND =
-                "am start -W -a android.intent.action.MAIN -c android.intent.category.HOME --user "
-                        + Process.myUserHandle().getIdentifier();
-        private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
-                "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
-
-        @NonNull
-        private final LockScreenSession mLockCredential;
-
-        public DeviceLockSession() throws Exception {
-            final Instrumentation instrumentation = getInstrumentation();
-            final Context context = instrumentation.getContext();
-            UiDeviceUtils.wakeUpAndUnlock(context);
-            launchHomeActivity();
-            assumeFalseOnVisibleBackgroundUser(context,
-                    "Keyguard not supported for visible background users");
-
-            final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
-            mLockCredential = new LockScreenSession(instrumentation, wmState);
-            mLockCredential.setLockCredential();
-        }
-
-        public void performDeviceLock() {
-            mLockCredential.sleepDevice();
-            KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
-            for (int i = 0; i < 25 && !keyguardManager.isDeviceLocked(); i++) {
-                SystemClock.sleep(200);
-            }
-        }
-
-        public void performDeviceUnlock() throws Exception {
-            mLockCredential.gotoKeyguard();
-            UiDeviceUtils.pressUnlockButton();
-            mLockCredential.enterAndConfirmLockCredential();
-            launchHomeActivity();
-            KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(
-                    Context.KEYGUARD_SERVICE);
-            for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
-                SystemClock.sleep(200);
-            }
-            assertFalse(keyguardManager.isDeviceLocked());
-        }
-
-        @Override
-        public void close() throws Exception {
-            mLockCredential.close();
-        }
-
-        /** Launches the home activity directly with waiting for it to be visible. */
-        private void launchHomeActivity() {
-            // dismiss all system dialogs before launch home.
-            closeSystemDialogs();
-            executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
-        }
-
-        private static void closeSystemDialogs() {
-            executeShellCommand(AM_BROADCAST_CLOSE_SYSTEM_DIALOGS);
-        }
-
-        /** Skips the test on visible background users. */
-        private void assumeFalseOnVisibleBackgroundUser(
-                @NonNull Context context, @NonNull String message) {
-            final UserHelper userHelper = new UserHelper(context);
-            assumeFalse(message, userHelper.isVisibleBackgroundUser());
-        }
     }
 
     @Presubmit
@@ -674,7 +594,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext()
                     .getSystemService(Context.KEYGUARD_SERVICE);
 
@@ -696,7 +616,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             dl.performDeviceLock();
             KeyguardManager keyguardManager = (KeyguardManager)getContext()
                 .getSystemService(Context.KEYGUARD_SERVICE);
@@ -796,7 +716,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         List<Pair<String, ImportedKey>> importedKeys = new ArrayList<>();
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             for (String algorithm : BASIC_ALGORITHMS) {
                 KeyProtection importParams = getUnlockedDeviceRequiredParams(algorithm);
                 ImportedKey key = importDefaultKatKey(algorithm, importParams);
@@ -1303,7 +1223,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
 
             dl.performDeviceLock();
@@ -1351,7 +1271,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         List<ImportedKey> importedKeys = new ArrayList<>();
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             for (String algorithm : BASIC_ALGORITHMS) {
                 KeyProtection importParams =
                         TestUtils.getMinimalWorkingImportParametersForCipheringWith(algorithm,
@@ -1376,7 +1296,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         ImportedKey key = null;
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyProtection importParams =
                     TestUtils.getMinimalWorkingImportParametersForCipheringWith(BASIC_ALGORITHMS[0],
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,

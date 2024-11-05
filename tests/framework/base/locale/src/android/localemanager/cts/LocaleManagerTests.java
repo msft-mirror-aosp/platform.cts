@@ -58,10 +58,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.LocaleList;
+import android.os.UserHandle;
 import android.server.wm.ActivityManagerTestBase;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -85,7 +86,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class LocaleManagerTests extends ActivityManagerTestBase {
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static Context sContext;
     private static LocaleManager sLocaleManager;
 
@@ -122,7 +122,7 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
 
     @BeforeClass
     public static void setUpClass() {
-        sContext = InstrumentationRegistry.getTargetContext();
+        sContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         sLocaleManager = sContext.getSystemService(LocaleManager.class);
 
         sPreviousSystemLocales = sLocaleManager.getSystemLocales();
@@ -138,6 +138,7 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
                 Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS);
     }
 
+    @Override
     @Before
     public void setUp() throws Exception {
         // Unlocks the device if locked, since we have tests where the app/activity needs
@@ -199,6 +200,10 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
         unRegisterReceiver(mImeAppCreationInfoProvider);
         unRegisterReceiver(mImeChangedBroadcastReceiver);
         resetImes();
+
+        stopTestPackage(IME_APP_PACKAGE);
+        stopTestPackage(INSTALLER_PACKAGE);
+        stopTestPackage(TEST_APP_PACKAGE);
     }
 
     private void unRegisterReceiver(BlockingBroadcastReceiver receiver) {
@@ -683,9 +688,10 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
     }
 
     private void setTestImeAsActive() throws Exception {
+        int testUserId = UserHandle.myUserId();
         if (sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            ShellUtils.runShellCommand("ime enable " + mTestIme + " --user 10");
-            ShellUtils.runShellCommand("ime set " + mTestIme + " --user 10");
+            ShellUtils.runShellCommand("ime enable --user " + testUserId + " " + mTestIme);
+            ShellUtils.runShellCommand("ime set --user " + testUserId + " " + mTestIme);
         } else {
             ShellUtils.runShellCommand("ime enable " + mTestIme);
             ShellUtils.runShellCommand("ime set " + mTestIme);

@@ -17,6 +17,7 @@
 package android.telephony.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -26,9 +27,14 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.PersistableBundle;
+import android.os.SystemClock;
+import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
+import android.telephony.NetworkRegistrationInfo;
+import android.telephony.ServiceState;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -40,6 +46,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -55,7 +62,9 @@ public class CarrierSignalTest {
     public final RequiredFeatureRule mTelephonyRequiredRule =
             new RequiredFeatureRule(PackageManager.FEATURE_TELEPHONY);
 
+    private static final String LOG_TAG = "CarrierSignalTest";
     private static final int TEST_TIMEOUT_MILLIS = 5000;
+    private static final int NETWORK_TIMEOUT = 1000;
     private Context mContext;
     private CarrierConfigManager mCarrierConfigManager;
     private int mTestSub;
@@ -68,18 +77,20 @@ public class CarrierSignalTest {
         mCarrierConfigManager = mContext.getSystemService(CarrierConfigManager.class);
         mTestSub = SubscriptionManager.getDefaultSubscriptionId();
 
-        String[] carrierConfigData = new String[] {
-                new ComponentName(mContext.getPackageName(),
-                        mReceiver.getClass().getName()).flattenToString()
-                        + ":"
-                        // add more actions here as tests increase.
-                        + String.join(",", TelephonyManager.ACTION_CARRIER_SIGNAL_RESET)
-        };
+        String[] carrierConfigData =
+                new String[] {
+                    new ComponentName(mContext.getPackageName(), mReceiver.getClass().getName())
+                                    .flattenToString()
+                            + ":"
+                            // add more actions here as tests increase.
+                            + String.join(",", TelephonyManager.ACTION_CARRIER_SIGNAL_RESET)
+                };
         PersistableBundle b = new PersistableBundle();
-        b.putStringArray(CarrierConfigManager.KEY_CARRIER_APP_NO_WAKE_SIGNAL_CONFIG_STRING_ARRAY,
+        b.putStringArray(
+                CarrierConfigManager.KEY_CARRIER_APP_NO_WAKE_SIGNAL_CONFIG_STRING_ARRAY,
                 carrierConfigData);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mCarrierConfigManager,
-                (cm) -> cm.overrideConfig(mTestSub, b));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mCarrierConfigManager, (cm) -> cm.overrideConfig(mTestSub, b));
         // We have no way of knowing when CarrierSignalAgent processes this broadcast, so sleep
         // and hope for the best.
         Thread.sleep(1000);
@@ -87,11 +98,12 @@ public class CarrierSignalTest {
 
     @After
     public void tearDown() {
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mCarrierConfigManager,
-                (cm) -> cm.overrideConfig(mTestSub, null));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mCarrierConfigManager, (cm) -> cm.overrideConfig(mTestSub, null));
         ConnectivityManager cm = mContext.getSystemService(ConnectivityManager.class);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(cm,
-                x -> x.setAirplaneMode(false));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                cm, x -> x.setAirplaneMode(false));
+        waitForCampingNetwork(TEST_TIMEOUT_MILLIS);
         try {
             mContext.unregisterReceiver(mReceiver);
         } catch (Throwable t) { }
@@ -100,16 +112,66 @@ public class CarrierSignalTest {
     @Test
     public void testResetBroadcast() throws Exception {
         mIntentFuture = new CompletableFuture<>();
-        mContext.registerReceiver(mReceiver,
-                new IntentFilter(TelephonyManager.ACTION_CARRIER_SIGNAL_RESET));
+        mContext.registerReceiver(
+                mReceiver, new IntentFilter(TelephonyManager.ACTION_CARRIER_SIGNAL_RESET));
 
         // Enable airplane mode to force the reset action
         ConnectivityManager cm = mContext.getSystemService(ConnectivityManager.class);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(cm,
-                x -> x.setAirplaneMode(true));
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                cm, x -> x.setAirplaneMode(true));
 
         Intent receivedIntent = mIntentFuture.get(TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        assertEquals(mTestSub,
+        assertEquals(
+                mTestSub,
                 receivedIntent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1));
+
+        assertTrue(
+                "still has in-service network after airplane mode",
+                waitForLosingNetwork(TEST_TIMEOUT_MILLIS));
+    }
+
+    protected boolean waitForLosingNetwork(long timeout) {
+        long startTime = SystemClock.uptimeMillis();
+        while (true) {
+            if (!isCamped()) {
+                return true;
+            }
+            if ((SystemClock.uptimeMillis() - startTime) > timeout) {
+                Log.d(LOG_TAG, "waitForLosingNetwork is timed out: " + timeout);
+                return false;
+            }
+            Log.d(LOG_TAG, "waitForLosingNetwork...");
+            SystemClock.sleep(NETWORK_TIMEOUT);
+        }
+    }
+
+    protected boolean waitForCampingNetwork(long timeout) {
+        long startTime = SystemClock.uptimeMillis();
+        while (true) {
+            if (isCamped()) {
+                return true;
+            }
+            if ((SystemClock.uptimeMillis() - startTime) > timeout) {
+                Log.d(LOG_TAG, "waitForCampingNetwork is timed out: " + timeout);
+                return false;
+            }
+            Log.d(LOG_TAG, "waitForCampingNetwork...");
+            SystemClock.sleep(NETWORK_TIMEOUT);
+        }
+    }
+
+    private boolean isCamped() {
+        TelephonyManager tm = mContext.getSystemService(TelephonyManager.class);
+        ServiceState ss =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        tm, telephonyManager -> telephonyManager.getServiceState());
+        if (ss == null) return false;
+        if (ss.getState() == ServiceState.STATE_EMERGENCY_ONLY) return true;
+        List<NetworkRegistrationInfo> nris = ss.getNetworkRegistrationInfoList();
+        for (NetworkRegistrationInfo nri : nris) {
+            if (nri.getTransportType() != AccessNetworkConstants.TRANSPORT_TYPE_WWAN) continue;
+            if (nri.isRegistered()) return true;
+        }
+        return false;
     }
 }

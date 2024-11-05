@@ -267,25 +267,9 @@ public class KeyAttestationTest {
                                         purposes[purposeIndex], devicePropertiesAttestation,
                                         isStrongBox);
                             } catch (Throwable e) {
-                                boolean isIdAttestationFailure =
-                                        (e.getCause() instanceof KeyStoreException)
-                                        && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
-                                        == ((KeyStoreException) e.getCause()).getNumericErrorCode();
-                                if (devicePropertiesAttestation && isIdAttestationFailure) {
-                                    if (getContext().getPackageManager().hasSystemFeature(
-                                            PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
-                                        throw new Exception("Unexpected failure while generating"
-                                                + " key.\nIn case of AOSP/GSI builds, system "
-                                                + "provided properties could be different from "
-                                                + "provisioned properties in KeyMaster/KeyMint. "
-                                                + "In such cases, make sure attestation specific "
-                                                + "properties (Build.*_FOR_ATTESTATION) are "
-                                                + "configured correctly.", e);
-                                    } else {
-                                        Log.i(TAG, "key attestation with device IDs not supported;"
-                                                + " test skipped");
-                                        continue;
-                                    }
+                                if (devicePropertiesAttestation
+                                        && isIgnorableIdAttestationFailure(e)) {
+                                    continue;
                                 }
                                 throw new Exception("Failed on curve " + curveIndex +
                                         " challenge " + challengeIndex + " purpose " +
@@ -986,22 +970,8 @@ public class KeyAttestationTest {
                 testRsaAttestation(challenge, false /* includeValidityDates */, keySize, purpose,
                         paddings, devicePropertiesAttestation, isStrongBox);
             } catch (Throwable e) {
-                boolean isIdAttestationFailure =
-                        (e.getCause() instanceof KeyStoreException)
-                                && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
-                                == ((KeyStoreException) e.getCause()).getNumericErrorCode();
-                if (devicePropertiesAttestation && isIdAttestationFailure) {
-                    if (getContext().getPackageManager().hasSystemFeature(
-                            PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
-                        throw new Exception("Unexpected failure while generating key."
-                            + "\nIn case of AOSP/GSI builds, system provided properties could be"
-                            + " different from provisioned properties in KeyMaster/KeyMint. In"
-                            + " such cases, make sure attestation specific properties"
-                            + " (Build.*_FOR_ATTESTATION) are configured correctly.", e);
-                    } else {
-                        Log.i(TAG, "key attestation with device IDs not supported; test skipped");
-                        continue;
-                    }
+                if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
+                    continue;
                 }
                 throw new Exception("Failed on key size " + keySize + " challenge [" +
                         new String(challenge) + "], purposes " +
@@ -1107,7 +1077,6 @@ public class KeyAttestationTest {
                 + " / challenge " + Arrays.toString(challenge)
                 + " / purposes " + purpose
                 + " / devicePropertiesAttestation " + devicePropertiesAttestation);
-
         String keystoreAlias = "test_key";
         Date startTime = new Date();
         KeyGenParameterSpec.Builder builder =
@@ -1117,7 +1086,19 @@ public class KeyAttestationTest {
                         .setAttestationChallenge(challenge)
                         .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
 
-        generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        try {
+            generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        } catch (Throwable e) {
+            if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
+                return;
+            }
+            throw new Exception("Failed on curve " + curve + " challenge ["
+                    + new String(challenge) + "], purposes "
+                    + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
+                    + devicePropertiesAttestation,
+                    e);
+
+        }
 
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
@@ -1604,9 +1585,10 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("unchecked")
     private void checkAttestationSecurityLevelDependentParams(Attestation attestation) {
-        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300}",
+        assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
                 attestation.getAttestationVersion(),
-                either(is(1)).or(is(2)).or(is(3)).or(is(4)).or(is(100)).or(is(200)).or(is(300)));
+                either(is(1)).or(is(2)).or(is(3)).or(is(4))
+                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1621,7 +1603,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                            either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                           .or(is(100)).or(is(200)).or(is(300)));
+                           .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("TEE enforced OS version and system OS version must be same.",
@@ -1635,7 +1617,7 @@ public class KeyAttestationTest {
                         is(KM_SECURITY_LEVEL_STRONG_BOX));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
                         either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                                .or(is(100)).or(is(200)).or(is(300)));
+                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("StrongBox enforced OS version and system OS version must be same.",
@@ -1698,6 +1680,9 @@ public class KeyAttestationTest {
 
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
+        assertEquals(32, verifiedBootHash.length);
+        checkEntropy(verifiedBootHash);
+
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
             hexVerifiedBootHash.append(String.format("%02x", b));
@@ -1714,22 +1699,19 @@ public class KeyAttestationTest {
         assertNotNull(rootOfTrust);
         assertNotNull(rootOfTrust.getVerifiedBootKey());
         assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                   " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
             checkEntropy(rootOfTrust.getVerifiedBootKey());
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
-            if (PropertyUtil.getFirstApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Verified boot hash was not previously checked in CTS, so set an api level check
-                // to avoid running into waiver issues.
-                return;
+
+            if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // The Verified Boot hash was not previously checked in CTS, so set an API level
+                // check to avoid running into waiver issues.
+                checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
-            assertNotNull(rootOfTrust.getVerifiedBootHash());
-            assertEquals(32, rootOfTrust.getVerifiedBootHash().length);
-            checkEntropy(rootOfTrust.getVerifiedBootHash());
-            checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
         }
     }
 
@@ -2035,5 +2017,44 @@ public class KeyAttestationTest {
                 throw e;
             }
         }
+    }
+
+    // Indicate whether the provided exception indicates an ID attestation failure that
+    // can be ignored (because the device doesn't support ID attestation).  This method
+    // will throw a new exception if the error is an ID attestation failure that can't
+    // be ignored.
+    private boolean isIgnorableIdAttestationFailure(Throwable e) throws Exception {
+        if (!(e.getCause() instanceof KeyStoreException)) {
+            return false;
+        }
+        if (((KeyStoreException) e.getCause()).getNumericErrorCode()
+                != KeyStoreException.ERROR_ID_ATTESTATION_FAILURE) {
+            return false;
+        }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+            Log.i(TAG, "key attestation with device IDs not supported; test skipped");
+            return true;
+        }
+
+        if (TestUtils.isGsiImage()) {
+            // When running under GSI, the ro.product.<device-id> values may be replaced with values
+            // that don't match the vendor code. However, any ro.product.vendor.<device-id> values
+            // will not be replaced by GSI (and the frameworks code will use them in preference to
+            // the ro.product.<device-id> values).
+            if (TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // On older releases just skip the failure.
+                Log.i(TAG, "device ID attestation on older device under GSI; test skipped");
+                return true;
+            } else {
+                // On more current devices, raise a different Exception to give out a hint
+                // that the vendor properties should be set.
+                throw new Exception("Failed to generate key with device ID attestation under GSI.  "
+                                + "Check that the relevant ro.product.vendor.<device-id> field is "
+                                + "set correctly in the vendor image.",
+                        e);
+            }
+        }
+        return false;
     }
 }

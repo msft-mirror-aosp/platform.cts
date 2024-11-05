@@ -46,6 +46,8 @@ android_test {
         "TestApisReflection",
         "bedstead-multiuser",
         "bedstead-enterprise",
+        "bedstead-contentsuggestions",
+        "bedstead-bluetooth",
     ],
     srcs: [
         "src/**/*.java",
@@ -84,6 +86,8 @@ android_test {
         "bedstead-root",
         "bedstead-multiuser",
         "bedstead-enterprise",
+        "bedstead-contentsuggestions",
+        "bedstead-bluetooth",
     ],
     srcs: [
         "src/**/*.java",
