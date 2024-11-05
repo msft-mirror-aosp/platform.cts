@@ -532,6 +532,20 @@ public class VibrationEffectTest {
         assertThat(effect).isNotEqualTo(otherEffect);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    @Test
+    public void testComposedDifferentDelayTypeNotEquals() {
+        VibrationEffect effect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.8f, 10,
+                        VibrationEffect.Composition.DELAY_TYPE_PAUSE)
+                .compose();
+        VibrationEffect otherEffect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.8f, 10,
+                        VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
+                .compose();
+        assertThat(effect).isNotEqualTo(otherEffect);
+    }
+
     @Test
     public void testComposedDifferentOrderNotEquals() {
         VibrationEffect effect = VibrationEffect.startComposition()
