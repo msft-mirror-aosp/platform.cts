@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -45,6 +46,7 @@ import org.junit.runner.RunWith;
  * features accurately indicate the capabilities of the Vulkan driver if one exists.
  */
 @SmallTest
+@AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class VulkanFeaturesTest {
 
@@ -316,9 +318,12 @@ public class VulkanFeaturesTest {
         return mHasTouchscreen && !mIsTV && !mIsWatch;
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-13")
+    @CddTest(requirements = {"7.1.4.2/H-1-1"})
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
+        final int apiLevel = PropertyUtil.getVsrApiLevel();
+        assumeTrue("Test does not apply for SoCs launched before T", apiLevel > 33);
+
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
         assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 

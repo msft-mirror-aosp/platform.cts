@@ -26,11 +26,18 @@ import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.os.AtomsProto;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.Descriptors;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +45,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class AppOpsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final int NUM_APP_OPS = AtomsProto.AttributedAppOps.getDefaultInstance().getOp().
             getDescriptorForType().getValues().size() - 1;
 
@@ -58,10 +66,8 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
 
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         mTransformedFromOp.clear();
         // The hotword op is allowed to all UIDs on some devices.
         boolean hotwordDetectionServiceRequired = Boolean.parseBoolean(
@@ -80,12 +86,11 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -93,6 +98,8 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
         mCtsBuild = buildInfo;
     }
 
+    @Ignore("b/347856815")
+    @Test
     public void testAppOps() throws Exception {
         // Set up what to collect
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,

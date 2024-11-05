@@ -119,7 +119,7 @@ for j in $(find ${CTS_ROOT}/android-cts/testcases -name '*.jar'); do
     JAR_PATH=${JAR_PATH}:$j
 done
 
-USE_ATS=${USE_ATS:-"false"}
+USE_ATS=${USE_ATS:-"true"}
 
 if [ "$USE_ATS" == "true" ]; then
     ATS_CONSOLE_JAR=${CTS_ROOT}/android-cts/tools/ats_console_deploy.jar

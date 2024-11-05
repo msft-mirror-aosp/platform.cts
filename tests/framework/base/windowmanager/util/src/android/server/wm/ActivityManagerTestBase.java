@@ -1281,11 +1281,13 @@ public abstract class ActivityManagerTestBase {
 
     public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
             String message) {
+
         final String activityClassName = getActivityName(activityName);
-        mWmState.waitForWithAmState(state -> activityClassName.equals(state.getFocusedActivity()),
+        mWmState.waitForWithAmState(state ->
+                activityClassName.equals(state.getFocusedActivityOnDisplay(displayId)),
                 "activity to be on top");
         waitAndAssertResumedActivity(activityName, "Activity must be resumed");
-        mWmState.assertFocusedActivity(message, activityName);
+        mWmState.assertFocusedActivityOnDisplay(message, activityName, displayId);
 
         final int frontRootTaskId = mWmState.getFrontRootTaskId(displayId);
         Task frontRootTaskOnDisplay = mWmState.getRootTask(frontRootTaskId);
@@ -1294,8 +1296,8 @@ public abstract class ActivityManagerTestBase {
                 activityClassName,
                 frontRootTaskOnDisplay.isLeafTask() ? frontRootTaskOnDisplay.mResumedActivity
                         : frontRootTaskOnDisplay.getTopTask().mResumedActivity);
-        mWmState.assertFocusedRootTask("Top activity's rootTask must also be on top",
-                frontRootTaskId);
+        mWmState.assertFocusedRootTaskOnDisplay("Top activity's rootTask must also be on top",
+                frontRootTaskId, displayId);
     }
 
     /**
@@ -3511,5 +3513,22 @@ public abstract class ActivityManagerTestBase {
         return mContext.getPackageManager()
                 .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
                         "android.software.car.splitscreen_multitasking") && isCar();
+    }
+
+    /**
+     * Checks whether the device has non-overlapping multitasking feature enabled.
+     *
+     * When this is true, we expect the Task to not occlude other Task below it,
+     * which means both Tasks can be resumed and visible.
+     */
+    protected boolean isNonOverlappingMultiWindowMode(Activity activity) {
+        if (!activity.isInMultiWindowMode()) {
+            return false;
+        }
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // Automotive SplitScreen Multitasking devices overlap the windows.
+            return false;
+        }
+        return true;
     }
 }
