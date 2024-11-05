@@ -36,6 +36,7 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
+import android.nfc.OemLogItems;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
 import android.nfc.cardemulation.ApduServiceInfo;
@@ -888,6 +889,10 @@ public class NfcAdapterTest {
         @Override
         public void onLaunchHceTapAgainDialog(@NonNull ApduServiceInfo service,
                                               @NonNull String category) {
+        }
+
+        @Override
+        public void onLogEventNotified(@NonNull OemLogItems item) {
         }
     }
 
