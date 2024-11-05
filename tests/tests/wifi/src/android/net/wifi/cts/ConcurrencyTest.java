@@ -18,6 +18,7 @@ package android.net.wifi.cts;
 
 import static android.content.Context.RECEIVER_NOT_EXPORTED;
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
+import static android.net.wifi.p2p.WifiP2pGroup.SECURITY_TYPE_WPA2_PSK;
 import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -1790,5 +1791,30 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             }
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#isPccModeSupported"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIsPccModeSupported() throws Exception {
+        sWifiP2pManager.isPccModeSupported();
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#isWiFiDirectR2Supported"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIsWiFiDirectR2Supported() throws Exception {
+        sWifiP2pManager.isWiFiDirectR2Supported();
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pGroup#getSecurityType"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testWifiP2pGroupGetSecurityType() {
+        WifiP2pGroup group = new WifiP2pGroup();
+        assertEquals(SECURITY_TYPE_WPA2_PSK, group.getSecurityType());
     }
 }

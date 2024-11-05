@@ -16,13 +16,15 @@
 
 package android.server.wm.backnavigation;
 
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
 import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
-import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
 import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SWIPE_EDGE_NONE_API;
+import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK;
+import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_TIMESTAMP_API;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
@@ -30,6 +32,7 @@ import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -40,6 +43,7 @@ import android.view.KeyEvent;
 import android.window.BackEvent;
 import android.window.OnBackAnimationCallback;
 import android.window.OnBackInvokedCallback;
+import android.window.SystemOnBackInvokedCallbacks;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -322,6 +326,37 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mStartLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mCancelLatch);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER,
+            FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK})
+    public void invokesSystemOverrideObserverCallback_invoked()
+            throws InterruptedException {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
+        // The override system callback can trigger navigation observer.
+        registerBackCallback(mActivity, SystemOnBackInvokedCallbacks
+                        .moveTaskToBackCallback(mActivity), PRIORITY_DEFAULT);
+        int midHeight = mUiDevice.getDisplayHeight() / 2;
+        int midWidth = mUiDevice.getDisplayWidth() / 2;
+
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+
+        // Assert that observer callback does not receive start and progress events during the
+        // gesture
+        assertNotInvoked(mTracker.mStartLatch);
+        assertNotInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+
+        final ComponentName activityName = mActivity.getComponentName();
+        touchSession.finishSwipe();
+        assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+        mWmState.waitAndAssertActivityState(activityName, STATE_STOPPED);
     }
 
     @Test

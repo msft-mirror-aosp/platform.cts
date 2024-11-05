@@ -36,6 +36,7 @@ import android.app.Instrumentation;
 import android.app.AppOpsManager;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -53,6 +54,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
 
 import org.junit.After;
@@ -564,6 +566,23 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // Appops should finish after stopping
         stopRecording(TEST_PACKAGE);
         assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testIfAttemptChangeCapabilities_isNotSilenced() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        // Go foreground without WIU caps. Note: if we attempt to start with record here, AMS throws
+        mContext.sendBroadcast(new Intent(TEST_PACKAGE + ACTION_BOUNCE_FOREGROUND)
+                .setComponent(new ComponentName(TEST_PACKAGE, TEST_PACKAGE + ".TrampolineReceiver")));
+        SystemUtil.runShellCommand("am wait-for-broadcast-barrier");
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + TEST_PACKAGE);
+
+        // Go foreground with the right capabilities
+        startForeground(TEST_PACKAGE);
+
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+
+        assertTrue(getOpState(TEST_PACKAGE));
     }
 
     private IBinder getAttributionProvider(String packageName) throws Exception {

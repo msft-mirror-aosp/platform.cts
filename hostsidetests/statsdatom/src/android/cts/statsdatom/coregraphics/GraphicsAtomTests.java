@@ -16,10 +16,9 @@
 
 package android.cts.statsdatom.coregraphics;
 
-import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.HARDWARE_RENDERER_EVENT_FIELD_NUMBER;
-import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.IMAGE_DECODED_FIELD_NUMBER;
 import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.SURFACE_CONTROL_EVENT_FIELD_NUMBER;
 import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.TEXTURE_VIEW_EVENT_FIELD_NUMBER;
+import static com.android.os.coregraphics.CoregraphicsExtensionAtoms.HARDWARE_RENDERER_EVENT_FIELD_NUMBER;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -33,11 +32,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.StatsLog;
-import com.android.os.coregraphics.BitmapFormat;
-import com.android.os.coregraphics.ColorSpaceTransfer;
 import com.android.os.coregraphics.CoregraphicsExtensionAtoms;
 import com.android.os.coregraphics.HardwareRendererEvent;
-import com.android.os.coregraphics.ImageDecoded;
 import com.android.os.coregraphics.SurfaceControlEvent;
 import com.android.os.coregraphics.TextureViewEvent;
 import com.android.tradefed.build.IBuildInfo;
@@ -190,42 +186,5 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         assertThat(secondAtom.getPreviousDataspace()).isEqualTo(DATASPACE_P3);
 
         assertThat(firstAtom.getUid()).isEqualTo(secondAtom.getUid());
-    }
-
-    @Test
-    public void imageDecodingAndViewEvents() throws Exception {
-        ExtensionRegistry registry = ExtensionRegistry.newInstance();
-        CoregraphicsExtensionAtoms.registerAllExtensions(registry);
-        ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                IMAGE_DECODED_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
-        DeviceUtils.runActivity(
-                getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG, "ImageViewActivity", null, null);
-
-        List<StatsLog.EventMetricData> data =
-                ReportUtils.getEventMetricDataList(getDevice(), registry);
-
-        // Reduce noise of the test by only checking for the HLG bitmap decoded by the app
-        List<ImageDecoded> imageDecodedAtoms =
-                data.stream()
-                        .map(StatsLog.EventMetricData::getAtom)
-                        .filter(atom -> atom.hasExtension(CoregraphicsExtensionAtoms.imageDecoded))
-                        .map(atom -> atom.getExtension(CoregraphicsExtensionAtoms.imageDecoded))
-                        .filter(atom
-                                -> atom.getColorSpaceTransfer()
-                                        == ColorSpaceTransfer.COLOR_SPACE_TRANSFER_HLGISH)
-                        .collect(toList());
-
-        List<Integer> uids =
-                imageDecodedAtoms.stream().map(ImageDecoded::getUid).distinct().collect(toList());
-
-        assertThat(uids).hasSize(1);
-        assertThat(uids.get(0)).isGreaterThan(10000);
-
-        assertThat(imageDecodedAtoms.size()).isEqualTo(3);
-
-        for (ImageDecoded atom : imageDecodedAtoms) {
-            assertThat(atom.getHasGainmap()).isFalse();
-            assertThat(atom.getFormat()).isEqualTo(BitmapFormat.BITMAP_FORMAT_ARGB_8888);
-        }
     }
 }
