@@ -4120,14 +4120,23 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 // the vehicle cabin.
                 assertTrue("Lens pose rotation should not describe a direction toward the cabin",
                         angle >= Math.PI / 4);
-            } else {
-                // Likewise, if android.automotive.location is
-                // CameraCharacteristics.AUTOMOTIVE_LOCATION_INTERIOR_OTHER, its
-                // android.lens.poseRotation should not describe a direction toward the outside of
-                // the vehicle cabin.
-                assertTrue("Lens pose rotation should not describe a direction toward the " +
-                        "outside of the cabin",
-                        angle <= Math.PI * 3 / 4);
+            } else if (location == CameraCharacteristics.AUTOMOTIVE_LOCATION_INTERIOR) {
+                // Likewise, if android.automotive.lens.facing is
+                // CameraCharacteristics.AUTOMOTIVE_LENS_FACING_INTERIOR_OTHER, its
+                // android.lens.poseRotation should not describe a direction toward the outside
+                // of the vehicle cabin.
+                for (int value : lensFacing) {
+                    if (value != CameraCharacteristics.AUTOMOTIVE_LENS_FACING_INTERIOR_OTHER) {
+                        continue;
+                    }
+
+                    assertTrue("Lens pose rotation should not describe a direction toward " +
+                            "the outside of the cabin",
+                            angle <= Math.PI * 3 / 4);
+
+                    // No need to examine remaining lens facing values.
+                    break;
+                }
             }
         }
     }
