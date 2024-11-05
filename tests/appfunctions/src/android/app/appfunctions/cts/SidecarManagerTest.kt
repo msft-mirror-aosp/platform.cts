@@ -27,9 +27,11 @@ import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
 import android.app.appsearch.GenericDocument
 import android.content.Context
+import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -42,7 +44,11 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
+import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -56,9 +62,6 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
@@ -111,15 +114,7 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response =
-                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context)
-                        .executeAppFunction(
-                            request,
-                            context.mainExecutor,
-                            { response -> continuation.resume(response) },
-                        )
-                }
+            val response = sidecarExecuteFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -128,6 +123,76 @@ class SidecarManagerTest {
                     )
                 )
                 .isEqualTo(3)
+            assertServiceDestroyed()
+        }
+    }
+
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+    )
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_sidecarManager_verifyCallingPackageFromRequest() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            // Only run test if sidecar library is available.
+            CtsTestUtil.assumeSidecarAvailable()
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = sidecarExecuteFunction(request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(response.resultDocument.getPropertyString("TEST_PROPERTY_CALLING_PACKAGE"))
+                .isEqualTo(CURRENT_PKG)
+            assertServiceDestroyed()
+        }
+    }
+
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+    )
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_cancellationSignalReceived_unbind() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            // Only run test if sidecar library is available.
+            CtsTestUtil.assumeSidecarAvailable()
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "longRunningFunction")
+                    .setParameters(parameters)
+                    .build()
+
+            val cancellationSignal = CancellationSignal()
+            val blockingQueue = LinkedBlockingQueue<SidecarExecuteAppFunctionResponse>()
+            SidecarAppFunctionManager(context).executeAppFunction(
+                request,
+                context.mainExecutor,
+                cancellationSignal,
+            ) { response: SidecarExecuteAppFunctionResponse ->
+                blockingQueue.add(response)
+            }
+            cancellationSignal.cancel()
+
+            assertCancelListenerTriggered()
+            assertThat(blockingQueue).isEmpty()
             assertServiceDestroyed()
         }
     }
@@ -154,15 +219,7 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response =
-                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context)
-                        .executeAppFunction(
-                            request,
-                            context.mainExecutor,
-                            { response -> continuation.resume(response) },
-                        )
-                }
+            val response = sidecarExecuteFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -228,13 +285,45 @@ class SidecarManagerTest {
         CtsTestUtil.assumeSidecarAvailable()
 
         val functionUnderTest = "add"
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        assertThat(sidecarIsAppFunctionEnabled(functionUnderTest)).isTrue()
         sidecarSetAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
         )
 
         assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
+    }
+
+    private suspend fun sidecarExecuteFunction(
+        request: SidecarExecuteAppFunctionRequest,
+        cancellationSignal: CancellationSignal = CancellationSignal(),
+    ): SidecarExecuteAppFunctionResponse {
+        return suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
+            SidecarAppFunctionManager(context)
+                .executeAppFunction(
+                    request,
+                    Runnable::run,
+                    cancellationSignal,
+                    { response: SidecarExecuteAppFunctionResponse -> continuation.resume(
+                        response
+                    ) },
+                )
+        }
+    }
+
+    private fun assertCancelListenerTriggered() {
+        assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+    }
+
+    private suspend fun sidecarIsAppFunctionEnabled(
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context)
+            .isAppFunctionEnabled(
+                functionIdentifier,
+                Runnable::run,
+                continuation.asOutcomeReceiver(),
+            )
     }
 
     private suspend fun sidecarIsAppFunctionEnabled(
@@ -245,7 +334,7 @@ class SidecarManagerTest {
             .isAppFunctionEnabled(
                 functionIdentifier,
                 targetPackage,
-                context.mainExecutor,
+                Runnable::run,
                 continuation.asOutcomeReceiver(),
             )
     }
@@ -258,7 +347,7 @@ class SidecarManagerTest {
             .setAppFunctionEnabled(
                 functionIdentifier,
                 state,
-                context.mainExecutor,
+                Runnable::run,
                 object : OutcomeReceiver<Void, Exception> {
                     override fun onResult(result: Void?) {
                         continuation.resume(Unit)

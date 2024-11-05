@@ -39,6 +39,7 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -190,6 +191,21 @@ public class VirtualDeviceImeTest {
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+    }
+
+    @Test
+    public void untrustedDisplay_customImeComponentIgnored() {
+        createVirtualDeviceAndDisplayWithFlags(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, VirtualDeviceTestIme.class.getName())),
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        mRule.runWithTemporaryPermission(() -> {
+            mRule.sendIntentToDisplay(
+                    new Intent(mContext, ImeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    mVirtualDisplayId);
+            return true;
+        }, android.Manifest.permission.INTERNAL_SYSTEM_WINDOW);
+        verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     /**
@@ -468,14 +484,20 @@ public class VirtualDeviceImeTest {
     }
 
     private VirtualDevice createVirtualDeviceAndDisplay(Optional<ComponentName> imeComponent) {
+        return createVirtualDeviceAndDisplayWithFlags(imeComponent,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+    }
+
+    private VirtualDevice createVirtualDeviceAndDisplayWithFlags(
+            Optional<ComponentName> imeComponent, int flags) {
         VirtualDeviceParams.Builder builder = new VirtualDeviceParams.Builder();
         imeComponent.ifPresent(componentName -> builder.setInputMethodComponent(componentName));
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(builder.build());
 
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+                flags);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
         return virtualDevice;
     }

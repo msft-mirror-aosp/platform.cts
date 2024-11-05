@@ -727,6 +727,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 371867486)
     public void testChildWindowFocusable() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setBackgroundColor(Color.BLUE);

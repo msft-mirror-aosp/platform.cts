@@ -36,6 +36,7 @@ import android.app.Instrumentation;
 import android.app.AppOpsManager;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -45,17 +46,21 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.provider.Settings;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -88,9 +93,34 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context mContext = mInstrumentation.getContext();
 
+    private static String sOldAppOpsConsts = "";
+
     // Used in teardown
     private Set<String> mServiceStartedPackages = new HashSet<>();
     private Set<String> mActivityStartedPackages = new HashSet<>();
+
+    @BeforeClass
+    public static void classSetup() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(()-> {
+            sOldAppOpsConsts = Settings.Global.getString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS);
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS,
+                    "top_state_settle_time=0,fg_service_state_settle_time=0,"
+                    + "bg_state_settle_time=0");
+        });
+    }
+
+    @AfterClass
+    public static void classTeardown() {
+        final var context = InstrumentationRegistry.getInstrumentation().getContext();
+        runWithShellPermissionIdentity(() -> {
+            // restore old AppOps settings.
+            Settings.Global.putString(context.getContentResolver(),
+                    Settings.Global.APP_OPS_CONSTANTS, sOldAppOpsConsts);
+        });
+    }
 
     @Before
     public void setup() throws Exception {
@@ -536,6 +566,23 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // Appops should finish after stopping
         stopRecording(TEST_PACKAGE);
         assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testIfAttemptChangeCapabilities_isNotSilenced() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        // Go foreground without WIU caps. Note: if we attempt to start with record here, AMS throws
+        mContext.sendBroadcast(new Intent(TEST_PACKAGE + ACTION_BOUNCE_FOREGROUND)
+                .setComponent(new ComponentName(TEST_PACKAGE, TEST_PACKAGE + ".TrampolineReceiver")));
+        SystemUtil.runShellCommand("am wait-for-broadcast-barrier");
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + TEST_PACKAGE);
+
+        // Go foreground with the right capabilities
+        startForeground(TEST_PACKAGE);
+
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+
+        assertTrue(getOpState(TEST_PACKAGE));
     }
 
     private IBinder getAttributionProvider(String packageName) throws Exception {

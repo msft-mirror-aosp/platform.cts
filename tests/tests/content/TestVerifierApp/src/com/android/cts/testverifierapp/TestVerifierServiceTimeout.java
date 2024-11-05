@@ -29,6 +29,7 @@ public class TestVerifierServiceTimeout extends TestVerifierService {
 
         Intent broadcastIntent = new Intent(ACTION_REQUEST_RECEIVED);
         broadcastIntent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        broadcastIntent.putExtra(EXTRA_VERIFICATION_SESSION, session);
         sendBroadcast(broadcastIntent);
     }
 }

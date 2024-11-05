@@ -33,6 +33,7 @@ public class TestVerifierService extends VerifierService {
             "android.content.pm.cts.verify.CANCELLED_RECEIVED";
     static final String ACTION_REQUEST_RECEIVED =
             "android.content.pm.cts.verify.REQUEST_RECEIVED";
+    static final String EXTRA_VERIFICATION_SESSION = "android.content.pm.cts.verify.session";
 
     @Override
     public void onCreate() {
@@ -75,8 +76,10 @@ public class TestVerifierService extends VerifierService {
                 .setVerified(true)
                 .build();
         session.reportVerificationComplete(status);
+        // Send data back to the main test to verify the received session attributes
         Intent broadcastIntent = new Intent(ACTION_REQUEST_RECEIVED);
         broadcastIntent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        broadcastIntent.putExtra(EXTRA_VERIFICATION_SESSION, session);
         sendBroadcast(broadcastIntent);
         Log.i(TAG, "Returned verification success.");
     }

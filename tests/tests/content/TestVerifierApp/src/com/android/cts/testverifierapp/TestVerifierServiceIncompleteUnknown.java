@@ -29,6 +29,7 @@ public class TestVerifierServiceIncompleteUnknown extends TestVerifierService {
         // Report incomplete with unknown reason
         session.reportVerificationIncomplete(VERIFICATION_INCOMPLETE_UNKNOWN);
         Intent broadcastIntent = new Intent(ACTION_REQUEST_RECEIVED);
+        broadcastIntent.putExtra(EXTRA_VERIFICATION_SESSION, session);
         broadcastIntent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         sendBroadcast(broadcastIntent);
         Log.i(TAG, "Returned verification incomplete.");

@@ -66,7 +66,6 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
-      debug = self.debug_mode
 
       def _do_preview_recording(cam, resolution, zoom_ratio):
         """Record a new set of data from the device.
@@ -194,6 +193,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             cap = cam.do_capture(
                 req, {'format': 'yuv'})
             cap_fl = cap['metadata']['android.lens.focalLength']
+            result_zoom = float(cap['metadata']['android.control.zoomRatio'])
             logging.debug('Camera focal length: %.2f', cap_fl)
 
             # Determine width and height of video
@@ -222,7 +222,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             all_aruco_ids.append([id[0] for id in ids])
             images.append(cv2.cvtColor(video_img, cv2.COLOR_RGB2BGR))
             video_test_data[i] = zoom_capture_utils.ZoomTestData(
-                result_zoom=z,
+                result_zoom=result_zoom,
                 radius_tol=_RADIUS_RTOL,
                 offset_tol=_OFFSET_TOL,
                 focal_length=cap_fl

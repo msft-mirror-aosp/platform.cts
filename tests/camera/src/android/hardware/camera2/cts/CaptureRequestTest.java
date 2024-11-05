@@ -46,6 +46,7 @@ import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -182,7 +183,14 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 p.recycle();
 
                 // Check capture request with additional physical camera settings
-                String physicalId = new String(Integer.toString(i + 1));
+                String physicalId;
+                if (TextUtils.isDigitsOnly(cameraIdsUnderTest[i])) {
+                    physicalId = new String(
+                            Integer.toString(Integer.valueOf(cameraIdsUnderTest[i]) + 1));
+                } else {
+                    physicalId = new String(Integer.toString(i + 1));
+                }
+
                 ArraySet<String> physicalIds = new ArraySet<String> ();
                 physicalIds.add(physicalId);
 
@@ -616,6 +624,27 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 toneMapTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test CCT color correction mode and color temperature, color tint controls
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_COLOR_TEMPERATURE)
+    public void testCctColorCorrectionControl() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isCctModeSupported()) {
+                    Log.i(TAG, "Camera " + id +
+                            " doesn't support CCT color correction mode, skipping test");
+                    continue;
+                }
+                openDevice(id);
+                cctColorCorrectionTestByCamera();
             } finally {
                 closeDevice();
             }
@@ -1536,6 +1565,92 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
        }
 
         stopPreview();
+    }
+
+    /**
+     * Test CCT color correction controls.
+     *
+     * <p>Test CCT color correction mode and control keys for color temperaure
+     * and color tint.</p>
+     */
+    private void cctColorCorrectionTestByCamera() throws Exception {
+        CaptureRequest request;
+        CaptureResult result;
+        Size maxPreviewSz = mOrderedPreviewSizes.get(0); // Max preview size.
+        updatePreviewSurface(maxPreviewSz);
+        CaptureRequest.Builder manualRequestBuilder = createRequestForPreview();
+        CaptureRequest.Builder previewRequestBuilder = createRequestForPreview();
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+
+        startPreview(previewRequestBuilder, maxPreviewSz, listener);
+
+        // Default preview result should give valid color correction metadata.
+        result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+        validateColorCorrectionResult(result,
+                previewRequestBuilder.get(CaptureRequest.COLOR_CORRECTION_MODE));
+        int colorCorrectionMode = CaptureRequest.COLOR_CORRECTION_MODE_CCT;
+
+        // Check if the color temperature range is advertised and
+        // supports the minimum required range.
+        Range<Integer> colorTemperatureRange =
+                mStaticInfo.getCharacteristics().get(CameraCharacteristics.
+                COLOR_CORRECTION_COLOR_TEMPERATURE_RANGE);
+        assertNotNull("CCT mode is supported but color temperature range is null",
+                colorTemperatureRange);
+        assertTrue("Color temperature range should advertise at least [2856, 6500]",
+                colorTemperatureRange.getLower() <= 2856
+                && colorTemperatureRange.getUpper() >= 6500);
+        assertTrue("Color temperature range should advertise between [1000, 40000]",
+                colorTemperatureRange.getLower() >= 1000
+                && colorTemperatureRange.getUpper() <= 40000);
+
+        List<Integer> availableControlModes = Arrays.asList(
+                CameraTestUtils.toObject(mStaticInfo.getAvailableControlModesChecked()));
+        List<Integer> availableAwbModes = Arrays.asList(
+                CameraTestUtils.toObject(mStaticInfo.getAwbAvailableModesChecked()));
+        boolean isManualCCSupported =
+                availableControlModes.contains(CaptureRequest.CONTROL_MODE_OFF) ||
+                availableAwbModes.contains(CaptureRequest.CONTROL_AWB_MODE_OFF);
+        if (isManualCCSupported) {
+            // Turn off AWB through either CONTROL_AWB_MODE_OFF or CONTROL_MODE_OFF
+            if (!availableControlModes.contains(CaptureRequest.CONTROL_MODE_OFF)) {
+                // Only manual AWB mode is supported
+                manualRequestBuilder.set(CaptureRequest.CONTROL_MODE,
+                        CaptureRequest.CONTROL_MODE_AUTO);
+                manualRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                        CaptureRequest.CONTROL_AWB_MODE_OFF);
+            } else {
+                // All 3A manual controls are supported, it doesn't matter what we set for AWB mode
+                manualRequestBuilder.set(CaptureRequest.CONTROL_MODE,
+                        CaptureRequest.CONTROL_MODE_OFF);
+            }
+
+            int[] TEST_COLOR_TEMPERATURE_VALUES = {2500, 4500, 6500};
+            int[] TEST_COLOR_TINT_VALUES = {-25, 0, 25};
+
+            for (int i = 0; i < TEST_COLOR_TEMPERATURE_VALUES.length; i++) {
+                manualRequestBuilder.set(CaptureRequest.COLOR_CORRECTION_MODE,
+                        colorCorrectionMode);
+                manualRequestBuilder.set(CaptureRequest.COLOR_CORRECTION_COLOR_TEMPERATURE,
+                        TEST_COLOR_TEMPERATURE_VALUES[i]);
+                manualRequestBuilder.set(CaptureRequest.COLOR_CORRECTION_COLOR_TINT,
+                        TEST_COLOR_TINT_VALUES[i]);
+                request = manualRequestBuilder.build();
+                mSession.capture(request, listener, mHandler);
+                result = listener.getCaptureResultForRequest(request, NUM_RESULTS_WAIT_TIMEOUT);
+                validateColorCorrectionResult(result, colorCorrectionMode);
+                int colorTemperatureResult =
+                        result.get(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
+                int colorTintResult = result.get(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
+                mCollector.expectEquals("Control mode result/request mismatch",
+                        CaptureResult.CONTROL_MODE_OFF, result.get(CaptureResult.CONTROL_MODE));
+                mCollector.expectEquals("Color temperature result/request mismatch",
+                        TEST_COLOR_TEMPERATURE_VALUES[i], colorTemperatureResult);
+                // The actual color tint applied may be clamped so the result
+                // may differ from the request, so we just check if it is null
+                mCollector.expectNotNull("Color tint result null", colorTintResult);
+            }
+        }
     }
 
     /**

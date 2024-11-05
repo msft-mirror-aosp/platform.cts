@@ -76,6 +76,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Process
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.ContactsContract
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
@@ -165,6 +167,8 @@ class AppOpsLoggingTest {
             locationManager.setLocationEnabledForUser(wasLocationEnabled, myUserHandle)
         }
     }
+
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     fun setLocationEnabled() {
         val locationManager = context.getSystemService(LocationManager::class.java)!!
@@ -916,6 +920,37 @@ class AppOpsLoggingTest {
         eventually {
             assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
             assertThat(asyncNoted[0].attributionTag).isEqualTo(TEST_ATTRIBUTION_TAG)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_SYNC_ON_OP_NOTED_API)
+    fun ignoreAsyncOpNoted() {
+        removeNotedAppOpsCollector()
+        appOpsManager.setOnOpNotedCallback(
+            Executor { it.run() },
+                object : OnOpNotedCallback() {
+                    override fun onNoted(op: SyncNotedAppOp) {
+                        noted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onSelfNoted(op: SyncNotedAppOp) {
+                        selfNoted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onAsyncNoted(asyncOp: AsyncNotedAppOp) {
+                        asyncNoted.add(asyncOp)
+                    }
+                },
+            AppOpsManager.OP_NOTED_CALLBACK_FLAG_IGNORE_ASYNC
+        )
+
+        context.createAttributionContext(TEST_ATTRIBUTION_TAG)
+                .sendBroadcast(Intent(PROTECTED_ACTION).setPackage(myPackage))
+        waitForBroadcasts()
+
+        eventually {
+            assertThat(asyncNoted).isEmpty()
         }
     }
 

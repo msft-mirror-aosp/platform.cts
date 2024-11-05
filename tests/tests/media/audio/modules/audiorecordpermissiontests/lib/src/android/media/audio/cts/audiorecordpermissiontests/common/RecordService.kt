@@ -129,7 +129,7 @@ open class RecordService : Service() {
                 PREFIX + ACTION_FINISH_RECORD ->
                     mRecordings.get(intent.getIntExtra(EXTRA_RECORD_ID, 0))?.close()
                 PREFIX + ACTION_START_FOREGROUND ->
-                    getCapabilities().let {
+                    intent.getIntExtra(EXTRA_CAP_OVERRIDE, getCapabilities()).let {
                         Log.i(TAG, "Going foreground with capabilities $it")
                         startForeground(1, buildNotification(), it)
                     }

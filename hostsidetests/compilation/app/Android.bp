@@ -45,14 +45,14 @@ android_test_helper_app {
     assets: [":CtsCompilationApp_assets_bad_profile"],
 }
 
-genrule {
+java_genrule {
     name: "CtsCompilationApp_assets_good_profile",
     cmd: "cp $(in) $(out)",
     srcs: [":CtsCompilationApp_profile"],
     out: ["art-profile/baseline.prof"],
 }
 
-genrule {
+java_genrule {
     name: "CtsCompilationApp_assets_bad_profile",
     cmd: "cp $(in) $(out)",
     srcs: [":AppUsedByOtherApp_1_prof"],

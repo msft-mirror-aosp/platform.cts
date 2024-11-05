@@ -62,19 +62,19 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.widget.ImageView;
-
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.StateKeeperRule;
@@ -122,6 +122,7 @@ public class VirtualDisplayTest {
 
     private Context mContext;
     private DisplayManager mDisplayManager;
+    private WindowManagerStateHelper mWindowManagerStateHelper;
     private Handler mHandler;
     private final Lock mImageReaderLock = new ReentrantLock(true /*fair*/);
     private ImageReader mImageReader;
@@ -130,10 +131,9 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
+    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.ADD_TRUSTED_DISPLAY,
+    public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
@@ -160,6 +160,7 @@ public class VirtualDisplayTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mDisplayManager = (DisplayManager)mContext.getSystemService(Context.DISPLAY_SERVICE);
+        mWindowManagerStateHelper = new WindowManagerStateHelper();
         mHandler = new Handler(Looper.getMainLooper());
         mImageListener = new ImageListener();
         // thread for image checking
@@ -308,8 +309,9 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testTrustedVirtualDisplay() throws Exception {
+        // Shell doesn't have the ADD_TRUSTED_DISPLAY permission.
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
+                .adoptShellPermissionIdentity();
 
         try {
             VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
@@ -753,8 +755,10 @@ public class VirtualDisplayTest {
                 PackageManager.FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_SCREEN_PORTRAIT);
-        return (supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait);
+        mWindowManagerStateHelper.computeState();
+        final boolean isFixedToUserRotation = mWindowManagerStateHelper.isFixedToUserRotation();
+        return (supportsLandscape && supportsPortrait && !isFixedToUserRotation)
+                || (!supportsLandscape && !supportsPortrait && !isFixedToUserRotation);
     }
 
     private void runOnUiThread(Runnable runnable) {

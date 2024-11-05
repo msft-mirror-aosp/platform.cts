@@ -3,6 +3,60 @@ package {
     default_team: "trendy_team_android_storage",
 }
 
+android_test_helper_app {
+    name: "CtsMediaProviderTestAppA",
+    manifest: "MediaProviderTestHelper/MediaProviderTestAppA.xml",
+    sdk_version: "test_current",
+    target_sdk_version: "36",
+    min_sdk_version: "30",
+    srcs: ["MediaProviderTestHelper/src/**/*.java"],
+    static_libs: [
+        "mediaprovider_flags_java_lib",
+        "cts-media-provider-lib",
+    ],
+    // Tag as a CTS artifact
+    test_suites: [
+        "general-tests",
+        "mts-mediaprovider",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsMediaProviderTestAppB",
+    manifest: "MediaProviderTestHelper/MediaProviderTestAppB.xml",
+    sdk_version: "test_current",
+    target_sdk_version: "36",
+    min_sdk_version: "30",
+    srcs: ["MediaProviderTestHelper/src/**/*.java"],
+    static_libs: [
+        "mediaprovider_flags_java_lib",
+        "cts-media-provider-lib",
+    ],
+    // Tag as a CTS artifact
+    test_suites: [
+        "general-tests",
+        "mts-mediaprovider",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsMediaProviderTestAppC",
+    manifest: "MediaProviderTestHelper/MediaProviderTestAppC.xml",
+    sdk_version: "test_current",
+    target_sdk_version: "36",
+    min_sdk_version: "30",
+    srcs: ["MediaProviderTestHelper/src/**/*.java"],
+    static_libs: [
+        "mediaprovider_flags_java_lib",
+        "cts-media-provider-lib",
+    ],
+    // Tag as a CTS artifact
+    test_suites: [
+        "general-tests",
+        "mts-mediaprovider",
+    ],
+}
+
 android_test {
     name: "CtsMediaProviderTestCases",
     defaults: ["cts_defaults"],
@@ -31,11 +85,14 @@ android_test {
         "junit",
         "truth",
         "mediaprovider_flags_java_lib",
+        "cts-scopedstorage-lib",
+        "cts-media-provider-lib",
     ],
 
     srcs: [
         "src/**/*.java",
         "app/GalleryTestApp/src/**/*.java",
+        "MediaProviderTestHelper/src/**/*.java",
         ":CtsProviderTestUtils",
     ],
 
@@ -46,6 +103,15 @@ android_test {
 
     data: [
         ":CtsProviderGalleryTestApp",
+        ":CtsMediaProviderTestAppA",
+        ":CtsMediaProviderTestAppB",
+        ":CtsMediaProviderTestAppC",
+    ],
+
+    java_resources: [
+        ":CtsMediaProviderTestAppA",
+        ":CtsMediaProviderTestAppB",
+        ":CtsMediaProviderTestAppC",
     ],
 
     host_required: ["compatibility-host-provider-preconditions"],

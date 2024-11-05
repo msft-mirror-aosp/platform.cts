@@ -2160,6 +2160,42 @@ public class TunerTest {
     }
 
     @Test
+    public void testRequestFrontendNoFrontendAvailableAndResourceHolderRetain() throws Exception {
+        prepTRMCustomFeResourceMapTest();
+
+        // Use try block to ensure restoring the TunerResourceManager
+        // Note: the handles will be changed from the original value, but should be OK
+        try {
+            TunerFrontendInfo[] infos = new TunerFrontendInfo[1];
+            // tunerFrontendInfo(handle, FrontendSettings.TYPE_*, exclusiveGroupId
+            infos[0] = tunerFrontendInfo(1, FrontendSettings.TYPE_DVBT, 1);
+            mTunerResourceManager.setFrontendInfoList(infos);
+
+            Tuner tunerA = new Tuner(mContext, null, 100);
+            Tuner tunerB = new Tuner(mContext, null, 100);
+
+            // let B hold resource
+            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
+                    true /* expectedResult */, 1 /* expectedHandle */);
+            // Requester says holder should not hold resource
+            tunerA.setResourceHolderRetain(false);
+            // Resource Challenger Situation
+            assignFeResource(tunerA.getClientId(), FrontendSettings.TYPE_DVBT,
+                    true /* expectedResult */, 1 /* expectedHandle */);
+            // Requester says holder should hold resource
+            tunerB.setResourceHolderRetain(true);
+            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
+                    false /* expectedResult */, -1 /* expectedHandle */);
+            tunerB.close();
+            tunerA.close();
+        } catch (Exception e) {
+            throw(e);
+        } finally {
+            cleanupTRMCustomFeResourceMapTest();
+        }
+    }
+
+    @Test
     public void testTransferOwner() throws Exception {
         testTransferFeOwnershipSingleTuner();
         testTransferFeAndCiCamOwnership();
@@ -2542,7 +2578,7 @@ public class TunerTest {
     }
 
     private TunerFrontendInfo tunerFrontendInfo(
-            int handle, int frontendType, int exclusiveGroupId) {
+            long handle, int frontendType, int exclusiveGroupId) {
         TunerFrontendInfo info = new TunerFrontendInfo();
         info.handle = handle;
         info.type = frontendType;
@@ -2586,9 +2622,9 @@ public class TunerTest {
         }
     }
 
-    private void assignFeResource(int clientId, int frontendType,
-                                  boolean expectedResult, int expectedHandle) {
-        int[] feHandle = new int[1];
+    private void assignFeResource(
+            int clientId, int frontendType, boolean expectedResult, long expectedHandle) {
+        long[] feHandle = new long[1];
         TunerFrontendRequest request = new TunerFrontendRequest();
         request.clientId = clientId;
         request.frontendType = frontendType;
@@ -3227,6 +3263,15 @@ public class TunerTest {
             ap.hasAudioDescription();
             ap.hasDialogueEnhancement();
             ap.hasSpokenSubtitles();
+        }
+        if (TunerVersionChecker.isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_4_0)) {
+            e.getNumDataPieces();
+            e.getIndexInDataGroup();
+            e.getDataGroupId();
+        } else {
+            assertTrue(e.getNumDataPieces() == 0);
+            assertTrue(e.getIndexInDataGroup() == 0);
+            assertTrue(e.getDataGroupId() == 0);
         }
         e.release();
     }

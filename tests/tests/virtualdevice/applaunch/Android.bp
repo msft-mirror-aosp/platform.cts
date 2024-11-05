@@ -29,6 +29,7 @@ android_test {
 
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "CtsDefaultCameraAccessTestBaseLib",
     ],
 
     srcs: [

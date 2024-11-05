@@ -25,6 +25,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AV1;
 import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
+import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
@@ -33,6 +34,7 @@ import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static java.lang.Math.max;
@@ -44,7 +46,6 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
@@ -109,9 +110,9 @@ public class VideoCodecRequirementsTest {
             ArrayList<String> hwVideoCodecs =
                     selectHardwareCodecs(codecMediaType, null, null, isEncoder);
             for (String hwVideoCodec : hwVideoCodecs) {
-                MediaCodec codec = MediaCodec.createByCodecName(hwVideoCodec);
-                CodecCapabilities capabilities =
-                        codec.getCodecInfo().getCapabilitiesForType(codecMediaType);
+                CodecCapabilities capabilities = getCodecCapabilities(hwVideoCodec, codecMediaType);
+                assertNotNull("did not receive capabilities for codec: " + hwVideoCodec
+                        + ", media type: " + codecMediaType + "\n", capabilities);
                 List<PerformancePoint> pps =
                         capabilities.getVideoCapabilities().getSupportedPerformancePoints();
                 assertTrue(hwVideoCodec + " doesn't advertise performance points", pps.size() > 0);
@@ -123,7 +124,6 @@ public class VideoCodecRequirementsTest {
                         break;
                     }
                 }
-                codec.release();
             }
         }
         return codecSet;

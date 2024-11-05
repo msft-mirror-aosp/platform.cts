@@ -18,6 +18,7 @@ package android.os.cts;
 
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -33,6 +34,7 @@ import android.os.VibrationEffect.Composition.UnreachableAfterRepeatingIndefinit
 import android.os.vibrator.Flags;
 import android.os.vibrator.PrebakedSegment;
 import android.os.vibrator.PrimitiveSegment;
+import android.os.vibrator.PwleSegment;
 import android.os.vibrator.RampSegment;
 import android.os.vibrator.StepSegment;
 import android.os.vibrator.VibrationEffectSegment;
@@ -45,6 +47,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,6 +85,7 @@ public class VibrationEffectTest {
                     .addTransition(Duration.ofMillis(200),
                             targetAmplitude(0.2f), targetFrequency(200f))
                     .build();
+
     private static final VibrationEffect TEST_PREBAKED =
             VibrationEffect.get(VibrationEffect.EFFECT_CLICK, true);
     private static final VibrationEffect TEST_COMPOSED =
@@ -649,6 +653,379 @@ public class VibrationEffectTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffect() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertThat(getRepeatIndex(repeatingEffect)).isEqualTo(1);
+        assertAmplitude(TEST_FLOAT_AMPLITUDE, repeatingEffect, 0);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[0], repeatingEffect, 1);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[1], repeatingEffect, 2);
+        assertAmplitude(TEST_FLOAT_AMPLITUDES[2], repeatingEffect, 3);
+
+        VibrationEffect envelopeEffect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 100.0f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.5f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 1.0f, /*frequencyHz=*/ 200.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 0.2f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 50)
+                .build();
+        VibrationEffect primitiveEffect = VibrationEffect.startComposition()
+                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
+                .compose();
+        repeatingEffect = VibrationEffect.createRepeatingEffect(primitiveEffect, envelopeEffect);
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertThat(getRepeatIndex(repeatingEffect)).isEqualTo(1);
+        assertPrimitiveId(VibrationEffect.Composition.PRIMITIVE_TICK, repeatingEffect, 0);
+        assertPwleSegment(repeatingEffect, 1);
+
+        repeatingEffect = VibrationEffect.createRepeatingEffect(
+                VibrationEffect.get(VibrationEffect.EFFECT_THUD));
+        assertThat(repeatingEffect.getDuration()).isEqualTo(Long.MAX_VALUE);
+        assertPrebakedEffectId(VibrationEffect.EFFECT_THUD, repeatingEffect, 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithRepeatingEffectIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_WAVEFORM);
+        VibrationEffect.createRepeatingEffect(repeatingEffect);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithPreambleAndRepeatingEffectIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        // RepeatingEffect is already created as repeating.
+        VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT, repeatingEffect);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
+    public void testCreateRepeatingEffectWithRepeatingPreambleIsInvalid() {
+        VibrationEffect repeatingEffect = VibrationEffect.createRepeatingEffect(TEST_ONE_SHOT,
+                TEST_WAVEFORM);
+        VibrationEffect.createRepeatingEffect(repeatingEffect, TEST_WAVEFORM);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testWaveformEnvelopeDescribeContents() {
+        getTestWaveformEnvelope().describeContents();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelope() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 100.0f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.5f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 1.0f, /*frequencyHz=*/ 200.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 0.2f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 50)
+                .build();
+
+        assertArrayEquals(new long[]{20, 100, 100, 50}, getTimings(effect));
+        assertPwleAmplitude(0.0f, 0.0f, effect, 0);
+        assertPwleAmplitude(0.0f, 0.5f, effect, 1);
+        assertPwleAmplitude(0.5f, 1.0f, effect, 2);
+        assertPwleAmplitude(1.0f, 0.2f, effect, 3);
+
+        assertPwleFrequency(100f, 100f, effect, 0);
+        assertPwleFrequency(100f, 150f, effect, 1);
+        assertPwleFrequency(150f, 200f, effect, 2);
+        assertPwleFrequency(200f, 150f, effect, 3);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequency() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 60)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 100.0f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.5f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 1.0f, /*frequencyHz=*/ 200.0f, /*timeMillis=*/ 100)
+                .addControlPoint(/*amplitude=*/ 0.2f, /*frequencyHz=*/ 150.0f, /*timeMillis=*/ 50)
+                .build();
+
+        assertArrayEquals(new long[]{20, 100, 100, 50}, getTimings(effect));
+        assertPwleAmplitude(0.0f, 0.0f, effect, 0);
+        assertPwleAmplitude(0.0f, 0.5f, effect, 1);
+        assertPwleAmplitude(0.5f, 1.0f, effect, 2);
+        assertPwleAmplitude(1.0f, 0.2f, effect, 3);
+
+        assertPwleFrequency(60f,  100f, effect, 0);
+        assertPwleFrequency(100f, 150f, effect, 1);
+        assertPwleFrequency(150f, 200f, effect, 2);
+        assertPwleFrequency(200f, 150f, effect, 3);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeEquals() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+
+        assertThat(other).isEqualTo(effect);
+        assertThat(other.hashCode()).isEqualTo(effect.hashCode());
+
+        effect = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+
+        other = VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+
+        assertThat(other).isEqualTo(effect);
+        assertThat(other.hashCode()).isEqualTo(effect.hashCode());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeNotEqualsDifferentNumberOfPoints() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
+                .build();
+        assertThat(other).isNotEqualTo(effect);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.0f, 60f, 20)
+                        .addControlPoint(0.3f, 100f, 50)
+                        .addControlPoint(0.4f, 120f, 80)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeNotEqualsDifferentAmplitudes() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.1f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeNotEqualsDifferentFrequency() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 121f, /*timeMillis=*/ 40)
+                .build();
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 40)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeNotEqualsDifferentDuration() {
+        VibrationEffect effect = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
+        VibrationEffect other = VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 50)
+                .build();
+        assertThat(effect).isNotEqualTo(other);
+
+        VibrationEffect otherWithInitialFrequency =
+                VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                        // amplitude, frequencyHz, timeMillis
+                        .addControlPoint(0.4f, 120f, 50)
+                        .addControlPoint(0.0f, 120f, 40)
+                        .build();
+
+        assertThat(otherWithInitialFrequency).isNotEqualTo(effect);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeEmptyBuilderIsInvalid() {
+        VibrationEffect.startWaveformEnvelope().build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeNegativeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ -0.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeOutOfRangeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 1.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeZeroFrequencyIsInvalid() {
+        VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 0.0f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeZeroDurationIsInvalid() {
+        VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 0)
+                .build();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyEmptyBuilderIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30).build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyNegativeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ -0.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyOutOfRangeAmplitudeIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 1.1f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyZeroFrequencyIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 0.0f, /*timeMillis=*/ 50)
+                .build();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @ApiTest(apis = {"VibrationEffect.WaveformEnvelopeBuilder#startWaveformEnvelope",
+            "VibrationEffect.WaveformEnvelopeBuilder#addControlPoint",
+            "VibrationEffect.WaveformEnvelopeBuilder#build"})
+    public void testStartWaveformEnvelopeWithInitialFrequencyZeroDurationIsInvalid() {
+        VibrationEffect.startWaveformEnvelope(/*initialFrequency=*/ 30)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 0)
+                .build();
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testWaveformEnvelopeToString() {
+        getTestWaveformEnvelope().toString();
+    }
+
+    @Test
     public void testStartWaveform() {
         VibrationEffect.WaveformBuilder first = VibrationEffect.startWaveform();
         VibrationEffect.WaveformBuilder other = VibrationEffect.startWaveform();
@@ -876,6 +1253,49 @@ public class VibrationEffectTest {
         assertThat(composed.getSegments().get(index)).isInstanceOf(RampSegment.class);
     }
 
+    private void assertPwleSegment(VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
+        VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(PwleSegment.class);
+    }
+
+    private void assertPwleAmplitude(float expectedStartAmplitude, float expectedEndAmplitude,
+            VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
+        VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
+        assertThat(index).isLessThan(composed.getSegments().size());
+        VibrationEffectSegment segment = composed.getSegments().get(index);
+        if (segment instanceof PwleSegment) {
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getStartAmplitude())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedStartAmplitude);
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getEndAmplitude())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedEndAmplitude);
+        } else {
+            fail("Expected a pwle segment at index " + index + " of " + effect);
+        }
+    }
+
+    private void assertPwleFrequency(float expectedStartFrequency, float expectedEndFrequency,
+            VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
+        VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
+        assertThat(index).isLessThan(composed.getSegments().size());
+        VibrationEffectSegment segment = composed.getSegments().get(index);
+        if (segment instanceof PwleSegment) {
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getStartFrequencyHz())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedStartFrequency);
+            assertThat(((PwleSegment) composed.getSegments().get(index)).getEndFrequencyHz())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedEndFrequency);
+        } else {
+            fail("Expected a pwle segment at index " + index + " of " + effect);
+        }
+    }
+
     private void assertAmplitude(float expected, VibrationEffect effect, int index) {
         assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
@@ -956,5 +1376,14 @@ public class VibrationEffectTest {
             };
         }
         return null;
+    }
+
+    private static VibrationEffect getTestWaveformEnvelope() {
+        return VibrationEffect.startWaveformEnvelope()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*timeMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*timeMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 80)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*timeMillis=*/ 40)
+                .build();
     }
 }

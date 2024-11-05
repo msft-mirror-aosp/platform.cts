@@ -75,6 +75,10 @@ public class SoundTriggerTest {
             SoundTrigger.ModuleProperties.AUDIO_CAPABILITY_ECHO_CANCELLATION
                     | SoundTrigger.ModuleProperties.AUDIO_CAPABILITY_NOISE_SUPPRESSION;
     private static final byte[] TEST_MODEL_DATA = new byte[1024];
+    private static final byte[] TEST_RECOGNITION_CONFIG_DATA = new byte[] {0, 1, 2, 3, 4};
+    private static final List<KeyphraseRecognitionExtra> TEST_KEYPHRASE_RECOGNITION_EXTRAS =
+            ImmutableList.of(
+                new KeyphraseRecognitionExtra(1, SoundTrigger.RECOGNITION_MODE_VOICE_TRIGGER, 1));
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -102,6 +106,16 @@ public class SoundTriggerTest {
         return new SoundTrigger.KeyphraseSoundModel(TEST_MODEL_UUID, TEST_VENDOR_UUID,
                 SoundTriggerTest.TEST_MODEL_DATA,
                 new SoundTrigger.Keyphrase[] {createTestKeyphrase()}, TEST_MODEL_VERSION);
+    }
+
+    private static RecognitionConfig createTestRecognitionConfig() {
+        return new RecognitionConfig.Builder()
+                .setCaptureRequested(true)
+                .setAllowMultipleTriggers(true)
+                .setKeyphrases(TEST_KEYPHRASE_RECOGNITION_EXTRAS)
+                .setData(TEST_RECOGNITION_CONFIG_DATA)
+                .setAudioCapabilities(1)
+                .build();
     }
 
     private static void verifyKeyphraseSoundModelMatchesTestParams(
@@ -163,6 +177,18 @@ public class SoundTriggerTest {
                 .isEqualTo(TEST_RETURNES_TRIGGER_IN_EVENT);
         assertThat(moduleProperties.getAudioCapabilities()).isEqualTo(TEST_AUDIO_CAPABILITIES);
         assertThat(moduleProperties.describeContents()).isEqualTo(0);
+    }
+
+    private static void verifyRecognitionConfigMatchesTestParams(
+            RecognitionConfig recognitionConfig) {
+        assertThat(recognitionConfig.isCaptureRequested()).isTrue();
+        assertThat(recognitionConfig.isAllowMultipleTriggers()).isTrue();
+        assertThat(recognitionConfig.getKeyphrases()).isEqualTo(TEST_KEYPHRASE_RECOGNITION_EXTRAS);
+        assertThat(recognitionConfig.getData())
+                .asList()
+                .containsExactly((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4)
+                .inOrder();
+        assertThat(recognitionConfig.getAudioCapabilities()).isEqualTo(1);
     }
 
     @Test
@@ -280,26 +306,21 @@ public class SoundTriggerTest {
     @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
     @Test
     public void testRecognitionConfigBuilderCustomizedValues() {
-        byte[] data = new byte[] {0, 1, 2, 3, 4};
-        List<KeyphraseRecognitionExtra> keyphrases =
-            ImmutableList.of(
-                new KeyphraseRecognitionExtra(1, SoundTrigger.RECOGNITION_MODE_VOICE_TRIGGER, 1));
-        RecognitionConfig recognitionConfig =
-                new RecognitionConfig.Builder()
-                        .setCaptureRequested(true)
-                        .setAllowMultipleTriggers(true)
-                        .setKeyphrases(keyphrases)
-                        .setData(data)
-                        .setAudioCapabilities(1)
-                        .build();
+        RecognitionConfig recognitionConfig = createTestRecognitionConfig();
+        verifyRecognitionConfigMatchesTestParams(recognitionConfig);
+    }
 
-        assertThat(recognitionConfig.isCaptureRequested()).isTrue();
-        assertThat(recognitionConfig.isAllowMultipleTriggers()).isTrue();
-        assertThat(recognitionConfig.getKeyphrases()).isEqualTo(keyphrases);
-        assertThat(recognitionConfig.getData())
-                .asList()
-                .containsExactly((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4)
-                .inOrder();
-        assertThat(recognitionConfig.getAudioCapabilities()).isEqualTo(1);
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
+    @Test
+    public void testRecognitionConfigParcelUnparcel() {
+        RecognitionConfig recognitionConfigSrc = createTestRecognitionConfig();
+        Parcel parcel = Parcel.obtain();
+        recognitionConfigSrc.writeToParcel(parcel, 0);
+
+        parcel.setDataPosition(0);
+        RecognitionConfig recognitionConfigResult =
+                SoundTrigger.RecognitionConfig.CREATOR.createFromParcel(parcel);
+        assertThat(recognitionConfigSrc).isEqualTo(recognitionConfigResult);
+        verifyRecognitionConfigMatchesTestParams(recognitionConfigResult);
     }
 }

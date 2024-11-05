@@ -21,6 +21,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
+import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL

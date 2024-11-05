@@ -156,8 +156,16 @@ public class SystemFontsTest {
             for (int i = 0; i < glyphs.glyphCount(); ++i) {
                 assertThat(glyphs.getFakeBold(i)).isFalse();
                 assertThat(glyphs.getFakeItalic(i)).isFalse();
-                assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
-                assertThat(glyphs.getItalicOverride(i)).isEqualTo(0);
+                if (w == 400) {
+                    assertThat(glyphs.getWeightOverride(i))
+                            .isAnyOf(400f, PositionedGlyphs.NO_OVERRIDE);
+                } else {
+                    assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                }
+                // The default font has wght and ital axis and ital is 0 by default.
+                // It is valid to leave no override or override with the default value.
+                assertThat(glyphs.getItalicOverride(i))
+                        .isAnyOf(0f, PositionedGlyphs.NO_OVERRIDE);
             }
         }
     }
@@ -174,7 +182,12 @@ public class SystemFontsTest {
             for (int i = 0; i < glyphs.glyphCount(); ++i) {
                 assertThat(glyphs.getFakeBold(i)).isFalse();
                 assertThat(glyphs.getFakeItalic(i)).isFalse();
-                assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                if (w == 400) {
+                    assertThat(glyphs.getWeightOverride(i))
+                            .isAnyOf(400f, PositionedGlyphs.NO_OVERRIDE);
+                } else {
+                    assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                }
                 assertThat(glyphs.getItalicOverride(i)).isEqualTo(1);
             }
         }

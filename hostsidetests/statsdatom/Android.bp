@@ -31,6 +31,7 @@ java_test_host {
         "src/**/batterystats/*.java",
         "src/**/binderstats/*.java",
         "src/**/bluetooth/*.java",
+        "src/**/coregraphics/*.java",
         "src/**/cpu/*.java",
         "src/**/credentials/*.java",
         "src/**/devicepower/*.java",
@@ -90,9 +91,10 @@ java_test_host {
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
         "cts_adpf_atom_common-host2",
+        "uprobestats-protos",
     ],
 
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomApp",
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",

@@ -33,7 +33,6 @@ java_test_host {
         "arcts",
         "cts",
         "general-tests",
-        "mcts-permission",
         "mts-permission",
     ],
     static_libs: [
@@ -43,7 +42,7 @@ java_test_host {
         "android.permission.flags-aconfig-java-host",
     ],
     java_resource_dirs: ["res"],
-    data: [
+    device_common_data: [
         ":cts-current-api-gz",
         ":CtsCertInstallerApp",
         ":CtsContactDirectoryProvider",

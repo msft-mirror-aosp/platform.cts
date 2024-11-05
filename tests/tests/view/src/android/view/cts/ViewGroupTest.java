@@ -16,6 +16,8 @@
 
 package android.view.cts;
 
+import static android.view.flags.Flags.FLAG_TOOLKIT_VIEWGROUP_SET_REQUESTED_FRAME_RATE_API;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -49,6 +51,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
@@ -125,6 +130,10 @@ public class ViewGroupTest implements CTSResult {
             androidx.test.platform.app.InstrumentationRegistry
                     .getInstrumentation().getUiAutomation(),
             Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @UiThreadTest
     @Before
@@ -2938,6 +2947,237 @@ public class ViewGroupTest implements CTSResult {
 
         assertSame(v1, mMockViewGroup.findViewById(2));
         assertSame(w1, mMockViewGroup.findViewById(3));
+    }
+
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_VIEWGROUP_SET_REQUESTED_FRAME_RATE_API)
+    public void testRequestedFrameRateApi() {
+        ViewGroup vg = new MockViewGroup(mContext);
+        vg.setRequestedFrameRate(30f);
+        assertEquals(30f, vg.getRequestedFrameRate(), 0);
+
+        vg.setRequestedFrameRate(60f);
+        assertEquals(60f, vg.getRequestedFrameRate(), 0);
+
+        vg.setRequestedFrameRate(120f);
+        assertEquals(120f, vg.getRequestedFrameRate(), 0);
+
+        vg.setRequestedFrameRate(-1f);
+        assertEquals(-1f, vg.getRequestedFrameRate(), 0);
+    }
+
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_VIEWGROUP_SET_REQUESTED_FRAME_RATE_API)
+    public void testPropagateRequestedFrameRate_shouldNotOverride() {
+        /*
+         * UI hierarchy
+         *  - a1
+         *  - vg1
+         *      - b1
+         *      - b2
+         *      - b3
+         *      - vg2
+         *          - c1
+         *          - c2
+         *          - c3
+         *          - vg4
+         *              - e1
+         *              - e2
+         *      - vg3
+         *          - d1
+         *          - d2
+         *          - vg5
+         *              -f1
+         *              -f2
+         */
+
+        View a1 = new View(mContext);
+        mMockViewGroup.addView(a1);
+
+        ViewGroup vg1 = new MockViewGroup(mContext);
+        View b1 = new View(mContext);
+        View b2 = new View(mContext);
+        View b3 = new View(mContext);
+        b1.setRequestedFrameRate(30f);
+        vg1.addView(b1);
+        vg1.addView(b2);
+        vg1.addView(b3);
+        mMockViewGroup.addView(vg1);
+
+        ViewGroup vg2 = new MockViewGroup(mContext);
+        View c1 = new View(mContext);
+        View c2 = new View(mContext);
+        View c3 = new View(mContext);
+        vg2.addView(c1);
+        vg2.addView(c2);
+        vg2.propagateRequestedFrameRate(120f, false);
+        vg2.addView(c3);
+
+        vg1.addView(vg2);
+        vg1.propagateRequestedFrameRate(60f, false);
+
+        ViewGroup vg3 = new MockViewGroup(mContext);
+        vg3.setRequestedFrameRate(80f);
+        View d1 = new View(mContext);
+        View d2 = new View(mContext);
+        vg3.addView(d1);
+        vg3.addView(d2);
+
+        vg1.addView(vg3);
+
+        ViewGroup vg4 = new MockViewGroup(mContext);
+        View e1 = new View(mContext);
+        View e2 = new View(mContext);
+
+        vg4.addView(e1);
+        vg2.addView(vg4);
+        vg4.addView(e2);
+
+        ViewGroup vg5 = new MockViewGroup(mContext);
+        View f1 = new View(mContext);
+        View f2 = new View(mContext);
+        vg5.addView(f1);
+        vg5.addView(f2);
+
+        vg3.addView(vg5);
+        vg5.propagateRequestedFrameRate(Float.NaN, false);
+
+        assertTrue(Float.isNaN(a1.getRequestedFrameRate())); // should be default value
+
+        assertEquals(60f, vg1.getRequestedFrameRate(), 0); // PropagateRequestedFrameRate 60
+        assertEquals(30f, b1.getRequestedFrameRate(), 0); // explicitly request 30
+        assertEquals(60f, b2.getRequestedFrameRate(), 0); // should inherit from vg1
+        assertEquals(60f, b3.getRequestedFrameRate(), 0);
+
+        assertEquals(120f, vg2.getRequestedFrameRate(), 0); // PropagateRequestedFrameRate 120
+        assertEquals(120f, c1.getRequestedFrameRate(), 0); // should inherit from vg2
+        assertEquals(120f, c2.getRequestedFrameRate(), 0);
+        assertEquals(120f, c3.getRequestedFrameRate(), 0);
+
+        assertEquals(80f, vg3.getRequestedFrameRate(), 0); // explicitly request 80
+        assertTrue(Float.isNaN(d1.getRequestedFrameRate())); // should not inherit from vg1 or vg3
+        assertTrue(Float.isNaN(d2.getRequestedFrameRate()));
+
+        assertEquals(120f, vg4.getRequestedFrameRate(), 0); // should inherit from vg2
+        assertEquals(120f, e1.getRequestedFrameRate(), 0); // should inherit from vg4
+        assertEquals(120f, e2.getRequestedFrameRate(), 0);
+
+        assertTrue(Float.isNaN(vg5.getRequestedFrameRate())); // frame rate should be reset
+        assertTrue(Float.isNaN(f1.getRequestedFrameRate()));
+        assertTrue(Float.isNaN(f2.getRequestedFrameRate()));
+    }
+
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_VIEWGROUP_SET_REQUESTED_FRAME_RATE_API)
+    public void testPropagateRequestedFrameRate_shouldOverride() {
+        /*
+         * UI hierarchy
+         *  - a1
+         *  - vg1
+         *      - b1
+         *      - b2
+         *      - b3
+         *      - vg2
+         *          - c1
+         *          - c2
+         *          - c3
+         *          - vg4
+         *              - e1
+         *              - e2
+         *      - vg3
+         *          - d1
+         *          - d2
+         *          - vg5
+         *              -f1
+         *              -f2
+         */
+
+        View a1 = new View(mContext);
+        mMockViewGroup.addView(a1);
+
+        ViewGroup vg1 = new MockViewGroup(mContext);
+        View b1 = new View(mContext);
+        View b2 = new View(mContext);
+        View b3 = new View(mContext);
+        b1.setRequestedFrameRate(30f);
+        vg1.addView(b1);
+        vg1.addView(b2);
+        vg1.addView(b3);
+        mMockViewGroup.addView(vg1);
+
+        ViewGroup vg2 = new MockViewGroup(mContext);
+        View c1 = new View(mContext);
+        View c2 = new View(mContext);
+        View c3 = new View(mContext);
+        vg2.addView(c1);
+        vg2.addView(c2);
+        vg2.propagateRequestedFrameRate(120f, false);
+        vg2.addView(c3);
+
+        vg1.addView(vg2);
+        vg1.propagateRequestedFrameRate(60f, true);
+
+        ViewGroup vg3 = new MockViewGroup(mContext);
+        vg3.setRequestedFrameRate(80f);
+        View d1 = new View(mContext);
+        View d2 = new View(mContext);
+        vg3.addView(d1);
+        vg3.addView(d2);
+
+        vg1.addView(vg3);
+
+        ViewGroup vg4 = new MockViewGroup(mContext);
+        View e1 = new View(mContext);
+        View e2 = new View(mContext);
+
+        vg4.addView(e1);
+        vg2.addView(vg4);
+        vg4.addView(e2);
+
+        vg4.propagateRequestedFrameRate(120f, false);
+
+        e1.setRequestedFrameRate(30);
+
+        ViewGroup vg5 = new MockViewGroup(mContext);
+        View f1 = new View(mContext);
+        View f2 = new View(mContext);
+        vg5.addView(f1);
+        vg5.addView(f2);
+
+        vg3.addView(vg5);
+        vg5.propagateRequestedFrameRate(Float.NaN, false);
+
+        assertTrue(Float.isNaN(a1.getRequestedFrameRate())); // should be default value
+
+        assertEquals(60f, vg1.getRequestedFrameRate(), 0); // should inherit from vg1
+
+        // the frame rate should be overridden to 60.
+        assertEquals(60f, b1.getRequestedFrameRate(), 0);
+        assertEquals(60f, b2.getRequestedFrameRate(), 0); // should inherit from vg1
+        assertEquals(60f, b3.getRequestedFrameRate(), 0);
+
+        // the frame rate should be overridden to 60.
+        assertEquals(60f, vg2.getRequestedFrameRate(), 0);
+        assertEquals(60f, c1.getRequestedFrameRate(), 0); // should inherit from vg2
+        assertEquals(60f, c2.getRequestedFrameRate(), 0);
+        assertEquals(60f, c3.getRequestedFrameRate(), 0);
+
+        assertEquals(60f, vg3.getRequestedFrameRate(), 0); // should inherit from vg1
+        assertEquals(60f, d1.getRequestedFrameRate(), 0);
+        assertEquals(60f, d2.getRequestedFrameRate(), 0);
+
+         // the frame rate should be overridden to 60.
+        assertEquals(60f, vg4.getRequestedFrameRate(), 0);
+        assertEquals(60f, e1.getRequestedFrameRate(), 0);
+        assertEquals(60f, e2.getRequestedFrameRate(), 0);
+
+        // the frame rate should be overridden to 60.
+        assertEquals(60f, vg5.getRequestedFrameRate(), 0);
+        assertEquals(60f, f1.getRequestedFrameRate(), 0);
+        assertEquals(60f, f2.getRequestedFrameRate(), 0);
     }
 
     static class MockTextView extends TextView {

@@ -36,6 +36,8 @@ import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.MediaPerfUtils;
 import com.android.compatibility.common.util.MediaUtils;
@@ -588,6 +590,11 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         "bbb_s2_1920x1080_mp4_av1_5010kbps_60fps_aac_lc_6ch_348kbps_22050hz.mp4",
     };
 
+    @CddTest(requirement = "5.1.10/C-2-1")
+    @ApiTest(apis = {"android.media.MediaCodecInfo#getCapabilitiesForType",
+            "android.media.MediaCodecInfo.CodecCapabilities#getVideoCapabilities",
+            "android.media.MediaCodecInfo.VideoCapabilities#getSupportedFrameRatesFor",
+            "android.media.MediaCodecInfo.VideoCapabilities#getAchievableFrameRatesFor"})
     @Test
     public void testPerf() throws Exception {
         perf(mDecoderName, mResources);

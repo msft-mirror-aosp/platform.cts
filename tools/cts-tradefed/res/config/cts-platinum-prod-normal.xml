@@ -106,13 +106,6 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityTestCases android.view.accessibility.cts.AccessibilityEventTest#testStateEventBurstCombined"/>
     <option name="compatibility:include-filter" value="CtsAccessibilityTestCases android.view.accessibility.cts.AccessibilityManagerTest#testGetAccessibilityServiceList"/>
     <!-- CtsAccountManagerTestCases -->
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testFinishSessionAndStartUpdateCredentialsSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testIsCredentialsUpdateSuggestedDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testStartAddAccountSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AbstractAuthenticatorTests#testStartUpdateCredentialsSessionDefaultImpl"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAccountRenameAndGetPreviousName"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccount"/>
-    <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountExplicitlyAndRemoveAccountExplicitly"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountExplicitlyAndRemoveAccountWithDefaultImpl"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountWithCallbackAndHandler"/>
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases android.accounts.cts.AccountManagerTest#testAddAccountWithNoAuthenticator"/>
@@ -1455,10 +1448,10 @@
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testGetHdrConversionModeSetting"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testGetSupportedHdrOutputTypes"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionDisabledTest#testSetHdrConversionMode"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionEnabledTest#testGetSupportedHdrOutputTypes"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionEnabledTest#testGetSupportedHdrOutputTypesWithAppOverride"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionEnabledTest#testSetHdrConversionMode"/>
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrConversionEnabledTest#testSetHdrConversionModeThrowsExceptionWithInvalidArgument"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testGetSupportedHdrOutputTypes"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testGetSupportedHdrOutputTypesWithAppOverride"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testSetHdrConversionMode"/>
+    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.HdrSettingsTest#testSetHdrConversionModeThrowsExceptionWithInvalidArgument"/>
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.VirtualDisplayTest#testVirtualDisplayWithRequestedRefreshRate"/>
     <!-- CtsDomainVerificationDeviceMultiUserTestCases -->
     <option name="compatibility:include-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileAllowParentLinkingTests#inPersonal_unverified"/>
@@ -1868,7 +1861,6 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testInvalidAudioFocusRequestDelayNoListener"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testInvalidAudioFocusRequestPauseOnDuckNoListener"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioFocusTest#testNullListenerHandlerNpe"/>
-    <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testAdjustUnmuteNotificationInVibrate"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testAdjustVolumeInTotalSilenceMode"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testStreamTypeAliasChange"/>
@@ -2848,7 +2840,6 @@
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest#testDestroy_doubleCallsAreNoop"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_destroySoftwareDetector_activeDetectorRemoved"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_getMaxCustomInitializationStatus"/>
-    <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDspSecurityException_onFailure"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDspTimeout_triggerOnFailure"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDsp_rejection"/>
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.HotwordDetectionServiceBasicTest#testHotwordDetectionService_onDetectFromDsp_success"/>

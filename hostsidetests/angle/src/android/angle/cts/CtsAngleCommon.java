@@ -58,7 +58,7 @@ class CtsAngleCommon {
     static final String ANGLE_DUMPSYS_GPU_TEST_CLASS = "AngleDumpsysGpuTestActivity";
     static final String ANGLE_DUMPSYS_GPU_TEST_APP = "CtsAngleDumpsysGpuTestApp.apk";
 
-    static final String ANGLE_DRIVER_TEST_CLASS = "AngleDriverTestActivity";
+    static final String ANGLE_DRIVER_TEST_CLASS = "AngleDriverTest";
     static final String ANGLE_DRIVER_TEST_DEFAULT_METHOD = "testUseDefaultDriver";
     static final String ANGLE_DRIVER_TEST_ANGLE_METHOD = "testUseAngleDriver";
     static final String ANGLE_DRIVER_TEST_NATIVE_METHOD = "testUseNativeDriver";
@@ -66,7 +66,7 @@ class CtsAngleCommon {
     static final String ANGLE_NATIVE_DRIVER_CHECK_PKG =
             "com.android.angleintegrationtest.nativedrivercheck";
     static final String ANGLE_NATIVE_DRIVER_CHECK_APP = "CtsAngleNativeDriverCheck.apk";
-    static final String ANGLE_NATIVE_DRIVER_CHECK_CLASS = "NativeDriverCheckActivity";
+    static final String ANGLE_NATIVE_DRIVER_CHECK_CLASS = "NativeDriverCheckTest";
     static final String ANGLE_NATIVE_DRIVER_CHECK_METHOD = "checkNativeDriver";
     static final String NATIVE_GL_RENDERER = "NATIVE_GL_RENDERER";
     static final TestDescription NATIVE_DRIVER_CHECK_TEST_DESCRIPTION =

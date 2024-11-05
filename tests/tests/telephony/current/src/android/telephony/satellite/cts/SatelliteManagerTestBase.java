@@ -134,6 +134,13 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because FEATURE_TELEPHONY is not available");
             return false;
         }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            // Satellite test against mock service should pass on satellite-less devices, but it's
+            // still too flaky.
+            logd("Skipping tests because FEATURE_TELEPHONY_SATELLITE is not available");
+            return false;
+        }
         try {
             getContext().getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
@@ -156,6 +163,12 @@ public class SatelliteManagerTestBase {
     protected static void revokeSatellitePermission() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    protected static void grantSatelliteAndReadBasicPhoneStatePermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.READ_BASIC_PHONE_STATE);
     }
 
     protected static class SatelliteTransmissionUpdateCallbackTest implements
@@ -845,6 +858,10 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
     }
 
     protected static class SatelliteModeRadiosUpdater extends ContentObserver implements
@@ -984,12 +1001,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
+                        logd("isSatelliteProvisioned: result=" + result);
                         provisioned.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("isSatelliteProvisioned: onError, exception=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -1007,6 +1026,7 @@ public class SatelliteManagerTestBase {
         Integer error = errorCode.get();
         Boolean isProvisioned = provisioned.get();
         if (error == null) {
+            logd("isSatelliteProvisioned isProvisioned=" + isProvisioned);
             assertNotNull(isProvisioned);
             return isProvisioned;
         } else {
@@ -1623,7 +1643,7 @@ public class SatelliteManagerTestBase {
     }
 
     // Get default active subscription ID.
-    protected int getActiveSubIDForCarrierSatelliteTest() {
+    protected static int getActiveSubIDForCarrierSatelliteTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
@@ -1649,6 +1669,24 @@ public class SatelliteManagerTestBase {
         loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    protected static int getNtnOnlySubscriptionId() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+
+        int subId = infoList.stream()
+                .filter(info -> info.isOnlyNonTerrestrialNetwork())
+                .mapToInt(SubscriptionInfo::getSubscriptionId)
+                .findFirst()
+                .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID && !infoList.isEmpty()) {
+            subId = infoList.get(0).getSubscriptionId();
+        }
+        logd("getNtnOnlySubscriptionId: subId=" + subId);
+        return subId;
     }
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
@@ -1759,7 +1797,7 @@ public class SatelliteManagerTestBase {
     }
 
     @NonNull
-    protected PersistableBundle getConfigForSubId(Context context, int subId, String key) {
+    protected static PersistableBundle getConfigForSubId(Context context, int subId, String key) {
         PersistableBundle config = null;
         CarrierConfigManager carrierConfigManager = context.getSystemService(
                 CarrierConfigManager.class);

@@ -268,6 +268,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
 
                 # determine radius tolerance of capture
                 cap_fl = cap['metadata']['android.lens.focalLength']
+                result_zoom = float(
+                    cap['metadata']['android.control.zoomRatio'])
                 radius_tol, offset_tol = test_tols.get(
                     cap_fl,
                     (zoom_capture_utils.RADIUS_RTOL,
@@ -298,7 +300,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
 
                 test_data.append(
                     zoom_capture_utils.ZoomTestData(
-                        result_zoom=z,
+                        result_zoom=result_zoom,
                         radius_tol=radius_tol,
                         offset_tol=offset_tol,
                         focal_length=cap_fl
@@ -314,7 +316,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               if not zoom_capture_utils.verify_zoom_results(
                   test_data, size, z_max, z_min):
                 failure_msg = (
-                    f'{combination_name}: failed!'
+                    f'{combination_name}: failed! '
                     'Check test_log.DEBUG for errors')
                 test_failures.append(failure_msg)
 

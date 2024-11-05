@@ -18,6 +18,7 @@ package android.net.wifi.p2p.cts;
 
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP;
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
+import static android.net.wifi.p2p.WifiP2pConfig.PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_PERSISTENT;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_TEMPORARY;
 
@@ -34,6 +35,7 @@ import android.test.AndroidTestCase;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
 import java.util.Arrays;
@@ -169,6 +171,20 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 .build();
         config.setVendorData(vendorData);
         assertTrue(vendorData.equals(config.getVendorData()));
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#getPccModeConnectionType"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigBuilderWithPccModeConnectionType() {
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setNetworkName(TEST_NETWORK_NAME)
+                .setPassphrase(TEST_PASSPHRASE)
+                .setGroupOperatingFrequency(TEST_OWNER_FREQ)
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setPccModeConnectionType(PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2)
+                .build();
+        assertEquals(PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2, config.getPccModeConnectionType());
     }
 
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,

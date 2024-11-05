@@ -32,6 +32,8 @@ import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_INSTALLED_HIDDEN;
 import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_INSTALLED_VISIBLE;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -99,7 +101,7 @@ public class CrossUserPackageVisibilityTests {
         final UserReference primaryUser = sDeviceState.primaryUser();
         if (primaryUser.id() == mContext.getUserId()) {
             mCurrentUser = primaryUser;
-            mOtherUser = sDeviceState.secondaryUser();
+            mOtherUser = secondaryUser(sDeviceState);
         } else {
             mCurrentUser = UserReference.of(mContext.getUser());
             mOtherUser = primaryUser;

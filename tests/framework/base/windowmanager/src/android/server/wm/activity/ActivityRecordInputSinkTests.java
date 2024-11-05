@@ -24,24 +24,14 @@ import static android.server.wm.overlay.Components.TranslucentFloatingActivity.E
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ActivityOptions;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.graphics.Rect;
-import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.server.wm.ActivityManagerTestBase;
-import android.server.wm.WindowManagerState;
 import android.server.wm.overlay.Components;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -49,68 +39,44 @@ import org.junit.Test;
  * atest CtsWindowManagerDeviceActivity:ActivityRecordInputSinkTests
  */
 @Presubmit
-public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
+public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBase {
 
     private static final String APP_SELF = "android.server.wm.cts";
-    private static final String APP_A =
-            android.server.wm.second.Components.class.getPackage().getName();
 
-    private static final ComponentName TEST_ACTIVITY =
-            new ComponentName(APP_SELF, "android.server.wm.activity.ActivityRecordInputSinkTestsActivity");
-
-    private static final ComponentName OVERLAY_IN_SAME_UID =
-            Components.TranslucentFloatingActivity.getComponent(APP_SELF);
-    private static final ComponentName OVERLAY_IN_DIFFERENT_UID =
-            Components.TranslucentFloatingActivity.getComponent(APP_A);
-    private static final ComponentName TRAMPOLINE_DIFFERENT_UID =
-            Components.TrampolineActivity.getComponent(APP_A);
-
-    private int mTouchCount;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        ActivityRecordInputSinkTestsActivity.sButtonClickCount.set(0);
-    }
-
-    @After
-    public void tearDown() {
-        stopTestPackage(APP_A);
-        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
+    @Override
+    @NonNull
+    String getAppSelf() {
+        return APP_SELF;
     }
 
     @Test
     public void testOverlappingActivityInNewTask_BlocksTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
-        launchActivityInNewTask(OVERLAY_IN_SAME_UID);
-        mWmState.waitAndAssertActivityState(OVERLAY_IN_SAME_UID, STATE_RESUMED);
+        launchActivityInNewTask(mOverlayInSameUid);
+        mWmState.waitAndAssertActivityState(mOverlayInSameUid, STATE_RESUMED);
         touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
 
         mContext.sendBroadcast(new Intent(Components.TranslucentFloatingActivity.ACTION_FINISH));
-        mWmState.waitAndAssertActivityRemoved(OVERLAY_IN_SAME_UID);
+        mWmState.waitAndAssertActivityRemoved(mOverlayInSameUid);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
     @Test
     public void testOverlappingActivityInSameTaskSameUid_DoesNotBlocksTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
-        launchActivityInSameTask(OVERLAY_IN_SAME_UID);
-        mWmState.waitAndAssertActivityState(OVERLAY_IN_SAME_UID, STATE_RESUMED);
+        launchActivityInSameTask(mOverlayInSameUid);
+        mWmState.waitAndAssertActivityState(mOverlayInSameUid, STATE_RESUMED);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
     @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskDifferentUid_DoesNotBlocksTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         launchActivityInSameTask(OVERLAY_IN_DIFFERENT_UID);
@@ -122,7 +88,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskDifferentUidNoOptIn_BlocksTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         launchActivityInSameTask(OVERLAY_IN_DIFFERENT_UID);
@@ -134,7 +100,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskDifferentUidOptIn_AllowsTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         final ActivityOptions options = ActivityOptions.makeBasic();
@@ -148,7 +114,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskTrampolineDifferentUid_DoesNotBlockTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         launchActivityInSameTask(TRAMPOLINE_DIFFERENT_UID,
@@ -161,7 +127,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskTrampolineDifferentUidNoOptIn_BlocksTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         launchActivityInSameTask(TRAMPOLINE_DIFFERENT_UID,
@@ -174,7 +140,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskTrampolineDifferentUidOptIn_AllowsTouches() {
-        launchActivity(TEST_ACTIVITY);
+        launchActivity(mTestActivity);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
 
         final ActivityOptions options = ActivityOptions.makeBasic();
@@ -192,11 +158,11 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setComponent(TRAMPOLINE_DIFFERENT_UID);
-        intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(TEST_ACTIVITY,
+        intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(mTestActivity,
                 OVERLAY_IN_DIFFERENT_UID));
         mContext.startActivity(intent);
 
-        mWmState.waitAndAssertActivityState(TEST_ACTIVITY, STATE_PAUSED);
+        mWmState.waitAndAssertActivityState(mTestActivity, STATE_PAUSED);
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
         touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
 
@@ -210,11 +176,11 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setComponent(TRAMPOLINE_DIFFERENT_UID);
-        intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(TEST_ACTIVITY,
+        intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(mTestActivity,
                 OVERLAY_IN_DIFFERENT_UID));
         mContext.startActivity(intent);
 
-        mWmState.waitAndAssertActivityState(TEST_ACTIVITY, STATE_PAUSED);
+        mWmState.waitAndAssertActivityState(mTestActivity, STATE_PAUSED);
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
         touchButtonsAndAssert(false);
 
@@ -223,48 +189,4 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         assertThat(mWmState.waitForAppTransitionRunningOnDisplay(displayId)).isTrue();
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/, false /*waitForAnimation*/);
     }
-
-    private void launchActivityInSameTask(ComponentName componentName) {
-        launchActivityInSameTask(componentName,  /* extras */ null);
-    }
-
-    private void launchActivityInSameTask(ComponentName componentName, @Nullable Bundle extras) {
-        launchActivityInSameTask(componentName, extras, /* options */ null);
-    }
-
-    private void launchActivityInSameTask(
-            ComponentName componentName, @Nullable Bundle extras, @Nullable Bundle options) {
-        Intent intent = new Intent(ActivityRecordInputSinkTestsActivity.LAUNCH_ACTIVITY_ACTION);
-        intent.setPackage(APP_SELF);
-        intent.putExtra(ActivityRecordInputSinkTestsActivity.COMPONENT_EXTRA, componentName);
-        intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_EXTRA, extras);
-        intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_OPTIONS, options);
-        mContext.sendBroadcast(intent);
-    }
-
-
-    private void touchButtonsAndAssert(boolean expectTouchesToReachActivity) {
-        touchButtonsAndAssert(expectTouchesToReachActivity, true /* waitForAnimation */);
-    }
-
-    private void touchButtonsAndAssert(
-            boolean expectTouchesToReachActivity, boolean waitForAnimation) {
-        WindowManagerState.Activity activity = mWmState.getActivity(TEST_ACTIVITY);
-        int displayId = activity.getTask().mDisplayId;
-        Rect bounds = activity.getBounds();
-        bounds.offset(0, -bounds.height() / 3);
-        mTouchHelper.tapOnCenter(bounds, displayId, waitForAnimation);
-        mTouchCount += (expectTouchesToReachActivity ? 1 : 0);
-        mInstrumentation.waitForIdleSync();
-        assertThat(ActivityRecordInputSinkTestsActivity.sButtonClickCount.get())
-                .isEqualTo(mTouchCount);
-
-        bounds.offset(0, 2 * bounds.height() / 3);
-        mTouchHelper.tapOnCenter(bounds, displayId, waitForAnimation);
-        mTouchCount += (expectTouchesToReachActivity ? 1 : 0);
-        mInstrumentation.waitForIdleSync();
-        assertThat(ActivityRecordInputSinkTestsActivity.sButtonClickCount.get())
-                .isEqualTo(mTouchCount);
-    }
-
 }

@@ -16,8 +16,6 @@
 
 package android.virtualdevice.cts.common;
 
-import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
-import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
@@ -77,23 +75,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * A test rule that allows for testing VDM and virtual device features.
  */
 @TargetApi(34)
 public class VirtualDeviceRule implements TestRule {
-
-    /** General permissions needed for created virtual devices and displays. */
-    private static final String[] REQUIRED_PERMISSIONS = new String[] {
-            CREATE_VIRTUAL_DEVICE,
-            ADD_TRUSTED_DISPLAY
-    };
 
     public static final VirtualDeviceParams DEFAULT_VIRTUAL_DEVICE_PARAMS =
             new VirtualDeviceParams.Builder().build();
@@ -115,23 +105,23 @@ public class VirtualDeviceRule implements TestRule {
             mContext.getSystemService(VirtualDeviceManager.class);
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
+    /** A default virtual device for tests that only use the rule to access VDM functionality. */
+    private VirtualDevice mDefaultVirtualDevice = null;
+
     /** Creates a rule with the required permissions for creating virtual devices and displays. */
     public static VirtualDeviceRule createDefault() {
-        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
-                REQUIRED_PERMISSIONS);
+        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING);
     }
 
     /** Creates a rule with an explicit device profile. */
     public static VirtualDeviceRule withDeviceProfile(String deviceProfile) {
-        return new VirtualDeviceRule(deviceProfile, REQUIRED_PERMISSIONS);
+        return new VirtualDeviceRule(deviceProfile);
     }
 
     /** Creates a rule with any additional permission needed for the specific test. */
     public static VirtualDeviceRule withAdditionalPermissions(String... additionalPermissions) {
         return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
-                Stream.concat(Arrays.stream(REQUIRED_PERMISSIONS),
-                                Arrays.stream(additionalPermissions))
-                        .toArray(String[]::new));
+                additionalPermissions);
     }
 
     private VirtualDeviceRule(String deviceProfile, String... permissions) {
@@ -154,6 +144,16 @@ public class VirtualDeviceRule implements TestRule {
     public Statement apply(final Statement base, final Description description) {
         assumeNotNull(mVirtualDeviceManager);
         return mRuleChain.apply(base, description);
+    }
+
+    /**
+     * Returns a default virtual device.
+     */
+    public VirtualDevice getDefaultVirtualDevice() {
+        if (mDefaultVirtualDevice == null) {
+            mDefaultVirtualDevice = createManagedVirtualDevice();
+        }
+        return mDefaultVirtualDevice;
     }
 
     /**

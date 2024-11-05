@@ -22,7 +22,9 @@ import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECT
 import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECTIONLESS_HANDWRITING_ERROR_UNSUPPORTED;
 import static android.view.inputmethod.Flags.FLAG_CONNECTIONLESS_HANDWRITING;
 import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
-import static android.view.inputmethod.Flags.initiationWithoutInputConnection;
+import static android.view.inputmethod.Flags.FLAG_INITIATION_WITHOUT_INPUT_CONNECTION;
+import static android.view.inputmethod.Flags.FLAG_REFACTOR_INSETS_CONTROLLER;
+import static android.view.inputmethod.Flags.FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE;
 import static android.view.inputmethod.InputMethodInfo.ACTION_STYLUS_HANDWRITING_SETTINGS;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
@@ -78,7 +80,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.ConnectionlessHandwritingCallback;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -152,8 +153,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
     private static final GestureNavSwitchHelper sGestureNavRule = new GestureNavSwitchHelper();
 
+    private final DeviceFlagsValueProvider mFlagsValueProvider = new DeviceFlagsValueProvider();
+
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
 
     @Before
     public void setup() {
@@ -1450,16 +1453,20 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             y = unfocusedEditText.getHeight() / 2;
             stylusPointer = TestUtils.injectStylusDownEvent(stylus, unfocusedEditText, x,  y);
             TestUtils.injectStylusUpEvent(stylusPointer);
-            if (Flags.useHandwritingListenerForTooltype()) {
+            if (mFlagsValueProvider.getBoolean(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)) {
                 expectEvent(stream, startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
                         TIMEOUT);
             } else {
                 expectEvent(stream, onStartInputMatcher(toolType, unfocusedMarker), TIMEOUT);
             }
-            expectEvent(
-                    stream,
-                    onUpdateEditorToolTypeMatcher(toolType),
-                    TIMEOUT);
+            if (!mFlagsValueProvider.getBoolean(FLAG_REFACTOR_INSETS_CONTROLLER)) {
+                // With the flag enabled, we won't call showSoftInput when the
+                // requestedVisibleTypes are not changed.
+                expectEvent(
+                        stream,
+                        onUpdateEditorToolTypeMatcher(toolType),
+                        TIMEOUT);
+            }
         } finally {
             if (stylus != null) {
                 stylus.close();
@@ -1633,10 +1640,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * Inject KeyEvent and Stylus tap verify toolType is detected with
      * {@link InputMethodService#onUpdateEditorToolType(int)} lifecycle method.
      */
+    @RequiresFlagsEnabled(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)
     @Test
     public void testOnViewClicked_withKeyEvent() throws Exception {
-        assumeTrue("skipping test when flag useHandwritingListenerForTooltype is disabled",
-                Flags.useHandwritingListenerForTooltype());
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(), instrumentation.getUiAutomation(),
@@ -2026,9 +2032,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * Tap on a view with stylus to launch a new activity with Editor. The editor's
      * editor ToolType should match stylus.
      */
+    @RequiresFlagsEnabled(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)
     @Test
     public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
-        assumeTrue(Flags.useHandwritingListenerForTooltype());
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         UinputTouchDevice stylus = null;
         int displayId = 0;
@@ -2174,7 +2180,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         NOT_EXPECT_TIMEOUT);
 
                 if (setAllowedDelegatorPackage) {
-                    if (initiationWithoutInputConnection()) {
+                    if (mFlagsValueProvider.getBoolean(FLAG_INITIATION_WITHOUT_INPUT_CONNECTION)) {
                         // There will be no active InputConnection when handwriting starts
                         expectEvent(
                                 stream,
@@ -2187,7 +2193,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     }
                     verifyStylusHandwritingWindowIsShown(stream, imeSession);
                 } else {
-                    if (initiationWithoutInputConnection()) {
+                    if (mFlagsValueProvider.getBoolean(FLAG_INITIATION_WITHOUT_INPUT_CONNECTION)) {
                         // There will be no active InputConnection if handwriting starts
                         notExpectEvent(
                                 stream,
@@ -2297,7 +2303,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         stream, editorMatcher("onStartInputView", editTextMarker),
                         NOT_EXPECT_TIMEOUT);
                 if (setHomeDelegatorAllowed) {
-                    if (initiationWithoutInputConnection()) {
+                    if (mFlagsValueProvider.getBoolean(FLAG_INITIATION_WITHOUT_INPUT_CONNECTION)) {
                         // There will be no active InputConnection when handwriting starts.
                         expectEvent(
                                 stream,
@@ -2310,7 +2316,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     }
                     verifyStylusHandwritingWindowIsShown(stream, imeSession);
                 } else {
-                    if (initiationWithoutInputConnection()) {
+                    if (mFlagsValueProvider.getBoolean(FLAG_INITIATION_WITHOUT_INPUT_CONNECTION)) {
                         // There will be no active InputConnection if handwriting starts.
                         notExpectEvent(
                                 stream,

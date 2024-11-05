@@ -28,7 +28,6 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.FlakyTest
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -81,17 +80,6 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
                 )
             )
         )
-    }
-
-    @Test
-    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val x = 30f
-        val y = 30f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN)
-            }
-        }
     }
 
     @Test

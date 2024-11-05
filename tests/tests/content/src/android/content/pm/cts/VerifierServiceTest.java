@@ -17,19 +17,38 @@
 package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_VERIFICATION_SERVICE;
+import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL_CLOSED;
+import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL_OPEN;
+import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_BLOCK_FAIL_WARN;
+import static android.content.pm.PackageInstaller.VERIFICATION_POLICY_NONE;
+import static android.content.pm.verify.pkg.VerificationSession.VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
+import static org.testng.Assert.expectThrows;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IIntentReceiver;
+import android.content.IIntentSender;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
+import android.content.pm.SharedLibraryInfo;
+import android.content.pm.SigningInfo;
+import android.content.pm.verify.pkg.VerificationSession;
+import android.content.pm.verify.pkg.VerificationStatus;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -48,12 +67,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 @AppModeNonSdkSandbox
+@RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
 public class VerifierServiceTest {
     private static final String VERIFIER_APP_PACKAGE_NAME = "com.android.cts.testverifierapp";
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
@@ -63,12 +91,22 @@ public class VerifierServiceTest {
             SAMPLE_APK_BASE + "CtsTestVerifierAppCrash.apk";
     private static final String VERIFIER_APP_REJECT_APK_PATH =
             SAMPLE_APK_BASE + "CtsTestVerifierAppReject.apk";
+    private static final String VERIFIER_APP_REJECT_WITH_POLICY_OVERRIDE_APK_PATH =
+            SAMPLE_APK_BASE + "CtsTestVerifierAppRejectWithPolicyOverride.apk";
     private static final String VERIFIER_APP_TIMEOUT_APK_PATH =
             SAMPLE_APK_BASE + "CtsTestVerifierAppTimeout.apk";
     private static final String VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH =
             SAMPLE_APK_BASE + "CtsTestVerifierAppIncompleteUnknown.apk";
+    private static final String VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH =
+            SAMPLE_APK_BASE + "CtsTestVerifierAppIncompleteNetworkUnavailable.apk";
     private static final String EMPTY_APP_APK = SAMPLE_APK_BASE
             + "CtsContentEmptyTestApp.apk";
+    private static final String EMPTY_APP_APK_DECLARING_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringLibrary.apk";
+    private static final String EMPTY_APP_APK_DECLARING_SDK_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringSdkLibrary.apk";
+    private static final String EMPTY_APP_APK_DECLARING_STATIC_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringStaticLibrary.apk";
     private static final String EMPTY_APP_PACKAGE_NAME = "android.content.cts.emptytestapp";
     private static final String ACTION_SERVICE_CONNECTED =
             "android.content.pm.cts.verify.SERVICE_CONNECTED";
@@ -82,17 +120,27 @@ public class VerifierServiceTest {
     private static final String NAMESPACE_PACKAGE_MANAGER_SERVICE = "package_manager_service";
     private static final String PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS =
             "verification_request_timeout_millis";
+    private static final String PROPERTY_VERIFIER_CONNECTION_TIMEOUT_MILLIS =
+            "verifier_connection_timeout_millis";
+    static final String EXTRA_VERIFICATION_SESSION = "android.content.pm.cts.verify.session";
+
+
     private static final long DEFAULT_TIMEOUT_MS = isLowRamDevice()
             ? TimeUnit.SECONDS.toMillis(60) : TimeUnit.SECONDS.toMillis(15);
     private final ConditionVariable mServiceConnectedLatch = new ConditionVariable();
-    private final ConditionVariable mVerificationRequiredLatch = new ConditionVariable();
+    private CompletableFuture<VerificationSession> mVerificationSession;
     private CompletableFuture<String> mNameAvailableLatch;
     private CompletableFuture<String> mVerificationCancelledLatch;
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final PackageInstaller mPackageInstaller =
+            mContext.getPackageManager().getPackageInstaller();
 
     private final TestVerifierBroadcastReceiver mBroadcastReceiver =
             new TestVerifierBroadcastReceiver();
+    private @PackageInstaller.VerificationPolicy int mDefaultPolicy;
+    private String mRequestTimeoutMillis;
+    private String mConnectionTimeoutMillis;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -106,15 +154,28 @@ public class VerifierServiceTest {
         // First install the test verifier and so that it can be selected as the default verifier
         // service
         // TODO: disable the previously connected verifier in the system
-        installPackage(VERIFIER_APP_APK_PATH);
+        installPackageWithAdb(VERIFIER_APP_APK_PATH);
 
         // Register to listen for the broadcasts from the test verifier service
         final IntentFilter intentFilter = getIntentFilter();
         mContext.registerReceiver(mBroadcastReceiver, intentFilter, Context.RECEIVER_EXPORTED);
 
+        // Remember the global default policy and restore it later. Some tests might change it.
+        mDefaultPolicy = getDefaultVerificationPolicy();
+        // Remember the timeout values and restore them later.
+        mRequestTimeoutMillis =
+                getTimeoutValueFromDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS);
+        mConnectionTimeoutMillis =
+                getTimeoutValueFromDeviceConfig(PROPERTY_VERIFIER_CONNECTION_TIMEOUT_MILLIS);
+        // Change the timeouts to shorter durations to reduce the test runtime.
+        setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
+                String.valueOf(2000)); // Wait for 2 seconds before a request times out
+        setTimeoutValueInDeviceConfig(PROPERTY_VERIFIER_CONNECTION_TIMEOUT_MILLIS,
+                String.valueOf(1000)); // Wait for 1 second for the connection to establish
+
         // Reset the latches
         mServiceConnectedLatch.close();
-        mVerificationRequiredLatch.close();
+        mVerificationSession = new CompletableFuture<>();
         mNameAvailableLatch = new CompletableFuture<>();
         mVerificationCancelledLatch = new CompletableFuture<>();
     }
@@ -137,114 +198,467 @@ public class VerifierServiceTest {
         } catch (IllegalArgumentException e) {
             // ignored
         }
+        setDefaultVerificationPolicy(mDefaultPolicy);
+        setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
+                mRequestTimeoutMillis);
+        setTimeoutValueInDeviceConfig(PROPERTY_VERIFIER_CONNECTION_TIMEOUT_MILLIS,
+                mConnectionTimeoutMillis);
+    }
+
+    private int getDefaultVerificationPolicy() {
+        String policyStr = SystemUtil.runShellCommand("pm get-verification-policy --user "
+                + ActivityManager.getCurrentUser()).trim();
+        return Integer.parseInt(policyStr);
+    }
+
+    private void setDefaultVerificationPolicy(
+            @PackageInstaller.VerificationPolicy int policy) {
+        SystemUtil.runShellCommand("pm set-verification-policy " + policy + " --user "
+                + ActivityManager.getCurrentUser());
+        assertThat(getDefaultVerificationPolicy()).isEqualTo(policy);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
     public void testInstallSuccess() throws Exception {
-        installPackageWithPackageName(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
         assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
         assertThat(mNameAvailableLatch.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(
                 EMPTY_APP_PACKAGE_NAME);
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertThat(session.getId()).isGreaterThan(0);
+        assertThat(session.getPackageName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(session.getInstallSessionId()).isGreaterThan(0);
+        assertThat(session.getStagedPackageUri().getScheme()).isEqualTo("file");
+        assertThat(session.getStagedPackageUri().toString()).contains("vmdl");
+        SigningInfo sessionSigningInfo = session.getSigningInfo();
+        assertThat(sessionSigningInfo).isNotNull();
+        final PackageInfo packageInfoExpected = mContext.getPackageManager().getPackageInfo(
+                EMPTY_APP_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES);
+        assertThat(packageInfoExpected).isNotNull();
+        final SigningInfo expectedSigningInfo = packageInfoExpected.signingInfo;
+        assertThat(expectedSigningInfo.getApkContentsSigners()).isEqualTo(
+                sessionSigningInfo.getApkContentsSigners());
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testInstallSuccessWithDynamicLib() throws Exception {
+        assertInstallPackageWithSession(EMPTY_APP_APK_DECLARING_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+        assertThat(libs).hasSize(1);
+        SharedLibraryInfo lib = libs.get(0);
+        assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_DYNAMIC);
+    }
+
+    @Test
+    public void testInstallSuccessWithSdkLib() throws Exception {
+        assertInstallPackageWithSession(
+                EMPTY_APP_APK_DECLARING_SDK_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+        assertThat(libs).hasSize(1);
+        SharedLibraryInfo lib = libs.get(0);
+        assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_SDK_PACKAGE);
+        assertThat(lib.getLongVersion()).isEqualTo(1);
+    }
+
+    @Test
+    public void testInstallSuccessWithStaticLib() throws Exception {
+        assertInstallPackageWithSession(
+                EMPTY_APP_APK_DECLARING_STATIC_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        try {
+            VerificationSession session =
+                    mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+            assertThat(libs).hasSize(1);
+            SharedLibraryInfo lib = libs.get(0);
+            assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+            assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_STATIC);
+            assertThat(lib.getLongVersion()).isEqualTo(1);
+        } finally {
+            // The package name of the static library has the version number as a suffix
+            uninstallPackage(EMPTY_APP_PACKAGE_NAME + "_1");
+        }
+    }
+
+    @Test
     public void testSessionAbandon() throws Exception {
-        PackageInstaller pi = mContext.getPackageManager().getPackageInstaller();
         PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL);
         params.setAppPackageName(EMPTY_APP_PACKAGE_NAME);
-        final int sessionId = pi.createSession(params);
+        final int sessionId = mPackageInstaller.createSession(params);
         assertThat(sessionId).isGreaterThan(0);
         assertThat(mNameAvailableLatch.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(
                 EMPTY_APP_PACKAGE_NAME);
-        pi.abandonSession(sessionId);
+        mPackageInstaller.abandonSession(sessionId);
         assertThat(mVerificationCancelledLatch.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
                 .isEqualTo(EMPTY_APP_PACKAGE_NAME);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
-    public void testVerifierCrash() throws Exception {
+    public void testVerifierCrashWithPolicyNone() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the crash version of the verifier
-        uninstallPackage(VERIFIER_APP_PACKAGE_NAME);
-        installPackage(VERIFIER_APP_CRASH_APK_PATH);
-        // Install a test app and expecting the install to fail
-        installPackageExpectingError(EMPTY_APP_APK,
-                "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
-                        + " A verifier agent is available on device but cannot be connected.]");
+        installPackageWithAdb(VERIFIER_APP_CRASH_APK_PATH);
+        // Install a test app and expecting the install to pass
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
-    public void testVerifierReject() throws Exception {
+    public void testVerifierCrashWithPolicyOpen() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierCrashWithPolicyWarning() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierCrashWithPolicyClosed() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        // Install the crash version of the verifier
+        installPackageWithAdb(VERIFIER_APP_CRASH_APK_PATH);
+        // Install a test app and expecting the install to fail
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_UNKNOWN),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " A verifier agent is available on device but cannot be connected."));
+    }
+
+    @Test
+    public void testVerifierRejectWithPolicyNone() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the reject version of the verifier
-        uninstallPackage(VERIFIER_APP_PACKAGE_NAME);
-        installPackage(VERIFIER_APP_REJECT_APK_PATH);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        // Install a test app and expecting the install to pass
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+        // Verify the policy received in the session
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .getVerificationPolicy()).isEqualTo(VERIFICATION_POLICY_NONE);
+    }
+
+    @Test
+    public void testVerifierRejectWithPolicyOpen() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
         // Install a test app and expecting the install to fail
-        installPackageExpectingError(EMPTY_APP_APK,
-                "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
-                        + " Verifier rejected the installation with message: " + REJECT_MESSAGE);
-        assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_PACKAGE_BLOCKED),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verifier rejected the installation with message: " + REJECT_MESSAGE));
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .getVerificationPolicy()).isEqualTo(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
-    public void testVerifierTimeout() throws Exception {
-        final String existingTimeoutValueInDeviceConfig =
-                getTimeoutValueFromDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS);
-        try {
-            // Install the timeout version of the verifier
-            uninstallPackage(VERIFIER_APP_PACKAGE_NAME);
-            installPackage(VERIFIER_APP_TIMEOUT_APK_PATH);
-            // Reduce the default timeout duration to reduce test run time
-            setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
-                    String.valueOf(2000)); // The system will wait for 2 seconds
-            // Install a test app and expecting the install to fail
-            installPackageExpectingError(EMPTY_APP_APK,
-                    "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
-                            + " Verification timed out;"
-                            + " missing a response from the verifier within the time limit");
-            assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-            assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-        } finally {
-            setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
-                    existingTimeoutValueInDeviceConfig);
-        }
+    public void testVerifierRejectWithPolicyWarning() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_PACKAGE_BLOCKED),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verifier rejected the installation with message: " + REJECT_MESSAGE));
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .getVerificationPolicy()).isEqualTo(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
-    public void testVerifierIncompleteUnknown() throws Exception {
+    public void testVerifierRejectPolicyClosed() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_PACKAGE_BLOCKED),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verifier rejected the installation with message: " + REJECT_MESSAGE));
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .getVerificationPolicy()).isEqualTo(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+    }
+
+    @Test
+    public void testVerifierTimeoutPolicyNone() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
+        installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierTimeoutPolicyOpen() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
+        installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierTimeoutPolicyWarning() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
+        installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierTimeoutPolicyClosed() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_TIMEOUT_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_UNKNOWN),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verification timed out;"
+                        + " missing a response from the verifier within the time limit"));
+    }
+
+    @Test
+    public void testVerifierIncompleteUnknownPolicyNone() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
         // Install the incomplete-unknown version of the verifier
-        uninstallPackage(VERIFIER_APP_PACKAGE_NAME);
-        installPackage(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
-        // Install a test app and expecting the install to fail
-        installPackageExpectingError(EMPTY_APP_APK,
-                "Failure [INSTALL_FAILED_INTERNAL_ERROR:"
-                        + " Verification cannot be completed for unknown reasons.");
-        assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
+        // Install a test app and expecting the install to pass
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
     }
 
-    private void installPackage(String apkPath) {
+    @Test
+    public void testVerifierIncompleteUnknownPolicyOpen() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierIncompleteUnknownPolicyWarning() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierIncompleteUnknownPolicyClosed() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_UNKNOWN_APK_PATH);
+        // Install a test app and expecting the install to fail
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_UNKNOWN),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verification cannot be completed because of unknown reasons."));
+    }
+
+    @Test
+    public void testVerifierIncompleteNetworkUnavailablePolicyNone() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_NONE);
+        // Install the incomplete-unknown version of the verifier
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
+        // Install a test app and expecting the install to pass
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierIncompleteNetworkUnavailablePolicyOpen() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_OPEN);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierIncompleteNetworkUnavailablePolicyWarning() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_WARN);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerifierIncompleteNetworkUnavailablePolicyClosed() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_INCOMPLETE_NETWORK_UNAVAILABLE_APK_PATH);
+        // Install a test app and expecting the install to fail
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME,
+                Optional.of(PackageInstaller.STATUS_FAILURE_ABORTED),
+                Optional.of(PackageInstaller.VERIFICATION_FAILED_REASON_NETWORK_UNAVAILABLE),
+                Optional.of("INSTALL_FAILED_VERIFICATION_FAILURE:"
+                        + " Verification cannot be completed because of unavailable network."));
+    }
+
+    @Test
+    public void testSetVerificationPolicyFails() throws Exception {
+        // Test without permission
+        expectThrows(SecurityException.class,
+                () -> mPackageInstaller.setVerificationPolicy(
+                        VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
+        // Test with permission
+        SystemUtil.runWithShellPermissionIdentity(
+                // This throws because the system isn't connected to a verifier
+                () -> expectThrows(IllegalStateException.class,
+                        () -> mPackageInstaller.setVerificationPolicy(
+                                VERIFICATION_POLICY_BLOCK_FAIL_CLOSED)),
+                android.Manifest.permission.VERIFICATION_AGENT
+        );
+        // Let the system connect to a verifier
+        installPackageWithAdb(VERIFIER_APP_APK_PATH);
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+        // Test with permission again
+        SystemUtil.runWithShellPermissionIdentity(
+                // This throws because the caller isn't the verifier
+                () -> expectThrows(IllegalStateException.class,
+                        () -> mPackageInstaller.setVerificationPolicy(
+                                VERIFICATION_POLICY_BLOCK_FAIL_CLOSED)),
+                android.Manifest.permission.VERIFICATION_AGENT
+        );
+        // Setting an invalid policy with shell command should fail
+        int invalidPolicy = 100;
+        assertThat(SystemUtil.runShellCommand("pm set-verification-policy " + invalidPolicy
+                + " --user " + ActivityManager.getCurrentUser())).startsWith("Failure");
+        assertThat(getDefaultVerificationPolicy()).isEqualTo(mDefaultPolicy);
+    }
+
+    @Test
+    public void testVerifierOverridingPolicy() throws Exception {
+        // Set the default policy to closed
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        // Install a verifier that overrides the policy to none but rejects the verification
+        installPackageWithAdb(VERIFIER_APP_REJECT_WITH_POLICY_OVERRIDE_APK_PATH);
+        // Install a test app and expecting the install to pass
+        assertInstallPackageWithSession(EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+    }
+
+    @Test
+    public void testVerificationSessionAPIsThrowsForNonVerifier() throws Exception {
+        assertInstallPackageWithSession(
+                EMPTY_APP_APK, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        expectThrows(IllegalStateException.class,
+                () -> session.extendTimeRemaining(100));
+        expectThrows(IllegalStateException.class,
+                () -> session.setVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED));
+        expectThrows(IllegalStateException.class,
+                () -> session.reportVerificationIncomplete(
+                        VERIFICATION_INCOMPLETE_NETWORK_UNAVAILABLE));
+        VerificationStatus status = new VerificationStatus.Builder().build();
+        expectThrows(IllegalStateException.class,
+                () -> session.reportVerificationComplete(status));
+    }
+
+    @Test
+    public void testAdbInstallBypassesVerifier() {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        installPackageWithAdb(EMPTY_APP_APK);
+    }
+
+    @Test
+    public void testAdbInstallForcesVerifier() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        installPackageWithAdbForceVerification(EMPTY_APP_APK,
+                "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
+                + " Verifier rejected the installation with message: " + REJECT_MESSAGE + "]");
+    }
+
+    @Test
+    public void testUpdateVerifierBypassesVerifier() throws Exception {
+        setDefaultVerificationPolicy(VERIFICATION_POLICY_BLOCK_FAIL_CLOSED);
+        installPackageWithAdb(VERIFIER_APP_REJECT_APK_PATH);
+        assertInstallPackageWithSession(VERIFIER_APP_APK_PATH, VERIFIER_APP_PACKAGE_NAME);
+    }
+
+    // Only used to install the verifier package
+    private void installPackageWithAdb(String apkPath) {
         assertThat(SystemUtil.runShellCommand("pm install " + apkPath)).isEqualTo("Success\n");
     }
 
-    private void installPackageWithPackageName(String apkPath, String packageName) {
-        assertThat(SystemUtil.runShellCommand(
-                "pm install --pkg " + packageName + " " + apkPath)).isEqualTo("Success\n");
-    }
-
-    private void installPackageExpectingError(String apkPath, String err) {
-        assertThat(SystemUtil.runShellCommand("pm install " + apkPath)).contains(err);
+    private void installPackageWithAdbForceVerification(String apkPath, String errMsgExpected) {
+        assertThat(SystemUtil.runShellCommand("pm install --force-verification " + apkPath))
+                .startsWith(errMsgExpected);
     }
 
     private void uninstallPackage(String packageName) {
         SystemUtil.runShellCommand("pm uninstall " + packageName);
+    }
+
+    // Install the test apk with the verifier enabled and assert install success
+    private void assertInstallPackageWithSession(String apkPath, String apkName) throws Exception {
+        assertInstallPackageWithSession(apkPath, apkName, Optional.empty(),
+                Optional.empty(), Optional.empty());
+    }
+
+    // Install the test apk with the verifier enabled and assert install failure with code and msg
+    private void assertInstallPackageWithSession(String apkPath, String apkName,
+            Optional<Integer> statusCodeExpected, Optional<Integer> reasonExpected,
+            Optional<String> errMsgExpected) throws Exception {
+        PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.installFlags |= PackageManager.INSTALL_REPLACE_EXISTING;
+        params.setAppPackageName(apkName);
+        final int sessionId = mPackageInstaller.createSession(params);
+        PackageInstaller.Session session = mPackageInstaller.openSession(sessionId);
+        writeFileToSession(session, apkPath);
+
+        CompletableFuture<Integer> failureReasonReceived = new CompletableFuture<>();
+        CompletableFuture<Integer> statusCode = new CompletableFuture<>();
+        CompletableFuture<String> errMsg = new CompletableFuture<>();
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder allowlistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    failureReasonReceived.complete(intent.getIntExtra(
+                            PackageInstaller.EXTRA_VERIFICATION_FAILURE_REASON,
+                            Integer.MIN_VALUE));
+                    statusCode.complete(intent.getIntExtra(
+                            PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE));
+                    errMsg.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            if (statusCodeExpected.isPresent() && reasonExpected.isPresent()
+                    && errMsgExpected.isPresent()) {
+                // Expecting failure with a reason code
+                assertThat(failureReasonReceived.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isEqualTo(reasonExpected.get());
+                assertThat(statusCode.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isEqualTo(statusCodeExpected.get());
+                assertThat(errMsg.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .contains(errMsgExpected.get());
+            } else {
+                // Expecting success
+                assertThat(errMsg.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isEqualTo("INSTALL_SUCCEEDED: Session installed");
+                assertThat(statusCode.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                        .isEqualTo(PackageInstaller.STATUS_SUCCESS);
+            }
+        }, Manifest.permission.INSTALL_PACKAGES); // Avoid user confirmation dialog
+    }
+
+    private static void writeFullStream(InputStream inputStream, OutputStream outputStream)
+            throws IOException {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, length);
+        }
+    }
+
+    private static void writeFileToSession(PackageInstaller.Session session, String apkPath)
+            throws IOException {
+        final File apkFile = new File(apkPath);
+        try (
+                OutputStream os = session.openWrite("base.apk", 0, apkFile.length());
+                InputStream is = new FileInputStream(apkFile)) {
+            writeFullStream(is, os);
+        }
     }
 
     private class TestVerifierBroadcastReceiver extends BroadcastReceiver {
@@ -263,7 +677,8 @@ public class VerifierServiceTest {
                             intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME));
                     break;
                 case ACTION_REQUEST_RECEIVED:
-                    mVerificationRequiredLatch.open();
+                    mVerificationSession.complete(intent.getParcelableExtra(
+                            EXTRA_VERIFICATION_SESSION, VerificationSession.class));
                     break;
             }
         }
@@ -284,7 +699,7 @@ public class VerifierServiceTest {
         final DeviceConfigStateManager stateManager = new DeviceConfigStateManager(mContext,
                 NAMESPACE_PACKAGE_MANAGER_SERVICE, propertyName);
         String currentValue = stateManager.get();
-        if (currentValue != value) {
+        if (!Objects.equals(currentValue, value)) {
             // Only change the value if the current value is different
             stateManager.set(value);
         }

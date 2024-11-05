@@ -42,6 +42,7 @@ import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DENSITY
 import com.android.cts.input.VirtualDisplayActivityScenario.Companion.TAG
 import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
 import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_FLAG_TRUSTED
 import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_NAME
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
@@ -70,6 +71,9 @@ interface VirtualDisplayActivityScenario<A : Activity> {
 
         /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT].  */
         const val VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 shl 7
+
+        /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED].  */
+        const val VIRTUAL_DISPLAY_FLAG_TRUSTED = 1 shl 10
     }
 
     var virtualDisplay: VirtualDisplay
@@ -272,10 +276,11 @@ private class Impl<A : Activity>(
             if (useSecureDisplay) this::runWithSecureDisplayPermission else ::defaultRunner
         val flags = VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
                 VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT or
+                VIRTUAL_DISPLAY_FLAG_TRUSTED or
                 (if (useSecureDisplay) VIRTUAL_DISPLAY_FLAG_SECURE else 0)
 
         runWithPermissions {
-            val virtualDevice = virtualDeviceRule!!.createManagedVirtualDevice()
+            val virtualDevice = virtualDeviceRule!!.defaultVirtualDevice
             virtualDevice.setShowPointerIcon(true)
             virtualDisplay =
                 virtualDevice.createVirtualDisplay(

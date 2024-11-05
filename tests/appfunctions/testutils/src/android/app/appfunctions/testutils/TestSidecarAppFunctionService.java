@@ -17,6 +17,7 @@
 package android.app.appfunctions.testutils;
 
 import android.app.appsearch.GenericDocument;
+import android.os.CancellationSignal;
 
 import androidx.annotation.NonNull;
 
@@ -24,6 +25,9 @@ import com.google.android.appfunctions.sidecar.AppFunctionService;
 import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest;
 import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
@@ -31,6 +35,10 @@ import java.util.function.Consumer;
  * purposes.
  */
 public class TestSidecarAppFunctionService extends AppFunctionService {
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+
+    private Future<Void> mCancellableFuture = null;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -40,13 +48,47 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
     @Override
     public void onExecuteFunction(
             @NonNull ExecuteAppFunctionRequest request,
+            @NonNull String callingPackage,
+            @NonNull CancellationSignal cancellationSignal,
             @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
+        cancellationSignal.setOnCancelListener(
+                () -> {
+                    TestAppFunctionServiceLifecycleReceiver.notifyOnOperationCancelled(this);
+                    cancelOperation();
+                });
         switch (request.getFunctionIdentifier()) {
-            case "add": {
-                ExecuteAppFunctionResponse result = add(request);
-                callback.accept(result);
-                break;
-            }
+            case "add":
+                {
+                    ExecuteAppFunctionResponse result = add(request, callingPackage);
+                    callback.accept(result);
+                    break;
+                }
+            case "longRunningFunction":
+                {
+                    mCancellableFuture =
+                            mExecutor.submit(
+                                    () -> {
+                                        try {
+                                            Thread.sleep(2000);
+                                        } catch (InterruptedException e) {
+                                            callback.accept(
+                                                    ExecuteAppFunctionResponse.newFailure(
+                                                            ExecuteAppFunctionResponse
+                                                                    .RESULT_CANCELLED,
+                                                            /* errorMessage= */ "Operation"
+                                                                    + " Interrupted",
+                                                            /* extras= */ null));
+                                            return null;
+                                        }
+                                        callback.accept(
+                                                ExecuteAppFunctionResponse.newSuccess(
+                                                        new GenericDocument.Builder<>("", "", "")
+                                                                .build(),
+                                                        /* extras= */ null));
+                                        return null;
+                                    });
+                    break;
+                }
             default:
                 callback.accept(
                         ExecuteAppFunctionResponse.newFailure(
@@ -56,12 +98,20 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
         }
     }
 
-    private ExecuteAppFunctionResponse add(ExecuteAppFunctionRequest request) {
+    private void cancelOperation() {
+        if (mCancellableFuture != null) {
+            mCancellableFuture.cancel(true);
+        }
+    }
+
+    private ExecuteAppFunctionResponse add(
+            ExecuteAppFunctionRequest request, String callingPackage) {
         long a = request.getParameters().getPropertyLong("a");
         long b = request.getParameters().getPropertyLong("b");
         GenericDocument result =
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
+                        .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
                         .build();
         return ExecuteAppFunctionResponse.newSuccess(result, /* extras= */ null);
     }

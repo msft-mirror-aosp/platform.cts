@@ -141,8 +141,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             // Destroy the display
         }
 
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
-                "Newly launches activity should be landing on default display");
+        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+                "Newly launches activity should be landing on main display assigned to the user");
     }
 
     /**
@@ -252,8 +252,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
     public void testExternalDisplayActivityTurnPrimaryOff() {
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);
-        waitAndAssertTopResumedActivity(RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity launched on primary display must be resumed");
+        waitAndAssertTopResumedActivity(RESIZEABLE_ACTIVITY, getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be resumed");
 
         final DisplayContent newDisplay = createManagedExternalDisplaySession()
                 .setCanShowWithInsecureKeyguard(true).createVirtualDisplay();
@@ -263,8 +263,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Check that the activity is launched onto the external display
         waitAndAssertActivityStateOnDisplay(TEST_ACTIVITY, STATE_RESUMED, newDisplay.mId,
                 "Activity launched on external display must be resumed");
-        mWmState.assertFocusedAppOnDisplay("App on default display must still be focused",
-                RESIZEABLE_ACTIVITY, DEFAULT_DISPLAY);
+        mWmState.assertFocusedAppOnDisplay("App on main display assigned to the user must "
+                + "still be focused", RESIZEABLE_ACTIVITY, getMainDisplayId());
 
         separateTestJournal();
         mObjectTracker.manage(new PrimaryDisplayStateSession()).turnScreenOff();
@@ -369,7 +369,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         mWmState.waitForValidState(RESIZEABLE_ACTIVITY);
         mWmState.assertVisibility(TEST_ACTIVITY, true /* visible */);
         mWmState.assertVisibility(RESIZEABLE_ACTIVITY, true /* visible */);
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, RESIZEABLE_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), RESIZEABLE_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
     }
 
@@ -386,20 +386,20 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         final int defaultDisplayStackId = mWmState.getFocusedTaskId();
         Task frontStack = mWmState.getRootTask(
                 defaultDisplayStackId);
-        assertEquals("Top stack must remain on primary display",
-                DEFAULT_DISPLAY, frontStack.mDisplayId);
+        assertEquals("Top stack must remain on main display assigned to the user",
+                getMainDisplayId(), frontStack.mDisplayId);
 
         // Launch activity on new secondary display.
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
         waitAndAssertActivityStateOnDisplay(TEST_ACTIVITY, STATE_RESUMED, newDisplay.mId,
                 "Top activity must be on secondary display");
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, VIRTUAL_DISPLAY_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), VIRTUAL_DISPLAY_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
 
         // Move activity from secondary display to primary.
         moveActivityToRootTaskOrOnTop(TEST_ACTIVITY, defaultDisplayStackId);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
                 "Moved activity must be on top");
     }
 
@@ -452,7 +452,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Start an activity on default display to determine default stack.
         launchActivity(BROADCAST_RECEIVER_ACTIVITY);
         final int focusedStackWindowingMode = mWmState.getFrontRootTaskWindowingMode(
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         // Finish probing activity.
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
         // Certain System UI components, such as CarLauncher,
@@ -567,8 +567,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             lockScreenSession.wakeUpDevice().enterAndConfirmLockCredential();
         }
 
-        waitAndAssertTopResumedActivity(VIRTUAL_DISPLAY_ACTIVITY, DEFAULT_DISPLAY,
-                "Top activity must be switched back to primary display");
+        waitAndAssertTopResumedActivity(VIRTUAL_DISPLAY_ACTIVITY, getMainDisplayId(),
+                "Top activity must be switched back to main display assigned to the user");
     }
 
     /**
@@ -760,13 +760,13 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             // Destroy the display.
         }
 
-        // Activity must be reparented to default display and relaunched.
+        // Activity must be reparented to main display assigned to the user and relaunched.
         assertActivityLifecycle(TEST_ACTIVITY, true /* relaunched */);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
-                "Top activity must be reparented to default display");
+        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+                "Top activity must be reparented to main display assigned to the user");
 
-        // Check the surface size after task was reparented to default display.
-        assertTopTaskSameSurfaceSizeWithDisplay(DEFAULT_DISPLAY);
+        // Check the surface size after task was reparented to main display assigned to the user.
+        assertTopTaskSameSurfaceSizeWithDisplay(getMainDisplayId());
     }
 
     private void assertTopTaskSameSurfaceSizeWithDisplay(int displayId) {
@@ -834,10 +834,10 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Move TestActivity from virtual display to default display.
         getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY)
                 .allowMultipleInstances(false).setNewTask(true)
-                .setDisplayId(DEFAULT_DISPLAY).execute();
+                .setDisplayId(getMainDisplayId()).execute();
 
         // Verify TestActivity moved to virtual display.
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
                 "Existing task must be brought to front");
 
         // Make sure last transition will not change when task move to another display.
@@ -859,10 +859,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
 
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(SDK_27_LAUNCHING_ACTIVITY).setNewTask(true)
-                .setDisplayId(DEFAULT_DISPLAY).setWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                .setDisplayId(getMainDisplayId()).setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .execute();
-        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity launched on default display must be resumed and focused");
+        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be resumed "
+                        + "and focused");
 
         assertEquals("There must be only one resumed activity in the package.", 1,
                 mWmState.getResumedActivitiesCountInPackage(
@@ -872,10 +873,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // allowMultipleInstances to false, and the TestActivity should be resumed.
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(SDK_27_SEPARATE_PROCESS_ACTIVITY).setNewTask(true)
-                .setDisplayId(DEFAULT_DISPLAY).setWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                .setDisplayId(getMainDisplayId()).setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .allowMultipleInstances(false).execute();
-        waitAndAssertTopResumedActivity(SDK_27_SEPARATE_PROCESS_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity launched on default display must be resumed and focused");
+        waitAndAssertTopResumedActivity(SDK_27_SEPARATE_PROCESS_ACTIVITY, getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be resumed "
+                        + "and focused");
         assertTrue("Activity that was on secondary display must be resumed",
                 mWmState.hasActivityState(SDK_27_TEST_ACTIVITY, STATE_RESUMED));
         assertEquals("There must be only two resumed activities in the package.", 2,
@@ -889,11 +891,12 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
                 .setSimulateDisplay(true).createDisplay();
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(SDK_27_LAUNCHING_ACTIVITY).setNewTask(true)
-                .setDisplayId(DEFAULT_DISPLAY).setWaitForLaunched(false).execute();
+                .setDisplayId(getMainDisplayId()).setWaitForLaunched(false).execute();
         // Dismiss DeprecatedTargetSdkVersionDialog to avoid it disturbing tapOnTaskCenter.
         DeprecatedTargetSdkUtils.waitAndDismissDeprecatedTargetSdkDialog(mWmState);
-        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity launched on default display must be resumed and focused");
+        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be resumed "
+                        + "and focused");
 
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(SDK_27_TEST_ACTIVITY).setNewTask(true)
@@ -906,8 +909,9 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         // Tap on task center to switch focus between displays. Using task center instead of
         // display center to cover the multi window scenario.
         tapOnTaskCenter(mWmState.getTaskByActivity(SDK_27_LAUNCHING_ACTIVITY));
-        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, DEFAULT_DISPLAY,
-                "Activity launched on default display must be resumed and focused");
+        waitAndAssertTopResumedActivity(SDK_27_LAUNCHING_ACTIVITY, getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be resumed "
+                        + "and focused");
         assertEquals("There must be only one resumed activity in the package.", 1,
                 mWmState.getResumedActivitiesCountInPackage(
                         SDK_27_LAUNCHING_ACTIVITY.getPackageName()));

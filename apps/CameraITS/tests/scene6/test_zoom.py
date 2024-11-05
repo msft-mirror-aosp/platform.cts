@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 
 import camera_properties_utils
@@ -32,6 +33,11 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
 _TEST_REQUIRED_MPC = 33
+_SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
+_ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
+# Wider zoom ratio range will be tested by test_zoom_tele
+_WIDE_ZOOM_RATIO_MAX = 2.0
+_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 
 class ZoomTest(its_base_test.ItsBaseTest):
@@ -57,7 +63,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
       z_min, z_max = float(z_range[0]), float(z_range[1])
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-      z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
+      z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
@@ -65,9 +71,11 @@ class ZoomTest(its_base_test.ItsBaseTest):
       # Check media performance class
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
+      ultrawide_camera_found = cam.has_ultrawide_camera(
+          facing=props['android.lens.facing'])
       if (media_performance_class >= _TEST_REQUIRED_MPC and
           cam.is_primary_camera() and
-          cam.has_ultrawide_camera(facing=props['android.lens.facing']) and
+          ultrawide_camera_found and
           int(z_min) >= 1):
         raise AssertionError(
             f'With primary camera {self.camera_id}, '
@@ -127,6 +135,16 @@ class ZoomTest(its_base_test.ItsBaseTest):
           cap_physical_id = (
               cap['metadata']['android.logicalMultiCamera.activePhysicalId']
           )
+          cap_zoom_ratio = float(cap['metadata']['android.control.zoomRatio'])
+          if not math.isclose(cap_zoom_ratio, z,
+                              rel_tol=_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL):
+            raise AssertionError(
+                'Request and result zoom ratios too different! '
+                f'Request zoom ratio: {z}. '
+                f'Result zoom ratio: {cap_zoom_ratio}. ',
+                f'RTOL: {_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL}'
+            )
+
           physical_ids.add(cap_physical_id)
           logging.debug('Physical IDs: %s', physical_ids)
 
@@ -148,15 +166,13 @@ class ZoomTest(its_base_test.ItsBaseTest):
               image_processing_utils.convert_image_to_uint8(img),
               cv2.COLOR_RGB2BGR
           )
-          img_gray = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-          _, binarized_img = cv2.threshold(img_gray, 0, 255,
-                                           cv2.THRESH_BINARY + cv2.THRESH_OTSU)
           try:
             corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-                np.expand_dims(binarized_img, axis=2),
+                bgr_img,
                 (f'{img_name_stem}_{fmt}_{z:.2f}_'
                  f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-                aruco_marker_count=1
+                aruco_marker_count=1,
+                force_greyscale=True  # Maximize number of markers detected
             )
           except AssertionError as e:
             logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
@@ -168,7 +184,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           test_data.append(
               zoom_capture_utils.ZoomTestData(
-                  result_zoom=z,
+                  result_zoom=cap_zoom_ratio,
                   radius_tol=radius_tol,
                   offset_tol=offset_tol,
                   focal_length=cap_fl,
@@ -183,9 +199,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
         opencv_processing_utils.mark_zoom_images(
             images, test_data, f'{img_name_stem}_{fmt}')
 
+        number_of_cameras_to_test = (
+            _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
+            if ultrawide_camera_found
+            else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
+        )
         if not zoom_capture_utils.verify_zoom_data(
             test_data, size,
-            offset_plot_name_stem=f'{img_name_stem}_{fmt}'):
+            offset_plot_name_stem=f'{img_name_stem}_{fmt}',
+            number_of_cameras_to_test=number_of_cameras_to_test):
           test_failed = True
 
     if test_failed:

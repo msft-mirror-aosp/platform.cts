@@ -577,7 +577,6 @@ public class BluetoothDeviceTest {
         mFakeDevice.removeBond();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_INACTIVE_AUDIO_DEVICE_UPON_CONNECTION)
     @Test
     public void setActiveAudioDevicePolicy_getActiveAudioDevicePolicy() {
         if (!mHasBluetooth || !mHasCompanionDevice) {

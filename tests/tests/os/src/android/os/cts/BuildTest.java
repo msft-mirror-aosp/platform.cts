@@ -33,6 +33,8 @@ import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
 
+import com.google.common.truth.Truth;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -313,8 +315,29 @@ public class BuildTest {
     @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
     @Test
     public void testSdkIntFull() {
-        assertTrue(" version " + Build.VERSION.SDK_INT_FULL
+        assertTrue("Version " + Build.VERSION.SDK_INT_FULL
                 + " is invalid; must be non-zero and positive", Build.VERSION.SDK_INT_FULL >= 0);
+    }
+
+    /**
+     * Verify that Build.getMajorSdkVersion returns SDK_INT.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testGetMajorSdkVersion() {
+        assertEquals(
+                "Major SDK version encoded in SDK_INT_FULL is invalid; must be same as SDK_INT",
+                Build.getMajorSdkVersion(Build.VERSION.SDK_INT_FULL), Build.VERSION.SDK_INT);
+    }
+
+    /**
+     * Verify that Build.getMinorSdkVersion returns a non-negative value.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testGetMinorSdkVersion() {
+        assertTrue("Minor SDK version encoded in SDK_INT_FULL invalid; must be zero or positive",
+                Build.getMinorSdkVersion(Build.VERSION.SDK_INT_FULL) >= 0);
     }
 
     /**
@@ -327,15 +350,12 @@ public class BuildTest {
             return;
         }
 
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at least VERSION_CODES.R",
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS >= Build.VERSION_CODES.R);
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at most VERSION.SDK_INT",
-                // we use RESOURCES_SDK_INT to account for active development versions
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS <= Build.VERSION.RESOURCES_SDK_INT);
+        Truth.assertWithMessage(
+                "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in the "
+                        + "CDD for Media Performance Class.").that(
+                Build.VERSION.MEDIA_PERFORMANCE_CLASS).isAnyOf(
+                        // TODO: b/374814872 autogenerate this list.
+                        30, 31, 33, 34, 35);
     }
 
     private void assertNotEmpty(String value) {

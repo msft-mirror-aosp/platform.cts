@@ -1506,6 +1506,16 @@ public class StaticMetadata {
     }
 
     /**
+     * Get supported YCBCR_P210 output sizes and do the check.
+     *
+     * @return Empty size array if YCBCR_P210 output is not supported
+     */
+    public Size[] getP210OutputSizesChecked() {
+        return getAvailableSizesForFormatChecked(ImageFormat.YCBCR_P210,
+                StreamDirection.Output);
+    }
+
+    /**
      * Used to determine the stream direction for various helpers that look up
      * format or size information.
      */
@@ -2468,6 +2478,27 @@ public class StaticMetadata {
         return getValueFromKeyNonNull(CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE);
     }
 
+    /*
+     * Determine if camera device supports CCT mode for color correction
+     *
+     * @return {@code true} if CCT mode is supported
+     */
+    public boolean isCctModeSupported() {
+        int[] availableColorCorrectionModes = mCharacteristics.get(
+                CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES);
+
+        if (availableColorCorrectionModes == null) {
+            return false;
+        }
+
+        for (int mode : availableColorCorrectionModes) {
+            if (mode == CameraMetadata.COLOR_CORRECTION_MODE_CCT) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /*
      * Determine if camera device support manual lens shading map control

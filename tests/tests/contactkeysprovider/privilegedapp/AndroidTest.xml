@@ -22,6 +22,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -31,8 +32,9 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="am start-foreground-service android.provider.cts.visibleapp/.VisibleService" />
-        <option name="teardown-command" value="am stop-service android.provider.cts.visibleapp" />
+        <option name="test-user-token" value="%TEST_USER%"/>
+        <option name="run-command" value="am start-foreground-service --user %TEST_USER% android.provider.cts.visibleapp/.VisibleService" />
+        <option name="teardown-command" value="am stop-service --user %TEST_USER% android.provider.cts.visibleapp" />
         <option name="teardown-command" value="pm uninstall android.provider.cts.visibleapp" />
     </target_preparer>
 
