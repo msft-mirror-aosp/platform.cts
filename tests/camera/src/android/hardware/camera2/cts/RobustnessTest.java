@@ -83,12 +83,14 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 import android.view.Surface;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1137,7 +1139,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
 
                         CaptureRequest.Builder previewRequest =
-                                prepareTriggerTestSession(preview, aeMode, afMode);
+                                prepareTriggerTestSession(preview, aeMode, afMode,
+                                        CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
 
                         SimpleCaptureCallback captureListener =
                                 new CameraTestUtils.SimpleCaptureCallback();
@@ -1239,6 +1242,101 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AE_PRIORITY)
+    public void testBasicTriggerSequenceAePriorityMode() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            Log.i(TAG, String.format("Testing Camera %s", id));
+
+            try {
+                // Legacy devices do not support precapture trigger; don't test devices that
+                // can't focus
+                StaticMetadata staticInfo = mAllStaticInfo.get(id);
+                if (staticInfo.isHardwareLevelLegacy() || !staticInfo.hasFocuser()) {
+                    continue;
+                }
+                // Depth-only devices won't support AE
+                if (!staticInfo.isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+
+                openDevice(id);
+                int[] availableAePriorityModes = mStaticInfo.getAeAvailablePriorityModesChecked();
+                int[] availableAeModes = mStaticInfo.getAeAvailableModesChecked();
+
+                for (int aePriorityMode : availableAePriorityModes) {
+                    if (aePriorityMode == CameraCharacteristics.CONTROL_AE_PRIORITY_MODE_OFF) {
+                        // Only test AE priority modes that have meaningful trigger behavior
+                        continue;
+                    }
+
+                    for (int aeMode : availableAeModes) {
+                        if (aeMode ==  CameraCharacteristics.CONTROL_AE_MODE_OFF) {
+                            // Only test AE modes that have meaningful trigger behavior
+                            continue;
+                        }
+
+                        SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
+
+                        CaptureRequest.Builder previewRequest =
+                                prepareTriggerTestSession(preview, aeMode,
+                                        CameraMetadata.CONTROL_AF_MODE_OFF /*afMode*/,
+                                        aePriorityMode);
+
+                        SimpleCaptureCallback captureListener =
+                                new CameraTestUtils.SimpleCaptureCallback();
+
+                        mCameraSession.setRepeatingRequest(previewRequest.build(), captureListener,
+                                mHandler);
+
+                        previewRequest.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                                CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+
+                        CaptureRequest triggerRequest  = previewRequest.build();
+                        mCameraSession.capture(triggerRequest, captureListener, mHandler);
+
+                        CaptureResult triggerResult = captureListener.getCaptureResultForRequest(
+                                triggerRequest, MAX_RESULT_STATE_CHANGE_WAIT_FRAMES);
+
+                        int aeState = triggerResult.get(CaptureResult.CONTROL_AE_STATE);
+
+                        boolean precaptureComplete = false;
+
+                        for (int i = 0;
+                             i < MAX_TRIGGER_SEQUENCE_FRAMES && !precaptureComplete;
+                             i++) {
+
+                            precaptureComplete = verifyAeSequence(aeState, precaptureComplete);
+
+                            CaptureResult precaptureResult = captureListener.getCaptureResult(
+                                CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
+                            aeState = precaptureResult.get(CaptureResult.CONTROL_AE_STATE);
+                        }
+
+                        assertTrue("Precapture sequence never completed!", precaptureComplete);
+
+                        for (int i = 0; i < MAX_RESULT_STATE_POSTCHANGE_WAIT_FRAMES; i++) {
+                            CaptureResult postPrecaptureResult = captureListener.getCaptureResult(
+                                CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
+                            aeState = postPrecaptureResult.get(CaptureResult.CONTROL_AE_STATE);
+                            assertTrue("Late transition to PRECAPTURE state seen",
+                                    aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE);
+                        }
+
+                        stopCapture(/*fast*/ false);
+                        preview.release();
+                    }
+
+                }
+
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
     @Test
     public void testSimultaneousTriggers() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
@@ -1277,7 +1375,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
 
                         CaptureRequest.Builder previewRequest =
-                                prepareTriggerTestSession(preview, aeMode, afMode);
+                                prepareTriggerTestSession(preview, aeMode, afMode,
+                                CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
 
                         SimpleCaptureCallback captureListener =
                                 new CameraTestUtils.SimpleCaptureCallback();
@@ -1380,7 +1479,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
 
                         CaptureRequest.Builder previewRequest =
-                                prepareTriggerTestSession(preview, aeMode, afMode);
+                                prepareTriggerTestSession(preview, aeMode, afMode,
+                                CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
 
                         SimpleCaptureCallback captureListener =
                                 new CameraTestUtils.SimpleCaptureCallback();
@@ -1497,7 +1597,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
 
                         CaptureRequest.Builder previewRequest =
-                                prepareTriggerTestSession(preview, aeMode, afMode);
+                                prepareTriggerTestSession(preview, aeMode, afMode,
+                                CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
 
                         SimpleCaptureCallback captureListener =
                                 new CameraTestUtils.SimpleCaptureCallback();
@@ -1616,7 +1717,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
 
                         CaptureRequest.Builder previewRequest =
-                                prepareTriggerTestSession(preview, aeMode, afMode);
+                                prepareTriggerTestSession(preview, aeMode, afMode,
+                                CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
 
                         SimpleCaptureCallback captureListener =
                                 new CameraTestUtils.SimpleCaptureCallback();
@@ -2058,14 +2160,19 @@ public class RobustnessTest extends Camera2AndroidTestCase {
     }
 
     private CaptureRequest.Builder prepareTriggerTestSession(
-            SurfaceTexture preview, int aeMode, int afMode) throws Exception {
-        Log.i(TAG, String.format("Testing AE mode %s, AF mode %s",
+            SurfaceTexture preview, int aeMode, int afMode, int aePriorityMode) throws Exception {
+        Log.i(TAG, String.format("Testing AE mode %s, AF mode %s AE priority mode %s",
                         StaticMetadata.getAeModeName(aeMode),
-                        StaticMetadata.getAfModeName(afMode)));
+                        StaticMetadata.getAfModeName(afMode),
+                        StaticMetadata.getAePriorityModeName(aePriorityMode)));
 
         CaptureRequest.Builder previewRequest = preparePreviewTestSession(preview);
         previewRequest.set(CaptureRequest.CONTROL_AE_MODE, aeMode);
         previewRequest.set(CaptureRequest.CONTROL_AF_MODE, afMode);
+
+        if (Flags.aePriority()) {
+            previewRequest.set(CaptureRequest.CONTROL_AE_PRIORITY_MODE, aePriorityMode);
+        }
 
         return previewRequest;
     }
