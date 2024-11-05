@@ -3362,6 +3362,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
             if (callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertTrue(callback.getCurrentSoftApInfo().getAutoShutdownTimeoutMillis() > 0);
+                if (Flags.mloSap()) {
+                    // Test AP configuration is WPA2, MldAddress should be NULL
+                    assertNull(callback.getCurrentSoftApInfo().getMldAddress());
+                }
             }
         } finally {
             // stop tethering which used to verify stopSoftAp
