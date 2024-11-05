@@ -1176,7 +1176,7 @@ public class PerformanceTest {
                 int maxVariation = checkSmoothZoomForV ? 0 : MAX_IMPROVEMENT_VARIATION;
                 assertTrue(
                         String.format("Zoom latency improvement variation %d must not exceed %d",
-                                variation, MAX_IMPROVEMENT_VARIATION), variation <= maxVariation);
+                                variation, maxVariation), variation <= maxVariation);
 
                 mReportLog.addValues("Camera zoom ratios", ratiosToTest, ResultType.NEUTRAL,
                         ResultUnit.NONE);

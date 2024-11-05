@@ -22,6 +22,7 @@ import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_SENSORS;
 import static android.hardware.Sensor.TYPE_ACCELEROMETER;
@@ -354,6 +355,8 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_DEFAULT);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_DEFAULT);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS))
+                .isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
     @Test
@@ -365,6 +368,7 @@ public class VirtualDeviceParamsTest {
                 .setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM)
                 .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
                 .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                .setDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS, DEVICE_POLICY_CUSTOM)
                 .build();
 
         assertThat(params.getDevicePolicy(POLICY_TYPE_SENSORS)).isEqualTo(DEVICE_POLICY_CUSTOM);
@@ -374,6 +378,9 @@ public class VirtualDeviceParamsTest {
                 Flags.crossDeviceClipboard() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(
                 Flags.virtualCamera() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS)).isEqualTo(
+                android.companion.virtualdevice.flags.Flags.defaultDeviceCameraAccessPolicy()
+                        ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
     }
 
     @Test

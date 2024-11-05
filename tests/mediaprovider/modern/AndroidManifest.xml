@@ -23,6 +23,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.MANAGE_MEDIA"/>
 
+    <queries>
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppA" />
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppB" />
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppC" />
+    </queries>
+
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.provider.cts.media.modern"
                      android:label="Modern CTS tests of android.providers.media">
