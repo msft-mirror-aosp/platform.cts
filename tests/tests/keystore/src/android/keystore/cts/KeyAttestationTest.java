@@ -1987,14 +1987,21 @@ public class KeyAttestationTest {
 
         if (TestUtils.isGsiImage()) {
             // When running under GSI, the ro.product.<device-id> values may be replaced with values
-            // that don't match the vendor code.  However, any ro.product.vendor.<device-id> values
+            // that don't match the vendor code. However, any ro.product.vendor.<device-id> values
             // will not be replaced by GSI (and the frameworks code will use them in preference to
-            // the ro.product.<device-id> values), so raise a different Exception to give out a hint
-            // that these should be set.
-            throw new Exception("Failed to generate key with device ID attestation under GSI.  "
+            // the ro.product.<device-id> values).
+            if (TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // On older releases just skip the failure.
+                Log.i(TAG, "device ID attestation on older device under GSI; test skipped");
+                return true;
+            } else {
+                // On more current devices, raise a different Exception to give out a hint
+                // that the vendor properties should be set.
+                throw new Exception("Failed to generate key with device ID attestation under GSI.  "
                                 + "Check that the relevant ro.product.vendor.<device-id> field is "
                                 + "set correctly in the vendor image.",
-                    e);
+                        e);
+            }
         }
         return false;
     }
