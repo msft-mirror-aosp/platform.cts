@@ -55,11 +55,13 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecTestBase;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.util.Range;
 
 import androidx.test.filters.SdkSuppress;
@@ -115,6 +117,11 @@ public class CodecInfoTest {
                 continue;
             }
             String codecName = codecInfo.getName();
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                Log.v(LOG_TAG, "codec " + codecName + " skipped in mode "
+                                + TestUtils.currentTestModeName());
+                continue;
+            }
             if (codecPrefix != null && !codecName.startsWith(codecPrefix)
                     || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
