@@ -19,9 +19,12 @@ package android.deviceconfig.cts;
 import static com.android.aconfig.flags.Flags.FLAG_ENABLE_ONLY_NEW_STORAGE;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.configinfrastructure.aconfig.AconfigPackage;
+import android.configinfrastructure.aconfig.AconfigStorageReadException;
+import android.os.Build;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -43,15 +46,46 @@ public final class AconfigApiTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testStorageReaderEnableInstance() {
+        if (Build.VERSION.SDK_INT <= 35) {
+            return;
+        }
         AconfigPackage reader = AconfigPackage.load("android.provider.flags");
-        // return default as true if the flag doesn't exist on the device
-        assertTrue(reader.getBooleanFlagValue("new_storage_public_api", true));
+        assertNotNull(reader);
+        assertTrue(reader.getBooleanFlagValue("new_storage_public_api", false));
     }
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testStorageReaderDisableInstance() {
+        if (Build.VERSION.SDK_INT <= 35) {
+            return;
+        }
         AconfigPackage reader = AconfigPackage.load("android.provider.flags");
+        assertNotNull(reader);
         assertFalse(reader.getBooleanFlagValue("flag_not_exist", false));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    public void testAconfigPackageLoadWithError() {
+        // load fake package
+        if (Build.VERSION.SDK_INT <= 35) {
+            return;
+        }
+        AconfigPackage p = AconfigPackage.load("fake_package");
+        assertNotNull(p);
+        assertFalse(p.getBooleanFlagValue("fake_flag", false));
+        assertTrue(p.getBooleanFlagValue("fake_flag", true));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
+    public void testAconfigStorageReadException() {
+        AconfigStorageReadException ae = new AconfigStorageReadException("message");
+        assertNotNull(ae);
+        ae = new AconfigStorageReadException("message", new Exception("parent"));
+        assertNotNull(ae);
+        ae = new AconfigStorageReadException(new Exception("parent"));
+        assertNotNull(ae);
     }
 }
