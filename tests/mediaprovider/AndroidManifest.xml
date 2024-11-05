@@ -21,6 +21,12 @@
 
     <uses-sdk android:targetSdkVersion="28"/>
 
+    <queries>
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppA" />
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppB" />
+        <package android:name="tests.mediaprovider.modern.testApp.TestAppC" />
+    </queries>
+
     <!-- This is required for android.provider.cts.media.MediaStore_MetadataKeysTest
             when upgrading targetSdkVersion to R+
     <queries>

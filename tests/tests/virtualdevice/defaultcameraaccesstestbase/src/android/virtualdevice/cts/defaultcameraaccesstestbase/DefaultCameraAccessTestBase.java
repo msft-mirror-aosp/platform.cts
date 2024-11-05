@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.virtualdevice.cts.applaunch;
+package android.virtualdevice.cts.defaultcameraaccesstestbase;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -24,65 +24,74 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
-import android.companion.virtual.flags.Flags;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.ConditionVariable;
-import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@RunWith(AndroidJUnit4.class)
-@AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-public class StreamedAppBehaviorTest {
+public abstract class DefaultCameraAccessTestBase {
 
     private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final int NO_ERROR = 0;
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule virtualDeviceRule = VirtualDeviceRule.createDefault();
 
-    @RequiresFlagsDisabled(Flags.FLAG_STREAM_CAMERA)
-    @Test
-    public void appsInVirtualDevice_shouldNotHaveAccessToCamera() throws Exception {
-        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
-        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
+    protected void verifyCameraAccessAllowed(VirtualDevice virtualDevice) throws Exception {
+        Activity activity = setupWithVirtualDevice(virtualDevice);
+        String[] cameras = getCameraIds();
+        for (String cameraId : cameras) {
+            assertThat(accessCameraFromActivity(activity, cameraId)).isEqualTo(NO_ERROR);
+        }
+    }
+
+    protected void verifyCameraAccessBlocked(VirtualDevice virtualDevice) throws Exception {
+        Activity activity = setupWithVirtualDevice(virtualDevice);
+        String[] cameras = getCameraIds();
+        for (String cameraId : cameras) {
+            assertThat(accessCameraFromActivity(activity, cameraId)).isGreaterThan(NO_ERROR);
+        }
+    }
+
+    private Activity setupWithVirtualDevice(VirtualDevice virtualDevice) {
+        VirtualDisplay virtualDisplay = virtualDeviceRule.createManagedVirtualDisplayWithFlags(
+                virtualDevice,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        return virtualDeviceRule.startActivityOnDisplaySync(
+                virtualDisplay, Activity.class);
+    }
 
+    private String[] getCameraIds() throws Exception {
         CameraManager manager = getApplicationContext().getSystemService(CameraManager.class);
         String[] cameras = manager.getCameraIdList();
         assumeNotNull((Object) cameras);
-
-        // An activity from this UID is running on the virtual device, so camera access is blocked.
-        AppComponents.EmptyActivity activity = mRule.startActivityOnDisplaySync(
-                virtualDisplay, AppComponents.EmptyActivity.class);
-
-        for (String cameraId : cameras) {
-            assertThat(accessCameraFromActivity(activity, cameraId)).isGreaterThan(0);
-        }
+        return cameras;
     }
 
     private int accessCameraFromActivity(Activity activity, String cameraId) {
         ConditionVariable cond = new ConditionVariable();
         final CameraManager cameraManager = activity.getSystemService(CameraManager.class);
-        final int[] cameraError = {0};
+        final int[] cameraError = {NO_ERROR};
+        final List<CameraDevice> cameraDevices = new ArrayList<>();
         final CameraDevice.StateCallback cameraCallback = new CameraDevice.StateCallback() {
             @Override
-            public void onOpened(@NonNull CameraDevice cameraDevice) {}
+            public void onOpened(@NonNull CameraDevice cameraDevice) {
+                cameraDevices.add(cameraDevice);
+            }
 
             @Override
             public void onDisconnected(@NonNull CameraDevice cameraDevice) {
@@ -101,10 +110,13 @@ public class StreamedAppBehaviorTest {
             try {
                 cameraManager.openCamera(cameraId, cameraCallback, null);
             } catch (CameraAccessException e) {
-                // ok to ignore - we should get one of the onDisconnected or onError callbacks above
+                cameraError[0] = CameraDevice.StateCallback.ERROR_CAMERA_DISABLED;
             }
         });
         cond.block(TIMEOUT_MILLIS);
+        for (CameraDevice device : cameraDevices) {
+            device.close();
+        }
         return cameraError[0];
     }
 }
