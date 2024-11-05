@@ -221,6 +221,12 @@ public class KeyAttestationTest {
                                 if (devicePropertiesAttestation && isIdAttestationFailure) {
                                     if (getContext().getPackageManager().hasSystemFeature(
                                             PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+                                        if (TestUtils.isGsiImage()) {
+                                            // System properties indicating device IDs may not
+                                            // match the vendor code when running under GSI.
+                                            Log.i(TAG, "skip device ID attest failure under GSI");
+                                            continue;
+                                        }
                                         throw new Exception("Unexpected failure while generating"
                                                 + " key.\nIn case of AOSP/GSI builds, system "
                                                 + "provided properties could be different from "
@@ -818,6 +824,12 @@ public class KeyAttestationTest {
                 if (devicePropertiesAttestation && isIdAttestationFailure) {
                     if (getContext().getPackageManager().hasSystemFeature(
                             PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+                        if (TestUtils.isGsiImage()) {
+                            // System properties indicating device IDs may not
+                            // match the vendor code when running under GSI.
+                            Log.i(TAG, "skip device ID attest failure under GSI");
+                            continue;
+                        }
                         throw new Exception("Unexpected failure while generating key."
                             + "\nIn case of AOSP/GSI builds, system provided properties could be"
                             + " different from provisioned properties in KeyMaster/KeyMint. In"
