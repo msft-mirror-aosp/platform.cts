@@ -52,7 +52,6 @@ import android.app.cts.android.app.cts.tools.SyncOrderedBroadcast;
 import android.app.cts.android.app.cts.tools.UidImportanceListener;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
-import android.app.cts.android.app.cts.tools.WatchUidRunner.WatchUidPredicate;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundServiceLocation;
 import android.app.stubs.LocalForegroundServiceSticky;
@@ -146,12 +145,6 @@ public class ActivityManagerProcessStateTest {
     static final String ACTION_FINISH = "com.android.test.action.FINISH";
 
     private static final int TEMP_WHITELIST_DURATION_MS = 2000;
-
-    private static final WatchUidPredicate CACHED_PREDICATE = new WatchUidPredicate.Builder(
-            WatchUidRunner.CMD_CACHED).build();
-    private static final WatchUidPredicate FGS_PREDICATE = new WatchUidPredicate.Builder(
-            WatchUidRunner.CMD_PROCSTATE).setExpectedProcState(
-            WatchUidRunner.STATE_FG_SERVICE).build();
 
     private Context mContext;
     private Context mTargetContext;
@@ -632,7 +625,7 @@ public class ActivityManagerProcessStateTest {
             cmd = "am make-uid-idle --user " + userId + " " + SIMPLE_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Now that we should be off the temp whitelist, make sure we again can't start.
@@ -661,7 +654,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(serviceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
         } finally {
@@ -830,7 +823,7 @@ public class ActivityManagerProcessStateTest {
             conn.waitForDisconnect();
             conn2.waitForDisconnect();
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
             // There may be a transient 'SVC' proc state here.
             uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
@@ -942,7 +935,7 @@ public class ActivityManagerProcessStateTest {
             // We don't want to wait for the uid to actually go idle, we can force it now.
             controller.makeUidIdle();
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
 
             // Make sure the process is gone so we start over fresh.
             controller.ensureProcessGone();
@@ -982,7 +975,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
         } finally {
@@ -1047,7 +1040,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // App isn't yet idle, so we should be able to start the service again.
@@ -1160,8 +1153,8 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceStartForegroundIntent);
             conn.waitForDisconnect();
 
-            // This should reach the cached state without moving to STATE_FG_SERVICE along the way.
-            uidWatcher.waitFor(CACHED_PREDICATE, FGS_PREDICATE);
+            // THIS MUST BE AN EXPECT: we want to make sure we don't get in to STATE_FG_SERVICE.
+            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Make sure the uid is idle (it should be anyway, it never went active here).
@@ -1221,8 +1214,8 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceStartForegroundIntent);
             conn.waitForDisconnect();
 
-            // This should reach the cached state without moving to STATE_FG_SERVICE along the way.
-            uidWatcher.waitFor(CACHED_PREDICATE, FGS_PREDICATE);
+            // THIS MUST BE AN EXPECT: we want to make sure we don't get in to STATE_FG_SERVICE.
+            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Make sure the uid is idle (it should be anyway, it never went active here).
