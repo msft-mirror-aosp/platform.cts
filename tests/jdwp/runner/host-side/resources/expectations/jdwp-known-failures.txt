@@ -31,5 +31,16 @@
     "org.apache.harmony.jpda.tests.jdwp.VirtualMachine_ReleaseEventsTest#testReleaseEvents001"
   ],
   bug: "16720689"
+},
+{
+  description: "Test fails because after a throw we don't stop at the right pc
+  in the catch block. If we fix this, then the behaviour of single stepping when
+  enabled from exception catch handlers breaks. We just match the behaviour of
+  openjdk here. These tests fail on RI as well.",
+  names: [
+    "org.apache.harmony.jpda.tests.jdwp.Events_EventWithExceptionTest#testSingleStepOut",
+    "org.apache.harmony.jpda.tests.jdwp.Events_SingleStepWithPendingExceptionTest#testSingleStepWithPendingException"
+  ],
+  bug: "333446719"
 }
 ]
