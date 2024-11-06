@@ -23,6 +23,7 @@ import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -32,6 +33,7 @@ import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.stubs.MockActivity;
 import android.app.stubs.MockListActivity;
+import android.app.stubs.MockTopResumedReporterActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -141,29 +143,46 @@ public class AppTaskTests {
      */
     @Test
     public void testMoveToFront() throws Exception {
-        final Activity a1 = mActivityRule.launchActivity(null);
+        final Intent firstActivityIntent = new Intent();
+        firstActivityIntent.setComponent(
+                new ComponentName(mTargetContext, MockTopResumedReporterActivity.class));
+        firstActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        MockTopResumedReporterActivity firstActivity =
+                (MockTopResumedReporterActivity) mInstrumentation.startActivitySync(
+                        firstActivityIntent);
 
         // Launch fullscreen activity as an another task to hide the first activity
-        final Intent intent = new Intent();
-        intent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
-        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
+        final Intent secondActivityIntent = new Intent();
+        secondActivityIntent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
+        secondActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
                     | FLAG_ACTIVITY_MULTIPLE_TASK);
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
-        mInstrumentation.startActivitySync(intent, options.toBundle());
-
+        mInstrumentation.startActivitySync(secondActivityIntent, options.toBundle());
+        waitAndAssertCondition(() -> !firstActivity.isTopResumed,
+                "First activity is not top resumed");
         final BooleanValue targetResumed = new BooleanValue();
         mLifecycleMonitor.addLifecycleCallback(new ActivityLifecycleCallback() {
             public void onActivityLifecycleChanged(Activity activity, Stage stage) {
-                if (activity == a1 && stage == Stage.RESUMED) {
+                if (activity == firstActivity && stage == Stage.RESUMED) {
                     targetResumed.value = true;
                 }
             }
         });
 
-        getAppTask(a1).moveToFront();
-        waitAndAssertCondition(() -> targetResumed.value,
-                "Expected activity brought to front and resumed");
+        final ActivityManager.AppTask appTask = getAppTask(firstActivity);
+        appTask.moveToFront();
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). a1 would still be resumed and visible without a lifecycle change even when
+        // another activity is launched in this case.
+        if (!firstActivity.isInMultiWindowMode()) {
+            waitAndAssertCondition(() -> targetResumed.value,
+                    "Expected activity brought to front and resumed");
+        }
+        assertTrue(appTask.getTaskInfo().isVisible());
+        assertEquals(appTask.getTaskInfo().topActivity, firstActivity.getComponentName());
+        waitAndAssertCondition(() -> firstActivity.isTopResumed,
+                "First activity is top resumed");
     }
 
     /**
