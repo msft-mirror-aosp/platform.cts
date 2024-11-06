@@ -785,7 +785,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onTagConnected(boolean connected, Tag tag) {
+        public void onTagConnected(boolean connected) {
             mTagDetectedCountDownLatch.countDown();
         }
 
@@ -860,6 +860,11 @@ public class NfcAdapterTest {
 
         @Override
         public void onRfDiscoveryStarted(boolean isDiscoveryStarted) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onEeListenActivated(boolean isActivated) {
             mTagDetectedCountDownLatch.countDown();
         }
 
