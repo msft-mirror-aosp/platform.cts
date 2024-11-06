@@ -130,26 +130,6 @@ public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuild
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS)
-    public void testBatteryUsageStatsSinceResetUsingPowerProfileModel() throws Exception {
-        if (!hasBattery()) {
-            return;
-        }
-
-        runBatteryUsageStatsAtomTest(
-                AtomsProto.Atom
-                        .BATTERY_USAGE_STATS_SINCE_RESET_USING_POWER_PROFILE_MODEL_FIELD_NUMBER,
-                atoms -> {
-                    for (final AtomsProto.Atom atom : atoms) {
-                        final BatteryUsageStatsAtomsProto batteryUsageStats =
-                                atom.getBatteryUsageStatsSinceResetUsingPowerProfileModel()
-                                        .getBatteryUsageStats();
-                        assertBatteryUsageStatsAtom(batteryUsageStats);
-                    }
-                });
-    }
-
-    @Test
     @RequiresFlagsEnabled(FLAG_ADD_BATTERY_USAGE_STATS_SLICE_ATOM)
     public void testBatteryUsageStatsPerUid() throws Exception {
         if (!hasBattery()) {
