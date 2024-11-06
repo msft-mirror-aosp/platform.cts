@@ -138,7 +138,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertThrows(SecurityException.class, () -> mManager.setAdvancedProtectionEnabled(true));
 
         mInstrumentation.getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.setAdvancedProtectionEnabled(true));
     }
 
@@ -158,7 +158,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertThrows(SecurityException.class, () -> mManager.getAdvancedProtectionFeatures());
 
         mInstrumentation.getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.getAdvancedProtectionFeatures());
     }
 
