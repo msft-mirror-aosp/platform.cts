@@ -352,8 +352,10 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         try {
             mTelecomManager.registerPhoneAccount(toRegister);
         } catch (SecurityException se) {
-            assertEquals("Self-managed ConnectionServices cannot also be call capable, " +
-                    "connection managers, or SIM accounts.", se.getMessage());
+            assertEquals("Self-managed ConnectionServices and "
+                    + "transactional voip apps "
+                    + "cannot also be call capable, connection managers, or "
+                    + "SIM accounts.", se.getMessage());
             return;
         }
         fail("Expected SecurityException");
