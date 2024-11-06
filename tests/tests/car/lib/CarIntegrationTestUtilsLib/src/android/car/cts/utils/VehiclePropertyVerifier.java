@@ -180,6 +180,7 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mVerifyErrorStates;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
+    private final VerifierContext mVerifierContext;
 
     private boolean mIsCarPropertyConfigCached;
     private CarPropertyConfig<T> mCachedCarPropertyConfig;
@@ -243,16 +244,15 @@ public class VehiclePropertyVerifier<T> {
         mReadPermissions = readPermissions;
         mWritePermissions = writePermissions;
         mPropertyToAreaIdValues = new SparseArray<>();
+        mVerifierContext = new VerifierContext(carPropertyManager);
     }
 
     /**
      * Gets a new builder for the verifier.
      */
     public static <T> Builder<T> newBuilder(
-            int propertyId, int access, int areaType, int changeMode, Class<T> propertyType,
-            CarPropertyManager carPropertyManager) {
-        return new Builder<>(propertyId, access, areaType, changeMode, propertyType,
-                carPropertyManager);
+            int propertyId, int access, int areaType, int changeMode, Class<T> propertyType) {
+        return new Builder<>(propertyId, access, areaType, changeMode, propertyType);
     }
 
     /**
@@ -1536,7 +1536,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         if (mAreaIdsVerifier.isPresent()) {
-            mAreaIdsVerifier.get().verify(areaIds);
+            mAreaIdsVerifier.get().verify(mVerifierContext, areaIds);
         }
 
         if (mChangeMode == CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS) {
@@ -1546,7 +1546,8 @@ public class VehiclePropertyVerifier<T> {
         }
 
         mCarPropertyConfigVerifier.ifPresent(
-                carPropertyConfigVerifier -> carPropertyConfigVerifier.verify(carPropertyConfig));
+                carPropertyConfigVerifier -> carPropertyConfigVerifier.verify(mVerifierContext,
+                        carPropertyConfig));
 
         if (!mPossibleConfigArrayValues.isEmpty()) {
             assertWithMessage(mPropertyName + " configArray must specify supported values")
@@ -1564,7 +1565,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         mConfigArrayVerifier.ifPresent(configArrayVerifier -> configArrayVerifier.verify(
-                carPropertyConfig.getConfigArray()));
+                mVerifierContext, carPropertyConfig.getConfigArray()));
 
         if (mPossibleConfigArrayValues.isEmpty() && !mConfigArrayVerifier.isPresent()
                 && !mCarPropertyConfigVerifier.isPresent()) {
@@ -1832,7 +1833,8 @@ public class VehiclePropertyVerifier<T> {
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(carPropertyConfig, propertyId,
+                propertyValueVerifier -> propertyValueVerifier.verify(
+                        mVerifierContext, carPropertyConfig, propertyId,
                         areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
@@ -2189,13 +2191,20 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
+     * A structure containing verifier context.
+     *
+     * This contains VehiclePropertyVerifier members that might be useful for the verification.
+     */
+    public record VerifierContext(CarPropertyManager carPropertyManager) {}
+
+    /**
      * An interface for verifying the config array.
      */
     public interface ConfigArrayVerifier {
         /**
          * Verifies the config array. Throws exception if not valid.
          */
-        void verify(List<Integer> configArray);
+        void verify(VerifierContext verifierContext, List<Integer> configArray);
     }
 
     /**
@@ -2205,8 +2214,8 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the property value. Throws exception if not valid.
          */
-        void verify(CarPropertyConfig<T> carPropertyConfig, int propertyId, int areaId,
-                long timestampNanos, T value);
+        void verify(VerifierContext verifierContext, CarPropertyConfig<T> carPropertyConfig,
+                int propertyId, int areaId, long timestampNanos, T value);
     }
 
     /**
@@ -2216,7 +2225,7 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the areaIds. Throws exception if not valid.
          */
-        void verify(int[] areaIds);
+        void verify(VerifierContext verifierContext, int[] areaIds);
     }
 
     /**
@@ -2226,7 +2235,7 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the property config. Throws exception if not valid.
          */
-        void verify(CarPropertyConfig<?> carPropertyConfig);
+        void verify(VerifierContext verifierContext, CarPropertyConfig<?> carPropertyConfig);
     }
 
     /**
@@ -2238,7 +2247,7 @@ public class VehiclePropertyVerifier<T> {
         private final int mAreaType;
         private final int mChangeMode;
         private final Class<T> mPropertyType;
-        private final CarPropertyManager mCarPropertyManager;
+        private CarPropertyManager mCarPropertyManager;
         private boolean mRequiredProperty = false;
         private Optional<ConfigArrayVerifier> mConfigArrayVerifier = Optional.empty();
         private Optional<CarPropertyValueVerifier<T>> mCarPropertyValueVerifier = Optional.empty();
@@ -2263,13 +2272,28 @@ public class VehiclePropertyVerifier<T> {
                 ImmutableList.builder();
 
         private Builder(int propertyId, int access, int areaType, int changeMode,
-                Class<T> propertyType, CarPropertyManager carPropertyManager) {
+                Class<T> propertyType) {
             mPropertyId = propertyId;
             mAccess = access;
             mAreaType = areaType;
             mChangeMode = changeMode;
             mPropertyType = propertyType;
+        }
+
+        public int getPropertyId() {
+            return mPropertyId;
+        }
+
+        public boolean isRequired() {
+            return mRequiredProperty;
+        }
+
+        /**
+         * Sets the car property manager.
+         */
+        public Builder<T> setCarPropertyManager(CarPropertyManager carPropertyManager) {
             mCarPropertyManager = carPropertyManager;
+            return this;
         }
 
         /**
