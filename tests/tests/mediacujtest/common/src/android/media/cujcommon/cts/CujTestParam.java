@@ -18,6 +18,7 @@ package android.media.cujcommon.cts;
 
 import com.google.auto.value.AutoValue;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -37,17 +38,22 @@ public abstract class CujTestParam {
   /**
    * Return test mediaUrls.
    */
-  public abstract List<String> mediaUrls();
+  public abstract List<String> getMediaUrls();
 
   /**
-   * Return test timeoutMilliSeconds.
+   * Return test duration.
    */
-  public abstract long timeoutMilliSeconds();
+  public abstract Duration getDuration();
+
+  /**
+   * Return test overhead.
+   */
+  public abstract Duration getOverhead();
 
   /**
    * Return test playerListener.
    */
-  public abstract PlayerListener playerListener();
+  public abstract PlayerListener getPlayerListener();
 
   /**
    * A builder for {@link CujTestParam}.
@@ -61,9 +67,14 @@ public abstract class CujTestParam {
     public abstract Builder setMediaUrls(List<String> mediaUrls);
 
     /**
-     * Sets test timeoutMilliSeconds.
+     * Sets test duration.
      */
-    public abstract Builder setTimeoutMilliSeconds(long timeoutMilliSeconds);
+    public abstract Builder setDuration(Duration duration);
+
+    /**
+     * Sets test overhead.
+     */
+    public abstract Builder setOverhead(Duration overhead);
 
     /**
      * Sets test playerListener.
