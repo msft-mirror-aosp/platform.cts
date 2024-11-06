@@ -1459,46 +1459,35 @@ public class PackageManagerShellCommandInstallTest {
         installPackage(TEST_SDK1);
         overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
-        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "INSTALL_SUCCEEDED");
+        getUiAutomation().adoptShellPermissionIdentity();
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    /*expectedStatus=*/PackageInstaller.STATUS_SUCCESS,
+                    "INSTALL_SUCCEEDED");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
+    // TODO(b/372861776): Add tests for enabling dependency installer once the changes for installer
+    // behavior have been merged.
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testInstallAppWithoutDependantSdk_dependencyInstallerDisabled_failsLater()
             throws Exception {
         onBeforeSdkTests();
 
-        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "Reconcile failed");
-    }
-
-    // TODO(b/372861776): Add tests for enabling dependency installer once the changes for installer
-    // behavior have been merged.
-    private void installAppUsingDependantSdk(
-            boolean enableAutoInstallDependencies, String expectedMsg) throws Exception {
         getUiAutomation().adoptShellPermissionIdentity();
         try {
-            final PackageInstaller installer = getPackageInstaller();
-            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
-            params.setAppPackageName(TEST_SDK_USER_PACKAGE);
-            params.setEnableAutoInstallDependencies(enableAutoInstallDependencies);
-
-            final int sessionId = installer.createSession(params);
-            PackageInstaller.Session session = installer.openSession(sessionId);
-
-            writeFileToSession(session, "sdk1_user", TEST_USING_SDK1);
-
-            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
-            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
-                @Override
-                public void send(int code, Intent intent, String resolvedType,
-                        IBinder allowlistToken, IIntentReceiver finishedReceiver,
-                        String requiredPermission, Bundle options) {
-                    statusMessage.complete(
-                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
-                }
-            }));
-
-            assertThat(statusMessage.get()).contains(expectedMsg);
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    /*expectedStatus=*/null,
+                    "Reconcile failed");
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
@@ -2748,6 +2737,96 @@ public class PackageManagerShellCommandInstallTest {
                     (int) status.get());
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallSdk_withoutInstallDependencyPackagePermission() throws Exception {
+        onBeforeSdkTests();
+
+        commitApk(
+                TEST_SDK1_PACKAGE,
+                TEST_SDK1,
+                /*enableAutoInstallDependencies=*/false,
+                PackageInstaller.STATUS_PENDING_USER_ACTION,
+                /*expectedMsg=*/null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallSdk_withInstallDependencyPackagePermission() throws Exception {
+        onBeforeSdkTests();
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES);
+        try {
+            commitApk(
+                    TEST_SDK1_PACKAGE,
+                    TEST_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    PackageInstaller.STATUS_SUCCESS,
+                    /*expectedMsg=*/null);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallNonDependency_withInstallDependencyPackagePermission_fails()
+            throws Exception {
+        onBeforeSdkTests();
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES);
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    /*expectedMsg=*/null);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private void commitApk(
+            String packageName, String apk, boolean enableAutoInstallDependencies,
+            Integer expectedStatus, String expectedMsg)
+            throws Exception {
+        final PackageInstaller installer = getPackageInstaller();
+        final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(packageName);
+        params.setEnableAutoInstallDependencies(enableAutoInstallDependencies);
+
+        final int sessionId = installer.createSession(params);
+        PackageInstaller.Session session = installer.openSession(sessionId);
+
+        writeFileToSession(session, "test", apk);
+
+        final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+        final CompletableFuture<Integer> status = new CompletableFuture<>();
+        session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+            @Override
+            public void send(int code, Intent intent, String resolvedType,
+                    IBinder allowlistToken, IIntentReceiver finishedReceiver,
+                    String requiredPermission, Bundle options) {
+                status.complete(
+                        intent.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE));
+                statusMessage.complete(
+                        intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+            }
+        }));
+
+        if (expectedStatus != null) {
+            assertEquals(statusMessage.get(), expectedStatus, status.get());
+        }
+        if (expectedMsg != null) {
+            assertThat(statusMessage.get()).contains(expectedMsg);
         }
     }
 
