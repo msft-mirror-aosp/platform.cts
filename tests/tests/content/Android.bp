@@ -325,6 +325,7 @@ android_test {
         ":CtsContentDeclaringSdkLibrary",
         ":CtsContentDeclaringStaticLibrary",
         ":CtsPackageChangedTestApp",
+        ":CtsPackageChangedSharedUserIdTestApp",
         ":CtsIntentResolutionApplicationOverrideTestApp",
         ":CtsIntentResolutionComponentOverrideTestApp",
     ],
