@@ -30,6 +30,7 @@ import static android.keystore.cts.AuthorizationList.KM_PURPOSE_DECRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_ENCRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_SIGN;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_VERIFY;
+import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_UNVERIFIED;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
@@ -1712,6 +1713,24 @@ public class KeyAttestationTest {
                 // check to avoid running into waiver issues.
                 checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
+        } else {
+            // We expect exactly one of these combinations of values because either:
+            //   1) CTS is running on a signed bootloader-locked build verified with the OEM's root
+            //      of trust, so the Verified Boot state is KM_VERIFIED_BOOT_VERIFIED.
+            //   OR
+            //   2) CTS is running on a signed GSI. This requires an unlocked bootloader and
+            //      therefore a chain of trust cannot be established, so the Verified Boot state is
+            //      KM_VERIFIED_BOOT_UNVERIFIED.
+            // Builds with a custom root of trust (which would result in
+            // KM_VERIFIED_BOOT_SELF_SIGNED and could have a locked or unlocked bootloader)
+            // shouldn't pass CTS since they don't comply with CDD requirement 9.10 [C-1-3] which
+            // requires use of the fused OEM root of trust for Verified Boot.
+            boolean isLocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_VERIFIED
+                    && rootOfTrust.isDeviceLocked();
+            boolean isUnlocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_UNVERIFIED
+                    && !rootOfTrust.isDeviceLocked();
+            assertTrue("Unexpected combination of device locked state and Verified Boot "
+                    + "state.", isLocked || isUnlocked);
         }
     }
 
