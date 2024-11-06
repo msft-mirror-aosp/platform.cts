@@ -639,6 +639,21 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /**
+     * Asserts that no types use the update_provider attribute.
+     */
+    @Test
+    public void testNoExemptionsForUpdateInterfaces() throws Exception {
+        Set<String> types = sepolicyAnalyzeGetTypesAssociatedWithAttribute(
+                "update_provider");
+        if (!types.isEmpty()) {
+            List<String> sortedTypes = new ArrayList<>(types);
+            Collections.sort(sortedTypes);
+            fail("Use of the \"update_provider\" attribute is prohibited. "
+                    + "The following types were found using this attribute: " + sortedTypes);
+        }
+    }
+
+    /**
      * Tests that mlstrustedsubject does not include untrusted_app
      * and that mlstrustedobject does not include app_data_file.
      * This helps prevent circumventing the per-user isolation of
