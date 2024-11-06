@@ -723,6 +723,7 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
+            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
             NfcUtils.enableNfc(nfcAdapter, mContext);
             nfcOemExtension.unregisterCallback(cb);
