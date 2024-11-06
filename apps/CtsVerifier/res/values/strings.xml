@@ -5769,13 +5769,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
     <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
         use in this test.</string>
-    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+    <string name="usbwarning_paragraph_1">The test may pass using this USB peripheral.
         However, some adapters have been seen to implement noise
-        suppression and/or echo cancellation, or introduce significant latency that
-        may cause the test to fail. If the test does not pass with this adapter,
-        you should obtain the</string>
-    <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
-    <string name="usbwarning_paragraph_1_2">for use in this test.</string>
+        suppression and/or echo cancellation which may block some signals used by the test,
+        or may introduce significant latency (from 40 to 60 ms) that also
+        may cause the test to fail.</string>
+    <string name="usbwarning_paragraph_2">If the test does not pass with this adapter,
+        you should obtain a Google-supplied USB-C to 3.5mm Adapter and Loopback Adapter.</string>
 
     <!-- Immersive Audio Test -->
     <string name="immersive_audio_test">Immersive Audio Test</string>
