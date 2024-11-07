@@ -17,6 +17,7 @@
 package android.hardware.input.cts.tests;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.flags.Flags;
@@ -50,6 +51,7 @@ import android.virtualdevice.cts.common.VirtualDeviceRule;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.input.DefaultPointerSpeedRule;
 
 import org.junit.Rule;
@@ -73,6 +75,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
 
     private VirtualDevice mVirtualDevice;
     private VirtualDisplay mVirtualDisplay;
+    private UserHelper mUserHelper = new UserHelper(mInstrumentation.getTargetContext());
     private int mDisplayWidth;
     private int mDisplayHeight;
 
@@ -83,6 +86,11 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
 
     @Override
     void onSetUp() {
+        // TODO(b/376071769): Remove the annotation after the source display for mirroring
+        // on the virtual display supports the secondary display for the visible background user.
+        assumeFalse("Since the source display for mirroring on the virtual display"
+                + " only supports the default display, it cannot be tested for the"
+                + " visible background user", mUserHelper.isVisibleBackgroundUser());
         // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
         // display. Use the same size for the virtual display to avoid scaling the mirrored content.
         DisplayMetrics displayMetrics = new DisplayMetrics();
