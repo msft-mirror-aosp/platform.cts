@@ -269,7 +269,7 @@ public final class PackageSuspensionTest {
     // MostRestrictiveCoexistenceTest does not work for policies which have 0 or 2+ permissions
     @EnsureHasDevicePolicyManagerRoleHolder
     @EnsureHasDeviceOwner(isPrimary = true)
-    @RequireFlagsEnabled(Flags.FLAG_UNMANAGED_MODE_MIGRATION)
+    @RequireFlagsEnabled(Flags.FLAG_SUSPEND_PACKAGES_COEXISTENCE)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureTestAppInstalled
@@ -304,7 +304,7 @@ public final class PackageSuspensionTest {
 
     @EnsureHasDevicePolicyManagerRoleHolder
     @EnsureHasDeviceOwner(isPrimary = true)
-    @RequireFlagsEnabled(Flags.FLAG_UNMANAGED_MODE_MIGRATION)
+    @RequireFlagsEnabled(Flags.FLAG_SUSPEND_PACKAGES_COEXISTENCE)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureTestAppInstalled
@@ -372,8 +372,8 @@ public final class PackageSuspensionTest {
         try {
             if (dpc(sDeviceState) == dpmRoleHolder(sDeviceState)) {
                 assumeTrue("This test only runs with flag "
-                        + Flags.FLAG_UNMANAGED_MODE_MIGRATION
-                        + " is enabled", Flags.unmanagedModeMigration());
+                        + Flags.FLAG_SUSPEND_PACKAGES_COEXISTENCE
+                        + " is enabled", Flags.suspendPackagesCoexistence());
             }
         } catch (IllegalStateException e) {
             // Fine - DMRH is not set
