@@ -643,6 +643,11 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
         }
 
+        // Only present on devices that support night mode scene indicator detection
+        if (!staticInfo.isNightModeIndicatorSupported()) {
+            waiverKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        }
+
         // LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID not required if key is not supported.
         if (!staticInfo.isLogicalMultiCamera() ||
                 !staticInfo.isActivePhysicalCameraIdSupported()) {
@@ -1109,6 +1114,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
+        if (Flags.nightModeIndicator()) {
+            resultKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        }
 
         return resultKeys;
     }
