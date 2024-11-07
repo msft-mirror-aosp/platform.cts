@@ -16,17 +16,19 @@
 
 package com.android.compatibility.common.util;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.Rect;
-import android.os.SystemClock;
+import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import java.io.IOException;
@@ -34,21 +36,30 @@ import java.io.IOException;
 /**
  * Helper class to enable gesture navigation on the device.
  */
-public class GestureNavSwitchHelper {
+public final class GestureNavSwitchHelper {
+
+    private static final String TAG = "GestureNavSwitchHelper";
+
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
     private static final int NAV_BAR_MODE_GESTURAL = 2;
 
-    private static final String GESTURAL_OVERLAY_NAME =
+    private static final String NAV_BAR_MODE_3BUTTON_OVERLAY =
+            "com.android.internal.systemui.navbar.threebutton";
+
+    private static final String NAV_BAR_MODE_GESTURAL_OVERLAY =
             "com.android.internal.systemui.navbar.gestural";
 
-    private static final int WAIT_OVERLAY_TIMEOUT = 3000;
-    private static final int PEEK_INTERVAL = 200;
+    private static final String STATE_ENABLED = "STATE_ENABLED";
+
+    private static final long OVERLAY_WAIT_TIMEOUT = 10000;
 
     private final Instrumentation mInstrumentation;
     private final UiDevice mDevice;
     private final WindowManager mWindowManager;
-    // This object has tried to enable gesture navigation but failed.
-    private boolean mTriedEnableButFail;
+    /** Failed to enable gesture navigation. */
+    private boolean mEnableGestureNavFailed;
+    /** Failed to enable three button navigation. */
+    private boolean mEnableThreeButtonNavFailed;
 
     /**
      * Initialize all options in System Gesture.
@@ -61,11 +72,12 @@ public class GestureNavSwitchHelper {
         mWindowManager = context.getSystemService(WindowManager.class);
     }
 
-    private boolean hasSystemGestureFeature() {
+    /** Whether the device supports gesture navigation bar. */
+    public boolean hasSystemGestureFeature() {
         if (!containsNavigationBar()) {
             return false;
         }
-        Context context = mInstrumentation.getTargetContext();
+        final Context context = mInstrumentation.getTargetContext();
         final PackageManager pm = context.getPackageManager();
 
         // No bars on embedded devices.
@@ -81,47 +93,116 @@ public class GestureNavSwitchHelper {
     }
 
     /**
-     * Attempt to enable gesture navigation mode.
-     * @return true if gesture navigation mode is enabled.
+     * Enable gesture navigation mode.
+     *
+     * @return Whether the navigation mode was successfully set. This is {@code true} if the
+     * requested mode is already set.
      */
     public boolean enableGestureNavigationMode() {
         // skip retry
-        if (mTriedEnableButFail) {
+        if (mEnableGestureNavFailed) {
             return false;
         }
         if (!hasSystemGestureFeature()) {
             return false;
         }
-        if (isGestureMode()) {
+        if (isGestureModeWithOverlay()) {
             return true;
         }
-        enableGestureNav();
-        final boolean success = isGestureMode();
-        mTriedEnableButFail = !success;
+        final boolean success = setNavigationMode(NAV_BAR_MODE_GESTURAL_OVERLAY);
+        mEnableGestureNavFailed = !success;
         return success;
     }
 
-    private void enableGestureNav() {
+    /**
+     * Enable three button navigation mode.
+     *
+     * @return Whether the navigation mode was successfully set. This is {@code true} if the
+     * requested mode is already set.
+     */
+    public boolean enableThreeButtonNavigationMode() {
+        // skip retry
+        if (mEnableThreeButtonNavFailed) {
+            return false;
+        }
         if (!hasSystemGestureFeature()) {
-            return;
+            return true;
         }
-        try {
-            if (!mDevice.executeShellCommand("cmd overlay list").contains(GESTURAL_OVERLAY_NAME)) {
-                return;
-            }
-        } catch (IOException ignore) {
-            //
+        if (isThreeButtonMode()) {
+            return true;
         }
-        monitorOverlayChange(() -> {
-            try {
-                mDevice.executeShellCommand("cmd overlay enable " + GESTURAL_OVERLAY_NAME);
-            } catch (IOException e) {
-                // Do nothing
-            }
-        });
+        final boolean success = setNavigationMode(NAV_BAR_MODE_3BUTTON_OVERLAY);
+        mEnableThreeButtonNavFailed = !success;
+        return success;
     }
 
-    private void getCurrentInsetsSize(Rect outSize) {
+    /**
+     * Sets the navigation mode to gesture navigation, if necessary.
+     *
+     * @return an {@link AutoCloseable} that resets the navigation mode, if necessary.
+     */
+    @NonNull
+    public AutoCloseable withGestureNavigationMode() {
+        if (isGestureModeWithOverlay() || !hasSystemGestureFeature()) {
+            return () -> {};
+        }
+
+        assertWithMessage("Gesture navigation mode set")
+                .that(enableGestureNavigationMode()).isTrue();
+        return () -> assertWithMessage("Gesture navigation mode unset")
+                .that(enableThreeButtonNavigationMode()).isTrue();
+    }
+
+    /**
+     * Sets the navigation mode to three button navigation, if necessary.
+     *
+     * @return an {@link AutoCloseable} that resets the navigation mode, if necessary.
+     */
+    @NonNull
+    public AutoCloseable withThreeButtonNavigationMode() {
+        if (isThreeButtonMode() || !hasSystemGestureFeature()) {
+            return () -> {};
+        }
+
+        assertWithMessage("Three button navigation mode set")
+                .that(enableThreeButtonNavigationMode()).isTrue();
+        return () -> assertWithMessage("Three button navigation mode unset")
+                .that(enableGestureNavigationMode()).isTrue();
+    }
+
+    /**
+     * Sets the navigation mode exclusively (disabling all other modes).
+     *
+     * @param navigationModePkgName the package name of the navigation mode to be set.
+     *
+     * @return whether the navigation mode was successfully set.
+     */
+    private boolean setNavigationMode(@NonNull String navigationModePkgName) {
+        try {
+            final boolean hasOverlay = mDevice.executeShellCommand(
+                    "cmd overlay list --user current").contains(navigationModePkgName);
+            if (!hasOverlay) {
+                Log.i(TAG, "setNavigationMode, overlay: " + navigationModePkgName
+                        + " does not exist");
+                return false;
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to get overlay list", e);
+            return false;
+        }
+        Log.d(TAG, "setNavigationMode: " + navigationModePkgName);
+        try {
+            mDevice.executeShellCommand("cmd overlay enable-exclusive --category --user current "
+                    + navigationModePkgName);
+            mDevice.executeShellCommand("am wait-for-broadcast-barrier");
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to set navigation mode", e);
+            return false;
+        }
+        return waitForOverlayState(navigationModePkgName, STATE_ENABLED);
+    }
+
+    private void getCurrentInsetsSize(@NonNull Rect outSize) {
         outSize.setEmpty();
         if (mWindowManager != null) {
             WindowInsets insets = mWindowManager.getCurrentWindowMetrics().getWindowInsets();
@@ -131,53 +212,123 @@ public class GestureNavSwitchHelper {
         }
     }
 
-    // Monitoring the navigation bar insets size change as a hint of gesture mode has changed, not
-    // the best option for every kind of devices. We can consider listening OVERLAY_CHANGED
-    // broadcast in U.
-    private void monitorOverlayChange(Runnable overlayChangeCommand) {
-        if (mWindowManager != null) {
-            final Rect initSize = new Rect();
-            getCurrentInsetsSize(initSize);
-            overlayChangeCommand.run();
-            // wait for insets size change
-            final Rect peekSize = new Rect();
-            int t = 0;
-            while (t < WAIT_OVERLAY_TIMEOUT) {
-                SystemClock.sleep(PEEK_INTERVAL);
-                t += PEEK_INTERVAL;
-                getCurrentInsetsSize(peekSize);
-                if (!peekSize.equals(initSize)) {
-                    break;
-                }
-            }
-        } else {
-            // shouldn't happen
-            overlayChangeCommand.run();
-            SystemClock.sleep(WAIT_OVERLAY_TIMEOUT);
-        }
-    }
-
+    /**
+     * Returns the current navigation mode, as set on the resource with id
+     * {@link #NAV_BAR_INTERACTION_MODE_RES_NAME}. Note on instant app mode, as well as in general
+     * on some targets, this will return the incorrect value. The actual state of the overlay
+     * should be checked instead ({@link #getStateForOverlay}).
+     *
+     * @return {@code 0} for three button navigation mode, {@code 2} for gesture navigation mode.
+     */
     private int getCurrentNavMode() {
-        final Context context  = mInstrumentation.getTargetContext();
-        final Resources res = context.getResources();
+        final var res = mInstrumentation.getTargetContext().getResources();
         int naviModeId = res.getIdentifier(NAV_BAR_INTERACTION_MODE_RES_NAME, "integer", "android");
         return res.getInteger(naviModeId);
     }
 
     private boolean containsNavigationBar() {
-        final Rect peekSize = new Rect();
+        final var peekSize = new Rect();
         getCurrentInsetsSize(peekSize);
         return peekSize.height() != 0;
     }
 
+    /** Whether three button navigation mode is enabled. */
+    public boolean isThreeButtonMode() {
+        return containsNavigationBar()
+                && STATE_ENABLED.equals(getStateForOverlay(NAV_BAR_MODE_3BUTTON_OVERLAY));
+    }
+
     /**
-     * @return Whether gesture navigation mode is enabled.
+     * Whether gesture navigation mode is enabled. Differs from {@link #isGestureMode} by checking
+     * the actual overlay being used. */
+    public boolean isGestureModeWithOverlay() {
+        return containsNavigationBar()
+                && STATE_ENABLED.equals(getStateForOverlay(NAV_BAR_MODE_GESTURAL_OVERLAY));
+    }
+
+    /**
+     * Whether gesture navigation mode is enabled. Left to avoid breakages to existing tests.
      */
     public boolean isGestureMode() {
-        if (!containsNavigationBar()) {
-            return false;
+        // TODO(b/377912666): replace with {@link #isGestureModeWithOverlay} after ensuring tests
+        //  don't break.
+        return containsNavigationBar() && getCurrentNavMode() == NAV_BAR_MODE_GESTURAL;
+    }
+
+    /**
+     * Waits for the state of the overlay with the given package name to match the expected state.
+     *
+     * @param overlayPackage the package name of the overlay to check.
+     * @param expectedState  the expected overlay state.
+     *
+     * @return whether the overlay state eventually matched the expected state.
+     */
+    private boolean waitForOverlayState(@NonNull String overlayPackage,
+            @NonNull String expectedState) {
+        final long startTime = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - startTime < OVERLAY_WAIT_TIMEOUT) {
+            final String state = getStateForOverlay(overlayPackage);
+            if (expectedState.equals(state)) {
+                return true;
+            }
         }
-        final int naviMode = getCurrentNavMode();
-        return naviMode == NAV_BAR_MODE_GESTURAL;
+
+        Log.i(TAG, "waitForOverlayState, overlayPackage: " + overlayPackage + " state was not: "
+                + expectedState);
+        return false;
+    }
+
+    /**
+     * Returns the state of the overlay with the given package name.
+     *
+     * @param overlayPackage the package name of the overlay to check.
+     */
+    @NonNull
+    private String getStateForOverlay(@NonNull String overlayPackage) {
+        // TODO(b/377912666): create TestApi for checking overlay state directly
+        final String dumpResult;
+        try {
+            dumpResult = mDevice.executeShellCommand("cmd overlay dump");
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to get overlay dump", e);
+            return "";
+        }
+
+        final String overlayPackageForCurrentUser =
+                overlayPackage + ":" + mInstrumentation.getContext().getUserId();
+
+        final int startIndex = dumpResult.indexOf(overlayPackageForCurrentUser);
+        if (startIndex < 0) {
+            Log.i(TAG, "getStateForOverlay, " + overlayPackageForCurrentUser + " not found");
+            return "";
+        }
+
+        final int endIndex = dumpResult.indexOf('}', startIndex);
+        if (endIndex <= startIndex) {
+            Log.i(TAG, "getStateForOverlay, state closing bracket not found");
+            return "";
+        }
+
+        final int stateIndex = dumpResult.indexOf("mState", startIndex);
+        if (stateIndex <= startIndex || stateIndex >= endIndex) {
+            Log.i(TAG, "getStateForOverlay, mState not found");
+            return "";
+        }
+
+        final int colonIndex = dumpResult.indexOf(':', stateIndex);
+        if (colonIndex <= stateIndex || colonIndex >= endIndex) {
+            Log.i(TAG, "getStateForOverlay, colon separator not found");
+            return "";
+        }
+
+        final int endLineIndex = dumpResult.indexOf('\n', colonIndex);
+        if (endLineIndex <= colonIndex || endLineIndex >= endIndex) {
+            Log.i(TAG, "getStateForOverlay, line end not found");
+            return "";
+        }
+
+        final var overlayState = dumpResult.substring(colonIndex + 2, endLineIndex);
+        return overlayState;
     }
 }
