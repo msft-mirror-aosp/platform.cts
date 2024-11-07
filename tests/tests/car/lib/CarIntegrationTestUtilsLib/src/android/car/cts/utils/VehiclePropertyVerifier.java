@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 
 import android.car.VehicleAreaDoor;
 import android.car.VehicleAreaMirror;
@@ -63,6 +64,8 @@ import android.util.SparseIntArray;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.internal.annotations.GuardedBy;
 
 import com.google.common.collect.ImmutableList;
@@ -70,6 +73,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.hamcrest.Matchers;
+import org.junit.AssumptionViolatedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,6 +93,79 @@ import java.util.stream.IntStream;
  * @param T The type for the property.
  */
 public class VehiclePropertyVerifier<T> {
+    private static final String STEP_VERIFY_READ_APIS_PREFIX = "verifyReadApis";
+    private static final String STEP_VERIFY_WRITE_APIS_PREFIX = "verifyWriteApis";
+
+    /**
+     * A step to verify {@link CarPropertyManager#getCarPropertyConfig} returns expected config.
+     */
+    public static final String STEP_VERIFY_PROPERTY_CONFIG = "verifyPropertyConfig";
+    /**
+     * A step to verify that expected exceptions are thrown when missing permission.
+     */
+    public static final String STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION =
+            "verifyPermissionNotGrantedException";
+    /**
+     * A step to verify {@link CarPropertyManager#getProperty},
+     * {@link CarPropertyManager#getIntProperty}, {@link CarPropertyManager#getBooleanProperty},
+     * {@link CarPropertyManager#getFloatProperty}, {@link CarPropertyManager#getIntArrayProperty}.
+     */
+    public static final String STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC =
+            STEP_VERIFY_READ_APIS_PREFIX + ".getProperty";
+    /**
+     * A step to verify {@link CarPropertyManager#getPropertiesAsync}.
+     */
+    public static final String STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC =
+            STEP_VERIFY_READ_APIS_PREFIX + ".getPropertiesAsync";
+    /**
+     * A step to verify {@link CarPropertyManager#subscribePropertyEvents}.
+     */
+    public static final String STEP_VERIFY_READ_APIS_SUBSCRIBE =
+            STEP_VERIFY_READ_APIS_PREFIX + ".subscribePropertyEvents";
+    /**
+     * A step to verify that for ADAS properties, if the feature is disabled, the property must
+     * report error state.
+     *
+     * This step is skipped for non-adas properties.
+     */
+    public static final String STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE =
+            STEP_VERIFY_READ_APIS_PREFIX + ".disableAdasFeatureVerifyState";
+    /**
+     * A step to verify {@link CarPropertyManager#setProperty}.
+     */
+    public static final String STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC =
+            STEP_VERIFY_WRITE_APIS_PREFIX + ".setProperty";
+    /**
+     * A step to verify {@link CarPropertyManager#setPropertiesAsync}.
+     */
+    public static final String STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC =
+            STEP_VERIFY_WRITE_APIS_PREFIX + ".setPropertiesAsync";
+    /**
+     * A step to verify that for ADAS properties, if the feature is disabled, the property must
+     * report error state.
+     *
+     * This step is skipped for non-adas properties.
+     */
+    public static final String STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE =
+            STEP_VERIFY_WRITE_APIS_PREFIX + ".disableAdasFeatureVerifyState";
+
+    /**
+     * A step to verify that for HVAC power dependant properties, setting should be unavailable
+     * when HVAC power is off.
+     */
+    public static final String STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE =
+            STEP_VERIFY_WRITE_APIS_PREFIX + ".turnOffHvacPowerSetNotAvailable";
+    /**
+     * A step to that expected exceptions are thrown when missing permissions for read APIs.
+     */
+    public static final String STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION =
+            "verifyReadApisWithoutPermission";
+    /**
+     * A step to that expected exceptions are thrown when missing permissions for write APIs.
+     */
+    public static final String STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION =
+            "verifyWriteApisWithoutPermission";
+
     private static final String TAG = VehiclePropertyVerifier.class.getSimpleName();
     private static final String CAR_PROPERTY_VALUE_SOURCE_GETTER = "Getter";
     private static final String CAR_PROPERTY_VALUE_SOURCE_CALLBACK = "Callback";
@@ -150,6 +227,12 @@ public class VehiclePropertyVerifier<T> {
     private static Class<?> sExceptionClassOnGet;
     private static Class<?> sExceptionClassOnSet;
 
+    private static boolean sIsCarPropertyConfigsCached;
+    // A static cache to store all property configs. This will be reused across multiple test cases
+    // in order to save time.
+    private static SparseArray<CarPropertyConfig<?>> sCachedCarPropertyConfigs =
+            new SparseArray<>();
+
     private final Context mContext =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final CarPropertyManager mCarPropertyManager;
@@ -183,8 +266,6 @@ public class VehiclePropertyVerifier<T> {
     private final VerifierContext mVerifierContext;
     private final List<Integer> mStoredProperties = new ArrayList<>();
 
-    private boolean mIsCarPropertyConfigCached;
-    private CarPropertyConfig<T> mCachedCarPropertyConfig;
     private SparseArray<SparseArray<?>> mPropertyToAreaIdValues;
 
     private VehiclePropertyVerifier(
@@ -356,14 +437,43 @@ public class VehiclePropertyVerifier<T> {
 
     /**
      * Gets the car property config for the current property or reads from cache if already cached.
+     *
+     * Note that we statically cache all the property configs using the shell permission.
      */
     public @Nullable CarPropertyConfig<T> getCarPropertyConfig() {
-        if (!mIsCarPropertyConfigCached)  {
-            mCachedCarPropertyConfig = (CarPropertyConfig<T>) mCarPropertyManager
-                    .getCarPropertyConfig(mPropertyId);
-            mIsCarPropertyConfigCached = true;
+        return getCarPropertyConfig(/* useCache= */ true);
+    }
+
+    /**
+     * Gets the car property config for the current property.
+     *
+     * @param useCache Whether to use a local cache that prefetched all the configs using shell
+     *      permission.
+     */
+    public @Nullable CarPropertyConfig<T> getCarPropertyConfig(boolean useCache) {
+        return (CarPropertyConfig<T>) getCarPropertyConfig(mPropertyId, useCache);
+    }
+
+    private @Nullable CarPropertyConfig<?> getCarPropertyConfig(int propertyId) {
+        return getCarPropertyConfig(propertyId, /* useCache= */ true);
+    }
+
+    private @Nullable CarPropertyConfig<?> getCarPropertyConfig(int propertyId, boolean useCache) {
+        if (!useCache) {
+            return mCarPropertyManager.getCarPropertyConfig(propertyId);
         }
-        return mCachedCarPropertyConfig;
+
+        if (!sIsCarPropertyConfigsCached)  {
+            try (PermissionContext p = TestApis.permissions().withPermission(
+                    TestApis.permissions().adoptablePermissions().toArray(new String[0]))) {
+                var configs = mCarPropertyManager.getPropertyList();
+                for (int i = 0; i < configs.size(); i++) {
+                    sCachedCarPropertyConfigs.put(configs.get(i).getPropertyId(), configs.get(i));
+                }
+            }
+            sIsCarPropertyConfigsCached = true;
+        }
+        return sCachedCarPropertyConfigs.get(propertyId);
     }
 
     /**
@@ -374,6 +484,25 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
+     * Gets all verification steps.
+     */
+    public static ImmutableList<String> getAllSteps() {
+        return ImmutableList.of(STEP_VERIFY_PROPERTY_CONFIG,
+                STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION,
+                STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC,
+                STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC,
+                STEP_VERIFY_READ_APIS_SUBSCRIBE,
+                STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
+                STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC,
+                STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC,
+                STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
+                STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE,
+                STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION,
+                STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION
+            );
+    }
+
+    /**
      * Runs various verifications on the property.
      */
     public void verify() {
@@ -381,15 +510,53 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
-     * Runs various verifications on the property with exceptions expected.
+     * Runs a specific verification step.
+     */
+    public void verify(String step, @Nullable Class<?> exceptedExceptionClass) {
+        if (step.equals(STEP_VERIFY_PROPERTY_CONFIG)) {
+            verifyConfig();
+            return;
+        }
+        assumeTrue("Property: " + getPropertyName() + " is not supported", isSupported());
+        if (step.equals(STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION)) {
+            verifyPermissionNotGrantedException();
+        } else if (step.startsWith(STEP_VERIFY_READ_APIS_PREFIX)) {
+            verifyReadApis(step, exceptedExceptionClass);
+        } else if (step.startsWith(STEP_VERIFY_WRITE_APIS_PREFIX)) {
+            verifyWriteApis(step, exceptedExceptionClass);
+        } else if (step.equals(STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION)) {
+            verifyReadApisWithoutPermission();
+        } else if (step.equals(STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION)) {
+            verifyWriteApisWithoutPermission();
+        } else {
+            throw new IllegalStateException("Unknown step: " + step);
+        }
+    }
+
+    /**
+     * Runs all verification steps on the property with exceptions expected.
      *
      * @param exceptedExceptionClass The exception class expected for reading/writing the property.
      */
     public void verify(@Nullable Class<?> exceptedExceptionClass) {
-        verifyConfig();
-        verifyPermissionNotGrantedException();
-        verifyReadPermissions(exceptedExceptionClass);
-        verifyWritePermissions(exceptedExceptionClass);
+        verifySteps(getAllSteps(), exceptedExceptionClass);
+    }
+
+    private void verifySteps(List<String> steps, @Nullable Class<?> exceptedExceptionClass) {
+        for (int i = 0; i < steps.size(); i++) {
+            try {
+                verify(steps.get(i), exceptedExceptionClass);
+            } catch (AssumptionViolatedException e) {
+                if (steps.get(i).equals(STEP_VERIFY_PROPERTY_CONFIG)) {
+                    // If the assumption fails for verifying config. It means the property is not
+                    // supported and we should not continue the rest of the steps.
+                    throw e;
+                } else {
+                    // Otherwise, we allow one step to be skipped.
+                    continue;
+                }
+            }
+        }
     }
 
     private void assertGetPropertyNotSupported(String msg) {
@@ -401,7 +568,10 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void verifyConfig() {
+    /**
+     * Verifies the configuration for the property.
+     */
+    public void verifyConfig() {
         ImmutableSet.Builder<String> permissionsBuilder = ImmutableSet.<String>builder();
         for (ImmutableSet<String> writePermissions: mWritePermissions) {
             permissionsBuilder.addAll(writePermissions);
@@ -410,7 +580,8 @@ public class VehiclePropertyVerifier<T> {
 
         runWithShellPermissionIdentity(
                 () -> {
-                    CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+                    CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig(
+                            /* useCache= */ false);
                     if (carPropertyConfig == null) {
                         if (mAccess == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ || mAccess
                                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
@@ -442,7 +613,31 @@ public class VehiclePropertyVerifier<T> {
                 }, allPermissions.toArray(new String[0]));
     }
 
-    private void verifyReadPermissions(Class<?> exceptedExceptionClass) {
+    /**
+     * Verifies that caller can call read APIs with read permission.
+     */
+    private void verifyReadApis(String step, Class<?> exceptedExceptionClass) {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        for (String readPermission: mReadPermissions) {
+            verifyReadPermissionGivesAccessToReadApis(step, readPermission, exceptedExceptionClass);
+        }
+    }
+
+    /**
+     * Verifies that caller can call write APIs with write permission.
+     */
+    private void verifyWriteApis(String step, Class<?> exceptedExceptionClass) {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        for (ImmutableSet<String> writePermissions: mWritePermissions) {
+            verifyWritePermissionsGiveAccessToWriteApis(step, writePermissions, mReadPermissions,
+                    exceptedExceptionClass);
+        }
+    }
+
+    /**
+     * Verifies that caller cannot call read APIs without read permission.
+     */
+    private void verifyReadApisWithoutPermission() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (String readPermission: mReadPermissions) {
             if (AREA_ID_CONFIG_ACCESS_FLAG) {
@@ -457,11 +652,13 @@ public class VehiclePropertyVerifier<T> {
                 verifyReadPermissionCannotWrite(readPermission, mWritePermissions,
                         carPropertyConfig.getAreaIds()[0]);
             }
-            verifyReadPermissionGivesAccessToReadApis(readPermission, exceptedExceptionClass);
         }
     }
 
-    private void verifyWritePermissions(Class<?> exceptedExceptionClass) {
+    /**
+     * Verifies that caller cannot call write APIs without write permission.
+     */
+    private void verifyWriteApisWithoutPermission() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (ImmutableSet<String> writePermissions: mWritePermissions) {
             if (AREA_ID_CONFIG_ACCESS_FLAG) {
@@ -490,8 +687,6 @@ public class VehiclePropertyVerifier<T> {
                     verifyIndividualWritePermissionsCannotWrite(writePermissions, areaId);
                 }
             }
-            verifyWritePermissionsGiveAccessToWriteApis(writePermissions, mReadPermissions,
-                    exceptedExceptionClass);
         }
     }
 
@@ -540,28 +735,43 @@ public class VehiclePropertyVerifier<T> {
                 }, readPermission);
     }
 
-    private void verifyReadPermissionGivesAccessToReadApis(String readPermission,
+    private void verifyReadPermissionGivesAccessToReadApis(String step, String readPermission,
             Class<?> exceptedExceptionClass) {
-        try {
-            enableAdasFeatureIfAdasStateProperty();
-            runWithShellPermissionIdentity(() -> {
-                assertThat(mCarPropertyManager.getCarPropertyConfig(mPropertyId)).isNotNull();
-                turnOnHvacPowerIfHvacPowerDependent();
-                verifyCarPropertyValueGetter();
-                if (exceptedExceptionClass != null) {
-                    assertWithMessage("Expected " + sExceptionClassOnGet + " to be of type "
-                            + exceptedExceptionClass).that(sExceptionClassOnGet)
-                            .isEqualTo(exceptedExceptionClass);
-                } else {
-                    verifyCarPropertyValueCallback();
-                    verifyGetPropertiesAsync();
-                }
-            }, readPermission);
-
+        if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
+            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
             disableAdasFeatureIfAdasStatePropertyAndVerify(ImmutableSet.<String>builder()
                         .add(readPermission)
                         .addAll(mDependentOnPropertyPermissions)
                         .build().toArray(new String[0]));
+            return;
+        }
+
+        try {
+            enableAdasFeatureIfAdasStateProperty();
+            runWithShellPermissionIdentity(() -> {
+                assertThat(getCarPropertyConfig(/* useCache= */ false)).isNotNull();
+                turnOnHvacPowerIfHvacPowerDependent();
+                if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC)) {
+                    verifyCarPropertyValueGetter();
+                    if (exceptedExceptionClass != null) {
+                        assertWithMessage("Expected " + sExceptionClassOnGet + " to be of type "
+                                + exceptedExceptionClass).that(sExceptionClassOnGet)
+                                .isEqualTo(exceptedExceptionClass);
+                    }
+                    return;
+                }
+                if (exceptedExceptionClass != null) {
+                    return;
+                }
+
+                if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC)) {
+                    verifyGetPropertiesAsync();
+                }
+
+                if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
+                    verifyCarPropertyValueCallback();
+                }
+            }, readPermission);
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -674,7 +884,7 @@ public class VehiclePropertyVerifier<T> {
         for (String writePermission: writePermissions) {
             runWithShellPermissionIdentity(
                     () -> {
-                        assertThat(mCarPropertyManager.getCarPropertyConfig(mPropertyId)).isNull();
+                        assertThat(getCarPropertyConfig(/* useCache= */ false)).isNull();
                         assertThrows(
                                 mPropertyName
                                         + " - property ID: "
@@ -689,36 +899,53 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void verifyWritePermissionsGiveAccessToWriteApis(ImmutableSet<String> writePermissions,
-            ImmutableSet<String> readPermissions, Class<?> exceptedExceptionClass) {
+    private void verifyWritePermissionsGiveAccessToWriteApis(String step,
+            ImmutableSet<String> writePermissions, ImmutableSet<String> readPermissions,
+            Class<?> exceptedExceptionClass) {
         ImmutableSet<String> propertyPermissions =
                 ImmutableSet.<String>builder()
                         .addAll(writePermissions)
                         .addAll(readPermissions)
                         .build();
 
+        if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE)) {
+            assumeTrue("Not an ADAS property", mDependentOnPropertyId.isPresent());
+            disableAdasFeatureIfAdasStatePropertyAndVerify(
+                    propertyPermissions.toArray(new String[0]));
+            return;
+        }
+
         try {
+            // Store the current value before we call enableAdasFeatureIfAdasStateProperty, which
+            // might change this.
             runWithShellPermissionIdentity(() -> {
                 storeCurrentValues();
             }, propertyPermissions.toArray(new String[0]));
             enableAdasFeatureIfAdasStateProperty();
+
             runWithShellPermissionIdentity(() -> {
                 turnOnHvacPowerIfHvacPowerDependent();
-                verifyCarPropertyValueSetter();
-                if (exceptedExceptionClass != null) {
-                    assertWithMessage("Expected " + sExceptionClassOnSet + " to be of type "
-                            + exceptedExceptionClass).that(sExceptionClassOnSet)
-                            .isEqualTo(exceptedExceptionClass);
-                } else {
+
+                if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC)) {
+                    verifyCarPropertyValueSetter();
+                    if (exceptedExceptionClass != null) {
+                        assertWithMessage("Expected " + sExceptionClassOnSet + " to be of type "
+                                + exceptedExceptionClass).that(sExceptionClassOnSet)
+                                .isEqualTo(exceptedExceptionClass);
+                    }
+                }
+
+                if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC)
+                        && exceptedExceptionClass == null) {
                     verifySetPropertiesAsync();
                 }
-                if (turnOffHvacPowerIfHvacPowerDependent()) {
-                    verifySetNotAvailable();
+                if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE)) {
+                    assumeTrue("Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
+                    if (turnOffHvacPowerIfHvacPowerDependent()) {
+                        verifySetNotAvailable();
+                    }
                 }
             }, propertyPermissions.toArray(new String[0]));
-
-            disableAdasFeatureIfAdasStatePropertyAndVerify(
-                    propertyPermissions.toArray(new String[0]));
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -736,7 +963,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         CarPropertyConfig<Boolean> hvacPowerOnCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
+                getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
         if (hvacPowerOnCarPropertyConfig == null
                 || !hvacPowerOnCarPropertyConfig.getConfigArray().contains(mPropertyId)) {
             return;
@@ -748,12 +975,8 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private boolean turnOffHvacPowerIfHvacPowerDependent() {
-        if (!mPossiblyDependentOnHvacPowerOn) {
-            return false;
-        }
-
         CarPropertyConfig<Boolean> hvacPowerOnCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
+                getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
         if (hvacPowerOnCarPropertyConfig == null
                 || !hvacPowerOnCarPropertyConfig.getConfigArray().contains(mPropertyId)) {
             return false;
@@ -775,7 +998,7 @@ public class VehiclePropertyVerifier<T> {
         runWithShellPermissionIdentity(() -> {
             int adasEnabledPropertyId = mDependentOnPropertyId.get();
             CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    mCarPropertyManager.getCarPropertyConfig(adasEnabledPropertyId);
+                    getCarPropertyConfig(adasEnabledPropertyId);
 
             if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
                     adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
@@ -795,10 +1018,17 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void disableAdasFeatureIfAdasStatePropertyAndVerify(String[] enabledPermissionsList) {
-        if (disableAdasFeatureIfAdasStateProperty()) {
+        try {
+            if (disableAdasFeatureIfAdasStateProperty()) {
+                runWithShellPermissionIdentity(() -> {
+                    verifyAdasPropertyDisabled();
+                }, enabledPermissionsList);
+            }
+        }  finally {
+            // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
-                verifyAdasPropertyDisabled();
-            }, enabledPermissionsList);
+                restoreInitialValues();
+            },  mDependentOnPropertyPermissions.toArray(new String[0]));
         }
     }
 
@@ -814,13 +1044,15 @@ public class VehiclePropertyVerifier<T> {
         runWithShellPermissionIdentity(() -> {
             int adasEnabledPropertyId = mDependentOnPropertyId.get();
             CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    mCarPropertyManager.getCarPropertyConfig(adasEnabledPropertyId);
+                    getCarPropertyConfig(adasEnabledPropertyId);
 
             if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
                     adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
                             == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
                 return;
             }
+
+            storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
 
             // Disable ADAS feature in all supported area IDs.
             setBooleanPropertyInAllAreaIds(adasEnabledCarPropertyConfig,
@@ -849,11 +1081,17 @@ public class VehiclePropertyVerifier<T> {
                     + VehiclePropertyIds.toString(propertyId) + " already has a stored value");
         }
         mStoredProperties.add(propertyId);
+        for (int i = 0; i < areaIdToInitialValue.size(); i++) {
+            Log.i(TAG, "Storing initial value for property:"
+                    + VehiclePropertyIds.toString(propertyId) + " at area ID: "
+                    + areaIdToInitialValue.keyAt(i)
+                    + " to " + areaIdToInitialValue.valueAt(i));
+        }
         mPropertyToAreaIdValues.put(propertyId, areaIdToInitialValue);
     }
 
     private void restoreInitialValue(int propertyId) {
-        var carPropertyConfig = mCarPropertyManager.getCarPropertyConfig(propertyId);
+        var carPropertyConfig = getCarPropertyConfig(propertyId);
         SparseArray<?> areaIdToInitialValue = mPropertyToAreaIdValues.get(propertyId);
 
         if (areaIdToInitialValue == null || carPropertyConfig == null) {
@@ -958,6 +1196,8 @@ public class VehiclePropertyVerifier<T> {
                         + " to restore initial car property value.");
                 continue;
             }
+            Log.i(TAG, "Restoring value for: " + propertyName + " at area ID: " + areaId + " to "
+                    + originalValue);
             Object currentValue = currentCarPropertyValue.getValue();
             if (valueEquals(originalValue, currentValue)) {
                 continue;
@@ -1242,7 +1482,7 @@ public class VehiclePropertyVerifier<T> {
     private void verifyHvacTemperatureValueSuggestionSetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+                getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
         if (hvacTemperatureSetCarPropertyConfig == null) {
             return;
         }
@@ -2032,6 +2272,9 @@ public class VehiclePropertyVerifier<T> {
                         == areaIdOverlapCheckResults.size()).isTrue();
     }
 
+    /**
+     * Verifies that exceptions are thrown when caller does not have read/write permission.
+     */
     private void verifyPermissionNotGrantedException() {
         // If the client itself already has read/write permissions without adopting any permissions
         // from the shell, skip the test.
@@ -2045,7 +2288,7 @@ public class VehiclePropertyVerifier<T> {
                             + " - property ID: "
                             + mPropertyId
                             + " CarPropertyConfig should not be accessible without permissions.")
-                .that(mCarPropertyManager.getCarPropertyConfig(mPropertyId))
+                .that(getCarPropertyConfig(/* useCache= */ false))
                 .isNull();
 
         int access = carPropertyConfig.getAccess();
@@ -2114,7 +2357,7 @@ public class VehiclePropertyVerifier<T> {
         Float suggestedTempInCelsius = temperatureSuggestion[2];
         Float suggestedTempInFahrenheit = temperatureSuggestion[3];
         CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+                getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
         if (hvacTemperatureSetCarPropertyConfig == null) {
             return;
         }
