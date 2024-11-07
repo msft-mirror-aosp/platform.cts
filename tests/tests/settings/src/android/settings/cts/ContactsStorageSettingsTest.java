@@ -31,14 +31,12 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.SetFlagsRule;
 import android.provider.ContactsContract;
-
+import android.provider.Flags;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
-
-import com.android.settings.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +66,7 @@ public final class ContactsStorageSettingsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTACTS_DEFAULT_ACCOUNT_IN_SETTINGS)
+    @RequiresFlagsEnabled(Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testContactsStorageSettingsExist() throws Exception {
         Intent intent = new Intent(
                 ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT).addFlags(

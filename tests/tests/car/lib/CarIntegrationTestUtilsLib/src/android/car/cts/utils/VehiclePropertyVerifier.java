@@ -180,6 +180,8 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mVerifyErrorStates;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
+    private final VerifierContext mVerifierContext;
+    private final List<Integer> mStoredProperties = new ArrayList<>();
 
     private boolean mIsCarPropertyConfigCached;
     private CarPropertyConfig<T> mCachedCarPropertyConfig;
@@ -243,16 +245,15 @@ public class VehiclePropertyVerifier<T> {
         mReadPermissions = readPermissions;
         mWritePermissions = writePermissions;
         mPropertyToAreaIdValues = new SparseArray<>();
+        mVerifierContext = new VerifierContext(carPropertyManager);
     }
 
     /**
      * Gets a new builder for the verifier.
      */
     public static <T> Builder<T> newBuilder(
-            int propertyId, int access, int areaType, int changeMode, Class<T> propertyType,
-            CarPropertyManager carPropertyManager) {
-        return new Builder<>(propertyId, access, areaType, changeMode, propertyType,
-                carPropertyManager);
+            int propertyId, int access, int areaType, int changeMode, Class<T> propertyType) {
+        return new Builder<>(propertyId, access, areaType, changeMode, propertyType);
     }
 
     /**
@@ -697,10 +698,12 @@ public class VehiclePropertyVerifier<T> {
                         .build();
 
         try {
+            runWithShellPermissionIdentity(() -> {
+                storeCurrentValues();
+            }, propertyPermissions.toArray(new String[0]));
             enableAdasFeatureIfAdasStateProperty();
             runWithShellPermissionIdentity(() -> {
                 turnOnHvacPowerIfHvacPowerDependent();
-                storeCurrentValues();
                 verifyCarPropertyValueSetter();
                 if (exceptedExceptionClass != null) {
                     assertWithMessage("Expected " + sExceptionClassOnSet + " to be of type "
@@ -840,7 +843,27 @@ public class VehiclePropertyVerifier<T> {
         if (areaIdToInitialValue == null || areaIdToInitialValue.size() == 0) {
             return;
         }
-        mPropertyToAreaIdValues.put(carPropertyConfig.getPropertyId(), areaIdToInitialValue);
+        var propertyId = carPropertyConfig.getPropertyId();
+        if (mPropertyToAreaIdValues.contains(propertyId)) {
+            throw new IllegalStateException("The property: "
+                    + VehiclePropertyIds.toString(propertyId) + " already has a stored value");
+        }
+        mStoredProperties.add(propertyId);
+        mPropertyToAreaIdValues.put(propertyId, areaIdToInitialValue);
+    }
+
+    private void restoreInitialValue(int propertyId) {
+        var carPropertyConfig = mCarPropertyManager.getCarPropertyConfig(propertyId);
+        SparseArray<?> areaIdToInitialValue = mPropertyToAreaIdValues.get(propertyId);
+
+        if (areaIdToInitialValue == null || carPropertyConfig == null) {
+            Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
+                    + " to restore to, ignore");
+            return;
+        }
+
+        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
+                areaIdToInitialValue);
     }
 
     /**
@@ -848,24 +871,15 @@ public class VehiclePropertyVerifier<T> {
      * {@link #storeCurrentValues}.
      *
      * Do nothing if no stored current values are available.
+     *
+     * The properties values are restored in the reverse-order as they are stored.
      */
-    public <U> void restoreInitialValues() {
-        for (int i = 0; i < mPropertyToAreaIdValues.size(); i++) {
-            int propertyId = mPropertyToAreaIdValues.keyAt(i);
-            CarPropertyConfig<U> carPropertyConfig = (CarPropertyConfig<U>)
-                    mCarPropertyManager.getCarPropertyConfig(propertyId);
-            SparseArray<U> areaIdToInitialValue = (SparseArray<U>)
-                    mPropertyToAreaIdValues.get(propertyId);
-
-            if (areaIdToInitialValue == null || carPropertyConfig == null) {
-                Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
-                        + " to restore to, ignore");
-                return;
-            }
-
-            restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
-                    areaIdToInitialValue);
+    public void restoreInitialValues() {
+        for (int i = mStoredProperties.size() - 1; i >= 0; i--) {
+            restoreInitialValue(mStoredProperties.get(i));
         }
+        mStoredProperties.clear();
+        mPropertyToAreaIdValues.clear();
     }
 
     // Get a map storing the property's area Ids to the initial values.
@@ -923,14 +937,14 @@ public class VehiclePropertyVerifier<T> {
     }
 
     // Restore the initial values of the property provided by {@code areaIdToInitialValue}.
-    private static <U> void restoreInitialValuesByAreaId(CarPropertyConfig<U> carPropertyConfig,
-            CarPropertyManager carPropertyManager, SparseArray<U> areaIdToInitialValue) {
+    private static void restoreInitialValuesByAreaId(CarPropertyConfig<?> carPropertyConfig,
+            CarPropertyManager carPropertyManager, SparseArray<?> areaIdToInitialValue) {
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
             int areaId = areaIdToInitialValue.keyAt(i);
-            U originalValue = areaIdToInitialValue.valueAt(i);
-            CarPropertyValue<U> currentCarPropertyValue = null;
+            Object originalValue = areaIdToInitialValue.valueAt(i);
+            CarPropertyValue<?> currentCarPropertyValue = null;
             try {
                 currentCarPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
             } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
@@ -944,12 +958,12 @@ public class VehiclePropertyVerifier<T> {
                         + " to restore initial car property value.");
                 continue;
             }
-            U currentValue = (U) currentCarPropertyValue.getValue();
+            Object currentValue = currentCarPropertyValue.getValue();
             if (valueEquals(originalValue, currentValue)) {
                 continue;
             }
-            CarPropertyValue<U> carPropertyValue = setPropertyAndWaitForChange(carPropertyManager,
-                    propertyId, carPropertyConfig.getPropertyType(), areaId, originalValue);
+            CarPropertyValue<Object> carPropertyValue = setPropertyAndWaitForChange(
+                    carPropertyManager, propertyId, Object.class, areaId, originalValue);
             assertWithMessage(
                     "Failed to restore car property value for property: " + propertyName
                             + " at area ID: " + areaId + " to its original value: " + originalValue
@@ -1536,7 +1550,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         if (mAreaIdsVerifier.isPresent()) {
-            mAreaIdsVerifier.get().verify(areaIds);
+            mAreaIdsVerifier.get().verify(mVerifierContext, areaIds);
         }
 
         if (mChangeMode == CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS) {
@@ -1546,7 +1560,8 @@ public class VehiclePropertyVerifier<T> {
         }
 
         mCarPropertyConfigVerifier.ifPresent(
-                carPropertyConfigVerifier -> carPropertyConfigVerifier.verify(carPropertyConfig));
+                carPropertyConfigVerifier -> carPropertyConfigVerifier.verify(mVerifierContext,
+                        carPropertyConfig));
 
         if (!mPossibleConfigArrayValues.isEmpty()) {
             assertWithMessage(mPropertyName + " configArray must specify supported values")
@@ -1564,7 +1579,7 @@ public class VehiclePropertyVerifier<T> {
         }
 
         mConfigArrayVerifier.ifPresent(configArrayVerifier -> configArrayVerifier.verify(
-                carPropertyConfig.getConfigArray()));
+                mVerifierContext, carPropertyConfig.getConfigArray()));
 
         if (mPossibleConfigArrayValues.isEmpty() && !mConfigArrayVerifier.isPresent()
                 && !mCarPropertyConfigVerifier.isPresent()) {
@@ -1832,7 +1847,8 @@ public class VehiclePropertyVerifier<T> {
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(carPropertyConfig, propertyId,
+                propertyValueVerifier -> propertyValueVerifier.verify(
+                        mVerifierContext, carPropertyConfig, propertyId,
                         areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
@@ -2189,13 +2205,20 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
+     * A structure containing verifier context.
+     *
+     * This contains VehiclePropertyVerifier members that might be useful for the verification.
+     */
+    public record VerifierContext(CarPropertyManager carPropertyManager) {}
+
+    /**
      * An interface for verifying the config array.
      */
     public interface ConfigArrayVerifier {
         /**
          * Verifies the config array. Throws exception if not valid.
          */
-        void verify(List<Integer> configArray);
+        void verify(VerifierContext verifierContext, List<Integer> configArray);
     }
 
     /**
@@ -2205,8 +2228,8 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the property value. Throws exception if not valid.
          */
-        void verify(CarPropertyConfig<T> carPropertyConfig, int propertyId, int areaId,
-                long timestampNanos, T value);
+        void verify(VerifierContext verifierContext, CarPropertyConfig<T> carPropertyConfig,
+                int propertyId, int areaId, long timestampNanos, T value);
     }
 
     /**
@@ -2216,7 +2239,7 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the areaIds. Throws exception if not valid.
          */
-        void verify(int[] areaIds);
+        void verify(VerifierContext verifierContext, int[] areaIds);
     }
 
     /**
@@ -2226,7 +2249,7 @@ public class VehiclePropertyVerifier<T> {
         /**
          * Verifies the property config. Throws exception if not valid.
          */
-        void verify(CarPropertyConfig<?> carPropertyConfig);
+        void verify(VerifierContext verifierContext, CarPropertyConfig<?> carPropertyConfig);
     }
 
     /**
@@ -2238,7 +2261,7 @@ public class VehiclePropertyVerifier<T> {
         private final int mAreaType;
         private final int mChangeMode;
         private final Class<T> mPropertyType;
-        private final CarPropertyManager mCarPropertyManager;
+        private CarPropertyManager mCarPropertyManager;
         private boolean mRequiredProperty = false;
         private Optional<ConfigArrayVerifier> mConfigArrayVerifier = Optional.empty();
         private Optional<CarPropertyValueVerifier<T>> mCarPropertyValueVerifier = Optional.empty();
@@ -2263,13 +2286,28 @@ public class VehiclePropertyVerifier<T> {
                 ImmutableList.builder();
 
         private Builder(int propertyId, int access, int areaType, int changeMode,
-                Class<T> propertyType, CarPropertyManager carPropertyManager) {
+                Class<T> propertyType) {
             mPropertyId = propertyId;
             mAccess = access;
             mAreaType = areaType;
             mChangeMode = changeMode;
             mPropertyType = propertyType;
+        }
+
+        public int getPropertyId() {
+            return mPropertyId;
+        }
+
+        public boolean isRequired() {
+            return mRequiredProperty;
+        }
+
+        /**
+         * Sets the car property manager.
+         */
+        public Builder<T> setCarPropertyManager(CarPropertyManager carPropertyManager) {
             mCarPropertyManager = carPropertyManager;
+            return this;
         }
 
         /**
