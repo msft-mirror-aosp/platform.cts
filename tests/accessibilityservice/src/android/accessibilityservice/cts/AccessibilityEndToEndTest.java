@@ -2559,6 +2559,30 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testAddLabeledBy_viewOnInitializeAccessibilityNodeInfoInternal() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(editText).isNotNull();
+
+        labelOne.setLabelFor(R.id.edittext);
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+    }
+
+    @Test
     @ApiTest(apis = {
             "android.view.View#getSupplementalDescription",
     })
