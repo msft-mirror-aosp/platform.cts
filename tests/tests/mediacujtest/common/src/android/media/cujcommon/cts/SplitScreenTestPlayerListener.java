@@ -24,11 +24,13 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class SplitScreenTestPlayerListener extends PlayerListener {
 
-  private static final int SPLIT_SCREEN_DURATION_MS = 5000;
+  private static final Duration SPLIT_SCREEN_DURATION = Duration.ofSeconds(5);
 
-  public SplitScreenTestPlayerListener(long sendMessagePosition) {
+  public SplitScreenTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -55,7 +57,7 @@ public class SplitScreenTestPlayerListener extends PlayerListener {
           intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT | Intent.FLAG_ACTIVITY_NEW_TASK);
           mActivity.startActivity(intent);
           mActivity.mConfiguredSplitScreenMode = true;
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -68,7 +70,7 @@ public class SplitScreenTestPlayerListener extends PlayerListener {
           mActivity.startActivity(startIntent);
           mActivity.mConfiguredSplitScreenMode = false;
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + SPLIT_SCREEN_DURATION_MS)
+        .setPosition(mSendMessagePosition.plus(SPLIT_SCREEN_DURATION).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }

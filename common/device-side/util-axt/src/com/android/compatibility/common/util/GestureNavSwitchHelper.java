@@ -16,20 +16,17 @@
 
 package com.android.compatibility.common.util;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 
-import androidx.annotation.NonNull;
-import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import java.io.IOException;
@@ -37,18 +34,11 @@ import java.io.IOException;
 /**
  * Helper class to enable gesture navigation on the device.
  */
-public final class GestureNavSwitchHelper {
-
-    private static final String TAG = "GestureNavSwitchHelper";
-
+public class GestureNavSwitchHelper {
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
-    private static final int NAV_BAR_MODE_3BUTTON = 0;
     private static final int NAV_BAR_MODE_GESTURAL = 2;
 
-    private static final String NAV_BAR_MODE_3BUTTON_OVERLAY =
-            "com.android.internal.systemui.navbar.threebutton";
-
-    private static final String NAV_BAR_MODE_GESTURAL_OVERLAY =
+    private static final String GESTURAL_OVERLAY_NAME =
             "com.android.internal.systemui.navbar.gestural";
 
     private static final int WAIT_OVERLAY_TIMEOUT = 3000;
@@ -57,10 +47,8 @@ public final class GestureNavSwitchHelper {
     private final Instrumentation mInstrumentation;
     private final UiDevice mDevice;
     private final WindowManager mWindowManager;
-    /** Failed to enable gesture navigation. */
-    private boolean mEnableGestureNavFailed;
-    /** Failed to enable three button navigation. */
-    private boolean mEnableThreeButtonNavFailed;
+    // This object has tried to enable gesture navigation but failed.
+    private boolean mTriedEnableButFail;
 
     /**
      * Initialize all options in System Gesture.
@@ -73,12 +61,11 @@ public final class GestureNavSwitchHelper {
         mWindowManager = context.getSystemService(WindowManager.class);
     }
 
-    /** Whether the device supports gesture navigation bar. */
-    public boolean hasSystemGestureFeature() {
+    private boolean hasSystemGestureFeature() {
         if (!containsNavigationBar()) {
             return false;
         }
-        final Context context = mInstrumentation.getTargetContext();
+        Context context = mInstrumentation.getTargetContext();
         final PackageManager pm = context.getPackageManager();
 
         // No bars on embedded devices.
@@ -94,14 +81,12 @@ public final class GestureNavSwitchHelper {
     }
 
     /**
-     * Enable gesture navigation mode.
-     *
-     * @return Whether the navigation mode was successfully set. This is {@code true} if the
-     * requested mode is already set.
+     * Attempt to enable gesture navigation mode.
+     * @return true if gesture navigation mode is enabled.
      */
     public boolean enableGestureNavigationMode() {
         // skip retry
-        if (mEnableGestureNavFailed) {
+        if (mTriedEnableButFail) {
             return false;
         }
         if (!hasSystemGestureFeature()) {
@@ -110,95 +95,33 @@ public final class GestureNavSwitchHelper {
         if (isGestureMode()) {
             return true;
         }
-        setNavigationMode(NAV_BAR_MODE_GESTURAL_OVERLAY);
+        enableGestureNav();
         final boolean success = isGestureMode();
-        mEnableGestureNavFailed = !success;
+        mTriedEnableButFail = !success;
         return success;
     }
 
-    /**
-     * Enable three button navigation mode.
-     *
-     * @return Whether the navigation mode was successfully set. This is {@code true} if the
-     * requested mode is already set.
-     */
-    public boolean enableThreeButtonNavigationMode() {
-        // skip retry
-        if (mEnableThreeButtonNavFailed) {
-            return false;
-        }
+    private void enableGestureNav() {
         if (!hasSystemGestureFeature()) {
-            return true;
+            return;
         }
-        if (isThreeButtonMode()) {
-            return true;
-        }
-        setNavigationMode(NAV_BAR_MODE_3BUTTON_OVERLAY);
-        final boolean success = isThreeButtonMode();
-        mEnableThreeButtonNavFailed = !success;
-        return success;
-    }
-
-    /**
-     * Sets the navigation mode to gesture navigation, if necessary.
-     *
-     * @return an {@link AutoCloseable} that resets the navigation mode, if necessary.
-     */
-    @NonNull
-    public AutoCloseable withGestureNavigationMode() {
-        if (isGestureMode() || !hasSystemGestureFeature()) {
-            return () -> {};
-        }
-
-        assertWithMessage("Gesture navigation mode set")
-                .that(enableGestureNavigationMode()).isTrue();
-        return () -> assertWithMessage("Gesture navigation mode unset")
-                .that(enableThreeButtonNavigationMode()).isTrue();
-    }
-
-    /**
-     * Sets the navigation mode to three button navigation, if necessary.
-     *
-     * @return an {@link AutoCloseable} that resets the navigation mode, if necessary.
-     */
-    @NonNull
-    public AutoCloseable withThreeButtonNavigationMode() {
-        if (isThreeButtonMode() || !hasSystemGestureFeature()) {
-            return () -> {};
-        }
-
-        assertWithMessage("Three button navigation mode set")
-                .that(enableThreeButtonNavigationMode()).isTrue();
-        return () -> assertWithMessage("Three button navigation mode unset")
-                .that(enableGestureNavigationMode()).isTrue();
-    }
-
-    /**
-     * Sets the navigation mode to the given one, and disables other navigation modes.
-     *
-     * @param navigationMode the navigation mode to set.
-     */
-    private void setNavigationMode(@NonNull String navigationMode) {
         try {
-            if (!mDevice.executeShellCommand("cmd overlay list").contains(navigationMode)) {
+            if (!mDevice.executeShellCommand("cmd overlay list").contains(GESTURAL_OVERLAY_NAME)) {
                 return;
             }
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to get overlay list", e);
+        } catch (IOException ignore) {
+            //
         }
-        Log.d(TAG, "setNavigationMode: " + navigationMode);
         monitorOverlayChange(() -> {
             try {
-                mDevice.executeShellCommand("cmd overlay enable-exclusive --category "
-                        + navigationMode);
-                mDevice.executeShellCommand("am wait-for-broadcast-barrier");
+                mDevice.executeShellCommand("cmd overlay enable " + GESTURAL_OVERLAY_NAME);
             } catch (IOException e) {
-                Log.w(TAG, "Failed to set navigation mode", e);
+                // Do nothing
             }
         });
     }
 
-    private void getCurrentInsetsSize(@NonNull Rect outSize) {
+    private void getCurrentInsetsSize(Rect outSize) {
         outSize.setEmpty();
         if (mWindowManager != null) {
             WindowInsets insets = mWindowManager.getCurrentWindowMetrics().getWindowInsets();
@@ -211,7 +134,7 @@ public final class GestureNavSwitchHelper {
     // Monitoring the navigation bar insets size change as a hint of gesture mode has changed, not
     // the best option for every kind of devices. We can consider listening OVERLAY_CHANGED
     // broadcast in U.
-    private void monitorOverlayChange(@NonNull Runnable overlayChangeCommand) {
+    private void monitorOverlayChange(Runnable overlayChangeCommand) {
         if (mWindowManager != null) {
             final Rect initSize = new Rect();
             getCurrentInsetsSize(initSize);
@@ -235,24 +158,26 @@ public final class GestureNavSwitchHelper {
     }
 
     private int getCurrentNavMode() {
-        final var res = mInstrumentation.getTargetContext().getResources();
+        final Context context  = mInstrumentation.getTargetContext();
+        final Resources res = context.getResources();
         int naviModeId = res.getIdentifier(NAV_BAR_INTERACTION_MODE_RES_NAME, "integer", "android");
         return res.getInteger(naviModeId);
     }
 
     private boolean containsNavigationBar() {
-        final var peekSize = new Rect();
+        final Rect peekSize = new Rect();
         getCurrentInsetsSize(peekSize);
         return peekSize.height() != 0;
     }
 
-    /** Whether three button navigation mode is enabled. */
-    public boolean isThreeButtonMode() {
-        return containsNavigationBar() && getCurrentNavMode() == NAV_BAR_MODE_3BUTTON;
-    }
-
-    /** Whether gesture navigation mode is enabled. */
+    /**
+     * @return Whether gesture navigation mode is enabled.
+     */
     public boolean isGestureMode() {
-        return containsNavigationBar() && getCurrentNavMode() == NAV_BAR_MODE_GESTURAL;
+        if (!containsNavigationBar()) {
+            return false;
+        }
+        final int naviMode = getCurrentNavMode();
+        return naviMode == NAV_BAR_MODE_GESTURAL;
     }
 }

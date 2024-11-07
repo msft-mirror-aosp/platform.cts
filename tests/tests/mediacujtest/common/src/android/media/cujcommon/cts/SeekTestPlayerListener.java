@@ -30,16 +30,15 @@ public class SeekTestPlayerListener extends PlayerListener {
 
   private static final String LOG_TAG = SeekTestPlayerListener.class.getSimpleName();
 
-  private final int mNumOfSeekIteration;
-  private long mSeekTimeUs;
+  private final int mNumOfSeekIterationsPerClip;
+  private Duration mSeekDuration;
   private final long mSeed;
-  private boolean mSeekDone;
 
-  public SeekTestPlayerListener(int numOfSeekIteration, long seekTimeUs,
-      long sendMessagePosition) {
+  public SeekTestPlayerListener(int numOfSeekIterationsPerClip, Duration seekDuration,
+      Duration sendMessagePosition) {
     super();
-    this.mNumOfSeekIteration = numOfSeekIteration;
-    this.mSeekTimeUs = seekTimeUs;
+    this.mNumOfSeekIterationsPerClip = numOfSeekIterationsPerClip;
+    this.mSeekDuration = seekDuration;
     this.mSeed = getSeed();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -59,20 +58,25 @@ public class SeekTestPlayerListener extends PlayerListener {
    */
   private void seek() {
     Random random = new Random(mSeed);
-    // If number of seek requested is one then seek forward or backward alternatively for
-    // mSeekTimeUs on given media list.
-    // If number of seek requested is 30 then seek for mSeekTimeUs- forward 10 times,
-    // backward 10 times and then randomly backwards or forwards 10 times on each
-    // media item.
-    for (int i = 0; i < mNumOfSeekIteration; i++) {
-      mActivity.mPlayer.seekTo(mActivity.mPlayer.getCurrentPosition() + mSeekTimeUs);
-      if (mNumOfSeekIteration == 1 || i == 10) {
-        mSeekTimeUs *= -1;
-      } else if (i >= 20) {
-        mSeekTimeUs *= random.nextBoolean() ? -1 : 1;
+    // In case of small test, number of seek requested (i.e. mNumOfSeekIterationsPerClip) is one
+    // per clip. We seek forward and backward alternatively for mSeekDuration for all the clips in
+    // the given media list.
+    // In case of large test, number of seek requested (i.e. mNumOfSeekIterationsPerClip) is 30 per
+    // clip. We seek forward 10 times, backward 10 times or vice-versa (i.e. backward 10 times and
+    // forward 10 times) and then randomly backwards or forwards 10 times for mSeekDuration for all
+    // the clips in the given media l̥ist.
+    for (int i = 0; i < mNumOfSeekIterationsPerClip; i++) {
+      mActivity.mPlayer.seekTo(mActivity.mPlayer.getCurrentPosition() + mSeekDuration.toMillis());
+      // Update expected total time due to seek
+      mExpectedTotalTime -= mSeekDuration.toMillis();
+      mTotalSeekOverhead = mTotalSeekOverhead.plus(CujTestBase.OVERHEAD_PER_SEEK);
+      if (mNumOfSeekIterationsPerClip == 1 || i == 9) {
+        mSeekDuration = mSeekDuration.multipliedBy(-1);
+      } else if (i >= 19) {
+        mSeekDuration =
+            random.nextBoolean() ? mSeekDuration.multipliedBy(-1) : mSeekDuration.multipliedBy(1);
       }
     }
-    mSeekDone = true;
   }
 
   @Override
@@ -82,16 +86,10 @@ public class SeekTestPlayerListener extends PlayerListener {
 
   @Override
   public void onEventsPlaybackStateChanged(@NonNull Player player) {
-    if (player.getPlaybackState() == Player.STATE_READY) {
-      // Add change in duration due to seek
-      if (mSeekDone) {
-        mExpectedTotalTime += (mSendMessagePosition - player.getCurrentPosition());
-        mSeekDone = false;
-      } else if (mExpectedTotalTime == 0) {
-        // At the first media transition player is not ready. So, add duration of
-        // first clip when player is ready
-        mExpectedTotalTime += player.getDuration();
-      }
+    if (mExpectedTotalTime == 0 && player.getPlaybackState() == Player.STATE_READY) {
+      // At the first media transition player is not ready. So, add duration of
+      // first clip when player is ready
+      mExpectedTotalTime += player.getDuration();
     }
   }
 
@@ -99,7 +97,7 @@ public class SeekTestPlayerListener extends PlayerListener {
   public void onEventsMediaItemTransition(@NonNull Player player) {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           seek();
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }
