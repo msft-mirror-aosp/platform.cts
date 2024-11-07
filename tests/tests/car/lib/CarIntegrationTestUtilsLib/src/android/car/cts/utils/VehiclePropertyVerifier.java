@@ -2061,6 +2061,9 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static void verifyPropertyNotAvailableException(PropertyNotAvailableException e) {
+        if (!isAtLeastU()) {
+            return;
+        }
         assertThat(((PropertyNotAvailableException) e).getDetailedErrorCode())
                 .isIn(PROPERTY_NOT_AVAILABLE_ERROR_CODES);
         int vendorErrorCode = e.getVendorErrorCode();
@@ -2069,6 +2072,9 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static void verifyInternalErrorException(CarInternalErrorException e) {
+        if (!isAtLeastU()) {
+            return;
+        }
         int vendorErrorCode = e.getVendorErrorCode();
         assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
         assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
