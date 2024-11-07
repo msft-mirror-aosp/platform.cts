@@ -545,7 +545,7 @@ static jboolean nativeTestIfWriteSampleDataSucceedsAfterStop(JNIEnv* env, jobjec
     return static_cast<jboolean>(isPass);
 }
 
-int registerAndroidMediaV2CtsMuxerUnitTestApi(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerUnitTestApi(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestIfInvalidFdIsRejected", "()Z", (void*)nativeTestIfInvalidFdIsRejected},
             {"nativeTestIfReadOnlyFdIsRejected", "(Ljava/lang/String;)Z",
@@ -590,6 +590,6 @@ int registerAndroidMediaV2CtsMuxerUnitTestApi(JNIEnv* env) {
             {"nativeTestIfWriteSampleDataSucceedsAfterStop", "(Ljava/lang/String;)Z",
              (void*)nativeTestIfWriteSampleDataSucceedsAfterStop},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerUnitTest$TestApiNative");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerUnitTest$TestApiNative");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
