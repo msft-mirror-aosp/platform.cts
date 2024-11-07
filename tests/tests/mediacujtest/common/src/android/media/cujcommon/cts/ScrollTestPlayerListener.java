@@ -22,11 +22,13 @@ import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 
+import java.time.Duration;
+
 public class ScrollTestPlayerListener extends PlayerListener {
 
   private final int mNumOfScrollIteration;
 
-  public ScrollTestPlayerListener(int numOfScrollIteration, long sendMessagePosition) {
+  public ScrollTestPlayerListener(int numOfScrollIteration, Duration sendMessagePosition) {
     super();
     this.mNumOfScrollIteration = numOfScrollIteration;
     this.mSendMessagePosition = sendMessagePosition;
@@ -76,9 +78,9 @@ public class ScrollTestPlayerListener extends PlayerListener {
     for (int i = 0; i < mNumOfScrollIteration; i++) {
       currentPlayer.createMessage((messageType, payload) -> {
             scrollView(yIndex);
-          }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition * (i + 1))
-          .setDeleteAfterDelivery(true)
-          .send();
+          }).setLooper(Looper.getMainLooper())
+          .setPosition(mSendMessagePosition.multipliedBy(i + 1).toMillis())
+          .setDeleteAfterDelivery(true).send();
     }
   }
 }
