@@ -301,12 +301,12 @@ public class VehiclePropertyVerifiers {
                 .setConfigArrayVerifier(
                         (verifierContext, configArray) -> {
                             CarPropertyConfig<?> hvacPowerOnCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_POWER_ON);
                             for (int powerDependentProperty : configArray) {
                                 CarPropertyConfig<?> powerDependentCarPropertyConfig =
-                                        verifierContext.carPropertyManager().getCarPropertyConfig(
-                                                powerDependentProperty);
+                                        verifierContext.getCarPropertyManager()
+                                                .getCarPropertyConfig(powerDependentProperty);
                                 if (powerDependentCarPropertyConfig == null) {
                                     continue;
                                 }
@@ -390,7 +390,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION must be implemented if "
@@ -465,7 +465,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionAvailableConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE must be implemented if "
@@ -491,7 +491,7 @@ public class VehiclePropertyVerifiers {
                         (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
                                 hvacFanDirection) -> {
                             CarPropertyValue<Integer[]> hvacFanDirectionAvailableCarPropertyValue =
-                                    verifierContext.carPropertyManager().getProperty(
+                                    verifierContext.getCarPropertyManager().getProperty(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
                                             areaId);
                             assertWithMessage(
@@ -919,7 +919,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacTempSetCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_TEMPERATURE_SET);
                             if (hvacTempSetCarPropertyConfig == null) {
                                 return;

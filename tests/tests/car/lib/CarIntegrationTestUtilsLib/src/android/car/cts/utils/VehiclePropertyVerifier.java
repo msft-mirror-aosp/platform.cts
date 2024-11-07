@@ -2499,7 +2499,17 @@ public class VehiclePropertyVerifier<T> {
      *
      * This contains VehiclePropertyVerifier members that might be useful for the verification.
      */
-    public record VerifierContext(CarPropertyManager carPropertyManager) {}
+    public static class VerifierContext {
+        private final CarPropertyManager mCarPropertyManager;
+
+        public VerifierContext(CarPropertyManager carPropertyManager) {
+            mCarPropertyManager = carPropertyManager;
+        }
+
+        public CarPropertyManager getCarPropertyManager() {
+            return mCarPropertyManager;
+        }
+    }
 
     /**
      * An interface for verifying the config array.
