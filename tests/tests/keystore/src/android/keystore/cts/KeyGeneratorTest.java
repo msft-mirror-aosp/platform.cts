@@ -24,8 +24,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
@@ -747,6 +749,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm)
             throws Exception {
+        checkDeviceCompatibility();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -766,6 +769,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
             throws Exception {
+        checkDeviceCompatibility();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -898,5 +902,11 @@ public class KeyGeneratorTest {
     private static KeyGenerator getKeyGenerator(String algorithm) throws NoSuchAlgorithmException,
             NoSuchProviderException {
         return KeyGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
+    }
+
+
+    private void checkDeviceCompatibility() {
+        assumeFalse("Skipping test as DUT does not support this operation",
+                getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 }
