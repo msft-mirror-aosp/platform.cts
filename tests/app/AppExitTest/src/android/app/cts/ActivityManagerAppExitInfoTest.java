@@ -995,10 +995,11 @@ public final class ActivityManagerAppExitInfoTest {
         PollingCheck.check("not able to get tombstone", TOMBSTONE_FETCH_TIMEOUT_MS,
                 () -> tombstoneFetcher.fetchTrace());
 
-        InputStream trace = tombstoneFetcher.getTrace();
-        assertNotNull(trace);
-        Tombstone tombstone = Tombstone.parseFrom(trace);
-        assertEquals(tombstone.getPid(), mStubPackagePid);
+        try (InputStream trace = tombstoneFetcher.getTrace()) {
+            assertNotNull(trace);
+            Tombstone tombstone = Tombstone.parseFrom(trace);
+            assertEquals(tombstone.getPid(), mStubPackagePid);
+        }
     }
 
     @Test
