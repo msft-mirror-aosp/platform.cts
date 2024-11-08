@@ -91,6 +91,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
         if (CodecTestBase.IS_AT_LEAST_U) {
             MEDIATYPE_LIST_FOR_TYPE_MP4.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         }
+        if (CodecTestBase.IS_AFTER_V) {
+            MEDIATYPE_LIST_FOR_TYPE_MP4.add(MediaFormat.MIMETYPE_VIDEO_APV);
+        }
     }
     private static final List<String> MEDIATYPE_LIST_FOR_TYPE_WEBM =
             Arrays.asList(MediaFormat.MIMETYPE_VIDEO_VP8, MediaFormat.MIMETYPE_VIDEO_VP9,
