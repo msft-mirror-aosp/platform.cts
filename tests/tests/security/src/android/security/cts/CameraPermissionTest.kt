@@ -303,7 +303,7 @@ class CameraPermissionTest {
     setSensorPrivacy(enabled = true)
 
     // Wait for any potential block()
-    Thread.sleep(1000)
+    Thread.sleep(TIMEOUT_MILLIS)
 
     sendStopRepeating(OPEN_CAMERA_APP)
     checkAppOpenedCamera(
@@ -402,7 +402,7 @@ class CameraPermissionTest {
     setSensorPrivacy(enabled = true)
 
     // Wait for any potential block()
-    Thread.sleep(1000)
+    Thread.sleep(TIMEOUT_MILLIS)
 
     sendStopRepeating(CAMERA_PROXY_APP)
     checkAppOpenedCameraByProxy(
