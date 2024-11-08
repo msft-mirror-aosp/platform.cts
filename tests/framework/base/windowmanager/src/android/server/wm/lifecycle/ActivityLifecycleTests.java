@@ -549,7 +549,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Assert that the top activity was relaunched.
         waitAndAssertActivityStates(state(topOpaqueActivity, ON_RESUME));
-        assertRelaunchSequence(SecondActivity.class, getTransitionLog(), ON_RESUME);
+        // If the device uses a close-to-square display, we allow activity to relaunch
+        // multiple-times. It may receive multiple configuration change events due to task bar
+        // re-creation. Note that it won't happen after V+.
+        assertRelaunchSequence(SecondActivity.class, getTransitionLog(), ON_RESUME,
+                isCloseToSquareDisplay() /* allowMultipleTimes */);
 
         // Finish the top activity
         getTransitionLog().clear();
