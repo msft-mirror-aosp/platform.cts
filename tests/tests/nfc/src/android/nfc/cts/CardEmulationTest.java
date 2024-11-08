@@ -2265,6 +2265,16 @@ public class CardEmulationTest {
         instance.isEuiccSupported();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CARD_EMULATION_EUICC)
+    @Test
+    public void testGetSetDefaultNfcSubscriptionId() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        instance.setDefaultNfcSubscriptionId(0); // This may not be set on all OEM devices.
+        instance.getDefaultNfcSubscriptionId(); // This may not be set on all OEM devices.
+    }
+
     private Activity createAndResumeActivity() {
         ensureUnlocked();
         Intent intent
