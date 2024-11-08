@@ -82,6 +82,7 @@ java_defaults {
         "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
         "flag-junit",
+        "com_android_wm_shell_flags_lib",
     ],
 
     test_suites: [
@@ -122,6 +123,7 @@ java_defaults {
         ":CtsDeviceServicesTestApp",
         ":CtsDeviceServicesTestApp27",
         ":CtsDeviceServicesTestApp30",
+        ":CtsDeviceServicesTestAppTv",
         ":CtsDeviceServicesTestSecondApp",
         ":CtsDeviceServicesTestThirdApp",
         ":CtsDeviceDeprecatedAbiApp",

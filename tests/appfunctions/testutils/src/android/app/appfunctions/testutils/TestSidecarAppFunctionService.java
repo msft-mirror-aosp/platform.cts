@@ -21,9 +21,9 @@ import android.os.CancellationSignal;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.appfunctions.sidecar.AppFunctionService;
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest;
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse;
+import com.android.extensions.appfunctions.AppFunctionService;
+import com.android.extensions.appfunctions.ExecuteAppFunctionRequest;
+import com.android.extensions.appfunctions.ExecuteAppFunctionResponse;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

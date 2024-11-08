@@ -325,6 +325,9 @@
         <activity android:name="android.app.stubs.MockListActivity"
              android:label="MockListActivity"/>
 
+        <activity android:name="android.app.stubs.MockTopResumedReporterActivity"
+            android:label="MockTopResumedReporterActivity"/>
+
         <activity android:name="android.app.stubs.AppStubActivity"
              android:label="AppStubActivity"
              android:exported="true">
