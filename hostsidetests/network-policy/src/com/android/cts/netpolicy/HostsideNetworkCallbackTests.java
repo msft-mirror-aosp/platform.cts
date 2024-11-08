@@ -18,9 +18,6 @@ package com.android.cts.netpolicy;
 import static com.android.cts.netpolicy.arguments.InstrumentationArguments.ARG_WAIVE_BIND_PRIORITY;
 
 import android.platform.test.annotations.FlakyTest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-
-import com.android.server.net.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +52,6 @@ public class HostsideNetworkCallbackTests extends HostsideNetworkPolicyTestCase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testOnBlockedStatusChanged_default() throws Exception {
         runDeviceTestsWithCustomOptions(TEST_PKG, TEST_PKG + ".NetworkCallbackTest",
                 "testOnBlockedStatusChanged_default", Map.of(ARG_WAIVE_BIND_PRIORITY, "true"));

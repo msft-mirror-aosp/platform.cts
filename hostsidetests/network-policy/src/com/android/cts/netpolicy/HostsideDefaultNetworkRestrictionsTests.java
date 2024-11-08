@@ -19,9 +19,7 @@ package com.android.cts.netpolicy;
 import static com.android.cts.netpolicy.arguments.InstrumentationArguments.ARG_WAIVE_BIND_PRIORITY;
 
 import android.platform.test.annotations.FlakyTest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 
-import com.android.server.net.Flags;
 import com.android.tradefed.device.DeviceNotAvailableException;
 
 import org.junit.After;
@@ -31,7 +29,6 @@ import org.junit.Test;
 import java.util.Map;
 
 @FlakyTest(bugId = 288324467)
-@RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
 public class HostsideDefaultNetworkRestrictionsTests extends HostsideNetworkPolicyTestCase {
     private static final String METERED_TEST_CLASS = TEST_PKG + ".DefaultRestrictionsMeteredTest";
     private static final String NON_METERED_TEST_CLASS =
