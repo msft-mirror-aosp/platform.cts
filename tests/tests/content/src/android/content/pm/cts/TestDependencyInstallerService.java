@@ -22,7 +22,6 @@ import static android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES;
 import static android.content.pm.PackageManager.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 
 import android.app.PendingIntent;
-import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -51,6 +50,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -68,8 +68,10 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
 
     private static final String TAG = TestDependencyInstallerService.class.getSimpleName();
     private static final String LIB_NAME_SDK_1 = "com.test.sdk1";
+    private static final String LIB_NAME_SDK_2 = "com.test.sdk2";
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";
     private static final String TEST_SDK1_APK_NAME = "HelloWorldSdk1";
+    private static final String TEST_SDK2_APK_NAME = "HelloWorldSdk2";
 
     private String mCertDigest;
 
@@ -88,9 +90,16 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             return;
         }
 
+        boolean sync = true;
         for (SharedLibraryInfo info: neededLibraries) {
-            // DIS only knows how to handle SDK1
             if (isSdk1(info)) {
+                Log.i(TAG, "SDK1 missing dependency found");
+                continue;
+            }
+
+            if (isSdk2(info)) {
+                Log.i(TAG, "SDK2 missing dependency found");
+                sync = false;
                 continue;
             }
             // For everything else, fail.
@@ -100,35 +109,59 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             return;
         }
 
-        installDependenciesBlocked(callback);
+        installDependencies(neededLibraries, callback, sync);
     }
 
     private boolean isSdk1(SharedLibraryInfo info) {
-        if (info.getName() == null || !info.getName().equals(LIB_NAME_SDK_1)) {
+        if (info.getCertDigests().isEmpty() || info.getName() == null) {
             return false;
         }
-        if (info.getCertDigests().isEmpty()
-                || !info.getCertDigests().get(0).equals(mCertDigest)) {
-            return false;
-        }
-        return true;
+        return info.getName().equals(LIB_NAME_SDK_1)
+            && info.getCertDigests().get(0).equals(mCertDigest);
     }
 
-    private void installDependenciesBlocked(DependencyInstallerCallback callback) {
+    private boolean isSdk2(SharedLibraryInfo info) {
+        if (info.getCertDigests().isEmpty() || info.getName() == null) {
+            return false;
+        }
+        return info.getName().equals(LIB_NAME_SDK_2)
+            && info.getCertDigests().get(0).equals(mCertDigest);
+    }
+
+    private void installDependencies(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback, boolean sync) {
         try {
             PackageInstaller installer = getPackageManager().getPackageInstaller();
-            SessionParams params = new SessionParams(MODE_FULL_INSTALL);
-            int sessionId = installer.createSession(params);
-            Log.i(TAG, "Session created: " + sessionId);
-            Session session = installer.openSession(sessionId);
-            writeApk(session, TEST_SDK1_APK_NAME);
-            SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionId);
-            session.commit(sender.getIntentSender(this));
+            int size = neededLibraries.size();
+            List<Integer> sessionIds = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                SessionParams params = new SessionParams(MODE_FULL_INSTALL);
+                int sessionId = installer.createSession(params);
+                Log.i(TAG, "Session created: " + sessionId);
+                sessionIds.add(sessionId);
+            }
+
+            // Return the session ids immediately
+            if (!sync) {
+                callback.onAllDependenciesResolved(sessionIds.stream().mapToInt(i->i).toArray());
+            }
+
+            for (int i = 0; i < size; i++) {
+                int sessionId = sessionIds.get(i);
+                Session session = installer.openSession(sessionId);
+                SharedLibraryInfo info = neededLibraries.get(i);
+                if (isSdk1(info)) {
+                    writeApk(session, TEST_SDK1_APK_NAME);
+                } else if (isSdk2(info)) {
+                    writeApk(session, TEST_SDK2_APK_NAME);
+                }
+                SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionId);
+                session.commit(sender.getIntentSender(this));
+            }
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
             callback.onFailureToResolveAllDependencies();
         }
-
     }
 
     private void writeApk(@NonNull Session session, @NonNull String name) throws IOException {
@@ -155,10 +188,6 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         return InstrumentationRegistry.getContext();
     }
 
-    private static UiAutomation getUiAutomation() {
-        return InstrumentationRegistry.getInstrumentation().getUiAutomation();
-    }
-
     private static void copyStream(InputStream in, OutputStream out) throws IOException {
         int total = 0;
         byte[] buffer = new byte[8192];
@@ -183,12 +212,11 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             Log.i(TAG, "Received intent " + prettyPrint(intent));
             int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                     PackageInstaller.STATUS_FAILURE);
-            if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
-                Log.i(TAG, "PENDING USER ACTION!");
-                mCallback.onFailureToResolveAllDependencies();
-            } else {
+            if (status == PackageInstaller.STATUS_SUCCESS) {
                 int[] result = {mSessionId};
                 mCallback.onAllDependenciesResolved(result);
+            } else {
+                mCallback.onFailureToResolveAllDependencies();
             }
         }
 
