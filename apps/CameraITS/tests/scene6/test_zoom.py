@@ -17,14 +17,17 @@
 import logging
 import os.path
 
+from mobly import test_runner
+import numpy as np
+
+import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
-import its_base_test
 import its_session_utils
-from mobly import test_runner
-import numpy as np
+import opencv_processing_utils
 import zoom_capture_utils
+
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -103,6 +106,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       req = capture_request_utils.auto_capture_request()
       test_failed = False
+      id_to_fov = {}
       for fmt in test_formats:
         logging.debug('testing %s format', fmt)
         test_data = []
@@ -130,6 +134,18 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           # determine radius tolerance of capture
           cap_fl = cap['metadata']['android.lens.focalLength']
+          cap_physical_id = (
+              cap['metadata']['android.logicalMultiCamera.activePhysicalId']
+          )
+          if cap_physical_id not in id_to_fov:
+            physical_props = cam.get_camera_properties_by_id(cap_physical_id)
+            physical_fov = float(cam.calc_camera_fov(physical_props))
+            id_to_fov[cap_physical_id] = physical_fov
+          physical_fov = id_to_fov[cap_physical_id]
+          is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
+          if is_tele:
+            z_max = max(data.result_zoom for data in test_data)
+            break
           radius_tol, offset_tol = test_tols.get(
               cap_fl,
               (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
