@@ -24,6 +24,7 @@ import android.service.watchdog.ExplicitHealthCheckService;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 @RunWith(AndroidJUnit4.class)
+@Ignore("b/361126781") // TODO: b/361126781 Re-enable after creating the API
 public final class ExplicitHealthCheckServiceTest {
 
     private ExplicitHealthCheckService mExplicitHealthCheckService;

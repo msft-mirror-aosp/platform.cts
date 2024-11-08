@@ -44,9 +44,9 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
+import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager
+import com.android.extensions.appfunctions.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.android.extensions.appfunctions.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -93,7 +93,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -128,7 +128,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -159,7 +159,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -198,7 +198,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -264,7 +264,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#isAppFunctionEnabled"]
     )
     @Test
     @IncludeRunOnSecondaryUser
@@ -276,7 +276,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#setAppFUnctionEnabled"]
     )
     @Test
     @IncludeRunOnSecondaryUser
