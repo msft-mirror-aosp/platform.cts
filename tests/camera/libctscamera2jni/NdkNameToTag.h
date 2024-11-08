@@ -292,6 +292,7 @@
       {"android.heic.availableHeicUltraHdrStallDurationsMaximumResolution", ACAMERA_HEIC_AVAILABLE_HEIC_ULTRA_HDR_STALL_DURATIONS_MAXIMUM_RESOLUTION},
       {"android.automotive.location", ACAMERA_AUTOMOTIVE_LOCATION},
       {"android.automotive.lens.facing", ACAMERA_AUTOMOTIVE_LENS_FACING},
+      {"android.extension.nightModeIndicator", ACAMERA_EXTENSION_NIGHT_MODE_INDICATOR},
       {"android.jpegr.availableJpegRStreamConfigurations", ACAMERA_JPEGR_AVAILABLE_JPEG_R_STREAM_CONFIGURATIONS},
       {"android.jpegr.availableJpegRMinFrameDurations", ACAMERA_JPEGR_AVAILABLE_JPEG_R_MIN_FRAME_DURATIONS},
       {"android.jpegr.availableJpegRStallDurations", ACAMERA_JPEGR_AVAILABLE_JPEG_R_STALL_DURATIONS},

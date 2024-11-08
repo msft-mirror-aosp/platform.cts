@@ -24,6 +24,9 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -33,6 +36,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -75,6 +79,11 @@ public class WatchUidRunner {
     static final String[] COMMAND_TO_STRING = new String[] {
             "procstate", "active", "idle", "uncached", "cached", "gone", "capability"
     };
+
+    // Index of each value in the `am watch-uid` output line.
+    static final int CMD_INDEX = 1;
+    static final int PROCSTATE_INDEX = 2;
+    static final int CAPABILITY_INDEX = 6;
 
     final Instrumentation mInstrumentation;
     final int mUid;
@@ -141,14 +150,14 @@ public class WatchUidRunner {
     public void expect(int cmd, String procState, long timeout) {
         long waitUntil = SystemClock.uptimeMillis() + timeout;
         String[] line = waitForNextLine(waitUntil, cmd, procState, 0);
-        if (!COMMAND_TO_STRING[cmd].equals(line[1])) {
+        if (!COMMAND_TO_STRING[cmd].equals(line[CMD_INDEX])) {
             String msg = "Expected cmd " + COMMAND_TO_STRING[cmd]
                     + " uid " + mUid + " but next report was " + Arrays.toString(line);
             Log.d(TAG, msg);
             logRemainingLines();
             throw new IllegalStateException(msg);
         }
-        if (procState != null && (line.length < 3 || !procState.equals(line[2]))) {
+        if (procState != null && (line.length < 3 || !procState.equals(line[PROCSTATE_INDEX]))) {
             String msg = "Expected procstate " + procState
                     + " uid " + mUid + " but next report was " + Arrays.toString(line);
             Log.d(TAG, msg);
@@ -159,62 +168,91 @@ public class WatchUidRunner {
     }
 
     public void waitFor(int cmd) {
-        waitFor(cmd, null, null, mDefaultWaitTime);
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd).build();
+        waitFor(predicate, null);
     }
 
     public void waitFor(int cmd, long timeout) {
-        waitFor(cmd, null, null, timeout);
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd).build();
+        waitFor(predicate, null, timeout);
     }
 
     public void waitFor(int cmd, String procState) {
-        waitFor(cmd, procState, null, mDefaultWaitTime);
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd)
+                .setExpectedProcState(procState)
+                .build();
+        waitFor(predicate, null);
     }
 
     public void waitFor(int cmd, String procState, Integer capability) {
-        waitFor(cmd, procState, capability, mDefaultWaitTime);
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd)
+                .setExpectedProcState(procState)
+                .setExpectedCapability(capability)
+                .build();
+        waitFor(predicate, null);
     }
 
     public void waitFor(int cmd, String procState, long timeout) {
-        waitFor(cmd, procState, null, timeout);
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd)
+                .setExpectedProcState(procState)
+                .build();
+        waitFor(predicate, null, timeout);
     }
 
     public void waitFor(int cmd, String procState, Integer capability, long timeout) {
+        final WatchUidPredicate predicate = new WatchUidPredicate.Builder(cmd)
+                                                        .setExpectedProcState(procState)
+                                                        .setExpectedCapability(capability)
+                                                        .build();
+        waitFor(predicate, null, timeout);
+    }
+
+    /**
+     * Waits for the `am watch-uid` command to output a line that matches the provided predicate.
+     *
+     * @param expectedPredicate the waitFor will return once this predicate returns true.
+     * @param failurePredicate  an {@link IllegalStateException} will be thrown if this predicate
+     *                          returns true before the {@code expectedPredicate}.
+     */
+    public void waitFor(@NonNull WatchUidPredicate expectedPredicate,
+            @Nullable WatchUidPredicate failurePredicate) {
+        waitFor(expectedPredicate, failurePredicate, mDefaultWaitTime);
+    }
+
+    /**
+     * Waits for the `am watch-uid` command to output a line that matches the provided predicate.
+     *
+     * @param expectedPredicate the waitFor will return once this predicate returns true.
+     * @param failurePredicate  an {@link IllegalStateException} will be thrown if this predicate
+     *                          returns true before the {@code expectedPredicate}.
+     * @param timeout           an {@link IllegalStateException} will be thrown if this timeout (in
+     *                          milliseconds) is exceeded.
+     */
+    public void waitFor(@NonNull WatchUidPredicate expectedPredicate,
+            @Nullable WatchUidPredicate failurePredicate, long timeout) {
+        final int cmd = expectedPredicate.cmd;
+        final String procState = expectedPredicate.procState;
+        final Integer capability = expectedPredicate.capability;
         Log.i(TAG, "waitFor(cmd=" + cmd + ", procState=" + procState + ", capability=" + capability
                 + ", timeout=" + timeout + ")");
         long waitUntil = SystemClock.uptimeMillis() + timeout;
         while (true) {
             String[] line = waitForNextLine(waitUntil, cmd, procState, capability);
-            if (COMMAND_TO_STRING[cmd].equals(line[1])) {
-                if (procState == null && capability == null) {
-                    Log.d(TAG, "Waited for: " + Arrays.toString(line));
-                    return;
-                }
-                if (cmd == CMD_PROCSTATE) {
-                    if (procState != null && capability != null) {
-                        if (procState.equals(line[2]) && capability.toString().equals(line[6])) {
-                            Log.d(TAG, "Waited for: " + Arrays.toString(line));
-                            return;
-                        }
-                    } else if (procState != null) {
-                        if (procState.equals(line[2])) {
-                            Log.d(TAG, "Waited for: " + Arrays.toString(line));
-                            return;
-                        }
-                    } else if (capability != null) {
-                        if (capability.toString().equals(line[6])) {
-                            Log.d(TAG, "Waited for: " + Arrays.toString(line));
-                            return;
-                        }
-                    }
-                } else {
-                    if (procState != null
-                            && procState.equals(line[2])) {
-                        Log.d(TAG, "Waited for: " + Arrays.toString(line));
-                        return;
-                    }
-                }
-                Log.d(TAG, "Skipping because procstate not " + procState + ": "
-                        + Arrays.toString(line));
+            if (expectedPredicate.test(line)) {
+                Log.d(TAG, "Waited for: " + Arrays.toString(line));
+                return;
+            } else if (failurePredicate != null && failurePredicate.test(line)) {
+                String msg = "Unexpected line hit: uid=" + mUidStr
+                        + " cmd=" + COMMAND_TO_STRING[failurePredicate.cmd]
+                        + " procState=" + failurePredicate.procState
+                        + " capability=" + failurePredicate.capability
+                        + " (Expected:"
+                        + " cmd=" + COMMAND_TO_STRING[cmd]
+                        + " procState=" + procState
+                        + " capability=" + capability
+                        + ")";
+                Log.d(TAG, msg);
+                throw new IllegalStateException(msg);
             } else {
                 Log.d(TAG, "Skipping because not " + COMMAND_TO_STRING[cmd] + ": "
                         + Arrays.toString(line));
@@ -327,6 +365,83 @@ public class WatchUidRunner {
                 return new String[] { mLastReadLine };
             }
             return mSpaceSplitter.split(mLastReadLine);
+        }
+    }
+
+    public static final class WatchUidPredicate implements Predicate<String[]> {
+        public final int cmd;
+        @Nullable public final String procState;
+        @Nullable public final Integer capability;
+
+        private WatchUidPredicate(Builder builder) {
+            cmd = builder.mCmd;
+            procState = builder.mProcState;
+            capability = builder.mCapability;
+        }
+
+        /**
+         * Returns true if the tokenized watch-uid line matches the expected values.
+         */
+        public boolean test(String[] line) {
+            if (COMMAND_TO_STRING[cmd].equals(line[CMD_INDEX])) {
+                if (procState == null && capability == null) {
+                    return true;
+                }
+                if (cmd == CMD_PROCSTATE) {
+                    if (procState != null && capability != null) {
+                        if (procState.equals(line[PROCSTATE_INDEX]) && capability.toString().equals(
+                                line[CAPABILITY_INDEX])) {
+                            return true;
+                        }
+                    } else if (procState != null) {
+                        if (procState.equals(line[PROCSTATE_INDEX])) {
+                            return true;
+                        }
+                    } else if (capability != null) {
+                        if (capability.toString().equals(line[CAPABILITY_INDEX])) {
+                            return true;
+                        }
+                    }
+                } else {
+                    if (procState != null && procState.equals(line[PROCSTATE_INDEX])) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static class Builder {
+            private final int mCmd;
+            private String mProcState = null;
+            private Integer mCapability = null;
+
+            public Builder(int cmd) {
+                mCmd = cmd;
+            }
+
+            /**
+             * Set the optional expected state ProcState to test against.
+             */
+            public Builder setExpectedProcState(@Nullable String procState) {
+                mProcState = procState;
+                return this;
+            }
+
+            /**
+             * Set the optional expected state process capability to test against.
+             */
+            public Builder setExpectedCapability(@Nullable Integer capability) {
+                mCapability = capability;
+                return this;
+            }
+
+            /**
+             * Build the predicate.
+             */
+            public WatchUidPredicate build() {
+                return new WatchUidPredicate(this);
+            }
         }
     }
 }
