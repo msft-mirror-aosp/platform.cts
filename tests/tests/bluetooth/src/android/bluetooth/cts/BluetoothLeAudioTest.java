@@ -136,6 +136,8 @@ public class BluetoothLeAudioTest {
             assertTrue(groupId == mTestGroupId);
             assertTrue(groupStreamStatus == mTestGroupStreamStatus);
         }
+        @Override
+        public void onBroadcastToUnicastFallbackGroupChanged(int groupId) {}
     };
 
     @Before
@@ -336,49 +338,6 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void callback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeAudio);
-
-        mTestGroupId = 1;
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mTestGroupStatus = 0;
-
-        mCodecConfigChangedCalled = false;
-        mGroupNodeAddedCalled = false;
-        mGroupStatusChangedCalled = false;
-        mGroupNodeRemovedCalled = false;
-
-        mTestCallback.onCodecConfigChanged(mTestGroupId, TEST_CODEC_STATUS);
-        mTestCallback.onGroupNodeAdded(mTestDevice, mTestGroupId);
-        mTestCallback.onGroupNodeRemoved(mTestDevice, mTestGroupId);
-        mTestCallback.onGroupStatusChanged(mTestGroupId, mTestGroupStatus);
-
-        assertTrue(mCodecConfigChangedCalled);
-        assertTrue(mGroupNodeAddedCalled);
-        assertTrue(mGroupNodeRemovedCalled);
-        assertTrue(mGroupStatusChangedCalled);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
-    public void streamStatusCallback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeAudio);
-
-        mTestGroupId = 1;
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mTestGroupStreamStatus = 1;
-
-        mGroupStreamStatusChangedCalled = false;
-
-        mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
-
-        assertTrue(mGroupStreamStatusChangedCalled);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
     public void getConnectedGroupLeadDevice() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
@@ -454,6 +413,25 @@ public class BluetoothLeAudioTest {
         } finally {
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void leAudioCallbackCoverage() {
+        // TODO: b/376934446 - This test does nothing and only covers the callbacks API as
+        // there is no current solution to have meaningful tests that exerce these callbacks
+        mTestGroupId = 1;
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mTestGroupStreamStatus = 1;
+        mTestGroupStatus = 0;
+
+        mTestCallback.onCodecConfigChanged(mTestGroupId, TEST_CODEC_STATUS);
+        mTestCallback.onGroupNodeAdded(mTestDevice, mTestGroupId);
+        mTestCallback.onGroupNodeRemoved(mTestDevice, mTestGroupId);
+        mTestCallback.onGroupStatusChanged(mTestGroupId, mTestGroupStatus);
+        mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
+        mTestCallback.onBroadcastToUnicastFallbackGroupChanged(mTestGroupId);
     }
 
     private boolean waitForProfileConnect() {

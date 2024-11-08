@@ -127,6 +127,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.filters.LargeTest;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
@@ -1399,6 +1401,12 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
+    static final class AllStepsProvider extends TestParameterValuesProvider {
+        @Override public List<?> provideValues(Context context) {
+            return VehiclePropertyVerifier.getAllSteps();
+        }
+    }
+
     static final class AllVerifierBuildersProvider extends TestParameterValuesProvider {
         @Override public List<?> provideValues(Context context) {
             var parameters = new ArrayList<Object>();
@@ -1425,7 +1433,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
-    private VehiclePropertyVerifier<?>[] getAllVerifiers() {
+    private List<VehiclePropertyVerifier<?>> getAllVerifiers() {
         var verifierInfo = getAllVerifierInfo();
         var verifiers = new ArrayList<VehiclePropertyVerifier<?>>();
         for (int i = 0; i < verifierInfo.length; i++) {
@@ -1440,7 +1448,28 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             verifiers.add(verifierInfo[i].mBuilder.setCarPropertyManager(mCarPropertyManager)
                     .build());
         }
-        return verifiers.toArray(new VehiclePropertyVerifier<?>[0]);
+        return verifiers;
+    }
+
+    private List<VehiclePropertyVerifier<?>> getAllSupportedVerifiers() {
+        Set<Integer> supportedPropertyIds = new ArraySet<>();
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                TestApis.permissions().adoptablePermissions().toArray(new String[0]))) {
+            var configs = mCarPropertyManager.getPropertyList();
+            for (int i = 0; i < configs.size(); i++) {
+                supportedPropertyIds.add(configs.get(i).getPropertyId());
+            }
+        }
+
+        List<VehiclePropertyVerifier<?>> supportedVerifiers = new ArrayList<>();
+        var allVerifiers = getAllVerifiers();
+        for (int i = 0; i < allVerifiers.size(); i++) {
+            if (!supportedPropertyIds.contains(allVerifiers.get(i).getPropertyId())) {
+                continue;
+            }
+            supportedVerifiers.add(allVerifiers.get(i));
+        }
+        return supportedVerifiers;
     }
 
     private static class VerifierInfo {
@@ -1744,7 +1773,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testIndividualProperty(
             @TestParameter(valuesProvider = AllVerifierBuildersProvider.class)
-            VerifierInfo verifierInfo) {
+            VerifierInfo verifierInfo,
+            @TestParameter(valuesProvider = AllStepsProvider.class) String step) {
+        // Check preconditions.
         var flag = verifierInfo.mFlag;
         if (flag != null) {
             if (flag.equals(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)) {
@@ -1765,8 +1796,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         standardCruiseControlChecker(false));
             }
         }
-        verifierInfo.mBuilder.setCarPropertyManager(mCarPropertyManager).build().verify(
-                verifierInfo.mExceptedExceptionClass);
+
+        // Run the verification.
+        var verifier = verifierInfo.mBuilder.setCarPropertyManager(mCarPropertyManager).build();
+        verifier.verify(step, verifierInfo.mExceptedExceptionClass);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getGearSelectionVerifierBuilder() {
@@ -5647,12 +5680,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     new ArrayList<>();
             Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
 
-            VehiclePropertyVerifier<?>[] verifiers = getAllVerifiers();
-            for (int i = 0; i < verifiers.length; i++) {
-                VehiclePropertyVerifier verifier = verifiers[i];
-                if (!verifier.isSupported()) {
-                    continue;
-                }
+            var verifiers = getAllSupportedVerifiers();
+            for (int i = 0; i < verifiers.size(); i++) {
+                VehiclePropertyVerifier verifier = verifiers.get(i);
                 CarPropertyConfig cfg = verifier.getCarPropertyConfig();
                 if (!Flags.areaIdConfigAccess() && cfg.getAccess()
                         != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ && cfg.getAccess()
@@ -7403,12 +7433,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     new ArrayList<>();
             Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
 
-            VehiclePropertyVerifier<?>[] verifiers = getAllVerifiers();
-            for (int i = 0; i < verifiers.length; i++) {
-                VehiclePropertyVerifier verifier = verifiers[i];
-                if (!verifier.isSupported()) {
-                    continue;
-                }
+            var verifiers = getAllSupportedVerifiers();
+            for (int i = 0; i < verifiers.size(); i++) {
+                var verifier = verifiers.get(i);
                 CarPropertyConfig cfg = verifier.getCarPropertyConfig();
                 if (!Flags.areaIdConfigAccess() && cfg.getAccess()
                         != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
@@ -7457,8 +7484,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             .that(requestPropIdAreaIds).contains(receivedPropIdAreaId);
                 }
             } finally {
-                for (int i = 0; i < verifiers.length; i++) {
-                    verifiers[i].restoreInitialValues();
+                for (int i = 0; i < verifiers.size(); i++) {
+                    verifiers.get(i).restoreInitialValues();
                 }
             }
         });

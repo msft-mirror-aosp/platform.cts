@@ -45,6 +45,8 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.DataSpace;
+import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraCharacteristics.Key;
@@ -2734,8 +2736,30 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                                 minDuration >= 0);
                     }
 
-                    // todo: test opaque image reader when it's supported.
-                    if (format != ImageFormat.PRIVATE) {
+                    if (Flags.cameraHeifGainmap() && (format == ImageFormat.HEIC_ULTRAHDR)) {
+                        //  Currently ImageReader cannot map HEIC_ULTRAHDR without explicit
+                        //  hardware buffer and dataspace configuration.
+                        // TODO: b/364911926 Remove this check once DataSpace.DATASPACE_HEIF_ULTRAHDR
+                        //     is available end to end.
+                        ImageReader.Builder testReaderBuilder = new ImageReader.Builder(
+                                size.getWidth(),
+                                size.getHeight());
+
+                        testReaderBuilder.setImageFormat(HardwareBuffer.BLOB);
+                        testReaderBuilder.setDefaultHardwareBufferFormat(HardwareBuffer.BLOB);
+                        testReaderBuilder.setDefaultDataSpace(DataSpace.DATASPACE_HEIF_ULTRAHDR);
+                        testReaderBuilder.setMaxImages(1);
+                        ImageReader testReader = testReaderBuilder.build();
+                        Surface testSurface = testReader.getSurface();
+
+                        assertTrue(
+                                String.format("isOutputSupportedFor fails for config %s, format %d",
+                                        size.toString(), format),
+                                config.isOutputSupportedFor(testSurface));
+
+                        testReader.close();
+                    } else if (format != ImageFormat.PRIVATE) {
+                        // todo: test opaque image reader when it's supported.
                         ImageReader testReader = ImageReader.newInstance(
                             size.getWidth(),
                             size.getHeight(),
@@ -2755,9 +2779,31 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 // Try an invalid size in this format, should round
                 Size invalidSize = findInvalidSize(supportedSizes);
                 int MAX_ROUNDING_WIDTH = 1920;
-                // todo: test opaque image reader when it's supported.
-                if (format != ImageFormat.PRIVATE &&
+                if (Flags.cameraHeifGainmap() && (format == ImageFormat.HEIC_ULTRAHDR)) {
+                    //  Currently ImageReader cannot map HEIC_ULTRAHDR without explicit
+                    //  hardware buffer and dataspace configuration.
+                    // TODO: b/364911926 Remove this check once DataSpace.DATASPACE_HEIF_ULTRAHDR
+                    //     is available end to end.
+                    ImageReader.Builder testReaderBuilder = new ImageReader.Builder(
+                            invalidSize.getWidth(),
+                            invalidSize.getHeight());
+
+                    testReaderBuilder.setImageFormat(HardwareBuffer.BLOB);
+                    testReaderBuilder.setDefaultHardwareBufferFormat(HardwareBuffer.BLOB);
+                    testReaderBuilder.setDefaultDataSpace(DataSpace.DATASPACE_HEIF_ULTRAHDR);
+                    testReaderBuilder.setMaxImages(1);
+                    ImageReader testReader = testReaderBuilder.build();
+                    Surface testSurface = testReader.getSurface();
+
+                    assertTrue(
+                            String.format("isOutputSupportedFor fails for config %s, format %d",
+                                    invalidSize.toString(), format),
+                            config.isOutputSupportedFor(testSurface));
+
+                    testReader.close();
+                } else if (format != ImageFormat.PRIVATE &&
                         invalidSize.getWidth() <= MAX_ROUNDING_WIDTH) {
+                    // todo: test opaque image reader when it's supported.
                     ImageReader testReader = ImageReader.newInstance(
                                                                      invalidSize.getWidth(),
                                                                      invalidSize.getHeight(),

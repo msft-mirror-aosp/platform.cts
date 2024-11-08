@@ -26,12 +26,15 @@ import android.graphics.Rect
 import android.graphics.RuntimeColorFilter
 import android.graphics.Shader
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.uirendering.cts.bitmapverifiers.RectVerifier
 import android.uirendering.cts.testinfrastructure.ActivityTestBase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.android.graphics.hwui.flags.Flags
 import org.junit.Assert.assertThrows
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -60,6 +63,9 @@ class RuntimeColorFilterTests : ActivityTestBase() {
         Shader.TileMode.CLAMP,
         Shader.TileMode.CLAMP
     )
+
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun createWithNullInput() {
