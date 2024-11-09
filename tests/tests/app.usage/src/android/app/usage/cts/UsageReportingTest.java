@@ -15,14 +15,15 @@
  */
 package android.app.usage.cts;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.usage.UsageStatsManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.LockScreenSession;
@@ -111,6 +112,10 @@ public class UsageReportingTest extends ActivityManagerTestBase {
 
     @Test
     public void testUsageReportingMissingStop() throws Exception {
+        // TODO(b/330610015): This test should be re-enabled once PowerManager#isInteractive
+        //  is fixed on form factors with visible background user.
+        assumeFalse(isAutomotiveWithVisibleBackgroundUser());
+
         launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
 
         Activity activity;
@@ -192,6 +197,10 @@ public class UsageReportingTest extends ActivityManagerTestBase {
 
     @Test
     public void testMultipleTokenMissingStop() throws Exception {
+        // TODO(b/330610015): This test should be re-enabled once PowerManager#isInteractive
+        //  is fixed on form factors with visible background user.
+        assumeFalse(isAutomotiveWithVisibleBackgroundUser());
+
         launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
 
         Activity activity;
@@ -381,5 +390,12 @@ public class UsageReportingTest extends ActivityManagerTestBase {
             }
             return found == expected;
         });
+    }
+
+    private boolean isAutomotiveWithVisibleBackgroundUser() {
+        PackageManager packageManager = mContext.getPackageManager();
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && userManager.isVisibleBackgroundUsersSupported();
     }
 }
