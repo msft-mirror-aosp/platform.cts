@@ -301,12 +301,12 @@ public class VehiclePropertyVerifiers {
                 .setConfigArrayVerifier(
                         (verifierContext, configArray) -> {
                             CarPropertyConfig<?> hvacPowerOnCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_POWER_ON);
                             for (int powerDependentProperty : configArray) {
                                 CarPropertyConfig<?> powerDependentCarPropertyConfig =
-                                        verifierContext.carPropertyManager().getCarPropertyConfig(
-                                                powerDependentProperty);
+                                        verifierContext.getCarPropertyManager()
+                                                .getCarPropertyConfig(powerDependentProperty);
                                 if (powerDependentCarPropertyConfig == null) {
                                     continue;
                                 }
@@ -390,7 +390,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION must be implemented if "
@@ -418,13 +418,14 @@ public class VehiclePropertyVerifiers {
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
                                                     + areaId
-                                                    + " must have at least 1 direction defined")
+                                                    + " must have at least 1 fan direction defined")
                                     .that(fanDirectionValues.length)
                                     .isAtLeast(1);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
                                                     + areaId
-                                                    + " values all must all be unique: "
+                                                    + " must have only unique fan direction"
+                                                    + " values: "
                                                     + Arrays.toString(fanDirectionValues))
                                     .that(fanDirectionValues.length)
                                     .isEqualTo(ImmutableSet.copyOf(fanDirectionValues).size());
@@ -464,7 +465,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacFanDirectionAvailableConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE);
                             assertWithMessage(
                                             "HVAC_FAN_DIRECTION_AVAILABLE must be implemented if "
@@ -490,7 +491,7 @@ public class VehiclePropertyVerifiers {
                         (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
                                 hvacFanDirection) -> {
                             CarPropertyValue<Integer[]> hvacFanDirectionAvailableCarPropertyValue =
-                                    verifierContext.carPropertyManager().getProperty(
+                                    verifierContext.getCarPropertyManager().getProperty(
                                             VehiclePropertyIds.HVAC_FAN_DIRECTION_AVAILABLE,
                                             areaId);
                             assertWithMessage(
@@ -499,10 +500,10 @@ public class VehiclePropertyVerifiers {
                                     .isNotNull();
 
                             assertWithMessage(
-                                            "HVAC_FAN_DIRECTION area ID "
+                                            "HVAC_FAN_DIRECTION_AVAILABLE area ID: "
                                                     + areaId
-                                                    + " value must be in list for"
-                                                    + " HVAC_FAN_DIRECTION_AVAILABLE")
+                                                    + " must include all possible fan direction"
+                                                    + " values")
                                     .that(hvacFanDirection)
                                     .isIn(
                                             Arrays.asList(
@@ -643,7 +644,7 @@ public class VehiclePropertyVerifiers {
                                 Integer minValueInt = (int) (minValueFloat * 10);
                                 assertWithMessage(
                                         "HVAC_TEMPERATURE_SET minimum value: " + minValueInt
-                                        + " at areaId: " + areaId + " should be equal to minimum"
+                                        + " at areaId: " + areaId + " must be equal to minimum"
                                         + " value specified in config"
                                         + " array: " + configMinValue)
                                         .that(minValueInt)
@@ -653,7 +654,7 @@ public class VehiclePropertyVerifiers {
                                 Integer maxValueInt = (int) (maxValueFloat * 10);
                                 assertWithMessage(
                                         "HVAC_TEMPERATURE_SET maximum value: " + maxValueInt
-                                        + " at areaId: " + areaId + " should be equal to maximum"
+                                        + " at areaId: " + areaId + " must be equal to maximum"
                                         + " value specified in config"
                                         + " array: " + configMaxValue)
                                         .that(maxValueInt)
@@ -918,7 +919,7 @@ public class VehiclePropertyVerifiers {
                 .setAreaIdsVerifier(
                         (verifierContext, areaIds) -> {
                             CarPropertyConfig<?> hvacTempSetCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.HVAC_TEMPERATURE_SET);
                             if (hvacTempSetCarPropertyConfig == null) {
                                 return;

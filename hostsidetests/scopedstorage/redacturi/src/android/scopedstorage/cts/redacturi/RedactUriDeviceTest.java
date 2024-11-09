@@ -26,6 +26,7 @@ import static android.scopedstorage.cts.lib.TestUtils.canQueryOnUri;
 import static android.scopedstorage.cts.lib.TestUtils.checkPermission;
 import static android.scopedstorage.cts.lib.TestUtils.forceStopApp;
 import static android.scopedstorage.cts.lib.TestUtils.getContentResolver;
+import static android.scopedstorage.cts.lib.TestUtils.getType;
 import static android.scopedstorage.cts.lib.TestUtils.grantPermission;
 import static android.scopedstorage.cts.lib.TestUtils.isFileDescriptorRedacted;
 import static android.scopedstorage.cts.lib.TestUtils.isFileOpenRedacted;
@@ -377,6 +378,35 @@ public class RedactUriDeviceTest extends ScopedStorageBaseDeviceTest {
             // APP_E has R_E_S
             assertThat(isFileOpenRedacted(APP_E, redactedUri)).isTrue();
             assertThrows(IOException.class, () -> isFileOpenRedacted(APP_B_NO_PERMS, redactedUri));
+        } finally {
+            img.delete();
+        }
+    }
+
+    @Test
+    public void testUnsharedRedactedUri_getType() throws Exception {
+        forceStopApp(APP_E.getPackageName());
+        final File img = stageImageFileWithMetadata(IMAGE_FILE_NAME);
+        try {
+            addressStoragePermissions(APP_E.getPackageName(), true);
+
+            final Uri redactedUri = getRedactedUri(img);
+            assertThat(getType(APP_E, redactedUri))
+                .isEqualTo("image/jpeg");
+        } finally {
+            img.delete();
+        }
+    }
+
+    @Test
+    public void testSharedRedactedUri_getType() throws Exception {
+        forceStopApp(APP_B_NO_PERMS.getPackageName());
+        final File img = stageImageFileWithMetadata(IMAGE_FILE_NAME);
+        try {
+
+            final Uri redactedUri = shareAndGetRedactedUri(img, APP_B_NO_PERMS);
+            assertThat(getType(APP_B_NO_PERMS, redactedUri))
+                .isEqualTo("image/jpeg");
         } finally {
             img.delete();
         }
