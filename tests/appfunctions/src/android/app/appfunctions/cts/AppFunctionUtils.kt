@@ -20,6 +20,7 @@ import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
@@ -39,14 +40,24 @@ object AppFunctionUtils {
     suspend fun executeAppFunctionAndWait(
         manager: AppFunctionManager,
         request: ExecuteAppFunctionRequest,
-    ): ExecuteAppFunctionResponse {
+    ): Result<ExecuteAppFunctionResponse> {
         return suspendCancellableCoroutine { continuation ->
             val cancellationSignal = CancellationSignal()
             continuation.invokeOnCancellation { cancellationSignal.cancel() }
-            manager.executeAppFunction(request, Runnable::run, cancellationSignal) {
-                response: ExecuteAppFunctionResponse ->
-                continuation.resume(response)
-            }
+            manager.executeAppFunction(
+                request,
+                Runnable::run,
+                cancellationSignal,
+                object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
+                    override fun onResult(result: ExecuteAppFunctionResponse) {
+                        continuation.resume(Result.success(result))
+                    }
+
+                    override fun onError(e: AppFunctionException) {
+                        continuation.resume(Result.failure(e))
+                    }
+                },
+            )
         }
     }
 

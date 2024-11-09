@@ -30,6 +30,7 @@ android_test {
         "android.security.flags-aconfig-java",
         "ctstestserver",
         "ctstestrunner-axt",
+        "cts-input-lib",
         "cts-install-lib",
         "compatibility-device-util-axt",
         "compatibility-common-util-devicesidelib",
