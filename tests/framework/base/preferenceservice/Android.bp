@@ -22,10 +22,13 @@ android_test {
     defaults: ["cts_defaults"],
     libs: ["android.test.runner.stubs.test"],
     static_libs: [
+        "aconfig_settingslib_flags_java_lib",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "junit",
+        "Nene",
+        "Harrier",
     ],
     srcs: ["src/**/*.kt"],
     // Tag this module as a cts test artifact
