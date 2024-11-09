@@ -44,9 +44,6 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
-import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager
-import com.android.extensions.appfunctions.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.android.extensions.appfunctions.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -62,6 +59,10 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.android.extensions.appfunctions.AppFunctionException as SidecarAppFunctionException
+import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager
+import com.android.extensions.appfunctions.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.android.extensions.appfunctions.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
@@ -118,9 +119,10 @@ class SidecarManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
             assertServiceDestroyed()
@@ -152,7 +154,12 @@ class SidecarManagerTest {
             val response = sidecarExecuteFunction(request)
 
             assertThat(response.isSuccess).isTrue()
-            assertThat(response.resultDocument.getPropertyString("TEST_PROPERTY_CALLING_PACKAGE"))
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
                 .isEqualTo(CURRENT_PKG)
             assertServiceDestroyed()
         }
@@ -223,9 +230,10 @@ class SidecarManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
         }
@@ -255,9 +263,10 @@ class SidecarManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
         }
@@ -297,16 +306,27 @@ class SidecarManagerTest {
     private suspend fun sidecarExecuteFunction(
         request: SidecarExecuteAppFunctionRequest,
         cancellationSignal: CancellationSignal = CancellationSignal(),
-    ): SidecarExecuteAppFunctionResponse {
-        return suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
+    ): Result<SidecarExecuteAppFunctionResponse> {
+        return suspendCancellableCoroutine<Result<SidecarExecuteAppFunctionResponse>> { continuation
+            ->
             SidecarAppFunctionManager(context)
                 .executeAppFunction(
                     request,
                     Runnable::run,
                     cancellationSignal,
-                    { response: SidecarExecuteAppFunctionResponse -> continuation.resume(
-                        response
-                    ) },
+                    object :
+                        OutcomeReceiver<
+                            SidecarExecuteAppFunctionResponse,
+                            SidecarAppFunctionException,
+                        > {
+                        override fun onResult(result: SidecarExecuteAppFunctionResponse) {
+                            continuation.resume(Result.success(result))
+                        }
+
+                        override fun onError(e: SidecarAppFunctionException) {
+                            continuation.resume(Result.failure(e))
+                        }
+                    },
                 )
         }
     }
@@ -315,16 +335,15 @@ class SidecarManagerTest {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
-    private suspend fun sidecarIsAppFunctionEnabled(
-        functionIdentifier: String,
-    ): Boolean = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context)
-            .isAppFunctionEnabled(
-                functionIdentifier,
-                Runnable::run,
-                continuation.asOutcomeReceiver(),
-            )
-    }
+    private suspend fun sidecarIsAppFunctionEnabled(functionIdentifier: String): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            SidecarAppFunctionManager(context)
+                .isAppFunctionEnabled(
+                    functionIdentifier,
+                    Runnable::run,
+                    continuation.asOutcomeReceiver(),
+                )
+        }
 
     private suspend fun sidecarIsAppFunctionEnabled(
         targetPackage: String,
