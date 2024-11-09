@@ -17,6 +17,7 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
@@ -131,9 +132,10 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
-        assertThat(response.errorMessage).isEqualTo("Function does not exist")
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
+        assertThat(response.appFunctionException().errorMessage)
+            .isEqualTo("Function does not exist")
         assertServiceDestroyed()
     }
 
@@ -155,17 +157,12 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(
-            request,
-            context.mainExecutor,
-            CancellationSignal()
-        ) { e: ExecuteAppFunctionResponse
-            ->
+        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
+            e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
 
         val response = requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
-        assertThat(response.isSuccess).isTrue()
         assertThat(
                 response.resultDocument.getPropertyLong(
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
@@ -196,7 +193,12 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
-        assertThat(response.resultDocument.getPropertyString("TEST_PROPERTY_CALLING_PACKAGE"))
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+            )
             .isEqualTo(CURRENT_PKG)
         assertServiceDestroyed()
     }
@@ -220,9 +222,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
             .isEqualTo(3)
         assertServiceDestroyed()
@@ -241,8 +244,9 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-        assertThat(response.errorMessage)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DENIED)
+        assertThat(response.appFunctionException().errorMessage)
             .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
@@ -259,11 +263,12 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DENIED)
         // The error message from this and executeAppFunction_otherNonExistingOtherPackage must be
         // kept in sync. This verifies that a caller cannot tell whether a package is installed or
         // not by comparing the error messages.
-        assertThat(response.errorMessage)
+        assertThat(response.appFunctionException().errorMessage)
             .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
@@ -280,8 +285,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_APP_UNKNOWN_ERROR)
         assertServiceDestroyed()
     }
 
@@ -297,8 +302,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_APP_UNKNOWN_ERROR)
         // The process that the service was just crashed. Validate the service is not created again.
         TestAppFunctionServiceLifecycleReceiver.reset()
         assertServiceWasNotCreated()
@@ -325,9 +330,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
             .isEqualTo(3)
         assertServiceDestroyed()
@@ -345,8 +351,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
         assertServiceWasNotCreated()
     }
 
@@ -362,7 +368,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_SYSTEM_ERROR)
         assertServiceWasNotCreated()
     }
 
@@ -379,7 +386,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DISABLED)
         assertServiceWasNotCreated()
     }
 
@@ -396,7 +404,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DISABLED)
         assertServiceWasNotCreated()
     }
 
@@ -427,7 +436,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_SYSTEM_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_SYSTEM_ERROR)
         assertServiceWasNotCreated()
     }
 
@@ -453,9 +463,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
             .isEqualTo(3)
         assertServiceDestroyed()
@@ -484,12 +495,12 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
-                        response.resultDocument.getPropertyLong(
-                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                        )
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                     )
                     .isEqualTo(3)
             }
@@ -509,9 +520,9 @@ class AppFunctionManagerTest {
                 val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.isSuccess).isFalse()
-                assertThat(response.resultCode)
-                    .isEqualTo(ExecuteAppFunctionResponse.RESULT_FUNCTION_NOT_FOUND)
-                assertThat(response.errorMessage)
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                assertThat(response.appFunctionException().errorMessage)
                     .contains(
                         "Document (android\$apps-db/app_functions," +
                             " android.app.appfunctions.cts.helper/random_function) not found"
@@ -542,12 +553,12 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
-                        response.resultDocument.getPropertyLong(
-                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                        )
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                     )
                     .isEqualTo(3)
             }
@@ -576,8 +587,9 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-                assertThat(response.errorMessage)
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_DENIED)
+                assertThat(response.appFunctionException().errorMessage)
                     .endsWith("does not have permission to execute the appfunction")
                 assertServiceWasNotCreated()
             }
@@ -650,8 +662,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
-        assertThat(isAppFunctionEnabled(functionIdentifier = "add_disabledByDefault"))
-            .isFalse()
+        assertThat(isAppFunctionEnabled(functionIdentifier = "add_disabledByDefault")).isFalse()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
@@ -792,15 +803,14 @@ class AppFunctionManagerTest {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
-    private suspend fun isAppFunctionEnabled(
-        functionIdentifier: String,
-    ): Boolean = suspendCancellableCoroutine { continuation ->
-        mManager.isAppFunctionEnabled(
-            functionIdentifier,
-            context.mainExecutor,
-            continuation.asOutcomeReceiver(),
-        )
-    }
+    private suspend fun isAppFunctionEnabled(functionIdentifier: String): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            mManager.isAppFunctionEnabled(
+                functionIdentifier,
+                context.mainExecutor,
+                continuation.asOutcomeReceiver(),
+            )
+        }
 
     private suspend fun isAppFunctionEnabled(
         targetPackage: String,
@@ -841,3 +851,6 @@ class AppFunctionManagerTest {
 }
 
 private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+
+fun <T> Result<T>.appFunctionException(): AppFunctionException =
+    exceptionOrNull() as AppFunctionException

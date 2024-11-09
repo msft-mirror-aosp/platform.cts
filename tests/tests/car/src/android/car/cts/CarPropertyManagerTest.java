@@ -2559,7 +2559,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyConfigVerifier(
                         (verifierContext, config) -> {
                             assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.carPropertyManager(),
+                                    verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.INFO_FUEL_CAPACITY);
                         })
                 .setCarPropertyValueVerifier(
@@ -2687,7 +2687,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyConfigVerifier(
                         (verifierContext, config) -> {
                             assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.carPropertyManager(),
+                                    verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.INFO_FUEL_DOOR_LOCATION);
                         })
                 .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
@@ -2919,7 +2919,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isGreaterThan(supportedRanges[i - 1]);
                             }
                             verifyUltrasonicsSupportedRangesWithinDetectionRange(
-                                    verifierContext.carPropertyManager(), areaId, supportedRanges);
+                                    verifierContext.getCarPropertyManager(), areaId,
+                                    supportedRanges);
                         })
                 .addReadPermission(Car.PERMISSION_READ_ULTRASONICS_SENSOR_DATA);
     }
@@ -2966,9 +2967,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtLeast(0);
                             }
                             verifyUltrasonicsMeasuredDistanceInSupportedRanges(
-                                    verifierContext.carPropertyManager(), areaId, distance);
+                                    verifierContext.getCarPropertyManager(), areaId, distance);
                             verifyUltrasonicsMeasuredDistanceWithinDetectionRange(
-                                    verifierContext.carPropertyManager(), areaId, distance);
+                                    verifierContext.getCarPropertyManager(), areaId, distance);
                         })
             .addReadPermission(Car.PERMISSION_READ_ULTRASONICS_SENSOR_DATA);
     }
@@ -3641,7 +3642,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .isAtLeast(0);
 
                             CarPropertyConfig<?> tirePressureConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.TIRE_PRESSURE);
 
                             if (tirePressureConfig == null
@@ -3735,7 +3736,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyConfigVerifier(
                         (verifierContext, carPropertyConfig) -> {
                             assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.carPropertyManager(),
+                                    verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.FUEL_LEVEL);
                         })
                 .setCarPropertyValueVerifier(
@@ -3747,14 +3748,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .that(fuelLevel)
                                     .isAtLeast(0);
 
-                            if (verifierContext.carPropertyManager().getCarPropertyConfig(
+                            if (verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.INFO_FUEL_CAPACITY)
                                     == null) {
                                 return;
                             }
 
                             CarPropertyValue<?> infoFuelCapacityValue =
-                                    verifierContext.carPropertyManager().getProperty(
+                                    verifierContext.getCarPropertyManager().getProperty(
                                             VehiclePropertyIds.INFO_FUEL_CAPACITY,
                                             VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
 
@@ -3783,14 +3784,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .that(evBatteryLevel)
                                     .isAtLeast(0);
 
-                            if (verifierContext.carPropertyManager().getCarPropertyConfig(
+                            if (verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
                                     == null) {
                                 return;
                             }
 
                             CarPropertyValue<?> infoEvBatteryCapacityValue =
-                                    verifierContext.carPropertyManager().getProperty(
+                                    verifierContext.getCarPropertyManager().getProperty(
                                             VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
                                             VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
 
@@ -3821,14 +3822,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .that(evCurrentBatteryCapacity)
                                     .isAtLeast(0);
 
-                            if (verifierContext.carPropertyManager().getCarPropertyConfig(
+                            if (verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
                                     == null) {
                                 return;
                             }
 
                             CarPropertyValue<?> infoEvBatteryCapacityValue =
-                                    verifierContext.carPropertyManager().getProperty(
+                                    verifierContext.getCarPropertyManager().getProperty(
                                             VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
                                             /*areaId=*/0);
 
@@ -3904,7 +3905,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyConfigVerifier(
                         (verifierContext, config) -> {
                             assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.carPropertyManager(),
+                                    verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.FUEL_DOOR_OPEN);
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
@@ -4266,7 +4267,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FRONT_FOG_LIGHTS_STATE must not be implemented"
                                                     + "when FOG_LIGHTS_STATE is implemented")
-                                    .that(verifierContext.carPropertyManager()
+                                    .that(verifierContext.getCarPropertyManager()
                                             .getCarPropertyConfig(
                                                     VehiclePropertyIds.FRONT_FOG_LIGHTS_STATE))
                                     .isNull();
@@ -4274,8 +4275,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "REAR_FOG_LIGHTS_STATE must not be implemented"
                                                     + "when FOG_LIGHTS_STATE is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.REAR_FOG_LIGHTS_STATE))
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.REAR_FOG_LIGHTS_STATE))
                                     .isNull();
                         })
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS);
@@ -4307,8 +4309,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FOG_LIGHTS_STATE must not be implemented"
                                                     + "when FRONT_FOG_LIGHTS_STATE is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.FOG_LIGHTS_STATE))
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.FOG_LIGHTS_STATE))
                                     .isNull();
                         })
                 .addReadPermission(Car.PERMISSION_EXTERIOR_LIGHTS);
@@ -4328,7 +4331,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FOG_LIGHTS_STATE must not be implemented"
                                                     + "when REAR_FOG_LIGHTS_STATE is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
                                                     VehiclePropertyIds.FOG_LIGHTS_STATE))
                                     .isNull();
                         })
@@ -4457,14 +4461,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FRONT_FOG_LIGHTS_SWITCH must not be implemented"
                                                     + "when FOG_LIGHTS_SWITCH is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
                                                     VehiclePropertyIds.FRONT_FOG_LIGHTS_SWITCH))
                                     .isNull();
 
                             assertWithMessage(
                                             "REAR_FOG_LIGHTS_SWITCH must not be implemented"
                                                     + "when FOG_LIGHTS_SWITCH is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
                                                     VehiclePropertyIds.REAR_FOG_LIGHTS_SWITCH))
                                     .isNull();
                         })
@@ -4499,7 +4505,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FOG_LIGHTS_SWITCH must not be implemented"
                                                     + "when FRONT_FOG_LIGHTS_SWITCH is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
                                                     VehiclePropertyIds.FOG_LIGHTS_SWITCH))
                                     .isNull();
                         })
@@ -4522,7 +4529,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             assertWithMessage(
                                             "FOG_LIGHTS_SWITCH must not be implemented"
                                                     + "when REAR_FOG_LIGHTS_SWITCH is implemented")
-                                    .that(verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    .that(verifierContext.getCarPropertyManager()
+                                            .getCarPropertyConfig(
                                                     VehiclePropertyIds.FOG_LIGHTS_SWITCH))
                                     .isNull();
                         })
@@ -4581,7 +4589,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         (verifierContext, carPropertyConfig) -> {
                             int[] areaIds = carPropertyConfig.getAreaIds();
                             CarPropertyConfig<?> seatMemorySetCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.SEAT_MEMORY_SET);
 
                             assertWithMessage(
@@ -4640,7 +4648,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         (verifierContext, carPropertyConfig) -> {
                             int[] areaIds = carPropertyConfig.getAreaIds();
                             CarPropertyConfig<?> seatMemorySelectCarPropertyConfig =
-                                    verifierContext.carPropertyManager().getCarPropertyConfig(
+                                    verifierContext.getCarPropertyManager().getCarPropertyConfig(
                                             VehiclePropertyIds.SEAT_MEMORY_SELECT);
 
                             assertWithMessage(

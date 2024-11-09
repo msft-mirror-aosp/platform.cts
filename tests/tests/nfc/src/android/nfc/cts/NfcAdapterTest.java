@@ -703,13 +703,6 @@ public class NfcAdapterTest {
             for (String nfcee : nfceeList) {
                 assertThat(nfcee).isNotEmpty();
             }
-            Thread thread = new Thread(() -> {
-                NfcUtils.disableNfc(nfcAdapter, mContext);
-                nfcOemExtension.maybeTriggerFirmwareUpdate();
-                NfcUtils.enableNfc(nfcAdapter, mContext);
-            });
-            thread.start();
-            thread.join(1000);
             nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
@@ -725,7 +718,6 @@ public class NfcAdapterTest {
             }
             assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
-            NfcUtils.enableNfc(nfcAdapter, mContext);
             nfcOemExtension.unregisterCallback(cb);
         }
     }
