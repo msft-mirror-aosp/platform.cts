@@ -394,13 +394,29 @@ public class SubscriptionManagerTest {
         // Push simple plan and get it back
         final SubscriptionPlan plan = buildValidSubscriptionPlan(System.currentTimeMillis());
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan));
-        assertEquals(Arrays.asList(plan), mSm.getSubscriptionPlans(mSubId));
+        final SubscriptionPlan returnedPlan = mSm.getSubscriptionPlans(mSubId).get(0);
+        assertEquals(plan, returnedPlan);
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            assertNull(returnedPlan.getPlanEndDate());
+        }
 
         // Push plan with expiration time and verify that it expired
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan), SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_CLEAR_WAIT_MS);
         assertTrue(mSm.getSubscriptionPlans(mSubId).isEmpty());
+
+        // Push simple non-recurring plan and get it back
+        ZonedDateTime start = ZonedDateTime.parse("2007-03-14T00:00:00.000Z");
+        ZonedDateTime end = ZonedDateTime.parse("2024-11-08T00:00:00.000Z");
+        final SubscriptionPlan planNonRecurring =
+                buildValidSubscriptionPlanNonRecurring(System.currentTimeMillis(), start, end);
+        mSm.setSubscriptionPlans(mSubId, Arrays.asList(planNonRecurring));
+        final SubscriptionPlan returnedPlanNonRecurring = mSm.getSubscriptionPlans(mSubId).get(0);
+        assertEquals(planNonRecurring, returnedPlanNonRecurring);
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            assertEquals(end, returnedPlanNonRecurring.getPlanEndDate());
+        }
 
         // Now revoke our access
         setSubPlanOwner(mSubId, null);
@@ -704,15 +720,20 @@ public class SubscriptionManagerTest {
     @Test
     public void testSubscriptionPlanResetNetworkTypes() {
         long time = System.currentTimeMillis();
-        SubscriptionPlan plan = SubscriptionPlan.Builder
+        SubscriptionPlan.Builder builder = SubscriptionPlan.Builder
                 .createRecurring(ZonedDateTime.parse("2007-03-14T00:00:00.000Z"),
                         Period.ofMonths(1))
                 .setTitle("CTS")
                 .setNetworkTypes(new int[] {TelephonyManager.NETWORK_TYPE_LTE})
                 .setDataLimit(1_000_000_000, SubscriptionPlan.LIMIT_BEHAVIOR_DISABLED)
                 .setDataUsage(500_000_000, time)
-                .resetNetworkTypes()
-                .build();
+                .resetNetworkTypes();
+
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+        }
+
+        SubscriptionPlan plan = builder.build();
         assertEquals(plan, buildValidSubscriptionPlan(time));
     }
 
@@ -1682,13 +1703,33 @@ public class SubscriptionManagerTest {
     }
 
     private static SubscriptionPlan buildValidSubscriptionPlan(long dataUsageTime) {
-        return SubscriptionPlan.Builder
-                .createRecurring(ZonedDateTime.parse("2007-03-14T00:00:00.000Z"),
-                        Period.ofMonths(1))
-                .setTitle("CTS")
+        return buildValidSubscriptionPlanRecurring(
+                dataUsageTime, ZonedDateTime.parse("2007-03-14T00:00:00.000Z"));
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanRecurring(
+            long dataUsageTime, ZonedDateTime start) {
+        return buildValidSubscriptionPlanCommon(
+                SubscriptionPlan.Builder.createRecurring(start, Period.ofMonths(1)), dataUsageTime);
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanNonRecurring(
+            long dataUsageTime, ZonedDateTime start, ZonedDateTime end) {
+        return buildValidSubscriptionPlanCommon(
+                SubscriptionPlan.Builder.createNonrecurring(start, end), dataUsageTime);
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanCommon(
+            SubscriptionPlan.Builder builder, long dataUsageTime) {
+        builder.setTitle("CTS")
                 .setDataLimit(1_000_000_000, SubscriptionPlan.LIMIT_BEHAVIOR_DISABLED)
-                .setDataUsage(500_000_000, dataUsageTime)
-                .build();
+                .setDataUsage(500_000_000, dataUsageTime);
+
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+        }
+
+        return builder.build();
     }
 
     private static @Nullable Network findCellularNetwork() {
