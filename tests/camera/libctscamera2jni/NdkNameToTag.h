@@ -101,6 +101,7 @@
       {"android.control.autoframingState", ACAMERA_CONTROL_AUTOFRAMING_STATE},
       {"android.control.lowLightBoostInfoLuminanceRange", ACAMERA_CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE},
       {"android.control.lowLightBoostState", ACAMERA_CONTROL_LOW_LIGHT_BOOST_STATE},
+      {"android.control.zoomMethod", ACAMERA_CONTROL_ZOOM_METHOD},
       {"android.edge.mode", ACAMERA_EDGE_MODE},
       {"android.edge.availableEdgeModes", ACAMERA_EDGE_AVAILABLE_EDGE_MODES},
       {"android.flash.mode", ACAMERA_FLASH_MODE},
