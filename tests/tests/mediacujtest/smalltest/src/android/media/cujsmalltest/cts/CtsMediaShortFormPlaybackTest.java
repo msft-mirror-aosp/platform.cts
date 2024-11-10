@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,6 +53,22 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CtsMediaShortFormPlaybackTest extends CujTestBase {
 
+  private static final Duration MESSAGE_POSITION_THREE_SEC = Duration.ofSeconds(3);
+  private static final Duration MESSAGE_POSITION_FIVE_SEC = Duration.ofSeconds(5);
+  private static final Duration CLIP_DURATION_FIVE_SEC = Duration.ofSeconds(5);
+  private static final Duration CLIP_DURATION_FIFTEEN_SEC = Duration.ofSeconds(15);
+  private static final Duration PLAYLIST_DURATION_TWENTY_SEC = Duration.ofSeconds(20);
+  private static final Duration PLAYLIST_DURATION_THREE_HUNDRED_SEC = Duration.ofSeconds(300);
+  private static final Duration SEEK_DURATION = Duration.ofSeconds(5);
+  private static final int SEEK_ITERATIONS = 1;
+  // A delay of about 1 to 2 seconds is observed after each seek on slower devices. Hence, the seek
+  // overhead is 1 (Number of seek iterations) * 2 (Overhead for each seek) = 2 seconds.
+  private static final Duration SEEK_OVERHEAD_PER_CLIP = OVERHEAD_PER_SEEK.multipliedBy(
+      SEEK_ITERATIONS);
+  private static final int SCROLL_ITERATIONS = 2;
+  private static final int NUMBER_OF_AUDIO_TRACKS = 2;
+  private static final int NUMBER_OF_SUBTITLE_TRACKS = 2;
+  private static final Duration LOCK_DURATION = Duration.ofSeconds(5);
   private static final String MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/sine1khzs40dblong";
   private static final String MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING =
@@ -93,7 +110,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   private final String mTestType;
 
   public CtsMediaShortFormPlaybackTest(CujTestParam cujTestParam, String testType) {
-    super(cujTestParam.playerListener());
+    super(cujTestParam.getPlayerListener());
     mCujTestParam = cujTestParam;
     this.mTestType = testType;
   }
@@ -105,67 +122,77 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   public static Collection<Object[]> input() {
     // CujTestParam, testId
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15secVideoList())
-            .setTimeoutMilliSeconds(330000)
-            .setPlayerListener(new PlaybackTestPlayerListener()).build(), "Hevc_720p_15sec"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15secVideoList())
-            .setTimeoutMilliSeconds(330000)
-            .setPlayerListener(new SeekTestPlayerListener(1, 5000, 9000)).build(),
-            "Hevc_720p_15sec_seekTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_480p_5secVideoList())
-            .setTimeoutMilliSeconds(60000)
-            .setPlayerListener(new OrientationTestPlayerListener(3000)).build(),
-            "Hevc_480p_5sec_OrientationTest"},
-        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_5secVideoList())
-            .setTimeoutMilliSeconds(60000)
-            .setPlayerListener(new OrientationTestPlayerListener(3000)).build(),
-            "Avc_1080p_5sec_OrientationTest"},
-        {CujTestParam.builder().setMediaUrls(prepareAvc_360x640_5secVideoList())
-            .setTimeoutMilliSeconds(60000)
-            .setPlayerListener(new OrientationTestPlayerListener(3000)).build(),
-            "Avc_360x640_5sec_OrientationTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_480p_15secVideoListForScrollTest())
-            .setTimeoutMilliSeconds(40000)
-            .setPlayerListener(new ScrollTestPlayerListener(2, 2000)).build(),
-            "Avc_360x640_15sec_ScrollTest"},
-        {CujTestParam.builder().setMediaUrls(prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new SwitchAudioTrackTestPlayerListener(2, 3000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_300secVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_THREE_HUNDRED_SEC).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new PlaybackTestPlayerListener()).build(),
+            "Hevc_720p_15sec_20clips"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_300secVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_THREE_HUNDRED_SEC).setOverhead(TEST_OVERHEAD.plus(
+                SEEK_OVERHEAD_PER_CLIP.multipliedBy(prepareHevc_720p_300secVideoPlaylist().size())))
+            .setPlayerListener(new SeekTestPlayerListener(SEEK_ITERATIONS, SEEK_DURATION,
+                Duration.ofSeconds(9) /* messagePosition */)).build(),
+            "Hevc_720p_15sec_20clips_seekTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_480p_20secVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_TWENTY_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new OrientationTestPlayerListener(MESSAGE_POSITION_THREE_SEC)).build(),
+            "Hevc_480p_5sec_4clips_OrientationTest"},
+        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_15secVideoPlaylist())
+            .setDuration(Duration.ofSeconds(15) /* playlistDuration */).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(
+                new OrientationTestPlayerListener(MESSAGE_POSITION_THREE_SEC)).build(),
+            "Avc_1080p_5sec_3clips_OrientationTest"},
+        {CujTestParam.builder().setMediaUrls(prepareAvc_360x640_20secVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_TWENTY_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new OrientationTestPlayerListener(MESSAGE_POSITION_THREE_SEC)).build(),
+            "Avc_360x640_5sec_4clips_OrientationTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_480p_10secVideoPlaylistForScrollTest())
+            .setDuration(Duration.ofSeconds(10) /* playlistDuration */).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new ScrollTestPlayerListener(SCROLL_ITERATIONS,
+                Duration.ofSeconds(2) /* messagePosition */)).build(),
+            "Avc_360x640_5sec_2clips_ScrollTest"},
+        {CujTestParam.builder()
+            .setMediaUrls(prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIVE_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new SwitchAudioTrackTestPlayerListener(NUMBER_OF_AUDIO_TRACKS,
+                    MESSAGE_POSITION_THREE_SEC)).build(),
             "Aac_2ch_44kHz_Aac_1ch_44kHz_5sec_SwitchAudioTracksTest"},
-        {CujTestParam.builder().setMediaUrls(prepare_Srt_Subtitles_Eng_French_5secVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new SwitchSubtitleTrackTestPlayerListener(2, 3000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepare_Srt_Subtitles_Eng_French_5secVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIVE_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new SwitchSubtitleTrackTestPlayerListener(NUMBER_OF_SUBTITLE_TRACKS,
+                    MESSAGE_POSITION_THREE_SEC)).build(),
             "Srt_Subtitle_eng_french_5sec_SwitchSubtitleTracksTest"},
-        {CujTestParam.builder().setMediaUrls(prepare_Ssa_Subtitles_Eng_French_5secVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new SwitchSubtitleTrackTestPlayerListener(2, 3000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepare_Ssa_Subtitles_Eng_French_5secVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIVE_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new SwitchSubtitleTrackTestPlayerListener(NUMBER_OF_SUBTITLE_TRACKS,
+                    MESSAGE_POSITION_THREE_SEC)).build(),
             "Ssa_Subtitle_eng_french_5sec_SwitchSubtitleTracksTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new PinchToZoomTestPlayerListener(3000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new PinchToZoomTestPlayerListener(MESSAGE_POSITION_THREE_SEC)).build(),
             "Hevc_720p_15sec_PinchToZoomTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new PipModeTestPlayerListener(5000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new PipModeTestPlayerListener(MESSAGE_POSITION_FIVE_SEC)).build(),
             "Hevc_720p_15sec_PipModeTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new SplitScreenTestPlayerListener(5000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new SplitScreenTestPlayerListener(MESSAGE_POSITION_FIVE_SEC)).build(),
             "Hevc_720p_15sec_SplitScreenTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
-            .setTimeoutMilliSeconds(50000)
-            .setPlayerListener(new DeviceLockTestPlayerListener(3000, false)).build(),
-            "Hevc_720p_15sec_DeviceLockTest"},
-        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new DeviceLockTestPlayerListener(3000, true)).build(),
-            "Mp3_15sec_DeviceLockTest"},
-        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
-            .setTimeoutMilliSeconds(50000)
-            .setPlayerListener(new LockPlaybackControllerTestPlayerListener(6000)).build(),
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD.plus(LOCK_DURATION))
+            .setPlayerListener(new DeviceLockTestPlayerListener(MESSAGE_POSITION_THREE_SEC,
+                false /* isAudioOnlyClip */)).build(), "Hevc_720p_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioPlaylistForDeviceLockTest())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new DeviceLockTestPlayerListener(MESSAGE_POSITION_THREE_SEC,
+                    true /* isAudioOnlyClip */)).build(), "Mp3_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoPlaylist())
+            .setDuration(CLIP_DURATION_FIFTEEN_SEC).setOverhead(TEST_OVERHEAD.plus(LOCK_DURATION))
+            .setPlayerListener(new LockPlaybackControllerTestPlayerListener(
+                Duration.ofSeconds(6) /* messagePosition */)).build(),
             "Hevc_720p_15sec_LockPlaybackTest"},
-        {CujTestParam.builder().setMediaUrls(prepareSineWaveAudioList())
-            .setTimeoutMilliSeconds(100000)
+        {CujTestParam.builder().setMediaUrls(prepareSineWave_70secAudioPlaylist())
+            .setDuration(Duration.ofSeconds(70) /* clipDuration */).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
             "Mp3_Sine_AudioOffloadTest"},
     }));
@@ -173,9 +200,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Hevc 720p 15sec video list.
+   * Prepare Hevc 720p 300sec video playlist. The playlist has 20 clips each of 15sec.
    */
-  public static List<String> prepareHevc_720p_15secVideoList() {
+  public static List<String> prepareHevc_720p_300secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING,
         MP4_FORBIGGERMELTDOWN_ASSET_720P_HEVC_URI_STRING,
@@ -201,9 +228,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Hevc 480p 15sec video list.
+   * Prepare Hevc 480p 20sec video playlist. The playlist has 4 clips each of 5sec.
    */
-  public static List<String> prepareHevc_480p_5secVideoList() {
+  public static List<String> prepareHevc_480p_20secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERJOYRIDES_ASSET_480P_HEVC_URI_STRING,
         MP4_FORBIGGERMELTDOWN_ASSET_480P_HEVC_URI_STRING,
@@ -213,9 +240,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Avc 1080p 15sec video list.
+   * Prepare Avc 1080p 15sec video playlist. The playlist has 3 clips each of 5sec.
    */
-  public static List<String> prepareAvc_1080p_5secVideoList() {
+  public static List<String> prepareAvc_1080p_15secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERMELTDOWN_ASSET_1080P_AVC_URI_STRING,
         MP4_ELEPHANTSDREAM_ASSET_1080P_AVC_URI_STRING,
@@ -224,9 +251,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Avc 360x480 video list.
+   * Prepare Avc 360x640 20sec video playlist. The playlist has 4 clips each of 5sec.
    */
-  public static List<String> prepareAvc_360x640_5secVideoList() {
+  public static List<String> prepareAvc_360x640_20secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_BIGBUCKBUNNY_ASSET_360x640_AVC_URI_STRING,
         MP4_ELEPHANTSDREAM_ASSET_360x640_AVC_URI_STRING,
@@ -236,9 +263,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Hevc 480p video list for Scroll Test.
+   * Prepare Hevc 480p 10sec video playlist for Scroll Test. The playlist has 2 clips each of 5sec.
    */
-  public static List<String> prepareHevc_480p_15secVideoListForScrollTest() {
+  public static List<String> prepareHevc_480p_10secVideoPlaylistForScrollTest() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERBLAZEA_ASSET_480P_HEVC_URI_STRING,
         MP4_FORBIGGERESCAPES_ASSET_480P_HEVC_URI_STRING);
@@ -246,27 +273,27 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare multiple audio tracks video list.
+   * Prepare multiple audio tracks 5sec video list.
    */
-  public static List<String> prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoList() {
+  public static List<String> prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MKV_TEARS_OF_STEEL_ASSET_AAC_2CH_44KHZ_AAC_1CH_44KHZ_URI_STRING);
     return videoInput;
   }
 
   /**
-   * Prepare multiple srt subtitle tracks video list.
+   * Prepare multiple srt subtitle tracks 5sec video list.
    */
-  public static List<String> prepare_Srt_Subtitles_Eng_French_5secVideoList() {
+  public static List<String> prepare_Srt_Subtitles_Eng_French_5secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MKV_TEARS_OF_STEEL_ASSET_SRT_SUBTITLES_ENG_FRENCH_URI_STRING);
     return videoInput;
   }
 
   /**
-   * Prepare multiple ssa subtitle tracks video list.
+   * Prepare multiple ssa subtitle tracks 5sec video list.
    */
-  public static List<String> prepare_Ssa_Subtitles_Eng_French_5secVideoList() {
+  public static List<String> prepare_Ssa_Subtitles_Eng_French_5secVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MKV_TEARS_OF_STEEL_ASSET_SSA_SUBTITLES_ENG_FRENCH_URI_STRING);
     return videoInput;
@@ -275,7 +302,7 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   /**
    * Prepare Hevc 720p 15sec single video list.
    */
-  public static List<String> prepareHevc_720p_15sec_SingleVideoList() {
+  public static List<String> prepareHevc_720p_15sec_SingleVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING);
     return videoInput;
@@ -284,16 +311,16 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   /**
    * Prepare Mp3 15sec audio list for Device Lock Test.
    */
-  public static List<String> prepareMp3_15secAudioListForDeviceLockTest() {
+  public static List<String> prepareMp3_15secAudioPlaylistForDeviceLockTest() {
     List<String> audioInput = Arrays.asList(
         MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING);
     return audioInput;
   }
 
   /**
-   * Prepare sine wave audio list.
+   * Prepare sine wave 70sec audio list.
    */
-  public static List<String> prepareSineWaveAudioList() {
+  public static List<String> prepareSineWave_70secAudioPlaylist() {
     List<String> audioInput = Arrays.asList(
         MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING);
     return audioInput;
@@ -311,17 +338,17 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   public void testVideoPlayback() throws Exception {
     /* TODO(b/339628718, b/338342633) */
     Assume.assumeFalse("Split screen test is skipped",
-        mCujTestParam.playerListener().isSplitScreenTest());
-    if (mCujTestParam.playerListener().isOrientationTest()) {
+        mCujTestParam.getPlayerListener().isSplitScreenTest());
+    if (mCujTestParam.getPlayerListener().isOrientationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
           !OrientationTestPlayerListener.getIgnoreOrientationRequest()
               && supportOrientationRequest(mActivity));
     }
-    if (mCujTestParam.playerListener().isPinchToZoomTest()) {
+    if (mCujTestParam.getPlayerListener().isPinchToZoomTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " as watch doesn't support zoom behaviour yet",
           isWatchDevice(mActivity));
     }
-    if (mCujTestParam.playerListener().isPipTest()) {
+    if (mCujTestParam.getPlayerListener().isPipTest()) {
       Assume.assumeFalse(
           "Skipping " + mTestType + " as watch doesn't support picture-in-picture mode yet",
           isWatchDevice(mActivity));
@@ -329,15 +356,15 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
           "Skipping " + mTestType + " as device doesn't support picture-in-picture feature",
           deviceSupportPipMode(mActivity));
     }
-    if (mCujTestParam.playerListener().isSplitScreenTest()) {
+    if (mCujTestParam.getPlayerListener().isSplitScreenTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support split screen feature",
           deviceSupportSplitScreenMode(mActivity));
     }
-    if (mCujTestParam.playerListener().getTestType()
+    if (mCujTestParam.getPlayerListener().getTestType()
         .equals(TestType.LOCK_PLAYBACK_CONTROLLER_TEST)) {
       Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
     }
-    if (mCujTestParam.playerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {
+    if (mCujTestParam.getPlayerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {
       Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
       Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
       // Skipping DEVICE_LOCK_TEST for secondary_user_on_secondary_display, because currently
@@ -346,10 +373,11 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
               + " as individual lock/unlock on a secondary screen is not supported.",
               isVisibleBackgroundNonProfileUser(mActivity));
     }
-    if (mCujTestParam.playerListener().isAudioOffloadTest()) {
+    if (mCujTestParam.getPlayerListener().isAudioOffloadTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio offloading",
           deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
     }
-    play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
+    play(mCujTestParam.getMediaUrls(),
+        mCujTestParam.getDuration().plus(mCujTestParam.getOverhead()));
   }
 }

@@ -25,9 +25,11 @@ import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
 import androidx.media3.common.Player.Events;
 
+import java.time.Duration;
+
 public class SpeedChangeTestPlayerListener extends PlayerListener {
 
-  private static final long START_SPEED_CHANGE_MS = 1000;
+  private static final Duration START_SPEED_CHANGE = Duration.ofSeconds(1);
   private static final float[] PLAYBACK_SPEEDS = {
       0.25f, 0.50f, 0.75f, 1.00f, 1.25f, 1.50f, 1.75f, 1.00f
   };
@@ -37,7 +39,7 @@ public class SpeedChangeTestPlayerListener extends PlayerListener {
 
   public SpeedChangeTestPlayerListener() {
     super();
-    this.mSendMessagePosition = START_SPEED_CHANGE_MS;
+    this.mSendMessagePosition = START_SPEED_CHANGE;
     this.mSpeedIndex = 0;
   }
 
@@ -69,11 +71,11 @@ public class SpeedChangeTestPlayerListener extends PlayerListener {
       // operations is 28 (7 * 4) seconds which is equivalent to the PTS duration within which speed
       // change operations are done i.e. 28 (29 - 1) sec. So, The total time consumed is
       // 7 (speeds) * 4 + 2 which is equal to the clip duration i.e. 30 sec.
-      mSendMessagePosition += (index * 1000L);
+      mSendMessagePosition = mSendMessagePosition.plus(Duration.ofSeconds(index));
       mActivity.mPlayer.createMessage((messageType, payload) -> {
             PlaybackParameters newParameters = new PlaybackParameters(PLAYBACK_SPEEDS[mSpeedIndex]);
             mActivity.mPlayer.setPlaybackParameters(newParameters);
-          }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+          }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
           .setDeleteAfterDelivery(true).send();
     }
   }

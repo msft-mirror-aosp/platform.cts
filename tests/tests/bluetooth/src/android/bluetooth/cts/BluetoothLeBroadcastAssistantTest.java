@@ -40,6 +40,7 @@ import android.bluetooth.BluetoothLeBroadcastReceiveState;
 import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -406,6 +407,38 @@ public class BluetoothLeBroadcastAssistantTest {
         // Verifies that it throws exception when input is null
         assertThrows(NullPointerException.class,
                 () -> mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(null));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_GET_LOCAL_METADATA)
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void getSourceMetadata() {
+        int testSourceId = 1;
+
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcastAssistant);
+
+        BluetoothDevice testDevice =
+                mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        // Verifies permissions
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, testSourceId),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        // Verifies that it throws exception when input is null
+        assertThrows(
+                NullPointerException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(null, testSourceId));
+
+        // Source id expect in range [0, 255]
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, -1));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, 256));
+
+        mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, testSourceId);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
