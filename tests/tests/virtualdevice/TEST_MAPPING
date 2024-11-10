@@ -47,6 +47,9 @@
           "exclude-filter": "android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability"
         }
       ]
+    },
+    {
+    "name": "CtsVirtualDevicesAppLaunchSdk35TestCases"
     }
   ]
 }

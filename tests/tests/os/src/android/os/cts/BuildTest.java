@@ -309,6 +309,27 @@ public class BuildTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void getBackportedFixStatus_alwaysFixed() {
+        // TODO b/372518979 - BACKPORTED_FIX_STATUS_FIXED when datastore implemented.
+        Truth.assertThat(Build.getBackportedFixStatus(350037023L)).isEqualTo(
+                Build.BACKPORTED_FIX_STATUS_UNKNOWN);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void getBackportedFixStatus_neverFixed() {
+        Truth.assertThat(Build.getBackportedFixStatus(350037348L)).isEqualTo(
+                Build.BACKPORTED_FIX_STATUS_UNKNOWN);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void testGetCriticalIssueStatus_onlyKnownFixes() {
+        // TODO b/372518979 - test when datastore implemented.
+    }
+
     /**
      * Verify that SDK_INT_FULL version is always non-zero and positive.
      */

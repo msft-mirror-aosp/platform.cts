@@ -1018,6 +1018,57 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         }
     }
 
+    // Test case to ensure if night mode indicator is supported then night mode camera extension
+    // is also available.
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NIGHT_MODE_INDICATOR)
+    public void testNightModeIndicatorSupportedWithNightModeCameraExtension() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isNightModeIndicatorSupported()) {
+                continue;
+            }
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
+            assertTrue("Night Mode Camera Extension must be available if "
+                          + "EXTENSION_NIGHT_MODE_INDICATOR is supported",
+                          supportedExtensions.contains(
+                              CameraExtensionCharacteristics.EXTENSION_NIGHT));
+        }
+    }
+
+    // Test case to ensure night mode indicator is supported for both camera extension and camera
+    // capture sessions.
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NIGHT_MODE_INDICATOR)
+    public void testNightModeIndicatorSupportedOnCameraCaptureAndCameraExtensionSession()
+            throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            if (!extensionChars.getSupportedExtensions().contains(
+                    CameraExtensionCharacteristics.EXTENSION_NIGHT)) {
+                continue;
+            }
+            boolean isNightModeIndicatorSupported = staticMeta.isNightModeIndicatorSupported();
+            boolean isNightModeIndicatorCameraExtensionSupported =
+                    extensionChars.getAvailableCaptureResultKeys(
+                        CameraExtensionCharacteristics.EXTENSION_NIGHT).contains(
+                        CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+            // If it's not supported in Camera2 and Camera Extensions then we can ignore
+            // However, if it's supported in either Camera2 or Camera Extensions, then it must
+            // be supported in both.
+            assertEquals("EXTENSION_NIGHT_MODE_INDICATOR must be supported in both camera"
+                          + "extension and camera capture sessions.", isNightModeIndicatorSupported,
+                          isNightModeIndicatorCameraExtensionSupported);
+        }
+    }
+
+
     // Test case for multi-frame only capture on all supported extensions and expected state
     // callbacks. Verify still frame output, measure the average capture latency and if possible
     // ensure that the value is within the reported range.

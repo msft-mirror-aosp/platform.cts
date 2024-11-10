@@ -41,6 +41,7 @@ android_test {
         "flag-junit",
         "Harrier",
         "Nene",
+        "TestParameterInjector",
     ],
     libs: [
         "android.test.base.stubs.test",

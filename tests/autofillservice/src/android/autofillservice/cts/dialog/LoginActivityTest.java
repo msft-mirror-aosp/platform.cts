@@ -54,6 +54,7 @@ import android.graphics.drawable.Icon;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.util.Log;
 import android.view.View;
+import android.view.autofill.AutofillManager;
 import android.widget.RemoteViews;
 
 import androidx.test.uiautomator.UiObject2;
@@ -871,6 +872,48 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
         v.setIsCredential(false);
         assertThat(v.isCredential()).isFalse();
+    }
+
+    @Test
+    public void test_triggerFillDialogThenCloseActivity() throws Exception {
+        // Enable feature and test service
+        enableFillDialogFeature(sContext);
+        enableService();
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "dude")
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(
+                                                createPresentation("Dropdown Presentation"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Presentation"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
+        final FillRequest fillRequest = sReplier.getNextFillRequest();
+        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        // Calling commit right after trigger the fill dialog would crash on AP3 if it
+        // doesn't contain ag/28252107
+        AutofillManager afm = activity.getSystemService(AutofillManager.class);
+        afm.commit();
+        mUiBot.waitForIdleSync();
     }
 
     @Test

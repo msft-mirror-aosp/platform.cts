@@ -17,6 +17,7 @@
 package android.server.wm.backnavigation;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
 import static android.window.BackNavigationInfo.TYPE_CALLBACK;
@@ -36,7 +37,11 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.CliIntentExtra;
 import android.server.wm.ComponentNameUtils;
 import android.server.wm.MockImeHelper;
 import android.view.Gravity;
@@ -46,10 +51,14 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.window.SystemOnBackInvokedCallbacks;
 
 import androidx.annotation.Nullable;
 
+import com.android.window.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -61,8 +70,16 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group1
 public class BackGestureInvokedTest extends ActivityManagerTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private TestActivitySession<BackInvokedActivity> mActivitySession;
     private BackInvokedActivity mActivity;
+
+
+    static final String OVERRIDE_DEFAULT_CALLBACK = "override_default_callback";
+    static final int OVERRIDE_MOVE_TASK_TO_BACK = 1;
+    static final int OVERRIDE_FINISH_AND_REMOVE_TASK = 2;
 
     @Before
     public void setUp() throws Exception {
@@ -139,6 +156,117 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testUnregisterSystemOverrideCallback() {
+        final ComponentName componentName = mActivity.getComponentName();
+        // Register callback to base activity
+        mInstrumentation.runOnMainSync(() -> {
+            mActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,
+                    SystemOnBackInvokedCallbacks.moveTaskToBackCallback(mActivity));
+        });
+        mInstrumentation.waitForIdleSync();
+        mInstrumentation.runOnMainSync(() -> {
+            mActivity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
+                    SystemOnBackInvokedCallbacks.moveTaskToBackCallback(mActivity));
+        });
+        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        mWmState.waitAndAssertActivityRemoved(componentName);
+
+        assertEquals(TYPE_RETURN_TO_HOME, mWmState.getBackNavigationState().getLastBackType());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_FinishAndRemoveTask_RootActivity() {
+        testSystemOverrideMethod(null, false,
+                OVERRIDE_FINISH_AND_REMOVE_TASK, TYPE_RETURN_TO_HOME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_MoveTaskToBack_RootActivity() {
+        testSystemOverrideMethod(null, false,
+                OVERRIDE_MOVE_TASK_TO_BACK, TYPE_RETURN_TO_HOME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_MoveTaskToBack_Task() {
+        final ComponentName componentName = new ComponentName(mContext, NewTaskActivity.class);
+        testSystemOverrideMethod(componentName, true,
+                OVERRIDE_MOVE_TASK_TO_BACK, TYPE_CROSS_TASK);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_FinishAndRemoveTask_Task() {
+        final ComponentName componentName = new ComponentName(mContext, NewTaskActivity.class);
+        testSystemOverrideMethod(componentName, true,
+                OVERRIDE_FINISH_AND_REMOVE_TASK, TYPE_CROSS_TASK);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_MoveTaskToBack_TopActivity() {
+        final ComponentName componentName = new ComponentName(mContext, SecondActivity.class);
+        testSystemOverrideMethod(componentName, false,
+                OVERRIDE_MOVE_TASK_TO_BACK, TYPE_RETURN_TO_HOME);
+    }
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREDICTIVE_BACK_SYSTEM_OVERRIDE_CALLBACK)
+    public void testSystemOverride_FinishAndRemoveTask_TopActivity() {
+        final ComponentName componentName = new ComponentName(mContext, SecondActivity.class);
+        testSystemOverrideMethod(componentName, false,
+                OVERRIDE_FINISH_AND_REMOVE_TASK, TYPE_CROSS_ACTIVITY);
+    }
+
+    /**
+     * @param componentName Set non-null to launch another new activity
+     * @param newTask Whether launch to new task
+     * @param overrideTo Override method
+     * @param expectResult The expected animation for the ahead-of-time.
+     */
+    private void testSystemOverrideMethod(ComponentName componentName, boolean newTask,
+            int overrideTo, int expectResult) {
+        if (componentName != null) {
+            if (newTask) {
+                launchActivityOnDisplay(componentName, DEFAULT_DISPLAY,
+                        CliIntentExtra.extraInt(OVERRIDE_DEFAULT_CALLBACK, overrideTo));
+            } else {
+                launchActivity(componentName,
+                        CliIntentExtra.extraInt(OVERRIDE_DEFAULT_CALLBACK, overrideTo));
+            }
+            mWmState.waitForActivityState(componentName, STATE_RESUMED);
+            mWmState.assertVisibility(componentName, true);
+            mWmState.waitForFocusedActivity("Wait for launched activity to be in front.",
+                    componentName);
+        } else {
+            // No start activity request, register callback to base activity
+            componentName = mActivity.getComponentName();
+            if (overrideTo == OVERRIDE_FINISH_AND_REMOVE_TASK) {
+                mInstrumentation.runOnMainSync(() -> {
+                    mActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,
+                            SystemOnBackInvokedCallbacks.finishAndRemoveTaskCallback(mActivity));
+                });
+            } else {
+                mInstrumentation.runOnMainSync(() -> {
+                    mActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,
+                            SystemOnBackInvokedCallbacks.moveTaskToBackCallback(mActivity));
+                });
+            }
+        }
+
+        triggerBackEventByGesture(DEFAULT_DISPLAY);
+        if (overrideTo == OVERRIDE_FINISH_AND_REMOVE_TASK) {
+            mWmState.waitAndAssertActivityRemoved(componentName);
+        } else {
+            mWmState.waitAndAssertActivityState(componentName, STATE_STOPPED);
+        }
+
+        assertEquals(expectResult, mWmState.getBackNavigationState().getLastBackType());
+    }
+
+    @Test
     public void testDialogDismissed() {
         mInstrumentation.runOnMainSync(() -> {
             new AlertDialog.Builder(mActivity)
@@ -212,6 +340,16 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
             mContentView = new FrameLayout(this);
             mContentView.setBackgroundColor(Color.GREEN);
             setContentView(mContentView);
+
+            if (getIntent().hasExtra(OVERRIDE_DEFAULT_CALLBACK)) {
+                final int overrideTo = getIntent().getIntExtra(OVERRIDE_DEFAULT_CALLBACK, 0);
+                if (overrideTo != 0) {
+                    getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,
+                            overrideTo == OVERRIDE_MOVE_TASK_TO_BACK
+                            ? SystemOnBackInvokedCallbacks.moveTaskToBackCallback(this)
+                            : SystemOnBackInvokedCallbacks.finishAndRemoveTaskCallback(this));
+                }
+            }
         }
     }
 
@@ -224,6 +362,16 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
             mContentView = new FrameLayout(this);
             mContentView.setBackgroundColor(Color.BLUE);
             setContentView(mContentView);
+
+            if (getIntent().hasExtra(OVERRIDE_DEFAULT_CALLBACK)) {
+                final int overrideTo = getIntent().getIntExtra(OVERRIDE_DEFAULT_CALLBACK, 0);
+                if (overrideTo != 0) {
+                    getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,
+                            overrideTo == OVERRIDE_MOVE_TASK_TO_BACK
+                            ? SystemOnBackInvokedCallbacks.moveTaskToBackCallback(this)
+                            : SystemOnBackInvokedCallbacks.finishAndRemoveTaskCallback(this));
+                }
+            }
         }
     }
 

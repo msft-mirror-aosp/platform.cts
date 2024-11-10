@@ -152,7 +152,8 @@ public class NetworkingHelper implements AutoCloseable {
         setLocationMode(String.valueOf(Settings.Secure.LOCATION_MODE_ON));
         final String ssid = SystemUtil.callWithShellPermissionIdentity(
                 () -> mWifiManager.getConnectionInfo().getSSID(),
-                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_WIFI_STATE);
+                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL);
         assertNotEquals(WifiManager.UNKNOWN_SSID, ssid);
         return unquoteSSID(ssid);
     }

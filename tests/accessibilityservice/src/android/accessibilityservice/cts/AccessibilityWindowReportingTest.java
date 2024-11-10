@@ -183,7 +183,6 @@ public class AccessibilityWindowReportingTest {
     }
 
     @Test
-    @Ignore("b/325640120")
     public void putWindowInPictureInPicture_generatesEventAndReportsProperty() throws Exception {
         if (!sInstrumentation.getContext().getPackageManager()
                 .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE)) {

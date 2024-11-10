@@ -22,11 +22,13 @@ import static org.junit.Assert.assertFalse;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class SwitchAudioTrackTestPlayerListener extends PlayerListener {
 
   private final int mNumOfAudioTrack;
 
-  public SwitchAudioTrackTestPlayerListener(int numOfAudioTrack, long sendMessagePosition) {
+  public SwitchAudioTrackTestPlayerListener(int numOfAudioTrack, Duration sendMessagePosition) {
     super();
     this.mNumOfAudioTrack = numOfAudioTrack;
     this.mSendMessagePosition = sendMessagePosition;
@@ -59,7 +61,7 @@ public class SwitchAudioTrackTestPlayerListener extends PlayerListener {
     // First trackGroupIndex is selected at the time of playback start, so changing
     // track from second track group Index onwards.
     for (int trackGroupIndex = 1; trackGroupIndex < mNumOfAudioTrack; trackGroupIndex++) {
-      createSwitchTrackMessage(mSendMessagePosition * trackGroupIndex, trackGroupIndex,
+      createSwitchTrackMessage(mSendMessagePosition.multipliedBy(trackGroupIndex), trackGroupIndex,
           0 /* TrackIndex */);
     }
   }

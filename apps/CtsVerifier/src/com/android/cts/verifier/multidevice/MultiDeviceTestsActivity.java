@@ -90,6 +90,9 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
                 "CtsNfcHceMultiDeviceTestCases#test_throughput")
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_polling_frame_timestamp",
-                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_timestamp"));
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_timestamp")
+            .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_vendor_specific_gain",
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_vendor_specific_gain"));
   }
 }

@@ -19,7 +19,7 @@
     package="android.app.appfunctions.cts.helper" >
     <application android:debuggable="true">
         <uses-library
-            android:name="com.google.android.appfunctions.sidecar"
+            android:name="com.android.extensions.appfunctions"
             android:required="false" />
         <!-- Platform's AppFunctionService. -->
         <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"

@@ -26,20 +26,21 @@ import android.view.Display;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class DeviceLockTestPlayerListener extends PlayerListener {
 
-  private static final int LOCK_DURATION_MS = 5000;
-  private static final int DELAY_MS = 2000;
+  private static final Duration LOCK_DURATION = Duration.ofSeconds(5);
+  private static final Duration DELAY = Duration.ofSeconds(2);
 
   private final boolean mIsAudioOnlyClip;
 
   private Display mDisplay;
   private boolean mIsPlayerPlaying;
 
-  public DeviceLockTestPlayerListener(long sendMessagePosition, boolean isAudioOnlyClip) {
+  public DeviceLockTestPlayerListener(Duration sendMessagePosition, boolean isAudioOnlyClip) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
     this.mIsAudioOnlyClip = isAudioOnlyClip;
@@ -61,7 +62,7 @@ public class DeviceLockTestPlayerListener extends PlayerListener {
     if (mExpectedTotalTime == 0 && player.getPlaybackState() == Player.STATE_READY) {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
-      mExpectedTotalTime += player.getDuration() + LOCK_DURATION_MS;
+      mExpectedTotalTime += player.getDuration() + LOCK_DURATION.toMillis();
       // Register the screen receiver to listen for screen on and off events
       mDisplay = mActivity.getDisplay();
     }
@@ -74,8 +75,8 @@ public class DeviceLockTestPlayerListener extends PlayerListener {
           UiDeviceUtils.pressSleepButton();
           // Unlock the device after LOCK_DURATION
           Timer timer = new Timer();
-          timer.schedule(new Task(), LOCK_DURATION_MS);
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+          timer.schedule(new Task(), LOCK_DURATION.toMillis());
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -83,8 +84,9 @@ public class DeviceLockTestPlayerListener extends PlayerListener {
           assertTrue(isDisplayOn());
           assertTrue(mIsPlayerPlaying);
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mIsAudioOnlyClip ? (mSendMessagePosition + LOCK_DURATION_MS + DELAY_MS)
-            : (mSendMessagePosition + DELAY_MS))
+        .setPosition(
+            mIsAudioOnlyClip ? (mSendMessagePosition.plus(LOCK_DURATION).plus(DELAY).toMillis())
+                : (mSendMessagePosition.plus(DELAY).toMillis()))
         .setDeleteAfterDelivery(true)
         .send();
   }

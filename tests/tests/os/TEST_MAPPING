@@ -11,6 +11,9 @@
         },
         {
           "exclude-filter": "android.os.cts.StrictModeTest#testNonSdkApiUsage"
+        },
+        {
+          "exclude-filter": "android.os.cts.BatteryChangedBroadcastTest"
         }
       ]
     }
@@ -97,6 +100,9 @@
         {
           // TODO(b/265922604)
           "exclude-filter": "android.os.cts.VibratorTest"
+        },
+        {
+          "exclude-filter": "android.os.cts.BatteryChangedBroadcastTest"
         }
       ]
     }
@@ -105,6 +111,16 @@
     {
       "name": "CtsOsTestCasesRavenwood",
       "host": true
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsOsTestCases",
+      "options": [
+        {
+          "include-filter": "android.os.cts.BatteryChangedBroadcastTest"
+        }
+      ]
     }
   ]
 }

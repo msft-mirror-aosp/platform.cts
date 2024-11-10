@@ -22,18 +22,19 @@ import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 
+import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class CallNotificationService extends ConnectionService {
-  public static final int DURATION_MS = 7000;
+  public static final Duration CALL_DURATION = Duration.ofSeconds(7);
 
   @Override
   public Connection onCreateIncomingConnection(PhoneAccountHandle connectionManagerPhoneAccount,
       ConnectionRequest request) {
     Connection sampleConnection = new Connection() {};
     Timer timer = new Timer();
-    timer.schedule(new Task(sampleConnection), DURATION_MS);
+    timer.schedule(new Task(sampleConnection), CALL_DURATION.toMillis());
     return sampleConnection;
   }
 

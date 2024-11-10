@@ -147,7 +147,8 @@ class TestAppInterface implements AutoCloseable {
         mTestJobStates.clear();
         SystemUtil.runShellCommand("cmd netpolicy stop-watching");
         SystemUtil.runShellCommand(
-                "cmd jobscheduler reset-execution-quota -u current " + TEST_APP_PACKAGE);
+                "cmd jobscheduler reset-execution-quota -u " + UserHandle.myUserId() + " "
+                + TEST_APP_PACKAGE);
         forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
 

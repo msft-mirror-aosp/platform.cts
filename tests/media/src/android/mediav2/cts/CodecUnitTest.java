@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
 import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
+import static android.media.codec.Flags.FLAG_NUM_INPUT_SLOTS;
 
 import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
@@ -2786,6 +2787,32 @@ public class CodecUnitTest {
                 Log.v(TAG, "expected exception thrown", e);
             }
             mLinearInputBlock.recycle();
+            mCodec.stop();
+            mCodec.release();
+        }
+
+        @RequiresFlagsEnabled({FLAG_NUM_INPUT_SLOTS})
+        @ApiTest(apis = {"android.media.MediaFormat#KEY_NUM_SLOTS"})
+        @Test
+        public void testNumInputSlots() throws IOException, InterruptedException {
+            MediaFormat format = getSampleVideoFormat();
+            String mediaType = format.getString(MediaFormat.KEY_MIME);
+            String codecName = MEDIA_CODEC_LIST_ALL.findDecoderForFormat(format);
+            mCodec = MediaCodec.createDecoderByType(mediaType);
+            configureCodec(format, true, false, false, MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
+            mCodec.start();
+            assertTrue(
+                    "KEY_NUM_SLOTS not found in input format: " + mCodec.getInputFormat(),
+                    mCodec.getInputFormat().containsKey(MediaFormat.KEY_NUM_SLOTS));
+            int numInputSlots = mCodec.getInputFormat().getInteger(MediaFormat.KEY_NUM_SLOTS);
+            assertTrue("KEY_NUM_SLOTS is not positive: " + numInputSlots, numInputSlots > 0);
+            while (!mAsyncHandle.isInputQueueEmpty()) {
+                int bufferIndex = mAsyncHandle.getInput().first;
+                assertTrue(
+                        "bufferIndex " + bufferIndex +
+                        " is out of range [0, " + numInputSlots + ")",
+                        bufferIndex < numInputSlots);
+            }
             mCodec.stop();
             mCodec.release();
         }

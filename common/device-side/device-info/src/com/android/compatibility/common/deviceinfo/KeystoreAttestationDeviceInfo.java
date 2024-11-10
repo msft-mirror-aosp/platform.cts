@@ -25,12 +25,14 @@ import static com.google.android.attestation.ParsedAttestationRecord.createParse
 
 import android.content.pm.PackageManager;
 import android.security.keystore.KeyGenParameterSpec;
+import android.util.Log;
 
 import com.android.compatibility.common.util.DeviceInfoStore;
 
 import com.google.android.attestation.AuthorizationList;
 import com.google.android.attestation.RootOfTrust;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -45,6 +47,8 @@ import java.util.List;
  * trusted execution environment (TEE) and by its StrongBox chip (if it has one).
  */
 public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
+    // Max log tag length is 23 characters, so we can't use the full class name.
+    private static final String TAG = "AttestationDeviceInfo";
     private static final String TEST_ALIAS_TEE = "testTeeKeyAlias";
     private static final String TEST_ALIAS_STRONGBOX = "testStrongBoxKeyAlias";
     private static final byte[] TEST_CHALLENGE = "challenge".getBytes();
@@ -92,7 +96,14 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
         KeyPairGenerator keyPairGenerator =
                 KeyPairGenerator.getInstance(KEY_ALGORITHM_EC, "AndroidKeyStore");
         keyPairGenerator.initialize(spec);
-        KeyPair kp = keyPairGenerator.generateKeyPair();
+
+        try {
+            KeyPair unusedKeyPair = keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            String keystoreType = strongBoxBacked ? "StrongBox" : "TEE";
+            Log.w(TAG, "Key pair generation failed with " + keystoreType + "-backed Keystore", e);
+            return;
+        }
 
         List<X509Certificate> x509Certificates = new ArrayList<>();
         for (Certificate certificate : mKeyStore.getCertificateChain(keyAlias)) {
@@ -100,10 +111,20 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
                 x509Certificates.add((X509Certificate) certificate);
             }
         }
-        assertTrue(!x509Certificates.isEmpty());
+        if (x509Certificates.isEmpty()) {
+            Log.w(TAG, "Certificate chain is empty, so no attestation could be extracted");
+            return;
+        }
 
-        AuthorizationList authorizationList = createParsedAttestationRecord(
-                x509Certificates).teeEnforced;
+        AuthorizationList authorizationList;
+
+        try {
+            authorizationList = createParsedAttestationRecord(
+                    x509Certificates).teeEnforced;
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to parse the attestation extension", e);
+            return;
+        }
 
         store.startGroup(resultGroupName);
         if (authorizationList.osVersion.isPresent()) {

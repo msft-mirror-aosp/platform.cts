@@ -59,6 +59,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
 @RunWith(AndroidJUnit4.class)
@@ -277,4 +278,106 @@ public class ApduServiceInfoTest {
         assertTrue(apduServiceInfo.isCategoryOtherServiceEnabled());
     }
 
+    @Test
+    public void test_offHostService_addPollingLoopFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_onHostService_addPollingLoopFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, true,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertTrue(addedFilters.contains(plFilter2));
+        assertEquals(2, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopFilter_sameFilterTwice() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopPatternFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_onHostService_addPollingLoopPatternFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, true,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertTrue(addedFilters.contains(plFilter2));
+        assertEquals(2, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopPatternFilter_sameFilterTwice() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
 }

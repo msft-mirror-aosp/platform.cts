@@ -30,6 +30,7 @@ import static android.keystore.cts.AuthorizationList.KM_PURPOSE_DECRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_ENCRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_SIGN;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_VERIFY;
+import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_UNVERIFIED;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
@@ -1680,6 +1681,9 @@ public class KeyAttestationTest {
 
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
+        assertEquals(32, verifiedBootHash.length);
+        checkEntropy(verifiedBootHash);
+
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
             hexVerifiedBootHash.append(String.format("%02x", b));
@@ -1696,22 +1700,37 @@ public class KeyAttestationTest {
         assertNotNull(rootOfTrust);
         assertNotNull(rootOfTrust.getVerifiedBootKey());
         assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                   " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
             checkEntropy(rootOfTrust.getVerifiedBootKey());
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
-            if (PropertyUtil.getFirstApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Verified boot hash was not previously checked in CTS, so set an api level check
-                // to avoid running into waiver issues.
-                return;
+
+            if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // The Verified Boot hash was not previously checked in CTS, so set an API level
+                // check to avoid running into waiver issues.
+                checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
-            assertNotNull(rootOfTrust.getVerifiedBootHash());
-            assertEquals(32, rootOfTrust.getVerifiedBootHash().length);
-            checkEntropy(rootOfTrust.getVerifiedBootHash());
-            checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
+        } else {
+            // We expect exactly one of these combinations of values because either:
+            //   1) CTS is running on a signed bootloader-locked build verified with the OEM's root
+            //      of trust, so the Verified Boot state is KM_VERIFIED_BOOT_VERIFIED.
+            //   OR
+            //   2) CTS is running on a signed GSI. This requires an unlocked bootloader and
+            //      therefore a chain of trust cannot be established, so the Verified Boot state is
+            //      KM_VERIFIED_BOOT_UNVERIFIED.
+            // Builds with a custom root of trust (which would result in
+            // KM_VERIFIED_BOOT_SELF_SIGNED and could have a locked or unlocked bootloader)
+            // shouldn't pass CTS since they don't comply with CDD requirement 9.10 [C-1-3] which
+            // requires use of the fused OEM root of trust for Verified Boot.
+            boolean isLocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_VERIFIED
+                    && rootOfTrust.isDeviceLocked();
+            boolean isUnlocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_UNVERIFIED
+                    && !rootOfTrust.isDeviceLocked();
+            assertTrue("Unexpected combination of device locked state and Verified Boot "
+                    + "state.", isLocked || isUnlocked);
         }
     }
 

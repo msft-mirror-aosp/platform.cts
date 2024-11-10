@@ -128,10 +128,12 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
                     R.string.provisioning_byod_fingerprint_disabled_in_settings_instruction,
                     new Intent(Settings.ACTION_SECURITY_SETTINGS)));
             */
+            /* Disabled due to b/359388643
             adapter.add(new DialogTestListItem(this, R.string.provisioning_byod_disable_fingerprint,
                     getTestIdPrefix() + "DisableFingerprint",
                     R.string.provisioning_byod_disable_fingerprint_instruction,
                     ByodHelperActivity.createLockIntent()));
+            */
         }
     }
 

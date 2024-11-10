@@ -41,6 +41,14 @@
         <activity android:name="com.android.test.walletroleholder.WalletRoleHolderForegroundActivity"
             android:exported="true">
         </activity>
+        <receiver android:name=".WalletRoleBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.cts.RegisterEventListener" />
+                <action android:name="com.cts.UnregisterEventListener" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -57,6 +57,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
+
 /** Tests to verify that power manager APIs behave as expected for virtual devices. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -223,8 +225,7 @@ public class VirtualDevicePowerTest {
     public void untrustedDisplay_followsDefaultDisplayPowerState() {
         assumeScreenOffSupported();
 
-        createVirtualDeviceAndDisplay(VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS,
-                VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
+        createVirtualDeviceAndDisplay(VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
 
         assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
@@ -240,8 +241,7 @@ public class VirtualDevicePowerTest {
     public void untrustedDisplay_noWakeLock() {
         assumeScreenOffSupported();
 
-        createVirtualDeviceAndDisplay(VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS,
-                VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
+        createVirtualDeviceAndDisplay(VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
 
         assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
@@ -311,8 +311,7 @@ public class VirtualDevicePowerTest {
     public void turnScreenOnWithoutShowWhenLocked_turnsOnAlwaysUnlockedVirtualDisplay() {
         createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
                 .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
-                .build(),
-                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+                .build());
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
@@ -330,6 +329,30 @@ public class VirtualDevicePowerTest {
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void customSleepTimeout_goesToSleep() {
+        assumeScreenOffSupported();
+
+        createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
+                .setScreenOffTimeout(Duration.ofMillis(FAST_SCREEN_OFF_TIMEOUT_MS))
+                .build());
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        // Ensure the default display timeout is different.
+        setScreenOffTimeoutMs(mMinimumScreenOffTimeoutMs * 3);
+        SystemClock.sleep(mMinimumScreenOffTimeoutMs);
+
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
+        assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
     }
 
     private void assumeScreenOffSupported() {
@@ -350,6 +373,16 @@ public class VirtualDevicePowerTest {
     void createVirtualDeviceAndDisplay() {
         createVirtualDeviceAndDisplay(VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS,
                 VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+    }
+
+    void createVirtualDeviceAndDisplay(VirtualDeviceParams params) {
+        createVirtualDeviceAndDisplay(params,
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+    }
+
+    void createVirtualDeviceAndDisplay(VirtualDisplayConfig.Builder displayConfig) {
+        createVirtualDeviceAndDisplay(VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS,
+                displayConfig);
     }
 
     void createVirtualDeviceAndDisplay(VirtualDeviceParams params,

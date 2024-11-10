@@ -809,6 +809,9 @@ public class EditTextTest {
             et.requestFocus();
         });
 
+        // Wait until the activity has the focus before checking for the blinking cursor.
+        WindowUtil.waitForFocus(testActivity);
+
         cursorBlinking = editor.isBlinking();
         assertTrue(cursorBlinking);
     }

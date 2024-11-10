@@ -27,6 +27,8 @@ import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -44,6 +46,7 @@ import android.bluetooth.BluetoothSocket;
 import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.OobData;
+import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -65,6 +68,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.UUID;
 
 @RunWith(AndroidJUnit4.class)
@@ -640,5 +644,26 @@ public class BluetoothDeviceTest {
                 () -> l2capSocket.getL2capLocalChannelId());
         assertThrows("Socket closed", BluetoothSocketException.class,
                 () -> l2capSocket.getL2capRemoteChannelId());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_MICROPHONE_FOR_CALL_ENABLED)
+    @Test
+    public void setMicrophonePreferredForCalls_isMicrophonePreferredForCalls() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        Permissions.enforceEachPermissions(
+                () -> mFakeDevice.setMicrophonePreferredForCalls(false),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforceEachPermissions(
+                () -> mFakeDevice.isMicrophonePreferredForCalls(),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        // default value should be true
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.isMicrophonePreferredForCalls()).isTrue();
+            assertThat(mFakeDevice.setMicrophonePreferredForCalls(true)).isEqualTo(
+                    BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
+        }
     }
 }

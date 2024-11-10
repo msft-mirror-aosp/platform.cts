@@ -91,6 +91,7 @@ java_test_host {
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
         "cts_adpf_atom_common-host2",
+        "uprobestats-protos",
     ],
 
     device_common_data: [

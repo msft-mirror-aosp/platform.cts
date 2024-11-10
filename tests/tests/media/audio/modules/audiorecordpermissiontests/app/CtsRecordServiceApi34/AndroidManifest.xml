@@ -21,6 +21,7 @@
          android:targetSdkVersion="34"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.UPDATE_APP_OPS_STATS"/>
 
@@ -35,7 +36,13 @@
             </intent-filter>
         </activity>
         <service android:name=".RecordService"
-             android:foregroundServiceType="microphone"
+            android:foregroundServiceType="microphone|mediaPlayback"
             android:exported="true"/>
+        <receiver android:name=".TrampolineReceiver"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.audio.cts.CtsRecordServiceApi34.ACTION_BOUNCE_FOREGROUND"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

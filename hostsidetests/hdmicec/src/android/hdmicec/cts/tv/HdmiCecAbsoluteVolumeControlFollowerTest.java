@@ -38,6 +38,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class HdmiCecAbsoluteVolumeControlFollowerTest extends BaseHdmiCecCtsTest {
+
     public HdmiCecAbsoluteVolumeControlFollowerTest() {
         super(HdmiCecConstants.CEC_DEVICE_TYPE_TV, "-t", "p", "-t", "a");
     }
@@ -86,6 +87,7 @@ public class HdmiCecAbsoluteVolumeControlFollowerTest extends BaseHdmiCecCtsTest
     @Test
     public void testSystemAudioModeOff_updatesVolume() throws Exception {
         // Wait for CEC adapter to enable System Audio Mode before turning it off
+        getDevice().executeShellCommand("cmd hdmi_control setsam on");
         hdmiCecClient.checkExpectedMessageFromClient(LogicalAddress.AUDIO_SYSTEM,
                 LogicalAddress.TV, CecOperand.SYSTEM_AUDIO_MODE_STATUS);
 

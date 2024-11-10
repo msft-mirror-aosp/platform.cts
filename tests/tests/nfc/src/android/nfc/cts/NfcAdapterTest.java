@@ -36,6 +36,7 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
+import android.nfc.OemLogItems;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
 import android.nfc.cardemulation.ApduServiceInfo;
@@ -703,13 +704,6 @@ public class NfcAdapterTest {
             for (String nfcee : nfceeList) {
                 assertThat(nfcee).isNotEmpty();
             }
-            Thread thread = new Thread(() -> {
-                NfcUtils.disableNfc(nfcAdapter, mContext);
-                nfcOemExtension.maybeTriggerFirmwareUpdate();
-                NfcUtils.enableNfc(nfcAdapter, mContext);
-            });
-            thread.start();
-            thread.join(1000);
             nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
@@ -723,8 +717,8 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
+            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
-            NfcUtils.enableNfc(nfcAdapter, mContext);
             nfcOemExtension.unregisterCallback(cb);
         }
     }
@@ -785,7 +779,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onTagConnected(boolean connected, Tag tag) {
+        public void onTagConnected(boolean connected) {
             mTagDetectedCountDownLatch.countDown();
         }
 
@@ -864,6 +858,11 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeListenActivated(boolean isActivated) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
@@ -883,6 +882,10 @@ public class NfcAdapterTest {
         @Override
         public void onLaunchHceTapAgainDialog(@NonNull ApduServiceInfo service,
                                               @NonNull String category) {
+        }
+
+        @Override
+        public void onLogEventNotified(@NonNull OemLogItems item) {
         }
     }
 

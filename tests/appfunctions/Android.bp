@@ -21,7 +21,7 @@ android_test {
     team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
     libs: [
-        "com.google.android.appfunctions.sidecar.stubs",
+        "com.android.extensions.appfunctions.stubs",
     ],
     static_libs: [
         "androidx.annotation_annotation",
@@ -87,7 +87,7 @@ android_test_helper_app {
     name: "CtsAppFunctionsSidecarTestHelper",
     defaults: ["cts_defaults"],
     libs: [
-        "com.google.android.appfunctions.sidecar.stubs",
+        "com.android.extensions.appfunctions.stubs",
     ],
     static_libs: [
         "CtsAppFunctionsTestUtils",

@@ -84,6 +84,7 @@ public class LauncherAppsTests {
 
     public static final String USER_EXTRA = "user_extra";
     public static final String PACKAGE_EXTRA = "package_extra";
+    public static final String CONFIGS_EXTRA = "configs_extra";
     public static final String REPLY_EXTRA = "reply_extra";
 
     private static final String MANAGED_PROFILE_PKG = "com.android.cts.managedprofile";
@@ -93,6 +94,7 @@ public class LauncherAppsTests {
     public static final int MSG_CHECK_PACKAGE_REMOVED = 2;
     public static final int MSG_CHECK_PACKAGE_CHANGED = 3;
     public static final int MSG_CHECK_NO_PACKAGE_ADDED = 4;
+    public static final int MSG_CONFIG_CHANGED = 5;
 
     public static final int RESULT_PASS = 1;
     public static final int RESULT_FAIL = 2;
@@ -212,6 +214,14 @@ public class LauncherAppsTests {
     public void testNoPackageAddedCallbackForUser() throws Throwable {
         int result = sendMessageToCallbacksService(MSG_CHECK_NO_PACKAGE_ADDED,
                 mUser, SIMPLE_APP_PACKAGE);
+        assertThat(result).isEqualTo(RESULT_PASS);
+    }
+
+    @Test
+    public void testUserConfigChangeCallback() throws Throwable {
+        Bundle params = new Bundle();
+        params.putBundle(CONFIGS_EXTRA, new Bundle());
+        int result = sendMessageToCallbacksService(MSG_CONFIG_CHANGED, mUser);
         assertThat(result).isEqualTo(RESULT_PASS);
     }
 
@@ -460,6 +470,19 @@ public class LauncherAppsTests {
         Bundle params = new Bundle();
         params.putParcelable(USER_EXTRA, user);
         params.putString(PACKAGE_EXTRA, packageName);
+
+        Message message = Message.obtain(null, msg, params);
+        message.replyTo = mResultMessenger;
+
+        mService.send(message);
+
+        return mResult.waitForResult();
+    }
+
+    private int sendMessageToCallbacksService(int msg, UserHandle user)
+            throws Throwable {
+        Bundle params = new Bundle();
+        params.putParcelable(USER_EXTRA, user);
 
         Message message = Message.obtain(null, msg, params);
         message.replyTo = mResultMessenger;

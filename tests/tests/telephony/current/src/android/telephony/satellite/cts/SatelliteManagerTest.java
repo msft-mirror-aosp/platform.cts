@@ -43,6 +43,7 @@ import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
+import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
@@ -61,6 +62,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -981,5 +983,48 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         Intent intent = new Intent(ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED);
         // Throws SecurityException as it is not a system app.
         assertThrows(SecurityException.class, () -> context.sendBroadcast(intent));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForSatelliteDisallowedReasonsChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteDisallowedReasonsCallback callback = new SatelliteDisallowedReasonsCallback() {
+            @Override
+            public void onSatelliteDisallowedReasonsChanged(
+                    int[] disallowedReasons) {
+                logd("onNtnSignalStrengthChanged(" + Arrays.toString(disallowedReasons) + ")");
+            }
+        };
+
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testUnregisterForSatelliteDisallowedReasonsChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteDisallowedReasonsCallback callback = new SatelliteDisallowedReasonsCallback() {
+            @Override
+            public void onSatelliteDisallowedReasonsChanged(
+                    int[] disallowedReasons) {
+                logd("onNtnSignalStrengthChanged(" + Arrays.toString(disallowedReasons) + ")");
+            }
+        };
+
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        getContext().getMainExecutor(), callback));
+        try {
+            sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(callback);
+            fail("Expected IllegalArgumentException or SecurityException");
+        } catch (IllegalArgumentException | SecurityException ex) {
+            assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
+            logd(ex.toString());
+        }
     }
 }

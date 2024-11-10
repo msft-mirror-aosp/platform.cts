@@ -20,6 +20,7 @@ import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDER
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_START_INDEX;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,6 +44,9 @@ import android.os.Bundle;
 import android.os.Message;
 import android.os.Parcelable;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -95,6 +99,9 @@ public class AccessibilityTextActionTest {
     private static UiAutomation sUiAutomation;
     final Object mClickableSpanCallbackLock = new Object();
     final AtomicBoolean mClickableSpanCalled = new AtomicBoolean(false);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private AccessibilityTextTraversalActivity mActivity;
 
@@ -273,6 +280,17 @@ public class AccessibilityTextActionTest {
 
     @Test
     public void testTextLocations_textViewShouldProvideWhenRequested() {
+        testTextViewProvidesLocationsWhenRequested(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocations_textViewShouldProvideWhenRequestedInWindow() {
+        testTextViewProvidesLocationsWhenRequested(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+    }
+
+    private void testTextViewProvidesLocationsWhenRequested(String extraDataKey) {
         final TextView textView = (TextView) mActivity.findViewById(R.id.text);
         // Use text with a strong s, since that gets replaced with a double s for all caps.
         // That replacement requires us to properly handle the length of the string changing.
@@ -284,17 +302,29 @@ public class AccessibilityTextActionTest {
                 .findAccessibilityNodeInfosByText(stringToSet).get(0);
         List<String> textAvailableExtraData = text.getAvailableExtraData();
         assertTrue("Text view should offer text location to accessibility",
-                textAvailableExtraData.contains(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+                textAvailableExtraData.contains(extraDataKey));
         assertNull("Text locations should not be populated by default",
-                text.getExtras().getString(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+                text.getExtras().getString(extraDataKey));
 
-        waitForExtraTextData(text);
-        assertNodeContainsTextLocationInfoOnOneLineLTR(text);
+        waitForExtraTextData(text, extraDataKey);
+        assertNodeContainsTextLocationInfoOnOneLineLTR(text, extraDataKey);
     }
 
     @Test
     @FlakyTest
     public void testTextLocations_textOutsideOfViewBounds_locationsShouldBeNull() {
+        testTextOusideOfViewBounds_locationsInWindowsNull(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+    }
+
+    @Test
+    @FlakyTest
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocations_textOutsideOfViewBounds_locationsInWindowShouldBeNull() {
+        testTextOusideOfViewBounds_locationsInWindowsNull(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+    }
+
+    private void testTextOusideOfViewBounds_locationsInWindowsNull(String extraDataKey) {
         final EditText editText = mActivity.findViewById(R.id.edit);
         makeTextViewVisibleAndSetText(editText, mActivity.getString(R.string.android_wiki));
 
@@ -303,11 +333,11 @@ public class AccessibilityTextActionTest {
                         mActivity.getString(R.string.android_wiki)).get(0);
         List<String> textAvailableExtraData = text.getAvailableExtraData();
         assertTrue("Text view should offer text location to accessibility",
-                textAvailableExtraData.contains(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+                textAvailableExtraData.contains(extraDataKey));
 
-        Bundle extras = waitForExtraTextData(text);
+        Bundle extras = waitForExtraTextData(text, extraDataKey);
         Parcelable[] parcelables = extras.getParcelableArray(
-                EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+                extraDataKey, RectF.class);
         assertNotNull(parcelables);
         final RectF[] locationsBeforeScroll = Arrays.copyOf(
                 parcelables, parcelables.length, RectF[].class);
@@ -336,9 +366,9 @@ public class AccessibilityTextActionTest {
             editText.scrollTo(0, oneLineDownY + 1);
         });
 
-        extras = waitForExtraTextData(text);
+        extras = waitForExtraTextData(text, extraDataKey);
         parcelables = extras
-                .getParcelableArray(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+                .getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
         final RectF[] locationsAfterScroll = Arrays.copyOf(
                 parcelables, parcelables.length, RectF[].class);
@@ -350,6 +380,19 @@ public class AccessibilityTextActionTest {
 
     @Test
     public void testTextLocations_withRequestPreparer_shouldHoldOffUntilReady() {
+        testTextLocations_withRequestPreparer_shouldHoldOffUntilReady(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocationsInWindow_withRequestPreparer_shouldHoldOffUntilReady() {
+        testTextLocations_withRequestPreparer_shouldHoldOffUntilReady(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+    }
+
+    private void testTextLocations_withRequestPreparer_shouldHoldOffUntilReady(
+            String extraDataKey) {
         final TextView textView = (TextView) mActivity.findViewById(R.id.text);
         makeTextViewVisibleAndSetText(textView, mActivity.getString(R.string.a_b));
 
@@ -371,9 +414,9 @@ public class AccessibilityTextActionTest {
                 textView, AccessibilityRequestPreparer.REQUEST_TYPE_EXTRA_DATA) {
             @Override
             public void onPrepareExtraData(int virtualViewId,
-                    String extraDataKey, Bundle args, Message preparationFinishedMessage) {
+                    String preparedExtraDataKey, Bundle args, Message preparationFinishedMessage) {
                 assertEquals(AccessibilityNodeProvider.HOST_VIEW_ID, virtualViewId);
-                assertEquals(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, extraDataKey);
+                assertEquals(extraDataKey, preparedExtraDataKey);
                 assertEquals(0, args.getInt(EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_START_INDEX));
                 assertEquals(text.getText().length(),
                         args.getInt(EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH));
@@ -387,7 +430,7 @@ public class AccessibilityTextActionTest {
         // Make the extra data request in another thread
         Runnable mockRunnableForData = mock(Runnable.class);
         new Thread(()-> {
-            waitForExtraTextData(text);
+            waitForExtraTextData(text, extraDataKey);
             mockRunnableForData.run();
         }).start();
 
@@ -401,7 +444,7 @@ public class AccessibilityTextActionTest {
         // Declare preparation for the request complete, and verify that it runs to completion
         messageRefForPrepare.get().sendToTarget();
         verify(mockRunnableForData, timeout(DEFAULT_TIMEOUT_MS)).run();
-        assertNodeContainsTextLocationInfoOnOneLineLTR(text);
+        assertNodeContainsTextLocationInfoOnOneLineLTR(text, extraDataKey);
         a11yManager.removeAccessibilityRequestPreparer(requestPreparer);
     }
 
@@ -439,7 +482,7 @@ public class AccessibilityTextActionTest {
              * Don't worry about the return value, as we're timing out. We're just making
              * sure that we don't hang the system.
              */
-            waitForExtraTextData(text);
+            waitForExtraTextData(text, EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
             mockRunnableForData.run();
         }).start();
 
@@ -454,16 +497,27 @@ public class AccessibilityTextActionTest {
     @Test
     @FlakyTest
     public void testTextLocation_testLocationBoundary_locationShouldBeLimitationLength() {
+        textTextLocationBoundaryShouldBeLimitedLength(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+    }
+
+    @Test
+    @FlakyTest
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocation_testLocationBoundary_locationInWindowShouldBeLimitationLength() {
+        textTextLocationBoundaryShouldBeLimitedLength(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+    }
+
+    private void textTextLocationBoundaryShouldBeLimitedLength(String extraDataKey) {
         final TextView textView = mActivity.findViewById(R.id.text);
         makeTextViewVisibleAndSetText(textView, mActivity.getString(R.string.a_b));
 
         final AccessibilityNodeInfo text = sUiAutomation.getRootInActiveWindow()
                 .findAccessibilityNodeInfosByText(mActivity.getString(R.string.a_b)).get(0);
 
-        Bundle extras = waitForExtraTextData(text, Integer.MAX_VALUE);
+        Bundle extras = waitForExtraTextData(text, extraDataKey, Integer.MAX_VALUE);
 
-        final Parcelable[] parcelables = extras.getParcelableArray(
-                EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+        final Parcelable[] parcelables = extras.getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
         final RectF[] locations = Arrays.copyOf(parcelables, parcelables.length, RectF[].class);
         assertEquals(locations.length,
@@ -573,10 +627,10 @@ public class AccessibilityTextActionTest {
         return args;
     }
 
-    private void assertNodeContainsTextLocationInfoOnOneLineLTR(AccessibilityNodeInfo info) {
-        Bundle extras = waitForExtraTextData(info);
-        final Parcelable[] parcelables = extras
-                .getParcelableArray(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+    private void assertNodeContainsTextLocationInfoOnOneLineLTR(AccessibilityNodeInfo info,
+            String extraDataKey) {
+        Bundle extras = waitForExtraTextData(info, extraDataKey);
+        final Parcelable[] parcelables = extras.getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
         final RectF[] locations = Arrays.copyOf(parcelables, parcelables.length, RectF[].class);
         assertEquals(info.getText().length(), locations.length);
@@ -637,18 +691,17 @@ public class AccessibilityTextActionTest {
         sInstrumentation.waitForIdleSync();
     }
 
-    private Bundle waitForExtraTextData(AccessibilityNodeInfo info) {
-        return waitForExtraTextData(info, info.getText().length());
+    private Bundle waitForExtraTextData(AccessibilityNodeInfo info, String key) {
+        return waitForExtraTextData(info, key, info.getText().length());
     }
 
-    private Bundle waitForExtraTextData(AccessibilityNodeInfo info, int length) {
+    private Bundle waitForExtraTextData(AccessibilityNodeInfo info, String key, int length) {
         final Bundle getTextArgs = getTextLocationArguments(length);
         // Node refresh must succeed and the resulting extras must contain the requested key.
         try {
             TestUtils.waitUntil("Timed out waiting for extra data", () -> {
-                info.refreshWithExtraData(
-                        EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, getTextArgs);
-                return info.getExtras().containsKey(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+                info.refreshWithExtraData(key, getTextArgs);
+                return info.getExtras().containsKey(key);
             });
         } catch (Exception e) {
             fail(e.getMessage());

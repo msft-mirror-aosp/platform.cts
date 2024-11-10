@@ -44,6 +44,8 @@ public final class AudioTest extends CtsVerifierTest {
     // MultiDisplayMode
     @CddTest(requirements = "7.8.2.1/C-1-1,C-1-2,C-1-3,C-1-4,C-2-1")
     public void AnalogHeadsetAudioTest() throws Exception {
+        excludeFeatures("android.software.leanback");
+
         runTest(".audio.AnalogHeadsetAudioActivity");
     }
 
@@ -407,7 +409,7 @@ public final class AudioTest extends CtsVerifierTest {
     @Test
     @SupportMultiDisplayMode
     // MultiDisplayMode
-    @CddTest(requirements = "7.8.2.2/H-1-1|7.7.2/C-2-1,C-2-2")
+    @CddTest(requirements = "7.8.2.2/H-1-1", "7.7.2/C-2-1,C-2-2")
     @ApiTest(apis = "android.app.Activity#onKeyDown")
     public void USBAudioPeripheralRecordTest() throws Exception {
         requireFeatures("android.hardware.usb.host");
