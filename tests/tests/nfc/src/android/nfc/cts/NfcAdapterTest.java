@@ -723,6 +723,7 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
+            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
             NfcUtils.enableNfc(nfcAdapter, mContext);
             nfcOemExtension.unregisterCallback(cb);
@@ -785,7 +786,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onTagConnected(boolean connected, Tag tag) {
+        public void onTagConnected(boolean connected) {
             mTagDetectedCountDownLatch.countDown();
         }
 
@@ -860,6 +861,11 @@ public class NfcAdapterTest {
 
         @Override
         public void onRfDiscoveryStarted(boolean isDiscoveryStarted) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onEeListenActivated(boolean isActivated) {
             mTagDetectedCountDownLatch.countDown();
         }
 

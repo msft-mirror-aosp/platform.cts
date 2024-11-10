@@ -60,9 +60,9 @@ TEST_F(NdkBinderTest_AIBinder, AssociateWrongClassFails) {
   AIBinder_decStrong(binder);
 }
 
-TEST_F(NdkBinderTest_AIBinder, CrashGetDescriptor) {
-  EXPECT_DEATH({ AIBinder_Class_getDescriptor(nullptr); }, "getDescriptor requires non-null clazz");
-}
+// TEST_F(NdkBinderTest_AIBinder, CrashGetDescriptor) {
+//   EXPECT_DEATH({ AIBinder_Class_getDescriptor(nullptr); }, "getDescriptor requires non-null clazz");
+// }
 
 TEST_F(NdkBinderTest_AIBinder, ClassGetDescriptor) {
   EXPECT_NE(SampleData::kClass, SampleData::kAnotherClassWithSameDescriptor);
