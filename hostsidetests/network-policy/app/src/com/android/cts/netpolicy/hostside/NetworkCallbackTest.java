@@ -35,11 +35,9 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.cts.util.CtsNetUtils;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import com.android.modules.utils.build.SdkLevel;
-import com.android.server.net.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -380,7 +378,6 @@ public class NetworkCallbackTest extends AbstractRestrictBackgroundNetworkTestCa
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testOnBlockedStatusChanged_default() throws Exception {
         try {
             assertProcessStateBelow(PROCESS_STATE_TOP_SLEEPING);

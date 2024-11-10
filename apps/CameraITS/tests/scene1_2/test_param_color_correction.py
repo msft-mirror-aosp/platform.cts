@@ -42,6 +42,8 @@ _RAW_GAIN_BOOST_R = [2, 1, 1, 1]  # red channel 2x
 _RAW_GAIN_UNITY = [1, 1, 1, 1]  # all channels equal
 _RGB_DIFF_THRESH = 0.1  # threshold for differences in asserts
 _RGB_RANGE_THRESH = 0.2  # 0.2 < mean < 0.8 to avoid dark or saturated imgs
+_STATIONARY_LENS_NUM_FRAMES = 4  # num of frames to wait for lens to stabilize
+_STATIONARY_LENS_NUM_TRIES = 1  # num of tries to wait for lens to stabilize
 
 
 class ParamColorCorrectionTest(its_base_test.ItsBaseTest):
@@ -76,7 +78,6 @@ class ParamColorCorrectionTest(its_base_test.ItsBaseTest):
           its_session_utils.CHART_DISTANCE_NO_SCALING)
 
       # Define format
-      sync_latency = camera_properties_utils.sync_latency(props)
       largest_yuv = capture_request_utils.get_largest_format('yuv', props)
       match_ar = (largest_yuv['width'], largest_yuv['height'])
       fmt = capture_request_utils.get_near_vga_yuv_format(
@@ -109,8 +110,11 @@ class ParamColorCorrectionTest(its_base_test.ItsBaseTest):
       for i in capture_idxs:
         req['android.colorCorrection.transform'] = transforms[i]
         req['android.colorCorrection.gains'] = gains[i]
-        cap = its_session_utils.do_capture_with_latency(
-            cam, req, sync_latency, fmt)
+        cap = capture_request_utils.stationary_lens_capture(
+            cam, req, fmt,
+            num_frames=_STATIONARY_LENS_NUM_FRAMES,
+            num_tries=_STATIONARY_LENS_NUM_TRIES
+        )
         img = image_processing_utils.convert_capture_to_rgb_image(cap)
         image_processing_utils.write_image(
             img, f'{name_with_log_path}_req={i}.jpg')

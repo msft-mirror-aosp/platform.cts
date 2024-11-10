@@ -666,6 +666,17 @@ public class StaticMetadata {
         return false;
     }
 
+    /**
+     * Checks if Night Mode Indicator key is available on this device
+     */
+    public Boolean isNightModeIndicatorSupported() {
+        if (Flags.nightModeIndicator()) {
+            return mCharacteristics.getAvailableCaptureResultKeys().contains(
+                    CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        }
+        return false;
+    }
+
     public int[] getAvailableTestPatternModesChecked() {
         Key<int[]> key =
                 CameraCharacteristics.SENSOR_AVAILABLE_TEST_PATTERN_MODES;

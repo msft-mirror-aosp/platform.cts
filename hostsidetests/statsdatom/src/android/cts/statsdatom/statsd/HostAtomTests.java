@@ -632,7 +632,8 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
                     Atom.SCREEN_STATE_CHANGED_FIELD_NUMBER,
                     Atom.BATTERY_LEVEL_CHANGED_FIELD_NUMBER,
                     Atom.CHARGING_STATE_CHANGED_FIELD_NUMBER,
-                    Atom.PLUGGED_STATE_CHANGED_FIELD_NUMBER
+                    Atom.PLUGGED_STATE_CHANGED_FIELD_NUMBER,
+                    Atom.BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED_FIELD_NUMBER
                 }
         );
 
@@ -649,6 +650,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
         assertThat(atoms.stream().anyMatch(Atom::hasDeviceIdleModeStateChanged)).isTrue();
         assertThat(atoms.stream().anyMatch(Atom::hasScreenStateChanged)).isTrue();
+        assertThat(atoms.stream().anyMatch(Atom::hasBootTimeEventElapsedTimeReported)).isTrue();
         if (!DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) {
             assertThat(atoms.stream().anyMatch(Atom::hasBatteryLevelChanged)).isTrue();
             assertThat(atoms.stream().anyMatch(Atom::hasChargingStateChanged)).isTrue();

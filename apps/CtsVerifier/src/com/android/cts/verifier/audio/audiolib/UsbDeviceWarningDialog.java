@@ -62,11 +62,10 @@ class UsbDeviceWarningDialog extends Dialog
                 .closeParagraph();
 
         htmlFormatter.openParagraph()
-                .appendText(mContext.getString(R.string.usbwarning_paragraph_1_1) + " ")
-                .openLink("https://store.google.com/product/usb_c_headphone_adapter")
-                .appendText(mContext.getString(R.string.usbwarning_googadapter))
-                .closeLink()
-                .appendText(" " + mContext.getString(R.string.usbwarning_paragraph_1_2));
+                .appendText(mContext.getString(R.string.usbwarning_paragraph_1));
+
+        htmlFormatter.openParagraph()
+                .appendText(mContext.getString(R.string.usbwarning_paragraph_2));
 
         htmlFormatter.closeDocument();
         htmlFormatter.put(mMessageView);
