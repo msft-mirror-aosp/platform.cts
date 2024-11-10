@@ -46,6 +46,8 @@ import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
@@ -58,6 +60,7 @@ import android.view.Surface;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -144,6 +147,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         FIRED,
         RAMPING_DOWN
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {
@@ -893,7 +900,31 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 Size maxPreviewSize = mOrderedPreviewSizes.get(0);
-                zoomRatioTestByCamera(maxPreviewSize);
+                zoomRatioTestByCamera(maxPreviewSize, /*useZoomRatioMethod*/false);
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test zoom using CONTROL_ZOOM_RATIO with CONTROL_ZOOM_METHOD set explicitly to ZOOM_RATIO,
+     * validate the returned crop regions and zoom ratio.
+     *
+     * The max preview size is used for each camera.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ZOOM_METHOD)
+    public void testZoomRatioWithMethod() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+                openDevice(id);
+                Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+                zoomRatioTestByCamera(maxPreviewSize, /*useZoomRatioMethod*/true);
             } finally {
                 closeDevice();
             }
@@ -3095,7 +3126,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         }
     }
 
-    private void zoomRatioTestByCamera(Size previewSize) throws Exception {
+    private void zoomRatioTestByCamera(Size previewSize, boolean useZoomRatioMethod)
+            throws Exception {
         final Range<Float> zoomRatioRange = mStaticInfo.getZoomRatioRangeChecked();
         // The error margin is derive from a VGA size camera zoomed all the way to 10x, in which
         // case the cropping error can be as large as 480/46 - 480/48 = 0.435.
@@ -3111,6 +3143,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, defaultCropRegion);
+        if (Flags.zoomMethod() && useZoomRatioMethod) {
+            requestBuilder.set(CaptureRequest.CONTROL_ZOOM_METHOD,
+                    CameraMetadata.CONTROL_ZOOM_METHOD_ZOOM_RATIO);
+        }
         SimpleCaptureCallback listener = new SimpleCaptureCallback();
 
         updatePreviewSurface(previewSize);
@@ -3230,10 +3266,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             previousRatio = resultZoomRatio;
 
             /*
-             * Set windowboxing cropRegion while zoomRatio is not 1.0x, and make sure the crop
-             * region was overwritten.
+             * Set windowboxing cropRegion while zoomRatio is not 1.0x or zoomRatio method
+             * is used, and make sure the crop region was overwritten.
              */
-            if (zoomFactor != 1.0f) {
+            if (zoomFactor != 1.0f || useZoomRatioMethod) {
                 requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom2xCropRegion);
                 CaptureRequest requestWithCrop = requestBuilder.build();
                 for (int j = 0; j < captureSubmitRepeat; ++j) {

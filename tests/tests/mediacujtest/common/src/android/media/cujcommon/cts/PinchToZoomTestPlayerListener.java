@@ -29,10 +29,12 @@ import android.view.ScaleGestureDetector;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class PinchToZoomTestPlayerListener extends PlayerListener {
 
   private static final String TAG = PinchToZoomTestPlayerListener.class.getSimpleName();
-  private static final int ZOOM_IN_DURATION_MS = 4000;
+  private static final Duration ZOOM_IN_DURATION = Duration.ofSeconds(4);
   private static final int PINCH_STEP_COUNT = 10;
   private static final float SPAN_GAP = 50.0f;
   private static final float LEFT_MARGIN_WIDTH_FACTOR = 0.1f;
@@ -42,7 +44,7 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
   private int mHeight;
   private float mStepSize;
 
-  public PinchToZoomTestPlayerListener(long sendMessagePosition) {
+  public PinchToZoomTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -86,14 +88,14 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Programmatically pinch and zoom in
           pinchAndZoom(true /* zoomIn */);
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Programmatically pinch and zoom out
           pinchAndZoom(false /* zoomOut */);
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + ZOOM_IN_DURATION_MS)
+        .setPosition(mSendMessagePosition.plus(ZOOM_IN_DURATION).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }

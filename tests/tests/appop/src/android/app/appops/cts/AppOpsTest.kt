@@ -39,6 +39,7 @@ import android.os.Process
 import android.os.UserHandle
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
@@ -1013,8 +1014,27 @@ class AppOpsTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_APPOP_MODE_CACHING_ENABLED)
     @Test
-    fun checkOpForBadUid() {
+    fun checkOpForBadUidReturnsIgnored() {
+        val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_RESERVED_FOR_TESTING)
+
+        runWithShellPermissionIdentity {
+            mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), MODE_ERRORED)
+            try {
+                val mode = mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+                    Process.myUid() + 1, mOpPackageName)
+                assertEquals(mode, MODE_IGNORED)
+            } finally {
+                // Clear the uid state
+                mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), defaultMode)
+            }
+        }
+    }
+
+    @RequiresFlagsDisabled(Flags.FLAG_APPOP_MODE_CACHING_ENABLED)
+    @Test
+    fun checkOpForBadUidReturnsDefaultMode() {
         val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_RESERVED_FOR_TESTING)
 
         runWithShellPermissionIdentity {

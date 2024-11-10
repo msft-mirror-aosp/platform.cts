@@ -321,6 +321,9 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
                 requestKeys.add(CaptureRequest.CONTROL_SCENE_MODE);
                 requestKeys.add(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE);
                 requestKeys.add(CaptureRequest.CONTROL_ZOOM_RATIO);
+                if (Flags.zoomMethod()) {
+                    requestKeys.add(CaptureRequest.CONTROL_ZOOM_METHOD);
+                }
                 requestKeys.add(CaptureRequest.FLASH_MODE);
                 requestKeys.add(CaptureRequest.JPEG_GPS_LOCATION);
                 requestKeys.add(CaptureRequest.JPEG_ORIENTATION);

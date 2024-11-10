@@ -18,6 +18,7 @@ package android.soundtrigger.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThrows;
 
 import android.hardware.soundtrigger.SoundTrigger;
 import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
@@ -322,5 +323,19 @@ public class SoundTriggerTest {
                 SoundTrigger.RecognitionConfig.CREATOR.createFromParcel(parcel);
         assertThat(recognitionConfigSrc).isEqualTo(recognitionConfigResult);
         verifyRecognitionConfigMatchesTestParams(recognitionConfigResult);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
+    @Test
+    public void testRecognitionConfigBuilderInvalidKeyphrases_NullPointerExceptionThrows() {
+        RecognitionConfig.Builder builder = new RecognitionConfig.Builder();
+        assertThrows(NullPointerException.class, () -> builder.setKeyphrases(null));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
+    @Test
+    public void testRecognitionConfigBuilderInvalidData_NullPointerExceptionThrows() {
+        RecognitionConfig.Builder builder = new RecognitionConfig.Builder();
+        assertThrows(NullPointerException.class, () -> builder.setData(null));
     }
 }

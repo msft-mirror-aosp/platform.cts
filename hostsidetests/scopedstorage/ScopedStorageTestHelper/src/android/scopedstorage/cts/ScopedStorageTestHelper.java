@@ -27,6 +27,7 @@ import static android.scopedstorage.cts.lib.TestUtils.DELETE_FILE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_MEDIA_BY_URI_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_RECURSIVE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.FILE_EXISTS_QUERY;
+import static android.scopedstorage.cts.lib.TestUtils.GET_TYPE_URI;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXCEPTION;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_ARGS;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_CALLING_PKG;
@@ -175,6 +176,9 @@ public class ScopedStorageTestHelper extends Activity {
                 case QUERY_WITH_ARGS:
                     returnIntent = queryWithArgs(queryType);
                     break;
+                case GET_TYPE_URI:
+                    returnIntent = getTypeForUri(queryType);
+                    break;
                 case "null":
                 default:
                     throw new IllegalStateException(
@@ -314,6 +318,19 @@ public class ScopedStorageTestHelper extends Activity {
             final Cursor c = getContentResolver().query(uri,
                     new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, args, null);
             intent.putExtra(queryType, c.getCount());
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent getTypeForUri(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+
+        try {
+            intent.putExtra(queryType, getContentResolver().getType(uri));
         } catch (Exception e) {
             intent.putExtra(INTENT_EXCEPTION, e);
         }
