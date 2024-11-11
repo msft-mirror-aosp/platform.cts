@@ -30,6 +30,7 @@ import static com.google.common.truth.TruthJUnit.assume;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
 
@@ -46,9 +47,16 @@ public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
     @Test
     @AsbSecurityTest(cveBugId = 327749022)
     public void testPocBUG_327749022() {
+        final Instrumentation instrumentation = getInstrumentation();
+        final Context context = instrumentation.getContext();
+
+        assume().withMessage(
+                        "Skipping test: Watch allows limited preferences of Settings during OOBE")
+                .that(isWatch(context))
+                .isFalse();
+
         try {
             // Set the 'DEVICE_PROVISIONED' as 'false' to reproduce the issue.
-            final Instrumentation instrumentation = getInstrumentation();
             try (AutoCloseable withDeviceInProvisionState =
                     withSetting(
                             instrumentation,
@@ -57,7 +65,6 @@ public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
                             "0" /* false */)) {
                 // Ensure that 'SettingsHomepageActivity' is not visible on the screen.
                 runShellCommand("input keyevent KEYCODE_HOME");
-                final Context context = instrumentation.getContext();
                 final Intent intentToLaunchSettings =
                         new Intent(Settings.ACTION_SETTINGS)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -83,5 +90,10 @@ public class BUG_327749022 extends StsExtraBusinessLogicTestCase {
         } catch (Exception e) {
             assume().that(e).isNull();
         }
+    }
+
+    private boolean isWatch(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+
     }
 }
