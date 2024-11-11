@@ -16,6 +16,8 @@
 
 package android.graphics.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.compat.CompatChanges;
 import android.graphics.cts.FrameRateOverrideCtsActivity.FrameRateObserver;
@@ -34,6 +36,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
@@ -86,6 +90,7 @@ public final class FrameRateOverrideTest {
                         Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS);
 
         mDisplayManager = mActivityRule.getActivity().getSystemService(DisplayManager.class);
+        assumeTrue(DisplayUtilKt.validateOnlyDefaultDisplayOn(mDisplayManager, TAG));
         mInitialMatchContentFrameRate = toSwitchingType(
                 mDisplayManager.getMatchContentFrameRateUserPreference());
         mDisplayManager.setRefreshRateSwitchingType(
