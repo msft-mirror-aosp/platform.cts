@@ -1415,12 +1415,6 @@ public final class MockIme extends InputMethodService {
         }
     }
 
-    @Override
-    public void onCustomImeSwitcherButtonRequestedVisible(boolean visible) {
-        getTracer().onCustomImeSwitcherButtonRequestedVisible(visible,
-                () -> super.onCustomImeSwitcherButtonRequestedVisible(visible));
-    }
-
     /**
      * Event tracing helper class for {@link MockIme}.
      */
@@ -1758,13 +1752,6 @@ public final class MockIme extends InputMethodService {
                     new ImeEventStreamTestUtils.WindowLayoutInfoParcelable(windowLayoutInfo);
             arguments.putParcelable("WindowLayoutInfo", parcel);
             recordEventInternal("getWindowLayoutInfo", runnable, arguments);
-        }
-
-        void onCustomImeSwitcherButtonRequestedVisible(boolean visible,
-                @NonNull Runnable runnable) {
-            final Bundle arguments = new Bundle();
-            arguments.putBoolean("visible", visible);
-            recordEventInternal("onCustomImeSwitcherButtonRequestedVisible", runnable, arguments);
         }
     }
 }
