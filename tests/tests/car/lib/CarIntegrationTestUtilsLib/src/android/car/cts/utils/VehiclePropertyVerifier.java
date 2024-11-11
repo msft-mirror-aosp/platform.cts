@@ -150,6 +150,13 @@ public class VehiclePropertyVerifier<T> {
             STEP_VERIFY_WRITE_APIS_PREFIX + ".disableAdasFeatureVerifyState";
 
     /**
+     * A step to verify that for HVAC power dependant properties, getting should be unavailable
+     * when HVAC power is off.
+     */
+    public static final String STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE =
+            STEP_VERIFY_READ_APIS_PREFIX + ".turnOffHvacPowerGetNotAvailable";
+
+    /**
      * A step to verify that for HVAC power dependant properties, setting should be unavailable
      * when HVAC power is off.
      */
@@ -497,6 +504,7 @@ public class VehiclePropertyVerifier<T> {
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC,
                 STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
+                STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE,
                 STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE,
                 STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION,
                 STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION
@@ -771,6 +779,13 @@ public class VehiclePropertyVerifier<T> {
 
                 if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
                     verifyCarPropertyValueCallback();
+                }
+
+                if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
+                    assumeTrue("Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
+                    if (turnOffHvacPowerIfHvacPowerDependent()) {
+                        verifyGetNotAvailable();
+                    }
                 }
             }, readPermission);
         } finally {
