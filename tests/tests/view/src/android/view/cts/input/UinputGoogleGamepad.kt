@@ -51,4 +51,5 @@ class UinputGoogleGamepad(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
     InputDevice.SOURCE_KEYBOARD,
     createRegisterCommand(),
+    null // display
 )
