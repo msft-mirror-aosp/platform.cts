@@ -20,6 +20,7 @@ import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.pm.Checksum.TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256;
 import static android.content.pm.Checksum.TYPE_WHOLE_MERKLE_ROOT_4K_SHA256;
 import static android.content.pm.Flags.FLAG_SDK_LIB_INDEPENDENCE;
+import static android.content.pm.Flags.FLAG_SDK_DEPENDENCY_INSTALLER;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_INCREMENTAL;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_NONE;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_STREAMING;
@@ -1390,6 +1391,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_LIB_INDEPENDENCE)
+    @RequiresFlagsDisabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testAppUsingSdkOptionalInstallInstall_allowAppInstallWithoutSDK()
             throws Exception {
         onBeforeSdkTests();
@@ -1407,6 +1409,45 @@ public class PackageManagerShellCommandInstallTest {
         // Try to install without required SDK1.
         installPackage(TEST_USING_SDK1_OPTIONAL, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_dependencyInstallerMissing() throws Exception {
+        onBeforeSdkTests();
+
+        // Installing package without dependency should fail
+        // But the error message should be different
+        String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+        assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        assertThat(errorMsg).contains("Failed to bind to Dependency Installer");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_multiSessionFailsLater() throws Exception {
+        onBeforeSdkTests();
+
+        // Create a multi session without all the dependencies
+        // Parent session
+        String parentSessionId = createSession("--multi-package");
+
+        // Required SDK1.
+        String sdkSessionId = createSession("");
+        addSplits(sdkSessionId, new String[] { createApkPath(TEST_SDK1) });
+
+        // The app.
+        String appSessionId = createSession("");
+        addSplits(appSessionId, new String[] { createApkPath(TEST_USING_SDK1_AND_SDK2) });
+
+        // Add both child sessions to the primary session and commit.
+        assertEquals("Success\n", executeShellCommand(
+                "pm install-add-session " + parentSessionId + " " + sdkSessionId + " "
+                        + appSessionId));
+
+        // Installation should fail.
+        String msg = executeShellCommand("pm install-commit " + parentSessionId);
+        assertThat(msg).contains("Reconcile failed");
     }
 
     @Test
@@ -2794,7 +2835,15 @@ public class PackageManagerShellCommandInstallTest {
             throws IOException {
         File file = new File(createApkPath(baseName));
         String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
-        assertTrue(result, result.startsWith(expectedResultStartsWith));
+        assertThat(result).startsWith(expectedResultStartsWith);
+    }
+
+    private String installPackageGetErrorMessage(String baseName) throws IOException {
+        File file = new File(createApkPath(baseName));
+        String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
+        assertThat(result).isNotEqualTo("Success\n");
+        assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
+        return result;
     }
 
     private void updatePackage(String packageName, String baseName) throws IOException {
