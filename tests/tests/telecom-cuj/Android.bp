@@ -63,12 +63,6 @@ droidstubs {
     ],
     create_doc_stubs: true,
     annotations_enabled: true,
-    //api_levels_annotations_enabled: true,
-    //api_levels_jar_filename: "android.telecom.jar",
-    //api_levels_annotations_dirs: [
-    //    "sdk-dir",
-    //    "api-versions-jars-dir",
-    //],
     merge_annotations_dirs: [
         "metalava-manual",
     ],
