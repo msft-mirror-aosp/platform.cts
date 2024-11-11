@@ -19,6 +19,7 @@ package android.view.surfacecontrol.cts;
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
 import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.RectChecker;
 import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.WAIT_TIMEOUT_S;
+import static android.view.cts.util.ASurfaceControlTestUtils.BufferReleaseCallback;
 import static android.view.cts.util.ASurfaceControlTestUtils.applyAndDeleteSurfaceTransaction;
 import static android.view.cts.util.ASurfaceControlTestUtils.createSurfaceTransaction;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_acquire;
@@ -57,7 +58,6 @@ import static android.view.cts.util.ASurfaceControlTestUtils.setPosition;
 import static android.view.cts.util.ASurfaceControlTestUtils.setScale;
 import static android.view.cts.util.ASurfaceControlTestUtils.setVisibility;
 import static android.view.cts.util.ASurfaceControlTestUtils.setZOrder;
-import static android.view.cts.util.ASurfaceControlTestUtils.BufferReleaseCallback;
 import static android.view.cts.util.FrameCallbackData.nGetFrameTimelines;
 
 import static org.junit.Assert.assertEquals;
@@ -313,6 +313,7 @@ public class ASurfaceControlTest {
         mActivity.verifyTest(surfaceHolderCallback, pixelChecker, mName);
     }
 
+    // @ApiTest = ASurfaceTransaction_create()
     @Test
     public void testSurfaceTransaction_create() {
         long surfaceTransaction = nSurfaceTransaction_create();
@@ -321,6 +322,7 @@ public class ASurfaceControlTest {
         nSurfaceTransaction_delete(surfaceTransaction);
     }
 
+    // @ApiTest = ASurfaceTransaction_apply(ASurfaceTransaction* _Nonnull transaction)
     @Test
     public void testSurfaceTransaction_apply() {
         long surfaceTransaction = nSurfaceTransaction_create();
@@ -346,7 +348,8 @@ public class ASurfaceControlTest {
     // When there is no visible buffer for the layer(s) the color defaults to black.
     // The test cases allow a +/- 10% error rate. This is based on the error
     // rate allowed in the SurfaceViewSyncTests
-
+    // @ApiTest = ASurfaceControl_createFromWindow(ANativeWindow* _Nonnull parent,
+    //                                                            const char* _Nonnull debug_name)
     @Test
     public void testSurfaceControl_createFromWindow() {
         verifyTest(
@@ -364,6 +367,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceControl_create(ASurfaceControl* _Nonnull parent,
+    //                                                  const char* _Nonnull debug_name)
     @Test
     public void testSurfaceControl_create() {
         verifyTest(
@@ -382,6 +387,7 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceControl_fromJava(JNIEnv* env, jobject surfaceControlObj)
     @Test
     public void testSurfaceControl_fromJava() {
         SurfaceControl.Builder builder = new SurfaceControl.Builder();
@@ -409,6 +415,7 @@ public class ASurfaceControlTest {
         nSurfaceControl_release(childSurfaceControl);
     }
 
+    // @ApiTest = ASurfaceTransaction_fromJava(JNIEnv* env, jobject transactionObj)
     @Test
     public void testSurfaceTransaction_fromJava() {
         SurfaceControl.Transaction jTransaction = new SurfaceControl.Transaction();
@@ -432,6 +439,7 @@ public class ASurfaceControlTest {
         Reference.reachabilityFence(jTransaction);
     }
 
+    // @ApiTest = ASurfaceControl_acquire(ASurfaceControl* aSurfaceControl)
     @Test
     public void testSurfaceControl_acquire() {
         verifyTest(
@@ -455,6 +463,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBuffer(ASurfaceTransaction* aSurfaceTransaction,
+    //                                   ASurfaceControl* aSurfaceControl,
+    //                                   AHardwareBuffer* buffer, int acquire_fence_fd)
     @Test
     public void testSurfaceTransaction_setBuffer() {
         verifyTest(
@@ -474,6 +485,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBuffer(ASurfaceTransaction* aSurfaceTransaction,
+    //                                   ASurfaceControl* aSurfaceControl,
+    //                                   AHardwareBuffer* buffer, int acquire_fence_fd)
     @Test
     public void testSurfaceTransaction_setNullBuffer() {
         verifyTest(
@@ -494,6 +508,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBuffer(ASurfaceTransaction* aSurfaceTransaction,
+    //                                   ASurfaceControl* aSurfaceControl,
+    //                                   AHardwareBuffer* buffer, int acquire_fence_fd)
     @Test
     public void testSurfaceTransaction_setBuffer_parentAndChild() {
         verifyTest(
@@ -517,6 +534,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBuffer(ASurfaceTransaction* aSurfaceTransaction,
+    //                                   ASurfaceControl* aSurfaceControl,
+    //                                   AHardwareBuffer* buffer, int acquire_fence_fd)
     @Test
     public void testSurfaceTransaction_setBuffer_childOnly() {
         verifyTest(
@@ -538,6 +558,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setVisibility(ASurfaceTransaction* _Nonnull transaction,
+    //                                       ASurfaceControl* _Nonnull surface_control,
+    //                                       enum ASurfaceTransactionVisibility visibility)
     @Test
     public void testSurfaceTransaction_setVisibility_show() {
         verifyTest(
@@ -559,6 +582,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setVisibility(ASurfaceTransaction* _Nonnull transaction,
+    //                                       ASurfaceControl* _Nonnull surface_control,
+    //                                       enum ASurfaceTransactionVisibility visibility)
     @Test
     public void testSurfaceTransaction_setVisibility_hide() {
         verifyTest(
@@ -580,6 +606,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferTransparency(ASurfaceTransaction* _Nonnull,
+    //                                               ASurfaceControl* _Nonnull surface_control,
+    //                                               enum ASurfaceTransactionTransparency)
     @Test
     public void testSurfaceTransaction_setBufferOpaque_opaque() {
         verifyTest(
@@ -601,6 +630,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferTransparency(ASurfaceTransaction* _Nonnull,
+    //                                               ASurfaceControl* _Nonnull surface_control,
+    //                                               enum ASurfaceTransactionTransparency)
     @Test
     public void testSurfaceTransaction_setBufferOpaque_translucent() {
         verifyTest(
@@ -630,6 +662,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect() {
         verifyTest(
@@ -650,6 +686,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_small() {
         verifyTest(
@@ -675,6 +715,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_childSmall() {
         verifyTest(
@@ -701,6 +745,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_extraLarge() {
         verifyTest(
@@ -722,6 +770,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_childExtraLarge() {
         verifyTest(
@@ -744,6 +796,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_negativeOffset() {
         verifyTest(
@@ -769,6 +825,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_outOfParentBounds() {
         verifyTest(
@@ -794,6 +854,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setDestinationRect_twoLayers() {
         verifyTest(
@@ -825,6 +889,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setSourceRect() {
         verifyTest(
@@ -856,6 +924,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setSourceRect_smallCentered() {
         // These rectangles leave two 10px strips unchecked to allow blended pixels due to GL
@@ -894,6 +966,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setSourceRect_small() {
         // These rectangles leave a 10px strip unchecked to allow blended pixels due to GL
@@ -925,6 +1001,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setSourceRect_extraLarge() {
         verifyTest(
@@ -958,6 +1038,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setSourceRect_badOffset() {
         verifyTest(
@@ -980,6 +1064,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setTransform_flipH() {
         verifyTest(
@@ -1013,6 +1101,10 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setGeometry(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control,
+    //                                     const ARect& source, const ARect& destination,
+    //                                     int32_t transform)
     @Test
     public void testSurfaceTransaction_setTransform_rotate180() {
         verifyTest(
@@ -1046,6 +1138,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setDamageRegion(ASurfaceTransaction* _Nonnull transaction,
+    //                                         ASurfaceControl* _Nonnull surface_control,
+    //                                         const ARect* _Nullable rects, uint32_t count)
     @Test
     public void testSurfaceTransaction_setDamageRegion_all() {
         verifyTest(
@@ -1072,6 +1167,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_setZOrder_zero() {
         verifyTest(
@@ -1097,6 +1194,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_setZOrder_positive() {
         verifyTest(
@@ -1122,6 +1221,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_setZOrder_negative() {
         verifyTest(
@@ -1147,6 +1248,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_setZOrder_max() {
         verifyTest(
@@ -1172,6 +1275,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_setZOrder_min() {
         verifyTest(
@@ -1197,6 +1302,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnComplete(ASurfaceTransaction* _Nonnull transaction,
+    //                                       void* _Null_unspecified context,
+    //                                       ASurfaceTransaction_OnComplete _Nonnull func)
     @Test
     public void testSurfaceTransaction_setOnComplete() {
         TimedTransactionListener onCompleteCallback = new TimedTransactionListener();
@@ -1235,6 +1343,8 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
     }
 
+    // @ApiTest = ASurfaceTransaction_setDesiredPresentTime(ASurfaceTransaction* _Nonnull,
+    //                                               int64_t desiredPresentTime)
     @Test
     @RequiresDevice // emulators can't support sync fences
     public void testSurfaceTransaction_setDesiredPresentTime_now() {
@@ -1279,6 +1389,8 @@ public class ASurfaceControlTest {
                 onCompleteCallback.mPresentTime >= mDesiredPresentTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setDesiredPresentTime(ASurfaceTransaction* _Nonnull,
+    //                                               int64_t desiredPresentTime)
     @Test
     @RequiresDevice // emulators can't support sync fences
     public void testSurfaceTransaction_setDesiredPresentTime_30ms() {
@@ -1323,6 +1435,8 @@ public class ASurfaceControlTest {
                 onCompleteCallback.mPresentTime >= mDesiredPresentTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setDesiredPresentTime(ASurfaceTransaction* _Nonnull,
+    //                                               int64_t desiredPresentTime)
     @Test
     @RequiresDevice // emulators can't support sync fences
     public void testSurfaceTransaction_setDesiredPresentTime_100ms() {
@@ -1368,6 +1482,8 @@ public class ASurfaceControlTest {
                 onCompleteCallback.mPresentTime >= mDesiredPresentTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferAlpha(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull, float alpha)
     @Test
     public void testSurfaceTransaction_setBufferAlpha_1_0() {
         verifyTest(
@@ -1389,6 +1505,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferAlpha(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull, float alpha)
     @Test
     public void testSurfaceTransaction_setBufferAlpha_0_5() {
         BasicSurfaceHolderCallback callback = new BasicSurfaceHolderCallback() {
@@ -1417,6 +1535,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferAlpha(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull, float alpha)
     @Test
     public void testSurfaceTransaction_setBufferAlpha_0_0() {
         verifyTest(
@@ -1438,6 +1558,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_reparent(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control,
+    //                                  ASurfaceControl* _Nullable new_parent)
     @Test
     public void testSurfaceTransaction_reparent() {
         verifyTest(
@@ -1469,6 +1592,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_reparent(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control,
+    //                                  ASurfaceControl* _Nullable new_parent)
     @Test
     public void testSurfaceTransaction_reparent_null() {
         verifyTest(
@@ -1492,6 +1618,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setColor() {
         verifyTest(
@@ -1511,6 +1640,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_noColorNoBuffer() {
         verifyTest(
@@ -1531,6 +1663,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setColorAlpha() {
         verifyTest(
@@ -1549,6 +1684,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setColorAndBuffer() {
         verifyTest(
@@ -1571,6 +1709,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setColorAndBuffer_bufferAlpha_0_5() {
         verifyTest(
@@ -1594,6 +1735,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setBufferNoColor_bufferAlpha_0() {
         verifyTest(
@@ -1619,6 +1763,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setColor(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float r, float g,
+    //                                  float b, float alpha, enum ADataSpace dataspace)
     @Test
     public void testSurfaceTransaction_setColorAndBuffer_hide() {
         verifyTest(
@@ -1645,6 +1792,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_zOrderMultipleSurfaces() {
         verifyTest(
@@ -1673,6 +1822,8 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,
+    //                                   ASurfaceControl* _Nonnull surface_control, int32_t z_order)
     @Test
     public void testSurfaceTransaction_zOrderMultipleSurfacesWithParent() {
         verifyTest(
@@ -1700,6 +1851,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setPosition(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control, int32_t x,
+    //                                     int32_t y)
     @Test
     public void testSurfaceTransaction_setPosition() {
         verifyTest(
@@ -1725,6 +1879,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setPosition(ASurfaceTransaction* _Nonnull transaction,
+    //                                     ASurfaceControl* _Nonnull surface_control, int32_t x,
+    //                                     int32_t y)
     @Test
     public void testSurfaceTransaction_setPositionNegative() {
         verifyTest(
@@ -1751,6 +1908,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setScale(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float xScale,
+    //                                  float yScale)
     @Test
     public void testSurfaceTransaction_setScale() {
         verifyTest(
@@ -1778,6 +1938,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setScale(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float xScale,
+    //                                  float yScale)
     @Test
     public void testSurfaceTransaction_scaleToZero() {
         verifyTest(
@@ -1802,6 +1965,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setScale(ASurfaceTransaction* _Nonnull transaction,
+    //                                  ASurfaceControl* _Nonnull surface_control, float xScale,
+    //                                  float yScale)
     @Test
     public void testSurfaceTransaction_setPositionAndScale() {
         verifyTest(
@@ -1846,6 +2012,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferTransform(ASurfaceTransaction* _Nonnull transaction,
+    //                                            ASurfaceControl* _Nonnull surface_control,
+    //                                            int32_t transform)
     @Test
     public void testSurfaceTransaction_setBufferTransform90() {
         verifyTest(
@@ -1875,6 +2044,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setCrop(ASurfaceTransaction* _Nonnull transaction,
+    //                                 ASurfaceControl* _Nonnull surface_control,
+    //                                 const ARect& crop)
     @Test
     public void testSurfaceTransaction_setCropSmall() {
         verifyTest(
@@ -1904,6 +2076,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setCrop(ASurfaceTransaction* _Nonnull transaction,
+    //                                 ASurfaceControl* _Nonnull surface_control,
+    //                                 const ARect& crop)
     @Test
     public void testSurfaceTransaction_setCropLarge() {
         verifyTest(
@@ -1937,6 +2112,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setCrop(ASurfaceTransaction* _Nonnull transaction,
+    //                                 ASurfaceControl* _Nonnull surface_control,
+    //                                 const ARect& crop)
     @Test
     public void testSurfaceTransaction_setCropOffset() {
         verifyTest(
@@ -1965,6 +2143,9 @@ public class ASurfaceControlTest {
                 });
     }
 
+    // @ApiTest = ASurfaceTransaction_setCrop(ASurfaceTransaction* _Nonnull transaction,
+    //                                 ASurfaceControl* _Nonnull surface_control,
+    //                                 const ARect& crop)
     @Test
     public void testSurfaceTransaction_setCropNegative() {
         verifyTest(
@@ -2068,6 +2249,8 @@ public class ASurfaceControlTest {
         return true;
     }
 
+    // @ApiTest = ASurfaceTransaction_setFrameTimeline(ASurfaceTransaction* _Nonnull transaction,
+    //                                          AVsyncId vsyncId)
     @Test
     @RequiresDevice // emulators can't support sync fences
     public void testSurfaceTransaction_setFrameTimeline_preferredIndex() {
@@ -2103,6 +2286,8 @@ public class ASurfaceControlTest {
 
     }
 
+    // @ApiTest = ASurfaceTransaction_setFrameTimeline(ASurfaceTransaction* _Nonnull transaction,
+    //                                          AVsyncId vsyncId)
     @Test
     @RequiresDevice // emulators can't support sync fences
     public void testSurfaceTransaction_setFrameTimeline_notPreferredIndex() {
@@ -2154,6 +2339,9 @@ public class ASurfaceControlTest {
         }
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnCommit(ASurfaceTransaction* _Nonnull transaction,
+    //                                     void* _Null_unspecified context,
+    //                                     ASurfaceTransaction_OnCommit _Nonnull func)
     @Test
     public void testSurfaceTransactionOnCommitCallback_emptyTransaction()
             throws InterruptedException {
@@ -2181,6 +2369,9 @@ public class ASurfaceControlTest {
         assertTrue(onCommitCallback.mCallbackTime <= onCompleteCallback.mCallbackTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnCommit(ASurfaceTransaction* _Nonnull transaction,
+    //                                     void* _Null_unspecified context,
+    //                                     ASurfaceTransaction_OnCommit _Nonnull func)
     @Test
     public void testSurfaceTransactionOnCommitCallback_bufferTransaction()
             throws Throwable {
@@ -2237,6 +2428,9 @@ public class ASurfaceControlTest {
         assertEquals(onCommitCallback.mLatchTime, onCompleteCallback.mLatchTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnCommit(ASurfaceTransaction* _Nonnull transaction,
+    //                                     void* _Null_unspecified context,
+    //                                     ASurfaceTransaction_OnCommit _Nonnull func)
     @Test
     public void testSurfaceTransactionOnCommitCallback_geometryTransaction()
             throws Throwable {
@@ -2293,6 +2487,9 @@ public class ASurfaceControlTest {
         assertTrue(onCommitCallback.mLatchTime == onCompleteCallback.mLatchTime);
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnCommit(ASurfaceTransaction* _Nonnull transaction,
+    //                                     void* _Null_unspecified context,
+    //                                     ASurfaceTransaction_OnCommit _Nonnull func)
     @Test
     public void testSurfaceTransactionOnCommitCallback_withoutContext()
             throws InterruptedException {
@@ -2311,6 +2508,9 @@ public class ASurfaceControlTest {
         assertTrue(onCommitCallback.mCallbackTime > 0);
     }
 
+    // @ApiTest = ASurfaceTransaction_setOnComplete(ASurfaceTransaction* _Nonnull transaction,
+    //                                       void* _Null_unspecified context,
+    //                                       ASurfaceTransaction_OnComplete _Nonnull func)
     @Test
     public void testSurfaceTransactionOnCompleteCallback_withoutContext()
             throws InterruptedException {
@@ -2330,6 +2530,9 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
     }
 
+    // @ApiTest = ASurfaceTransaction_setExtendedRangeBrightness(ASurfaceTransaction* _Nonnull,
+    //                                                    ASurfaceControl* _Nonnull surface_control,
+    //                                                    float currentRatio, float desiredRatio)
     @Test
     public void testSetExtendedRangeBrightness() throws Exception {
         mActivity.awaitReadyState();
@@ -2453,6 +2656,9 @@ public class ASurfaceControlTest {
         return ratio;
     }
 
+    // @ApiTest = ASurfaceTransaction_setDesiredHdrHeadroom(ASurfaceTransaction* _Nonnull,
+    //                                               ASurfaceControl* _Nonnull surface_control,
+    //                                               float desiredHeadroom)
     @Test
     public void testSetDesiredHdrHeadroom() throws Exception {
         mActivity.awaitReadyState();
@@ -2541,6 +2747,12 @@ public class ASurfaceControlTest {
         }
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferWithRelease(ASurfaceTransaction* _Nonnull,
+    //                                              ASurfaceControl* _Nonnull surface_control,
+    //                                              AHardwareBuffer* _Nonnull buffer,
+    //                                              int acquire_fence_fd,
+    //                                              void* _Null_unspecified context,
+    //                                              ASurfaceTransaction_OnBufferRelease _Nonnull)
     @Test
     public void testBufferRelease() {
         SurfaceControl.Builder builder = new SurfaceControl.Builder();
@@ -2582,6 +2794,12 @@ public class ASurfaceControlTest {
         // nSurfaceTransaction_releaseBuffer(buffer3);
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferWithRelease(ASurfaceTransaction* _Nonnull,
+    //                                              ASurfaceControl* _Nonnull surface_control,
+    //                                              AHardwareBuffer* _Nonnull buffer,
+    //                                              int acquire_fence_fd,
+    //                                              void* _Null_unspecified context,
+    //                                              ASurfaceTransaction_OnBufferRelease _Nonnull)
     @Test
     public void testBufferReleaseOnSetBuffer() {
         SurfaceControl.Builder builder = new SurfaceControl.Builder();
@@ -2631,6 +2849,12 @@ public class ASurfaceControlTest {
         nSurfaceControl_release(surfaceControl);
     }
 
+    // @ApiTest = ASurfaceTransaction_setBufferWithRelease(ASurfaceTransaction* _Nonnull,
+    //                                              ASurfaceControl* _Nonnull surface_control,
+    //                                              AHardwareBuffer* _Nonnull buffer,
+    //                                              int acquire_fence_fd,
+    //                                              void* _Null_unspecified context,
+    //                                              ASurfaceTransaction_OnBufferRelease _Nonnull)
     @Test
     public void testBufferReleaseOnTransactionMerge() {
         SurfaceControl.Builder builder = new SurfaceControl.Builder();
@@ -2638,7 +2862,6 @@ public class ASurfaceControlTest {
         SurfaceControl control = builder.build();
         final long surfaceControl = nSurfaceControl_fromJava(control);
         assertTrue(surfaceControl != 0);
-
 
 
         SurfaceControl.Transaction jTransaction = new SurfaceControl.Transaction();
