@@ -32,4 +32,14 @@ public class QuickAccessWalletDelegateTargetActivityService extends
                 "android.sample.quickaccesswallet.app.QuickAccessWalletDelegateTargetActivity");
         return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
     }
+
+    @Nullable
+    @Override
+    public PendingIntent getGestureTargetActivityPendingIntent() {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setClassName(
+                "android.sample.quickaccesswallet.app",
+                "android.sample.quickaccesswallet.app.QuickAccessWalletDelegateTargetActivity");
+        return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+    }
 }
