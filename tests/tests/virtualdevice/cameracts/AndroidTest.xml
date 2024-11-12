@@ -16,6 +16,9 @@
 <configuration description="Configuration for Virtual Device Manager Camera Tests running the Camera CTS tests">
     <!-- Only run tests if the device under test is SDK version 34 (Android 14) or above. -->
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
+        <option name="forbidden-feature" value="android.hardware.type.automotive"/>
+    </object>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
         <option name="command-timeout" value="2000" />
         <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
