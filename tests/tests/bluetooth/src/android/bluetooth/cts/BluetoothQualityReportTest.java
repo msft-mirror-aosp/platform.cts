@@ -20,15 +20,25 @@ import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothQualityReport.BqrCommon;
 import android.bluetooth.BluetoothQualityReport.BqrConnectFail;
+import android.bluetooth.BluetoothQualityReport.BqrEnergyMonitor;
+import android.bluetooth.BluetoothQualityReport.BqrRfStats;
 import android.bluetooth.BluetoothQualityReport.BqrVsA2dpChoppy;
 import android.bluetooth.BluetoothQualityReport.BqrVsLsto;
 import android.bluetooth.BluetoothQualityReport.BqrVsScoChoppy;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.bluetooth.flags.Flags;
+
+import com.google.common.truth.Expect;
+
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,6 +47,12 @@ import java.nio.ByteOrder;
 
 @RunWith(AndroidJUnit4.class)
 public final class BluetoothQualityReportTest {
+
+    @Rule public final Expect expect = Expect.create();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = "BluetoothQualityReportTest";
 
     private static String mRemoteAddress = "01:02:03:04:05:06";
@@ -53,6 +69,11 @@ public final class BluetoothQualityReportTest {
         BqrCommon bqrCommon = bqr.getBqrCommon();
         Assert.assertNotNull(bqrCommon);
         Assert.assertEquals(bqr.getQualityReportId(), bqrp.getQualityReportId());
+        if ((bqr.getQualityReportId() == BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR)
+                || (bqr.getQualityReportId()
+                        == BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS)) {
+            return;
+        }
         Assert.assertEquals(bqrp.mPacketType, bqrCommon.getPacketType());
         Assert.assertEquals("TYPE_NULL", BqrCommon.packetTypeToString(bqrCommon.getPacketType()));
         Assert.assertEquals(bqrp.mConnectionHandle, bqrCommon.getConnectionHandle());
@@ -148,6 +169,50 @@ public final class BluetoothQualityReportTest {
         Assert.assertEquals(0, bqrVsScoChoppy.describeContents());
     }
 
+    private void assertBqrEnergyMonitor(BQRParameters bqrp, BluetoothQualityReport bqr) {
+        BqrEnergyMonitor bqrEnergyMonitor = (BqrEnergyMonitor) bqr.getBqrEvent();
+        expect.that(bqrEnergyMonitor).isNotNull();
+        expect.that(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Energy Monitor");
+        expect.that(bqrp.mAvgCurrentConsume)
+                .isEqualTo(bqrEnergyMonitor.getAverageCurrentConsumptionMicroamps());
+        expect.that(bqrp.mIdleTotalTime).isEqualTo(bqrEnergyMonitor.getIdleStateTotalTimeMillis());
+        expect.that(bqrp.mIdleStateEnterCount).isEqualTo(bqrEnergyMonitor.getIdleStateEnterCount());
+        expect.that(bqrp.mActiveTotalTime)
+                .isEqualTo(bqrEnergyMonitor.getActiveStateTotalTimeMillis());
+        expect.that(bqrp.mActiveStateEnterCount)
+                .isEqualTo(bqrEnergyMonitor.getActiveStateEnterCount());
+        expect.that(bqrp.mBredrTxTotalTime).isEqualTo(bqrEnergyMonitor.getBredrTxTotalTimeMillis());
+        expect.that(bqrp.mBredrTxStateEnterCount)
+                .isEqualTo(bqrEnergyMonitor.getBredrTxStateEnterCount());
+        expect.that(bqrp.mBredrTxAvgPowerLevel)
+                .isEqualTo(bqrEnergyMonitor.getBredrAverageTxPowerLeveldBm());
+        expect.that(bqrp.mBredrRxTotalTime).isEqualTo(bqrEnergyMonitor.getBredrRxTotalTimeMillis());
+        expect.that(bqrp.mBredrRxStateEnterCount)
+                .isEqualTo(bqrEnergyMonitor.getBredrRxStateEnterCount());
+        expect.that(bqrp.mLeTxTotalTime).isEqualTo(bqrEnergyMonitor.getLeTsTotalTimeMillis());
+        expect.that(bqrp.mLeTxStateEnterCount).isEqualTo(bqrEnergyMonitor.getLeTxStateEnterCount());
+        expect.that(bqrp.mLeTxAvgPowerLevel)
+                .isEqualTo(bqrEnergyMonitor.getLeAverageTxPowerLeveldBm());
+        expect.that(bqrp.mLeRxTotalTime).isEqualTo(bqrEnergyMonitor.getLeRxTotalTimeMillis());
+        expect.that(bqrp.mLeRxStateEnterCount).isEqualTo(bqrEnergyMonitor.getLeRxStateEnterCount());
+        expect.that(bqrp.mReportTotalTime)
+                .isEqualTo(bqrEnergyMonitor.getPowerDataTotalTimeMillis());
+        expect.that(bqrp.mRxActiveOneChainTime)
+                .isEqualTo(bqrEnergyMonitor.getRxSingleChainActiveDurationMillis());
+        expect.that(bqrp.mRxActiveTwoChainTime)
+                .isEqualTo(bqrEnergyMonitor.getRxDualChainActiveDurationMillis());
+        expect.that(bqrp.mTxiPaActiveOneChainTime)
+                .isEqualTo(bqrEnergyMonitor.getTxInternalPaSingleChainActiveDurationMillis());
+        expect.that(bqrp.mTxiPaActiveTwoChainTime)
+                .isEqualTo(bqrEnergyMonitor.getTxInternalPaDualChainActiveDurationMillis());
+        expect.that(bqrp.mTxePaActiveOneChainTime)
+                .isEqualTo(bqrEnergyMonitor.getTxExternalPaSingleChainActiveDurationMillis());
+        expect.that(bqrp.mTxePaActiveTwoChainTime)
+                .isEqualTo(bqrEnergyMonitor.getTxExternalPaDualChainActiveDurationMillis());
+        expect.that(bqrEnergyMonitor.describeContents()).isEqualTo(0);
+    }
+
     private void assertBqrConnectFail(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS Connect Fail
         BqrConnectFail bqrConnectFail = (BqrConnectFail) bqr.getBqrEvent();
@@ -157,6 +222,40 @@ public final class BluetoothQualityReportTest {
                 BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
         Assert.assertEquals(bqrp.mFailReason, bqrConnectFail.getFailReason());
         Assert.assertEquals(0, bqrConnectFail.describeContents());
+    }
+
+    private void assertBqrRfStats(BQRParameters bqrp, BluetoothQualityReport bqr) {
+        BqrRfStats bqrRfStats = (BqrRfStats) bqr.getBqrEvent();
+        expect.that(bqrRfStats).isNotNull();
+        expect.that(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("RF Stats");
+        expect.that(bqrp.mExtensionInfo).isEqualTo(bqrRfStats.getExtensionInfo());
+        expect.that(bqrp.mReportTimePeriod).isEqualTo(bqrRfStats.getPerformanceDurationMillis());
+        expect.that(bqrp.mTxPoweriPaBf)
+                .isEqualTo(bqrRfStats.getTxPowerInternalPaBeamformingCount());
+        expect.that(bqrp.mTxPowerePaBf)
+                .isEqualTo(bqrRfStats.getTxPowerExternalPaBeamformingCount());
+        expect.that(bqrp.mTxPoweriPaDiv).isEqualTo(bqrRfStats.getTxPowerInternalPaDiversityCount());
+        expect.that(bqrp.mTxPowerePaDiv).isEqualTo(bqrRfStats.getTxPowerExternalPaDiversityCount());
+        expect.that(bqrp.mRssiChainOver50)
+                .isEqualTo(bqrRfStats.getPacketsWithRssiAboveMinus50dBm());
+        expect.that(bqrp.mRssiChain50To55).isEqualTo(bqrRfStats.getPacketsWithRssi50To55dBm());
+        expect.that(bqrp.mRssiChain55To60).isEqualTo(bqrRfStats.getPacketsWithRssi55To60dBm());
+        expect.that(bqrp.mRssiChain60To65).isEqualTo(bqrRfStats.getPacketsWithRssi60To65dBm());
+        expect.that(bqrp.mRssiChain65To70).isEqualTo(bqrRfStats.getPacketsWithRssi65To70dBm());
+        expect.that(bqrp.mRssiChain70To75).isEqualTo(bqrRfStats.getPacketsWithRssi70To75dBm());
+        expect.that(bqrp.mRssiChain75To80).isEqualTo(bqrRfStats.getPacketsWithRssi75To80dBm());
+        expect.that(bqrp.mRssiChain80To85).isEqualTo(bqrRfStats.getPacketsWithRssi80To85dBm());
+        expect.that(bqrp.mRssiChain85To90).isEqualTo(bqrRfStats.getPacketsWithRssi85To90dBm());
+        expect.that(bqrp.mRssiChainUnder90)
+                .isEqualTo(bqrRfStats.getPacketsWithRssiBelowMinus90dBm());
+        expect.that(bqrp.mRssiDeltaUnder2).isEqualTo(bqrRfStats.getPacketsWithRssiDeltaBelow2dBm());
+        expect.that(bqrp.mRssiDelta2To5).isEqualTo(bqrRfStats.getPacketsWithRssiDelta2To5dBm());
+        expect.that(bqrp.mRssiDelta5To8).isEqualTo(bqrRfStats.getPacketsWithRssiDelta5To8dBm());
+        expect.that(bqrp.mRssiDelta8To11).isEqualTo(bqrRfStats.getPacketsWithRssiDelta8To11dBm());
+        expect.that(bqrp.mRssiDeltaOver11)
+                .isEqualTo(bqrRfStats.getPacketsWithRssiDeltaAbove11dBm());
+        expect.that(bqrRfStats.describeContents()).isEqualTo(0);
     }
 
     private static BluetoothClass getBluetoothClassHelper(int remoteCoD) {
@@ -290,6 +389,29 @@ public final class BluetoothQualityReportTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
+    public void bqrEnergyMonitor() {
+        BQRParameters bqrp = BQRParameters.getInstance();
+        Assert.assertNotNull(bqrp);
+
+        bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR);
+        Assert.assertEquals(
+                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR);
+
+        BluetoothQualityReport bqr =
+                initBqrCommon(
+                        bqrp,
+                        mRemoteAddress,
+                        mLmpVer,
+                        mLmpSubVer,
+                        mManufacturerId,
+                        mRemoteName,
+                        mRemoteCoD);
+
+        assertBqrEnergyMonitor(bqrp, bqr);
+    }
+
+    @Test
     public void bqrConnectFail() {
         BQRParameters bqrp = BQRParameters.getInstance();
         Assert.assertNotNull(bqrp);
@@ -332,6 +454,29 @@ public final class BluetoothQualityReportTest {
                 BqrConnectFail.connectFailIdToString(
                         BqrConnectFail.CONNECT_FAIL_ID_CONTROLLER_BUSY));
         Assert.assertEquals("INVALID", BqrConnectFail.connectFailIdToString(0xFF));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
+    public void bqrRfStats() {
+        BQRParameters bqrp = BQRParameters.getInstance();
+        Assert.assertNotNull(bqrp);
+
+        bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS);
+        Assert.assertEquals(
+                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS);
+
+        BluetoothQualityReport bqr =
+                initBqrCommon(
+                        bqrp,
+                        mRemoteAddress,
+                        mLmpVer,
+                        mLmpSubVer,
+                        mManufacturerId,
+                        mRemoteName,
+                        mRemoteCoD);
+
+        assertBqrRfStats(bqrp, bqr);
     }
 
     @Test
@@ -469,6 +614,10 @@ public final class BluetoothQualityReportTest {
         Assert.assertNotNull(bqrp);
 
         for (int id : BQRParameters.QualityReportId) {
+            if ((id == BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR)
+                    || (id == BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS)) {
+                continue;
+            }
             bqrp.setQualityReportId((byte) id);
             Assert.assertEquals(bqrp.getQualityReportId(), id);
 
@@ -505,6 +654,60 @@ public final class BluetoothQualityReportTest {
                     break;
                 case BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL:
                     assertBqrConnectFail(bqrp, bqr);
+                    break;
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
+    public void readWriteBqrParcelV6Flag() {
+        BQRParameters bqrp = BQRParameters.getInstance();
+        Assert.assertNotNull(bqrp);
+
+        for (int id : BQRParameters.QualityReportId) {
+            bqrp.setQualityReportId((byte) id);
+            Assert.assertEquals(bqrp.getQualityReportId(), id);
+
+            BluetoothQualityReport bqr =
+                    initBqrCommon(
+                            bqrp,
+                            mRemoteAddress,
+                            mLmpVer,
+                            mLmpSubVer,
+                            mManufacturerId,
+                            mRemoteName,
+                            mRemoteCoD);
+
+            Parcel parcel = Parcel.obtain();
+            bqr.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+
+            BluetoothQualityReport bqrFromParcel =
+                    BluetoothQualityReport.CREATOR.createFromParcel(parcel);
+
+            assertBqrCommon(bqrp, bqrFromParcel);
+
+            switch (id) {
+                case BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR:
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO:
+                    assertBqrApproachLsto(bqrp, bqr);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY:
+                    assertBqrA2dpChoppy(bqrp, bqr);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY:
+                    assertBqrScoChoppy(bqrp, bqr);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL:
+                    assertBqrConnectFail(bqrp, bqr);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR:
+                    assertBqrEnergyMonitor(bqrp, bqr);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS:
+                    assertBqrRfStats(bqrp, bqr);
                     break;
             }
         }
@@ -793,11 +996,13 @@ public final class BluetoothQualityReportTest {
         private static BQRParameters INSTANCE;
         private static String TAG = "BQRParameters";
 
-        public static int mBqrCommonSize = 55;
+        public static int mBqrCommonSize = 85;
         public static int mBqrVsLstoSize = 23;
         public static int mBqrVsA2dpChoppySize = 16;
         public static int mBqrVsScoChoppySize = 33;
         public static int mBqrConnectFailSize = 1;
+        public static int mBqrEnergyMonitorSize = 81;
+        public static int mBqrRfStatsSize = 82;
 
         // BQR Common
         public byte mQualityReportId = 1;
@@ -823,6 +1028,15 @@ public final class BluetoothQualityReportTest {
         public String mAddressStr = "01:02:03:04:05:06";
         public byte[] mAddress = {6, 5, 4, 3, 2, 1};
         public byte mCalFailedItemCount = 50;
+
+        public int mTxTotalPackets = 20;
+        public int mTxUnackPackets = 21;
+        public int mTxFlushPackets = 22;
+        public int mTxLastSubeventPackets = 23;
+        public int mCrcErrorPackets = 24;
+        public int mRxDupPackets = 25;
+        public int mRxUnRecvPackets = 26;
+        public short mCoexInfoMask = 1;
 
         // BQR VS LSTO
         public byte mConnState = (byte) 0x89;
@@ -866,12 +1080,61 @@ public final class BluetoothQualityReportTest {
         // BQR VS Connect Fail
         public byte mFailReason = 0x3a;
 
+        // BQR Energy Monitor
+        public short mAvgCurrentConsume = 56;
+        public int mIdleTotalTime = 57;
+        public int mIdleStateEnterCount = 58;
+        public int mActiveTotalTime = 59;
+        public int mActiveStateEnterCount = 60;
+        public int mBredrTxTotalTime = 61;
+        public int mBredrTxStateEnterCount = 62;
+        public byte mBredrTxAvgPowerLevel = 63;
+        public int mBredrRxTotalTime = 64;
+        public int mBredrRxStateEnterCount = 65;
+        public int mLeTxTotalTime = 66;
+        public int mLeTxStateEnterCount = 67;
+        public byte mLeTxAvgPowerLevel = 68;
+        public int mLeRxTotalTime = 69;
+        public int mLeRxStateEnterCount = 70;
+        public int mReportTotalTime = 71;
+        public int mRxActiveOneChainTime = 72;
+        public int mRxActiveTwoChainTime = 73;
+        public int mTxiPaActiveOneChainTime = 74;
+        public int mTxiPaActiveTwoChainTime = 75;
+        public int mTxePaActiveOneChainTime = 76;
+        public int mTxePaActiveTwoChainTime = 77;
+
+        // BQR Rf Stats
+        public byte mExtensionInfo = 78;
+        public int mReportTimePeriod = 79;
+        public int mTxPoweriPaBf = 80;
+        public int mTxPowerePaBf = 81;
+        public int mTxPoweriPaDiv = 82;
+        public int mTxPowerePaDiv = 83;
+        public int mRssiChainOver50 = 84;
+        public int mRssiChain50To55 = 85;
+        public int mRssiChain55To60 = 86;
+        public int mRssiChain60To65 = 87;
+        public int mRssiChain65To70 = 88;
+        public int mRssiChain70To75 = 89;
+        public int mRssiChain75To80 = 90;
+        public int mRssiChain80To85 = 91;
+        public int mRssiChain85To90 = 92;
+        public int mRssiChainUnder90 = 93;
+        public int mRssiDeltaUnder2 = 94;
+        public int mRssiDelta2To5 = 95;
+        public int mRssiDelta5To8 = 96;
+        public int mRssiDelta8To11 = 97;
+        public int mRssiDeltaOver11 = 98;
+
         public static int[] QualityReportId = {
             BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR,
             BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO,
             BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY,
             BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY,
             BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL,
+            BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR,
+            BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS,
         };
 
         private BQRParameters() {}
@@ -911,6 +1174,12 @@ public final class BluetoothQualityReportTest {
                 case BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL:
                     ba = ByteBuffer.allocate(mBqrCommonSize + mBqrConnectFailSize);
                     break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR:
+                    ba = ByteBuffer.allocate(1 + mBqrEnergyMonitorSize);
+                    break;
+                case BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS:
+                    ba = ByteBuffer.allocate(1 + mBqrRfStatsSize);
+                    break;
                 default:
                     ba = ByteBuffer.allocate(mBqrCommonSize);
                     break;
@@ -919,69 +1188,128 @@ public final class BluetoothQualityReportTest {
             ba.order(ByteOrder.LITTLE_ENDIAN);
 
             ba.put(mQualityReportId);
-            ba.put(mPacketType);
-            ba.putShort(mConnectionHandle);
-            ba.put(mConnectionRole);
-            ba.put(mTxPowerLevel);
-            ba.put(mRssi);
-            ba.put(mSnr);
-            ba.put(mUnusedAfhChannelCount);
-            ba.put(mAfhSelectUnidealChannelCount);
-            ba.putShort(mLsto);
-            ba.putInt(mPiconetClock);
-            ba.putInt(mRetransmissionCount);
-            ba.putInt(mNoRxCount);
-            ba.putInt(mNakCount);
-            ba.putInt(mLastTxAckTimestamp);
-            ba.putInt(mFlowOffCount);
-            ba.putInt(mLastFlowOnTimestamp);
-            ba.putInt(mOverflowCount);
-            ba.putInt(mUnderflowCount);
-            ba.put(addrBuff);
-            ba.put(mCalFailedItemCount);
 
-            if (mQualityReportId == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO) {
-                ba.put(mConnState);
-                ba.putInt(mBasebandStats);
-                ba.putInt(mSlotsUsed);
-                ba.putShort(mCxmDenials);
-                ba.putShort(mTxSkipped);
-                ba.putShort(mRfLoss);
-                ba.putInt(mNativeClock);
-                ba.putInt(mLastTxAckTimestampLsto);
+            if (mQualityReportId
+                    == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR) {
+                ba.putShort(mAvgCurrentConsume);
+                ba.putInt(mIdleTotalTime);
+                ba.putInt(mIdleStateEnterCount);
+                ba.putInt(mActiveTotalTime);
+                ba.putInt(mActiveStateEnterCount);
+                ba.putInt(mBredrTxTotalTime);
+                ba.putInt(mBredrTxStateEnterCount);
+                ba.put(mBredrTxAvgPowerLevel);
+                ba.putInt(mBredrRxTotalTime);
+                ba.putInt(mBredrRxStateEnterCount);
+                ba.putInt(mLeTxTotalTime);
+                ba.putInt(mLeTxStateEnterCount);
+                ba.put(mLeTxAvgPowerLevel);
+                ba.putInt(mLeRxTotalTime);
+                ba.putInt(mLeRxStateEnterCount);
+                ba.putInt(mReportTotalTime);
+                ba.putInt(mRxActiveOneChainTime);
+                ba.putInt(mRxActiveTwoChainTime);
+                ba.putInt(mTxiPaActiveOneChainTime);
+                ba.putInt(mTxiPaActiveTwoChainTime);
+                ba.putInt(mTxePaActiveOneChainTime);
+                ba.putInt(mTxePaActiveTwoChainTime);
             } else if (mQualityReportId
-                    == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY) {
-                ba.putInt(mArrivalTime);
-                ba.putInt(mScheduleTime);
-                ba.putShort(mGlitchCountA2dp);
-                ba.putShort(mTxCxmDenialsA2dp);
-                ba.putShort(mRxCxmDenialsA2dp);
-                ba.put(mAclTxQueueLength);
-                ba.put(mLinkQuality);
-            } else if (mQualityReportId
-                    == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY) {
-                ba.putShort(mGlitchCountSco);
-                ba.put(mIntervalEsco);
-                ba.put(mWindowEsco);
-                ba.put(mAirFormat);
-                ba.putShort(mInstanceCount);
-                ba.putShort(mTxCxmDenialsSco);
-                ba.putShort(mRxCxmDenialsSco);
-                ba.putShort(mTxAbortCount);
-                ba.putShort(mLateDispatch);
-                ba.putShort(mMicIntrMiss);
-                ba.putShort(mLpaIntrMiss);
-                ba.putShort(mSprIntrMiss);
-                ba.putShort(mPlcFillCount);
-                ba.putShort(mPlcDiscardCount);
-                ba.putShort(mMissedInstanceCount);
-                ba.putShort(mTxRetransmitSlotCount);
-                ba.putShort(mRxRetransmitSlotCount);
-                ba.putShort(mGoodRxFrameCount);
+                    == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS) {
+                ba.put(mExtensionInfo);
+                ba.putInt(mReportTimePeriod);
+                ba.putInt(mTxPoweriPaBf);
+                ba.putInt(mTxPowerePaBf);
+                ba.putInt(mTxPoweriPaDiv);
+                ba.putInt(mTxPowerePaDiv);
+                ba.putInt(mRssiChainOver50);
+                ba.putInt(mRssiChain50To55);
+                ba.putInt(mRssiChain55To60);
+                ba.putInt(mRssiChain60To65);
+                ba.putInt(mRssiChain65To70);
+                ba.putInt(mRssiChain70To75);
+                ba.putInt(mRssiChain75To80);
+                ba.putInt(mRssiChain80To85);
+                ba.putInt(mRssiChain85To90);
+                ba.putInt(mRssiChainUnder90);
+                ba.putInt(mRssiDeltaUnder2);
+                ba.putInt(mRssiDelta2To5);
+                ba.putInt(mRssiDelta5To8);
+                ba.putInt(mRssiDelta8To11);
+                ba.putInt(mRssiDeltaOver11);
+            } else {
+                ba.put(mPacketType);
+                ba.putShort(mConnectionHandle);
+                ba.put(mConnectionRole);
+                ba.put(mTxPowerLevel);
+                ba.put(mRssi);
+                ba.put(mSnr);
+                ba.put(mUnusedAfhChannelCount);
+                ba.put(mAfhSelectUnidealChannelCount);
+                ba.putShort(mLsto);
+                ba.putInt(mPiconetClock);
+                ba.putInt(mRetransmissionCount);
+                ba.putInt(mNoRxCount);
+                ba.putInt(mNakCount);
+                ba.putInt(mLastTxAckTimestamp);
+                ba.putInt(mFlowOffCount);
+                ba.putInt(mLastFlowOnTimestamp);
+                ba.putInt(mOverflowCount);
+                ba.putInt(mUnderflowCount);
+                ba.put(addrBuff);
+                ba.put(mCalFailedItemCount);
+                ba.putInt(mTxTotalPackets);
+                ba.putInt(mTxUnackPackets);
+                ba.putInt(mTxFlushPackets);
+                ba.putInt(mTxLastSubeventPackets);
+                ba.putInt(mCrcErrorPackets);
+                ba.putInt(mRxDupPackets);
+                ba.putInt(mRxUnRecvPackets);
+                ba.putShort(mCoexInfoMask);
 
-            } else if (mQualityReportId
-                    == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL) {
-                ba.put(mFailReason);
+                if (mQualityReportId
+                        == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO) {
+                    ba.put(mConnState);
+                    ba.putInt(mBasebandStats);
+                    ba.putInt(mSlotsUsed);
+                    ba.putShort(mCxmDenials);
+                    ba.putShort(mTxSkipped);
+                    ba.putShort(mRfLoss);
+                    ba.putInt(mNativeClock);
+                    ba.putInt(mLastTxAckTimestampLsto);
+                } else if (mQualityReportId
+                        == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY) {
+                    ba.putInt(mArrivalTime);
+                    ba.putInt(mScheduleTime);
+                    ba.putShort(mGlitchCountA2dp);
+                    ba.putShort(mTxCxmDenialsA2dp);
+                    ba.putShort(mRxCxmDenialsA2dp);
+                    ba.put(mAclTxQueueLength);
+                    ba.put(mLinkQuality);
+                } else if (mQualityReportId
+                        == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY) {
+                    ba.putShort(mGlitchCountSco);
+                    ba.put(mIntervalEsco);
+                    ba.put(mWindowEsco);
+                    ba.put(mAirFormat);
+                    ba.putShort(mInstanceCount);
+                    ba.putShort(mTxCxmDenialsSco);
+                    ba.putShort(mRxCxmDenialsSco);
+                    ba.putShort(mTxAbortCount);
+                    ba.putShort(mLateDispatch);
+                    ba.putShort(mMicIntrMiss);
+                    ba.putShort(mLpaIntrMiss);
+                    ba.putShort(mSprIntrMiss);
+                    ba.putShort(mPlcFillCount);
+                    ba.putShort(mPlcDiscardCount);
+                    ba.putShort(mMissedInstanceCount);
+                    ba.putShort(mTxRetransmitSlotCount);
+                    ba.putShort(mRxRetransmitSlotCount);
+                    ba.putShort(mGoodRxFrameCount);
+
+                } else if (mQualityReportId
+                        == (byte) BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL) {
+                    ba.put(mFailReason);
+                }
             }
             return ba.array();
         }
