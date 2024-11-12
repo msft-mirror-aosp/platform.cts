@@ -21,22 +21,26 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.app.admin.DevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManager;
+import android.app.admin.flags.Flags;
 import android.content.ComponentName;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.AutoTimeEnabled;
 import com.android.bedstead.harrier.policies.AutoTimeRequired;
 import com.android.bedstead.harrier.policies.AutoTimeZoneEnabled;
@@ -44,6 +48,8 @@ import com.android.bedstead.harrier.policies.DisallowConfigDateTime;
 import com.android.bedstead.harrier.policies.Time;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.compatibility.common.util.ApiTest;
@@ -60,9 +66,13 @@ import java.util.TimeZone;
 public final class TimeTest {
     private static final long MILLIS_SINCE_EPOCH = 1660000000000l;
     private static final String TIMEZONE = "Singapore";
+
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @PolicyAppliesTest(policy = AutoTimeRequired.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeRequired")
@@ -281,6 +291,10 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_autoTimeZoneIsEnabled() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setAutoTimeZoneEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
 
@@ -291,8 +305,15 @@ public final class TimeTest {
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(1);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME_ZONE, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -300,6 +321,10 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_autoTimeZoneIsNotEnabled() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setAutoTimeZoneEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
 
@@ -310,8 +335,15 @@ public final class TimeTest {
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(0);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME_ZONE, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -319,6 +351,10 @@ public final class TimeTest {
     @CannotSetPolicyTest(policy = AutoTimeZoneEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_notAllowed_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setAutoTimeZoneEnabledCoexistence());
+
         assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
                 .setAutoTimeZoneEnabled(dpc(sDeviceState).componentName(), true));
     }
@@ -327,6 +363,10 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_true_logsEvent() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setAutoTimeZoneEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
@@ -338,8 +378,15 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME_ZONE, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -347,6 +394,10 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeZoneEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZoneEnabled")
     public void setAutoTimeZoneEnabled_false_logsEvent() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setAutoTimeZoneEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeZoneEnabled(dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
@@ -358,9 +409,86 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isFalse()).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME_ZONE, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZonePolicy")
+    public void setAutoTimeZonePolicy_enabled_autoTimeZoneIsEnabled() {
+        int originalPolicy = dpc(sDeviceState).devicePolicyManager().getAutoTimeZonePolicy();
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimeZonePolicy(DevicePolicyManager.AUTO_TIME_ZONE_ENABLED);
+
+            assertThat(TestApis.settings().global().getInt(
+                    Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(1);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(originalPolicy);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZonePolicy")
+    public void setAutoTimeZonePolicy_disabled_autoTimeZoneIsNotEnabled() {
+        int originalPolicy = dpc(sDeviceState).devicePolicyManager().getAutoTimeZonePolicy();
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimeZonePolicy(DevicePolicyManager.AUTO_TIME_ZONE_DISABLED);
+
+            assertThat(TestApis.settings().global().getInt(
+                    Settings.Global.AUTO_TIME_ZONE, 0)).isEqualTo(0);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(originalPolicy);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeZoneEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZonePolicy")
+    public void setAutoTimeZonePolicy_notControlled_autoTimeZoneIsNotControlled() {
+        int originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeZonePolicy();
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME_ZONE, 0);
+
+        try {
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                    DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+
+            assertThat(dpc(sDeviceState).devicePolicyManager().getAutoTimeZonePolicy())
+                    .isEqualTo(DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(originalValue);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ZONE_ENABLED_COEXISTENCE)
+    @CannotSetPolicyTest(policy = AutoTimeZoneEnabled.class, includeNonDeviceAdminStates = false)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeZonePolicy")
+    public void setAutoTimeZonePolicy_notAllowed_throwsException() {
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
+                .setAutoTimeZonePolicy(DevicePolicyManager.AUTO_TIME_ZONE_ENABLED));
     }
 
     // TODO: Add test of ACTION_TIME_CHANGED broadcast
@@ -482,8 +610,15 @@ public final class TimeTest {
             Poll.forValue("timezone ID", () -> TimeZone.getDefault().getID())
                     .toBeEqualTo(TIMEZONE).errorOnFail().await();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE,
+                        originalAutoTimeZoneEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            }
         }
     }
 
@@ -516,8 +651,15 @@ public final class TimeTest {
             assertThat(returnValue).isTrue();
             assertThat(TimeZone.getDefault().getDisplayName()).isNotEqualTo(TIMEZONE);
         } finally {
-            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
-                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE,
+                        originalAutoTimeZoneEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            }
         }
     }
 
@@ -537,8 +679,15 @@ public final class TimeTest {
             assertThat(returnValue).isFalse();
             assertThat(TimeZone.getDefault().getDisplayName()).isNotEqualTo(TIMEZONE);
         } finally {
-            setAutoTimeZoneEnabled(dpc(sDeviceState).devicePolicyManager(),
-                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE,
+                        originalAutoTimeZoneEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            }
         }
     }
 
@@ -570,8 +719,15 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
             ).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            if (Flags.setAutoTimeZoneEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZonePolicy(
+                        DevicePolicyManager.AUTO_TIME_ZONE_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(Settings.Global.AUTO_TIME_ZONE,
+                        originalAutoTimeZoneEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeZoneEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeZoneEnabledValue);
+            }
         }
     }
 
