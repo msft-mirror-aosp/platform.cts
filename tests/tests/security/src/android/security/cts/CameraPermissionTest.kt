@@ -366,7 +366,7 @@ class CameraPermissionTest {
 
   @Test
   @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
-  fun testProxyConnectDevice_noCameraProxyPermission_checkFullAttributionSourceChain_off() {
+  fun testProxyConnectDevice_noCameraProxyPermission_dataDeliveryPermissionChecks_off() {
     denyAppPermission(CAMERA_PROXY_APP)
     openCameraByProxy(OPEN_CAMERA_APP.keys.openCamera2ByProxy)
     checkAppOpenedCameraByProxy(OPEN_CAMERA_APP.keys.cameraOpened2)
