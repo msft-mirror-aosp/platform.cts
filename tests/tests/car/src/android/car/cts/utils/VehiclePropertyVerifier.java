@@ -1602,7 +1602,8 @@ public class VehiclePropertyVerifier<T> {
             case VehiclePropertyType.INT64:
                 return ((Long) value >= (Long) min && (Long) value <= (Long) max);
             case VehiclePropertyType.FLOAT:
-                return ((Float) value >= (Float) min && (Float) value <= (Float) max);
+                return (((Float) value > (Float) min || valueEquals(value, min))
+                        && ((Float) value < (Float) max || valueEquals(value, max)));
             default:
                 return false;
         }
