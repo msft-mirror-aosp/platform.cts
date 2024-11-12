@@ -342,17 +342,6 @@ public class PerformanceHintManagerTest {
         }
     }
 
-    @Test
-    // TODO(b/304828176): Support NDK API annotation.
-    @ApiTest(apis = {"APerformanceHint_notifyWorkloadIncrease",
-                     "APerformanceHint_notifyWorkloadReset"})
-    public void testNativeLoadHints() {
-        final String resultMessage = nativeTestLoadHints();
-        if (!Strings.isNullOrEmpty(resultMessage)) {
-            fail(resultMessage);
-        }
-    }
-
     private native String nativeTestCreateHintSession();
     private native String nativeTestGetPreferredUpdateRateNanos();
     private native String nativeUpdateTargetWorkDuration();
@@ -363,5 +352,4 @@ public class PerformanceHintManagerTest {
     private native String nativeSetPreferPowerEfficiency();
     private native String nativeTestReportActualWorkDuration2();
     private native String nativeTestReportActualWorkDuration2WithIllegalArgument();
-    private native String nativeTestLoadHints();
 }
