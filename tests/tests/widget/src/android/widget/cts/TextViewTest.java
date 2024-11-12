@@ -3796,7 +3796,7 @@ public class TextViewTest {
 
     @UiThreadTest
     @Test
-    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationSettings_Api35() {
         mTextView = new TextView(mActivity);
         Context context = InstrumentationRegistry.getTargetContext();

@@ -189,26 +189,26 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE)
-  fun testConnectDevice_useContextAttributionSource_off() {
+  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
+  fun testConnectDevice_dataDeliveryPermissionChecks_off() {
     testConnectDevice(expectDenial = true)
   }
 
   @Test
-  @RequiresFlagsEnabled(Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE)
-  fun testConnectDevice_useContextAttributionSource_on() {
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
+  fun testConnectDevice_dataDeliveryPermissionChecks_on() {
     testConnectDevice(expectDenial = false)
   }
 
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE)
-  fun testConnect_useContextAttributionSource_off() {
+  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
+  fun testConnect_dataDeliveryPermissionChecks_off() {
     testConnect(expectDenial = true)
   }
 
   @Test
-  @RequiresFlagsEnabled(Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE)
-  fun testConnect_useContextAttributionSource_on() {
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
+  fun testConnect_dataDeliveryPermissionChecks_on() {
     testConnect(expectDenial = false)
   }
 
@@ -303,7 +303,7 @@ class CameraPermissionTest {
     setSensorPrivacy(enabled = true)
 
     // Wait for any potential block()
-    Thread.sleep(1000)
+    Thread.sleep(TIMEOUT_MILLIS)
 
     sendStopRepeating(OPEN_CAMERA_APP)
     checkAppOpenedCamera(
@@ -324,8 +324,7 @@ class CameraPermissionTest {
       testProxyOpenCamera_noPermission(ApiLevel.API_2, OPEN_CAMERA_APP)
 
   @Test
-  @RequiresFlagsEnabled(
-      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyConnectDevice_noCameraProxyPermission() =
       testProxyOpenCamera_noPermission(ApiLevel.API_2, CAMERA_PROXY_APP)
 
@@ -336,7 +335,7 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyConnectDevice_noCameraProxyPermission_checkFullAttributionSourceChain_off() {
     denyAppPermission(CAMERA_PROXY_APP)
     openCameraByProxy(OPEN_CAMERA_APP.keys.openCamera2ByProxy)
@@ -354,8 +353,7 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsEnabled(
-      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_opChanged_softDenial_cameraMute() =
       testProxyStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_2, expectBlock = false)
 
@@ -363,7 +361,7 @@ class CameraPermissionTest {
   // full AttributionSource chain is not considered and OpenCameraApp will be blocked due to
   // entering the background
   @Test
-  @RequiresFlagsDisabled(Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsDisabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_opChanged_softDenial_cameraMute_dataDeliveryPermissionChecks_off() =
       testProxyStreaming_opChanged_softDenial_cameraMute(ApiLevel.API_2, expectBlock = true)
 
@@ -402,7 +400,7 @@ class CameraPermissionTest {
     setSensorPrivacy(enabled = true)
 
     // Wait for any potential block()
-    Thread.sleep(1000)
+    Thread.sleep(TIMEOUT_MILLIS)
 
     sendStopRepeating(CAMERA_PROXY_APP)
     checkAppOpenedCameraByProxy(
@@ -413,15 +411,13 @@ class CameraPermissionTest {
   }
 
   @Test
-  @RequiresFlagsEnabled(
-      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_noOpenCameraPermission_opChanged_softDenial_block() {
     testProxyStreaming2_opChanged_softDenial_block(OPEN_CAMERA_APP)
   }
 
   @Test
-  @RequiresFlagsEnabled(
-      Flags.FLAG_USE_CONTEXT_ATTRIBUTION_SOURCE, Flags.FLAG_CHECK_FULL_ATTRIBUTION_SOURCE_CHAIN)
+  @RequiresFlagsEnabled(Flags.FLAG_DATA_DELIVERY_PERMISSION_CHECKS)
   fun testProxyStreaming2_noCameraProxyPermission_opChanged_softDenial_block() {
     testProxyStreaming2_opChanged_softDenial_block(CAMERA_PROXY_APP)
   }
