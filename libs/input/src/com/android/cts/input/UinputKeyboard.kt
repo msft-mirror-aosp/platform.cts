@@ -46,5 +46,6 @@ private fun createKeyboardRegisterCommand(): UinputRegisterCommand {
 class UinputKeyboard(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
     SOURCE_KEYBOARD,
-    createKeyboardRegisterCommand()
+    createKeyboardRegisterCommand(),
+    null // display
 )
