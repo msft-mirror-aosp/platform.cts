@@ -225,6 +225,10 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_UNARCHIVAL_CONFIRMATION] = 146
             APP_OPS[AppOpsManager.OPSTR_EMERGENCY_LOCATION] = 147
             APP_OPS[AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS] = 148
+            APP_OPS[AppOpsManager.OPSTR_READ_HEART_RATE] = 149
+            APP_OPS[AppOpsManager.OPSTR_READ_SKIN_TEMPERATURE] = 150
+            APP_OPS[AppOpsManager.OPSTR_RANGING] = 151
+            APP_OPS[AppOpsManager.OPSTR_READ_OXYGEN_SATURATION] = 152
         }
     }
 }
