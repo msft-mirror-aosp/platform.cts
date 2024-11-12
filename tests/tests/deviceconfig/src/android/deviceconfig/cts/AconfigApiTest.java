@@ -23,9 +23,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.configinfrastructure.aconfig.AconfigPackage;
-import android.configinfrastructure.aconfig.AconfigStorageReadException;
 import android.os.Build;
+import android.os.flagging.AconfigPackage;
+import android.os.flagging.AconfigStorageReadException;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
