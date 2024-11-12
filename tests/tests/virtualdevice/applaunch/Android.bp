@@ -22,6 +22,8 @@ android_test {
 
     defaults: ["cts_defaults"],
 
+    target_sdk_version: "35",
+
     libs: [
         "android.test.runner",
         "android.test.base",
