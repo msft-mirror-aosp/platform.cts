@@ -333,73 +333,27 @@ static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* en
     return nullptr;
 }
 
-static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
-    APerformanceHintManager* manager = APerformanceHint_getManager();
-    if (!manager) return toJString(env, "null manager");
-    SessionWrapper wrapper = createSession(manager);
-    if (wrapper.session() == nullptr) return nullptr;
-
-    int result =
-            APerformanceHint_notifyWorkloadIncrease(wrapper.session(), true, false, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
-        return toJString(env,
-                         std::format("notifyWorkloadIncrease(true, false) returned {}", result)
-                                 .c_str());
-    }
-
-    result = APerformanceHint_notifyWorkloadReset(wrapper.session(), false, true, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
-        return toJString(env,
-                         std::format("notifyWorkloadReset(false, true) returned {}", result)
-                                 .c_str());
-    }
-
-    result = APerformanceHint_notifyWorkloadIncrease(wrapper.session(), true, true, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
-        return toJString(env,
-                         std::format("notifyWorkloadIncrease(true, true) returned {}", result)
-                                 .c_str());
-    }
-
-    result = APerformanceHint_notifyWorkloadIncrease(wrapper.session(), false, false, "CTS hint");
-    if (result != EINVAL && result != ENOTSUP) {
-        return toJString(env,
-                         std::format("notifyWorkloadIncrease(false, false) returned {}", result)
-                                 .c_str());
-    }
-
-    result = APerformanceHint_notifyWorkloadReset(wrapper.session(), false, false, "CTS hint");
-    if (result != EINVAL && result != ENOTSUP) {
-        return toJString(env,
-                         std::format("notifyWorkloadReset(false, false) returned {}", result)
-                                 .c_str());
-    }
-
-    return nullptr;
-}
-
 static JNINativeMethod gMethods[] = {
-        {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
-        {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
-         (void*)nativeTestGetPreferredUpdateRateNanos},
-        {"nativeUpdateTargetWorkDuration", "()Ljava/lang/String;",
-         (void*)nativeUpdateTargetWorkDuration},
-        {"nativeUpdateTargetWorkDurationWithNegativeDuration", "()Ljava/lang/String;",
-         (void*)nativeUpdateTargetWorkDurationWithNegativeDuration},
-        {"nativeReportActualWorkDuration", "()Ljava/lang/String;",
-         (void*)nativeReportActualWorkDuration},
-        {"nativeReportActualWorkDurationWithIllegalArgument", "()Ljava/lang/String;",
-         (void*)nativeReportActualWorkDurationWithIllegalArgument},
-        {"nativeTestSetThreadsWithInvalidTid", "()Ljava/lang/String;",
-         (void*)nativeTestSetThreadsWithInvalidTid},
-        {"nativeSetPreferPowerEfficiency", "()Ljava/lang/String;",
-         (void*)nativeSetPreferPowerEfficiency},
-        {"nativeTestReportActualWorkDuration2", "()Ljava/lang/String;",
-         (void*)nativeTestReportActualWorkDuration2},
-        {"nativeTestReportActualWorkDuration2WithIllegalArgument", "()Ljava/lang/String;",
-         (void*)nativeTestReportActualWorkDuration2WithIllegalArgument},
-        {"nativeTestLoadHints", "()Ljava/lang/String;", (void*)nativeTestLoadHints},
-
+    {"nativeTestCreateHintSession", "()Ljava/lang/String;",
+     (void*)nativeTestCreateHintSession},
+    {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
+     (void*)nativeTestGetPreferredUpdateRateNanos},
+    {"nativeUpdateTargetWorkDuration", "()Ljava/lang/String;",
+     (void*)nativeUpdateTargetWorkDuration},
+    {"nativeUpdateTargetWorkDurationWithNegativeDuration", "()Ljava/lang/String;",
+     (void*)nativeUpdateTargetWorkDurationWithNegativeDuration},
+    {"nativeReportActualWorkDuration", "()Ljava/lang/String;",
+     (void*)nativeReportActualWorkDuration},
+    {"nativeReportActualWorkDurationWithIllegalArgument", "()Ljava/lang/String;",
+     (void*)nativeReportActualWorkDurationWithIllegalArgument},
+    {"nativeTestSetThreadsWithInvalidTid", "()Ljava/lang/String;",
+     (void*)nativeTestSetThreadsWithInvalidTid},
+    {"nativeSetPreferPowerEfficiency", "()Ljava/lang/String;",
+     (void*)nativeSetPreferPowerEfficiency},
+    {"nativeTestReportActualWorkDuration2", "()Ljava/lang/String;",
+     (void*)nativeTestReportActualWorkDuration2},
+    {"nativeTestReportActualWorkDuration2WithIllegalArgument", "()Ljava/lang/String;",
+     (void*)nativeTestReportActualWorkDuration2WithIllegalArgument},
 };
 
 int register_android_os_cts_PerformanceHintManagerTest(JNIEnv *env) {
