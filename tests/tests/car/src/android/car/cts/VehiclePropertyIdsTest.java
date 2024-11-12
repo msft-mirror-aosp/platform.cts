@@ -16,6 +16,7 @@
 
 package android.car.cts;
 
+import static android.car.feature.Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES;
 import static android.car.feature.Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -565,6 +566,16 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
         assertThat(VehiclePropertyIds.toString(
                 VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE))
                 .isEqualTo("LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE");
+    }
+
+    /**
+     * Test for {@link VehiclePropertyIds#toString()} for properties added in Android V.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testToStringForAndroidBVehicleProperties() {
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_MODEL_TRIM))
+                .isEqualTo("INFO_MODEL_TRIM");
     }
 
     /**
