@@ -191,6 +191,52 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     }
 
     @SuppressWarnings("unused")
+    public String testSqueezingImpact() throws Throwable {
+        List<TestSensorEvent> events = new ArrayList<>();
+        getTestLogger().logInstructions(R.string.snsr_baro_squeeze_test_prep_instruction);
+        waitForUserToContinue();
+        // Initial collection to get a baseline reading for barometer measurements without the
+        // impact of squeezing.
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 35 seconds - 2 * 15 seconds for baseline, 2 seconds for the impact, and
+        // 3 seconds for extra room.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 35, TimeUnit.SECONDS);
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                SystemClock.sleep(15000);
+                                playSound();
+                                SystemClock.sleep(15000);
+                                playSound();
+                            } catch (InterruptedException e) {
+                                Assert.fail("FAILED - Unable to play sound.");
+                            }
+                        });
+        thread.start();
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+        boolean failed =
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.12 hPa");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
     public String testTemperatureCompensation() throws Throwable {
         getTestLogger().logInstructions(R.string.snsr_baro_fridge_wait);
         waitForUserToContinue();
