@@ -1692,7 +1692,7 @@ public class KeyAttestationTest {
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
         assertEquals(32, verifiedBootHash.length);
-        checkEntropy(verifiedBootHash);
+        checkEntropy(verifiedBootHash, "rootOfTrust.verifiedBootHash" /* dataName */);
 
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
@@ -1715,7 +1715,8 @@ public class KeyAttestationTest {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
-            checkEntropy(rootOfTrust.getVerifiedBootKey());
+            checkEntropy(rootOfTrust.getVerifiedBootKey(),
+                    "rootOfTrust.verifiedBootKey" /* dataName */);
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
 
             if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -1744,43 +1745,43 @@ public class KeyAttestationTest {
         }
     }
 
-    private void checkEntropy(byte[] entropyData) {
-        byte[] entropyDataCopy = Arrays.copyOf(entropyData, entropyData.length);
-        assertTrue("Failed Shannon entropy check", checkShannonEntropy(entropyDataCopy));
-        assertTrue("Failed BiEntropy check", checkTresBiEntropy(entropyDataCopy));
+    private void checkEntropy(byte[] data, String dataName) {
+        byte[] dataCopy = Arrays.copyOf(data, data.length);
+        assertTrue("Failed Shannon entropy check", checkShannonEntropy(dataCopy, dataName));
+        assertTrue("Failed BiEntropy check", checkTresBiEntropy(dataCopy, dataName));
     }
 
-    private boolean checkShannonEntropy(byte[] verifiedBootKey) {
-        double probabilityOfSetBit = countSetBits(verifiedBootKey) / (double) (
-                verifiedBootKey.length * 8);
-        return calculateShannonEntropy(probabilityOfSetBit) > 0.8;
+    private boolean checkShannonEntropy(byte[] data, String dataName) {
+        double probabilityOfSetBit = countSetBits(data) / (double) (data.length * 8);
+        return calculateShannonEntropy(probabilityOfSetBit, dataName) > 0.8;
     }
 
-    private double calculateShannonEntropy(double probabilityOfSetBit) {
+    private double calculateShannonEntropy(double probabilityOfSetBit, String dataName) {
         if (probabilityOfSetBit <= 0.001 || probabilityOfSetBit >= .999) return 0;
         double entropy = (-probabilityOfSetBit * logTwo(probabilityOfSetBit)) -
                 ((1 - probabilityOfSetBit) * logTwo(1 - probabilityOfSetBit));
-        Log.i(TAG, "Shannon entropy of VB Key: " + entropy);
+        Log.i(TAG, "Shannon entropy of " + dataName + ": " + entropy);
         return entropy;
     }
 
     /**
      * Note: This method modifies the input parameter while performing bit entropy check.
      */
-    private boolean checkTresBiEntropy(byte[] verifiedBootKey) {
+    private boolean checkTresBiEntropy(byte[] data, String dataName) {
         double weightingFactor = 0;
         double weightedEntropy = 0;
         double probabilityOfSetBit = 0;
-        int length = verifiedBootKey.length * 8;
-        for (int i = 0; i < (verifiedBootKey.length * 8) - 2; i++) {
-            probabilityOfSetBit = countSetBits(verifiedBootKey) / (double) length;
+        int length = data.length * 8;
+        for (int i = 0; i < (data.length * 8) - 2; i++) {
+            probabilityOfSetBit = countSetBits(data) / (double) length;
             weightingFactor += logTwo(i + 2);
-            weightedEntropy += calculateShannonEntropy(probabilityOfSetBit) * logTwo(i + 2);
-            deriveBitString(verifiedBootKey, length);
+            weightedEntropy += calculateShannonEntropy(probabilityOfSetBit, dataName)
+                    * logTwo(i + 2);
+            deriveBitString(data, length);
             length -= 1;
         }
         double tresBiEntropy = (1 / weightingFactor) * weightedEntropy;
-        Log.i(TAG, "BiEntropy of VB Key: " + tresBiEntropy);
+        Log.i(TAG, "BiEntropy of " + dataName + ": " + tresBiEntropy);
         return tresBiEntropy > 0.9;
     }
 
