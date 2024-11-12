@@ -188,7 +188,8 @@ public class InputDeviceKeyLayoutMapTest {
                         "bool", "android"));
         mKeyLayout = nativeLoadKeyLayout(mParser.readRegisterCommand(R.raw.Generic));
         mUinputDevice = new UinputDevice(
-                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand());
+                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand(),
+                null /* display */);
     }
 
     @After
