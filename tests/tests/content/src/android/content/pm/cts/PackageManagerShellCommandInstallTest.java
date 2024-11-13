@@ -1413,6 +1413,18 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_dependencyInstallerDisabledShellCommand()
+            throws Exception {
+        onBeforeSdkTests();
+
+        String errorMsg = installPackageGetErrorMessage(
+                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true);
+        assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        assertThat(errorMsg).contains("Reconcile failed");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testAppWithoutDependantSdk_dependencyInstallerMissing() throws Exception {
         onBeforeSdkTests();
 
@@ -2893,8 +2905,18 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     private String installPackageGetErrorMessage(String baseName) throws IOException {
+        return installPackageGetErrorMessage(baseName, /*disableAutoInstallDependencies=*/false);
+    }
+
+    private String installPackageGetErrorMessage(
+            String baseName, boolean disableAutoInstallDependencies) throws IOException {
         File file = new File(createApkPath(baseName));
-        String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
+        String disableDependencyInstall = "";
+        if (Flags.sdkDependencyInstaller() && disableAutoInstallDependencies) {
+            disableDependencyInstall += "--disable-auto-install-dependencies ";
+        }
+        String result = executeShellCommand(
+                "pm " + mInstall + " -t -g " + disableDependencyInstall + file.getPath());
         assertThat(result).isNotEqualTo("Success\n");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
         return result;
