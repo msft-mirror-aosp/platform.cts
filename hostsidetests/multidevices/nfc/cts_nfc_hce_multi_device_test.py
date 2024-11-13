@@ -239,7 +239,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             else:
                 pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            if len(pn532_serial_path) > 0:
+            casimir_id = self.user_params.get("casimir_id", "")
+
+            if len(casimir_id) > 0:
+                self._setup_failure_reason = 'Failed to connect to casimir'
+                _LOG.info("casimir_id = " + casimir_id)
+                self.pn532 = pn532.Casimir(casimir_id)
+            elif len(pn532_serial_path) > 0:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
