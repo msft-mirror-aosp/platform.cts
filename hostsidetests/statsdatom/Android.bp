@@ -86,6 +86,7 @@ java_test_host {
         "android.os.flags-aconfig-java-host",
         "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
+        "stats_flags_lib_host",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
