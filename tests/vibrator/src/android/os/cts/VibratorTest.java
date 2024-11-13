@@ -393,6 +393,30 @@ public class VibratorTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    @Test
+    public void testVibrateComposedWithRelativeDelays() {
+        boolean[] supported = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
+        int[] durations = mVibrator.getPrimitiveDurations(PRIMITIVE_EFFECTS);
+        for (int i = 0; i < PRIMITIVE_EFFECTS.length; i++) {
+            mVibrator.vibrate(VibrationEffect.startComposition()
+                    // Starts after 10ms default delay
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 1.0f, 10)
+                    // Starts at the same time as previous one
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f, 0,
+                            VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
+                    // Starts right after previous one
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f, durations[i],
+                            VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
+                    .compose());
+            if (supported[i]) {
+                // Plays only one primitive after 10ms initial pause
+                assertStartsThenStopsVibrating(
+                        durations[i] * 2 + 10, "primitive id=" + PRIMITIVE_EFFECTS[i]);
+            }
+        }
+    }
+
     @Test
     public void testVibrateWithAttributes() {
         mVibrator.vibrate(VibrationEffect.createOneShot(10, 10), VIBRATION_ATTRIBUTES);
