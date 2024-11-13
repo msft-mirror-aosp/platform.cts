@@ -238,7 +238,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                             null, -1.0f, 1021109556L, CODEC_ALL},
             }));
         }
-        if (IS_AFTER_V && apvSupport() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_8213kbps_apv_10bit.mp4",
                             null, -1.0f, 2541827789L, CODEC_ALL},
