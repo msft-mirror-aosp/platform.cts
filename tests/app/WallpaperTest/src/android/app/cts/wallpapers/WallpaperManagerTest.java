@@ -1699,7 +1699,7 @@ public class WallpaperManagerTest {
                 int sourceFlag = which == FLAG_LOCK ? FLAG_LOCK : FLAG_SYSTEM;
                 Rect absoluteCrop = mWallpaperManager.getBitmapCrops(
                         List.of(screenSize), sourceFlag, true).getFirst();
-                assertThat(absoluteCrop).isEqualTo(expectedCrop);
+                assertAlmostEqual(expectedCrop, absoluteCrop);
                 Rect relativeCrop = mWallpaperManager.getBitmapCrops(
                         List.of(screenSize), sourceFlag, false).getFirst();
                 float tolerance = 2f / Math.min(relativeCrop.width(), relativeCrop.height());
