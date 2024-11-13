@@ -37,7 +37,9 @@ android_test {
         "CtsSurfaceValidatorLib",
         "CtsVirtualDeviceCommonLib",
         "android.companion.virtual.flags-aconfig-java",
-        "Harrier",
+        "android.companion.virtualdevice.flags-aconfig-java",
+        "display_flags_lib",
+        "junit-params",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
@@ -45,6 +47,7 @@ android_test {
         "cts",
         "general-tests",
         "sts",
+        "dts",
     ],
     sdk_version: "test_current",
     data: [":CtsAppTestStubs"],

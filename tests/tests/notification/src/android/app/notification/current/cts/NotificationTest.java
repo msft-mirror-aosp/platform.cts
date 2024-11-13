@@ -17,16 +17,19 @@
 package android.app.notification.current.cts;
 
 import static android.app.Notification.FLAG_BUBBLE;
+import static android.app.Notification.FLAG_PROMOTED_ONGOING;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Flags;
 import android.app.Notification;
 import android.app.Notification.Action.Builder;
 import android.app.Notification.CallStyle;
@@ -49,7 +52,7 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.StrictMode;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Pair;
 import android.widget.RemoteViews;
 
@@ -89,6 +92,7 @@ public class NotificationTest {
             NotificationManager.IMPORTANCE_HIGH);
     private static final String SHORTCUT_ID = "shortcutId";
     private static final String SETTING_TEXT = "work chats";
+    private static final String SHORT_CRITICAL_TEXT = "short critical text";
     private static final boolean ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS = false;
 
     @Before
@@ -157,15 +161,18 @@ public class NotificationTest {
     @Test
     public void testWriteToParcel() {
         Notification.BubbleMetadata bubble = makeBubbleMetadata();
-        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
+        Notification.Builder builder = new Notification.Builder(mContext, CHANNEL.getId())
                 .setBadgeIconType(Notification.BADGE_ICON_SMALL)
                 .setShortcutId(SHORTCUT_ID)
                 .setTimeoutAfter(TIMEOUT)
                 .setSettingsText(SETTING_TEXT)
                 .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
                 .setBubbleMetadata(bubble)
-                .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS)
-                .build();
+                .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
+        if (Flags.apiRichOngoing()) {
+            builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
+        }
+        mNotification = builder.build();
         mNotification.icon = 0;
         mNotification.number = 1;
         final Intent intent = new Intent().setPackage(mContext.getPackageName());
@@ -221,6 +228,9 @@ public class NotificationTest {
         assertEquals(mNotification.getTimeoutAfter(), result.getTimeoutAfter());
         assertEquals(mNotification.getChannelId(), result.getChannelId());
         assertEquals(mNotification.getSettingsText(), result.getSettingsText());
+        if (Flags.apiRichOngoing()) {
+            assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
+        }
         assertEquals(mNotification.getGroupAlertBehavior(), result.getGroupAlertBehavior());
         assertNotNull(result.getBubbleMetadata());
         assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
@@ -999,6 +1009,24 @@ public class NotificationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testGetShortCriticalText_noneSet() {
+        Notification n = new Notification.Builder(mContext, CHANNEL.getId()).build();
+
+        assertEquals(n.getShortCriticalText(), null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testGetShortCriticalText_isSet() {
+        Notification n = new Notification.Builder(mContext, CHANNEL.getId())
+                .setShortCriticalText(SHORT_CRITICAL_TEXT)
+                .build();
+
+        assertEquals(n.getShortCriticalText(), SHORT_CRITICAL_TEXT);
+    }
+
+    @Test
     public void testNotification_isBigPictureStyle_pictureContentDescriptionSet() {
         final String contentDescription = "content description";
 
@@ -1199,6 +1227,15 @@ public class NotificationTest {
         assertNotNull(remoteInputActionPair);
         assertEquals(freeformRemoteInput, remoteInputActionPair.first);
         assertEquals(actionWithFreeformRemoteInput, remoteInputActionPair.second);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testPromotedOngoingFlag() {
+        Notification notification = new Notification.Builder(mContext, "test")
+                .setFlag(FLAG_PROMOTED_ONGOING, true)
+                .build();
+        assertNotEquals(0, (notification.flags & FLAG_PROMOTED_ONGOING));
     }
 
     private static void assertMessageEquals(

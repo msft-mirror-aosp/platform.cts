@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.area;
 
+import static android.hardware.devicestate.feature.flags.Flags.FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
@@ -37,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
+import android.app.PictureInPictureParams;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -46,6 +48,9 @@ import android.hardware.devicestate.DeviceStateRequest;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DeviceStateUtils;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
@@ -131,7 +136,12 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 mWindowAreaSessionState = sessionStatus;
             };
 
-    @Rule
+    // CheckFlagsRule rule needs to before WindowManagerJetpackTestRule
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 1)
     public final WindowExtensionTestRule mWindowManagerJetpackTestRule =
             new WindowExtensionTestRule(WindowAreaComponent.class);
 
@@ -519,6 +529,59 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
 
         mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
                 mSessionStateListener);
+    }
+
+    /**
+     * Tests that you can start, and then end rear display presentation mode with the calling
+     * process in picture-in-picture mode.
+     * Verifies that the {@link ExtensionWindowAreaPresentationSessionCallback} that is
+     * provided when calling {@link WindowAreaComponent#startRearDisplayPresentationSession}
+     * receives the {@link ExtensionWindowAreaPresentationSessionCallback#onSessionStarted} callback
+     * when starting the session and
+     * {@link ExtensionWindowAreaPresentationSessionCallback#onSessionEnded()} when ending the
+     * session.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area."
+                    + "WindowAreaComponent#startRearDisplayPresentationSession",
+            "androidx.window.extensions.area."
+                    + "WindowAreaComponent#endRearDisplayPresentationSession"})
+    @RequiresFlagsEnabled(FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE)
+    @Test
+    public void testStartAndEndRearDisplayPresentationSession_endsSessionInPip() throws Throwable {
+        assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
+                == WindowAreaComponent.STATUS_AVAILABLE);
+        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+
+        mWindowAreaComponent.startRearDisplayPresentationSession(mActivity,
+                mSessionStateListener);
+        waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_ACTIVE);
+        assertEquals(mCurrentDeviceState.getIdentifier(), mRearDisplayPresentationState);
+
+        ExtensionWindowAreaPresentation presentation =
+                mWindowAreaComponent.getRearDisplayPresentation();
+        assertNotNull(presentation);
+        assertNotNull(presentation.getWindow());
+        TestPresentationView presentationView = new TestPresentationView(
+                presentation.getPresentationContext());
+        mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
+        waitAndAssert(() -> presentationView.mAttachedToWindow);
+        assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
+        assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
+        assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
+
+        mActivity.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
+        waitAndAssert(() -> mActivity.isInPictureInPictureMode());
+
+        mWindowAreaComponent.endRearDisplayPresentationSession();
+        // Cancelling rear display presentation mode should cancel the override, so verifying that
+        // the device state is no longer the rear display presentation state.
+        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assertEquals(WindowAreaComponent.STATUS_AVAILABLE,
+                (int) mWindowAreaPresentationStatus.getWindowAreaStatus());
+        // Since the non-visible and session ended callbacks happen so fast, we check if
+        // the list of values received equal what we expected.
+        assertEquals(mSessionStateStatusValues, SESSION_LIFECYCLE_VALUES);
     }
 
     @Override

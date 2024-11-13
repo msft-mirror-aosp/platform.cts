@@ -16,10 +16,14 @@
 
 package com.android.interactive.steps
 
+import android.os.Build
 import com.android.bedstead.adb.adb
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.usb.usb
 
+// TODO(b/349136331): AdbManager is not aware of the active connections. This needs to be
+// added in AdbDebuggingManager and adbd.
 class ConnectViaAdbToHostStep : ActAndWaitStep(
-        "Connect this device via ADB to the host", { TestApis.adb().isEnabledOverWifi() || TestApis.usb().isConnected() }
+        "Connect this device via ADB to the host",
+    { TestApis.adb().isEnabledOverWifi() || TestApis.usb().isConnected() || Build.IS_EMULATOR }
 )

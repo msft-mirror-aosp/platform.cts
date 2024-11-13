@@ -18,12 +18,13 @@
 
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.security.cts.dynamicpermissiontestattackerapp">
+    package="android.security.cts.usepermission">
 
     <permission-tree android:name="com.android.voicemail.permission"/>
+    <permission-tree android:name="android.security.cts.usepermission"/>
 
     <application android:label="Dynamic Permission Test Attacker App">
-        <service android:name="android.security.cts.dynamicpermissiontestattackerapp.RemovePermissionService"
+        <service android:name="android.security.cts.usepermission.DynamicPermissionService"
                  android:exported="true"/>
     </application>
 </manifest>

@@ -185,7 +185,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     public void testChooserIntent_nonMediaFilter() throws Exception {
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
-        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         // Should open DocumentsUi
         assertThatShowsDocumentsUiButtons();

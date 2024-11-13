@@ -31,8 +31,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -41,6 +39,9 @@ import com.android.cts.verifier.audio.wavelib.DspBufferMath;
 import com.android.cts.verifier.audio.wavelib.DspFftServer;
 import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Tests Audio built in Microphone response for Voice Recognition audio source feature.
@@ -322,9 +323,9 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
                 -50.0, -120.0,     /* start top,bottom value */
                 -50.0, -120.0      /* stop top,bottom value */);
 
-        mResultsMic = new Results("mic_response", BANDS_MIC);
-        mResultsTone = new Results("tone_response", BANDS_TONE);
-        mResultsBack = new Results("background_response", BANDS_BACKGROUND);
+        mResultsMic = new Results("mic_response", TEST_NOISE, BANDS_MIC);
+        mResultsTone = new Results("tone_response", TEST_TONE, BANDS_TONE);
+        mResultsBack = new Results("background_response", TEST_USB_BACKGROUND, BANDS_BACKGROUND);
         connectRefMicUI();
     }
 
@@ -425,16 +426,16 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
         String name = "undefined";
         switch(testId) {
             case TEST_TONE:
-                name = "BuiltIn_tone";
+                name = "built_in_tone";
                 break;
             case TEST_NOISE:
-                name = "BuiltIn_noise";
+                name = "built_in_noise";
                 break;
             case TEST_USB_BACKGROUND:
-                name = "USB_background";
+                name = "usb_background";
                 break;
             case TEST_USB_NOISE:
-                name = "USB_noise";
+                name = "usb_noise";
                 break;
         }
         return name;
@@ -642,6 +643,7 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
 
         storeTestResults(mResultsTone);
         storeTestResults(mResultsMic);
+        storeTestResults(mResultsBack);
 
         boolean allTestsPassed = false;
         if (mResultsMic.testAll() && mResultsTone.testAll() && toneTestSuccess &&
@@ -826,14 +828,16 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
     };
 
     private class Results {
+        private int mTestId;
         private int mBandCount;
         private String mLabel;
         public double[] mValuesLog;
         int[] mPointsPerBand; // = new int[mBands];
         double[] mAverageEnergyPerBand;// = new double[mBands];
         int[] mInBoundPointsPerBand;// = new int[mBands];
-        public Results(String label, int bandCount) {
+        Results(String label, int testId, int bandCount) {
             mLabel = label;
+            mTestId = testId;
             mBandCount = bandCount;
             mPointsPerBand = new int[mBandCount];
             mAverageEnergyPerBand = new double[mBandCount];
@@ -915,56 +919,38 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
      * Store test results in log
      */
     private static final String SECTION_AUDIOFREQUENCYVOICERECOGNITION =
-            "audio_frequency_voicerecognition";
+            "audio_frequency_voice_recognition";
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYVOICERECOGNITION);
     }
 
     private void storeTestResults(Results results) {
-        String channelLabel = "channel_" + results.mLabel;
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        for (int b = 0; b < results.mBandCount; b++) {
-            String bandLabel = String.format(channelLabel + "_%d", b);
-            reportLog.addValue(
-                    bandLabel + "_Level",
-                    results.mAverageEnergyPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    bandLabel + "_pointsinbound",
-                    results.mInBoundPointsPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.COUNT);
-
-            reportLog.addValue(
-                    bandLabel + "_pointstotal",
-                    results.mPointsPerBand[b],
-                    ResultType.NEUTRAL,
-                    ResultUnit.COUNT);
+        try {
+            CtsVerifierReportLog reportLog = getReportLog();
+            JSONArray bandsArray = new JSONArray();
+            JSONObject resultsObject = new JSONObject();
+            for (int b = 0; b < results.mBandCount; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_LEVEL, results.mAverageEnergyPerBand[b]);
+                bandObject.put(KEY_POINTS_IN_BOUND, results.mInBoundPointsPerBand[b]);
+                bandObject.put(KEY_POINTS_TOTAL, results.mPointsPerBand[b]);
+                bandsArray.put(bandObject);
+            }
+            resultsObject.put(KEY_BANDS, bandsArray);
+            resultsObject.put(KEY_MAGNITUDE_SPECTRUM_LOG, new JSONArray(results.mValuesLog));
+            reportLog.addValue(results.mLabel, resultsObject);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+            appendResultsToScreen(results.mTestId, LOG_ERROR_STR);
         }
 
-        reportLog.addValues(channelLabel + "_magnitudeSpectrumLog",
-                results.mValuesLog,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        Log.v(TAG, "Results Stored");
+        Log.v(TAG, "Results Recorded");
     }
 
     @Override // PassFailButtons
     public void recordTestResults() {
         getReportLog().submit();
-    }
-
-    private void recordHeasetPortFound(boolean found) {
-        getReportLog().addValue(
-                "User Reported Headset Port",
-                found ? 1.0 : 0,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
     }
 
     private void showToneRMS() {

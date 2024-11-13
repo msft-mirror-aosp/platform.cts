@@ -102,8 +102,7 @@ public class LoudnessCodecControllerTest {
     @Before
     public void setUp() {
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        final AudioManager audioManager = (AudioManager) context.getSystemService(
-                AudioManager.class);
+        final AudioManager audioManager = context.getSystemService(AudioManager.class);
         mSessionId = 0;
         if (audioManager != null) {
             mSessionId = audioManager.generateAudioSessionId();
@@ -268,16 +267,17 @@ public class LoudnessCodecControllerTest {
         final MediaCodec mediaCodec2 = createMediaCodec(/*configure*/true);
 
         try {
+            // Initially we receive 2 updates with the estimated AudioDeviceAttributes
+            // properties in the Bundle
             mLcc.addMediaCodec(mediaCodec1);
             mLcc.addMediaCodec(mediaCodec2);
             Thread.sleep(TEST_LOUDNESS_CALLBACK_TIMEOUT.toMillis());
 
-            // Device id for AudioAttributes should not change to send more updates
-            // after creating the AudioTrack
+            // We get another 2 updates after we have a device ID assigned
             mAt = createAndStartAudioTrack();
             Thread.sleep(TEST_LOUDNESS_CALLBACK_TIMEOUT.toMillis());
 
-            assertEquals(2, mCodecUpdateCallNumber.get());
+            assertEquals(4, mCodecUpdateCallNumber.get());
         } finally {
             mediaCodec1.release();
             mediaCodec2.release();

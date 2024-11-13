@@ -22,6 +22,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +36,14 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class PreferenceActivityFlowPortraitTest extends PreferenceActivityFlowTest {
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation(),
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<PreferenceWithHeadersPortrait> mActivityRule =
             new ActivityTestRule<>(PreferenceWithHeadersPortrait.class, true, false);
 

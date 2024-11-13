@@ -23,9 +23,9 @@ import android.provider.Settings
 import androidx.annotation.RequiresApi
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Versions
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 
 /** APIs related to [android.provider.Settings.Secure].  */
 object SecureSettings {
@@ -169,7 +169,7 @@ object SecureSettings {
      * See [Settings.Secure.putString]
      */
     @RequiresApi(Build.VERSION_CODES.S)
-    fun putString(contentResolver: ContentResolver, key: String, value: String) {
+    fun putString(contentResolver: ContentResolver, key: String, value: String?) {
         Versions.requireMinimumVersion(Build.VERSION_CODES.S)
         TestApis.permissions().withPermission(
                 INTERACT_ACROSS_USERS_FULL, Manifest.permission.WRITE_SECURE_SETTINGS).use {
@@ -188,7 +188,7 @@ object SecureSettings {
      * See [.putString]
      */
     @SuppressLint("NewApi")
-    fun putString(user: UserReference, key: String, value: String) {
+    fun putString(user: UserReference, key: String, value: String?) {
         if (user == TestApis.users().instrumented()) {
             putString(key, value)
             return
@@ -202,7 +202,7 @@ object SecureSettings {
      *
      * See [.putString]
      */
-    fun putString(key: String, value: String) {
+    fun putString(key: String, value: String?) {
         TestApis.permissions().withPermission(
                 Manifest.permission.WRITE_SECURE_SETTINGS).use {
             Settings.Secure.putString(

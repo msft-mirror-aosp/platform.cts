@@ -32,7 +32,9 @@ import android.companion.virtual.flags.Flags;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
+import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -96,8 +98,35 @@ public class RecentTasksTest {
         assertThat(isTaskIncludedInRecents(taskId)).isFalse();
     }
 
-    private VirtualDevice createVirtualDeviceWithRecentsPolicy(
-            @VirtualDeviceParams.DevicePolicy int recentsPolicy) {
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void testOverrideRecentsPolicyPerDisplay() {
+        VirtualDevice virtualDevice = createVirtualDeviceWithRecentsPolicy(DEVICE_POLICY_DEFAULT);
+        VirtualDisplay defaultPolicyDisplay = createPublicVirtualDisplay(virtualDevice);
+        VirtualDisplay customPolicyDisplay = createPublicVirtualDisplay(virtualDevice);
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM,
+                customPolicyDisplay.getDisplay().getDisplayId());
+
+        Activity defaultPolicyActivity =
+                mRule.startActivityOnDisplaySync(defaultPolicyDisplay, EmptyActivity.class);
+        final int defaultPolicyTaskId = defaultPolicyActivity.getTaskId();
+        assertThat(isTaskIncludedInRecents(defaultPolicyTaskId)).isTrue();
+
+        Activity customPolicyActivity =
+                mRule.startActivityOnDisplaySync(customPolicyDisplay, SecondActivity.class);
+        final int customPolicyTaskId = customPolicyActivity.getTaskId();
+        assertThat(isTaskIncludedInRecents(customPolicyTaskId)).isFalse();
+
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM,
+                defaultPolicyDisplay.getDisplay().getDisplayId());
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT,
+                customPolicyDisplay.getDisplay().getDisplayId());
+
+        assertThat(isTaskIncludedInRecents(defaultPolicyTaskId)).isFalse();
+        assertThat(isTaskIncludedInRecents(customPolicyTaskId)).isTrue();
+    }
+
+    private VirtualDevice createVirtualDeviceWithRecentsPolicy(int recentsPolicy) {
         return mRule.createManagedVirtualDevice(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_RECENTS, recentsPolicy)
                 .build());

@@ -36,9 +36,10 @@ object GlobalSettings {
     fun putInt(contentResolver: ContentResolver, key: String, value: Int) {
         Versions.requireMinimumVersion(Build.VERSION_CODES.S)
         TestApis.permissions().withPermission(
-                INTERACT_ACROSS_USERS_FULL, Manifest.permission.WRITE_SECURE_SETTINGS).use {
-                    Settings.Global.putInt(contentResolver, key, value)
-                }
+            INTERACT_ACROSS_USERS_FULL, Manifest.permission.WRITE_SECURE_SETTINGS
+        ).use {
+            Settings.Global.putInt(contentResolver, key, value)
+        }
     }
 
     /**
@@ -80,9 +81,10 @@ object GlobalSettings {
     fun putString(contentResolver: ContentResolver, key: String, value: String) {
         Versions.requireMinimumVersion(Build.VERSION_CODES.S)
         TestApis.permissions().withPermission(
-                INTERACT_ACROSS_USERS_FULL, Manifest.permission.WRITE_SECURE_SETTINGS).use {
-                    Settings.Global.putString(contentResolver, key, value)
-                }
+            INTERACT_ACROSS_USERS_FULL, Manifest.permission.WRITE_SECURE_SETTINGS
+        ).use {
+            Settings.Global.putString(contentResolver, key, value)
+        }
     }
 
     /**
@@ -110,7 +112,7 @@ object GlobalSettings {
      *
      * See [.putString]
      */
-    fun putString(key: String, value: String) {
+    fun putString(key: String, value: String?) {
         TestApis.permissions().withPermission(Manifest.permission.WRITE_SECURE_SETTINGS).use {
             Settings.Global.putString(
                     TestApis.context().instrumentedContext().contentResolver, key, value)
@@ -190,9 +192,13 @@ object GlobalSettings {
     /**
      * Get int from global settings for the instrumented user.
      *
-     *
      * See [.getInt]
+     *
+     * @throws NeneException If a setting by the given
+     * name can't be found or the setting value is not an integer.
      */
+
+    @Throws(NeneException::class)
     fun getInt(key: String): Int {
         return getIntInner(TestApis.context().instrumentedContext().contentResolver, key)
     }
@@ -237,7 +243,9 @@ object GlobalSettings {
     fun getString(user: UserReference, key: String): String? {
         return if (user == TestApis.users().instrumented()) {
             getString(key)
-        } else getString(TestApis.context().androidContextAsUser(user).contentResolver, key)
+        } else {
+            getString(TestApis.context().androidContextAsUser(user).contentResolver, key)
+        }
     }
 
     /**
@@ -294,7 +302,8 @@ object GlobalSettings {
         TestApis.permissions().withPermission(Manifest.permission.WRITE_SECURE_SETTINGS).use {
             Settings.Global.resetToDefaults(
                     TestApis.context().instrumentedContext().contentResolver,  /* tag= */
-                    null)
+                    null
+            )
         }
     }
 }

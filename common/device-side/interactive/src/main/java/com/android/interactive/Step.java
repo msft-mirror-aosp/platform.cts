@@ -110,12 +110,17 @@ public abstract class Step<E> {
         try {
             step = stepClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new AssertionError("Error preparing step", e);
+            throw new AssertionError("Error preparing " + stepClass, e);
         }
 
         // Check if is cached...
         if (sStepCache.containsKey(stepClass)) {
             return (E) sStepCache.get(stepClass);
+        }
+
+        if (step.getValue().isPresent()) {
+            // If the step already has an answer - no need to show it to the user or run automations
+            return step.getValue().get();
         }
 
         if (!sForceManual.get()
@@ -186,8 +191,7 @@ public abstract class Step<E> {
         }
 
         if (TestApis.instrumentation().arguments().getBoolean("ENABLE_MANUAL", false)) {
-            if (!step.getValue().isPresent() && !step.hasFailed()) {
-                // If the step already has an answer - no need to show it to the user
+            if (!step.hasFailed()) {
                 step.interact();
             }
 
@@ -233,7 +237,8 @@ public abstract class Step<E> {
                 }
             }
         }
-        throw new AssertionError("Could not automatically or manually pass test");
+        throw new AssertionError("Could not automatically or manually pass test. "
+                + "Failed at step: " + step);
     }
 
     /** Gets the boolean value of an instrumentation argument with a default value. */

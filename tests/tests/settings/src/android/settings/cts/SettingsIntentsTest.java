@@ -67,6 +67,9 @@ public class SettingsIntentsTest {
         assumeFalse(
                 "Skipping test: Satellite settings are not supported in Wear",
                 SettingsTestUtils.isWatch());
+        assumeFalse(
+                "Skipping test: Satellite settings are not supported in TV",
+                SettingsTestUtils.isTelevision());
         Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         final Intent intent = new Intent(Settings.ACTION_SATELLITE_SETTING).addFlags(

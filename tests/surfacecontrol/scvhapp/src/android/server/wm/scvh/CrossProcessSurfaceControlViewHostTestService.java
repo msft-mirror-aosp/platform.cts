@@ -33,6 +33,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceControlViewHost;
 import android.view.View;
 import android.view.WindowManager;
+import android.window.InputTransferToken;
 
 import androidx.annotation.Nullable;
 
@@ -151,5 +152,19 @@ public class CrossProcessSurfaceControlViewHostTestService extends Service {
                 Log.e(TAG, "Failed to set keep screen on flag");
             }
         }
+
+        @Override
+        public boolean requestTouchGestureTransferFromHostThrows(
+                InputTransferToken hostInputTransferToken) {
+            try {
+                WindowManager wm = getSystemService(WindowManager.class);
+                wm.transferTouchGesture(hostInputTransferToken,
+                        mSurfaceControlViewHost.getSurfacePackage().getInputTransferToken());
+            } catch (SecurityException e) {
+                return true;
+            }
+            return false;
+        }
+
     }
 }

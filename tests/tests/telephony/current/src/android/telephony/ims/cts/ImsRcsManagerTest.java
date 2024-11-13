@@ -72,7 +72,7 @@ public class ImsRcsManagerTest {
      */
     @Test
     public void testMethodPermissions() throws Exception {
-        if (!ImsUtils.shouldTestTelephony()) {
+        if (!ImsUtils.shouldTestTelephony() || !ImsUtils.shouldTestImsService()) {
             return;
         }
 

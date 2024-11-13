@@ -36,8 +36,8 @@ test_suites = [
 android_library {
     name: "CtsTvTunerTestCases_lib",
     srcs: [
-        "*.java",
-        "*.aidl",
+        "src/**/*.java",
+        "src/**/*.aidl",
         ":tuner_cts_configuration_v2",
     ],
     libs: libs,

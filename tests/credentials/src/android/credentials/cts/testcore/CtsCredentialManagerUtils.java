@@ -45,6 +45,12 @@ public class CtsCredentialManagerUtils {
         return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
+    /** Whether the device has the tv feature or not **/
+    public static boolean isTv(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
     /**
      * Enable the main credential manager feature. If this is off, any underlying changes for
      * autofill-credentialManager integrations are off.

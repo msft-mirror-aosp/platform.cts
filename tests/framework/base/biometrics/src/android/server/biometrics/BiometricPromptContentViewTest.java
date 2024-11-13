@@ -17,7 +17,6 @@
 package android.server.biometrics;
 
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_IDLE;
-import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -51,7 +50,6 @@ import androidx.test.uiautomator.UiObject2;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -79,7 +77,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * Upon successful authentication, checks that the result is
      * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
-    @Ignore("b/356789161")
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
     @ApiTest(apis = {
             "android.hardware.biometrics."
@@ -102,7 +99,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptContentViewWithMoreOptionsButton.Builder#setDescription",
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -158,7 +155,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -197,7 +194,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutPermissionException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -245,7 +242,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutSettingListenerException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -282,7 +279,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -335,7 +332,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * Upon successful authentication, checks that the result is
      * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
-    @Ignore("b/356789161")
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
     @ApiTest(apis = {
             "android.hardware.biometrics."
@@ -358,7 +354,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#addListItem",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setDescription"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testVerticalList_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -430,7 +426,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setContentView",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());

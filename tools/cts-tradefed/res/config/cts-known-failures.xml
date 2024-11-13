@@ -334,9 +334,13 @@
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
 
-    <!-- b/358008915 -->
-    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.TopicsApiLoggingHostTest#testGetTopicsLog" />
-    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.UiApiLoggingHostTest#testStartSettingMainActivityAndGetUiLog" />
+    <!-- b/353652236 -->
+    <option name="compatibility:exclude-filter" value="android.adservices.test.scenario.adservices.topics.TopicsEpochComputationOnDeviceClassifierMicrobenchmark#testEpochComputation" />
+
+    <!-- b/353956086 -->
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier" />
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier_usingGetMethodToCreateManager" />
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
 
     <!-- b/355285596 -->
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />

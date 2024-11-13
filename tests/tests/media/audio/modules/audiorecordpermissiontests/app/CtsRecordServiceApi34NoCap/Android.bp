@@ -22,5 +22,5 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     srcs: ["**/*.kt"],
     static_libs: ["audiorecordpermissiontests_shared"],
-    sdk_version: "current",
+    sdk_version: "test_33",
 }

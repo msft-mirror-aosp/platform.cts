@@ -164,6 +164,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -1040,6 +1041,8 @@ public class AppEnumerationTests extends AppEnumerationTestsBase {
     @Test
     public void queriesNothing_cannotSeeAppWidgetProviderTarget() throws Exception {
         assumeTrue(sPm.hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS));
+        assumeFalse("Skipping test: Tv does not support widget yet",
+                sPm.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
 
         assertNotVisible(QUERIES_NOTHING, TARGET_APPWIDGETPROVIDER,
                 this::getInstalledAppWidgetProviders);

@@ -39,6 +39,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(RequirePackageNotInstalledGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface RequirePackageNotInstalled {
     String value();
     UserType onUser() default UserType.INSTRUMENTED_USER;

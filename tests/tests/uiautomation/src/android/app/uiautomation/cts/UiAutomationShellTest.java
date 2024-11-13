@@ -174,6 +174,16 @@ public class UiAutomationShellTest {
         );
     }
 
+    @Test
+    public void testExecuteShellCommand_invalidProgram() throws IOException {
+        validateShellCommand(
+                /* shellCommand = */ "/system/bin/invalidProgram",
+                /* stdin = */ "",
+                /* expectedStdout = */ "",
+                /* stderrValidator = */ stderr -> assertThat(stderr).isEmpty()
+        );
+    }
+
     private Instrumentation getInstrumentation() {
         return InstrumentationRegistry.getInstrumentation();
     }

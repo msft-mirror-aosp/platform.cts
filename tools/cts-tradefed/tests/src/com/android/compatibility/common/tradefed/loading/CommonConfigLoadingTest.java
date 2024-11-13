@@ -121,6 +121,10 @@ public class CommonConfigLoadingTest {
         // to replace the main Application class with Test Application so Hilt can swap
         // dependencies for testing.
         RUNNER_EXCEPTION.add("com.android.healthconnect.controller.tests.HiltTestRunner");
+        // Photopicker APK uses Hilt for dependency injection. During test setup it needs
+        // to replace the main application class with Test Application so Hilt can swap
+        // dependencies for testing.
+        RUNNER_EXCEPTION.add("com.android.photopicker.tests.HiltTestRunner");
     }
 
     /**

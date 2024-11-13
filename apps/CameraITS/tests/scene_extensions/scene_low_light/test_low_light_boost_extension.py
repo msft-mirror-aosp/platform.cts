@@ -43,7 +43,6 @@ _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics#EXTENSION_NIGHT
 _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
@@ -179,11 +178,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
 
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
-
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
       brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
@@ -208,7 +202,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Since low light boost can be supported by Camera2 and Night Mode
       # Extensions, run the test for both (if supported)
-
       # Wait for tablet brightness to change
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       if is_low_light_boost_supported:

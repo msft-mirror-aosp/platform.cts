@@ -100,7 +100,7 @@ public class InputDeviceMultiDeviceKeyEventTest {
             final int jsonDeviceId = i + 1;
             mUinputDevices[i] = new UinputDevice(mInstrumentation,
                 InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand(jsonDeviceId),
-                null /* display */);
+                    null /* display */);
         }
 
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);

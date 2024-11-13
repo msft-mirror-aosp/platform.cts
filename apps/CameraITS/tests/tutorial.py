@@ -34,10 +34,8 @@ import os.path
 
 # Modules from the numpy, scipy, and matplotlib libraries. These are used for
 # the image processing code, and images are represented as numpy arrays.
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 import numpy
-import matplotlib
-import matplotlib.pyplot
 
 # Module for Mobly
 from mobly import test_runner
@@ -191,11 +189,11 @@ class TutorialTest(its_base_test.ItsBaseTest):
       hist, _ = numpy.histogram(yimg*255, 256, (0, 256))
 
       # Plot the histogram using matplotlib, and save as a PNG image.
-      pylab.plot(range(256), hist.tolist())
-      pylab.xlabel('Luma DN')
-      pylab.ylabel('Pixel count')
-      pylab.title('Histogram of luma channel of captured image')
-      matplotlib.pyplot.savefig(f'{file_name}_histogram.png')
+      plt.plot(range(256), hist.tolist())
+      plt.xlabel('Luma DN')
+      plt.ylabel('Pixel count')
+      plt.title('Histogram of luma channel of captured image')
+      plt.savefig(f'{file_name}_histogram.png')
 
       # Capture a frame to be returned as a JPEG. Load it as an RGB image,
       # then save it back as a JPEG.

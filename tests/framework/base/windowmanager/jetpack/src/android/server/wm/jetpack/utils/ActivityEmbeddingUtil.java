@@ -31,7 +31,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeNotNull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -61,7 +60,6 @@ import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.window.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -692,15 +690,10 @@ public class ActivityEmbeddingUtil {
      */
     public static void assumeActivityEmbeddingSupportedDevice() {
         assumeExtensionSupportedDevice();
-        if (!Flags.enableWmExtensionsForAllFlag()) {
-            assumeNotNull("Device does not support ActivityEmbedding",
-                    getWindowExtensions().getActivityEmbeddingComponent());
-        } else {
-            // Devices are required to enable Activity Embedding with WM Extensions, unless the
-            // app's targetSDK is smaller than Android 15.
-            assertNotNull("Device with WM Extensions must support ActivityEmbedding",
-                    getWindowExtensions().getActivityEmbeddingComponent());
-        }
+        // Devices are required to enable Activity Embedding with WM Extensions, unless the
+        // app's targetSDK is smaller than Android 15.
+        assertNotNull("Device with WM Extensions must support ActivityEmbedding",
+                getWindowExtensions().getActivityEmbeddingComponent());
     }
 
     private static void assertSplitInfoTopSplitIsCorrect(@NonNull List<SplitInfo> splitInfoList,

@@ -36,6 +36,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -227,8 +228,15 @@ public class MockImeSession implements AutoCloseable {
                 MultiUserUtils.getCurrentInputMethodInfoAsUser(mContext, mUiAutomation,
                         mTargetUser);
         final String result = imi != null ? imi.getId() : null;
+        // debug log for b/354782333.
+        final String defaultInputMethod = MultiUserUtils.getSecureSettings(
+                mUiAutomation, Settings.Secure.DEFAULT_INPUT_METHOD, mTargetUser);
+        // debug log for b/354782333.
+        final String enabledInputMethods = MultiUserUtils.getSecureSettings(
+                mUiAutomation, Settings.Secure.ENABLED_INPUT_METHODS, mTargetUser);
         Log.v(TAG, "getCurrentInputMethodId(): returning " + result + " for user "
-                + mTargetUser.getIdentifier());
+                + mTargetUser.getIdentifier() + " DEFAULT_INPUT_METHOD=" + defaultInputMethod
+                + " ENABLED_INPUT_METHODS=" + enabledInputMethods);
         return result;
     }
 
@@ -307,7 +315,7 @@ public class MockImeSession implements AutoCloseable {
         if (MultiUserUtils.getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
                 .stream()
                 .anyMatch(info -> getMockImeComponentName().equals(info.getComponent()))) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("MockIME should not be already enabled.");
         }
 
         // Make sure to set up additional subtypes before launching MockIme.
@@ -347,10 +355,19 @@ public class MockImeSession implements AutoCloseable {
 
         String imeId = getImeId();
         executeImeCmd("enable", imeId);
-        executeImeCmd("set", imeId);
+        if (!imeSettings.mSuppressSetIme) {
+            executeImeCmd("set", imeId);
 
-        PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
-                () -> getImeId().equals(getCurrentInputMethodId()));
+            PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
+                    () -> getImeId().equals(getCurrentInputMethodId()));
+        } else {
+            PollingCheck.check("Make sure that MockIME becomes enabled", TIMEOUT_MILLIS, () ->
+                    MultiUserUtils
+                            .getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
+                            .stream()
+                            .anyMatch(
+                                    info -> getMockImeComponentName().equals(info.getComponent())));
+        }
     }
 
     @Override

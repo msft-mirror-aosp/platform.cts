@@ -69,6 +69,7 @@ public class AAudioTests {
         uiAutomation.dropShellPermissionIdentity();
         // need to retain the identity until the callback is triggered
         uiAutomation.adoptShellPermissionIdentity(CAPTURE_AUDIO_OUTPUT);
+        permissionBarrier();
     }
 
     static void enableAudioHotwordPermission() {
@@ -77,11 +78,20 @@ public class AAudioTests {
         uiAutomation.dropShellPermissionIdentity();
         // need to retain the identity until the callback is triggered
         uiAutomation.adoptShellPermissionIdentity(CAPTURE_AUDIO_HOTWORD);
+        permissionBarrier();
     }
 
     static void disablePermissions() {
         // Drop any identity adopted earlier.
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.dropShellPermissionIdentity();
+        permissionBarrier();
+    }
+
+    private static void permissionBarrier() {
+        InstrumentationRegistry.getInstrumentation()
+                               .getContext()
+                               .getSystemService(AudioManager.class)
+                               .permissionUpdateBarrier();
     }
 }

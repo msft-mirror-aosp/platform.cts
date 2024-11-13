@@ -230,6 +230,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private static final long TIMEOUT_MS = 4000;
 
     private static final long POST_TIMEOUT = 200;
+    private static final long TIMEOUT_FORCE_REGROUP_MS = TIMEOUT_MS + POST_TIMEOUT;
     private static final int MESSAGE_BROADCAST_NOTIFICATION = 1;
     private static final int MESSAGE_SERVICE_NOTIFICATION = 2;
     private static final int MESSAGE_CLICK_NOTIFICATION = 3;
@@ -319,6 +320,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 PendingIntent.FLAG_MUTABLE_UNAUDITED);
     }
 
+    private boolean isAutogroupSummary(Notification n) {
+        return n.getGroup() != null && (n.flags & Notification.FLAG_AUTOGROUP_SUMMARY) != 0;
+    }
+
     private boolean isGroupSummary(Notification n) {
         return n.getGroup() != null && (n.flags & Notification.FLAG_GROUP_SUMMARY) != 0;
     }
@@ -330,8 +335,15 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         StatusBarNotification[] sbns = mNotificationManager.getActiveNotifications();
         for (StatusBarNotification sbn : sbns) {
-            if (isGroupSummary(sbn.getNotification())
-                    || autoGroupedIds.contains(sbn.getId())) {
+            final boolean expectAutogrouped;
+            if (android.service.notification.Flags.notificationForceGrouping()) {
+                expectAutogrouped = isAutogroupSummary(sbn.getNotification())
+                        || autoGroupedIds.contains(sbn.getId());
+            } else {
+                expectAutogrouped = isGroupSummary(sbn.getNotification())
+                        || autoGroupedIds.contains(sbn.getId());
+            }
+            if (expectAutogrouped) {
                 assertTrue(sbn.getKey() + " is unexpectedly not autogrouped",
                         sbn.getOverrideGroupKey() != null);
                 if (expectedGroupKey == null) {
@@ -1707,6 +1719,178 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(2);
     }
 
+    private void testAutogrouping_forceGrouping_common(boolean summaryOnly) throws Exception {
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
+        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+
+        String testGroup = "testGroup";
+        sendNotification(910, testGroup, summaryOnly, R.drawable.black, false, null);
+        sendNotification(920, testGroup, summaryOnly, R.drawable.blue, false, null);
+        sendNotification(930, testGroup, summaryOnly, R.drawable.yellow, false, null);
+        sendNotification(940, testGroup, summaryOnly, R.drawable.yellow, false, null);
+
+        List<Integer> postedIds = new ArrayList<>();
+        postedIds.add(910);
+        postedIds.add(920);
+        postedIds.add(930);
+        postedIds.add(940);
+
+        // Wait until all the notifications, including the autogroup, are posted and grouped.
+        postingLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        rerankLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        assertNotificationCount(5);
+        assertAllPostedNotificationsAutogrouped();
+
+        // Cancel all autogrouped notifications
+        CountDownLatch removedLatch;
+        for (int i = postedIds.size() - 1; i >= 0; i--) {
+            rerankLatch = mListener.setRankingUpdateCountDown(1);
+            removedLatch = mListener.setRemovedCountDown(1);
+            int id = postedIds.remove(i);
+            cancelAndPoll(id);
+            removedLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+            assertAllPostedNotificationsAutogrouped();
+        }
+        // Autogroup summary should be canceled
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
+        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
+    public void testAutogrouping_groupWithoutSummary() throws Exception {
+        // Post notifications with a group name BUT without a summary notification
+        testAutogrouping_forceGrouping_common(false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
+    public void testAutogrouping_summaryWithoutChildren() throws Exception {
+        // Post group summary notifications BUT no group children
+        testAutogrouping_forceGrouping_common(true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+            com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
+    public void testAutogrouping_sparseGroups() throws Exception {
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+
+        //Post multiple groups with a single summary & a single child notification: "sparse groups"
+        final int numGroups = 4;
+        final int startId = 900;
+        final int startSummaryId = 990;
+        List<Integer> postedIds = new ArrayList<>();
+        List<Integer> postedSummaryIds = new ArrayList<>();
+        for (int i = 0; i < numGroups; i++) {
+            CountDownLatch postingLatch = mListener.setPostedCountDown(2);
+            CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(2);
+            String testGroup = "testGroup " + i;
+            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null);
+            sendNotification(startSummaryId + i, testGroup, true, R.drawable.blue, false, null);
+            postedIds.add(startId + i);
+            postedSummaryIds.add(startSummaryId + i);
+            postingLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        }
+
+        CountDownLatch removedLatch = mListener.setRemovedCountDown(numGroups);
+        // Wait until all the notifications, including the autogroup, are posted and grouped.
+        CountDownLatch postingLatch = mListener.setPostedCountDown(1);
+        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(1);
+        postingLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        rerankLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        removedLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        // Only child notifications + autogroup summary are left
+        assertNotificationCount(numGroups + 1);
+        assertAllPostedNotificationsAutogrouped();
+        // Check that all posted summaries were removed
+        for (int summaryId: postedSummaryIds) {
+            assertThat(mNotificationHelper.isNotificationGone(summaryId, SEARCH_TYPE.APP))
+                    .isTrue();
+        }
+        assertThat(removedLatch.getCount()).isEqualTo(0);
+
+        // Cancel all autogrouped notifications
+        for (int i = postedIds.size() - 1; i >= 0; i--) {
+            rerankLatch = mListener.setRankingUpdateCountDown(1);
+            removedLatch = mListener.setRemovedCountDown(1);
+            int id = postedIds.remove(i);
+            cancelAndPoll(id);
+            removedLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+            assertAllPostedNotificationsAutogrouped();
+        }
+
+        // Autogroup summary should be canceled
+        removedLatch = mListener.setRemovedCountDown(1);
+        removedLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
+            com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
+    public void testAutogrouping_sparseGroups_appCancelsRemovedSummary() throws Exception {
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+
+        //Post multiple groups with a single summary & a single child notification: "sparse groups"
+        final int numGroups = 4;
+        final int startId = 900;
+        final int startSummaryId = 990;
+        List<Integer> postedSummaryIds = new ArrayList<>();
+        for (int i = 0; i < numGroups; i++) {
+            CountDownLatch postingLatch = mListener.setPostedCountDown(2);
+            CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(2);
+            String testGroup = "testGroup " + i;
+            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null);
+            sendNotification(startSummaryId + i, testGroup, true, R.drawable.blue, false, null);
+            postedSummaryIds.add(startSummaryId + i);
+            postingLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        }
+
+        CountDownLatch removedLatch = mListener.setRemovedCountDown(numGroups);
+        // Wait until all the notifications, including the autogroup, are posted and grouped.
+        CountDownLatch postingLatch = mListener.setPostedCountDown(1);
+        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(1);
+        postingLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        rerankLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        removedLatch.await(TIMEOUT_FORCE_REGROUP_MS, TimeUnit.MILLISECONDS);
+        // Only child notifications + autogroup summary are left
+        assertNotificationCount(numGroups + 1);
+        assertAllPostedNotificationsAutogrouped();
+        // Check that all posted summaries were removed
+        for (int summaryId: postedSummaryIds) {
+            assertThat(mNotificationHelper.isNotificationGone(summaryId, SEARCH_TYPE.APP))
+                    .isTrue();
+        }
+        assertThat(removedLatch.getCount()).isEqualTo(0);
+
+        // App cancels summary notifications that removed by autogrouping
+        //      => the original group's child notifications are canceled
+        for (int i = postedSummaryIds.size() - 1; i >= 0; i--) {
+            rerankLatch = mListener.setRankingUpdateCountDown(1);
+            removedLatch = mListener.setRemovedCountDown(1);
+            int id = postedSummaryIds.remove(i);
+            cancelAndPoll(id);
+            removedLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+            assertAllPostedNotificationsAutogrouped();
+        }
+
+        // Autogroup summary should be canceled
+        removedLatch = mListener.setRemovedCountDown(1);
+        removedLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(0);
+    }
+
     private void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(
                 final int numExpectedUpdates) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
@@ -1744,6 +1928,15 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             rerankLatch.await(400, TimeUnit.MILLISECONDS);
             assertNotificationCount(5);
             assertOnlySomeNotificationsAutogrouped(postedIds);
+        }
+
+        if (android.service.notification.Flags.notificationForceGrouping()) {
+            // post new group summary => avoid forced regrouping
+            int newGroupSummaryId = 999;
+            sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
+            postingLatch.await(400, TimeUnit.MILLISECONDS);
+            rerankLatch.await(400, TimeUnit.MILLISECONDS);
+            assertNotificationCount(6);
         }
 
         // send a new non-grouped notification. since the autogroup summary still exists,

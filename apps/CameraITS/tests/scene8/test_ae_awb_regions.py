@@ -41,7 +41,6 @@ _NUM_AE_AWB_REGIONS = 4
 _NUM_FRAMES = 4
 _PERCENTAGE = 100
 _REGION_DURATION_MS = 1800  # 1.8 seconds
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 
 
 def _convert_image_coords_to_sensor_coords(
@@ -282,11 +281,6 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           log_path)
 
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
-
       # Check skip conditions
       max_ae_regions = props['android.control.maxRegionsAe']
       max_awb_regions = props['android.control.maxRegionsAwb']
@@ -300,9 +294,10 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       logging.debug('maximum AWB regions: %d', max_awb_regions)
 
       # Find largest preview size to define capture size to find aruco markers
-      preview_size = (
-          video_processing_utils.get_largest_common_preview_video_size(
+      common_preview_size_info = (
+          video_processing_utils.get_preview_video_sizes_union(
               cam, self.camera_id))
+      preview_size = common_preview_size_info.largest_size
       width = int(preview_size.split('x')[0])
       height = int(preview_size.split('x')[1])
       req = capture_request_utils.auto_capture_request()

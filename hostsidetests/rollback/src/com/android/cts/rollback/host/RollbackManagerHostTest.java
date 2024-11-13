@@ -16,6 +16,8 @@
 
 package com.android.cts.rollback.host;
 
+import static android.crashrecovery.flags.Flags.FLAG_ENABLE_CRASHRECOVERY;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.hamcrest.CoreMatchers.endsWith;
@@ -23,15 +25,18 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assume.assumeThat;
 
 import android.cts.install.lib.host.InstallUtilsHost;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,6 +70,10 @@ public class RollbackManagerHostTest extends BaseHostJUnit4Test {
                 "com.android.cts.rollback.host.app2.HostTestHelper",
                 method)).isTrue();
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     /**
      * Uninstalls any version greater than 1 of shim apex and reboots the device if necessary
@@ -255,5 +264,27 @@ public class RollbackManagerHostTest extends BaseHostJUnit4Test {
         } finally {
             getDevice().executeShellCommand("setprop persist.pm.mock-upgrade false");
         }
+    }
+
+    /**
+     * Tests that verifies PackageRollbackInfo APIs for APK only rollback.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_CRASHRECOVERY)
+    public void testPackageRollbackInfoApisWithApkOnlyUpdates() throws Exception {
+        run("testApkOnlyStagedRollback_Phase1_Install");
+        getDevice().reboot();
+        run("testIsApexAndIsApkInApexFalseForApkRollback");
+    }
+
+    /**
+     * Tests that verifies PackageRollbackInfo APIs for APK-in-APEX rollback.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_CRASHRECOVERY)
+    public void testPackageRollbackInfoApisWithApkInApexUpdates() throws Exception {
+        run("testApexOnlySystemVersionStagedRollback_Phase1_Install");
+        getDevice().reboot();
+        run("testIsApexAndIsApkInApexForApkInApexRollback");
     }
 }

@@ -18,7 +18,7 @@ package {
 
 java_test_host {
     name: "CtsStatsdAtomHostTestCases",
-    team: "trendy_team_android_telemetry_infra",
+    team: "trendy_team_android_telemetry_client_infra",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/alarm/*.java",
@@ -38,6 +38,7 @@ java_test_host {
         "src/**/display/*.java",
         "src/**/gamemanager/*.java",
         "src/**/gnss/*.java",
+        "src/**/hardware/health/*.java",
         "src/**/jobscheduler/*.java",
         "src/**/integrity/*.java",
         "src/**/media/*.java",
@@ -82,17 +83,20 @@ java_test_host {
     static_libs: [
         "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
+        "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
+        "cts_adpf_atom_common-host2",
     ],
 
     device_common_data: [
         ":CtsStatsdAtomApp",
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",
+        ":CtsStatsdAdpfApp2",
         ":CtsExternalServiceService",
         ":CtsMediaProjectionTestCases",
         ":CtsSimpleApp",

@@ -283,7 +283,22 @@ public class ImeSettings {
             return this;
         }
 
+        /**
+         * Whether the IME should only be initialized and enabled, but not set as the current IME.
+         */
+        boolean mSuppressSetIme = false;
+
+        /**
+         * Sets whether the IME should only be initialized and enabled, but not set as
+         * the current IME.
+         */
+        public Builder setSuppressSetIme(boolean suppressSetIme) {
+            mSuppressSetIme = suppressSetIme;
+            return this;
+        }
+
         boolean mSuppressResetIme = false;
+
         /**
          * Specifies whether {@code adb shell ime reset} should be suppressed or not on
          * {@link MockImeSession#create(android.content.Context)} and

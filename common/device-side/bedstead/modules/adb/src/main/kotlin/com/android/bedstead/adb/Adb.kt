@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.adb;
+package com.android.bedstead.adb
 
+import android.util.Log
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.annotations.Experimental
+import com.android.bedstead.nene.exceptions.NeneException
 
 /** Helper methods related to Adb. */
 object Adb {
 
-    private const val ADB_WIFI_ENABLED = "adb_wifi_enabled";
+    private const val ADB_WIFI_ENABLED = "adb_wifi_enabled"
+    private const val LOG_TAG = "Adb"
 
     /**
      * True if the device can run commands as root.
@@ -36,8 +39,14 @@ object Adb {
     // TODO(scottjonathan): This API would be more useful if it checked if we actually had an
     // active adb connection over wifi rather than just if the setting is set.
     @Experimental
-    fun isEnabledOverWifi(): Boolean = TestApis.settings().global().getInt(ADB_WIFI_ENABLED) == 1
-
+    fun isEnabledOverWifi(): Boolean {
+        return try {
+            TestApis.settings().global().getInt(ADB_WIFI_ENABLED) == 1
+        } catch (exception: NeneException) {
+            Log.w(LOG_TAG,"ADB_WIFI_ENABLED setting not found on the device", exception)
+            false
+        }
+    }
 }
 
 fun TestApis.adb() = Adb

@@ -52,7 +52,6 @@ import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
 import android.app.appsearch.testutil.EnterpriseGlobalSearchSessionShimImpl;
-import android.app.appsearch.testutil.TestContactsIndexerConfig;
 import android.net.Uri;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -113,7 +112,7 @@ public class EnterpriseContactsDeviceTest {
                 searchContext).get();
         SetSchemaRequest setSchemaRequest = new SetSchemaRequest.Builder()
                 .addSchemas(ContactPoint.SCHEMA,
-                        Person.getSchema(new TestContactsIndexerConfig()))
+                        Person.getSchema())
                 .addRequiredPermissionsForSchemaTypeVisibility(Person.SCHEMA_TYPE, permissions)
                 .setForceOverride(true).build();
         db.setSchemaAsync(setSchemaRequest).get();

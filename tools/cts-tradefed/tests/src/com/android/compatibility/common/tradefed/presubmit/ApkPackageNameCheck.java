@@ -67,6 +67,7 @@ public class ApkPackageNameCheck {
         EXCEPTION_LIST.add("android.mediav2.cts");
         EXCEPTION_LIST.add("android.media.bettertogether.cts");
         EXCEPTION_LIST.add("android.media.codec.cts");
+        EXCEPTION_LIST.add("android.media.decoder.cts");
         EXCEPTION_LIST.add("android.media.drmframework.cts");
         EXCEPTION_LIST.add("android.media.encoder.cts");
         EXCEPTION_LIST.add("android.media.extractor.cts");

@@ -25,11 +25,16 @@ import static org.junit.Assert.fail;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -50,6 +55,11 @@ import java.util.regex.Pattern;
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuildTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
     static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
@@ -295,6 +305,16 @@ public class BuildTest {
                             + Build.VERSION.DEVICE_INITIAL_SDK_INT,
                     Build.VERSION.SDK_INT >= Build.VERSION.DEVICE_INITIAL_SDK_INT);
         }
+    }
+
+    /**
+     * Verify that the minor SDK version is always non-negative.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testSdkMinorInt() {
+        assertTrue("Minor SDK version " + Build.VERSION.SDK_MINOR_INT
+                + " is invalid; must not be negative", Build.VERSION.SDK_MINOR_INT >= 0);
     }
 
     /**

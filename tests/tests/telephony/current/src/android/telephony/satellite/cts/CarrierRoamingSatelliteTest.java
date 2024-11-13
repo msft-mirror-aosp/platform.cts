@@ -25,6 +25,7 @@ import static org.junit.Assume.assumeTrue;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.CarrierConfigManager;
 
 import com.android.internal.telephony.flags.Flags;
 
@@ -32,8 +33,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
@@ -99,6 +103,55 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
             assertTrue(listener.waitForModeChanged(1));
             assertFalse(listener.getNtnMode());
         } finally {
+            removeSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+            sTelephonyManager.unregisterTelephonyCallback(listener);
+            dropShellIdentity();
+        }
+    }
+
+    @Test
+    @Ignore
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testCarrierRoamingNtnEligible() throws Exception {
+        CarrierRoamingNtnModeListenerTest listener = new CarrierRoamingNtnModeListenerTest();
+        listener.clearModeChanges();
+
+        // Insert sim card
+        assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT));
+        TimeUnit.MILLISECONDS.sleep(TIMEOUT);
+        sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+        adoptShellIdentity();
+        boolean originalWifiState = sWifiManager.isWifiEnabled();
+
+        try {
+            // Get NTN eligibility immediately after registering
+            sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), listener);
+            assertTrue(listener.waitForNtnEligible(1));
+            assertFalse(listener.getNtnEligible());
+            listener.clearModeChanges();
+
+            // override satellite config
+            overrideSatelliteConfig(SLOT_ID_0,
+                    CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+
+            if (originalWifiState) {
+                sWifiManager.setWifiEnabled(false);
+                sWifiStateReceiver.setWifiExpectedState(false);
+                assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
+            }
+            listener.clearModeChanges();
+
+            // Network is lost
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+            assertFalse(listener.waitForNtnEligible(1));
+            listener.clearModeChanges();
+
+            // Callback is received after hysteresis timeout
+            assertTrue(listener.waitForNtnEligible(1));
+            assertTrue(listener.getNtnEligible());
+        } finally {
+            sWifiManager.setWifiEnabled(originalWifiState);
             removeSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
             sTelephonyManager.unregisterTelephonyCallback(listener);
             dropShellIdentity();

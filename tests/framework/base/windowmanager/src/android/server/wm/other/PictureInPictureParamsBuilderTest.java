@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.PictureInPictureParams;
 import android.app.PictureInPictureParams.Builder;
 import android.graphics.Rect;
+import android.platform.test.annotations.Presubmit;
 import android.util.Rational;
 
 import androidx.test.filters.SmallTest;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
  * Build/Install/Run:
  * atest CtsWindowManagerDeviceOther:PictureInPictureParamsBuilderTest
  */
+@Presubmit
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PictureInPictureParamsBuilderTest {

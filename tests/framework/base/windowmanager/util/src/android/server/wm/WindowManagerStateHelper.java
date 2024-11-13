@@ -112,12 +112,25 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitForAllStoppedActivities() {
-        if (!Condition.waitFor("all started activities have been removed", () -> {
+        Condition.waitFor("all activities to be stopped", () -> {
             computeState();
-            return !containsStartedActivities();
-        })) {
-            fail("All started activities have been removed");
-        }
+            for (Task rootTask : getRootTasks()) {
+                final Activity notStopped = rootTask.getActivity(a -> switch (a.state) {
+                    case STATE_RESUMED, STATE_STARTED, STATE_PAUSING, STATE_PAUSED, STATE_STOPPING:
+                        logAlways("Not stopped: " + a);
+                        yield true;
+                    case STATE_STOPPED, STATE_DESTROYED:
+                        yield false;
+                    default: // FINISHING, DESTROYING, INITIALIZING
+                        logE("Weird state: " + a);
+                        yield false;
+                });
+                if (notStopped != null) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     public void waitForAllNonHomeActivitiesToDestroyed() {
@@ -252,7 +265,8 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void waitAndAssertKeyguardGone() {
         assertTrue("Keyguard must be gone",
                 waitForWithAmState(
-                        state -> !state.getKeyguardControllerState().keyguardShowing,
+                        state -> !state.getKeyguardControllerState().keyguardShowing
+                                && !state.getKeyguardControllerState().mKeyguardGoingAway,
                         "Keyguard gone"));
     }
 
@@ -503,6 +517,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
+        waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
@@ -696,8 +711,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
         final String activityComponentName = getActivityName(activityName);
         final String message = activityComponentName + " to be focused";
         return Condition.waitFor(new Condition<>(message, () -> {
+            computeState();
             boolean focusedActivityMatching = activityComponentName.equals(getFocusedActivity());
+            if (!focusedActivityMatching) {
+                logAlways("Expecting top resumed activity " + activityComponentName + ", but is "
+                        + getFocusedActivity());
+            }
             boolean focusedAppMatching = activityComponentName.equals(getFocusedApp());
+            if (!focusedAppMatching) {
+                logAlways("Expecting focused app " + activityComponentName + ", but is "
+                        + getFocusedApp());
+            }
             return focusedActivityMatching && focusedAppMatching;
         }).setRetryIntervalMs(200).setRetryLimit(20));
     }
@@ -859,7 +883,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void assertKeyguardGone() {
-        assertFalse("Keyguard is not shown",
+        assertFalse("Keyguard must not be shown",
                 getKeyguardControllerState().keyguardShowing);
         assertFalse("Keyguard must not be going away",
                 getKeyguardControllerState().mKeyguardGoingAway);

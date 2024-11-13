@@ -16,7 +16,11 @@
 
 package com.android.bedstead.nene;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.getQuickSettingsSupported;
+import static org.junit.Assert.fail;
+
 import android.service.quicksettings.TileService;
+import android.util.Log;
 
 import com.google.common.truth.Truth;
 
@@ -210,6 +214,27 @@ public class TestApisTest {
     @Test
     public void quickSettings_isSupported_returns() {
         Truth.assertThat(TestApis.quickSettings().isSupported()).isEqualTo(
-                TileService.isQuickSettingsSupported());
+                getQuickSettingsSupported(new TileService()));
+    }
+
+    @Test
+    public void reflectTestApi_directCall_doesNotThrowNoSuchMethodException() {
+        assertSpecificExceptionIsNotThrown(NoSuchMethodException.class,
+                () -> TestApis.devicePolicy().getLastBugReportRequestTime());
+    }
+
+    private <T extends Exception> void assertSpecificExceptionIsNotThrown(Class<T> exceptionClass,
+            Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (Exception e) {
+            if (exceptionClass.isInstance(e)) {
+                fail(exceptionClass.getName() + " was thrown");
+            } else {
+                Log.i("TestApisReflectionTest", "Caught exception: " + e +
+                        ", but ignoring since it is not an instance of " +
+                        exceptionClass.getName());
+            }
+        }
     }
 }

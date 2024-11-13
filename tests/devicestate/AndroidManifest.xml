@@ -22,6 +22,7 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".DeviceStateTestActivity" android:exported="true"
+                  android:supportsPictureInPicture="true"
                   android:configChanges="screenSize|smallestScreenSize|orientation|screenLayout" />
     </application>
 

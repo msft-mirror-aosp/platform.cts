@@ -82,7 +82,7 @@ public class RemoteSubmixTest {
     private static final int DURATION_IN_SEC = 1;
     private static final int ENCODING_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final int CHANNEL_MASK = AudioFormat.CHANNEL_IN_MONO;
-    private static final int BUFFER_SIZE = SAMPLE_RATE * DURATION_IN_SEC
+    private static final int BUFFER_SIZE_IN_BYTES = SAMPLE_RATE * DURATION_IN_SEC
             * Integer.bitCount(CHANNEL_MASK)
             * Short.BYTES; // Size in bytes for 16bit mono at 44.1k/s
     private static final int RETRY_DISCONTINUITY = 10;
@@ -225,7 +225,7 @@ public class RemoteSubmixTest {
     }
 
     private boolean isRecordingBufferContinuous(ByteBuffer buffer) {
-        short[] recordArray = new short[BUFFER_SIZE / Short.BYTES];
+        short[] recordArray = new short[BUFFER_SIZE_IN_BYTES / Short.BYTES];
 
         for (int i = 0; i < recordArray.length; i++) {
             recordArray[i] = buffer.getShort();
@@ -271,7 +271,7 @@ public class RemoteSubmixTest {
                         .pressKeyCode(KeyEvent.KEYCODE_POWER);
             }
 
-            rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
+            rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE_IN_BYTES);
 
             audioRecord.stop();
             mediaPlayer.stop();

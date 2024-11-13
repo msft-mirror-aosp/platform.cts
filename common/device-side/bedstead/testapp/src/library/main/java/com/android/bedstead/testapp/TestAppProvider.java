@@ -16,6 +16,17 @@
 
 package com.android.bedstead.testapp;
 
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_ENCRYPTED_STORAGE;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_DISABLE_CAMERA;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_DISABLE_KEYGUARD_FEATURES;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_EXPIRE_PASSWORD;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_FORCE_LOCK;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_LIMIT_PASSWORD;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_RESET_PASSWORD;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_SETS_GLOBAL_PROXY;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_WATCH_LOGIN;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_WIPE_DATA;
+
 import android.content.Context;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -24,17 +35,36 @@ import android.util.Log;
 import com.android.bedstead.nene.TestApis;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.info.ActivityInfo;
+import com.android.queryable.info.MetadataInfo;
+import com.android.queryable.info.MetadataValue;
 import com.android.queryable.info.ReceiverInfo;
+import com.android.queryable.info.ResourceInfo;
 import com.android.queryable.info.ServiceInfo;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 /** Entry point to Test App. Used for querying for {@link TestApp} instances. */
 public final class TestAppProvider {
@@ -46,6 +76,18 @@ public final class TestAppProvider {
     private boolean mTestAppsInitialised = false;
     private final List<TestAppDetails> mTestApps = new ArrayList<>();
     private Set<TestAppDetails> mTestAppsSnapshot = null;
+
+    private static final Map<String, Integer> sPoliciesIntToXmlTagMap =
+            ImmutableMap.of("limit-password", USES_POLICY_LIMIT_PASSWORD,
+                    "watch-login", USES_POLICY_WATCH_LOGIN,
+                    "reset-password", USES_POLICY_RESET_PASSWORD,
+                    "force-lock", USES_POLICY_FORCE_LOCK,
+                    "wipe-data", USES_POLICY_WIPE_DATA,
+                    "set-global-proxy", USES_POLICY_SETS_GLOBAL_PROXY,
+                    "expire-password", USES_POLICY_EXPIRE_PASSWORD,
+                    "encrypted-storage", USES_ENCRYPTED_STORAGE,
+                    "disable-camera", USES_POLICY_DISABLE_CAMERA,
+                    "disable-keyguard-features", USES_POLICY_DISABLE_KEYGUARD_FEATURES);
 
     public TestAppProvider() {
         initTestApps();
@@ -105,10 +147,7 @@ public final class TestAppProvider {
         }
         mTestAppsInitialised = true;
 
-        int indexId = sContext.getResources().getIdentifier(
-                "raw/index", /* defType= */ null, sContext.getPackageName());
-
-        try (InputStream inputStream = sContext.getResources().openRawResource(indexId)) {
+        try (InputStream inputStream = sContext.getAssets().open("testapps/index.txt")) {
             TestappProtos.TestAppIndex index = TestappProtos.TestAppIndex.parseFrom(inputStream);
             for (int i = 0; i < index.getAppsCount(); i++) {
                 loadApk(index.getApps(i));
@@ -120,17 +159,34 @@ public final class TestAppProvider {
         }
     }
 
-    private void loadApk(TestappProtos.AndroidApp app) {
+    private void loadApk(TestappProtos.AndroidApp app) throws IOException {
         TestAppDetails details = new TestAppDetails();
         details.mApp = app;
 
-        details.mResourceIdentifier = sContext.getResources().getIdentifier(
-                "raw/" + getApkNameWithoutSuffix(app.getApkName()),
-                /* defType= */ null, sContext.getPackageName());
-
         for (int i = 0; i < app.getMetadataCount(); i++) {
             TestappProtos.Metadata metadataEntry = app.getMetadata(i);
-            details.mMetadata.putString(metadataEntry.getName(), metadataEntry.getValue());
+            MetadataInfo metadataInfo = MetadataInfo.builder().key(metadataEntry.getName())
+                    .value(MetadataValue.builder().value(metadataEntry.getValue()).build())
+                    .build();
+
+            if (!metadataEntry.getResource().isEmpty()) {
+                String resourceName = metadataEntry.getValue();
+                if (!resourceName.isEmpty()) {
+                    // TODO(b/273291850): enable parsing of non-xml resources as well.
+                    try (InputStream inputStream =
+                                 sContext.getAssets().open("resources/" + resourceName + ".xml")) {
+                        String content =
+                                new String(ByteStreams.toByteArray(inputStream), StandardCharsets.UTF_8);
+                        metadataInfo.setResource(ResourceInfo.builder().content(content).build());
+                        Set<Integer> policies = fetchPoliciesFromResource(content);
+                        if (policies != null) {
+                            details.mPolicies.addAll(policies);
+                        }
+                    }
+                }
+            }
+
+            details.mMetadata.add(metadataInfo);
         }
 
         for (int i = 0; i < app.getPermissionsCount(); i++) {
@@ -170,6 +226,8 @@ public final class TestAppProvider {
                     .serviceClass(serviceEntry.getName())
                     .intentFilters(intentFilterSetFromProtoList(
                             serviceEntry.getIntentFiltersList()))
+                    .metadata(metadataSetFromProtoList(
+                            serviceEntry.getMetadataList()))
                     .build());
         }
 
@@ -222,11 +280,41 @@ public final class TestAppProvider {
         return metadataSet;
     }
 
-    private String getApkNameWithoutSuffix(String apkName) {
-        return apkName.split("\\.", 2)[0];
-    }
-
     void markTestAppUsed(TestAppDetails testApp) {
         mTestApps.remove(testApp);
     }
+
+    private Set<Integer> fetchPoliciesFromResource(String resourceContent) {
+        Document document = convertStringToXml(resourceContent);
+        NodeList nodeList = document.getElementsByTagName("uses-policies");
+        if (nodeList == null || nodeList.item(0) == null) {
+            return null;
+        }
+        nodeList = document.getElementsByTagName("uses-policies").item(0)
+                .getChildNodes();
+
+        Set<Integer> policies = new HashSet<>();
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                Integer policyIntValue = sPoliciesIntToXmlTagMap.get(node.getNodeName());
+                if (policyIntValue == null) {
+                    continue;
+                }
+                policies.add(policyIntValue);
+            }
+        }
+        return policies;
+    }
+
+    private static Document convertStringToXml(String xmlString) {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        try {
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            return builder.parse(new InputSource(new StringReader(xmlString)));
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

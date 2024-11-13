@@ -170,6 +170,24 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    public void testIsAdasGnssLocationEnabled() throws Exception {
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
+
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(LOCATION_BYPASS);
+
+        boolean defaultValue = mManager.isAdasGnssLocationEnabled();
+        try {
+            mManager.setAdasGnssLocationEnabled(false);
+            assertThat(mManager.isAdasGnssLocationEnabled()).isFalse();
+            mManager.setAdasGnssLocationEnabled(true);
+            assertThat(mManager.isAdasGnssLocationEnabled()).isTrue();
+        } finally {
+            mManager.setAdasGnssLocationEnabled(defaultValue);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testIsProviderEnabled() {
         assertThat(mManager.isProviderEnabled(TEST_PROVIDER)).isTrue();
 

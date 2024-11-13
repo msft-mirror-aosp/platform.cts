@@ -115,10 +115,28 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
         }
     }
 
+    private static final String KEY_USER_REPORTED_REF_MIC = "user_reported_ref_mic";
+    private static final String KEY_USER_REPORTED_HEADSET_PORT = "user_reported_headset_port";
+    protected static final String KEY_LEVEL = "level";
+    protected static final String KEY_POINTS_IN_BOUND = "points_in_bound";
+    protected static final String KEY_POINTS_TOTAL = "points_total";
+    protected static final String KEY_MAGNITUDE_SPECTRUM_LOG = "magnitude_spectrum_log";
+    protected static final String KEY_BANDS = "bands";
+
+    protected static final String LOG_ERROR_STR = "Could not log metric.";
+
     private void recordRefMicStatus(boolean has) {
         getReportLog().addValue(
-                "User reported ref mic availability: ",
-                has ? 1.0 : 0,
+                KEY_USER_REPORTED_REF_MIC,
+                has,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+    }
+
+    protected void recordHeadsetPortFound(boolean found) {
+        getReportLog().addValue(
+                KEY_USER_REPORTED_HEADSET_PORT,
+                found,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
     }

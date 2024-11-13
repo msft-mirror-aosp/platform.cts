@@ -16,20 +16,21 @@
 
 package android.provider.cts;
 
-import com.google.android.mms.ContentType;
-import com.google.android.mms.pdu.CharacterSets;
-
 import android.app.UiAutomation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.BaseColumns;
 import android.provider.Telephony;
+import android.telephony.TelephonyManager;
 import android.util.Log;
+
+import com.google.android.mms.ContentType;
+import com.google.android.mms.pdu.CharacterSets;
 
 /**
  * CTS tests for backup and restore of blocked numbers using local transport.
@@ -38,6 +39,7 @@ import android.util.Log;
 // make cts
 // cts-tradefed
 // run cts -m CtsProviderTestCases --test android.provider.cts.SmsBackupRestoreTest
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider.")
 public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
     private static final String TAG = "SmsBackupRestoreTest";
     private static final String LOCAL_BACKUP_COMPONENT =
@@ -105,7 +107,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
 
     private boolean isFeatureSupported() throws Exception {
         return (ProviderTestUtils.hasBackupTransport(LOCAL_BACKUP_COMPONENT, mUiAutomation)
-                && mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+                && TelephonyManager.from(mContext).isDeviceSmsCapable());
     }
 
     private void clearMessages() {

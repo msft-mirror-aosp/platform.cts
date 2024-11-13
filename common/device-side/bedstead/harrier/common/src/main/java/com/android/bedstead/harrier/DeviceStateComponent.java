@@ -35,9 +35,4 @@ public interface DeviceStateComponent {
      * Prepare component for test
      */
     default void prepareTestState() {}
-
-    /**
-     * See {@link HarrierRule#releaseResources()}
-     */
-    default void releaseResources() {}
 }

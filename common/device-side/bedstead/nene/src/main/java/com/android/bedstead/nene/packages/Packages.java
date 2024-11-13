@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.packages;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.setInstallFlagAllowTest;
 import static android.Manifest.permission.INSTALL_PACKAGES;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
@@ -41,7 +42,6 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.util.Log;
 
@@ -410,7 +410,7 @@ public final class Packages {
                     PackageInstaller.SessionParams sessionParams =
                             new PackageInstaller.SessionParams(
                                     MODE_FULL_INSTALL);
-                    TestApisReflectionKt.setInstallFlagAllowTest(sessionParams);
+                    setInstallFlagAllowTest(sessionParams);
                     sessionId = packageInstaller.createSession(sessionParams);
                 }
 

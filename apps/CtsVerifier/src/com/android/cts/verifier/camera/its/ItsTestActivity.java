@@ -25,6 +25,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
@@ -54,7 +55,6 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
-import com.android.internal.util.ArrayUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -94,6 +94,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String TAG = "ItsTestActivity";
     private static final String EXTRA_CAMERA_ID = "camera.its.extra.CAMERA_ID";
     private static final String EXTRA_RESULTS = "camera.its.extra.RESULTS";
+    private static final String EXTRA_TABLET_NAME = "camera.its.extra.TABLET_NAME";
     private static final String EXTRA_VERSION = "camera.its.extra.VERSION";
     private static final String CURRENT_VERSION = "1.0";
     private static final String ACTION_ITS_RESULT =
@@ -160,6 +161,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
     private static final String PERF_METRICS_KEY_PREFIX_NIGHT = "night_extension";
     private static final String PERF_METRICS_KEY_PREFIX_LOW_LIGHT = "low_light_boost";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_LUMA = "noise_luma";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U = "noise_chroma_u";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V = "noise_chroma_v";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -229,6 +233,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene0",
             "scene1_1",
             "scene1_2",
+            "scene1_3",
             "scene2_a",
             "scene2_b",
             "scene2_c",
@@ -355,9 +360,11 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 String cameraId = intent.getStringExtra(EXTRA_CAMERA_ID);
                 String results = intent.getStringExtra(EXTRA_RESULTS);
+                String tabletName = intent.getStringExtra(EXTRA_TABLET_NAME);
                 if (cameraId == null || results == null) {
                     Log.e(TAG, "cameraId = " + ((cameraId == null) ? "null" : cameraId) +
-                            ", results = " + ((results == null) ? "null" : results));
+                            ", results = " + ((results == null) ? "null" : results) +
+                            ", tabletName = " + ((tabletName == null) ? "null" : tabletName));
                     return;
                 }
 
@@ -406,6 +413,7 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                     JSONObject camJsonObj = new JSONObject();
                     camJsonObj.put("camera_id", cameraId);
+                    camJsonObj.put("tablet_name", tabletName);
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);
@@ -833,6 +841,15 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V, floatValue);
         } else if (resultKey.contains(PERF_METRICS_KEY_RAW)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + PERF_METRICS_KEY_RAW + PERF_METRICS_KEY_RMS_DIFF, floatValue);
@@ -874,7 +891,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         @Override
         public final void onDeviceStateChanged(DeviceState state) {
             int stateIdentifier = state.getIdentifier();
-            boolean folded = ArrayUtils.contains(mFoldedDeviceStates, stateIdentifier);
+            boolean folded = CameraTestUtils.contains(mFoldedDeviceStates, stateIdentifier);
             Log.i(TAG, "Is device folded? " + mIsDeviceFolded);
             if (!mFirstFoldCheck || mIsDeviceFolded != folded) {
                 mIsDeviceFolded = folded;

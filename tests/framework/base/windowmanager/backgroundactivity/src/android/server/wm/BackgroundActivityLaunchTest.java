@@ -91,6 +91,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * This class covers all test cases for starting/blocking background activities.
@@ -1246,6 +1247,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         boolean buttonClicked = false;
         BySelector selector = By.clickable(true);
         List<UiObject2> objects = device.findObjects(selector);
+        assume().withMessage("No clickable UI elements").that(objects).isNotEmpty();
+        List<String> objectTexts = objects.stream()
+                .map(UiObject2::getText)
+                .collect(Collectors.toList());
         for (UiObject2 object : objects) {
             String objectText = object.getText();
             if (objectText == null) {
@@ -1257,7 +1262,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 break;
             }
         }
-        assertWithMessage("Create' button not found/clicked")
+        assertWithMessage("Create' button not found/clicked in %s", objectTexts)
+                .that(buttonClicked)
+                .isTrue();
+        assertWithMessage("%s is not gone", settingsPkgName)
                 .that(device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10) && buttonClicked)
                 .isTrue();
 

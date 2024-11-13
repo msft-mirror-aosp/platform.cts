@@ -126,6 +126,8 @@
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"/>
 
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests$ShowImeActivity"/>
+
         <activity android:name="android.server.wm.multidisplay.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 
@@ -447,7 +449,10 @@
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity android:name="android.server.wm.insets.ForceRelayoutTestBase$TestActivity"
-             android:exported="true"/>
+                  android:exported="true"
+                  android:showWhenLocked="true"
+                  android:turnScreenOn="true"
+                  android:keepScreenOn="true"/>
 
         <activity android:name="android.server.wm.animations.ActivityTransitionTests$LauncherActivity"
             android:theme="@style/Theme.TranslucentBars"
