@@ -175,6 +175,10 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_logsEvent() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
                 dpc(sDeviceState).componentName());
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
@@ -186,8 +190,15 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -195,6 +206,10 @@ public final class TimeTest {
     @CanSetPolicyTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_logsEvent() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
                 dpc(sDeviceState).componentName());
 
@@ -207,8 +222,15 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isFalse()).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -216,6 +238,10 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_true_autoTimeIsEnabled() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager().getAutoTimeEnabled(
                 dpc(sDeviceState).componentName());
 
@@ -226,8 +252,15 @@ public final class TimeTest {
             assertThat(TestApis.settings().global()
                     .getInt(Settings.Global.AUTO_TIME, 0)).isEqualTo(1);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -235,6 +268,10 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_false_autoTimeIsNotEnabled() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeEnabled(dpc(sDeviceState).componentName());
 
@@ -245,8 +282,15 @@ public final class TimeTest {
             assertThat(TestApis.settings().global().getInt(
                     Settings.Global.AUTO_TIME, 0)).isEqualTo(0);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -254,6 +298,10 @@ public final class TimeTest {
     @PolicyAppliesTest(policy = AutoTimeEnabled.class)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void getAutoTimeEnabled_returnsAutoTimeEnabled() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         boolean originalValue = dpc(sDeviceState).devicePolicyManager()
                 .getAutoTimeEnabled(dpc(sDeviceState).componentName());
 
@@ -264,8 +312,15 @@ public final class TimeTest {
             assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getAutoTimeEnabled(dpc(sDeviceState).componentName())).isEqualTo(true);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalValue);
+            }
         }
     }
 
@@ -273,6 +328,10 @@ public final class TimeTest {
     @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimeEnabled")
     public void setAutoTimeEnabled_notAllowed_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         assertThrows(SecurityException.class,
                 () -> dpc(sDeviceState).devicePolicyManager()
                         .setAutoTimeEnabled(dpc(sDeviceState).componentName(), true));
@@ -282,9 +341,114 @@ public final class TimeTest {
     @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
     @ApiTest(apis = "android.app.manager.DevicePolicyManager#getAutoTimeEnabled")
     public void getAutoTimeEnabled_notAllowed_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(
+                dpc(sDeviceState).componentName() != null || Flags.setAutoTimeEnabledCoexistence());
+
         assertThrows(SecurityException.class,
                 () -> dpc(sDeviceState).devicePolicyManager()
                         .getAutoTimeEnabled(dpc(sDeviceState).componentName()));
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimePolicy")
+    public void setAutoTimePolicy_enabled_autoTimeIsEnabled() {
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager().setAutoTimePolicy(
+                    DevicePolicyManager.AUTO_TIME_ENABLED);
+
+            assertThat(TestApis.settings().global()
+                    .getInt(Settings.Global.AUTO_TIME, 0)).isEqualTo(1);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimePolicy")
+    public void setAutoTimePolicy_disabled_autoTimeIsNotEnabled() {
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_DISABLED);
+
+            assertThat(TestApis.settings().global().getInt(
+                    Settings.Global.AUTO_TIME, 0)).isEqualTo(0);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimePolicy")
+    public void setAutoTimePolicy_notControlled_autoTimePolicyIsNotControlled() {
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getAutoTimePolicy())
+                    .isEqualTo(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @PolicyAppliesTest(policy = AutoTimeEnabled.class)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimePolicy")
+    public void getAutoTimePolicy_returnsAutoTimeEnabled() {
+        int originalSetting =
+                TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0);
+        try {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_ENABLED);
+
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getAutoTimePolicy())
+                    .isEqualTo(DevicePolicyManager.AUTO_TIME_ENABLED);
+        } finally {
+            dpc(sDeviceState).devicePolicyManager()
+                    .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+            TestApis.settings().global().putInt(Settings.Global.AUTO_TIME, originalSetting);
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#setAutoTimePolicy")
+    public void setAutoTimePolicy_notAllowed_throwsException() {
+        assertThrows(SecurityException.class,
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_ENABLED));
+    }
+
+    @Postsubmit(reason = "New test")
+    @RequiresFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @CannotSetPolicyTest(policy = AutoTimeEnabled.class, includeNonDeviceAdminStates = false)
+    @ApiTest(apis = "android.app.manager.DevicePolicyManager#getAutoTimePolicy")
+    public void getAutoTimePolicy_notAllowed_throwsException() {
+        assertThrows(SecurityException.class,
+                () -> dpc(sDeviceState).devicePolicyManager().getAutoTimePolicy());
     }
 
     @Postsubmit(reason = "New test")
@@ -514,8 +678,15 @@ public final class TimeTest {
 
             assertThat(differenceSeconds).isLessThan(120); // Within 2 minutes
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalAutoTimeEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            }
         }
     }
 
@@ -535,8 +706,15 @@ public final class TimeTest {
             assertThat(returnValue).isTrue();
             assertThat(System.currentTimeMillis()).isNotEqualTo(MILLIS_SINCE_EPOCH);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalAutoTimeEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            }
         }
     }
 
@@ -556,8 +734,15 @@ public final class TimeTest {
             assertThat(returnValue).isFalse();
             assertThat(System.currentTimeMillis()).isNotEqualTo(MILLIS_SINCE_EPOCH);
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalAutoTimeEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            }
         }
     }
 
@@ -588,8 +773,15 @@ public final class TimeTest {
                     .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
             ).wasLogged();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
-                    dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            if (Flags.setAutoTimeEnabledCoexistence()) {
+                dpc(sDeviceState).devicePolicyManager()
+                        .setAutoTimePolicy(DevicePolicyManager.AUTO_TIME_NOT_CONTROLLED_BY_POLICY);
+                TestApis.settings().global().putInt(
+                        Settings.Global.AUTO_TIME, originalAutoTimeEnabledValue ? 1 : 0);
+            } else {
+                dpc(sDeviceState).devicePolicyManager().setAutoTimeEnabled(
+                        dpc(sDeviceState).componentName(), originalAutoTimeEnabledValue);
+            }
         }
     }
 
