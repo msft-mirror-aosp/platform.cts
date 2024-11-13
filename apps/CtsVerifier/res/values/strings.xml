@@ -6214,19 +6214,40 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
     <string name="audio_disconnect_info">
         Tests that audio streams generate the correct stream disconnection events. Note that this
-        test is only required for devices that support wired headset.
+        test is only required for devices that support a wired headset.
         \n\nTest Requirements
         \nA wired (analog or USB) headset peripheral, or analog loopback adapter.
         \n\nTest Process:
-        \n1. Press the \"Start\" button.
-        \n2. For each tested audio route:
+        \n1. If a headset is currently connected, disconnect it before starting the test.
+        \n2. Press the \"Start\" button.
+        \n3. For each tested audio route:
         \n a. Connect the headset peripheral when instructed.
         \n b. Disconnect the headset peripheral when instructed.
         \n\nTest Criteria:
         \nThe test passes if all routes demonstrate the correct stream disconnection behavior.
     </string>
+    <string name="audio_disconnect_removebeforestart">If a headset is currently connected,
+        unplug it before beginning the test.
+    </string>
     <string name="audio_disconnect_wired_prompt">Does this device support an analog or USB audio peripheral?</string>
     <string name="audio_disconnect_port_detected">"Wired device support detected"</string>
+
+    <string name="audio_disconnect_insert_fail_prose">Timeout waiting for headset insert.
+        Either the INSERT event was never received or the test operator waited too long to plug in the headset.</string>
+    <string name="audio_stream_disconnect_insert_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_stream_disconnect_code_insert_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_disconnect_remove_fail_prose">Timeout waiting for headset removal.
+        Either the REMOVE event was never received or the test operator waited too long to unplug the headset.</string>
+    <string name="audio_stream_disconnect_remove_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after REMOVE event received.
+    </string>
+    <string name="audio_stream_disconnect_code_remove_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after REMOVAL event received.
+    </string>
 
     <!--Audio Frequency Global strings -->
     <string name="af_button_play">Play</string>
