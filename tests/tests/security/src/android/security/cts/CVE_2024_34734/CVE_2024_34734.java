@@ -108,7 +108,7 @@ public class CVE_2024_34734 extends StsExtraBusinessLogicTestCase {
                         .isTrue();
 
                 // Launch PocBackgroundService and check for any exceptions
-                context.startForegroundService(new Intent(context, PocBackgroundService.class));
+                context.startService(new Intent(context, PocBackgroundService.class));
                 assume().that(PocBackgroundServiceException.get(mTimeout, TimeUnit.MILLISECONDS))
                         .isNull();
 
