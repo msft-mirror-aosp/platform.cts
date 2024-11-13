@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.app.stubs;
 
-import android.mediav2.common.cts.WorkDirBase;
+import android.app.Activity;
 
-/**
- * Return the primary shared/external storage directory used by the tests
- * Note: Path returned includes File.separator() at the end.
- */
-class WorkDir extends WorkDirBase {
-    static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaV2TestCases-5.1");
+public class MockTopResumedReporterActivity extends Activity {
+    public boolean isTopResumed;
+
+    @Override
+    public void onTopResumedActivityChanged(boolean isTopResumedActivity) {
+        isTopResumed = isTopResumedActivity;
     }
 }
