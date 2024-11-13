@@ -578,6 +578,10 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("INFO_MODEL_TRIM");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS))
                 .isEqualTo("INFO_VEHICLE_SIZE_CLASS");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE))
+                .isEqualTo("TURN_SIGNAL_LIGHT_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.TURN_SIGNAL_SWITCH))
+                .isEqualTo("TURN_SIGNAL_SWITCH");
     }
 
     /**
