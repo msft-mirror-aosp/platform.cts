@@ -44,6 +44,7 @@ import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
 import android.os.vibrator.Flags;
+import android.os.vibrator.VibratorEnvelopeEffectInfo;
 import android.os.vibrator.VibratorFrequencyProfile;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -728,19 +729,11 @@ public class VibratorTest {
     public void testVibratorMaxEnvelopeEffectDurationMillis() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
-        int expectedMaxDurationMS = mVibrator.getMaxEnvelopeEffectSize()
-                * mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        VibratorEnvelopeEffectInfo envelopeEffectInfo = mVibrator.getEnvelopeEffectInfo();
+        long durationMs = envelopeEffectInfo.getMaxDurationMillis();
+        long expectedMaxDurationMS = envelopeEffectInfo.getMaxSize()
+                * envelopeEffectInfo.getMaxControlPointDurationMillis();
         assertThat(durationMs).isEqualTo(expectedMaxDurationMS);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorMaxEnvelopeEffectDurationMillisUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
-
-        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
     }
 
     @Test
@@ -748,17 +741,8 @@ public class VibratorTest {
     public void testVibratorGetMaxEnvelopeEffectSize() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
+        int controlPointsMax = mVibrator.getEnvelopeEffectInfo().getMaxSize();
         assertThat(controlPointsMax).isAtLeast(ENVELOPE_EFFECT_MIN_REQUIRED_SIZE);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMaxEnvelopeEffectSizeUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
-
-        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
-        assertThat(controlPointsMax).isEqualTo(0);
     }
 
     @Test
@@ -766,18 +750,9 @@ public class VibratorTest {
     public void testVibratorGetMinEnvelopeEffectControlPointDurationMillis() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
+        long durationMs = mVibrator.getEnvelopeEffectInfo().getMinControlPointDurationMillis();
         assertThat(durationMs).isGreaterThan(0);
         assertThat(durationMs).isAtMost(ENVELOPE_EFFECT_MAX_ALLOWED_CONTROL_POINT_MIN_DURATION_MS);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMinEnvelopeEffectControlPointDurationMillisUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
-
-        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
     }
 
     @Test
@@ -785,18 +760,29 @@ public class VibratorTest {
     public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillis() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        long durationMs = mVibrator.getEnvelopeEffectInfo().getMaxControlPointDurationMillis();
         assertThat(durationMs).isAtLeast(
                 ENVELOPE_EFFECT_MIN_REQUIRED_CONTROL_POINT_MAX_DURATION_MS);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillisUnsupported() {
+    public void testVibratorGetEnvelopeEffectInfoUnsupported() {
         assumeFalse(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
+        int controlPointsMax = mVibrator.getEnvelopeEffectInfo().getMaxSize();
+        assertThat(controlPointsMax).isEqualTo(0);
+
+        long maxDurationMs = mVibrator.getEnvelopeEffectInfo().getMaxDurationMillis();
+        assertThat(maxDurationMs).isEqualTo(0L);
+
+        long minControlPointDurationMs =
+                mVibrator.getEnvelopeEffectInfo().getMinControlPointDurationMillis();
+        assertThat(minControlPointDurationMs).isEqualTo(0L);
+
+        long maxControlPointDurationMs =
+                mVibrator.getEnvelopeEffectInfo().getMaxControlPointDurationMillis();
+        assertThat(maxControlPointDurationMs).isEqualTo(0L);
     }
 
     private boolean isSystemVibrator() {
