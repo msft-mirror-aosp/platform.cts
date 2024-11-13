@@ -909,6 +909,7 @@ public class AugmentedLoginActivityTest
 
     @Presubmit
     @Test
+    @AppModeFull(reason = "testAutoFill_mainServiceReturnedNull_augmentedAutofillOneField enough")
     public void testAugmentedAutoFill_hasPreviousRequestViewNotFocused_requestAutofill()
             throws Exception {
         // Set services

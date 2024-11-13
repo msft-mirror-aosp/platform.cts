@@ -423,23 +423,6 @@ def int_to_rational(i):
     return {'numerator': i, 'denominator': 1}
 
 
-def get_largest_yuv_format(props, match_ar=None):
-  """Return a capture request and format spec for the largest yuv size.
-
-  Args:
-    props: object returned from camera_properties_utils.get_camera_properties().
-    match_ar: (Optional) a (w, h) tuple. Aspect ratio to match during search.
-
-  Returns:
-    fmt:   an output format specification for the largest possible yuv format
-           for this device.
-  """
-  size = get_available_output_sizes('yuv', props, match_ar_size=match_ar)[0]
-  fmt = {'format': 'yuv', 'width': size[0], 'height': size[1]}
-
-  return fmt
-
-
 def get_smallest_yuv_format(props, match_ar=None):
   """Return a capture request and format spec for the smallest yuv size.
 
@@ -484,19 +467,21 @@ def get_near_vga_yuv_format(props, match_ar=None):
   return fmt
 
 
-def get_largest_jpeg_format(props, match_ar=None):
-  """Return a capture request and format spec for the largest jpeg size.
+def get_largest_format(match_fmt, props, match_ar=None):
+  """Return a capture request and format spec for the largest match_fmt size.
 
   Args:
+    match_fmt: str; 'yuv', 'jpeg', or 'raw'.
     props: object returned from camera_properties_utils.get_camera_properties().
     match_ar: (Optional) a (w, h) tuple. Aspect ratio to match during search.
 
   Returns:
-    fmt:   an output format specification for the largest possible jpeg format
-           for this device.
+    fmt:   an output format specification for the largest possible format
+           for this device of the type match_fmt.
   """
-  size = get_available_output_sizes('jpeg', props, match_ar_size=match_ar)[0]
-  fmt = {'format': 'jpeg', 'width': size[0], 'height': size[1]}
+  size = get_available_output_sizes(match_fmt, props, match_ar_size=match_ar)[0]
+  fmt = {'format': match_fmt, 'width': size[0], 'height': size[1]}
+  logging.debug('format selected: %s', fmt)
 
   return fmt
 

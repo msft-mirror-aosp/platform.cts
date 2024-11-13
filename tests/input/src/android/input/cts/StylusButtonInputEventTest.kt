@@ -29,7 +29,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
-import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.VirtualDisplayActivityScenario
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -74,7 +74,7 @@ class StylusButtonInputEventTest {
     @get:Rule val debugInputRule = DebugInputRule()
     @get:Rule val testName = TestName()
     @get:Rule val virtualDisplayRule =
-        VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+        VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var statusBarManager: StatusBarManager
     private lateinit var initialStylusButtonsEnabledSetting: String
@@ -153,7 +153,7 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendBtnTouch(true)
                 uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
-                uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
                 assertNextMotionEventEquals(
@@ -208,7 +208,7 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendBtnTouch(true)
                 uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
-                uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
                 assertNextMotionEventEquals(

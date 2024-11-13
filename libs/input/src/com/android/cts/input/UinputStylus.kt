@@ -76,4 +76,5 @@ class UinputStylus (instrumentation: Instrumentation, display: Display) : Uinput
     display,
     createStylusRegisterCommand(display),
     SOURCE_STYLUS or SOURCE_TOUCHSCREEN,
+    MT_TOOL_PEN,
 )

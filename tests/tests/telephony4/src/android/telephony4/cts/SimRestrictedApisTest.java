@@ -57,6 +57,8 @@ public class SimRestrictedApisTest {
      */
     @Test
     public void testInjectSmsPdu() {
+        assumeTrue(getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_MESSAGING));
         try {
             if (isSimCardPresent()) {
                 SmsManager.getDefault().injectSmsPdu(TEST_PDU, "3gpp", null);

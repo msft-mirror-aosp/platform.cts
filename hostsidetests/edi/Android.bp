@@ -24,6 +24,7 @@ java_test_host {
         "ats",
         "cts",
         "gts",
+        "gxrts",
         "general-tests",
         "tvts",
     ],

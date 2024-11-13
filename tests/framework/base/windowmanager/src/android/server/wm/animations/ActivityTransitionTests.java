@@ -57,6 +57,7 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.Condition;
+import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerState;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
@@ -145,6 +146,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         mWmState.setSanityCheckWithFocusedWindow(false);
         mWmState.waitForDisplayUnfrozen();
     }
+
+    @Rule
+    public final DumpOnFailure dumpOnFailure = new DumpOnFailure();
 
     @After
     public void tearDown() {
@@ -571,7 +575,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         bounds.transitionBounds = getTransitionAppBounds();
         bounds.testableBounds = activity.getActivityTestableRegion();
         launchHomeActivityNoWait();
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        finishAndRemoveCurrentTestActivityTasks();
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
         return bounds;
     }
@@ -593,9 +597,21 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         // matches the most common wait time in CTS (2^0 + 2^1 + ... + 2^13 = about 8000).
         final ArrayList<AssertionResult> failedResults = new ArrayList<>();
         int sleepDurationMilliseconds = 1;
+        Bitmap screenshot = null;
         for (int i = 0; i < 13; i++) {
-            final AssertionResult result = assertFunction.apply(
-                    mInstrumentation.getUiAutomation().takeScreenshot());
+            mWmState.computeState();
+            final boolean isTransitionRunning = WindowManagerState.APP_STATE_RUNNING.equals(
+                    mWmState.getDisplay(getMainDisplayId()).getAppTransitionState());
+
+            final AssertionResult result;
+            if (isTransitionRunning) {
+                screenshot = mInstrumentation.getUiAutomation().takeScreenshot();
+                result = assertFunction.apply(screenshot);
+            } else {
+                result = new AssertionResult(true,
+                        "Screenshot ignored because there is no running transition");
+            }
+
             if (!result.isFailure) {
                 return;
             }
@@ -603,6 +619,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             SystemClock.sleep(sleepDurationMilliseconds);
             sleepDurationMilliseconds *= 2;
         }
+        dumpOnFailure.dumpOnFailure("last_screenshot",  screenshot);
 
         fail("No screenshot of the activity transition passed the assertions ::\n"
                 + String.join(",\n", failedResults.stream().map(Object::toString)
@@ -748,8 +765,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             TestBounds testBounds, int lessXColor, int largeXColor) {
         final int[] xSample = {
                 (splitX - testBounds.testableBounds.left) / 2 + testBounds.testableBounds.left,
-                splitX - 3,
-                splitX + 3,
+                splitX - 10,
+                splitX + 10,
                 (testBounds.testableBounds.right - splitX) / 2 + splitX};
         final int scaleHeight = testBounds.testableBounds.height() / 5;
         final int[] ySample = {

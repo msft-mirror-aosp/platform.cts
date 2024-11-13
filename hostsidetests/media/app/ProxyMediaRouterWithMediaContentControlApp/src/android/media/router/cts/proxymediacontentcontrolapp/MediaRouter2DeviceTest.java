@@ -54,8 +54,8 @@ import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

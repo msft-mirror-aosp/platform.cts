@@ -19,10 +19,6 @@ package android.view.inputmethod.cts.util;
 import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.webkit.WebView;
@@ -31,6 +27,10 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.Timeout;
 

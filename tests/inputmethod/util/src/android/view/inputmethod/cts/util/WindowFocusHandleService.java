@@ -16,7 +16,6 @@
 
 package android.view.inputmethod.cts.util;
 
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
@@ -48,6 +47,8 @@ import androidx.annotation.MainThread;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
+import com.android.compatibility.common.util.UserHelper;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +66,8 @@ public class WindowFocusHandleService extends Service {
     private Handler mThreadHandler;
     private CountDownLatch mUiThreadSignal;
 
+    private final UserHelper mUserHelper = new UserHelper();
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -72,7 +75,8 @@ public class WindowFocusHandleService extends Service {
         final HandlerThread localThread = new HandlerThread("TestThreadHandler");
         localThread.start();
         mThreadHandler = new Handler(localThread.getLooper());
-        mThreadHandler.post(() -> mPopupTextView = createPopupTextView(new Point(150, 150)));
+        mThreadHandler.post(() -> mPopupTextView =
+                createPopupTextView(new Point(150, 150), mUserHelper.getMainDisplayId()));
     }
 
     public @Nullable static WindowFocusHandleService getInstance() {
@@ -92,8 +96,8 @@ public class WindowFocusHandleService extends Service {
     }
 
     @UiThread
-    private EditText createPopupTextView(Point pos) {
-        final Context windowContext = createWindowContext(DEFAULT_DISPLAY);
+    private EditText createPopupTextView(Point pos, int displayId) {
+        final Context windowContext = createWindowContext(displayId);
         final WindowManager wm = windowContext.getSystemService(WindowManager.class);
         final EditText editText = new EditText(windowContext) {
             @Override

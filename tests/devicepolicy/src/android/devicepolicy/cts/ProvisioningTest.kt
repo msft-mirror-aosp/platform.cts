@@ -18,7 +18,6 @@ package android.devicepolicy.cts
 import android.Manifest
 import android.accounts.Account
 import android.app.admin.*
-import android.app.admin.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
@@ -60,6 +59,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
+import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.packages.CommonPackages
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
@@ -179,9 +179,8 @@ class ProvisioningTest {
         UserReference.of(
             localDevicePolicyManager.createAndProvisionManagedProfile(MANAGED_PROFILE_PARAMS)
         ).use { profile ->
-            assertThat(TestApis.devicePolicy().getActiveAdmins(profile)).hasSize(1)
-            assertThat(TestApis.devicePolicy().getActiveAdmins(profile).iterator().next())
-                .isEqualTo(DEVICE_ADMIN_COMPONENT)
+            assertThat(TestApis.devicePolicy().getActiveAdmins(profile))
+                .containsExactly(DeviceAdmin.of(DEVICE_ADMIN_COMPONENT_NAME))
         }
     }
 
@@ -418,7 +417,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDeviceOwner() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
@@ -451,7 +449,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDoInMainUser() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
@@ -1549,10 +1546,7 @@ class ProvisioningTest {
         private const val PROFILE_OWNER_NAME = "testDeviceAdmin"
         private const val DEVICE_OWNER_NAME = "testDeviceAdmin"
         private val DEVICE_ADMIN_COMPONENT_NAME = DeviceAdminApp.deviceAdminComponentName(context)
-        private val DEVICE_ADMIN_COMPONENT = TestApis.packages().component(
-            DEVICE_ADMIN_COMPONENT_NAME
-        )
-
+        
         private val SINGLE_USER_DO_DEVICE_ADMIN = deviceState.testApps().query()
                 .allowInternalBedsteadTestApps().whereIsHeadlessDOSingleUser().isTrue()
                 .get()

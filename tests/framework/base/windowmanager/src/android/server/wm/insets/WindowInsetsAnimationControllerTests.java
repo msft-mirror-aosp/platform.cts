@@ -71,7 +71,6 @@ import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 import com.android.cts.mockime.ImeEventStream;
@@ -385,7 +384,6 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
     }
 
     @Presubmit
-    @FlakyTest(bugId = 339380439)
     @Test
     public void testControl_transition_show() throws Throwable {
         retryIfCancelled(
@@ -518,7 +516,6 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
     }
 
     @Presubmit
-    @FlakyTest(bugId = 339380439)
     @Test
     public void testImeControl_isntInterruptedByStartingInput() throws Throwable {
         if (mType != ime()) {

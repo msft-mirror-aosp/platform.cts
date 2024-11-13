@@ -47,6 +47,7 @@ java_library_host {
         "RemoteFrameworkClasses_Annotations",
         "ConnectedAppsSDK_Annotations",
         "TestApisReflection_Annotations",
+        "bedstead-testapis-parser",
     ],
     java_resource_dirs: [
         "java/",

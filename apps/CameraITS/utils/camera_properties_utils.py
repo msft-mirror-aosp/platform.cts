@@ -47,6 +47,22 @@ STABILIZATION_MODE_OFF = 0
 STABILIZATION_MODE_PREVIEW = 2
 LENS_OPTICAL_STABILIZATION_MODE_ON = 1
 
+_M_TO_CM = 100
+
+
+def log_minimum_focus_distance(props):
+  """Log the minimum focus distance for debugging AF issues.
+
+  Args:
+    props: Camera properties object.
+  """
+  min_fd_diopters = props['android.lens.info.minimumFocusDistance']
+  if min_fd_diopters:  # not equal to 0
+    min_fd_cm = 1 / min_fd_diopters * _M_TO_CM
+    logging.debug('Minimum focus distance (cm): %.2f', min_fd_cm)
+  else:
+    logging.debug('Fixed focus camera')
+
 
 def check_front_or_rear_camera(props):
   """Raises an error if not LENS_FACING FRONT or BACK.

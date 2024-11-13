@@ -237,6 +237,19 @@ public class AudioTrackOffloadTest {
         };
     }
 
+    @Test
+    public void testPcmAudioTrackOffload() throws Exception {
+        final int sampleRate = 44100;
+        final AudioFormat format = new AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(sampleRate)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                .build();
+        // Average kbps for 44.1kHz 16b stereo = 1378 kbps
+        final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
+        testAudioTrackOffload(R.raw.sinesweepraw,  // 6 seconds stereo
+                bitRateInKbps, format);
+    }
 
     @Test
     public void testOpusAudioTrackOffload() throws Exception {
@@ -278,6 +291,10 @@ public class AudioTrackOffloadTest {
         }
 
         int bufferSizeInBytes = bitRateInkbps * 1000 * BUFFER_SIZE_SEC / 8;
+
+        // ensure always a multiple of the framesize for linear PCM
+        bufferSizeInBytes -= bufferSizeInBytes % audioFormat.getFrameSizeInBytes();
+
         // format is offloadable, test playback head is progressing
         AudioTrack track = new AudioTrack.Builder()
                 .setAudioAttributes(DEFAULT_ATTR)
@@ -314,6 +331,7 @@ public class AudioTrackOffloadTest {
             track = getOffloadAudioTrack(
                     bitRateInkbps, audioFormat, /* testName= */"testAudioTrackOffload");
             if (track == null) {
+                Log.d(TAG, "testAudioTrackOffload cannot create AudioTrack");
                 return;
             }
 
@@ -325,6 +343,7 @@ public class AudioTrackOffloadTest {
             track.registerStreamEventCallback(mExec, mCallback);
 
             int bufferSizeInBytes3sec = bitRateInkbps * 1000 * BUFFER_SIZE_SEC / 8;
+            bufferSizeInBytes3sec -= bufferSizeInBytes3sec % audioFormat.getFrameSizeInBytes();
             final byte[] data = new byte[bufferSizeInBytes3sec];
             final int read = audioInputStream.read(data);
             assertWithMessage("Could not read enough audio from the resource file")

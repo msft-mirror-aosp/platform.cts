@@ -26,6 +26,18 @@
               android:layout_height="wrap_content">
     </ListView>
 
+    <TextView android:id="@+id/labelOne"
+        android:text="@string/text_input_blah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    </TextView>
+
+    <TextView android:id="@+id/labelTwo"
+        android:text="@string/text_input_blah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    </TextView>
+
     <EditText android:id="@+id/edittext"
               android:text="@string/text_input_blah"
               android:layout_height="wrap_content"
@@ -84,21 +96,21 @@
         </Button>
     </LinearLayout>
 
-    <LinearLayout android:layout_width="fill_parent"
-                  android:layout_height="wrap_content"
-                  android:gravity="center">
-        <TextView android:id="@+id/delegateText"
-                  android:text="@string/text_input_blah"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content">
-        </TextView>
-        <Button android:id="@+id/buttonDelegated"
+    <LinearLayout  android:id="@+id/buttonTargetGrandparent"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+        <LinearLayout  android:id="@+id/buttonTargetParent"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:gravity="center">
+            <Button android:id="@+id/buttonTarget"
                 android:text="@string/button_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-        </Button>
+            </Button>
+        </LinearLayout>
     </LinearLayout>
-
 
     <LinearLayout android:id="@+id/autoImportantLinearLayout"
                   android:layout_width="fill_parent"

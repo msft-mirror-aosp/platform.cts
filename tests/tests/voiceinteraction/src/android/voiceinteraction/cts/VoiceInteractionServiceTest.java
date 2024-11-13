@@ -199,8 +199,6 @@ public class VoiceInteractionServiceTest {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
-    @RequiresFlagsEnabled({
-            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
@@ -217,8 +215,6 @@ public class VoiceInteractionServiceTest {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
-    @RequiresFlagsEnabled({
-            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser()

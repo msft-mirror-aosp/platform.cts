@@ -13,6 +13,7 @@
 # limitations under the License.
 """Verify preview is stable during phone movement."""
 
+import concurrent.futures
 import logging
 import os
 
@@ -66,6 +67,16 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
   """
 
   def test_preview_stabilization(self):
+    # Use a pool of threads to execute asynchronously
+    with concurrent.futures.ThreadPoolExecutor() as analysis_executor:
+      self._test_preview_stabilization(analysis_executor)
+
+  def _test_preview_stabilization(self, executor):
+    """Tests stabilization using an injected ThreadPoolExecutor for analysis.
+
+    Args:
+      executor: a ThreadPoolExecutor to analyze recordings asynchronously.
+    """
     rot_rig = {}
     log_path = self.log_path
 
@@ -152,14 +163,19 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
           # Verify stabilization was applied to preview stream
           stabilization_result[preview_size] = (
-              preview_processing_utils.verify_preview_stabilization(
+              executor.submit(
+                  preview_processing_utils.verify_preview_stabilization,
                   recording_obj, gyro_events, _NAME, log_path, facing,
-                  zoom_ratio)
+                  zoom_ratio
+              )
           )
 
       # Assert PASS/FAIL criteria
       test_failures = []
-      for _, result_per_size in stabilization_result.items():
+      for preview_size, result_per_size_future in stabilization_result.items():
+        result_per_size = result_per_size_future.result()
+        logging.debug('Stabilization result for %s: %s',
+                      preview_size, result_per_size)
         if result_per_size['failure'] is not None:
           test_failures.append(result_per_size['failure'])
 

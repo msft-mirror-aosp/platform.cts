@@ -29,9 +29,12 @@ import android.content.res.Resources;
 import android.content.res.ResourcesImpl;
 import android.content.res.ResourcesKey;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 
@@ -49,7 +52,13 @@ import java.util.ArrayList;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+// This test requires installing separate APKs and call PackageManager.getApplicationInfo(),
+// which is not supported on Ravenwood yet.
+@DisabledOnRavenwood(blockedBy = PackageManager.class)
 public class Resources_RegisterResourcePathsTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private static final String APP_ONE_RES_DIR = "app_one.apk";
     private static final String TEST_LIB = "android.content.cts";
 
@@ -75,7 +84,9 @@ public class Resources_RegisterResourcePathsTest {
     }
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     @SmallTest

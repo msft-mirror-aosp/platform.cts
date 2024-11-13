@@ -76,7 +76,7 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
                 // fall through
-            case Features.LIST_FILTER_TOKENIZE_FUNCTION:
+            case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
                 // fall through
             case Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS:
                 return true;

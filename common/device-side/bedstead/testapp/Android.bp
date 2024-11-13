@@ -62,7 +62,10 @@ android_library {
     ],
     manifest: "src/library/main/AndroidManifest.xml",
     min_sdk_version: "29",
-    resource_zips: [":TestApp_Apps"],
+    assets: [
+        ":TestApp_Apps",
+        ":TestApp_Metadata_Resources",
+    ],
     plugins: [
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
@@ -88,6 +91,7 @@ android_test {
         "androidx.test.ext.junit",
         "truth",
         "testng", // for assertThrows
+        "bedstead-performance-analyzer",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
@@ -123,8 +127,6 @@ java_genrule {
         ":ContentTestApp",
         ":DevicePolicyManagementRoleHolderTestApp",
         ":RemoteDPCTestApp",
-        ":RemoteDPCTestAppTargetingV23",
-        ":RemoteDPCTestAppTargetingV24",
         ":RemoteDPCTestAppTargetingV28",
         ":RemoteDPCTestAppTargetingV30",
         ":DialerApp",
@@ -134,36 +136,70 @@ java_genrule {
         ":MLCTestApp",
         ":MultipleActivitiesTestApp",
         ":HeadlessDOSingleUserTestApp",
+        ":RemoteDeviceAdminTestApp",
     ],
-    out: ["TestApp_Apps.res.zip"],
+    out: [
+        "testapps/index.txt",
+        "testapps/EmptyTestApp.apk",
+        "testapps/NotEmptyTestApp.apk",
+        "testapps/DeviceAdminTestApp.apk",
+        "testapps/TestOnlyDeviceAdminTestApp.apk",
+        "testapps/LockTaskApp.apk",
+        "testapps/DelegateTestApp.apk",
+        "testapps/ContentTestApp.apk",
+        "testapps/DevicePolicyManagementRoleHolderTestApp.apk",
+        "testapps/RemoteDPCTestApp.apk",
+        "testapps/RemoteDPCTestAppTargetingV28.apk",
+        "testapps/RemoteDPCTestAppTargetingV30.apk",
+        "testapps/DialerApp.apk",
+        "testapps/SmsApp.apk",
+        "testapps/AccountManagementApp.apk",
+        "testapps/RemoteAccountAuthenticatorApp.apk",
+        "testapps/MLCTestApp.apk",
+        "testapps/MultipleActivitiesTestApp.apk",
+        "testapps/HeadlessDOSingleUserTestApp.apk",
+        "testapps/RemoteDeviceAdminTestApp.apk",
+    ],
     tools: [
-        "soong_zip",
         "index_testapps",
         "aapt2",
     ],
-    cmd: "mkdir -p $(genDir)/res/raw" +
-        " && cp $(location :EmptyTestApp) $(genDir)/res/raw" +
-        " && cp $(location :NotEmptyTestApp) $(genDir)/res/raw" +
-        " && cp $(location :DeviceAdminTestApp) $(genDir)/res/raw" +
-        " && cp $(location :TestOnlyDeviceAdminTestApp) $(genDir)/res/raw" +
-        " && cp $(location :LockTaskApp) $(genDir)/res/raw" +
-        " && cp $(location :DelegateTestApp) $(genDir)/res/raw" +
-        " && cp $(location :ContentTestApp) $(genDir)/res/raw" +
-        " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV23) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV24) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV28) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV30) $(genDir)/res/raw" +
-        " && cp $(location :DialerApp) $(genDir)/res/raw" +
-        " && cp $(location :SmsApp) $(genDir)/res/raw" +
-        " && cp $(location :AccountManagementApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/res/raw" +
-        " && cp $(location :MLCTestApp) $(genDir)/res/raw" +
-        " && cp $(location :MultipleActivitiesTestApp) $(genDir)/res/raw" +
-        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/res/raw" +
-        " && $(location index_testapps) --directory $(genDir)/res/raw --aapt2 $(location aapt2)" +
-        " && $(location soong_zip) -o $(out) -C $(genDir)/res -D $(genDir)/res/raw",
+    cmd: "mkdir -p $(genDir)/testapps" +
+        " && cp $(location :EmptyTestApp) $(genDir)/testapps" +
+        " && cp $(location :NotEmptyTestApp) $(genDir)/testapps" +
+        " && cp $(location :DeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :TestOnlyDeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :LockTaskApp) $(genDir)/testapps" +
+        " && cp $(location :DelegateTestApp) $(genDir)/testapps" +
+        " && cp $(location :ContentTestApp) $(genDir)/testapps" +
+        " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV28) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV30) $(genDir)/testapps" +
+        " && cp $(location :DialerApp) $(genDir)/testapps" +
+        " && cp $(location :SmsApp) $(genDir)/testapps" +
+        " && cp $(location :AccountManagementApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/testapps" +
+        " && cp $(location :MLCTestApp) $(genDir)/testapps" +
+        " && cp $(location :MultipleActivitiesTestApp) $(genDir)/testapps" +
+        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminTestApp) $(genDir)/testapps" +
+        " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)",
+}
+
+java_genrule {
+    name: "TestApp_Metadata_Resources",
+    srcs: [
+        "src/testapps/main/res/**/xml/*",
+    ],
+    out: [
+        "resources/device_admin.xml",
+        "resources/headless_single_user_device_admin.xml",
+        "resources/no_headless_device_owner_device_admin.xml",
+        "resources/test_xml.xml",
+    ],
+    cmd: "mkdir -p $(genDir)/resources" +
+        " && cp $(in) $(genDir)/resources",
 }
 
 android_test_helper_app {
@@ -182,6 +218,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    resource_dirs: ["src/testapps/main/res/test_resources"],
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/NotEmptyTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
@@ -292,34 +329,6 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
-    name: "RemoteDPCTestAppTargetingV23",
-    static_libs: [
-        "TestApp_TestApps",
-    ],
-    resource_dirs: ["src/testapps/main/res/device_admin"],
-    manifest: "manifests/RemoteDPCManifest.xml",
-    additional_manifests: ["CommonManifest.xml"],
-    aaptflags: [
-        "--rename-manifest-package com.android.cts.RemoteDPCV23",
-    ],
-    target_sdk_version: "23",
-}
-
-android_test_helper_app {
-    name: "RemoteDPCTestAppTargetingV24",
-    static_libs: [
-        "TestApp_TestApps",
-    ],
-    resource_dirs: ["src/testapps/main/res/device_admin"],
-    manifest: "manifests/RemoteDPCManifest.xml",
-    additional_manifests: ["CommonManifest.xml"],
-    aaptflags: [
-        "--rename-manifest-package com.android.cts.RemoteDPCV24",
-    ],
-    target_sdk_version: "24",
-}
-
-android_test_helper_app {
     name: "RemoteDPCTestAppTargetingV28",
     static_libs: [
         "TestApp_TestApps",
@@ -330,6 +339,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package com.android.cts.RemoteDPCV28",
     ],
+    min_sdk_version: "29",
     target_sdk_version: "28",
 }
 
@@ -344,6 +354,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package com.android.cts.RemoteDPCV30",
     ],
+    min_sdk_version: "30",
     target_sdk_version: "30",
 }
 
@@ -417,6 +428,17 @@ android_test_helper_app {
     ],
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/MultipleActivitiesTestAppManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/RemoteDeviceAdminManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
 }

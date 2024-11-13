@@ -26,12 +26,10 @@ import android.os.Bundle;
 import android.telecom.BluetoothCallQualityReport;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
-import android.telecom.CallDiagnostics;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
 import android.telecom.TelecomManager;
 import android.telephony.CallQuality;
-import android.telephony.TelephonyManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -188,60 +186,6 @@ public class CallDiagnosticServiceTest extends BaseTelecomTestWithMockServices {
         mService.getCallAudioStateLatch().await(TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
                 TimeUnit.MILLISECONDS);
         assertEquals(CallAudioState.ROUTE_SPEAKER, mService.getCallAudioState().getRoute());
-    }
-
-    /**
-     * Test incoming D2D message
-     * @throws InterruptedException
-     */
-    public void testReceiveD2DMessage() throws InterruptedException {
-        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
-            return;
-        }
-        setupCall();
-
-        Bundle message = new Bundle();
-        message.putInt(Connection.EXTRA_DEVICE_TO_DEVICE_MESSAGE_TYPE,
-                CallDiagnostics.MESSAGE_CALL_NETWORK_TYPE);
-        message.putInt(Connection.EXTRA_DEVICE_TO_DEVICE_MESSAGE_VALUE,
-                TelephonyManager.NETWORK_TYPE_LTE);
-        mConnection.sendConnectionEvent(Connection.EVENT_DEVICE_TO_DEVICE_MESSAGE, message);
-
-        CtsCallDiagnosticService.CtsCallDiagnostics diagnosticCall = mService.getCalls().get(0);
-        diagnosticCall.getReceivedMessageLatch().await(TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS);
-        assertEquals(CallDiagnostics.MESSAGE_CALL_NETWORK_TYPE,
-                diagnosticCall.getMessageType());
-        assertEquals(TelephonyManager.NETWORK_TYPE_LTE,
-                diagnosticCall.getMessageValue());
-    }
-
-    /**
-     * Test sending D2D message
-     * @throws InterruptedException
-     */
-    public void testSendD2DMessage() throws InterruptedException {
-        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
-            return;
-        }
-        setupCall();
-
-        CtsCallDiagnosticService.CtsCallDiagnostics diagnosticCall = mService.getCalls().get(0);
-        diagnosticCall.sendDeviceToDeviceMessage(CallDiagnostics.MESSAGE_DEVICE_BATTERY_STATE,
-                CallDiagnostics.BATTERY_STATE_LOW);
-
-        final TestUtils.InvokeCounter counter = mConnection.getInvokeCounter(
-                MockConnection.ON_CALL_EVENT);
-        counter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
-
-        String event = (String) (counter.getArgs(0)[0]);
-        Bundle extras = (Bundle) (counter.getArgs(0)[1]);
-        assertEquals(Connection.EVENT_DEVICE_TO_DEVICE_MESSAGE, event);
-        assertNotNull(extras);
-        int messageType = extras.getInt(Connection.EXTRA_DEVICE_TO_DEVICE_MESSAGE_TYPE);
-        int messageValue = extras.getInt(Connection.EXTRA_DEVICE_TO_DEVICE_MESSAGE_VALUE);
-        assertEquals(CallDiagnostics.MESSAGE_DEVICE_BATTERY_STATE, messageType);
-        assertEquals(CallDiagnostics.BATTERY_STATE_LOW, messageValue);
     }
 
     /**

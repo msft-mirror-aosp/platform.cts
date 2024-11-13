@@ -63,6 +63,7 @@ android_test {
         "CtsVirtualDeviceCommonLib",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
+        "com.android.input.flags-aconfig-java",
         "compatibility-device-util-axt",
         "cts-input-lib",
         "cts-kernelinfo-lib",
@@ -77,6 +78,8 @@ android_test {
         "android.hardware.biometrics.flags-aconfig-java",
         "android.companion.virtual.flags-aconfig-java",
         "android.media.codec-aconfig-java",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     jni_libs: [
         "libctshardware_jni",

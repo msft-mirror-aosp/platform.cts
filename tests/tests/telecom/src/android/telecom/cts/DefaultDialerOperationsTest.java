@@ -33,6 +33,7 @@ import android.test.InstrumentationTestCase;
 import android.text.TextUtils;
 
 import androidx.test.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.List;
@@ -210,7 +211,7 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
 
     public void testHandlePinMmPermissions()
             throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         try {

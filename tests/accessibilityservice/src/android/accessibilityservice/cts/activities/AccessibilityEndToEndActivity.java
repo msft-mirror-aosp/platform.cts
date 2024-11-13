@@ -26,6 +26,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -82,11 +83,17 @@ public class AccessibilityEndToEndActivity extends AccessibilityTestActivity {
         button.getViewTreeObserver().addOnGlobalLayoutListener(setTouchDelegate(button,
                 () -> withTouchableAtRight.apply(button))::run);
 
-        Button delegated = findViewById(R.id.buttonDelegated);
-        Function<View, Rect> withTouchableAsParent = (v) -> new Rect(
-                0, 0, v.getWidth(), v.getHeight());
-        delegated.getViewTreeObserver().addOnGlobalLayoutListener(setTouchDelegate(delegated,
-                () -> withTouchableAsParent.apply((View) delegated.getParent()))::run);
+        LinearLayout buttonTargetGrandparent = findViewById(R.id.buttonTargetGrandparent);
+        Button buttonTarget = findViewById(R.id.buttonTarget);
+        buttonTarget.getViewTreeObserver().addOnGlobalLayoutListener(setTouchDelegate(
+                buttonTargetGrandparent, buttonTarget,
+                () -> withTouchableAtRight.apply(buttonTarget))::run);
+    }
+
+    private static Runnable setTouchDelegate(View source, View target,
+            Supplier<Rect> rectSupplier) {
+        return () -> ((View) source).setTouchDelegate(
+                new TouchDelegate(rectSupplier.get(), target));
     }
 
     private static Runnable setTouchDelegate(View target, Supplier<Rect> rectSupplier) {

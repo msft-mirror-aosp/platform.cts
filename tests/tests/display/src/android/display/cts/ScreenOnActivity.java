@@ -17,14 +17,13 @@
 package android.display.cts;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.WindowManager;
 
 /**
  * An activity to turn on the screen
  */
-public final class ScreenOnActivity extends Activity {
+public class ScreenOnActivity extends Activity {
 
     @Override
     public void onCreate(Bundle bundle) {

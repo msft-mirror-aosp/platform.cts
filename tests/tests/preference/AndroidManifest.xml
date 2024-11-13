@@ -29,33 +29,45 @@
     <application android:requestLegacyExternalStorage="true"
                  android:theme="@style/OptOutEdgeToEdgeEnforcement">
         <uses-library android:name="android.test.runner" />
-        <activity android:name="android.preference.cts.PreferenceCtsActivity">
+        <activity
+            android:name="android.preference.cts.PreferenceCtsActivity"
+            android:exported="true">
             <meta-data android:name="android.preference"
                     android:resource="@xml/preferences_from_intent" />
         </activity>
         <activity
-            android:name="PreferenceFragmentActivity" >
+            android:name="PreferenceFragmentActivity"
+            android:exported="true">
         </activity>
         <activity
             android:name="android.preference2.cts.PreferenceStubActivity" >
         </activity>
         <activity
-            android:name="PreferenceFromCodeActivity" >
+            android:name="PreferenceFromCodeActivity"
+            android:exported="true">
         </activity>
-        <activity android:name="PreferencesFromXml" />
-        <activity android:name="PreferencesFromXmlNested" />
-        <activity android:name="PreferencesFromXmlRecycle" />
-        <activity android:name="PreferenceWithHeaders" />
+        <activity android:name="PreferencesFromXml"
+                  android:exported="true"/>
+        <activity android:name="PreferencesFromXmlNested"
+                  android:exported="true"/>
+        <activity android:name="PreferencesFromXmlRecycle"
+                  android:exported="true"/>
+        <activity android:name="PreferenceWithHeaders"
+                  android:exported="true"/>
         <!-- Landscape setup of PreferenceWithHeaders -->
         <activity
             android:name="PreferenceWithHeadersLandscape"
-            android:screenOrientation="landscape"/>
+            android:screenOrientation="landscape"
+            android:exported="true"/>
         <!-- Portrait setup of PreferenceWithHeaders -->
         <activity
             android:name="PreferenceWithHeadersPortrait"
             android:enableOnBackInvokedCallback="false"
-            android:screenOrientation="portrait"/>
-        <activity android:name="FragmentPreferences" />
+            android:screenOrientation="portrait"
+            android:exported="true"/>
+        <activity
+            android:name="FragmentPreferences"
+            android:exported="true"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

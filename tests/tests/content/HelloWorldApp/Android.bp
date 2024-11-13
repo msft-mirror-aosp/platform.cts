@@ -535,3 +535,27 @@ android_test {
     ],
     v4_signature: true,
 }
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldAppV1",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    manifest: "AndroidManifestV1.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldAppV2",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    manifest: "AndroidManifestV2.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}

@@ -41,6 +41,7 @@ import android.provider.MediaStore.Files.FileColumns;
 import android.provider.cts.ProviderTestUtils;
 import android.provider.cts.media.MediaStoreAudioTestHelper.Audio1;
 import android.provider.cts.media.MediaStoreAudioTestHelper.Audio7;
+import android.provider.cts.media.MediaStoreAudioTestHelper.Audio8;
 import android.provider.cts.media.MediaStoreUtils.PendingParams;
 import android.provider.cts.media.MediaStoreUtils.PendingSession;
 import android.util.Log;
@@ -217,6 +218,32 @@ public class MediaStore_Audio_MediaTest {
             assertEquals(Audio7.IS_NOTIFICATION, c.getInt(c.getColumnIndex(Media.IS_NOTIFICATION)));
             assertEquals(Audio7.IS_RINGTONE, c.getInt(c.getColumnIndex(Media.IS_RINGTONE)));
             assertEquals(Audio7.IS_RECORDING, c.getInt(c.getColumnIndex(Media.IS_RECORDING)));
+        } finally {
+            // delete
+            mContentResolver.delete(uri, null, null);
+        }
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public void testStoreAudioSampling() {
+        MediaStoreAudioTestHelper.Audio8 audio8 = MediaStoreAudioTestHelper.Audio8.getInstance();
+        ContentValues values = audio8.getContentValues(mVolumeName);
+        //insert
+        Uri mediaUri = Media.getContentUri(mVolumeName);
+        Uri uri = mContentResolver.insert(mediaUri, values);
+        assertNotNull(uri);
+
+        try (Cursor c = mContentResolver.query(uri, null, null, null, null)) {
+            assertThat(c).isNotNull();
+            assertThat(c.getCount()).isEqualTo(1);
+            c.moveToFirst();
+            String expected = audio8.getContentValues(mVolumeName).getAsString(Media.DATA);
+            assertThat(c.getString(c.getColumnIndex(Media.DATA))).isEqualTo(expected);
+            assertThat(c.getString(c.getColumnIndex(Media.MIME_TYPE))).isEqualTo(Audio8.MIME_TYPE);
+            assertThat(c.getInt(c.getColumnIndex(Media.SAMPLERATE))).isEqualTo(Audio8.SAMPLERATE);
+            assertThat(c.getInt(c.getColumnIndex(Media.BITS_PER_SAMPLE))).isEqualTo(
+                    Audio8.BITS_PER_SAMPLE);
         } finally {
             // delete
             mContentResolver.delete(uri, null, null);

@@ -109,7 +109,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -146,6 +145,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
+import android.util.Rational;
 import android.util.Size;
 
 import com.android.compatibility.common.util.AppOpsUtils;
@@ -153,6 +153,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.truth.Truth;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -165,12 +166,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:PinnedStackTests
+ * atest CtsWindowManagerDeviceOther:PinnedStackTests
  */
 @Presubmit
 @android.server.wm.annotation.Group2
 public class PinnedStackTests extends ActivityManagerTestBase {
     private static final String TAG = PinnedStackTests.class.getSimpleName();
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_PIP_ACTIVITY.getPackageName();
 
     private static final String APP_OPS_OP_ENTER_PICTURE_IN_PICTURE = "PICTURE_IN_PICTURE";
     private static final int APP_OPS_MODE_IGNORED = 1;
@@ -179,8 +181,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     private static final int ROTATION_90 = 1;
     private static final int ROTATION_180 = 2;
     private static final int ROTATION_270 = 3;
-
-    private static final float FLOAT_COMPARE_EPSILON = 0.005f;
 
     // Corresponds to com.android.internal.R.dimen.config_pictureInPictureMinAspectRatio
     private static final int MIN_ASPECT_RATIO_NUMERATOR = 100;
@@ -202,6 +202,11 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         super.setUp();
         assumeTrue(supportsPip());
         assumeFalse("PiP in HSUM not supported", UserManager.isHeadlessSystemUserMode());
+    }
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
     }
 
     @Test
@@ -431,8 +436,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
         // Assert that we have entered PIP and that the aspect ratio is correct
-        final Rect bounds = getPinnedStackBounds();
-        assertFloatEquals((float) bounds.width() / bounds.height(), (float) 1.0f / 4.0f);
+        assertValidAspectRatio(1, 4);
     }
 
     @Test
@@ -502,6 +506,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         mBroadcastActionTrigger.changeAspectRatio(newNumerator, newDenominator);
 
         waitForValidAspectRatio(newNumerator, newDenominator);
+        assertValidAspectRatio(newNumerator, newDenominator);
     }
 
     private void testEnterPipAspectRatio(int num, int denom) {
@@ -517,9 +522,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackExists();
 
         // Assert that we have entered PIP and that the aspect ratio is correct
-        Rect pinnedStackBounds = getPinnedStackBounds();
-        assertFloatEquals((float) pinnedStackBounds.width() / pinnedStackBounds.height(),
-                (float) num / denom);
+        assertValidAspectRatio(num, denom);
     }
 
     @Test
@@ -544,8 +547,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
         waitForValidAspectRatio(num, denom);
-        Rect bounds = getPinnedStackBounds();
-        assertFloatEquals((float) bounds.width() / bounds.height(), (float) num / denom);
+        assertValidAspectRatio(num, denom);
     }
 
     @Test
@@ -601,9 +603,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // Wait for animation complete since we are comparing aspect ratio
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
-        Rect pinnedStackBounds = getPinnedStackBounds();
-        assertFloatEquals((float) pinnedStackBounds.width() / pinnedStackBounds.height(),
-                (float) MAX_ASPECT_RATIO_NUMERATOR / MAX_ASPECT_RATIO_DENOMINATOR);
+        assertValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
     }
 
     @Test
@@ -830,9 +830,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackExists();
 
         waitForValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
-        Rect bounds = getPinnedStackBounds();
-        assertFloatEquals((float) bounds.width() / bounds.height(),
-                (float) MAX_ASPECT_RATIO_NUMERATOR / MAX_ASPECT_RATIO_DENOMINATOR);
+        assertValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
     }
 
     @Test
@@ -942,7 +940,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is now in the fullscreen/freeform stack (when
         // no fullscreen/freeform stack existed before)
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
@@ -958,7 +956,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed in the fullscreen/freeform stack,
         // behind the top fullscreen/freeform activity
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 testAppWindowingMode, ACTIVITY_TYPE_STANDARD, pipWindowingMode);
     }
@@ -975,16 +973,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
 
     @Test
     public void testMovePipToBackWithNoFullscreenOrFreeformStack() {
-        // Start with a clean slate, remove all the stacks but home
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-
         // Launch a pip activity
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
@@ -1342,7 +1337,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Dismiss it
         separateTestJournal();
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         waitForExitPipToFullscreen(PIP_ACTIVITY);
         waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
 
@@ -1885,6 +1880,17 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     /**
+     * Assers that the pinned stack bounds are of the aspect ratio given
+     * by the numberator and the denominator, within some allowed margin of error.
+     */
+    private void assertValidAspectRatio(int num, int denom) {
+        final Rect bounds = getPinnedStackBounds();
+        final Rational aspectRatio = new Rational(num, denom);
+        assertTrue(bounds + " matches " + aspectRatio,
+                PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    /**
      * Asserts that the pinned stack exists.
      */
     private void assertPinnedStackExists() {
@@ -1990,7 +1996,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         mWmState.waitForWithAmState((state) -> {
             Rect bounds = state.getStandardRootTaskByWindowingMode(WINDOWING_MODE_PINNED)
                     .getBounds();
-            return floatEquals((float) bounds.width() / bounds.height(), (float) num / denom);
+            return PictureInPictureParams.isSameAspectRatio(bounds, new Rational(num, denom));
         }, "valid aspect ratio");
     }
 
@@ -2006,19 +2012,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
      */
     private Rect getPinnedStackBounds() {
         return getPinnedStack().getBounds();
-    }
-
-    /**
-     * Compares two floats with a common epsilon.
-     */
-    private void assertFloatEquals(float actual, float expected) {
-        if (!floatEquals(actual, expected)) {
-            fail(expected + " not equal to " + actual);
-        }
-    }
-
-    private boolean floatEquals(float a, float b) {
-        return Math.abs(a - b) < FLOAT_COMPARE_EPSILON;
     }
 
     /**
@@ -2117,6 +2110,12 @@ public class PinnedStackTests extends ActivityManagerTestBase {
             mWmState.assertDoesNotContainStack("Must not contain pinned stack.",
                     WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
         }
+    }
+
+    private void removeRootTasksInPinnedWindowingModes() {
+        runWithShellPermission(
+                () -> mAtm.removeRootTasksInWindowingModes(new int[]{WINDOWING_MODE_PINNED}));
+        waitForIdle();
     }
 
     public static class TestActivity extends Activity { }

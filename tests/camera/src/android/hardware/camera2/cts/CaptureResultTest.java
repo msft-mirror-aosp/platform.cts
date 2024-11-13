@@ -1039,9 +1039,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);
-        if (Flags.cameraManualFlashStrengthControl()) {
-            resultKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
-        }
+        resultKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
         resultKeys.add(CaptureResult.HOT_PIXEL_MODE);
         resultKeys.add(CaptureResult.JPEG_GPS_LOCATION);
         resultKeys.add(CaptureResult.JPEG_ORIENTATION);
@@ -1089,9 +1087,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.STATISTICS_LENS_SHADING_MAP_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_DATA_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_SAMPLES);
-        if (Flags.concertMode()) {
-            resultKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
-        }
+        resultKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         resultKeys.add(CaptureResult.TONEMAP_CURVE);
         resultKeys.add(CaptureResult.TONEMAP_MODE);
         resultKeys.add(CaptureResult.TONEMAP_GAMMA);
@@ -1099,9 +1095,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.BLACK_LEVEL_LOCK);
         resultKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
-        if (Flags.concertMode()) {
-            resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
-        }
+        resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
 
         return resultKeys;

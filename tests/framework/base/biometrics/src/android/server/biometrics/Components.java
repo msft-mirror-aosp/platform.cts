@@ -27,6 +27,9 @@ public class Components extends ComponentsBase {
     public static final ComponentName CLASS_3_BIOMETRIC_ACTIVITY =
             component("Class3BiometricActivity");
 
+    public static final ComponentName CONFIRM_DEVICE_CREDENTIAL_TEST_ACTIVITY = component(
+            "ConfirmDeviceCredentialTestActivity");
+
     private static ComponentName component(String className) {
         return component(Components.class, className);
     }

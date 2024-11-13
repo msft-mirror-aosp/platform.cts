@@ -18,6 +18,7 @@ package android.provider.cts.media;
 
 import static android.provider.cts.media.MediaProviderTestUtils.containsId;
 import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
+import static android.provider.cts.media.MediaProviderTestUtils.createMediaInDownloads;
 import static android.provider.cts.media.MediaStoreTest.TAG;
 
 import static org.junit.Assert.assertEquals;
@@ -37,8 +38,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Files.FileColumns;
 import android.provider.MediaStore.MediaColumns;
@@ -47,7 +52,11 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,6 +71,8 @@ import java.util.Arrays;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStore_FilesTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private Context mContext;
     private ContentResolver mResolver;
 
@@ -188,6 +199,48 @@ public class MediaStore_FilesTest {
             pfd.close();
         } finally {
             mResolver.delete(fileUri, null, null);
+        }
+    }
+
+    @Test
+    @Ignore("b/364840943")
+    @RequiresFlagsEnabled(Flags.FLAG_INFERRED_MEDIA_DATE)
+    public void testStandardSorting() throws Exception {
+        mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
+                null);
+        try {
+            File fileA = createMediaInDownloads(R.raw.testmp3, mVolumeName);
+            File fileB = createMediaInDownloads(R.raw.testmp3, mVolumeName);
+            File fileC = createMediaInDownloads(R.raw.testmp3, mVolumeName);
+
+            final Bundle extras = new Bundle();
+            extras.putBoolean(MediaStore.QUERY_ARG_MEDIA_STANDARD_SORT_ORDER, true);
+
+            // This sorting rule will be overridden
+            extras.putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER,
+                    MediaColumns.DATE_MODIFIED + " ASC");
+
+            // Verify that querying with QUERY_ARG_MEDIA_STANDARD_SORT_ORDER
+            // returns the media files based on date_modified (DESC, newest first)
+            try (Cursor c = mResolver.query(
+                    MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                    new String[]{MediaColumns.DATA, MediaColumns.INFERRED_DATE}, extras,
+                    null)) {
+                assumeTrue(c.getCount() == 3);
+
+                c.moveToFirst();
+                assertEquals(fileC.getAbsolutePath(), c.getString(0));
+                assertTrue(c.getInt(1) > 0);
+                c.moveToNext();
+                assertEquals(fileB.getAbsolutePath(), c.getString(0));
+                assertTrue(c.getInt(1) > 0);
+                c.moveToNext();
+                assertEquals(fileA.getAbsolutePath(), c.getString(0));
+                assertTrue(c.getInt(1) > 0);
+            }
+        } finally {
+            mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
+                    null);
         }
     }
 

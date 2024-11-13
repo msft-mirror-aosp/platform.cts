@@ -49,7 +49,7 @@ public class AlwaysSupportedFeatures implements Features {
                 // fall through
             case Features.LIST_FILTER_HAS_PROPERTY_FUNCTION:
                 // fall through
-            case Features.LIST_FILTER_TOKENIZE_FUNCTION:
+            case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
                 // fall through
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
                 // fall through
@@ -82,6 +82,8 @@ public class AlwaysSupportedFeatures implements Features {
             case Features.SET_SCHEMA_REQUEST_ADD_SCHEMA_TYPE_VISIBLE_TO_CONFIG:
                 // fall through
             case Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS:
+                // fall through
+            case Features.BLOB_STORAGE:
                 return true;
             default:
                 return false;

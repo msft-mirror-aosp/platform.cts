@@ -24,8 +24,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Message;
@@ -36,6 +39,8 @@ import android.view.ViewParent;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebIconDatabase;
+import android.webkit.WebMessage;
+import android.webkit.WebMessagePort;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -45,6 +50,7 @@ import android.webkit.WebView;
 import android.webkit.cts.WebViewSyncLoader.WaitForLoadedClient;
 import android.webkit.cts.WebViewSyncLoader.WaitForProgressClient;
 
+import androidx.annotation.StringDef;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -63,6 +69,7 @@ import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
+import java.lang.annotation.Retention;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -78,17 +85,64 @@ import java.util.regex.Pattern;
 public class WebSettingsTest extends SharedWebViewTest {
     private static final String LOG_TAG = "WebSettingsTest";
 
-    private final String EMPTY_IMAGE_HEIGHT = "0";
-    private final String NETWORK_IMAGE_HEIGHT = "48";  // See getNetworkImageHtml()
-    private final String DATA_URL_IMAGE_HTML = "<html>" +
-            "<head><script>function updateTitle(){" +
-            "document.title=document.getElementById('img').naturalHeight;}</script></head>" +
-            "<body onload='updateTitle()'>" +
-            "<img id='img' onload='updateTitle()' src='data:image/png;base64,iVBORw0KGgoAAA" +
-            "ANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAAAXNSR0IArs4c6QAAAA1JREFUCB0BAgD9/wAAAAIAAc3j" +
-            "0SsAAAAASUVORK5CYII=" +
-            "'></body></html>";
-    private final String DATA_URL_IMAGE_HEIGHT = "1";
+    private static final Integer EMPTY_IMAGE_HEIGHT = 0;
+    private static final Integer NETWORK_IMAGE_HEIGHT = 48;  // See getNetworkImageHtml()
+    private static final Integer DATA_IMAGE_HEIGHT = 1;
+
+    @Retention(SOURCE)
+    @StringDef({LOAD_EVENT_TYPE_IMAGE, LOAD_EVENT_TYPE_PAGE})
+    public @interface LoadEventType {}
+    public static final String LOAD_EVENT_TYPE_IMAGE = "IMAGE";
+    public static final String LOAD_EVENT_TYPE_PAGE = "PAGE";
+
+
+    private static final String TEST_IMAGE_HTML_TEMPLATE = """
+        <html>
+            <head>
+                <script>
+
+                let imageLoadComplete;
+                let imageLoadPromise = new Promise(res => {
+                    imageLoadComplete = res;
+                });
+
+                let pageLoadComplete;
+                let pageLoadPromise = new Promise(res => {
+                    pageLoadComplete = res;
+                });
+
+                document.onreadystatechange = () => {
+                    if (document.readyState === 'complete') {
+                        pageLoadComplete();
+                    }
+                };
+
+                onmessage = async (e) => {
+                    const port = e.ports[0];
+                    switch (e.data) {
+                        case '%s': {
+                            await imageLoadPromise;
+                            break;
+                        }
+                        case '%s': {
+                            await pageLoadPromise;
+                            break;
+                        }
+                    }
+                    port.postMessage("complete");
+                };
+                </script>
+            </head>
+            <body>
+                <img id='img' src='%s' onload='imageLoadComplete()'>
+            </body>
+        </html>""";
+
+    private static final String DATA_IMAGE_HTML = String.format(TEST_IMAGE_HTML_TEMPLATE,
+            LOAD_EVENT_TYPE_IMAGE,
+            LOAD_EVENT_TYPE_PAGE,
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAAAXNSR0IArs"
+            + "4c6QAAAA1JREFUCB0BAgD9/wAAAAIAAc3j0SsAAAAASUVORK5CYII=");
 
     @Rule
     public ActivityScenarioRule mActivityScenarioRule =
@@ -108,7 +162,6 @@ public class WebSettingsTest extends SharedWebViewTest {
         mSettings = mOnUiThread.getSettings();
         mContext = getTestEnvironment().getContext();
     }
-
 
     @After
     public void tearDown() throws Exception {
@@ -810,7 +863,8 @@ public class WebSettingsTest extends SharedWebViewTest {
         mSettings.setLoadsImagesAutomatically(true);
 
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
     }
 
     @Test
@@ -819,8 +873,9 @@ public class WebSettingsTest extends SharedWebViewTest {
         mSettings.setJavaScriptEnabled(true);
         mSettings.setLoadsImagesAutomatically(true);
 
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
     }
 
     @Test
@@ -831,10 +886,12 @@ public class WebSettingsTest extends SharedWebViewTest {
 
         mOnUiThread.clearCache(true); // in case of side-effects from other tests
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
 
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
     }
 
     @Test
@@ -845,18 +902,20 @@ public class WebSettingsTest extends SharedWebViewTest {
 
         mOnUiThread.clearCache(true); // in case of side-effects from other tests
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
-        mSettings.setLoadsImagesAutomatically(true); // load images, without calling #reload()
-        waitForNonEmptyImage();
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
+        mSettings.setLoadsImagesAutomatically(true);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
 
         mSettings.setLoadsImagesAutomatically(false);
         mOnUiThread.clearCache(true);
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
-        mSettings.setLoadsImagesAutomatically(true); // load images, without calling #reload()
-        waitForNonEmptyImage();
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
+        mSettings.setLoadsImagesAutomatically(true);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
     }
 
     @Test
@@ -868,9 +927,11 @@ public class WebSettingsTest extends SharedWebViewTest {
 
         // Check that by default network and data url images are loaded.
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
 
         // Check that only network images are blocked, data url images are still loaded.
         // Also check that network images are loaded automatically once we disable the setting,
@@ -878,15 +939,17 @@ public class WebSettingsTest extends SharedWebViewTest {
         mSettings.setBlockNetworkImage(true);
         mOnUiThread.clearCache(true);
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
         mSettings.setBlockNetworkImage(false);
-        waitForNonEmptyImage();
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
 
         mSettings.setBlockNetworkImage(true);
         mOnUiThread.clearCache(true);
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
     }
 
     @Test
@@ -901,9 +964,11 @@ public class WebSettingsTest extends SharedWebViewTest {
             mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
         assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mOnUiThread.getTitle());
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
 
         // Check that only network resources are blocked, data url images are still loaded.
         mSettings.setBlockNetworkLoads(true);
@@ -912,9 +977,11 @@ public class WebSettingsTest extends SharedWebViewTest {
             mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
         assertNotEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mOnUiThread.getTitle());
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(EMPTY_IMAGE_HEIGHT, mOnUiThread.getTitle());
-        mOnUiThread.loadDataAndWaitForCompletion(DATA_URL_IMAGE_HTML, "text/html", null);
-        assertEquals(DATA_URL_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_PAGE);
+        assertEquals(EMPTY_IMAGE_HEIGHT, getImageHeight());
+        mOnUiThread.loadDataAndWaitForCompletion(DATA_IMAGE_HTML, "text/html", null);
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(DATA_IMAGE_HEIGHT, getImageHeight());
 
         // Check that network resources are loaded once we disable the setting and reload the page.
         mSettings.setBlockNetworkLoads(false);
@@ -922,7 +989,8 @@ public class WebSettingsTest extends SharedWebViewTest {
             mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL));
         assertEquals(TestHtmlConstants.HELLO_WORLD_TITLE, mOnUiThread.getTitle());
         mOnUiThread.loadDataAndWaitForCompletion(getNetworkImageHtml(), "text/html", null);
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
     }
 
     // Verify that an image in local file system can be loaded by an asset
@@ -934,8 +1002,8 @@ public class WebSettingsTest extends SharedWebViewTest {
         mSettings.setAllowFileAccessFromFileURLs(false);
         String url = TestHtmlConstants.getFileUrl(TestHtmlConstants.IMAGE_ACCESS_URL);
         mOnUiThread.loadUrlAndWaitForCompletion(url);
-        waitForNonEmptyImage();
-        assertEquals(NETWORK_IMAGE_HEIGHT, mOnUiThread.getTitle());
+        waitForLoadEvent(LOAD_EVENT_TYPE_IMAGE);
+        assertEquals(NETWORK_IMAGE_HEIGHT, getImageHeight());
     }
 
     // Verify that javascript cross-domain request permissions matches file domain settings
@@ -1142,29 +1210,33 @@ public class WebSettingsTest extends SharedWebViewTest {
     }
 
     private String getNetworkImageHtml() {
-        return "<html>" +
-                "<head><script>function updateTitle(){" +
-                "document.title=document.getElementById('img').naturalHeight;}</script></head>" +
-                "<body onload='updateTitle()'>" +
-                "<img id='img' onload='updateTitle()' src='" +
-                mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL) +
-                "'></body></html>";
+        return String.format(TEST_IMAGE_HTML_TEMPLATE,
+                LOAD_EVENT_TYPE_IMAGE,
+                LOAD_EVENT_TYPE_PAGE,
+                mWebServer.getAssetUrl(TestHtmlConstants.SMALL_IMG_URL));
     }
 
-    private void waitForNonEmptyImage() {
-        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                try {
-                    int value = Integer.parseInt(mOnUiThread.getTitle());
-                    return value > 0;
-                } catch (NumberFormatException e) {
-                    // Page title cannot be parsed as an integer. This probably means the page title
-                    // hasn't been updated yet, so keep polling.
-                    return false;
+    private void waitForLoadEvent(@LoadEventType String loadEventType) {
+        final WebMessagePort[] channel = mOnUiThread.createWebMessageChannel();
+        WebMessage message = new WebMessage(loadEventType, new WebMessagePort[]{channel[1]});
+        mOnUiThread.postWebMessage(message, Uri.parse("*"));
+
+        final SettableFuture<Void> messageFuture = SettableFuture.create();
+        WebkitUtils.onMainThreadSync(() -> {
+            channel[0].setWebMessageCallback(new WebMessagePort.WebMessageCallback() {
+                @Override
+                public void onMessage(WebMessagePort port, WebMessage message) {
+                    messageFuture.set(null);
                 }
-            }
-        }.run();
+            });
+        });
+
+        WebkitUtils.waitForFuture(messageFuture);
+    }
+
+    private Integer getImageHeight() {
+        return Integer.parseInt(mOnUiThread.evaluateJavascriptSync(
+                "document.getElementById('img').naturalHeight"));
     }
 
     private class IconListenerClient extends WaitForProgressClient {

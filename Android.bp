@@ -80,6 +80,11 @@ java_defaults {
             static_libs: ["platform-test-annotations"],
         },
     },
+    lint: {
+        strict_updatability_linting: false,
+        extra_check_modules: ["AndroidFrameworkLintChecker"],
+        disabled_checks: ["NonUserGetterCalled"],
+    },
 }
 
 java_defaults {

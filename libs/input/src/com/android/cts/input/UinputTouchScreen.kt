@@ -70,4 +70,5 @@ class UinputTouchScreen(instrumentation: Instrumentation, display: Display) : Ui
     display,
     createTouchScreenRegisterCommand(display),
     SOURCE_TOUCHSCREEN,
+    MT_TOOL_FINGER,
 )

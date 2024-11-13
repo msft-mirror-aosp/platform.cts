@@ -31,7 +31,8 @@ ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
 )
 ACTIVITY_WAIT_TIME_SECONDS = 5
-AGREE_BUTTON = 'Agree and continue'
+AGREE_BUTTON = 'Agree'
+AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
@@ -250,6 +251,9 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
     if dut.ui(text=AGREE_BUTTON).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=AGREE_BUTTON).click.wait()
+    if dut.ui(text=AGREE_AND_CONTINUE_BUTTON).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=AGREE_AND_CONTINUE_BUTTON).click.wait()
     if dut.ui(text=OK_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=OK_BUTTON_TXT).click.wait()

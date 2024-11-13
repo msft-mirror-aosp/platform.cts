@@ -33,7 +33,6 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -43,7 +42,6 @@ import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -223,9 +221,6 @@ public final class FrameRateOverrideTest {
         Log.i(TAG, "\n");
     }
 
-    // b/350443755 Ignore for flaky test.
-    @Ignore
-    @FlakyTest(bugId = 350443755)
     @Test
     public void testAppBackpressure()
             throws InterruptedException, IOException {

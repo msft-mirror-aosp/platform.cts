@@ -45,6 +45,7 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setPosition;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setQuadrantBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBufferWithRelease;
 import static android.view.cts.util.ASurfaceControlTestUtils.reparent;
 import static android.view.cts.util.ASurfaceControlTestUtils.setBufferAlpha;
 import static android.view.cts.util.ASurfaceControlTestUtils.setBufferOpaque;
@@ -56,9 +57,11 @@ import static android.view.cts.util.ASurfaceControlTestUtils.setPosition;
 import static android.view.cts.util.ASurfaceControlTestUtils.setScale;
 import static android.view.cts.util.ASurfaceControlTestUtils.setVisibility;
 import static android.view.cts.util.ASurfaceControlTestUtils.setZOrder;
+import static android.view.cts.util.ASurfaceControlTestUtils.BufferReleaseCallback;
 import static android.view.cts.util.FrameCallbackData.nGetFrameTimelines;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -171,6 +174,32 @@ public class ASurfaceControlTest {
         public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
             mBasicSurfaceHolderCallback.surfaceDestroyed();
         }
+    }
+
+    public long setAndApplySolidBufferWithRelease(
+            long surfaceControl, int width, int height, int color,
+            BufferReleaseCallback callback) {
+        Assert.assertNotNull(callback);
+
+        SurfaceControl.Transaction jTransaction = new SurfaceControl.Transaction();
+        final long transaction = nSurfaceTransaction_fromJava(jTransaction);
+        assertTrue(transaction != 0);
+
+        long buffer = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction,
+                width, height, color, callback);
+        assertTrue("failed to set buffer", buffer != 0);
+        TimedTransactionListener onCommitCallback = new TimedTransactionListener();
+        nSurfaceTransaction_setOnCommitCallback(transaction, onCommitCallback);
+        nSurfaceTransaction_apply(transaction);
+
+        try {
+            onCommitCallback.mLatch.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+        }
+        if (onCommitCallback.mLatch.getCount() > 0) {
+            Log.e(TAG, "Failed to wait for commit callback");
+        }
+        return buffer;
     }
 
     private abstract static class BasicSurfaceHolderCallback {
@@ -2486,5 +2515,175 @@ public class ASurfaceControlTest {
 
         assertTrue("Removed headroom restriction is not respected",
                 getStableHdrSdrRatio(display) > targetHeadroom);
+    }
+
+    static class TimedBufferReleaseCallback implements
+            BufferReleaseCallback {
+        long mCallbackTime = -1;
+        CountDownLatch mLatch = new CountDownLatch(1);
+
+        @Override
+        public void onBufferRelease() {
+            mCallbackTime = SystemClock.elapsedRealtime();
+            mLatch.countDown();
+        }
+
+        boolean callbackCalled() {
+            return mCallbackTime != -1;
+        }
+
+        boolean waitForCallback() {
+            try {
+                return mLatch.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Test
+    public void testBufferRelease() {
+        SurfaceControl.Builder builder = new SurfaceControl.Builder();
+        builder.setName("testBufferRelease");
+        SurfaceControl control = builder.build();
+        final long surfaceControl = nSurfaceControl_fromJava(control);
+        assertTrue(surfaceControl != 0);
+
+        var buffer1ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer1 = setAndApplySolidBufferWithRelease(surfaceControl, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer1ReleaseCallback);
+        // Buffer should not have been released, so we don't expect the callback to be called.
+        assertFalse(buffer1ReleaseCallback.callbackCalled());
+        var buffer2ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer2 = setAndApplySolidBufferWithRelease(surfaceControl, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer2ReleaseCallback);
+
+        // Buffer2 should not have been released, so we don't expect the callback to be called.
+        // Latching buffer2, should release buffer1.
+        buffer1ReleaseCallback.waitForCallback();
+        assertTrue(buffer1ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer1);
+        assertFalse(buffer2ReleaseCallback.callbackCalled());
+
+        var buffer3ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer3 = setAndApplySolidBufferWithRelease(surfaceControl, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer3ReleaseCallback);
+
+        buffer2ReleaseCallback.waitForCallback();
+        assertTrue(buffer2ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer2);
+        assertFalse(buffer3ReleaseCallback.callbackCalled());
+
+        nSurfaceControl_release(surfaceControl);
+
+        // releasing the surface control should release the last buffer
+        // buffer3ReleaseCallback.waitForCallback();
+        // assertTrue(buffer3ReleaseCallback.callbackCalled());
+        // nSurfaceTransaction_releaseBuffer(buffer3);
+    }
+
+    @Test
+    public void testBufferReleaseOnSetBuffer() {
+        SurfaceControl.Builder builder = new SurfaceControl.Builder();
+        builder.setName("testBufferRelease");
+        SurfaceControl control = builder.build();
+        final long surfaceControl = nSurfaceControl_fromJava(control);
+        assertTrue(surfaceControl != 0);
+
+        SurfaceControl.Transaction jTransaction = new SurfaceControl.Transaction();
+        final long transaction = nSurfaceTransaction_fromJava(jTransaction);
+        assertTrue(transaction != 0);
+
+        var buffer1ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer1 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer1ReleaseCallback);
+        assertTrue("failed to set buffer", buffer1 != 0);
+
+        // Buffer should not have been released, since we are not replacing the buffer.
+        assertFalse(buffer1ReleaseCallback.callbackCalled());
+
+        var buffer2ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer2 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer2ReleaseCallback);
+
+        // Buffer2 replaces Buffer1 when we call set buffer on the transaction so should release buffer1.
+        buffer1ReleaseCallback.waitForCallback();
+        assertTrue(buffer1ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer1);
+        assertFalse(buffer2ReleaseCallback.callbackCalled());
+
+        var buffer3ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer3 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer3ReleaseCallback);
+
+        buffer2ReleaseCallback.waitForCallback();
+        assertTrue(buffer2ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer2);
+        assertFalse(buffer3ReleaseCallback.callbackCalled());
+
+        // setting a null buffer should release the last buffer
+        nSurfaceTransaction_setBuffer(surfaceControl, transaction, /*null buffer*/ 0);
+
+        buffer3ReleaseCallback.waitForCallback();
+        assertTrue(buffer3ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer3);
+
+        nSurfaceControl_release(surfaceControl);
+    }
+
+    @Test
+    public void testBufferReleaseOnTransactionMerge() {
+        SurfaceControl.Builder builder = new SurfaceControl.Builder();
+        builder.setName("testBufferRelease");
+        SurfaceControl control = builder.build();
+        final long surfaceControl = nSurfaceControl_fromJava(control);
+        assertTrue(surfaceControl != 0);
+
+
+
+        SurfaceControl.Transaction jTransaction = new SurfaceControl.Transaction();
+        final long transaction = nSurfaceTransaction_fromJava(jTransaction);
+        assertTrue(transaction != 0);
+
+        var buffer1ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer1 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer1ReleaseCallback);
+        assertTrue("failed to set buffer", buffer1 != 0);
+
+        SurfaceControl.Transaction parentTransaction = new SurfaceControl.Transaction();
+        parentTransaction.merge(jTransaction);
+        // Buffer should not have been released, since we are not replacing the buffer.
+        assertFalse(buffer1ReleaseCallback.callbackCalled());
+
+        var buffer2ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer2 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer2ReleaseCallback);
+        parentTransaction.merge(jTransaction);
+
+        // Buffer2 replaces Buffer1 when we merge the transaction so should release buffer1.
+        buffer1ReleaseCallback.waitForCallback();
+        assertTrue(buffer1ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer1);
+        assertFalse(buffer2ReleaseCallback.callbackCalled());
+
+        var buffer3ReleaseCallback = new TimedBufferReleaseCallback();
+        long buffer3 = nSurfaceTransaction_setSolidBufferWithRelease(surfaceControl, transaction, DEFAULT_LAYOUT_WIDTH,
+                DEFAULT_LAYOUT_HEIGHT, Color.RED, buffer3ReleaseCallback);
+        parentTransaction.merge(jTransaction);
+
+        buffer2ReleaseCallback.waitForCallback();
+        assertTrue(buffer2ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer2);
+        assertFalse(buffer3ReleaseCallback.callbackCalled());
+
+        // setting a null buffer should release the last buffer
+        nSurfaceTransaction_setBuffer(surfaceControl, transaction, /*null buffer*/ 0);
+        parentTransaction.merge(jTransaction);
+
+        buffer3ReleaseCallback.waitForCallback();
+        assertTrue(buffer3ReleaseCallback.callbackCalled());
+        nSurfaceTransaction_releaseBuffer(buffer3);
+
+        nSurfaceControl_release(surfaceControl);
     }
 }

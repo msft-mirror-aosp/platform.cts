@@ -66,19 +66,18 @@ def _get_supported_preview_sizes(cam, camera_id):
     supported_preview_sizes: capped by min & max of video encoding capabilities
   """
   # Find min and max video encoding sizes
-  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
-  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
-  common_size_max = (
-      video_processing_utils.get_largest_common_preview_video_size(
+  common_preview_video_sizes = (
+      # Function only returns max and min size, and not the full list
+      video_processing_utils.get_preview_video_sizes_union(
           cam, camera_id))
-  common_size_min, _ = (
-      video_processing_utils.get_lowest_common_preview_video_size(
-          supported_preview_sizes, supported_video_qualities))
+  common_size_max = common_preview_video_sizes.largest_size
+  common_size_min = common_preview_video_sizes.smallest_size
   largest_common_size_area = (
       int(common_size_max.split('x')[0])*int(common_size_max.split('x')[1]))
   smallest_common_size_area = max(
       int(common_size_min.split('x')[0])*int(common_size_min.split('x')[1]),
-      _LOW_RESOLUTION_SIZE_AREA)
+          _LOW_RESOLUTION_SIZE_AREA)
+  logging.debug('Smallest common size area: %s', smallest_common_size_area)
   # Clamp list of previews with min and max sizes' area
   supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
   supported_preview_sizes = (
@@ -200,13 +199,9 @@ class PreviewAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       # Raise error if not FRONT or REAR facing camera
       camera_properties_utils.check_front_or_rear_camera(props)
 
-      # List of preview resolutions to test
-      supported_preview_sizes = _get_supported_preview_sizes(
-          cam, self.camera_id)
+      # Converge 3A
       raw_avlb = camera_properties_utils.raw16(props)
       full_or_better = camera_properties_utils.full_or_better(props)
-
-      # Converge 3A
       cam.do_3a()
       req = capture_request_utils.auto_capture_request()
       if raw_avlb and (fls_physical == fls_logical):
@@ -221,6 +216,8 @@ class PreviewAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       run_crop_test = full_or_better and raw_avlb
 
       # Check if we support testing this preview size
+      supported_preview_sizes = _get_supported_preview_sizes(
+          cam, self.camera_id)
       for preview_size in supported_preview_sizes:
         logging.debug('Testing preview recording for size: %s', preview_size)
         # recording preview

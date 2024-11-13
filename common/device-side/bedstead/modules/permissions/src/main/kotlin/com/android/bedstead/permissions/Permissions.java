@@ -18,6 +18,10 @@ package com.android.bedstead.permissions;
 
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.cts.testapisreflection.TestApisReflectionKt.addOverridePermissionState;
+import static android.cts.testapisreflection.TestApisReflectionKt.clearOverridePermissionStates;
+import static android.cts.testapisreflection.TestApisReflectionKt.getAdoptedShellPermissions;
+import static android.cts.testapisreflection.TestApisReflectionKt.removeOverridePermissionState;
 
 import android.app.AppOpsManager;
 import android.content.Context;
@@ -635,8 +639,7 @@ public final class Permissions {
         if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
             // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
             // infinite loop so won't use .appOps().set()
-            Set<String> previousAdoptedShellPermissions =
-                    TestApisReflectionKt.getAdoptedShellPermissions(
+            Set<String> previousAdoptedShellPermissions = getAdoptedShellPermissions(
                             ShellCommandUtils.uiAutomation());
             adoptShellPermissionIdentity(CommonPermissions.MANAGE_APP_OPS_MODES);
             for (String appOp : filteredGrantedAppOps) {
@@ -736,7 +739,8 @@ public final class Permissions {
     public void clearAllOverridePermissionStates() {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
             try {
-                TestApisReflectionKt.clearAllOverridePermissionStates(ShellCommandUtils.uiAutomation());
+                TestApisReflectionKt.clearAllOverridePermissionStates(
+                        ShellCommandUtils.uiAutomation());
             } catch (Exception e) {
                 Log.e(LOG_TAG, "Error clearing all override permission states", e);
             }
@@ -744,18 +748,18 @@ public final class Permissions {
     }
 
     private void resetRootPermissionState(Package pkg, UserReference user) {
-        TestApisReflectionKt.clearOverridePermissionStates(ShellCommandUtils.uiAutomation(),
-                pkg.uid(user));
+        clearOverridePermissionStates(ShellCommandUtils.uiAutomation(), pkg.uid(user));
     }
 
-    private void forceRootPermissionState(Package pkg, UserReference user, String permission, boolean granted) {
-        TestApisReflectionKt.addOverridePermissionState(
+    private void forceRootPermissionState(Package pkg, UserReference user, String permission,
+            boolean granted) {
+        addOverridePermissionState(
                 ShellCommandUtils.uiAutomation(), pkg.uid(user), permission,
                 granted ? PERMISSION_GRANTED : PERMISSION_DENIED);
     }
 
     public void removeRootPermissionState(Package pkg, UserReference user, String permission) {
-        TestApisReflectionKt.removeOverridePermissionState(
+        removeOverridePermissionState(
                 ShellCommandUtils.uiAutomation(), pkg.uid(user), permission);
     }
 

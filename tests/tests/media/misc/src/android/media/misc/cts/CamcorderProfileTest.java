@@ -36,6 +36,7 @@ import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -528,6 +529,7 @@ public class CamcorderProfileTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandbox does not have permission to use camera.")
     public void testGetFirstBackCamera() {
         /*
          * Device may not have rear camera for checkGet(-1).
@@ -546,6 +548,7 @@ public class CamcorderProfileTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandbox does not have permission to use camera.")
     public void testGetWithId() {
         int nCamera = Camera.getNumberOfCameras();
         Context context = InstrumentationRegistry.getContext();

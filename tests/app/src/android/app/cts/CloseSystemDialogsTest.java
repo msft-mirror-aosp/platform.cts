@@ -68,7 +68,6 @@ import com.android.compatibility.common.util.UserHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -273,7 +272,6 @@ public class CloseSystemDialogsTest {
             + " not support visible background users at the moment, so skipping these tests for"
             + " secondary_user_on_secondary_display.")
     @Test
-    @Ignore
     public void testCloseSystemDialogs_inTrampolineWhenTargetSdk30_isSent() throws Exception {
         int notificationId = 43;
         CompletableFuture<Integer> result = new CompletableFuture<>();

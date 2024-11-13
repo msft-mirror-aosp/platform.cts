@@ -37,6 +37,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureTestAppInstalledGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsureTestAppInstalled {
 
     int ENSURE_TEST_APP_INSTALLED_PRIORITY = MIDDLE;

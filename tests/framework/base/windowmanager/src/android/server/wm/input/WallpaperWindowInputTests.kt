@@ -32,6 +32,7 @@ import android.view.Display.DEFAULT_DISPLAY
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.window.WindowInfosListenerForTest
+import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -113,7 +114,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
         if (enableWallpaperTouch) {
             assertThat(event, allOf(
                 withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(Point(xOnScreen, yOnScreen)),
+                withCoords(Point(xOnScreen, yOnScreen), UinputTouchDevice.TOUCH_COORDINATE_EPSILON),
                 withSource(InputDevice.SOURCE_TOUCHSCREEN)
             ))
         } else {

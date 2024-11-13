@@ -40,6 +40,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequireRunOnProfileAnnotation("com.android.tv.profile")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireRunOnTvProfile {
     OptionalBoolean installInstrumentedAppInParent() default ANY;
 

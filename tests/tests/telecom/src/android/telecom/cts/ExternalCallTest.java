@@ -108,7 +108,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
                 MockConnection.ON_PULL_EXTERNAL_CALL);
         // Try to pull -- we expect Telecom to absorb the request since the call is not pullable.
         call.pullExternalCall();
-        counter.waitForCount(5000L/*mS*/);
+        counter.tryWaitForCount(1, 5000L/*ms*/);
         assertEquals(0, counter.getInvokeCount());
     }
 
@@ -158,7 +158,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
         // Try to pull -- we expect Telecom to absorb the request since we are on an emergency
         // call.
         call.pullExternalCall();
-        counter.waitForCount(5000L /*mS*/);
+        counter.tryWaitForCount(1, 5000L /*ms*/);
         assertEquals(0, counter.getInvokeCount());
     }
 

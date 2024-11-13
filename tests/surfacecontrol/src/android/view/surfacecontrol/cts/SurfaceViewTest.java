@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 public class SurfaceViewTest {
     private SurfaceViewCtsActivity mActivity;
-    private SurfaceViewCtsActivity.MockSurfaceView mMockSurfaceView;
+    private SurfaceViewCtsActivity.TestSurfaceView mTestSurfaceView;
 
     @Rule
     public ActivityTestRule<SurfaceViewCtsActivity> mActivityRule =
@@ -59,8 +59,8 @@ public class SurfaceViewTest {
     @Before
     public void setup() {
         mActivity = mActivityRule.getActivity();
-        mMockSurfaceView = mActivity.getSurfaceView();
-        CtsWindowInfoUtils.waitForWindowFocus(mMockSurfaceView, true);
+        mTestSurfaceView = mActivity.getSurfaceView();
+        CtsWindowInfoUtils.waitForWindowFocus(mTestSurfaceView, true);
     }
 
     @UiThreadTest
@@ -78,33 +78,33 @@ public class SurfaceViewTest {
         final int right = 320;
         final int bottom = 240;
 
-        assertTrue(mMockSurfaceView.isDraw());
-        assertTrue(mMockSurfaceView.isOnAttachedToWindow());
-        assertTrue(mMockSurfaceView.isDispatchDraw());
-        assertTrue(mMockSurfaceView.isSurfaceCreatedCalled());
-        assertTrue(mMockSurfaceView.isSurfaceChanged());
+        assertTrue(mTestSurfaceView.isDraw());
+        assertTrue(mTestSurfaceView.isOnAttachedToWindow());
+        assertTrue(mTestSurfaceView.isDispatchDraw());
+        assertTrue(mTestSurfaceView.isSurfaceCreatedCalled());
+        assertTrue(mTestSurfaceView.isSurfaceChanged());
 
-        assertTrue(mMockSurfaceView.isOnWindowVisibilityChanged());
-        int expectedVisibility = mMockSurfaceView.getVisibility();
-        int actualVisibility = mMockSurfaceView.getVInOnWindowVisibilityChanged();
+        assertTrue(mTestSurfaceView.isOnWindowVisibilityChanged());
+        int expectedVisibility = mTestSurfaceView.getVisibility();
+        int actualVisibility = mTestSurfaceView.getVInOnWindowVisibilityChanged();
         assertEquals(expectedVisibility, actualVisibility);
 
-        assertTrue(mMockSurfaceView.isOnMeasureCalled());
-        int expectedWidth = mMockSurfaceView.getMeasuredWidth();
-        int expectedHeight = mMockSurfaceView.getMeasuredHeight();
-        int actualWidth = mMockSurfaceView.getWidthInOnMeasure();
-        int actualHeight = mMockSurfaceView.getHeightInOnMeasure();
+        assertTrue(mTestSurfaceView.isOnMeasureCalled());
+        int expectedWidth = mTestSurfaceView.getMeasuredWidth();
+        int expectedHeight = mTestSurfaceView.getMeasuredHeight();
+        int actualWidth = mTestSurfaceView.getWidthInOnMeasure();
+        int actualHeight = mTestSurfaceView.getHeightInOnMeasure();
         assertEquals(expectedWidth, actualWidth);
         assertEquals(expectedHeight, actualHeight);
 
         Region region = new Region();
         region.set(left, top, right, bottom);
-        assertTrue(mMockSurfaceView.gatherTransparentRegion(region));
+        assertTrue(mTestSurfaceView.gatherTransparentRegion(region));
 
-        mMockSurfaceView.setFormat(PixelFormat.TRANSPARENT);
-        assertFalse(mMockSurfaceView.gatherTransparentRegion(region));
+        mTestSurfaceView.setFormat(PixelFormat.TRANSPARENT);
+        assertFalse(mTestSurfaceView.gatherTransparentRegion(region));
 
-        SurfaceHolder actual = mMockSurfaceView.getHolder();
+        SurfaceHolder actual = mTestSurfaceView.getHolder();
         assertNotNull(actual);
         assertTrue(actual instanceof SurfaceHolder);
     }
@@ -122,16 +122,16 @@ public class SurfaceViewTest {
         final int bottom = 240;
 
         // change the SurfaceView size
-        int beforeLayoutWidth = mMockSurfaceView.getWidth();
-        int beforeLayoutHeight = mMockSurfaceView.getHeight();
-        mMockSurfaceView.resetOnSizeChangedFlag(false);
-        assertFalse(mMockSurfaceView.isOnSizeChangedCalled());
-        mMockSurfaceView.layout(left, top, right, bottom);
-        assertTrue(mMockSurfaceView.isOnSizeChangedCalled());
-        assertEquals(beforeLayoutWidth, mMockSurfaceView.getOldWidth());
-        assertEquals(beforeLayoutHeight, mMockSurfaceView.getOldHeight());
-        assertEquals(right - left, mMockSurfaceView.getWidth());
-        assertEquals(bottom - top, mMockSurfaceView.getHeight());
+        int beforeLayoutWidth = mTestSurfaceView.getWidth();
+        int beforeLayoutHeight = mTestSurfaceView.getHeight();
+        mTestSurfaceView.resetOnSizeChangedFlag(false);
+        assertFalse(mTestSurfaceView.isOnSizeChangedCalled());
+        mTestSurfaceView.layout(left, top, right, bottom);
+        assertTrue(mTestSurfaceView.isOnSizeChangedCalled());
+        assertEquals(beforeLayoutWidth, mTestSurfaceView.getOldWidth());
+        assertEquals(beforeLayoutHeight, mTestSurfaceView.getOldHeight());
+        assertEquals(right - left, mTestSurfaceView.getWidth());
+        assertEquals(bottom - top, mTestSurfaceView.getHeight());
     }
 
     /**
@@ -144,52 +144,52 @@ public class SurfaceViewTest {
         final int scrollToX = 200;
         final int scrollToY = 200;
 
-        int oldHorizontal = mMockSurfaceView.getScrollX();
-        int oldVertical = mMockSurfaceView.getScrollY();
-        assertFalse(mMockSurfaceView.isOnScrollChanged());
-        mMockSurfaceView.scrollTo(scrollToX, scrollToY);
-        assertTrue(mMockSurfaceView.isOnScrollChanged());
-        assertEquals(oldHorizontal, mMockSurfaceView.getOldHorizontal());
-        assertEquals(oldVertical, mMockSurfaceView.getOldVertical());
-        assertEquals(scrollToX, mMockSurfaceView.getScrollX());
-        assertEquals(scrollToY, mMockSurfaceView.getScrollY());
+        int oldHorizontal = mTestSurfaceView.getScrollX();
+        int oldVertical = mTestSurfaceView.getScrollY();
+        assertFalse(mTestSurfaceView.isOnScrollChanged());
+        mTestSurfaceView.scrollTo(scrollToX, scrollToY);
+        assertTrue(mTestSurfaceView.isOnScrollChanged());
+        assertEquals(oldHorizontal, mTestSurfaceView.getOldHorizontal());
+        assertEquals(oldVertical, mTestSurfaceView.getOldVertical());
+        assertEquals(scrollToX, mTestSurfaceView.getScrollX());
+        assertEquals(scrollToY, mTestSurfaceView.getScrollY());
     }
 
     @Test
     public void testOnDetachedFromWindow() {
-        assertFalse(mMockSurfaceView.isDetachedFromWindow());
-        assertTrue(mMockSurfaceView.isShown());
+        assertFalse(mTestSurfaceView.isDetachedFromWindow());
+        assertTrue(mTestSurfaceView.isShown());
         mActivityRule.finishActivity();
-        PollingCheck.waitFor(() -> mMockSurfaceView.isDetachedFromWindow() &&
-                !mMockSurfaceView.isShown());
+        PollingCheck.waitFor(() -> mTestSurfaceView.isDetachedFromWindow()
+                && !mTestSurfaceView.isShown());
     }
 
     @Test
     public void surfaceInvalidatedWhileDetaching() throws Throwable {
-        assertTrue(mMockSurfaceView.mSurface.isValid());
-        assertFalse(mMockSurfaceView.isDetachedFromWindow());
+        assertTrue(mTestSurfaceView.mSurface.isValid());
+        assertFalse(mTestSurfaceView.isDetachedFromWindow());
         WidgetTestUtils.runOnMainAndLayoutSync(mActivityRule, () -> {
-            ((ViewGroup)mMockSurfaceView.getParent()).removeView(mMockSurfaceView);
+            ((ViewGroup) mTestSurfaceView.getParent()).removeView(mTestSurfaceView);
         }, false);
-        assertTrue(mMockSurfaceView.isDetachedFromWindow());
-        assertFalse(mMockSurfaceView.mSurface.isValid());
+        assertTrue(mTestSurfaceView.isDetachedFromWindow());
+        assertFalse(mTestSurfaceView.mSurface.isValid());
     }
 
     @Test
     public void testSurfaceRemainsValidWhileCanvasLocked() throws Throwable {
-        assertFalse(mMockSurfaceView.isDetachedFromWindow());
-        assertTrue(mMockSurfaceView.isShown());
-        mMockSurfaceView.awaitSurfaceCreated(3, TimeUnit.SECONDS);
-        assertTrue(mMockSurfaceView.isSurfaceCreatedCalled());
-        Canvas canvas = mMockSurfaceView.getHolder().lockCanvas();
+        assertFalse(mTestSurfaceView.isDetachedFromWindow());
+        assertTrue(mTestSurfaceView.isShown());
+        mTestSurfaceView.awaitSurfaceCreated(3, TimeUnit.SECONDS);
+        assertTrue(mTestSurfaceView.isSurfaceCreatedCalled());
+        Canvas canvas = mTestSurfaceView.getHolder().lockCanvas();
         assertNotNull(canvas);
         // Try to detach the surfaceview. Since the surface is locked by the lock canvas called,
         // the surface will remain valid.
         mActivityRule.getActivity().runOnUiThread(() ->
-                ((ViewGroup) mMockSurfaceView.getParent()).removeView(mMockSurfaceView));
-        assertTrue(mMockSurfaceView.mSurface.isValid());
-        mMockSurfaceView.getHolder().unlockCanvasAndPost(canvas);
-        PollingCheck.waitFor(() -> mMockSurfaceView.isDetachedFromWindow()
-                && !mMockSurfaceView.isShown());
+                ((ViewGroup) mTestSurfaceView.getParent()).removeView(mTestSurfaceView));
+        assertTrue(mTestSurfaceView.mSurface.isValid());
+        mTestSurfaceView.getHolder().unlockCanvasAndPost(canvas);
+        PollingCheck.waitFor(() -> mTestSurfaceView.isDetachedFromWindow()
+                && !mTestSurfaceView.isShown());
     }
 }

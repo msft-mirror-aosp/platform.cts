@@ -38,6 +38,27 @@
             android:requiredDisplayCategory="testActivityCategory"
             android:exported="false" />
         <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory1Group1Activity"
+            android:requiredDisplayCategory="testDisplayCategory1"
+            android:taskAffinity="android.virtualdevice.cts.applaunch.group1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$EmptyGroup1Activity"
+            android:taskAffinity="android.virtualdevice.cts.applaunch.group1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory1Activity"
+            android:requiredDisplayCategory="testDisplayCategory1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory2Activity"
+            android:requiredDisplayCategory="testDisplayCategory2"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$AnotherDisplayCategory2Activity"
+            android:requiredDisplayCategory="testDisplayCategory2"
+            android:exported="false" />
+        <activity
             android:name=".ActivityInterceptionTest$InterceptedActivity"
             android:exported="false">
             <intent-filter>

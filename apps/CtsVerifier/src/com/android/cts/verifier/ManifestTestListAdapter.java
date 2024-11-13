@@ -30,7 +30,6 @@ import android.hardware.SensorPrivacyManager;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.UserManager;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.ListView;
 
@@ -144,8 +143,6 @@ public class ManifestTestListAdapter extends TestListAdapter {
     private static final String CONFIG_BATTERY_SUPPORTED = "config_battery_supported";
 
     private static final String CONFIG_NO_EMULATOR = "config_no_emulator";
-
-    private static final String CONFIG_VOICE_CAPABLE = "config_voice_capable";
 
     private static final String CONFIG_HAS_RECENTS = "config_has_recents";
 
@@ -504,13 +501,6 @@ public class ManifestTestListAdapter extends TestListAdapter {
                             }
                         } catch (Exception e) {
                             Log.e(LOG_TAG, "Exception while checking for emulator support.", e);
-                        }
-                        break;
-                    case CONFIG_VOICE_CAPABLE:
-                        TelephonyManager telephonyManager =
-                                context.getSystemService(TelephonyManager.class);
-                        if (!telephonyManager.isVoiceCapable()) {
-                            return false;
                         }
                         break;
                     case CONFIG_HAS_RECENTS:

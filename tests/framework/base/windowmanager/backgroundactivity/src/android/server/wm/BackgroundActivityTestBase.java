@@ -82,7 +82,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final Components APP_ASM_OPT_OUT = Components.get(APP_ASM_OPT_OUT_PACKAGE);
 
     static final List<Components> ALL_APPS =
-            List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33);
+            List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33, APP_ASM_OPT_OUT);
 
     static final String SHELL_PACKAGE = "com.android.shell";
     // This can be long as the activity should start
@@ -95,6 +95,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final String ASM_RESTRICTIONS_ENABLED =
             "ActivitySecurity__asm_restrictions_enabled";
     private static final int TEST_SERVICE_SETUP_TIMEOUT_MS = 2000;
+    public static final int FOCUS_LOSS_TIMEOUT_MS = 10_000;
     final DeviceConfigStateHelper mDeviceConfig =
             new DeviceConfigStateHelper(NAMESPACE_WINDOW_MANAGER);
 
@@ -316,6 +317,15 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
             return this;
         }
 
+        // Start an action, expecting the given activity's component name to be started
+        // for this action.
+        ActivityStartVerifier action(String action) {
+            mLaunchIntent.setAction(action);
+            mBroadcastIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.LAUNCH_INTENTS,
+                    new Intent[]{mLaunchIntent});
+            return this;
+        }
+
         ActivityStartVerifier activityIntoNewTask(ComponentName to) {
             activity(to);
             mLaunchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -362,6 +372,23 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
             assertTaskStackHasComponents(expectedComponents[expectedComponents.length - 1],
                     expectedComponents);
             return this;
+        }
+
+        ActivityStartVerifier executeAndWaitForFocusLoss(ComponentName activityToLoseFocus) {
+            mContext.sendBroadcast(mBroadcastIntent);
+            waitForActivityState(FOCUS_LOSS_TIMEOUT_MS, activityToLoseFocus,
+                    WindowManagerState.STATE_PAUSED);
+
+            // Reset intents to remove any added flags
+            reset();
+            return this;
+        }
+
+        ComponentName thenAssertTaskHasLostFocus(ComponentName taskWithoutFocus) {
+            assertWithMessage("Task should have lost focus: " + taskWithoutFocus).that(
+                            mWmState.getFocusedActivity())
+                    .isNotEqualTo(getActivityName(taskWithoutFocus));
+            return ComponentName.unflattenFromString(mWmState.getFocusedActivity());
         }
 
         /**

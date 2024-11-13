@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -137,14 +137,14 @@ class ParamNoiseReductionTest(its_base_test.ItsBaseTest):
           snrs[chan].append(rgb_snrs[chan])
 
     # Draw plot
-    pylab.figure(_NAME)
-    pylab.title(f'{_NAME}')
+    plt.figure(_NAME)
+    plt.title(f'{_NAME}')
     for j in range(_NUM_COLORS):
-      pylab.plot(_NR_MODES_LIST, snrs[j], '-'+'rgb'[j]+'o')
-    pylab.xlabel(f'{str(_NR_MODES)[1:-1]}')  # strip '{' '}' off string
-    pylab.ylabel('SNR (dB)')
-    pylab.xticks(_NR_MODES_LIST)
-    matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_SNRs.png')
+      plt.plot(_NR_MODES_LIST, snrs[j], '-'+'rgb'[j]+'o')
+    plt.xlabel(f'{str(_NR_MODES)[1:-1]}')  # strip '{' '}' off string
+    plt.ylabel('SNR (dB)')
+    plt.xticks(_NR_MODES_LIST)
+    plt.savefig(f'{name_with_log_path}_plot_SNRs.png')
 
     if nr_modes_reported != _NR_MODES_LIST:
       raise AssertionError(f'{nr_modes_reported} != {_NR_MODES_LIST}')

@@ -16,18 +16,34 @@
 
 package android.os.cts;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+
+import android.content.Context;
 import android.icu.util.ULocale;
 import android.os.LocaleList;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class LocaleListTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class LocaleListTest {
+    @Test
     public void testEmptyLocaleList() {
         LocaleList ll = new LocaleList();
         assertNotNull(ll);
@@ -46,6 +62,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertNull(ll.get(10));
     }
 
+    @Test
     public void testOneMemberLocaleList() {
         final LocaleList ll = new LocaleList(Locale.US);
         assertNotNull(ll);
@@ -55,6 +72,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertNull(ll.get(10));
     }
 
+    @Test
     public void testTwoMemberLocaleList() {
         final Locale enPH = Locale.forLanguageTag("en-PH");
         final Locale[] la = {enPH, Locale.US};
@@ -67,6 +85,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertNull(ll.get(10));
     }
 
+    @Test
     public void testNullArgument() {
         try {
             LocaleList ll = new LocaleList((Locale) null);
@@ -82,6 +101,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testNullArguments() {
         final Locale[] la = {Locale.US, null};
         LocaleList ll = null;
@@ -93,6 +113,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testRepeatedArguments() {
         final Locale[] la = {Locale.US, Locale.US};
         LocaleList ll = new LocaleList(la);
@@ -100,6 +121,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals(Locale.US, ll.get(0));
     }
 
+    @Test
     public void testIndexOf() {
         final LocaleList empty = new LocaleList();
         assertEquals(-1, empty.indexOf(Locale.US));
@@ -114,6 +136,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals(-1, twoMember.indexOf(Locale.forLanguageTag("en-US")));
     }
 
+    @Test
     public void testEquals() {
         final LocaleList empty = new LocaleList();
         final LocaleList anotherEmpty = new LocaleList();
@@ -140,6 +163,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertTrue(oneMember.equals(sameOneMember));
     }
 
+    @Test
     public void testHashCode() {
         final LocaleList empty = new LocaleList();
         final LocaleList anotherEmpty = new LocaleList();
@@ -151,6 +175,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals(oneMember.hashCode(), sameOneMember.hashCode());
     }
 
+    @Test
     public void testToString() {
         LocaleList ll = new LocaleList();
         assertEquals("[]", ll.toString());
@@ -164,6 +189,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals("["+Locale.US.toString()+","+Locale.FRENCH.toString()+"]", ll.toString());
     }
 
+    @Test
     public void testToLanguageTags() {
         LocaleList ll = new LocaleList();
         assertEquals("", ll.toLanguageTags());
@@ -178,6 +204,7 @@ public class LocaleListTest extends AndroidTestCase {
                 ll.toLanguageTags());
     }
 
+    @Test
     public void testGetEmptyLocaleList() {
         LocaleList empty = LocaleList.getEmptyLocaleList();
         LocaleList anotherEmpty = LocaleList.getEmptyLocaleList();
@@ -187,6 +214,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertSame(empty, anotherEmpty);
     }
 
+    @Test
     public void testForLanguageTags() {
         assertEquals(LocaleList.getEmptyLocaleList(), LocaleList.forLanguageTags(null));
         assertEquals(LocaleList.getEmptyLocaleList(), LocaleList.forLanguageTags(""));
@@ -198,6 +226,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals(new LocaleList(la), LocaleList.forLanguageTags("en-PH,en-US"));
     }
 
+    @Test
     public void testGetDefault() {
         final LocaleList ll = LocaleList.getDefault();
         assertNotNull(ll);
@@ -207,6 +236,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertTrue(ll.indexOf(defaultLocale) != -1);
     }
 
+    @Test
     public void testGetAdjustedDefault() {
         final LocaleList ll = LocaleList.getDefault();
         assertNotNull(ll);
@@ -216,6 +246,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertTrue(ll.indexOf(defaultLocale) == 0);
     }
 
+    @Test
     public void testGetDefault_localeSetDefaultCalled() {
         final Locale originalLocale = Locale.getDefault();
         final LocaleList originalLocaleList = LocaleList.getDefault();
@@ -252,6 +283,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSetDefault_null() {
         try {
             LocaleList.setDefault(null);
@@ -261,6 +293,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSetDefault_empty() {
         try {
             LocaleList.setDefault(LocaleList.getEmptyLocaleList());
@@ -270,6 +303,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSetDefault_oneLocale() {
         final Locale originalLocale = Locale.getDefault();
         final LocaleList originalLocaleList = LocaleList.getDefault();
@@ -286,6 +320,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSetDefault_twoLocales() {
         final Locale originalLocale = Locale.getDefault();
         final LocaleList originalLocaleList = LocaleList.getDefault();
@@ -302,6 +337,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testParcelable() {
         // Make sure an empty LocaleList can be marshalled/unmarshalled via Parcel.
         assertEquals(LocaleList.getEmptyLocaleList(),
@@ -312,6 +348,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertEquals(original, cloneViaParcel(original));
     }
 
+    @Test
     public void testDescribeContents_doesNotThrowException() {
         // Just check calling describeContents() should not cause any exceptions.
         LocaleList.forLanguageTags("en").describeContents();
@@ -354,6 +391,7 @@ public class LocaleListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetFirstMatch_noAssets() {
         String[] noAssets = {};
         assertNull(LocaleList.getEmptyLocaleList().getFirstMatch(noAssets));
@@ -365,6 +403,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("fr-BE,nl-BE").getFirstMatch(noAssets));
     }
 
+    @Test
     public void testGetFirstMatch_oneAsset() {
         String[] oneDutchAsset = {"nl"};
         assertNull(LocaleList.getEmptyLocaleList().getFirstMatch(oneDutchAsset));
@@ -382,6 +421,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("nl-BE,fr-BE").getFirstMatch(oneDutchAsset));
     }
 
+    @Test
     public void testGetFirstMatch_twoAssets() {
         String[] FrenchAndDutchAssets = {"fr", "nl"};
         assertNull(LocaleList.getEmptyLocaleList().getFirstMatch(FrenchAndDutchAssets));
@@ -399,6 +439,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("nl-BE,fr-BE").getFirstMatch(FrenchAndDutchAssets));
     }
 
+    @Test
     public void testGetFirstMatch_oneChineseAsset() {
         String[] oneChineseAsset = {"zh-CN"};  // Assumed to mean zh-Hans-CN
         // The following Chinese examples would all match, so they will be chosen.
@@ -431,6 +472,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("ko-KR,zh-Hant-TW").getFirstMatch(oneChineseAsset));
     }
 
+    @Test
     public void testGetFirstMatch_serbianCyrillic() {
         String[] oneSerbianAsset = {"sr"};  // Assumed to mean sr-Cyrl-RS
         // The following Serbian examples would all match, so they will be chosen.
@@ -463,6 +505,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("hr-HR,sr-Latn-ME").getFirstMatch(oneSerbianAsset));
     }
 
+    @Test
     public void testGetFirstMatch_LtrPseudoLocale() {
         String[] onePseudoLocale = {"en-XA"};
         // "en-XA" matches itself
@@ -479,6 +522,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("sr,en-US").getFirstMatch(onePseudoLocale));
     }
 
+    @Test
     public void testGetFirstMatch_RtlPseudoLocale() {
         String[] onePseudoLocale = {"ar-XB"};
         // "ar-XB" matches itself
@@ -495,6 +539,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("sr,ar-EG").getFirstMatch(onePseudoLocale));
     }
 
+    @Test
     public void testGetFirstMatch_privateUseWithoutCountry() {
         String[] onePrivateLocale = {"qaa"};
         // "qaa" supports itself and "qaa-CA"
@@ -506,6 +551,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("sr,qaa-CA").getFirstMatch(onePrivateLocale));
     }
 
+    @Test
     public void testGetFirstMatch_privateUseWithCountry() {
         String[] onePrivateLocale = {"qaa-US"};
         // "qaa-US" supports itself
@@ -522,6 +568,7 @@ public class LocaleListTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("sr,qaa").getFirstMatch(onePrivateLocale));
     }
 
+    @Test
     public void testIsPseudoLocale() {
         assertTrue(LocaleList.isPseudoLocale(ULocale.forLanguageTag("en-XA")));
         assertTrue(LocaleList.isPseudoLocale(ULocale.forLanguageTag("ar-XB")));
@@ -533,6 +580,7 @@ public class LocaleListTest extends AndroidTestCase {
         assertFalse(LocaleList.isPseudoLocale((ULocale) null));
     }
 
+    @Test
     public void testMatchesLanguageAndScript() {
         assertTrue(LocaleList.matchesLanguageAndScript(Locale.forLanguageTag("fr-Latn-FR"),
                 Locale.forLanguageTag("fr-Latn")));

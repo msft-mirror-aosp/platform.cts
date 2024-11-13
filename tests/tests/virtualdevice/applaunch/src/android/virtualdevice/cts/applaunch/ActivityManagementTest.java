@@ -22,6 +22,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -31,12 +32,15 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.view.WindowManager;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.TestService;
@@ -128,6 +132,33 @@ public class ActivityManagementTest {
         mRule.waitAndAssertActivityRemoved(mEmptyActivityComponent);
 
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onDisplayEmpty(mVirtualDisplayId);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_ACTIVITY_CONTROL_API,
+            android.companion.virtual.flags.Flags.FLAG_DYNAMIC_POLICY})
+    @Test
+    public void activityListener_shouldCallOnActivityLaunchBlocked() {
+        mVirtualDevice.addActivityPolicyExemption(mEmptyActivityComponent);
+
+        Intent intent = new Intent(mContext, EmptyActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        mRule.sendIntentToDisplay(intent, mVirtualDisplayId);
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onActivityLaunchBlocked(
+                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUser()),
+                any());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void activityListener_shouldCallOnSecureWindowShown() {
+        EmptyActivity activity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplayId, EmptyActivity.class);
+        getInstrumentation().runOnMainSync(() ->
+                activity.getWindow().setFlags(
+                        WindowManager.LayoutParams.FLAG_SECURE,
+                        WindowManager.LayoutParams.FLAG_SECURE));
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onSecureWindowShown(
+                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUser()));
     }
 
     @Test

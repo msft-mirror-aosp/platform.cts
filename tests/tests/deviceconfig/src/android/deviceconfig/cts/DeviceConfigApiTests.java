@@ -26,10 +26,13 @@ import android.content.Context;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.ravenwood.RavenwoodConfig;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
+import android.provider.flags.Flags;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -37,13 +40,20 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.ravenwood.common.RavenwoodCommonUtils;
 
+import com.google.common.truth.Expect;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,6 +66,9 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public final class DeviceConfigApiTests {
+
+    private static final String TAG = DeviceConfigApiTests.class.getSimpleName();
+
     private static final String NAMESPACE1 = "namespace1";
     private static final String NAMESPACE2 = "namespace2";
     private static final String NAMESPACE3 = "namespace3";
@@ -96,6 +109,8 @@ public final class DeviceConfigApiTests {
 
     private static final long OPERATION_TIMEOUT_MS = 5000;
 
+    private static final String DUMP_PREFIX = "..";
+
     private static Context sContext;
 
     private static Executor sExecutor;
@@ -120,6 +135,10 @@ public final class DeviceConfigApiTests {
     private static String sUnsupportedReason;
 
     private int mInitialSyncDisabledMode;
+
+    @Rule public final Expect expect = Expect.create();
+
+    @Rule public final TestName testName = new TestName();
 
     @RavenwoodConfig.Config
     public static final RavenwoodConfig sConfig = new RavenwoodConfig.Builder()
@@ -173,6 +192,9 @@ public final class DeviceConfigApiTests {
         if (SdkLevel.isAtLeastV()) {
             DeviceConfig.clearAllLocalOverrides();
         }
+
+        OnPropertiesChangedListenerForTests.unregisterAfter(DeviceConfigApiTests.class, testName);
+
         if (!RavenwoodCommonUtils.isOnRavenwood()) {
             // Do not need waiting on Ravenwood as everything happens locally in process.
             TimeUnit.MILLISECONDS.sleep(WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS);
@@ -1145,59 +1167,54 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener listener1 = createOnPropertiesChangedListener(receivedUpdates1);
         OnPropertiesChangedListener listener2 = createOnPropertiesChangedListener(receivedUpdates2);
 
-        try {
-            DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
 
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates1.size(), /*expectedTotalUpdatesCount=*/1);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), /*expectedTotalUpdatesCount=*/0);
-            receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates1.size(), /*expectedTotalUpdatesCount=*/1);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), /*expectedTotalUpdatesCount=*/0);
+        receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
 
-            DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener2);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener2);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
 
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates2.size(), 1);
-            receivedUpdates1.get(1).assertEqual(NAMESPACE1, KEY1, VALUE2);
-            receivedUpdates2.get(0).assertEqual(NAMESPACE1, KEY1, VALUE2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates2.size(), 1);
+        receivedUpdates1.get(1).assertEqual(NAMESPACE1, KEY1, VALUE2);
+        receivedUpdates2.get(0).assertEqual(NAMESPACE1, KEY1, VALUE2);
 
-            DeviceConfig.removeOnPropertiesChangedListener(listener1);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
+        DeviceConfig.removeOnPropertiesChangedListener(listener1);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates2.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates2.size(), 2);
 
-            receivedUpdates2.get(1).assertEqual(NAMESPACE1, KEY1, VALUE1);
+        receivedUpdates2.get(1).assertEqual(NAMESPACE1, KEY1, VALUE1);
 
-            DeviceConfig.removeOnPropertiesChangedListener(listener2);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
+        DeviceConfig.removeOnPropertiesChangedListener(listener2);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), 2);
-        } finally {
-            DeviceConfig.removeOnPropertiesChangedListener(listener1);
-            DeviceConfig.removeOnPropertiesChangedListener(listener2);
-        }
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), 2);
     }
 
     /**
@@ -1212,79 +1229,71 @@ public final class DeviceConfigApiTests {
         OnPropertiesChangedListener listener1 = createOnPropertiesChangedListener(receivedUpdates1);
         OnPropertiesChangedListener listener2 = createOnPropertiesChangedListener(receivedUpdates2);
 
-        try {
-            DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, sExecutor, listener1);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/1);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
 
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates1.size(), 1);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), 0);
-            receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates1.size(), 1);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), 0);
+        receivedUpdates1.get(0).assertEqual(NAMESPACE1, KEY1, VALUE1);
 
-            DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, sExecutor, listener2);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, sExecutor, listener2);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE2, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/0);
 
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), 0);
-            receivedUpdates1.get(1).assertEqual(NAMESPACE1, KEY1, VALUE2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), 0);
+        receivedUpdates1.get(1).assertEqual(NAMESPACE1, KEY1, VALUE2);
 
-            DeviceConfig.setProperty(NAMESPACE2, KEY1, VALUE1, /*makeDefault=*/false);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        DeviceConfig.setProperty(NAMESPACE2, KEY1, VALUE1, /*makeDefault=*/false);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates2.size(), 1);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates2.size(), 1);
 
-            receivedUpdates2.get(0).assertEqual(NAMESPACE2, KEY1, VALUE1);
+        receivedUpdates2.get(0).assertEqual(NAMESPACE2, KEY1, VALUE1);
 
-            DeviceConfig.removeOnPropertiesChangedListener(listener1);
-            DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
+        DeviceConfig.removeOnPropertiesChangedListener(listener1);
+        DeviceConfig.setProperty(NAMESPACE1, KEY1, VALUE1, /*makeDefault=*/false);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/1);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), 1);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), 1);
 
-            DeviceConfig.setProperty(NAMESPACE2, KEY1, VALUE2, /*makeDefault=*/false);
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        DeviceConfig.setProperty(NAMESPACE2, KEY1, VALUE2, /*makeDefault=*/false);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener did not receive expected update",
-                    receivedUpdates2.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener did not receive expected update",
+                receivedUpdates2.size(), 2);
 
-            receivedUpdates2.get(1).assertEqual(NAMESPACE2, KEY1, VALUE2);
-            DeviceConfig.removeOnPropertiesChangedListener(listener2);
+        receivedUpdates2.get(1).assertEqual(NAMESPACE2, KEY1, VALUE2);
+        DeviceConfig.removeOnPropertiesChangedListener(listener2);
 
-            waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
-            waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates2, /*expectedTotalUpdatesCount=*/2);
+        waitForListenerUpdateOrTimeout(receivedUpdates1, /*expectedTotalUpdatesCount=*/2);
 
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates1.size(), 2);
-            assertEquals("OnPropertiesListener received unexpected update",
-                    receivedUpdates2.size(), 2);
-
-        } catch(Exception e) {
-            throw e;
-        } finally {
-            DeviceConfig.removeOnPropertiesChangedListener(listener1);
-            DeviceConfig.removeOnPropertiesChangedListener(listener2);
-        }
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates1.size(), 2);
+        assertEquals("OnPropertiesListener received unexpected update",
+                receivedUpdates2.size(), 2);
     }
 
     /**
@@ -1394,6 +1403,40 @@ public final class DeviceConfigApiTests {
         assertEquals(callback.onDeviceConfigAccessCalls, 0);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
+    public void testDump_empty() throws Exception {
+        String dump = dump();
+
+        expect.withMessage("dump()").that(dump)
+            .isEqualTo(DUMP_PREFIX + "0 listeners for 0 namespaces:\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
+    public void testDump_withListeners() throws Exception {
+        var listener1 = new TestOnPropertiesChangedListener();
+        var listener2 = new TestOnPropertiesChangedListener();
+        var listener3 = new TestOnPropertiesChangedListener();
+
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, Runnable::run, listener1);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, Runnable::run, listener2);
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE1, Runnable::run, listener3);
+        // Next call will remove listener1 from NAMESPACE1
+        DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, Runnable::run, listener1);
+
+        String dump = dump();
+
+        expect.withMessage("dump()").that(dump).isEqualTo(DUMP_PREFIX
+                + "3 listeners for 2 namespaces:\n"
+                + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n"
+                + DUMP_PREFIX + NAMESPACE2 + ": 1 listeners\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener1 + "\n"
+        );
+    }
+
     private class TestMonitorCallback implements DeviceConfig.MonitorCallback {
         public int onNamespaceUpdateCalls = 0;
         public int onDeviceConfigAccessCalls = 0;
@@ -1416,16 +1459,41 @@ public final class DeviceConfigApiTests {
 
     private OnPropertiesChangedListener createOnPropertiesChangedListener(
             List<PropertyUpdate> receivedUpdates) {
-        OnPropertiesChangedListener changeListener = new OnPropertiesChangedListener() {
-            @Override
-            public void onPropertiesChanged(Properties properties) {
+        return new TestOnPropertiesChangedListener(receivedUpdates);
+    }
+
+
+    private final class TestOnPropertiesChangedListener
+            extends OnPropertiesChangedListenerForTests {
+        private final List<PropertyUpdate> mReceivedUpdates;
+
+        TestOnPropertiesChangedListener() {
+            this(/* receivedUpdates= */ null);
+        }
+
+        TestOnPropertiesChangedListener(List<PropertyUpdate> receivedUpdates) {
+            super(testName);
+            mReceivedUpdates = receivedUpdates;
+        }
+
+        @Override
+        public void onPropertiesChanged(Properties properties) {
+            super.onPropertiesChanged(properties);
+
+            if (mReceivedUpdates != null) {
                 synchronized (mLock) {
-                    receivedUpdates.add(new PropertyUpdate(properties));
+                    mReceivedUpdates.add(new PropertyUpdate(properties));
                     mLock.notifyAll();
                 }
             }
-        };
-        return changeListener;
+        }
+
+        @Override
+        protected void decorateToString(StringBuilder toString) {
+            if (mReceivedUpdates != null) {
+                toString.append(", received ").append(mReceivedUpdates.size()).append(" updates");
+            }
+        }
     }
 
     private void waitForListenerUpdateOrTimeout(
@@ -1578,4 +1646,20 @@ public final class DeviceConfigApiTests {
             }
         }
     }
+
+    private String dump(String...args) throws IOException {
+        try (StringWriter sw = new StringWriter()) {
+            PrintWriter pw = new PrintWriter(sw);
+
+            DeviceConfig.dump(/* fd= */ null, pw, DUMP_PREFIX, args);
+
+            pw.flush();
+            String dump = sw.toString();
+
+            Log.v(TAG, "dump() output\n" + dump);
+
+            return dump;
+        }
+    }
+
 }

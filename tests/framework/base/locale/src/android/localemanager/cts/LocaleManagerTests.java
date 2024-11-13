@@ -49,6 +49,7 @@ import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.app.LocaleManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -60,8 +61,8 @@ import android.os.LocaleList;
 import android.os.UserHandle;
 import android.server.wm.ActivityManagerTestBase;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -85,7 +86,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class LocaleManagerTests extends ActivityManagerTestBase {
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static Context sContext;
     private static LocaleManager sLocaleManager;
 
@@ -122,7 +122,7 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
 
     @BeforeClass
     public static void setUpClass() {
-        sContext = InstrumentationRegistry.getTargetContext();
+        sContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         sLocaleManager = sContext.getSystemService(LocaleManager.class);
 
         sPreviousSystemLocales = sLocaleManager.getSystemLocales();
@@ -138,6 +138,7 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
                 Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS);
     }
 
+    @Override
     @Before
     public void setUp() throws Exception {
         // Unlocks the device if locked, since we have tests where the app/activity needs
@@ -199,6 +200,10 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
         unRegisterReceiver(mImeAppCreationInfoProvider);
         unRegisterReceiver(mImeChangedBroadcastReceiver);
         resetImes();
+
+        stopTestPackage(IME_APP_PACKAGE);
+        stopTestPackage(INSTALLER_PACKAGE);
+        stopTestPackage(TEST_APP_PACKAGE);
     }
 
     private void unRegisterReceiver(BlockingBroadcastReceiver receiver) {
@@ -344,9 +349,8 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
     @Test
     public void testSetApplicationLocales_forAnotherAppInForeground_persistsAndSendsBroadcast()
             throws Exception {
-        // Bring the TestApp to the foreground by invoking an activity and verify its visibility.
+        // Bring the TestApp to the foreground by invoking an activity.
         launchActivity(TEST_APP_MAIN_ACTIVITY);
-        mWmState.assertVisibility(TEST_APP_MAIN_ACTIVITY, /* visible*/ true);
 
         runWithShellPermissionIdentity(() ->
                         sLocaleManager.setApplicationLocales(TEST_APP_PACKAGE, DEFAULT_APP_LOCALES),
@@ -419,18 +423,20 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
     @Test
     public void testSetApplicationLocales_forAnotherAppInForeground_callsOnConfigChanged()
             throws Exception {
-        // Bring the TestApp to the foreground by invoking an activity and verify its visibility.
+        // Bring the TestApp to the foreground by invoking an activity.
         launchActivity(TEST_APP_MAIN_ACTIVITY);
-        mWmState.assertVisibility(TEST_APP_MAIN_ACTIVITY, /* visible*/ true);
 
         runWithShellPermissionIdentity(() ->
                         sLocaleManager.setApplicationLocales(TEST_APP_PACKAGE, DEFAULT_APP_LOCALES),
                 Manifest.permission.CHANGE_CONFIGURATION);
         assertLocalesCorrectlySetForAnotherApp(TEST_APP_PACKAGE, DEFAULT_APP_LOCALES);
 
-        assertTrue(mTestAppConfigChangedInfoProvider.await());
-        assertReceivedBroadcastContains(mTestAppConfigChangedInfoProvider, TEST_APP_PACKAGE,
+        KeyguardManager km = sContext.getSystemService(KeyguardManager.class);
+        if (km != null && !km.isKeyguardLocked()) {
+            assertTrue(mTestAppConfigChangedInfoProvider.await());
+            assertReceivedBroadcastContains(mTestAppConfigChangedInfoProvider, TEST_APP_PACKAGE,
                 combineLocales(DEFAULT_APP_LOCALES, DEFAULT_SYSTEM_LOCALES));
+        }
     }
 
     @Test

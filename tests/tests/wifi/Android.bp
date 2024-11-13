@@ -52,6 +52,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "junit-params",
+        "Nene",
         "net-utils-framework-common",
         "truth",
         "android.wifi.mockwifi",
@@ -65,6 +66,7 @@ android_test {
         "mts-wifi",
         "mcts-wifi",
         "sts",
+        "dts",
     ],
 
     data: [
@@ -89,7 +91,7 @@ android_test {
 
     srcs: [
         "src/android/net/wifi/nl80211/cts/*.java",
-        "src/android/net/wifi/shareconnectivity/*.java",
+        "src/android/net/wifi/sharedconnectivity/**/*.java",
     ],
     static_libs: [
         "androidx.test.rules",

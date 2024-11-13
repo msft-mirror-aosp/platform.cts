@@ -262,10 +262,7 @@ public class ImageDecoderTest {
         }
 
         try {
-            ImageDecoder.Source src = ImageDecoder
-                .createSource(getResources(), R.raw.heifimage_10bit);
-            assertNotNull(src);
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             assertNotNull(bm);
@@ -320,11 +317,8 @@ public class ImageDecoderTest {
         assumeTrue("HEIF is not supported on this device, skip this test.",
                 ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
-
-        ImageDecoder.Source src = ImageDecoder.createSource(getResources(), R.raw.heifimage_10bit);
-        assertNotNull(src);
         try {
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_LOW_RAM);
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });

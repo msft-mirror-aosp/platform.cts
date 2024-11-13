@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 public class BackNavigationActivity extends Activity {
 
     boolean mOnBackPressedCalled;
+    boolean mOnUserInteractionCalled;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -34,5 +35,11 @@ public class BackNavigationActivity extends Activity {
     public void onBackPressed() {
         mOnBackPressedCalled = true;
         super.onBackPressed();
+    }
+
+    @Override
+    public void onUserInteraction() {
+        mOnUserInteractionCalled = true;
+        super.onUserInteraction();
     }
 }

@@ -21,24 +21,24 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_AVAILABLE;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
+import static android.cts.testapisreflection.TestApisReflectionKt.forceUpdateUserSetupComplete;
+import static android.cts.testapisreflection.TestApisReflectionKt.getUserType;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
+import static com.android.bedstead.nene.users.Users.users;
+import static com.android.bedstead.nene.utils.Versions.U;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_USERS;
-import static com.android.bedstead.nene.users.Users.users;
-import static com.android.bedstead.nene.utils.Versions.U;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.content.Intent;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -53,14 +53,14 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
-import com.android.bedstead.permissions.CommonPermissions;
-import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommand.Builder;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.CommonPermissions;
+import com.android.bedstead.permissions.PermissionContext;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
@@ -194,7 +194,7 @@ public final class UserReference implements AutoCloseable {
 
             try {
                 // Expected success string is "Success: removed user"
-                String unused = ShellCommand.builder("pm remove-user")
+                ShellCommand.builder("pm remove-user")
                         .addOperand("-w") // Wait for remove-user to complete
                         .withTimeout(Duration.ofMinutes(1))
                         .addOperand(mId)
@@ -242,7 +242,7 @@ public final class UserReference implements AutoCloseable {
             // ("Success: user %d removed\n", userId)
             // ("Success: user %d set as ephemeral\n", userId)
             // ("Success: user %d is already being removed\n", userId)
-            String unused = ShellCommand.builder("pm remove-user")
+            ShellCommand.builder("pm remove-user")
                     .addOperand("--set-ephemeral-if-in-use")
                     .addOperand(mId)
                     .validate(ShellCommandUtils::startsWithSuccess)
@@ -372,10 +372,11 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user is a profile, then this will make the parent the foreground user. It will
      * still return the {@link UserReference} of the profile in that case.
      */
+    @CanIgnoreReturnValue
     public UserReference switchTo() {
         UserReference parent = parent();
         if (parent != null) {
-            UserReference unused = parent.switchTo();
+            parent.switchTo();
             return this;
         }
 
@@ -553,7 +554,7 @@ public final class UserReference implements AutoCloseable {
                 try (PermissionContext p = TestApis.permissions()
                         .withPermission(CREATE_USERS)
                         .withPermissionOnVersionAtLeast(U, QUERY_USERS)) {
-                    String userTypeName = TestApisReflectionKt.getUserType(mUserManager);
+                    String userTypeName = getUserType(mUserManager);
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
                     }
@@ -655,7 +656,7 @@ public final class UserReference implements AutoCloseable {
                 /* user= */ this, USER_SETUP_COMPLETE_KEY, complete ? 1 : 0);
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            TestApisReflectionKt.forceUpdateUserSetupComplete(devicePolicyManager, id());
+            forceUpdateUserSetupComplete(devicePolicyManager, id());
         }
     }
 
@@ -691,16 +692,16 @@ public final class UserReference implements AutoCloseable {
                     .addOption("--user", mId);
 
             if (existingCredential != null) {
-                ShellCommand.Builder unused = commandBuilder.addOption("--old", existingCredential);
+                commandBuilder.addOption("--old", existingCredential);
             } else if (mLockCredential != null) {
-                ShellCommand.Builder unused = commandBuilder.addOption("--old", mLockCredential);
+                commandBuilder.addOption("--old", mLockCredential);
             }
 
-            String unused = commandBuilder.addOperand(lockCredential)
+            commandBuilder.addOperand(lockCredential)
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
-            if (e.output().contains("null or empty")) {
+            if (e.output().contains("old credential was not provided")) {
                 throw new NeneException("Error attempting to set lock credential when there is "
                         + "already one set. Use the version which takes the existing credential");
             }
@@ -822,7 +823,7 @@ public final class UserReference implements AutoCloseable {
         }
 
         try {
-            String unused = ShellCommand.builder("cmd lock_settings")
+            ShellCommand.builder("cmd lock_settings")
                     .addOperand("clear")
                     .addOption("--old", lockCredential)
                     .addOption("--user", mId)
@@ -891,6 +892,7 @@ public final class UserReference implements AutoCloseable {
      * @return {@code false} if user's credential is needed in order to turn off quiet mode,
      *         {@code true} otherwise.
      */
+    @CanIgnoreReturnValue
     @TargetApi(P)
     @Experimental
     public boolean setQuietMode(boolean enabled) {
@@ -917,7 +919,7 @@ public final class UserReference implements AutoCloseable {
                     .register();
             try {
                 if (mUserManager.requestQuietModeEnabled(enabled, userHandle())) {
-                    Intent unused = r.awaitForBroadcast();
+                    r.awaitForBroadcast();
                     return true;
                 }
                 return false;
@@ -958,7 +960,7 @@ public final class UserReference implements AutoCloseable {
     /** See {@link #remove}. */
     @Override
     public void close() {
-        UserReference unused = remove();
+        remove();
     }
 
     private AdbUser adbUserOrNull() {

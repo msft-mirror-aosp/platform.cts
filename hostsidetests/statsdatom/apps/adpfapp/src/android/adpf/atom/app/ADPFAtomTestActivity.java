@@ -18,6 +18,7 @@ package android.adpf.atom.app;
 
 import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND;
 import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_REGULAR_HINT_SESSIONS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_URI_STRING;
@@ -36,6 +37,7 @@ import android.os.PerformanceHintManager;
 import android.os.Process;
 import android.util.ArrayMap;
 import android.util.Log;
+import android.widget.RelativeLayout;
 
 import com.android.compatibility.common.util.PropertyUtil;
 
@@ -52,6 +54,8 @@ public class ADPFAtomTestActivity extends Activity {
     private final Map<String, Bundle> mResult = new ArrayMap<>();
 
     private static final int FIRST_API_LEVEL = PropertyUtil.getFirstApiLevel();
+
+    private RelativeLayout mRelativeLayout;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -87,8 +91,35 @@ public class ADPFAtomTestActivity extends Activity {
                 } else {
                     assertNotNull(session);
                 }
+                drawText();
+                Log.i(TAG, "Created hint session.");
+                break;
+            case ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE:
+                PerformanceHintManager.Session session1 = createPerformanceHintSession();
+                PerformanceHintManager.Session session2 = createPerformanceHintSession();
+                PerformanceHintManager.Session session3 = createPerformanceHintSession();
+                if (FIRST_API_LEVEL < Build.VERSION_CODES.S) {
+                    assumeNotNull(session1);
+                    assumeNotNull(session2);
+                    assumeNotNull(session3);
+                } else {
+                    assertNotNull(session1);
+                    assertNotNull(session2);
+                    assertNotNull(session3);
+                }
+                drawText();
+                Log.i(TAG, "Created multiple hint sessions.");
                 break;
         }
+    }
+
+    private void drawText() {
+        setContentView(R.layout.activity_main);
+
+        mRelativeLayout = findViewById(R.id.idRLView);
+
+        ADPFAtomTestPaintView paintView = new ADPFAtomTestPaintView(this);
+        mRelativeLayout.addView(paintView);
     }
 
     /**
