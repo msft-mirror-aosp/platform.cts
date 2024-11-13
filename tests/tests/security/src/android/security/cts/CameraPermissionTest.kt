@@ -48,6 +48,7 @@ import android.os.ServiceSpecificException
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.provider.Settings
 import android.security.cts.camera.open.lib.IOpenCameraActivity
 import android.security.cts.camera.open.lib.IntentKeys
 import android.util.Log
@@ -128,12 +129,18 @@ class CameraPermissionTest {
 
   private lateinit var broadcastReceiver: BroadcastReceiver
   private lateinit var openCameraAppInterface: IOpenCameraActivity
+  private lateinit var appOpsManager: AppOpsManager
+  private var oldAppOpsSettings: String? = null
+  private var shouldRestoreAppOpsSettings: Boolean = false
   private val onResumeFuture = CompletableFuture<Intent>()
   private val streamOpenedFuture = CompletableFuture<Intent>()
   private var openCameraResultFuture: CompletableFuture<Instrumentation.ActivityResult>? = null
   private var restoreSensorPrivacy: (() -> Unit)? = null
 
   private lateinit var cameraManager: CameraManager
+
+  private val context: Context
+    get() = instrumentation.context
 
   @Before
   fun setUp() {
@@ -145,9 +152,22 @@ class CameraPermissionTest {
         .find(CAMERA_PROXY_APP.packageName)
         .grantPermission(Manifest.permission.CAMERA)
 
-    val context = instrumentation.context
     cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
     assumeTrue(cameraManager.getCameraIdList().size > 0)
+
+    appOpsManager = context.getSystemService(AppOpsManager::class.java)
+
+    runWithShellPermissionIdentity {
+      oldAppOpsSettings =
+          Settings.Global.getString(context.contentResolver, Settings.Global.APP_OPS_CONSTANTS)
+      Settings.Global.putString(
+          context.contentResolver,
+          Settings.Global.APP_OPS_CONSTANTS,
+          "top_state_settle_time=0,fg_service_state_settle_time=0,bg_state_settle_time=0")
+      shouldRestoreAppOpsSettings = true
+      appOpsManager.clearHistory()
+      appOpsManager.resetHistoryParameters()
+    }
 
     broadcastReceiver =
         object : BroadcastReceiver() {
@@ -178,7 +198,17 @@ class CameraPermissionTest {
     finishActivity()
 
     if (this::broadcastReceiver.isInitialized) {
-      instrumentation.context.unregisterReceiver(broadcastReceiver)
+      context.unregisterReceiver(broadcastReceiver)
+    }
+
+    if (shouldRestoreAppOpsSettings) {
+      runWithShellPermissionIdentity {
+        // restore old AppOps settings.
+        Settings.Global.putString(
+            context.contentResolver, Settings.Global.APP_OPS_CONSTANTS, oldAppOpsSettings)
+        appOpsManager.clearHistory()
+        appOpsManager.resetHistoryParameters()
+      }
     }
 
     for (callback in onTearDown) {
@@ -296,7 +326,7 @@ class CameraPermissionTest {
 
     assertStreamOpened()
 
-    val am = instrumentation.context.getSystemService(ActivityManager::class.java)
+    val am = context.getSystemService(ActivityManager::class.java)
     val importance = am.getPackageImportance(OPEN_CAMERA_APP.packageName)
     Log.v(TAG, "OpenCameraApp importance: ${importance}")
 
@@ -385,7 +415,7 @@ class CameraPermissionTest {
 
     assertStreamOpened()
 
-    val am = instrumentation.context.getSystemService(ActivityManager::class.java)
+    val am = context.getSystemService(ActivityManager::class.java)
 
     // Wait until OpenCameraApp is no longer visible according to ActivityManager
     for (i in 0..7) { // 7s
@@ -444,7 +474,7 @@ class CameraPermissionTest {
         onResumeFuture
             .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .getIntExtra(OPEN_CAMERA_APP.keys.pid, -1)
-    instrumentation.context.sendBroadcast(
+    context.sendBroadcast(
         Intent(openCameraKey).apply {
           putExtra(OPEN_CAMERA_APP.keys.shouldStream, shouldStream)
           putExtra(OPEN_CAMERA_APP.keys.shouldRepeat, shouldRepeat)
@@ -527,7 +557,7 @@ class CameraPermissionTest {
   }
 
   private fun testConnectDevice(expectDenial: Boolean) {
-    val clientAttribution = instrumentation.context.getAttributionSource().asState()
+    val clientAttribution = context.getAttributionSource().asState()
     val expectedError =
         if (expectDenial) {
           ICameraService.ERROR_PERMISSION_DENIED
@@ -538,7 +568,7 @@ class CameraPermissionTest {
   }
 
   private fun testConnect(expectDenial: Boolean) {
-    val clientAttribution = instrumentation.context.getAttributionSource().asState()
+    val clientAttribution = context.getAttributionSource().asState()
     val expectedError =
         if (expectDenial) {
           ICameraService.ERROR_PERMISSION_DENIED
@@ -571,7 +601,7 @@ class CameraPermissionTest {
             DummyCameraDeviceCallbacks(),
             cameraManager.getCameraIdList()[0],
             0 /*oomScoreOffset*/,
-            instrumentation.context.applicationInfo.targetSdkVersion,
+            context.applicationInfo.targetSdkVersion,
             ICameraService.ROTATION_OVERRIDE_NONE,
             clientAttribution,
             DEVICE_POLICY_DEFAULT)
@@ -600,7 +630,7 @@ class CameraPermissionTest {
         .connect(
             DummyCameraClient(),
             /* cameraId= */ 0,
-            instrumentation.context.applicationInfo.targetSdkVersion,
+            context.applicationInfo.targetSdkVersion,
             ICameraService.ROTATION_OVERRIDE_NONE,
             /* forceSlowJpegMode= */ false,
             clientAttribution,
@@ -615,12 +645,9 @@ class CameraPermissionTest {
         onResumeFuture
             .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
             .getIntExtra(OPEN_CAMERA_APP.keys.pid, Process.INVALID_PID)
-    val uid =
-        instrumentation.context.packageManager
-            .getApplicationInfo(OPEN_CAMERA_APP.packageName, 0)
-            .uid
+    val uid = context.packageManager.getApplicationInfo(OPEN_CAMERA_APP.packageName, 0).uid
 
-    val context = instrumentation.context
+    val context = context
     val contextAttribution = context.getAttributionSource().asState()
     val clientAttribution = AttributionSourceState()
     clientAttribution.uid = uid
@@ -650,7 +677,7 @@ class CameraPermissionTest {
     openCameraResultFuture?.let {
       val finishIntent = Intent(OPEN_CAMERA_APP.keys.finish)
       finishIntent.setPackage(OPEN_CAMERA_APP.packageName)
-      instrumentation.context.sendBroadcast(finishIntent)
+      context.sendBroadcast(finishIntent)
     }
   }
 
@@ -695,7 +722,7 @@ class CameraPermissionTest {
   }
 
   private fun setSensorPrivacy(enabled: Boolean) {
-    val spm = instrumentation.context.getSystemService(SensorPrivacyManager::class.java)!!
+    val spm = context.getSystemService(SensorPrivacyManager::class.java)!!
     val supportsToggle = supportsSoftwarePrivacyToggle(spm)
     if (enabled) {
       assumeTrue(supportsToggle)
@@ -751,8 +778,7 @@ class CameraPermissionTest {
 
   private fun setOpMode(app: TestApp, @AppOpsManager.Mode mode: Int) {
     runWithShellPermissionIdentity {
-      val uid = instrumentation.context.packageManager.getApplicationInfo(app.packageName, 0).uid
-      val appOpsManager = instrumentation.context.getSystemService(AppOpsManager::class.java)
+      val uid = context.packageManager.getApplicationInfo(app.packageName, 0).uid
 
       val oldMode =
           appOpsManager.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_CAMERA, uid, app.packageName)
@@ -795,7 +821,7 @@ class CameraPermissionTest {
   private fun sendStopRepeating(app: TestApp) {
     val stopRepeatingIntent = Intent(app.keys.stopRepeating)
     stopRepeatingIntent.setPackage(app.packageName)
-    instrumentation.context.sendBroadcast(stopRepeatingIntent)
+    context.sendBroadcast(stopRepeatingIntent)
   }
 
   private companion object {
