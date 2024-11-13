@@ -1687,22 +1687,22 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Assert the KEEP_SCREEN_ON flag is not set on the main window yet.
         assertNotEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnSetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch::countDown));
+                keepScreenOnSetLatch::countDown));
         mTestService.setKeepScreenOnFlag(true);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnSetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);
         // Assert the KEEP_SCREEN_ON flag is now set on the main window.
         assertEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnUnsetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch2::countDown));
+                keepScreenOnUnsetLatch::countDown));
         mTestService.setKeepScreenOnFlag(false);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnUnsetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);
