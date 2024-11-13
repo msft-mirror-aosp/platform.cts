@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.security.cts;
+package android.security.cts.advancedprotection;
 
 import static android.security.advancedprotection.AdvancedProtectionManager.ACTION_SHOW_ADVANCED_PROTECTION_SUPPORT_DIALOG;
 import static android.security.advancedprotection.AdvancedProtectionManager.EXTRA_SUPPORT_DIALOG_TYPE;
@@ -25,31 +25,22 @@ import static android.security.advancedprotection.AdvancedProtectionManager.SUPP
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
-import android.app.Instrumentation;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
 import android.security.advancedprotection.AdvancedProtectionManager;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
@@ -59,52 +50,9 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_API)
-public class AdvancedProtectionManagerTest {
+public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     private static final int TIMEOUT_S = 1;
     private static final String RANDOM_STRING = "random_string";
-    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
-    private AdvancedProtectionManager mManager;
-    private boolean mInitialApmState;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Before
-    public void setup() {
-        assumeTrue(shouldTestAdvancedProtection(mInstrumentation.getContext()));
-        mManager = (AdvancedProtectionManager) mInstrumentation
-                .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
-                Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
-
-        mInitialApmState = mManager.isAdvancedProtectionEnabled();
-    }
-
-    private static boolean shouldTestAdvancedProtection(Context context) {
-        PackageManager pm = context.getPackageManager();
-        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
-            return false;
-        }
-        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            return false;
-        }
-        if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
-            return false;
-        }
-        return true;
-    }
-
-    @After
-    public void teardown() {
-        if (mManager == null) {
-            return;
-        }
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
-        mManager.setAdvancedProtectionEnabled(mInitialApmState);
-        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-    }
 
     @Test
     public void testEnableProtection() {
@@ -176,10 +124,12 @@ public class AdvancedProtectionManagerTest {
         }
     }
 
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#getAdvancedProtectionFeatures"})
     @Test
-    public void testGetFeatures() {
-        // To be updated once we start adding in features;
-        assertTrue(mManager.getAdvancedProtectionFeatures().isEmpty());
+    public void testGetFeatures_notNull() {
+        assertNotNull(mManager.getAdvancedProtectionFeatures());
     }
 
     @Test
@@ -277,7 +227,7 @@ public class AdvancedProtectionManagerTest {
     }
 
     @ApiTest(apis = {"android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#testCreateSupportIntent"})
+            + "#testCreateSupportIntent"})
     @Test
     public void testCreateSupportIntent_randomFeature_randomType_throwsIllegalArgument() {
         assertThrows(IllegalArgumentException.class, () -> mManager.createSupportIntent(
