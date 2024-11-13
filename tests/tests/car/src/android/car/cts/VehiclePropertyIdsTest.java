@@ -576,6 +576,8 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
     public void testToStringForAndroidBVehicleProperties() {
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_MODEL_TRIM))
                 .isEqualTo("INFO_MODEL_TRIM");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS))
+                .isEqualTo("INFO_VEHICLE_SIZE_CLASS");
     }
 
     /**
