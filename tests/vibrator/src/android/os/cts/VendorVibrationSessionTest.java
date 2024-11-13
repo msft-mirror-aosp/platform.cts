@@ -78,8 +78,9 @@ public class VendorVibrationSessionTest {
         Vibrator getVibrator();
     }
 
-    private static void addVibratorProvider(List<Object[]> data, VibratorProvider provider) {
-        data.add(new Object[]{ provider });
+    private static void addTestParameter(List<Object[]> data, String testLabel,
+            VibratorProvider vibratorProvider) {
+        data.add(new Object[]{ testLabel, vibratorProvider });
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -88,7 +89,7 @@ public class VendorVibrationSessionTest {
         // test.
         ArrayList<Object[]> data = new ArrayList<>();
         // These vibrators should be identical, but verify both APIs explicitly.
-        addVibratorProvider(data,
+        addTestParameter(data, "systemVibrator",
                 () -> InstrumentationRegistry.getInstrumentation().getContext()
                         .getSystemService(Vibrator.class));
         // VibratorManager also presents getDefaultVibrator, but in VibratorManagerTest
@@ -98,7 +99,7 @@ public class VendorVibrationSessionTest {
         VibratorManager vibratorManager = InstrumentationRegistry.getInstrumentation().getContext()
                 .getSystemService(VibratorManager.class);
         for (int vibratorId : vibratorManager.getVibratorIds()) {
-            addVibratorProvider(data,
+            addTestParameter(data, "vibratorId:" + vibratorId,
                     () -> InstrumentationRegistry.getInstrumentation().getContext()
                             .getSystemService(VibratorManager.class).getVibrator(vibratorId));
         }
@@ -117,10 +118,11 @@ public class VendorVibrationSessionTest {
 
     private final Vibrator mVibrator;
     private final Executor mExecutor;
+    private final List<CancellationSignal> mCancellationSignals = new ArrayList<>();
     private final List<TestCallback> mPendingCallbacks = new ArrayList<>();
 
-    // vibratorLabel is used by the parameterized test infrastructure.
-    public VendorVibrationSessionTest(VibratorProvider vibratorProvider) {
+    // Test label is needed for execution history
+    public VendorVibrationSessionTest(String testLabel, VibratorProvider vibratorProvider) {
         mVibrator = vibratorProvider.getVibrator();
         mExecutor = Executors.newSingleThreadExecutor();
         assertThat(mVibrator).isNotNull();
@@ -134,11 +136,13 @@ public class VendorVibrationSessionTest {
 
     @After
     public void cleanUp() throws Exception {
+        for (CancellationSignal signal : mCancellationSignals) {
+            // Cancel any pending session request, even if session was not started yet.
+            signal.cancel();
+        }
         for (TestCallback callback : mPendingCallbacks) {
-            VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
-            if (session != null) {
-                session.cancel();
-            }
+            // Wait for all pending session requests to be finished.
+            callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS);
         }
     }
 
@@ -253,8 +257,12 @@ public class VendorVibrationSessionTest {
 
     private TestCallback startSession(VibrationAttributes attrs,
             CancellationSignal cancellationSignal) {
+        if (cancellationSignal == null) {
+            cancellationSignal = new CancellationSignal();
+        }
         TestCallback callback = new TestCallback();
         mVibrator.startVendorSession(attrs, "reason", cancellationSignal, mExecutor, callback);
+        mCancellationSignals.add(cancellationSignal);
         mPendingCallbacks.add(callback);
         return callback;
     }
