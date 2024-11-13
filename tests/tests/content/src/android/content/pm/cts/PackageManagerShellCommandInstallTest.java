@@ -1451,6 +1451,60 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallAppWithDependantSdk_dependencyInstallerDisabled_succeeds()
+            throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+
+        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "INSTALL_SUCCEEDED");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallAppWithoutDependantSdk_dependencyInstallerDisabled_failsLater()
+            throws Exception {
+        onBeforeSdkTests();
+
+        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "Reconcile failed");
+    }
+
+    // TODO(b/372861776): Add tests for enabling dependency installer once the changes for installer
+    // behavior have been merged.
+    private void installAppUsingDependantSdk(
+            boolean enableAutoInstallDependencies, String expectedMsg) throws Exception {
+        getUiAutomation().adoptShellPermissionIdentity();
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_SDK_USER_PACKAGE);
+            params.setEnableAutoInstallDependencies(enableAutoInstallDependencies);
+
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "sdk1_user", TEST_USING_SDK1);
+
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder allowlistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) {
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertThat(statusMessage.get()).contains(expectedMsg);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
     public void testAppUsingSdkRequiredInstallAndUpdate() throws Exception {
         onBeforeSdkTests();
         // Try to install without required SDK1.

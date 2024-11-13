@@ -54,6 +54,14 @@
       </intent-filter>
     </provider>
 
+    <provider android:name="android.provider.cts.cloudproviders.SearchCloudMediaProvider"
+        android:authorities="com.android.provider.cts.cloudproviders.search"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.content.action.CLOUD_MEDIA_PROVIDER" />
+        </intent-filter>
+    </provider>
+
     <provider android:name="android.photopicker.cts.cloudproviders.CloudProviderPrimary"
               android:authorities="android.photopicker.cts.cloudproviders.cloud_primary"
               android:permission="com.android.providers.media.permission.MANAGE_CLOUD_MEDIA_PROVIDERS"

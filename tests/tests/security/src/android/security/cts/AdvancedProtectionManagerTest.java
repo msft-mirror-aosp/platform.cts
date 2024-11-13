@@ -16,7 +16,16 @@
 
 package android.security.cts;
 
+import static android.security.advancedprotection.AdvancedProtectionManager.ACTION_SHOW_ADVANCED_PROTECTION_SUPPORT_DIALOG;
+import static android.security.advancedprotection.AdvancedProtectionManager.EXTRA_SUPPORT_DIALOG_TYPE;
+import static android.security.advancedprotection.AdvancedProtectionManager.EXTRA_SUPPORT_DIALOG_FEATURE;
+import static android.security.advancedprotection.AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G;
+import static android.security.advancedprotection.AdvancedProtectionManager.SUPPORT_DIALOG_TYPE_BLOCKED_INTERACTION;
+import static android.security.advancedprotection.AdvancedProtectionManager.SUPPORT_DIALOG_TYPE_DISABLED_SETTING;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -25,6 +34,7 @@ import static org.junit.Assert.fail;
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -34,6 +44,8 @@ import android.security.advancedprotection.AdvancedProtectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -49,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_API)
 public class AdvancedProtectionManagerTest {
     private static final int TIMEOUT_S = 1;
+    private static final String RANDOM_STRING = "random_string";
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private AdvancedProtectionManager mManager;
     private boolean mInitialApmState;
@@ -197,6 +210,95 @@ public class AdvancedProtectionManagerTest {
         mInstrumentation.getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
         assertDoesNotThrow(() -> mManager.getAdvancedProtectionFeatures());
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent",
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#SUPPORT_DIALOG_TYPE_BLOCKED_INTERACTION"})
+    @Test
+    public void testCreateSupportIntent_existingFeature_blockedInteraction_createsIntent() {
+        Intent intent = mManager.createSupportIntent(FEATURE_ID_DISALLOW_CELLULAR_2G,
+                SUPPORT_DIALOG_TYPE_BLOCKED_INTERACTION);
+
+        assertEquals(ACTION_SHOW_ADVANCED_PROTECTION_SUPPORT_DIALOG, intent.getAction());
+        assertEquals(FEATURE_ID_DISALLOW_CELLULAR_2G,
+                intent.getStringExtra(EXTRA_SUPPORT_DIALOG_FEATURE));
+        assertEquals(SUPPORT_DIALOG_TYPE_BLOCKED_INTERACTION,
+                intent.getStringExtra(EXTRA_SUPPORT_DIALOG_TYPE));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent",
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#SUPPORT_DIALOG_TYPE_DISABLED_SETTING"})
+    @Test
+    public void testCreateSupportIntent_existingFeature_disabledSetting_createsIntent() {
+        Intent intent = mManager.createSupportIntent(FEATURE_ID_DISALLOW_CELLULAR_2G,
+                SUPPORT_DIALOG_TYPE_DISABLED_SETTING);
+
+        assertEquals(ACTION_SHOW_ADVANCED_PROTECTION_SUPPORT_DIALOG, intent.getAction());
+        assertEquals(FEATURE_ID_DISALLOW_CELLULAR_2G,
+                intent.getStringExtra(EXTRA_SUPPORT_DIALOG_FEATURE));
+        assertEquals(SUPPORT_DIALOG_TYPE_DISABLED_SETTING,
+                intent.getStringExtra(EXTRA_SUPPORT_DIALOG_TYPE));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_existingFeature_nullType_createsIntent() {
+        Intent intent = mManager.createSupportIntent(FEATURE_ID_DISALLOW_CELLULAR_2G, null);
+
+        assertEquals(ACTION_SHOW_ADVANCED_PROTECTION_SUPPORT_DIALOG, intent.getAction());
+        assertEquals(FEATURE_ID_DISALLOW_CELLULAR_2G,
+                intent.getStringExtra(EXTRA_SUPPORT_DIALOG_FEATURE));
+        assertNull(intent.getStringExtra(EXTRA_SUPPORT_DIALOG_TYPE));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_existingFeature_randomType_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> mManager.createSupportIntent(
+                FEATURE_ID_DISALLOW_CELLULAR_2G, RANDOM_STRING));
+    }
+
+    @ApiTest(apis = {"android.security.advancedprotection.AdvancedProtectionManager"
+            + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_randomFeature_existingType_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> mManager.createSupportIntent(
+                RANDOM_STRING, SUPPORT_DIALOG_TYPE_BLOCKED_INTERACTION));
+    }
+
+    @ApiTest(apis = {"android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_randomFeature_randomType_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class, () -> mManager.createSupportIntent(
+                RANDOM_STRING, RANDOM_STRING));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_nullFeature_randomType_throwsNullPointer() {
+        assertThrows(NullPointerException.class, () -> mManager.createSupportIntent(null,
+                RANDOM_STRING));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#testCreateSupportIntent"})
+    @Test
+    public void testCreateSupportIntent_nullFeature_nullType_throwsNullPointer() {
+        assertThrows(NullPointerException.class, () -> mManager.createSupportIntent(null, null));
     }
 
     private static void assertDoesNotThrow(ThrowingRunnable runnable) {
