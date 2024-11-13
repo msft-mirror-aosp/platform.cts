@@ -1729,6 +1729,7 @@ public class WallpaperManagerTest {
     @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS})
     public void testSetWallpaperWithCrops_twoCrops() {
         Point displaySize = getScreenSize();
+        assumeFalse(displaySize.x == displaySize.y);
         Point rotatedDisplaySize = new Point(displaySize.y, displaySize.x);
 
         Point bitmapSize = new Point(300, 800);
