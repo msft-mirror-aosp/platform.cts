@@ -91,6 +91,7 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
         if (mDpm.isAdminActive(adminComponent)) {
             mDpm.removeActiveAdmin(adminComponent);
         }
+        clearKeyguardDisabledFeatures();
         super.finish();
     }
 
@@ -99,6 +100,13 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
         Intent setKeyguardDisabledFeaturesIntent = new Intent(
                 ByodHelperActivity.ACTION_KEYGUARD_DISABLED_FEATURES)
                         .putExtra(ByodHelperActivity.EXTRA_PARAMETER_1, flags);
+        startActivity(setKeyguardDisabledFeaturesIntent);
+    }
+
+    private void clearKeyguardDisabledFeatures() {
+        Intent setKeyguardDisabledFeaturesIntent = new Intent(
+                ByodHelperActivity.ACTION_KEYGUARD_DISABLED_FEATURES)
+                        .putExtra(ByodHelperActivity.EXTRA_PARAMETER_1, 0);
         startActivity(setKeyguardDisabledFeaturesIntent);
     }
 
