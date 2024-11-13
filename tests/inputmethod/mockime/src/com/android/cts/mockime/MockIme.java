@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.inputmethodservice.ExtractEditText;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
@@ -638,6 +639,12 @@ public final class MockIme extends InputMethodService {
                     }
                     case "getStylusHandwritingEvents": {
                         return mEvents;
+                    }
+                    case "setStylusHandwritingRegion": {
+                        Region handwritingRegion = command.getExtras().getParcelable(
+                                "handwritingRegion", Region.class);
+                        setStylusHandwritingRegion(handwritingRegion);
+                        return true;
                     }
                     case "finishStylusHandwriting": {
                         finishStylusHandwriting();
