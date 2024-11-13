@@ -16,6 +16,11 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
@@ -90,6 +95,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_VP8);
         ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_VP9);
         ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        ABR_MEDIATYPE_LIST.add(MediaFormat.MIMETYPE_VIDEO_APV);
     }
 
     public CodecEncoderTest(String encoder, String mediaType, EncoderConfigParams[] cfgParams,
@@ -253,6 +259,13 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         return params;
     }
 
+    private static EncoderConfigParams[] getApvCfgParams() {
+        EncoderConfigParams[] params = new EncoderConfigParams[2];
+        params[0] = getVideoEncoderCfgParam(MediaFormat.MIMETYPE_VIDEO_APV, 176, 144, 1024000, 0);
+        params[1] = getVideoEncoderCfgParam(MediaFormat.MIMETYPE_VIDEO_APV, 352, 288, 1024000, 0);
+        return params;
+    }
+
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
         final boolean isEncoder = true;
@@ -275,6 +288,12 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, getVp9CfgParams()},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, getAv1CfgParams()},
         }));
+
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, getApvCfgParams()},
+            }));
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
 
@@ -306,6 +325,9 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+            requireCSD = true;
+        } else if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()
+                && mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
             requireCSD = true;
         }
 

@@ -43,7 +43,6 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.server.net.Flags;
 
 import java.util.Collections;
 import java.util.Map;
@@ -526,11 +525,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
 
         mTestAppInterface.kill();
-        if (Flags.networkBlockedForTopSleepingAndAbove()) {
-            PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
-                    mTestAppInterface::isNetworkBlockedByPolicy,
-                    "Test app did not lose network access after being stopped");
-        }
+        PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
+                mTestAppInterface::isNetworkBlockedByPolicy,
+                "Test app did not lose network access after being stopped");
         // The job should run after network is connected, even though the app does not have access
         // due to policy right now.
         mNetworkingHelper.setAllNetworksEnabled(true);
@@ -708,9 +705,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0, // Regular jobs should not have any privileged network capabilities
-                250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */)
+                .build());
     }
 
     // --------------------------------------------------------------------------------------------

@@ -118,6 +118,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.security.advancedprotection.AdvancedProtectionFeature;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -2824,6 +2825,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
+
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                assertEquals(currentConfig.isClientIsolationEnabled(),
+                        testSoftApConfig.isClientIsolationEnabled());
+            }
         }
     }
 
@@ -3199,7 +3205,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
                 softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
             }
-
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                softApConfigBuilder.setClientIsolationEnabled(true);
+            }
             // Test SoftApConfiguration set and get
             verifySetGetSoftApConfig(softApConfigBuilder.build());
 
@@ -3262,7 +3270,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 softApConfigBuilder.setBridgedModeOpportunisticShutdownEnabled(false);
                 verifySetGetSoftApConfig(softApConfigBuilder.build());
             }
-
         } finally {
             sWifiManager.unregisterSoftApCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
@@ -3362,6 +3369,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
             if (callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertTrue(callback.getCurrentSoftApInfo().getAutoShutdownTimeoutMillis() > 0);
+                if (Flags.mloSap()) {
+                    // Test AP configuration is WPA2, MldAddress should be NULL
+                    assertNull(callback.getCurrentSoftApInfo().getMldAddress());
+                }
             }
         } finally {
             // stop tethering which used to verify stopSoftAp
@@ -7535,6 +7546,27 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             assertTrue("retrieve Wi-Fi backup data fail", isQuerySucceeded.value);
             sWifiManager.restoreWifiBackupData(backupWifiData.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_WEP_DISABLED_IN_APM)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
+            codeName = "Baklava")
+    @Test
+    public void testGetSupportedAdvancedProtectionFeaturesOverWifi() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            List<AdvancedProtectionFeature> features =
+                    sWifiManager.getAvailableAdvancedProtectionFeatures();
+            // Should have the WEP disabled feature at least.
+            assertNotNull(features);
+            assertFalse(features.isEmpty());
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

@@ -125,6 +125,10 @@ public abstract class CodecTestBase {
     public static final boolean IS_AT_LEAST_V =
             ApiLevelUtil.isAfter(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
                 || ApiLevelUtil.codenameEquals("VanillaIceCream");
+    //TODO(b/248315681) Change to a proper condition
+    public static final boolean IS_AT_LEAST_B =
+            ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                || ApiLevelUtil.codenameEquals("Baklava");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
@@ -225,6 +229,7 @@ public abstract class CodecTestBase {
     static final int[] HEVC_PROFILES = combine(HEVC_SDR_PROFILES, HEVC_HDR_PROFILES);
     static final int[] AV1_SDR_PROFILES = new int[]{AV1ProfileMain8};
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
+    static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
@@ -451,6 +456,7 @@ public abstract class CodecTestBase {
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_PROFILES);
+        PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HLG_PROFILES);
 
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);

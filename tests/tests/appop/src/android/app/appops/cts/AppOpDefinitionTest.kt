@@ -228,6 +228,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_HEART_RATE] = 149
             APP_OPS[AppOpsManager.OPSTR_READ_SKIN_TEMPERATURE] = 150
             APP_OPS[AppOpsManager.OPSTR_RANGING] = 151
+            APP_OPS[AppOpsManager.OPSTR_READ_OXYGEN_SATURATION] = 152
         }
     }
 }

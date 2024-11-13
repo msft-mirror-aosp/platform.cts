@@ -27,6 +27,9 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.view.cts.R;
@@ -71,7 +74,9 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputDeviceKeyLayoutMapTest {
-    private static final String TAG = "InputDeviceKeyLayoutMapTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private static final String LABEL_PREFIX = "KEYCODE_";
     private static final int DEVICE_ID = 1;
     private static final int EV_SYN = 0;
@@ -82,48 +87,69 @@ public class InputDeviceKeyLayoutMapTest {
     private static final int GOOGLE_VIRTUAL_KEYBOARD_ID = 0x001f;
     private static final int POLL_EVENT_TIMEOUT_SECONDS = 5;
 
+    private static final Set<String> NEW_KEYS = new HashSet<>(Arrays.asList(
+            "DICTATE",
+            "NEW",
+            "CLOSE",
+            "DO_NOT_DISTURB",
+            "PRINT",
+            "LOCK",
+            "FULLSCREEN",
+            "F13",
+            "F14",
+            "F15",
+            "F16",
+            "F17",
+            "F18",
+            "F19",
+            "F20",
+            "F21",
+            "F22",
+            "F23",
+            "F24"
+    ));
+
     private static final Set<String> EXCLUDED_KEYS = new HashSet<>(Arrays.asList(
-                // Meta control keys.
-                "META_LEFT",
-                "META_RIGHT",
-                // KeyEvents not delivered to apps.
-                "APP_SWITCH",
-                "ASSIST",
-                "BACK",
-                "BRIGHTNESS_DOWN",
-                "BRIGHTNESS_UP",
-                "EMOJI_PICKER",
-                "HOME",
-                "KEYBOARD_BACKLIGHT_DOWN",
-                "KEYBOARD_BACKLIGHT_TOGGLE",
-                "KEYBOARD_BACKLIGHT_UP",
-                "LANGUAGE_SWITCH",
-                "MACRO_1",
-                "MACRO_2",
-                "MACRO_3",
-                "MACRO_4",
-                "MUTE",
-                "NOTIFICATION",
-                "POWER",
-                "RECENT_APPS",
-                "SCREENSHOT",
-                "SEARCH",
-                "SLEEP",
-                "SOFT_SLEEP",
-                "STYLUS_BUTTON_TERTIARY",
-                "STYLUS_BUTTON_PRIMARY",
-                "STYLUS_BUTTON_SECONDARY",
-                "SYSRQ",
-                "WAKEUP",
-                "VOICE_ASSIST",
-                // Keys that cause the test activity to lose focus
-                "CALCULATOR",
-                "CALENDAR",
-                "CONTACTS",
-                "ENVELOPE",
-                "EXPLORER",
-                "MUSIC"
-                ));
+            // Meta control keys.
+            "META_LEFT",
+            "META_RIGHT",
+            // KeyEvents not delivered to apps.
+            "APP_SWITCH",
+            "ASSIST",
+            "BACK",
+            "BRIGHTNESS_DOWN",
+            "BRIGHTNESS_UP",
+            "HOME",
+            "KEYBOARD_BACKLIGHT_DOWN",
+            "KEYBOARD_BACKLIGHT_TOGGLE",
+            "KEYBOARD_BACKLIGHT_UP",
+            "LANGUAGE_SWITCH",
+            "MACRO_1",
+            "MACRO_2",
+            "MACRO_3",
+            "MACRO_4",
+            "MUTE",
+            "NOTIFICATION",
+            "POWER",
+            "RECENT_APPS",
+            "SCREENSHOT",
+            "SEARCH",
+            "SLEEP",
+            "SOFT_SLEEP",
+            "STYLUS_BUTTON_TERTIARY",
+            "STYLUS_BUTTON_PRIMARY",
+            "STYLUS_BUTTON_SECONDARY",
+            "SYSRQ",
+            "WAKEUP",
+            "VOICE_ASSIST",
+            // Keys that cause the test activity to lose focus
+            "CALCULATOR",
+            "CALENDAR",
+            "CONTACTS",
+            "ENVELOPE",
+            "EXPLORER",
+            "MUSIC"
+    ));
 
     private Map<String, Integer> mKeyLayout;
     private Instrumentation mInstrumentation;
@@ -162,7 +188,8 @@ public class InputDeviceKeyLayoutMapTest {
                         "bool", "android"));
         mKeyLayout = nativeLoadKeyLayout(mParser.readRegisterCommand(R.raw.Generic));
         mUinputDevice = new UinputDevice(
-                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand());
+                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand(),
+                null /* display */);
     }
 
     @After
@@ -250,7 +277,7 @@ public class InputDeviceKeyLayoutMapTest {
     @Test
     public void testLayoutKeyEvents() {
         for (Map.Entry<String, Integer> entry : mKeyLayout.entrySet()) {
-            if (EXCLUDED_KEYS.contains(entry.getKey())) {
+            if (EXCLUDED_KEYS.contains(entry.getKey()) || NEW_KEYS.contains(entry.getKey())) {
                 continue;
             }
 
@@ -259,6 +286,30 @@ public class InputDeviceKeyLayoutMapTest {
             final int keyCode = KeyEvent.keyCodeFromString(label);
 
             if (!isForwardedToApps(keyCode)) {
+                continue;
+            }
+
+            pressKey(evKey);
+            assertReceivedKeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+            assertReceivedKeyEvent(KeyEvent.ACTION_UP, keyCode);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_ENABLE_NEW_25Q2_KEYCODES)
+    public void testNewKeycodes() {
+        for (Map.Entry<String, Integer> entry : mKeyLayout.entrySet()) {
+            if (!NEW_KEYS.contains(entry.getKey())) {
+                continue;
+            }
+
+            String label = LABEL_PREFIX + entry.getKey();
+            final int evKey = entry.getValue();
+            final int keyCode = KeyEvent.keyCodeFromString(label);
+
+            if (!isForwardedToApps(keyCode) || keyCode == KeyEvent.KEYCODE_LOCK
+                    || keyCode == KeyEvent.KEYCODE_FULLSCREEN
+                    || keyCode == KeyEvent.KEYCODE_DO_NOT_DISTURB) {
                 continue;
             }
 

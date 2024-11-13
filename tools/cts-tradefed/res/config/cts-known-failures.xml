@@ -310,18 +310,6 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
 
-    <!-- b/367914183 -->
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_simple" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_propertyRestriction" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_multipleSearchEmbeddings" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_hybrid" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testInformationalRankingExpressions" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearchWithoutEnablingFeatureFails" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.SearchSpecCtsTest#testEmbeddingSearch" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.SearchSpecCtsTest#testRebuild_embeddingSearch" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_embeddingSearch" />
-    <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases[run-on-work-profile] android.app.appsearch.cts.app.SearchSpecCtsTest#testSetFeatureEnabledToFalse_embeddingSearch" />
-
     <!-- b/363168669 -->
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />

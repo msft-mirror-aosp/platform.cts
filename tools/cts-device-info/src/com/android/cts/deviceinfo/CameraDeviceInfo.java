@@ -700,6 +700,9 @@ public final class CameraDeviceInfo extends DeviceInfo {
         if (Flags.cameraAeModeLowLightBoost()) {
             charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
         }
+        if (Flags.aePriority()) {
+            charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES.getName());
+        }
         charsKeyNames.add(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL.getName());

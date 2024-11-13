@@ -30,10 +30,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.Gainmap;
 import android.graphics.ImageDecoder;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.os.Parcel;
@@ -74,6 +76,8 @@ public class GainmapTest {
     static final Bitmap sScalingRedA8;
     static final Bitmap sScalingRed8888;
     static final Bitmap sScalingRedHLG8888;
+
+    static final Bitmap sScalingWhite8888;
 
     static {
         sScalingRedA8 = Bitmap.createBitmap(new int[] {
@@ -119,6 +123,13 @@ public class GainmapTest {
                     .setGainmapDirection(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR);
             sScalingRedHLG8888.getGainmap().setAlternativeImagePrimaries(SRGB);
         }
+        sScalingWhite8888 = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
+        Paint paint = new Paint();
+        paint.setColor(Color.WHITE);
+        new Canvas(sScalingWhite8888).drawPaint(paint);
+        Bitmap scalingWhiteGainmap = Bitmap.createBitmap(6, 6, Bitmap.Config.ARGB_8888);
+        new Canvas(scalingWhiteGainmap).drawPaint(paint);
+        sScalingWhite8888.setGainmap(new Gainmap(scalingWhiteGainmap));
     }
 
     @Rule
@@ -456,6 +467,30 @@ public class GainmapTest {
 
         assertBitmapQuadColor(region, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, threshold);
         assertBitmapQuadColor(gainmap, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK, threshold);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_RESAMPLE_GAINMAP_REGIONS)
+    @Test
+    public void testDecodeGainmapBitmapRegionDecoderWithInSampleSizeDoesNotInset()
+            throws Exception {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        assertTrue(sScalingWhite8888.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        byte[] data = stream.toByteArray();
+        BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(data, 0, data.length);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = 2;
+        Bitmap region = decoder.decodeRegion(new Rect(0, 0, 18, 18), options);
+        assertTrue(region.hasGainmap());
+        Bitmap gainmapImage = region.getGainmap().getGainmapContents();
+        assertEquals(Bitmap.Config.ARGB_8888, gainmapImage.getConfig());
+        Color expectedColor = Color.valueOf(Color.WHITE);
+        for (int x = 0; x < gainmapImage.getWidth(); x++) {
+            for (int y = 0; y < gainmapImage.getHeight(); y++) {
+                Color got = gainmapImage.getColor(x, y);
+                assertArrayEquals("Differed at x=" + x + ", y=" + y,
+                        expectedColor.getComponents(), got.getComponents(), 0.05f);
+            }
+        }
     }
 
     @Test

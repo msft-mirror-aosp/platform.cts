@@ -633,6 +633,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
         }
 
+        /*
+         * Extension keys. Tested in extension related tests.
+         */
+        waiverKeys.add(CaptureResult.EXTENSION_STRENGTH);
+        waiverKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
+
         // Only present on devices capable of reporting intra-frame statistics
         waiverKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         // Only present on logical cameras that switch between lenses when going trhough zoom ratios
@@ -641,6 +647,11 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         // Only present on devices that support low light boose AE mode
         if (!staticInfo.isAeModeLowLightBoostSupported()) {
             waiverKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
+        }
+
+        // Only present on devices that support night mode scene indicator detection
+        if (!staticInfo.isNightModeIndicatorSupported()) {
+            waiverKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
         }
 
         // LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID not required if key is not supported.
@@ -1048,6 +1059,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         if (Flags.cameraAeModeLowLightBoost()) {
             resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
         }
+        if (Flags.zoomMethod()) {
+            resultKeys.add(CaptureResult.CONTROL_ZOOM_METHOD);
+        }
+        if (Flags.aePriority()) {
+            resultKeys.add(CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        }
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);
@@ -1109,6 +1126,11 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
+        resultKeys.add(CaptureResult.EXTENSION_STRENGTH);
+        resultKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
+        if (Flags.nightModeIndicator()) {
+            resultKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        }
 
         return resultKeys;
     }

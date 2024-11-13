@@ -1010,7 +1010,7 @@ public class TypefaceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     public void testEffectiveWeight() {
         assertWeight(400, Typeface.SANS_SERIF);
@@ -1032,7 +1032,7 @@ public class TypefaceTest {
                 Typeface.create("sans-serif-black", Typeface.NORMAL), 400, false));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     public void testEffectiveWeight_customFont() {
         assumeTrue(ROBOTO.exists() && ROBOTO.canRead());

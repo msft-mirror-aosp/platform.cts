@@ -466,8 +466,20 @@ public final class ActivityManagerTest {
         assertTrue(indexRecentOne != -1 && indexRecentTwo != -1);
         assertTrue(indexRecentTwo < indexRecentOne);
 
-        // assert only recent2_activity is visible.
-        assertFalse(runningTaskList.get(indexRecentOne).isVisible());
+        boolean isRecentTwoActivityInMultiWindowMode = false;
+        for (int i = mStartedActivityList.size() - 1; i >= 0; i--) {
+            final Activity activity = mStartedActivityList.get(i);
+            if (activity.getClass() == ActivityManagerRecentTwoActivity.class) {
+                isRecentTwoActivityInMultiWindowMode = activity.isInMultiWindowMode();
+                break;
+            }
+        }
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If recent2_activity is in multi-windowing mode, it may not fully obscure
+        // recent1_activity.
+        if (!isRecentTwoActivityInMultiWindowMode) {
+            assertFalse(runningTaskList.get(indexRecentOne).isVisible());
+        }
         assertTrue(runningTaskList.get(indexRecentTwo).isVisible());
     }
 
