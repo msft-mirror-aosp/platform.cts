@@ -1084,6 +1084,9 @@ public class DisplayTest extends TestBase {
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888),
                      dest.isCombinationSupported(
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
+        if (android.hardware.flags.Flags.lutsApi()) {
+            assertEquals(overlayProperties.getLutProperties(), dest.getLutProperties());
+        }
         parcel.recycle();
     }
 
