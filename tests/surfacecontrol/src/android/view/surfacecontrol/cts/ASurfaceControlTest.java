@@ -101,6 +101,7 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.lang.ref.Reference;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -199,6 +200,14 @@ public class ASurfaceControlTest {
         if (onCommitCallback.mLatch.getCount() > 0) {
             Log.e(TAG, "Failed to wait for commit callback");
         }
+        return buffer;
+    }
+
+    public long setSolidBuffer(long surfaceControl, long surfaceTransaction, int width,
+            int height, int color) {
+        long buffer = nSurfaceTransaction_setSolidBuffer(surfaceControl, surfaceTransaction,
+                width, height, color);
+        assertTrue("failed to set buffer", buffer != 0);
         return buffer;
     }
 
@@ -1305,6 +1314,8 @@ public class ASurfaceControlTest {
     // @ApiTest = ASurfaceTransaction_setOnComplete(ASurfaceTransaction* _Nonnull transaction,
     //                                       void* _Null_unspecified context,
     //                                       ASurfaceTransaction_OnComplete _Nonnull func)
+    // @ApiTest = ASurfaceTransactionStats_getLatchTime(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats)
     @Test
     public void testSurfaceTransaction_setOnComplete() {
         TimedTransactionListener onCompleteCallback = new TimedTransactionListener();
@@ -2329,6 +2340,10 @@ public class ASurfaceControlTest {
         long mLatchTime = -1;
         long mPresentTime = -1;
         CountDownLatch mLatch = new CountDownLatch(1);
+        long mTargetSurfaceControlPtr;
+        boolean mSurfaceControlFound;
+        boolean mAcquireTimeQueried;
+        boolean mReleaseFenceQueried;
 
         @Override
         public void onTransactionComplete(long inLatchTime, long presentTime) {
@@ -2336,6 +2351,17 @@ public class ASurfaceControlTest {
             mLatchTime = inLatchTime;
             mPresentTime = presentTime;
             mLatch.countDown();
+        }
+
+        public long shouldQueryTransactionStats() {
+            return mTargetSurfaceControlPtr;
+        }
+
+        public void onTransactionStatsRead(boolean surfaceControlFound, boolean releaseFenceQueried,
+                boolean acquireTimeQueried) {
+            mSurfaceControlFound = surfaceControlFound;
+            mReleaseFenceQueried = releaseFenceQueried;
+            mAcquireTimeQueried = acquireTimeQueried;
         }
     }
 
@@ -2908,5 +2934,115 @@ public class ASurfaceControlTest {
         nSurfaceTransaction_releaseBuffer(buffer3);
 
         nSurfaceControl_release(surfaceControl);
+    }
+
+    // @ApiTest = ASurfaceTransaction_delete(ASurfaceTransaction* _Nullable transaction)
+    @Test
+    public void testSurfaceTransaction_delete() {
+        long surfaceTransaction = nSurfaceTransaction_create();
+        assertTrue("failed to create surface transaction", surfaceTransaction != 0);
+        nSurfaceTransaction_delete(surfaceTransaction);
+
+        // can pass a nullptr
+        nSurfaceTransaction_delete(0);
+    }
+
+    // @ApiTest = ASurfaceTransactionStats_getLatchTime(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats)
+    // @ApiTest = ASurfaceTransactionStats_getAcquireTime(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats,
+    //        ASurfaceControl* _Nonnull surface_control)
+    // @ApiTest = ASurfaceTransactionStats_getASurfaceControls(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats,
+    //        ASurfaceControl* _Nullable* _Nullable* _Nonnull outASurfaceControls,
+    //        size_t* _Nonnull outASurfaceControlsSize)
+    // @ApiTest = ASurfaceTransactionStats_releaseASurfaceControls(
+    //        ASurfaceControl* _Nonnull* _Nonnull surface_controls)
+    @Test
+    @RequiresDevice // emulators can't support sync fences
+    public void testOnCommit_ASurfaceTransactionStats() {
+        SurfaceControl.Builder builder = new SurfaceControl.Builder();
+        builder.setName("testOnCommit_ASurfaceTransactionStats");
+        SurfaceControl control = builder.build();
+        final long surfaceControl = nSurfaceControl_fromJava(control);
+        assertTrue(surfaceControl != 0);
+        final ArrayList<Long> mBuffers = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            TimedTransactionListener onCommitCallback = new TimedTransactionListener();
+            long surfaceTransaction = createSurfaceTransaction();
+            mBuffers.add(setSolidBuffer(surfaceControl, surfaceTransaction, 1,
+                    1, Color.RED));
+            nSurfaceTransaction_setOnCommitCallback(surfaceTransaction, onCommitCallback);
+            onCommitCallback.mTargetSurfaceControlPtr = surfaceControl;
+            applyAndDeleteSurfaceTransaction(surfaceTransaction);
+            try {
+                onCommitCallback.mLatch.await(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+            }
+
+            // Validate we got callbacks.
+            assertEquals(0, onCommitCallback.mLatch.getCount());
+            assertTrue(onCommitCallback.mCallbackTime > 0);
+            assertTrue(onCommitCallback.mSurfaceControlFound);
+            assertTrue(onCommitCallback.mAcquireTimeQueried);
+        }
+
+        for (Long buffer : mBuffers) {
+            nSurfaceTransaction_releaseBuffer(buffer);
+        }
+        mBuffers.clear();
+    }
+
+    // @ApiTest = ASurfaceTransactionStats_getLatchTime(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats)
+    // @ApiTest = ASurfaceTransactionStats_getAcquireTime(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats,
+    //        ASurfaceControl* _Nonnull surface_control)
+    // @ApiTest = ASurfaceTransactionStats_getPreviousReleaseFenceFd(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats,
+    //        ASurfaceControl* _Nonnull surface_control)
+    // @ApiTest = ASurfaceTransactionStats_getASurfaceControls(
+    //        ASurfaceTransactionStats* _Nonnull surface_transaction_stats,
+    //        ASurfaceControl* _Nullable* _Nullable* _Nonnull outASurfaceControls,
+    //        size_t* _Nonnull outASurfaceControlsSize)
+    // @ApiTest = ASurfaceTransactionStats_releaseASurfaceControls(
+    //        ASurfaceControl* _Nonnull* _Nonnull surface_controls)
+    @Test
+    @RequiresDevice // emulators can't support sync fences
+    public void testOnComplete_ASurfaceTransactionStats() {
+        SurfaceControl.Builder builder = new SurfaceControl.Builder();
+        builder.setName("testOnComplete_ASurfaceTransactionStats");
+        SurfaceControl control = builder.build();
+        final long surfaceControl = nSurfaceControl_fromJava(control);
+        assertTrue(surfaceControl != 0);
+        final ArrayList<Long> mBuffers = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            TimedTransactionListener onCompleteCallback = new TimedTransactionListener();
+            long surfaceTransaction = createSurfaceTransaction();
+            mBuffers.add(setSolidBuffer(surfaceControl, surfaceTransaction, 1,
+                    1, Color.RED));
+            nSurfaceTransaction_setOnCompleteCallback(surfaceTransaction,
+                    true /* waitForFence */, onCompleteCallback);
+            onCompleteCallback.mTargetSurfaceControlPtr = surfaceControl;
+            applyAndDeleteSurfaceTransaction(surfaceTransaction);
+            try {
+                onCompleteCallback.mLatch.await(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+            }
+
+            // Validate we got callbacks.
+            assertEquals(0, onCompleteCallback.mLatch.getCount());
+            assertTrue(onCompleteCallback.mCallbackTime > 0);
+            assertTrue(onCompleteCallback.mSurfaceControlFound);
+            assertTrue(onCompleteCallback.mAcquireTimeQueried);
+            assertTrue(onCompleteCallback.mReleaseFenceQueried);
+        }
+
+        for (Long buffer : mBuffers) {
+            nSurfaceTransaction_releaseBuffer(buffer);
+        }
+        mBuffers.clear();
     }
 }

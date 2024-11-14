@@ -17,8 +17,8 @@
 package android.mediapc.cts.common;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Utility class for computing the per frame variance.
@@ -66,8 +66,8 @@ public class Variance {
         String filePath = args[0];
         String outputFilename = args[1];
 
-        int width = 854;
-        int height = 480;
+        int width = 1920;
+        int height = 1080;
         int numFrames = 180;
         int ySize = width * height;
         byte[] luma = new byte[ySize];

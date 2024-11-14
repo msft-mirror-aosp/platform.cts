@@ -1603,13 +1603,17 @@ public class VehiclePropertyVerifier<T> {
                 mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
                 CarPropertyValue<T> updatedValue =
                         setterCallback.waitForPropertyEvent(SET_PROPERTY_CALLBACK_TIMEOUT_SEC);
-                // If the callback receives a new event with the value set before the timeout,
-                // then this check will fail.
-                assertWithMessage(
-                        "Received onChangeEvent(s) for " + mPropertyName + " with updated value: "
-                                + valueToSet + " before 5s timeout. This property must not be"
-                                + " available to set.")
-                        .that(updatedValue.getValue()).isNotEqualTo(valueToSet);
+                if (updatedValue != null
+                        && updatedValue.getStatus() == CarPropertyValue.STATUS_AVAILABLE) {
+                    // If the callback receives a new event with the value set before the timeout,
+                    // then this check will fail.
+                    assertWithMessage(
+                            "Received onChangeEvent(s) for " + mPropertyName
+                                    + " with updated value: " + valueToSet + " before 5s timeout."
+                                    + " When the power is turned off, this property must not be"
+                                    + " available to set.")
+                            .that(updatedValue.getValue()).isNotEqualTo(valueToSet);
+                }
             } catch (Exception e) {
                 // In normal cases, this should throw PropertyNotAvailableException.
                 // In rare cases, the value we are setting is the same as the current value,
@@ -2949,6 +2953,41 @@ public class VehiclePropertyVerifier<T> {
             return value.toString();
         }
 
+        /**
+         * Waits at most {@code timeoutInSec} for a property event that is the result of a
+         * {@code setProperty} request.
+         *
+         * <p>If {@link #onChangeEvent(CarPropertyValue)} is called, then this method will return
+         * the {@link CarPropertyValue} if:
+         * <ul>
+         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         *  <li>The event is timestamped after {@link #mCreationTimeNanos} but before
+         *  {@link SystemClock#elapsedRealtimeNanos()}
+         *  <li>One of the following is true:
+         *    <ul>
+         *      <li>{@link CarPropertyValue#getStatus()} is NOT
+         *      {@link CarPropertyValue#STATUS_AVAILABLE}
+         *      <li>{@link CarPropertyValue#getStatus()} is
+         *      {@link CarPropertyValue#STATUS_AVAILABLE} and {@link CarPropertyValue#getValue()}
+         *      equals {@link #mExpectedSetValue}.
+         *    </ul>
+         * </ul>
+         *
+         * <p>If {@link #onErrorEvent(int, int)} is called, then this method will return
+         * {@code null} if:
+         * <ul>
+         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         * </ul>
+         *
+         * <p>If {@code timeoutInSec} is reached before any of the above conditions are met or if
+         * {@link InterruptedException} is thrown, then this method will throw an
+         * {@code AssertionError} and fail the test.
+         *
+         * @param timeoutInSec maximum time in seconds to wait for an expected event
+         * @return a valid {@link CarPropertyValue} if all {@link #onChangeEvent(CarPropertyValue)}
+         * conditions are met, or {@code null} if all {@link #onErrorEvent(int, int)} conditions
+         * are met.
+         */
         public CarPropertyValue<?> waitForPropertyEvent(int timeoutInSec) {
             try {
                 assertWithMessage(

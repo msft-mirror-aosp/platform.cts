@@ -30,6 +30,7 @@ java_defaults {
         "ctstestrunner-axt",
         "ctstestserver",
         "cts-media-common",
+        "android.media.extractor.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",

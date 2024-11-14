@@ -118,6 +118,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.security.advancedprotection.AdvancedProtectionFeature;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -7545,6 +7546,27 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             assertTrue("retrieve Wi-Fi backup data fail", isQuerySucceeded.value);
             sWifiManager.restoreWifiBackupData(backupWifiData.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_WEP_DISABLED_IN_APM)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
+            codeName = "Baklava")
+    @Test
+    public void testGetSupportedAdvancedProtectionFeaturesOverWifi() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            List<AdvancedProtectionFeature> features =
+                    sWifiManager.getAvailableAdvancedProtectionFeatures();
+            // Should have the WEP disabled feature at least.
+            assertNotNull(features);
+            assertFalse(features.isEmpty());
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

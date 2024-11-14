@@ -59,6 +59,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.HandwritingGesture;
 import android.view.inputmethod.InlineSuggestion;
 import android.view.inputmethod.InlineSuggestionsRequest;
@@ -1121,7 +1122,6 @@ public final class MockIme extends InputMethodService {
                 () -> super.onStartInputView(editorInfo, restarting));
     }
 
-
     @Override
     public void onPrepareStylusHandwriting() {
         getTracer().onPrepareStylusHandwriting(() -> super.onPrepareStylusHandwriting());
@@ -1180,6 +1180,11 @@ public final class MockIme extends InputMethodService {
     @Override
     public void onFinishInput() {
         getTracer().onFinishInput(() -> super.onFinishInput());
+    }
+
+    @Override
+    public boolean onShouldVerifyKeyEvent(@NonNull KeyEvent keyEvent) {
+        return getTracer().onShouldVerifyKeyEvent(keyEvent, () -> Flags.verifyKeyEvent());
     }
 
     @Override
@@ -1415,6 +1420,12 @@ public final class MockIme extends InputMethodService {
         }
     }
 
+    @Override
+    public void onCustomImeSwitcherButtonRequestedVisible(boolean visible) {
+        getTracer().onCustomImeSwitcherButtonRequestedVisible(visible,
+                () -> super.onCustomImeSwitcherButtonRequestedVisible(visible));
+    }
+
     /**
      * Event tracing helper class for {@link MockIme}.
      */
@@ -1596,6 +1607,14 @@ public final class MockIme extends InputMethodService {
             recordEventInternal("onUpdateEditorToolType", runnable, arguments);
         }
 
+        boolean onShouldVerifyKeyEvent(
+                @NonNull KeyEvent keyEvent, @NonNull BooleanSupplier supplier) {
+            final Bundle arguments = new Bundle();
+            arguments.putParcelable("keyEvent", keyEvent);
+            return recordEventInternal("onShouldVerifyKeyEvent",
+                    supplier::getAsBoolean, arguments);
+        }
+
         boolean onKeyDown(int keyCode, KeyEvent event, @NonNull BooleanSupplier supplier) {
             final Bundle arguments = new Bundle();
             arguments.putInt("keyCode", keyCode);
@@ -1752,6 +1771,13 @@ public final class MockIme extends InputMethodService {
                     new ImeEventStreamTestUtils.WindowLayoutInfoParcelable(windowLayoutInfo);
             arguments.putParcelable("WindowLayoutInfo", parcel);
             recordEventInternal("getWindowLayoutInfo", runnable, arguments);
+        }
+
+        void onCustomImeSwitcherButtonRequestedVisible(boolean visible,
+                @NonNull Runnable runnable) {
+            final Bundle arguments = new Bundle();
+            arguments.putBoolean("visible", visible);
+            recordEventInternal("onCustomImeSwitcherButtonRequestedVisible", runnable, arguments);
         }
     }
 }
