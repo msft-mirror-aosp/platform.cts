@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.app.StatusBarManager
 import android.graphics.Point
+import android.os.UserManager
 import android.view.InputDevice.SOURCE_STYLUS
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -30,6 +31,7 @@ import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.VirtualDisplayActivityScenario
+import com.google.common.truth.TruthJUnit.assume
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -86,6 +88,9 @@ class StylusButtonInputEventTest {
         statusBarManager =
             instrumentation.targetContext.getSystemService(StatusBarManager::class.java)
 
+        // StatusBarManagerService#handleSystemKey rejects requests from background users
+        assume().that(isBackgroundUser()).isFalse()
+
         // Send an unrelated system key to the status bar so last stylus system key history is not
         // preserved between tests.
         SystemUtil.runWithShellPermissionIdentity {
@@ -98,6 +103,13 @@ class StylusButtonInputEventTest {
         SystemUtil.runShellCommandOrThrow(
             "settings put $SETTING_NAMESPACE_KEY $initialStylusButtonsEnabledSetting"
         )
+    }
+
+    fun isBackgroundUser(): Boolean {
+        val userManager = instrumentation.targetContext.getSystemService(UserManager::class.java)
+        val isForeground: Boolean = userManager.isUserForeground()
+        val isProfile: Boolean = userManager.isProfile()
+        return !isForeground && !isProfile
     }
 
     @Test

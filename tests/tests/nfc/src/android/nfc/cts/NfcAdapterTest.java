@@ -18,6 +18,7 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
@@ -704,14 +705,6 @@ public class NfcAdapterTest {
             for (String nfcee : nfceeList) {
                 assertThat(nfcee).isNotEmpty();
             }
-            Thread thread = new Thread(() -> {
-                NfcUtils.disableNfc(nfcAdapter, mContext);
-                nfcOemExtension.maybeTriggerFirmwareUpdate();
-                NfcUtils.enableNfc(nfcAdapter, mContext);
-            });
-            thread.start();
-            thread.join(1000);
-            nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
             nfcOemExtension.pausePolling(1000);
@@ -726,9 +719,32 @@ public class NfcAdapterTest {
             }
             assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
-            NfcUtils.enableNfc(nfcAdapter, mContext);
             nfcOemExtension.unregisterCallback(cb);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionMaybeTriggerFirmwareUpdate()
+            throws InterruptedException, RemoteException {
+        NfcAdapter nfcAdapter = createMockedInstance();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        nfcOemExtension.maybeTriggerFirmwareUpdate();
+        verify(mService).checkFirmware();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionTriggerInitialization()
+            throws InterruptedException, RemoteException {
+        NfcAdapter nfcAdapter = createMockedInstance();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        nfcOemExtension.triggerInitialization();
+        verify(mService).triggerInitialization();
     }
 
     @Test
@@ -890,6 +906,10 @@ public class NfcAdapterTest {
         @Override
         public void onLaunchHceTapAgainDialog(@NonNull ApduServiceInfo service,
                                               @NonNull String category) {
+        }
+
+        @Override
+        public void onRoutingTableFull() {
         }
 
         @Override

@@ -30,6 +30,12 @@ public class ASurfaceControlTestUtils {
 
     public interface TransactionCompleteListener {
         void onTransactionComplete(long latchTime, long presentTime);
+        default long shouldQueryTransactionStats() {
+                return 0;
+        }
+        default void onTransactionStatsRead(boolean surfaceControlFound,
+                boolean releaseFenceQueried, boolean acquireTimeQueried) {
+        }
     }
 
     public interface BufferReleaseCallback {
