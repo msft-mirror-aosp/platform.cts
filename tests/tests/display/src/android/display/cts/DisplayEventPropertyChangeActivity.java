@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.backportedfixes;
 
-import com.google.common.collect.ImmutableSet;
+package android.display.cts;
 
-/** Constants and helpers for {@link BackportedFixTest} */
-public final class BackportedFixes {
-    public static final ImmutableSet<Long> ALL_ISSUES = ImmutableSet.of(
-            350037023L,
-            350037348L
-    );
+import android.app.Activity;
+import android.view.Window;
+import android.view.WindowManager;
 
-    private BackportedFixes() {
+/**
+ * A simple activity to manipulate displays to change its properties
+ */
+public class DisplayEventPropertyChangeActivity extends Activity {
+    /**
+     * A utility to change the mode of the default display
+     */
+    public void setModeId(int modeId) {
+        runOnUiThread(() -> {
+            Window w = getWindow();
+            WindowManager.LayoutParams params = w.getAttributes();
+            params.preferredDisplayModeId = modeId;
+            w.setAttributes(params);
+        });
     }
 }
