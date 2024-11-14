@@ -41,7 +41,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -146,7 +145,6 @@ public class DistanceMeasurementResultTest {
         assertEquals(60.0, result.getErrorAltitudeAngle(), 0.0);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetDelaySpreadMeters() {
@@ -157,7 +155,6 @@ public class DistanceMeasurementResultTest {
         assertEquals(60.0, result.getDelaySpreadMeters(), 0.0);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetConfidenceLevel() {
@@ -168,7 +165,6 @@ public class DistanceMeasurementResultTest {
         assertEquals(0.5, result.getConfidenceLevel(), 0.0);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetDetectedAttackLevel() {
@@ -180,7 +176,6 @@ public class DistanceMeasurementResultTest {
         assertEquals(NADM_ATTACK_IS_VERY_UNLIKELY, result.getDetectedAttackLevel());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetVelocityMetersPerSecond() {
@@ -199,7 +194,6 @@ public class DistanceMeasurementResultTest {
         assertEquals(timestamp, result.getMeasurementTimestampNanos());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void readWriteParcelForCs() {
