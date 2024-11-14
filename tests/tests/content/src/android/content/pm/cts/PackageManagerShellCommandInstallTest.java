@@ -226,6 +226,7 @@ public class PackageManagerShellCommandInstallTest {
     private boolean mIncremental = false;
     private boolean mVerifierTimeoutTest = false;
     private String mInstall = "";
+    private String mDisableDependencyInstall = "";
     private static long sStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
 
     private static PackageInstaller getPackageInstaller() {
@@ -327,6 +328,10 @@ public class PackageManagerShellCommandInstallTest {
         mInstall = mDataLoaderType == DATA_LOADER_TYPE_NONE ? " install " :
                 mDataLoaderType == DATA_LOADER_TYPE_STREAMING ? " install-streaming " :
                         " install-incremental ";
+
+        if (Flags.sdkDependencyInstaller()) {
+            mDisableDependencyInstall += "--disable-auto-install-dependencies ";
+        }
 
         uninstallPackageSilently(TEST_APP_PACKAGE);
 
@@ -1407,8 +1412,22 @@ public class PackageManagerShellCommandInstallTest {
         onBeforeSdkTests();
 
         // Try to install without required SDK1.
-        installPackage(TEST_USING_SDK1_OPTIONAL, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_USING_SDK1_OPTIONAL, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_dependencyInstallerDisabledShellCommand()
+            throws Exception {
+        onBeforeSdkTests();
+
+        String errorMsg = installPackageGetErrorMessage(
+                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true);
+        assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        assertThat(errorMsg).contains("Reconcile failed");
     }
 
     @Test
@@ -1508,7 +1527,9 @@ public class PackageManagerShellCommandInstallTest {
     public void testAppUsingSdkRequiredInstallAndUpdate() throws Exception {
         onBeforeSdkTests();
         // Try to install without required SDK1.
-        installPackage(TEST_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
 
         // Now install the required SDK1.
@@ -1541,7 +1562,7 @@ public class PackageManagerShellCommandInstallTest {
         }
 
         // Try to install without required SDK2.
-        installPackage(TEST_USING_SDK1_AND_SDK2,
+        installPackage(TEST_USING_SDK1_AND_SDK2, /*disableAutoInstallDependencies=*/true,
                 "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
 
         // Now install the required SDK2.
@@ -1588,7 +1609,9 @@ public class PackageManagerShellCommandInstallTest {
         uninstallPackageSilently(TEST_SDK1_PACKAGE);
 
         // Try to install without required SDK1.
-        installPackage(TEST_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
 
         // Parent session
@@ -1636,7 +1659,9 @@ public class PackageManagerShellCommandInstallTest {
         assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
 
         // Try to install the package with empty digest.
-        installPackage(TEST_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
     }
 
     @Test
@@ -1904,11 +1929,15 @@ public class PackageManagerShellCommandInstallTest {
         onBeforeSdkTests();
 
         // Try to install without required SDK1.
-        installPackage(TEST_USING_SDK3, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_USING_SDK3, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
 
         // Try to install SDK3 without required SDK1.
-        installPackage(TEST_SDK3_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_SDK3_USING_SDK1, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isSdkInstalled(TEST_SDK3_NAME, 3));
 
         // Now install the required SDK1.
@@ -1945,7 +1974,7 @@ public class PackageManagerShellCommandInstallTest {
         }
 
         // Try to install updated SDK3 without required SDK2.
-        installPackage(TEST_SDK3_USING_SDK1_AND_SDK2,
+        installPackage(TEST_SDK3_USING_SDK1_AND_SDK2, /*disableAutoInstallDependencies=*/true,
                 "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
 
         // Now install the required SDK2.
@@ -1987,7 +2016,9 @@ public class PackageManagerShellCommandInstallTest {
         onBeforeSdkTests();
 
         // Try to install without required SDK1.
-        installPackage(TEST_SDK3_USING_SDK1, "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+        installPackage(
+                TEST_SDK3_USING_SDK1, /*disableAutoInstallDependencies=*/true,
+                "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertFalse(isSdkInstalled(TEST_SDK3_NAME, 3));
 
         // Now install the required SDK1.
@@ -2019,7 +2050,7 @@ public class PackageManagerShellCommandInstallTest {
         }
 
         // Try to install without required SDK2.
-        installPackage(TEST_SDK3_USING_SDK1_AND_SDK2,
+        installPackage(TEST_SDK3_USING_SDK1_AND_SDK2, /*disableAutoInstallDependencies=*/true,
                 "Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
 
         // Now install the required SDK2.
@@ -2887,14 +2918,37 @@ public class PackageManagerShellCommandInstallTest {
 
     private void installPackage(String baseName, String expectedResultStartsWith)
             throws IOException {
+        installPackage(
+                baseName, /*disableAutoInstallDependencies=*/false, expectedResultStartsWith);
+    }
+
+    private void installPackage(
+            String baseName, boolean disableAutoInstallDependencies,
+            String expectedResultStartsWith)
+            throws IOException {
         File file = new File(createApkPath(baseName));
-        String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
+        String disableDependencyInstall = "";
+        if (disableAutoInstallDependencies) {
+            disableDependencyInstall = mDisableDependencyInstall;
+        }
+        String result = executeShellCommand(
+                "pm " + mInstall + " -t -g " + disableDependencyInstall + file.getPath());
         assertThat(result).startsWith(expectedResultStartsWith);
     }
 
     private String installPackageGetErrorMessage(String baseName) throws IOException {
+        return installPackageGetErrorMessage(baseName, /*disableAutoInstallDependencies=*/false);
+    }
+
+    private String installPackageGetErrorMessage(
+            String baseName, boolean disableAutoInstallDependencies) throws IOException {
         File file = new File(createApkPath(baseName));
-        String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
+        String disableDependencyInstall = "";
+        if (disableAutoInstallDependencies) {
+            disableDependencyInstall = mDisableDependencyInstall;
+        }
+        String result = executeShellCommand(
+                "pm " + mInstall + " -t -g " + disableDependencyInstall + file.getPath());
         assertThat(result).isNotEqualTo("Success\n");
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
         return result;
