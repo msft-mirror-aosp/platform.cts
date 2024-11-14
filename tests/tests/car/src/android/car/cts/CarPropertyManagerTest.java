@@ -1070,6 +1070,12 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE,
                             VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE)
                     .build();
+    private static final ImmutableList<Integer>
+            PERMISSION_READ_BRAKE_INFO_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE)
+                    .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
                     .add(
@@ -1869,6 +1875,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers
                                 .getBrakePedalCompressionPercentageVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
@@ -7553,6 +7562,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_CAR_PEDALS_PROPERTIES,
                 Car.PERMISSION_READ_CAR_PEDALS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testPermissionReadBrakeInfoGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_BRAKE_INFO_PROPERTIES,
+                Car.PERMISSION_READ_BRAKE_INFO);
     }
 
     @Test
