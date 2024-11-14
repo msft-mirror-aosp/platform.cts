@@ -588,6 +588,10 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("INSTANTANEOUS_EV_EFFICIENCY");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.VEHICLE_HORN_ENGAGED))
                 .isEqualTo("VEHICLE_HORN_ENGAGED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL))
+                .isEqualTo("VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL");
     }
 
     /**

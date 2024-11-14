@@ -31,6 +31,7 @@ import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.LocationCharacterization;
+import android.car.hardware.property.VehicleAutonomousState;
 import android.car.hardware.property.VehicleSizeClass;
 import android.car.hardware.property.VehicleTurnSignal;
 import android.util.ArraySet;
@@ -124,6 +125,16 @@ public class VehiclePropertyVerifiers {
     private static final ImmutableSet<Integer> TURN_SIGNAL_STATES =
             ImmutableSet.<Integer>builder().add(VehicleTurnSignal.STATE_NONE,
                     VehicleTurnSignal.STATE_RIGHT, VehicleTurnSignal.STATE_LEFT).build();
+    private static final ImmutableSet<Integer> VEHICLE_AUTONOMOUS_STATES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            VehicleAutonomousState.LEVEL_0,
+                            VehicleAutonomousState.LEVEL_1,
+                            VehicleAutonomousState.LEVEL_2,
+                            VehicleAutonomousState.LEVEL_3,
+                            VehicleAutonomousState.LEVEL_4,
+                            VehicleAutonomousState.LEVEL_5)
+                    .build();
 
     /**
      * Gets the verifier builder for LOCATION_CHARACTERIZATION.
@@ -1170,5 +1181,17 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_READ_CAR_HORN)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_HORN)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_HORN);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getVehicleDrivingAutomationTargetLevelVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class)
+                .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
+                .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
     }
 }

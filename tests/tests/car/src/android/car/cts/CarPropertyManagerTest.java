@@ -1030,7 +1030,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             PERMISSION_CAR_DRIVING_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
-                            VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL)
+                            VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL,
+                            VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL)
                     .build();
     private static final ImmutableList<Integer>
             PERMISSION_READ_ULTRASONICS_SENSOR_DATA_PROPERTIES =
@@ -1852,6 +1853,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers.getVehicleHornEngagedVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers
+                                .getVehicleDrivingAutomationTargetLevelVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
