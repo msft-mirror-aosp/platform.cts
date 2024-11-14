@@ -776,7 +776,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final ImmutableList<Integer> PERMISSION_MILEAGE_3P_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
-                            VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY)
+                            VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
+                            VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -1834,6 +1835,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(
                         VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
