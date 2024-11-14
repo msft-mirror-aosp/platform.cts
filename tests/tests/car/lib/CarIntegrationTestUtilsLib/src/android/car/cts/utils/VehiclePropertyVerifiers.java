@@ -1194,4 +1194,15 @@ public class VehiclePropertyVerifiers {
                 .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
                 .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
     }
+
+    public static VehiclePropertyVerifier.Builder<Float>
+            getAcceleratorPedalCompressionPercentageVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
+    }
 }

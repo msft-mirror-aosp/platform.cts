@@ -592,6 +592,10 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 VehiclePropertyIds.toString(
                         VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL))
                 .isEqualTo("VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE))
+                .isEqualTo("ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE");
     }
 
     /**
