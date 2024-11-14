@@ -773,6 +773,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.PERF_ODOMETER)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_MILEAGE_3P_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY)
+                    .build();
     private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -1826,6 +1831,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
@@ -7193,6 +7201,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_MILEAGE_PROPERTIES,
                 Car.PERMISSION_MILEAGE);
+    }
+
+    @Test
+    public void testPermissionMileage3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_MILEAGE_3P_PROPERTIES,
+                Car.PERMISSION_MILEAGE_3P);
     }
 
     @Test

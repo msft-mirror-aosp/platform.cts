@@ -1137,4 +1137,15 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
+
+    public static VehiclePropertyVerifier.Builder<Float>
+            getInstantaneousFuelEconomyVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .addReadPermission(Car.PERMISSION_MILEAGE_3P);
+    }
 }
