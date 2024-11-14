@@ -91,8 +91,8 @@ public final class ContextHelperTest extends ActivityManagerTestBase {
             // execute
             ContextHelper.startActivityAsUser(mContext, startIntent,
                     /* options= */ null, UserHandle.CURRENT);
-            waitAndAssertTopResumedActivity(testActivityName, Display.DEFAULT_DISPLAY,
-                    "Activity must be resumed");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName,
+                    Display.DEFAULT_DISPLAY, "Activity must be resumed");
 
             // assert
             theInstance = SingleUseActivity.getInstance();

@@ -799,9 +799,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setOptions(launchOptions)
                 .launch();
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
         waitAndAssertActivityTransitions(CallbackTrackingActivity.class,
                 getLaunchSequence(CallbackTrackingActivity.class), "launch");
 
@@ -817,8 +817,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                     .setFlags(FLAG_ACTIVITY_NEW_TASK)
                     .setOptions(launchOptions)
                     .launch();
-            waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                    newDisplay.mId, "Activity launched on secondary display must be focused");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    getComponentName(SingleTopActivity.class), newDisplay.mId,
+                    "Activity launched on secondary display must be focused");
 
             waitAndAssertActivityTransitions(SingleTopActivity.class,
                     getLaunchSequence(SingleTopActivity.class), "launch");
@@ -851,9 +852,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setOptions(launchOptions)
                 .launch();
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -867,8 +868,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
 
         getTransitionLog().clear();
 
@@ -939,9 +941,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 SlowActivity.FLAG_SLOW_TOP_RESUME_RELEASE);
         mTargetContext.startActivity(defaultDisplaySlowIntent, launchOptions.toBundle());
 
-        waitAndAssertTopResumedActivity(getComponentName(SlowActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SlowActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Wait and assert focus switch
         waitAndAssertActivityStates(state(secondActivityClass, ON_TOP_POSITION_LOST),
@@ -1013,9 +1015,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 SlowActivity.FLAG_TIMEOUT_TOP_RESUME_RELEASE);
         mTargetContext.startActivity(defaultDisplaySlowIntent, launchOptions.toBundle());
 
-        waitAndAssertTopResumedActivity(getComponentName(SlowActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SlowActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Wait and assert focus switch.
         waitAndAssertActivityStates(state(secondActivityClass, ON_TOP_POSITION_LOST),
@@ -1060,9 +1062,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         final Activity callbackTrackingActivity =
                 launchActivityAndWait(CallbackTrackingActivity.class);
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display.
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -1077,8 +1079,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
         // An activity is launched on the new display, so the activity on default display should
         // lose the top state.
         assertSequence(CallbackTrackingActivity.class, getTransitionLog(),
@@ -1105,9 +1108,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         final Activity callbackTrackingActivity =
                 launchActivityAndWait(CallbackTrackingActivity.class);
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                getMainDisplayId(), "Activity launched on main display assigned to the user "
-                        + "must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display.
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -1122,8 +1125,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
 
         // Bring the focus back.
         final Intent sameInstanceIntent = new Intent(mContext, CallbackTrackingActivity.class);
