@@ -38,6 +38,8 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -53,6 +55,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.ColorInfo;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -83,6 +86,9 @@ public class MediaMuxerTest {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 
     private final boolean mAndroid11 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
@@ -1498,4 +1504,3 @@ public class MediaMuxerTest {
         return null;
     }
 }
-
