@@ -55,7 +55,6 @@ java_test_helper_library {
     ],
     libs: ["junit"],
     static_libs: [
-        "android.view.inputmethod.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "compatibility-device-util-axt",
