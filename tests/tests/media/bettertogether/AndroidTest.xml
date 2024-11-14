@@ -19,7 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <!-- Avoid Play Protect verification -->
@@ -32,25 +32,9 @@
         <option name="disable-audio" value="false"/>
         <option name="screen-saver" value="off"/>
     </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.DynamicConfigPusher">
-        <option name="target" value="host" />
-        <option name="config-filename" value="CtsMediaBetterTogetherTestCases" />
-        <option name="dynamic-config-name" value="CtsMediaBetterTogetherTestCases" />
-        <option name="version" value="9.0_r1"/>
-    </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
-        <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsMediaBetterTogetherTestCases-1.0" />
-        <option name="dynamic-config-module" value="CtsMediaBetterTogetherTestCases" />
-    </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsMediaBetterTogetherTestCases.apk" />
-    </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.DynamicConfigPusher">
-        <option name="target" value="device" />
-        <option name="config-filename" value="CtsMediaBetterTogetherTestCases" />
-        <option name="version" value="1.0"/>
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.media.bettertogether.cts" />
