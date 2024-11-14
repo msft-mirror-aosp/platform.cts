@@ -1050,6 +1050,18 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
                             VehiclePropertyIds.TURN_SIGNAL_SWITCH)
                     .build();
+    private static final ImmutableList<Integer>
+            PERMISSION_READ_CAR_HORN_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.VEHICLE_HORN_ENGAGED)
+                    .build();
+    private static final ImmutableList<Integer>
+            PERMISSION_CONTROL_CAR_HORN_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.VEHICLE_HORN_ENGAGED)
+                    .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
                     .add(
@@ -1838,6 +1850,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(
                         VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getVehicleHornEngagedVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
@@ -7498,6 +7512,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_EXTERIOR_LIGHTS_PROPERTIES,
                 Car.PERMISSION_READ_EXTERIOR_LIGHTS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testPermissionReadCarHornGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_CAR_HORN_PROPERTIES,
+                Car.PERMISSION_READ_CAR_HORN);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testPermissionControlCarHornGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CONTROL_CAR_HORN_PROPERTIES,
+                Car.PERMISSION_CONTROL_CAR_HORN);
     }
 
     @Test
