@@ -1074,7 +1074,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             PERMISSION_READ_BRAKE_INFO_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
-                            VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE)
+                            VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE,
+                            VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW)
                     .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
@@ -1878,6 +1879,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(
                         VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }

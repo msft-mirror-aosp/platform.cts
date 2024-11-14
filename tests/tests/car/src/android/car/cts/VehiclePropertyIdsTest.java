@@ -602,6 +602,8 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("BRAKE_PEDAL_COMPRESSION_PERCENTAGE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE))
                 .isEqualTo("BRAKE_PAD_WEAR_PERCENTAGE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW))
+                .isEqualTo("BRAKE_FLUID_LEVEL_LOW");
     }
 
     /**

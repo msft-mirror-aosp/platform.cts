@@ -1227,4 +1227,15 @@ public class VehiclePropertyVerifiers {
                         Float.class)
                 .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
     }
+
+    public static VehiclePropertyVerifier.Builder<Boolean>
+            getBrakeFluidLevelLowVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class)
+                .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
+    }
 }
