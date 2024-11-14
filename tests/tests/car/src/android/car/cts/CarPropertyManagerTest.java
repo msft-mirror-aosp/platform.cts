@@ -1067,7 +1067,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             PERMISSION_READ_CAR_PEDALS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
-                            VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE)
+                            VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE,
+                            VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE)
                     .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
@@ -1865,6 +1866,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers
                                 .getAcceleratorPedalCompressionPercentageVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers
+                                .getBrakePedalCompressionPercentageVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }

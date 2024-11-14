@@ -1205,4 +1205,15 @@ public class VehiclePropertyVerifiers {
                         Float.class)
                 .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
     }
+
+    public static VehiclePropertyVerifier.Builder<Float>
+            getBrakePedalCompressionPercentageVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .addReadPermission(Car.PERMISSION_READ_CAR_PEDALS);
+    }
 }
