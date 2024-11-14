@@ -32,6 +32,8 @@ import org.junit.runners.model.Statement;
  * {@link Build#getBackportedFixStatus(long)} returns false.
  */
 public class BackportedFixRule implements TestRule {
+    private final ApprovedBackportedFixes mFixes = ApprovedBackportedFixes.getInstance();
+
     // TODO: make host version of this.
 
     @Override
@@ -40,9 +42,10 @@ public class BackportedFixRule implements TestRule {
         if (issue == null) {
             return statement;
         }
-        if (!BackportedFixes.ALL_ISSUES.contains(issue.value())) {
+        int alias = mFixes.getAlias(issue.value());
+        if (!mFixes.getAllIssues().contains(issue.value())) {
             throw new IllegalStateException(
-                    "https://issuetracker.google.com/issues/%d is not a approved backported fix."
+                    "https://issuetracker.google.com/issues/%d is not an approved backported fix."
                             .formatted(issue.value()));
         }
         return new Statement() {
@@ -51,15 +54,16 @@ public class BackportedFixRule implements TestRule {
                 try {
                     statement.evaluate();
                 } catch (AssertionError e) {
-                    if (Build.getBackportedFixStatus(issue.value())
+
+
+                    if (Build.getBackportedFixStatus(alias)
                             == Build.BACKPORTED_FIX_STATUS_FIXED) {
                         throw e;
                     }
                     throw new AssumptionViolatedException(
-                            ("https://issuetracker.google.com/issues/%d is not marked fixed on "
-                                    + "this device.").formatted(
-                                    issue.value()),
-                            e);
+                            ("https://issuetracker.google.com/issues/%d with alias %d is not "
+                                    + "marked fixed on this device.")
+                                    .formatted(issue.value(), alias), e);
                 }
             }
         };
