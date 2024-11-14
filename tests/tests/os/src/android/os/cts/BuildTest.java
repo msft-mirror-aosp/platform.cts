@@ -29,6 +29,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
+import android.platform.test.ravenwood.RavenwoodConfig;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
@@ -41,11 +42,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * CTS for the {@link Build} class.
@@ -58,10 +61,20 @@ import java.util.regex.Pattern;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuildTest {
 
+    private static final String BACKPORTED_FIXES_ALIAS_PROP_NAME =
+            "ro.build.backported_fixes.alias_bitset.long_list";
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
             ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
             : DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @RavenwoodConfig.Config
+    public static final RavenwoodConfig sRavenwood = new RavenwoodConfig.Builder()
+            // TODO b/308461809: Include 1 the alias for Known issue 350037023
+            // 1023 is the max alias.
+            .setSystemPropertyMutable(BACKPORTED_FIXES_ALIAS_PROP_NAME,
+                    bitSetIndexToLongArrayString(1023))
+            .build();
 
     static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
     static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
@@ -312,22 +325,38 @@ public class BuildTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
     public void getBackportedFixStatus_alwaysFixed() {
-        // TODO b/372518979 - BACKPORTED_FIX_STATUS_FIXED when datastore implemented.
-        Truth.assertThat(Build.getBackportedFixStatus(350037023L)).isEqualTo(
+        // Known issue 350037023 has an alias of 1
+        Truth.assertThat(Build.getBackportedFixStatus(1L)).isEqualTo(
+                // TODO b/372518979 - BACKPORTED_FIX_STATUS_FIXED when the build property is set.
                 Build.BACKPORTED_FIX_STATUS_UNKNOWN);
     }
 
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
     public void getBackportedFixStatus_neverFixed() {
-        Truth.assertThat(Build.getBackportedFixStatus(350037348L)).isEqualTo(
+        // Known issue 350037348 has an alias of 3
+        Truth.assertThat(Build.getBackportedFixStatus(3L)).isEqualTo(
                 Build.BACKPORTED_FIX_STATUS_UNKNOWN);
     }
 
+
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
-    public void testGetCriticalIssueStatus_onlyKnownFixes() {
-        // TODO b/372518979 - test when datastore implemented.
+    public void getBackportedFixStatus_1023() {
+        if (RavenwoodConfig.isOnRavenwood()) {
+            // This tests the private method Build.isBitSet
+            Truth.assertThat(Build.getBackportedFixStatus(1023)).isEqualTo(
+                    Build.BACKPORTED_FIX_STATUS_FIXED);
+        }
+    }
+
+    private static String bitSetIndexToLongArrayString(int... bitIndexes) {
+        BitSet bs = new BitSet();
+        for (int i : bitIndexes) {
+            bs.set(i);
+        }
+        return Arrays.stream(bs.toLongArray()).mapToObj(Long::toString).collect(
+                Collectors.joining(","));
     }
 
     /**

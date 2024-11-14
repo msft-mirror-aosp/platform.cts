@@ -1225,6 +1225,9 @@ public class WifiRttTest extends TestBase {
                 WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_RANGING_FRAME_PROTECTION_SUPPORTED));
         assumeTrue(mCharacteristics.getBoolean(
                 WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_SECURE_HE_LTF_SUPPORTED));
+        assertTrue(mCharacteristics.getInt(
+                WifiRttManager.CHARACTERISTICS_KEY_INT_MAX_SUPPORTED_SECURE_HE_LTF_PROTO_VERSION)
+                >= 0);
 
         // Check for responder
         ScanResult testAp = getS11AzSecureScanResult();
