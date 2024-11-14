@@ -28,6 +28,9 @@ import static android.net.wifi.WifiManager.COEX_RESTRICTION_SOFTAP;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
 import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
+import static android.net.wifi.WifiManager.WIFI_STATE_DISABLED;
+import static android.net.wifi.WifiManager.WIFI_STATE_DISABLING;
+import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
 import static android.os.Process.myUid;
 
@@ -297,11 +300,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 int newState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
                         WifiManager.WIFI_STATE_UNKNOWN);
                 synchronized (sMySync) {
-                    if (newState == WifiManager.WIFI_STATE_ENABLED) {
+                    if (newState == WIFI_STATE_ENABLED) {
                         Log.d(TAG, "*** New WiFi state is ENABLED ***");
                         sMySync.expectedState = STATE_WIFI_ENABLED;
                         sMySync.notifyAll();
-                    } else if (newState == WifiManager.WIFI_STATE_DISABLED) {
+                    } else if (newState == WIFI_STATE_DISABLED) {
                         Log.d(TAG, "*** New WiFi state is DISABLED ***");
                         sMySync.expectedState = STATE_WIFI_DISABLED;
                         sMySync.notifyAll();
@@ -724,10 +727,92 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         setWifiEnabled(true);
         assertTrue(sWifiManager.isWifiEnabled());
         assertNotNull(sWifiManager.getDhcpInfo());
-        assertEquals(WifiManager.WIFI_STATE_ENABLED, sWifiManager.getWifiState());
+        assertEquals(WIFI_STATE_ENABLED, sWifiManager.getWifiState());
         sWifiManager.getConnectionInfo();
         setWifiEnabled(false);
         assertFalse(sWifiManager.isWifiEnabled());
+    }
+
+
+    public static class TestWifiStateChangedListener
+            implements WifiManager.WifiStateChangedListener {
+        private final Object mWifiStateLock;
+        private final List<Integer> mWifiStates = new ArrayList<>();
+
+        TestWifiStateChangedListener(Object lock) {
+            mWifiStateLock = lock;
+        }
+
+        @Override
+        public void onWifiStateChanged(int state) {
+            synchronized (mWifiStateLock) {
+                mWifiStates.add(state);
+                mWifiStateLock.notify();
+            }
+        }
+
+        /**
+         * Gets the Nth Wi-Fi state seen since registering this listener.
+         */
+        public int getWifiState(int index) {
+            synchronized (mWifiStateLock) {
+                return mWifiStates.get(index);
+            }
+        }
+
+        /**
+         * Gets the number of Wi-fi states recorded since registering this listener.
+         */
+        public int getWifiStatesSize() {
+            synchronized (mWifiStateLock) {
+                return mWifiStates.size();
+            }
+        }
+    }
+
+    /**
+     * Test that WifiStateChangedListener receives updates to the Wifi enabled state.
+     */
+    @Test
+    public void testWifiStateChangedListener() throws Exception {
+        synchronized (mLock) {
+            try {
+                setWifiEnabled(true);
+                final TestWifiStateChangedListener listener =
+                        new TestWifiStateChangedListener(mLock);
+                sWifiManager.addWifiStateChangedListener(mExecutor, listener);
+
+                // Callback should be called after registering
+                long now = System.currentTimeMillis();
+                long deadline = now + TEST_WAIT_DURATION_MS;
+                while (now < deadline) {
+                    mLock.wait(deadline - now);
+                    if (listener.getWifiStatesSize() > 0) {
+                        break;
+                    }
+                    now = System.currentTimeMillis();
+                }
+                assertEquals(WIFI_STATE_ENABLED, listener.getWifiState(0));
+                assertEquals(1, listener.getWifiStatesSize());
+
+                setWifiEnabled(false);
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (now < deadline) {
+                    mLock.wait(deadline - now);
+                    if (listener.getWifiStatesSize() > 2) {
+                        break;
+                    }
+                    now = System.currentTimeMillis();
+                }
+                assertEquals(WIFI_STATE_DISABLING, listener.getWifiState(1));
+                assertEquals(WIFI_STATE_DISABLED, listener.getWifiState(2));
+                assertEquals(3, listener.getWifiStatesSize());
+            } catch (InterruptedException e) {
+                throw new AssertionError(
+                        "Thread interrupted unexpectedly while waiting on mLock", e);
+            }
+        }
     }
 
     /**
