@@ -52,15 +52,15 @@ public abstract class VirtualInputDevice implements
             "ro.hw_timeout_multiplier", 1);
     private InputStream mInputStream;
     private OutputStream mOutputStream;
-    private Instrumentation mInstrumentation;
+    final Instrumentation mInstrumentation;
     private final Thread mResultThread;
     private final HandlerThread mHandlerThread;
     private final Handler mHandler;
-    private final InputManager mInputManager;
+    private InputManager mInputManager;
     private volatile CountDownLatch mDeviceAddedSignal; // to wait for onInputDeviceAdded signal
     private volatile CountDownLatch mDeviceRemovedSignal; // to wait for onInputDeviceRemoved signal
     // Input device ID assigned by input manager
-    private int mDeviceId = Integer.MIN_VALUE;
+    int mDeviceId = Integer.MIN_VALUE;
     private final int mVendorId;
     private final int mProductId;
     private final int mSources;
