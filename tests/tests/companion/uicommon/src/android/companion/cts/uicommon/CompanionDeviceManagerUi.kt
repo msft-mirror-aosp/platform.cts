@@ -85,11 +85,16 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
             val startTime = SystemClock.uptimeMillis()
             var elapsedTime = 0L
             // UiDevice.hasObject() takes a long time for some reason so wait at least 10 seconds
-            while (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES)
-                    && elapsedTime < 10.seconds.inWholeMilliseconds) {
+            while (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES) &&
+                    elapsedTime < 10.seconds.inWholeMilliseconds) {
                 it.swipe(Direction.UP, 1.0F)
                 elapsedTime = SystemClock.uptimeMillis() - startTime
             }
+        }
+        if (!ui.hasObject(NEGATIVE_BUTTON_MULTIPLE_DEVICES)) {
+            var scrollableObject = UiScrollable(UiSelector().scrollable(true))
+            scrollableObject.scrollIntoView(
+                    UiSelector().resourceId("negative_multiple_devices_layout"))
         }
         click(NEGATIVE_BUTTON_MULTIPLE_DEVICES, "Negative button for multiple devices")
     }
@@ -103,6 +108,10 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
     fun scrollToBottom() {
         if (SCROLLABLE_PERMISSION_LIST.waitForExists(2.seconds.inWholeMilliseconds)) {
             SCROLLABLE_PERMISSION_LIST.scrollToEnd(MAX_SWIPE)
+            if (!ui.hasObject(POSITIVE_BUTTON)) {
+                var scrollableObject = UiScrollable(UiSelector().scrollable(true))
+                scrollableObject.scrollIntoView(UiSelector().resourceId("btn_positive"))
+            }
             val positiveButton = waitUntilPositiveButtonAppeared()
             val isEnabled = positiveButton.wait(
                 Until.enabled(positiveButton.isEnabled), 5.seconds.inWholeMilliseconds)
