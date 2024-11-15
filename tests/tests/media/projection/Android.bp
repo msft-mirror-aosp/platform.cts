@@ -43,8 +43,6 @@ java_defaults {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
-        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
 }
