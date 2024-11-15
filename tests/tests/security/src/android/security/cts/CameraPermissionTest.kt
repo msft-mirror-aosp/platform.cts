@@ -117,6 +117,10 @@ class CameraPermissionTest {
     override fun onRepeatingRequestError(lastFrameNumber: Long, repeatingRequestId: Int) {
       Log.i(TAG, "onRepeatingRequestError($lastFrameNumber, $repeatingRequestId)")
     }
+
+    override fun onClientSharedAccessPriorityChanged(primaryClient: Boolean) {
+       Log.i(TAG, "onClientSharedAccessPriorityChanged($primaryClient)")
+    }
   }
 
   abstract class DummyBase : Binder(), android.os.IInterface {
@@ -604,7 +608,7 @@ class CameraPermissionTest {
             context.applicationInfo.targetSdkVersion,
             ICameraService.ROTATION_OVERRIDE_NONE,
             clientAttribution,
-            DEVICE_POLICY_DEFAULT)
+            DEVICE_POLICY_DEFAULT, false)
         .disconnect()
   }
 

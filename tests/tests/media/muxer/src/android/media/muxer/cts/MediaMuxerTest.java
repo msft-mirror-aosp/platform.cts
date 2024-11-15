@@ -16,6 +16,9 @@
 
 package android.media.muxer.cts;
 
+import static com.android.media.editing.flags.Flags.FLAG_MUXER_MP4_ENABLE_APV;
+import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_APV;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,6 +37,9 @@ import android.media.MediaMuxer;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -49,6 +55,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.ColorInfo;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -79,6 +86,9 @@ public class MediaMuxerTest {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 
     private final boolean mAndroid11 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
@@ -155,6 +165,21 @@ public class MediaMuxerTest {
         final String source = "video_1280x720_mp4_av1_2000kbps_30fps.mp4";
         String outputFilePath =
                 File.createTempFile("testAV1VideoOnlyOutputInMP4", ".mp4").getAbsolutePath();
+        cloneAndVerify(
+                source,
+                outputFilePath,
+                1 /* expectedTrackCount */,
+                0 /* degrees */,
+                MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
+                true /* signalEos */);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({FLAG_EXTRACTOR_MP4_ENABLE_APV, FLAG_MUXER_MP4_ENABLE_APV})
+    public void testAPVVideoOnlyOutputInMP4() throws Exception {
+        final String source = "pattern_640x480_30fps_8213kbps_apv_10bit.mp4";
+        String outputFilePath =
+                File.createTempFile("testAPVVideoOnlyOutputInMP4", ".mp4").getAbsolutePath();
         cloneAndVerify(
                 source,
                 outputFilePath,
@@ -1479,4 +1504,3 @@ public class MediaMuxerTest {
         return null;
     }
 }
-
