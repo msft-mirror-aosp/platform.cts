@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.os.Build;
 import android.os.SystemProperties;
@@ -36,7 +35,6 @@ import com.android.compatibility.common.util.CddTest;
 
 import com.google.common.truth.Truth;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -53,9 +51,6 @@ import java.util.stream.Collectors;
 /**
  * CTS for the {@link Build} class.
  *
- * This class contains tests that must pass without having a {@link RavenwoodRule},
- * so do not add one in this class. {@link #setUp()} has a check to ensure it.
- *
  * For tests that do require a {@link RavenwoodRule}, use {@link BuildExtTest} instead.
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -68,8 +63,8 @@ public class BuildTest {
             ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
             : DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @RavenwoodConfig.Config
-    public static final RavenwoodConfig sRavenwood = new RavenwoodConfig.Builder()
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
             // 1 the alias for known issue b/350037023
             // 1023 is the max alias.
             .setSystemPropertyMutable(BACKPORTED_FIXES_ALIAS_PROP_NAME,
@@ -82,16 +77,6 @@ public class BuildTest {
     static final String DEVICE = "ro.product.device";
     static final String MANUFACTURER = "ro.product.manufacturer";
     static final String MODEL = "ro.product.model";
-
-    @Before
-    public void setUp() {
-        // Ensure this class doesn't have a RavenwoodRule.
-        for (var field : this.getClass().getFields()) {
-            if (field.getType() == RavenwoodRule.class) {
-                fail("This clsas is not supposed to have a RavenwoodRule. See the class javadoc.");
-            }
-        }
-    }
 
     /**
      * Check if minimal properties are set (note that these might come from either
