@@ -31,6 +31,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.SystemUtil;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,7 +43,7 @@ public class OrientationTestPlayerListener extends PlayerListener {
 
   private boolean mOrientationChangeRequested;
 
-  public OrientationTestPlayerListener(long sendMessagePosition) {
+  public OrientationTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -114,7 +115,7 @@ public class OrientationTestPlayerListener extends PlayerListener {
     }
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           changeOrientation();
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }
