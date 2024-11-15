@@ -1537,7 +1537,16 @@
     <string name="snsr_baro_wait">Please wait while the device collects readings.</string>
     <string name="snsr_baro_restore_to_default">Collection has completed, please turn off the flashlight, and return device back to flat surface.</string>
     <string name="snsr_baro_proceed">The test has finished running, please press next to proceed to the results.</string>
-
+    <string name="snsr_baro_turn_location_on"> After clicking the Next button, you will be redirected to the location settings screen. Please turn on location services on this device, and then go to the location settings screen and turn on location for the reference device.</string>
+    <string name="snsr_baro_turn_bluetooth_on"> After clicking the Next button, you will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device, and then go to the bluetooth settings screen and turn on bluetooth for the reference device. If the two devices are paired already, forget them before proceeding.</string>
+    <string name="snsr_baro_fridge_instruction"> After clicking the Next button, put the device in the fridge with a temperature of 6 degrees Celsius or lower on a flat surface for 20 minutes with the screen off.</string>
+    <string name="snsr_baro_fridge_wait">Please wait while the device gets to expected starting temperature, this will take 20 minutes.</string>
+    <string name="snsr_baro_date_time_instruction">Take the device out of the fridge and put it on a flat surface with the screen side up next to the reference device. After clicking the "Next" button, you will be redirected to the date and time settings screen. Open the date and time settings screen on the reference device, and set the date and time on this device and the reference device to an hour from now in your local timezone, and click save/done/OK simultaneously on both devices.\nAfter that has been done, use the back button on the test device to return back to the CTS Verifier app.</string>
+    <string name="snsr_baro_bluetooth_instruction">Please open the CTS Verifier app on the reference device, and click the "Barometer reference" menu item, you should see a list of bluetooth devices near you. Read these instructions carefully before continuing:\nAfter clicking the Next button here, you will be redirected to the Bluetooth pairing screen. Find this device on the reference device\'s list - if not found, click the "scan for devices" button on the reference device - and click it, wait up to 10 seconds for the pairing prompt to appear on the reference device, and click "Pair" on both devices. Return to the CTS Verifier app on this device after connection is established.</string>
+    <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. Please wait while the device collects readings.</string>
+<!-- String for Barometer reference device -->
+    <string name="snsr_baro_ref_device">Barometer Reference Device</string>
+    <string name="snsr_baro_ref_device_start_collection_instruction">Now that the two devices are connected, click the Next button on both devices simultaneously to start collecting readings.</string>
 
     <!-- Strings for Sample Test Activities -->
     <string name="share_button_text">Share</string>
