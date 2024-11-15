@@ -1074,9 +1074,6 @@ public class WifiRttTest extends TestBase {
         assertEquals(1000, rangingResult.getMinTimeBetweenNtbMeasurementsMicros());
         assertEquals(10000, rangingResult.getMaxTimeBetweenNtbMeasurementsMicros());
         assertEquals(null, rangingResult.getUnverifiedResponderLocation());
-        assertTrue(rangingResult.isRangingFrameProtected());
-        assertTrue(rangingResult.isRangingAuthenticated());
-        assertTrue(rangingResult.isSecureHeLtfEnabled());
         try {
             rangingResult = new RangingResult.Builder()
                     .setStatus(RangingResult.STATUS_SUCCESS)
@@ -1088,6 +1085,32 @@ public class WifiRttTest extends TestBase {
         } catch (IllegalArgumentException e) {
 
         }
+    }
+
+    /**
+     * Test Secure RangingResult.Builder
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_RANGING)
+    @Test
+    @ApiTest(apis = { "android.net.wifi.rtt.RangingResult.Builder#setRangingFrameProtected",
+            "android.net.wifi.rtt.RangingResult.Builder#setRangingAuthenticated",
+            "android.net.wifi.rtt.RangingResult#isRangingFrameProtected",
+            "android.net.wifi.rtt.RangingResult#isRangingAuthenticated",
+            "android.net.wifi.rtt.RangingResult#isSecureHeLtfEnabled"})
+    public void testSecureRangingResultBuilder() {
+        RangingResult rangingResult = new RangingResult.Builder()
+                .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                .setRangingFrameProtected(true)
+                .setRangingAuthenticated(true)
+                .setSecureHeLtfEnabled(true)
+                .setSecureHeLtfProtocolVersion(1)
+                .build();
+
+        assertEquals(MacAddress.fromString("00:11:22:33:44:55"), rangingResult.getMacAddress());
+        assertTrue(rangingResult.isRangingFrameProtected());
+        assertTrue(rangingResult.isRangingAuthenticated());
+        assertTrue(rangingResult.isSecureHeLtfEnabled());
+        assertEquals(1, rangingResult.getSecureHeLtfProtocolVersion());
     }
 
     /**

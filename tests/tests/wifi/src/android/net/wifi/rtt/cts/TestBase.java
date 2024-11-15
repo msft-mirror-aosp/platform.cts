@@ -47,6 +47,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -367,6 +368,7 @@ public class TestBase extends WifiJUnit4TestBase {
     }
 
     private static boolean isSecureRangingResponder(ScanResult scanResult) {
+        if (!Flags.secureRanging()) return false;
         return (scanResult.capabilities != null && scanResult.capabilities.contains("PASN")
                 && scanResult.isSecureHeLtfSupported());
     }
