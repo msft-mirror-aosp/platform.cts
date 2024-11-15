@@ -34,14 +34,12 @@ import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.Context;
 import android.os.Build;
 import android.os.CancellationSignal;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -118,7 +116,6 @@ public class DistanceMeasurementManagerTest {
         assertNotNull(list);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getChannelSoundingMaxSupportedSecurityLevel() {
@@ -127,7 +124,6 @@ public class DistanceMeasurementManagerTest {
         assertTrue(isValidSecurityLevel(securityLevel));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getLocalChannelSoundingMaxSupportedSecurityLevel() {
