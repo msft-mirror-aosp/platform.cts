@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +44,9 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
 
+  private static final Duration MESSAGE_POSITION = Duration.ofSeconds(4);
+  private static final Duration CLIP_DURATION = Duration.ofSeconds(15);
+  private static final Duration CALL_DURATION = Duration.ofSeconds(7);
   private static final String MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/ForBiggerJoyrides_720p_hevc_15s";
 
@@ -50,7 +54,7 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   private final String mTestType;
 
   public CtsMediaShortFormFullModePlaybackTest(CujTestParam cujTestParam, String testType) {
-    super(cujTestParam.playerListener());
+    super(cujTestParam.getPlayerListener());
     mCujTestParam = cujTestParam;
     this.mTestType = testType;
   }
@@ -62,13 +66,18 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   public static Collection<Object[]> input() {
     // CujTestParam, testId
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15secVideoListForNotificationTest())
-            .setTimeoutMilliSeconds(52000)
-            .setPlayerListener(new CallNotificationTestPlayerListener(4000)).build(),
+        {CujTestParam.builder()
+            .setMediaUrls(prepareHevc_720p_15secVideoPlaylistForNotificationTest())
+            .setDuration(CLIP_DURATION)
+            .setOverhead(TEST_OVERHEAD.plus(CALL_DURATION))
+            .setPlayerListener(
+                new CallNotificationTestPlayerListener(MESSAGE_POSITION)).build(),
             "Hevc_720p_15sec_CallNotificationTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15secVideoListForNotificationTest())
-            .setTimeoutMilliSeconds(45000)
-            .setPlayerListener(new MessageNotificationTestPlayerListener(4000)).build(),
+        {CujTestParam.builder()
+            .setMediaUrls(prepareHevc_720p_15secVideoPlaylistForNotificationTest())
+            .setDuration(CLIP_DURATION)
+            .setOverhead(TEST_OVERHEAD).setPlayerListener(
+                new MessageNotificationTestPlayerListener(MESSAGE_POSITION)).build(),
             "Hevc_720p_15sec_MessageNotificationTest"},
     }));
     return exhaustiveArgsList;
@@ -77,7 +86,7 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   /**
    * Prepare Hevc 720p 15sec video list for notification test.
    */
-  public static List<String> prepareHevc_720p_15secVideoListForNotificationTest() {
+  public static List<String> prepareHevc_720p_15secVideoPlaylistForNotificationTest() {
     List<String> videoInput = Arrays.asList(
         MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING);
     return videoInput;
@@ -92,13 +101,14 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
   @Test
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
-    if (mCujTestParam.playerListener().isCallNotificationTest()) {
+    if (mCujTestParam.getPlayerListener().isCallNotificationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
           deviceSupportPhoneCall(mActivity));
       // Skip call notification tests for visible background users.
       // Visible background users do not support call notifications.
       Assume.assumeFalse(isVisibleBackgroundNonProfileUser(mActivity));
     }
-    play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
+    play(mCujTestParam.getMediaUrls(),
+        mCujTestParam.getDuration().plus(mCujTestParam.getOverhead()));
   }
 }
