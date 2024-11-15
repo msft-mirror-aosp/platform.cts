@@ -3791,6 +3791,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 ShellIdentityUtils.invokeWithShellPermissions(
                         () -> sWifiManager.enableNetwork(disabledNetworkId, true));
             }
+            turnScreenOn();
         }
     }
 
@@ -3895,7 +3896,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             // check if we got the state changed callback with both data in and out
             assertTrue(success);
         } finally {
-            turnScreenOff();
             sWifiManager.unregisterTrafficStateCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
