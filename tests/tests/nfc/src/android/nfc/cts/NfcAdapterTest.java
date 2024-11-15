@@ -718,6 +718,7 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
             assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            nfcOemExtension.forceRoutingTableCommit();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
@@ -856,7 +857,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onRoutingChanged() {
+        public void onRoutingChanged(@NonNull Consumer<Boolean> isSkipped) {
         }
 
         @Override
@@ -914,6 +915,11 @@ public class NfcAdapterTest {
 
         @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
+        }
+
+        @Override
+        public void onExtractOemPackages(@NonNull NdefMessage message,
+                @NonNull Consumer<List<String>> packageConsumer) {
         }
     }
 
