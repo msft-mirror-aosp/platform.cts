@@ -47,6 +47,8 @@ class A11yStickyKeysTest {
         const val KEY_A = 30
         const val KEY_LEFTSHIFT = 42
         const val A11Y_SETTINGS_PROPAGATE_TIME_MILLIS: Long = 100
+        const val EPHEMERAL_MODIFIER_MASK: Int =
+            KeyEvent.META_META_MASK or KeyEvent.META_CTRL_MASK or KeyEvent.META_ALT_MASK or KeyEvent.META_SHIFT_MASK
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -104,7 +106,7 @@ class A11yStickyKeysTest {
             Assert.assertEquals(
                 "Modifier state should be $expectedModifierState",
                 expectedModifierState,
-                lastInputEvent.metaState
+                lastInputEvent.metaState and EPHEMERAL_MODIFIER_MASK
             )
         }
         activity.assertNoEvents()
