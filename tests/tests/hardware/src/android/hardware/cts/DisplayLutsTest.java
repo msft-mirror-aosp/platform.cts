@@ -21,6 +21,8 @@ import static android.hardware.flags.Flags.FLAG_LUTS_API;
 import android.hardware.DisplayLuts;
 import android.hardware.LutProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -28,6 +30,7 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,6 +40,9 @@ import org.junit.runner.RunWith;
 public class DisplayLutsTest {
     private static final String TAG = "DisplayLutsTest";
     private DisplayLuts mDisplayLuts;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @After
     public void tearDown() throws Throwable {
