@@ -183,7 +183,6 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_SDK3_USING_SDK1_AND_SDK2 = "HelloWorldSdk3UsingSdk1And2.apk";
     private static final String TEST_USING_SDK3 = "HelloWorldUsingSdk3.apk";
 
-
     private static final String TEST_SUFFICIENT = "HelloWorldWithSufficient.apk";
 
     private static final String TEST_SUFFICIENT_VERIFIER_REJECT =
@@ -1432,19 +1431,60 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_dependencyInstallerMissing() throws Exception {
+    public void testAppWithoutDependantSdk_failDependencyResolution() throws Exception {
         onBeforeSdkTests();
 
-        // Installing package without dependency should fail
-        // But the error message should be different
-        String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+        // Dependency Installer Service cannot resolve SDK3
+        String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
         assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
-        assertThat(errorMsg).contains("Failed to bind to Dependency Installer");
+        assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_multiSessionFailsLater() throws Exception {
+    public void testAppWithMissingDependency_resolveSdk1_success() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        //TODO(372862145): INSTALL_DEPENDENCY_PACKAGE permission from role should bypass user action
+        // requirement.
+        getUiAutomation().adoptShellPermissionIdentity();
+
+        try {
+            // Dependency Installer Service should resolve missing SDK1
+            installPackage(TEST_USING_SDK1);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithMissingDependency_resolveSdk1_wrongCertDigest() throws Exception {
+        onBeforeSdkTests();
+
+        overrideUsesSdkLibraryCertificateDigest("RANDOMCERT");
+
+        //TODO(372862145): INSTALL_DEPENDENCY_PACKAGE permission from role should bypass user action
+        // requirement. Until we have that, bypass with EMERGENCY_INSTALL_PACKAGES
+        getUiAutomation().adoptShellPermissionIdentity();
+
+        try {
+            // Dependency Installer Service should try to resolve dependency but fail
+            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithMssingDependency_multiSessionFailsLater() throws Exception {
         onBeforeSdkTests();
 
         // Create a multi session without all the dependencies
@@ -2912,6 +2952,7 @@ public class PackageManagerShellCommandInstallTest {
     /* Install for all the users */
     private void installPackage(String baseName) throws IOException {
         File file = new File(createApkPath(baseName));
+        assertThat(file.exists()).isTrue();
         assertEquals("Success\n", executeShellCommand(
                 "pm " + mInstall + " -t -g " + file.getPath()));
     }
