@@ -18,7 +18,8 @@ package android.media.cujcommon.cts;
 
 import static android.media.cujcommon.cts.CujTestBase.ORIENTATIONS;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -36,12 +37,13 @@ import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.TrackSelectionParameters;
 import androidx.media3.common.Tracks;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class PlayerListener implements Player.Listener {
 
-  public static final long NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US = 6000;
+  public static final Duration NOTIFICATIONTEST_PLAYBACK_DELTA = Duration.ofSeconds(6);
   public static final Object LISTENER_LOCK = new Object();
   public static int CURRENT_MEDIA_INDEX = 0;
 
@@ -70,7 +72,7 @@ public abstract class PlayerListener implements Player.Listener {
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
   protected AudioOffloadTestActivity mAudioOffloadActivity;
-  protected long mSendMessagePosition;
+  protected Duration mSendMessagePosition;
   protected int mPreviousOrientation;
   protected int mOrientationIndex;
   protected boolean mScrollRequested;
@@ -82,15 +84,24 @@ public abstract class PlayerListener implements Player.Listener {
   protected long mStartTime;
   protected AudioManager mAudioManager;
   protected boolean mRingVolumeUpdated;
+  protected Duration mTotalSeekOverhead;
 
   public PlayerListener() {
-    this.mSendMessagePosition = 0;
+    this.mSendMessagePosition = Duration.ofSeconds(0);
+    this.mTotalSeekOverhead = Duration.ofSeconds(0);
   }
 
   /**
    * Returns the type of test.
    */
   public abstract TestType getTestType();
+
+  /**
+   * Returns the aggregated seek overhead for Seek test.
+   */
+  public Duration getTotalSeekOverhead() {
+    return mTotalSeekOverhead;
+  }
 
   /**
    * Returns True for Orientation test.
@@ -249,8 +260,13 @@ public abstract class PlayerListener implements Player.Listener {
                   mAudioManager.getStreamMinVolume(AudioManager.STREAM_RING), 0 /*no flag used*/);
             }
             long actualTime = System.currentTimeMillis() - mStartTime;
-            assertEquals((float) mExpectedTotalTime, (float) actualTime,
-                NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+            // The long version of isWithin() is added in version 1.2 of the truth package. AOSP
+            // has support for accepting long as an argument, but android15-tests-dev does not
+            // support it yet. As the float version is present, we have made a change that casts
+            // the durations to float.
+            assertWithMessage("Test did not complete within expected time").that((float) actualTime)
+                .isWithin((float) NOTIFICATIONTEST_PLAYBACK_DELTA.toMillis())
+                .of((float) mExpectedTotalTime);
           }
           if (isAudioOffloadTest()) {
             assertTrue("Player did not sleep for audio offload",
@@ -297,7 +313,7 @@ public abstract class PlayerListener implements Player.Listener {
    * @param trackGroupIndex     Index of the current track group
    * @param trackIndex          Index of the current track
    */
-  protected final void createSwitchTrackMessage(long sendMessagePosition, int trackGroupIndex,
+  protected final void createSwitchTrackMessage(Duration sendMessagePosition, int trackGroupIndex,
       int trackIndex) {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           TrackSelectionParameters currentParameters =
@@ -313,7 +329,7 @@ public abstract class PlayerListener implements Player.Listener {
           mConfiguredTrackFormat = mTrackGroups.get(trackGroupIndex)
               .getTrackFormat(trackIndex);
           mTrackChangeRequested = true;
-        }).setLooper(Looper.getMainLooper()).setPosition(sendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(sendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true).send();
   }
 

@@ -16,7 +16,7 @@
 
 package android.media.cujcommon.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.Activity;
 import android.app.ActivityTaskManager;
@@ -32,6 +32,7 @@ import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ActivityScenario;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -41,6 +42,11 @@ import java.util.concurrent.TimeoutException;
 public class CujTestBase {
 
   static final String SHORTFORM_PLAYBAK_TEST_APP = "android.media.cujsmalltest.cts";
+
+  protected static final Duration TEST_OVERHEAD = Duration.ofSeconds(30);
+
+  // A delay of about 1 to 2 seconds is observed after each seek on slower devices.
+  public static final Duration OVERHEAD_PER_SEEK = Duration.ofSeconds(2);
 
   static final int[] ORIENTATIONS = {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
@@ -163,10 +169,10 @@ public class CujTestBase {
    * Prepare the player, input list and add input list to player's playlist. After that, play for
    * the provided playlist and validate playback time.
    *
-   * @param mediaUrls           List of mediaurl
-   * @param timeoutMilliSeconds Timeout for the test
+   * @param mediaUrls List of mediaurl
+   * @param timeout   Timeout for the test
    */
-  public void play(List<String> mediaUrls, long timeoutMilliSeconds)
+  public void play(List<String> mediaUrls, Duration timeout)
       throws TimeoutException, InterruptedException {
     long startTime = System.currentTimeMillis();
     if (mListener.isScrollTest()) {
@@ -183,14 +189,14 @@ public class CujTestBase {
       });
     }
 
-    long endTime = System.currentTimeMillis() + timeoutMilliSeconds;
+    long endTime = System.currentTimeMillis() + timeout.toMillis();
     // Wait for playback to finish
     synchronized (PlayerListener.LISTENER_LOCK) {
       while (!PlayerListener.mPlaybackEnded) {
-        PlayerListener.LISTENER_LOCK.wait(timeoutMilliSeconds);
+        PlayerListener.LISTENER_LOCK.wait(timeout.toMillis());
         if (endTime < System.currentTimeMillis()) {
           throw new TimeoutException(
-              "playback timed out after " + timeoutMilliSeconds + " milli seconds.");
+              "playback timed out after " + timeout.toMillis() + " milli seconds.");
         }
       }
       PlayerListener.mPlaybackEnded = false;
@@ -198,6 +204,12 @@ public class CujTestBase {
     long actualTotalTime = System.currentTimeMillis() - startTime;
     long expectedTotalTime = mListener.getExpectedTotalTime();
     mListener.onTestCompletion();
-    assertEquals((float) expectedTotalTime, (float) actualTotalTime, 30000);
+    // The long version of isWithin() is added in version 1.2 of the truth package. AOSP
+    // has support for accepting long as an argument, but android15-tests-dev does not
+    // support it yet. As the float version is present, we have made a change that casts
+    // the durations to float.
+    assertWithMessage("Test did not complete within expected time").that((float) actualTotalTime)
+        .isWithin((float) TEST_OVERHEAD.plus(mListener.getTotalSeekOverhead()).toMillis())
+        .of((float) expectedTotalTime);
   }
 }
