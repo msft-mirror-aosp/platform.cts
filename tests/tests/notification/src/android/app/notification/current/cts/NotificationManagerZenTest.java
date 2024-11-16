@@ -710,6 +710,8 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
+        assumeFalse(mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(FEATURE_WATCH));
         assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
     }
 
