@@ -19,7 +19,6 @@ package android.server.wm.activity;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -277,8 +276,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FULLSCREEN);
 
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
-        assertTrue("Display turns on by " + (useWindowFlags ? "flags" : "APIs"),
-                isDisplayOn(DEFAULT_DISPLAY));
+        int displayId = activity.getConfigInfo().displayId;
+        assertTrue("Display " + displayId + " turns on by "
+                        + (useWindowFlags ? "flags" : "APIs"),
+                isDisplayOn(displayId));
 
         activity.finish();
         mWmState.waitForActivityRemoved(activity.getName());
