@@ -97,6 +97,10 @@
 
       <activity android:name="android.appwidget.cts.activity.TransitionActivity"
            android:label="TransitionActivity"/>
+
+      <provider
+          android:name="android.appwidget.cts.TestContentProvider"
+          android:authorities="android.appwidget.cts" />
   </application>
 
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

@@ -70,10 +70,10 @@ public class BuildTest {
 
     @RavenwoodConfig.Config
     public static final RavenwoodConfig sRavenwood = new RavenwoodConfig.Builder()
-            // TODO b/308461809: Include 1 the alias for Known issue 350037023
+            // 1 the alias for known issue b/350037023
             // 1023 is the max alias.
             .setSystemPropertyMutable(BACKPORTED_FIXES_ALIAS_PROP_NAME,
-                    bitSetIndexToLongArrayString(1023))
+                    bitSetIndexToLongArrayString(1, 1023))
             .build();
 
     static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
@@ -327,8 +327,7 @@ public class BuildTest {
     public void getBackportedFixStatus_alwaysFixed() {
         // Known issue 350037023 has an alias of 1
         Truth.assertThat(Build.getBackportedFixStatus(1L)).isEqualTo(
-                // TODO b/372518979 - BACKPORTED_FIX_STATUS_FIXED when the build property is set.
-                Build.BACKPORTED_FIX_STATUS_UNKNOWN);
+                Build.BACKPORTED_FIX_STATUS_FIXED);
     }
 
     @Test

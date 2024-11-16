@@ -138,7 +138,7 @@ class SettingsPreferenceServiceClientTest {
         TestApis.permissions().withPermission(
             Manifest.permission.READ_SYSTEM_PREFERENCES,
             Manifest.permission.WRITE_SYSTEM_PREFERENCES
-        ).use {
+        ).withAppOp("android:write_system_preferences").use {
             client.setPreferenceValue(
                 SetValueRequest.Builder(
                     "s",
