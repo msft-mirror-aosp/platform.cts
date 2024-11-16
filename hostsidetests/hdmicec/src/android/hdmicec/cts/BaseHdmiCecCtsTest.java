@@ -744,4 +744,12 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
         return getDevice().executeShellCommand("dumpsys audio | sed -n '/^- STREAM_MUSIC:/,/^$/p'"
                 + " | grep \"Devices\"").contains("hdmi");
     }
+
+    /**
+     * Returns whether the device is a fixed volume device.
+     */
+    public boolean isFixedVolumeDevice() throws Exception {
+        return getDevice().executeShellCommand("dumpsys audio | grep mUseFixedVolume=")
+                .replace("mUseFixedVolume=", "").trim().equals("true");
+    }
 }
