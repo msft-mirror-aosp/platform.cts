@@ -134,7 +134,7 @@ public class DisplayEventTest extends TestBase {
         registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_STATE);
 
         // Change the display state
-        SystemUtil.runShellCommand(mInstrumentation, "input keyevent 26");
+        switchDisplayState();
 
         // Validate the event was received
         waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
@@ -169,7 +169,7 @@ public class DisplayEventTest extends TestBase {
             }
         };
         mDisplayManager.registerDisplayListener(mContext.getMainExecutor(), eventFlagMask,
-                        mDisplayListener);
+                mDisplayListener);
     }
 
     /**
@@ -200,6 +200,14 @@ public class DisplayEventTest extends TestBase {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private void switchDisplayState() throws Exception {
+        if (mDisplay.getState() == Display.STATE_OFF) {
+            SystemUtil.runShellCommand(mInstrumentation, "cmd power wakeup");
+        } else {
+            SystemUtil.runShellCommand(mInstrumentation, "cmd power sleep");
         }
     }
 
