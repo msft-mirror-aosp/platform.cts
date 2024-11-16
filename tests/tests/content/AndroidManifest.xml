@@ -386,6 +386,14 @@
             </intent-filter>
         </service>
         <!--Test for PackageManager-->
+        <service
+            android:name="android.content.pm.cts.TestDependencyInstallerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.INSTALL_DEPENDENCY" />
+            </intent-filter>
+        </service>
+        <!--Test for PackageManager-->
         <receiver android:name="android.content.pm.cts.PmTestReceiver"
              android:exported="true">
             <intent-filter>

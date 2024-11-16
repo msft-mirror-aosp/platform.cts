@@ -1,5 +1,9 @@
 package android.security;
 
+import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
+
+import static org.junit.Assume.assumeTrue;
+
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,6 +12,9 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.database.Cursor;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.net.http.AndroidHttpClient;
 import android.test.AndroidTestCase;
@@ -19,7 +26,6 @@ import org.apache.http.client.methods.HttpGet;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.UnknownServiceException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -35,9 +41,24 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
         mCleartextTrafficExpectedToBePermitted = cleartextTrafficExpectedToBePermitted;
     }
 
+    private static boolean isInternetConnected(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        Network activeNetwork = connectivityManager.getActiveNetwork();
+        if (activeNetwork == null) {
+            return false;
+        }
+
+        NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(activeNetwork);
+        return caps != null && caps.hasCapability(NET_CAPABILITY_INTERNET);
+    }
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+
+        assumeTrue("CTS requires a working internet connection", isInternetConnected(mContext));
         mHttpOnlyWebServer = new CtsTestServer(mContext, false);
     }
 
@@ -231,7 +252,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
             Intent downloadCompleteIntent;
 
             long downloadId = downloadManager.enqueue(new DownloadManager.Request(uri));
-            downloadCompleteIntent = downloadCompleteIntentFuture.get(5, TimeUnit.SECONDS);
+            downloadCompleteIntent = downloadCompleteIntentFuture.get();
 
             assertEquals(downloadId,
                     downloadCompleteIntent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1));

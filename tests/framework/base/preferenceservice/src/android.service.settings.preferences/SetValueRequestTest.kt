@@ -17,15 +17,24 @@
 package android.service.settings.preferences
 
 import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth.assertThat
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @SmallTest
+@RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
 class SetValueRequestTest {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val value = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING)
         .setStringValue("string")

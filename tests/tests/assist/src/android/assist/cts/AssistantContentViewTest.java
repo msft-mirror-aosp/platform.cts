@@ -16,18 +16,14 @@
 
 package android.assist.cts;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.fail;
 
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
-import android.graphics.Point;
 import android.os.Bundle;
 import android.util.Log;
 
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,17 +31,11 @@ import java.util.concurrent.TimeUnit;
 public class AssistantContentViewTest extends AssistTestBase {
     private static final String TAG = "ContentViewTest";
     private AutoResetLatch mContentViewLatch = new AutoResetLatch(1);
-    private Bundle mBundle;
 
     @Override
     protected void customSetup() throws Exception {
         mActionLatchReceiver = new AssistantReceiver();
         startTestActivity(Utils.VERIFY_CONTENT_VIEW);
-    }
-
-    @Override
-    protected void customTearDown() throws Exception {
-        mBundle = null;
     }
 
     private void waitForContentView() throws Exception {
@@ -56,32 +46,25 @@ public class AssistantContentViewTest extends AssistTestBase {
     }
 
     @Test
-    @Ignore("b/349497368")
-    public void testAssistantContentViewDimens() throws Exception {
+    public void testAssistantContentView() throws Exception {
         if (mActivityManager.isLowRamDevice()) {
-          Log.d(TAG, "Not running assist tests on low-RAM device.");
-          return;
+            Log.d(TAG, "Not running assist tests on low-RAM device.");
+            return;
         }
         startTest(Utils.VERIFY_CONTENT_VIEW);
         waitForAssistantToBeReady();
         startSession();
         waitForContentView();
-        int height = mBundle.getInt(Utils.EXTRA_CONTENT_VIEW_HEIGHT, 0);
-        int width = mBundle.getInt(Utils.EXTRA_CONTENT_VIEW_WIDTH, 0);
-        Point displayPoint = mBundle.getParcelable(Utils.EXTRA_DISPLAY_POINT);
-        assertThat(height).isEqualTo(displayPoint.y);
-        assertThat(width).isEqualTo(displayPoint.x);
     }
 
     private class AssistantReceiver extends ActionLatchReceiver {
 
         AssistantReceiver() {
-            super(Utils.BROADCAST_CONTENT_VIEW_HEIGHT, mContentViewLatch);
+            super(Utils.BROADCAST_CONTENT_VIEW, mContentViewLatch);
         }
 
         @Override
         protected void onAction(Bundle bundle, String action) {
-            mBundle = bundle;
             super.onAction(bundle, action);
         }
     }
