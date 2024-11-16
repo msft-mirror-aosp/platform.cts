@@ -238,8 +238,9 @@ public class WindowInputTests {
                     insets.top + insets.bottom + lp.height);
         });
 
+        final int displayId = mActivity.getDisplayId();
         final Rect previousWindowBoundsInDisplay = Objects.requireNonNull(
-                getWindowBoundsInDisplaySpace(mView::getWindowToken));
+                getWindowBoundsInDisplaySpace(mView::getWindowToken, displayId));
 
         // Move the window to a random location in the window and attempt to tap on view multiple
         // times.
@@ -268,7 +269,7 @@ public class WindowInputTests {
                         return true;
                     };
             assertTrue(waitForWindowInfo(hasUpdatedBounds, WINDOW_WAIT_TIMEOUT,
-                    mView::getWindowToken, mView.getDisplay().getDisplayId()));
+                    mView::getWindowToken, displayId));
             final int previousCount = mClickCount;
 
             mTouchScreen.tapOnViewCenter(mView);
@@ -691,6 +692,7 @@ public class WindowInputTests {
                         decorViewLocation[1] + decorView.getHeight() / 2);
 
         final long downTime = SystemClock.uptimeMillis();
+        final int displayId = mActivity.getDisplayId();
         final MotionEvent eventDown =
                 MotionEvent.obtain(
                         downTime,
@@ -699,6 +701,7 @@ public class WindowInputTests {
                         testPoint.x,
                         testPoint.y,
                         /* metaState= */ 0);
+        eventDown.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(eventDown);
 
         final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -716,6 +719,7 @@ public class WindowInputTests {
                                         testPoint.x,
                                         testPoint.y,
                                         /* metaState= */ 0);
+                        eventMove.setDisplayId(displayId);
                         try {
                             mInstrumentation.sendPointerSync(eventMove);
                         } catch (SecurityException e) {
