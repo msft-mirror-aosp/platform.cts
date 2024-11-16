@@ -2160,7 +2160,7 @@ public class TunerTest {
     }
 
     @Test
-    public void testRequestFrontendNoFrontendAvailableAndResourceHolderRetain() throws Exception {
+    public void testRequestFrontendNoFrontendAvailableAndResourceOwnerRetention() throws Exception {
         prepTRMCustomFeResourceMapTest();
 
         // Use try block to ensure restoring the TunerResourceManager
@@ -2178,12 +2178,12 @@ public class TunerTest {
             assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
                     true /* expectedResult */, 1 /* expectedHandle */);
             // Requester says holder should not hold resource
-            tunerA.setResourceHolderRetain(false);
+            tunerA.setResourceOwnershipRetention(false);
             // Resource Challenger Situation
             assignFeResource(tunerA.getClientId(), FrontendSettings.TYPE_DVBT,
                     true /* expectedResult */, 1 /* expectedHandle */);
             // Requester says holder should hold resource
-            tunerB.setResourceHolderRetain(true);
+            tunerB.setResourceOwnershipRetention(true);
             assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
                     false /* expectedResult */, -1 /* expectedHandle */);
             tunerB.close();
