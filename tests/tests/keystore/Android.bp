@@ -144,6 +144,7 @@ android_test {
         "android.test.runner",
     ],
     static_libs: [
+        "android.security.flags-aconfig-java",
         "bouncycastle-bcpkix-unbundled",
         "bouncycastle-unbundled",
         "cts-core-test-runner-axt",
