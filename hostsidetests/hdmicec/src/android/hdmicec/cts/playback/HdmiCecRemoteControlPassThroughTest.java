@@ -212,6 +212,8 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
         assumeFalse("Skip for audio system devices (b/323469502)",
                 hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
 
+        assumeFalse("Skip for fixed volume device", isFixedVolumeDevice());
+
         // The DUT won't send <User Control Pressed> messages if this condition is not met.
         assumeTrue(isPlayingStreamMusicOnHdmiOut());
 
