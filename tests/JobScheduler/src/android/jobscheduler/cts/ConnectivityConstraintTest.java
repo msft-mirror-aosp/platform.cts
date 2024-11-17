@@ -43,7 +43,6 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.server.net.Flags;
 
 import java.util.Collections;
 import java.util.Map;
@@ -526,11 +525,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
 
         mTestAppInterface.kill();
-        if (Flags.networkBlockedForTopSleepingAndAbove()) {
-            PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
-                    mTestAppInterface::isNetworkBlockedByPolicy,
-                    "Test app did not lose network access after being stopped");
-        }
+        PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
+                mTestAppInterface::isNetworkBlockedByPolicy,
+                "Test app did not lose network access after being stopped");
         // The job should run after network is connected, even though the app does not have access
         // due to policy right now.
         mNetworkingHelper.setAllNetworksEnabled(true);

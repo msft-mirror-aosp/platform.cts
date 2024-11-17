@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.function.DoubleUnaryOperator;
 
 @SmallTest
@@ -86,17 +87,35 @@ public class ColorSpaceTest {
 
     private static final DoubleUnaryOperator sIdentity = DoubleUnaryOperator.identity();
 
+    private static final HashSet<ColorSpace.Named> ALLOWED_NAMED_COLORSPACES =
+            new HashSet<>(Arrays.asList(
+                    ColorSpace.Named.SRGB,
+                    ColorSpace.Named.LINEAR_SRGB,
+                    ColorSpace.Named.EXTENDED_SRGB,
+                    ColorSpace.Named.LINEAR_EXTENDED_SRGB,
+                    ColorSpace.Named.BT709,
+                    ColorSpace.Named.BT2020,
+                    ColorSpace.Named.DCI_P3,
+                    ColorSpace.Named.DISPLAY_P3,
+                    ColorSpace.Named.NTSC_1953,
+                    ColorSpace.Named.SMPTE_C,
+                    ColorSpace.Named.ADOBE_RGB,
+                    ColorSpace.Named.PRO_PHOTO_RGB,
+                    ColorSpace.Named.ACES,
+                    ColorSpace.Named.ACESCG,
+                    ColorSpace.Named.CIE_XYZ,
+                    ColorSpace.Named.CIE_LAB,
+                    ColorSpace.Named.BT2020_HLG,
+                    ColorSpace.Named.BT2020_PQ));
+    static {
+        if (Flags.okLabColorspace()) {
+            ALLOWED_NAMED_COLORSPACES.add(ColorSpace.Named.OK_LAB);
+        }
+    }
+
     @Test
     public void testNamedColorSpaces() {
-        ColorSpace.Named[] values = ColorSpace.Named.values();
-        int numColorSpaces;
-        if (Flags.okLabColorspace()) {
-            numColorSpaces = values.length;
-        } else {
-            numColorSpaces = values.length - 1;
-        }
-        for (int i = 0; i < numColorSpaces; i++) {
-            ColorSpace.Named named = values[i];
+        for (ColorSpace.Named named : ALLOWED_NAMED_COLORSPACES) {
             ColorSpace colorSpace = ColorSpace.get(named);
             Log.v("ResolvedColorSpace", "ColorSpace: " + colorSpace);
             assertNotNull(colorSpace.getName());
@@ -368,7 +387,7 @@ public class ColorSpaceTest {
             // a ColorSpace that is flagged, this falls back ot return SRGB as a default.
             // The values method of an enum will always return the full set of enum values
             // regardless if they are flagged out or not
-            boolean isSrgbFallback = (colorSpace.getId() == 0 && !Flags.okLabColorspace());
+            boolean isSrgbFallback = !ALLOWED_NAMED_COLORSPACES.contains(e);
             if (e == ColorSpace.Named.SRGB || isSrgbFallback) {
                 assertTrue(colorSpace.isSrgb());
             } else {
