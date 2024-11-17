@@ -217,6 +217,45 @@ class AppOpsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CHECK_OP_OVERLOAD_API_ENABLED)
+    fun testCheckOpWithAttributionTag() {
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ALLOWED)
+        assertEquals(MODE_ALLOWED, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+        assertEquals(MODE_ALLOWED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+        assertEquals(MODE_ALLOWED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_IGNORED)
+        assertEquals(MODE_IGNORED, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_IGNORED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_IGNORED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ERRORED)
+        try {
+            mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, null)
+            fail("SecurityException expected")
+        } catch (expected: SecurityException) {
+        }
+        assertEquals(MODE_ERRORED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_ERRORED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_DEFAULT)
+        assertEquals(MODE_DEFAULT, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_DEFAULT, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_DEFAULT, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+    }
+
+    @Test
     fun testStartOpAndFinishOp() {
         setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ALLOWED)
         assertEquals(MODE_ALLOWED, mAppOps.startOp(OPSTR_RESERVED_FOR_TESTING,
