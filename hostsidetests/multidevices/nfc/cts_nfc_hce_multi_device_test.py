@@ -52,12 +52,16 @@ try:
         parse_protocol_params,
         create_select_apdu,
         poll_and_transact,
+        poll_and_observe_frames,
         get_apdus,
         POLLING_FRAME_ALL_TEST_CASES,
-        GUARD_TIME_PER_TECH,
-        TimedWrapper,
-        PollingFrame,
+        POLLING_FRAMES_TYPE_A_SPECIAL,
+        POLLING_FRAMES_TYPE_B_SPECIAL,
+        POLLING_FRAMES_TYPE_F_SPECIAL,
+        POLLING_FRAME_ON,
+        POLLING_FRAME_OFF,
         apply_original_frame_ordering,
+        TimedWrapper,
         ns_to_ms,
         ns_to_us,
         us_to_ms,
@@ -104,6 +108,9 @@ _FRAME_EVENT_TIMEOUT_SEC = 1
 _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS = 5
 _FAILED_MISSING_POLLING_FRAMES_MSG = "Device did not receive all polling frames"
 _FAILED_TIMESTAMP_TOLERANCE_EXCEEDED_MSG = "Polling frame timestamp tolerance exceeded"
+_FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE = """
+Polling frame vendor specific gain value dropped on power increase
+"""
 
 
 
@@ -232,7 +239,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             else:
                 pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            if len(pn532_serial_path) > 0:
+            casimir_id = self.user_params.get("casimir_id", "")
+
+            if len(casimir_id) > 0:
+                self._setup_failure_reason = 'Failed to connect to casimir'
+                _LOG.info("casimir_id = " + casimir_id)
+                self.pn532 = pn532.Casimir(casimir_id)
+            elif len(pn532_serial_path) > 0:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
@@ -984,58 +997,36 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Test Steps:
         1. Toggle NFC reader field OFF
         2. Start emulator activity
-        3. Toggle NFC reader field ON and transmit polling frames.
-        4. Set a handler for an OFF event, turn NFC reader field off, wait for last event.
-        5. Collect polling frames. Iterate over matching polling loop frame and device
-        time measurements. Calculate elapsed time for each and verify
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over matching polling loop frame
+        and device time measurements. Calculate elapsed time for each and verify
         that the host-device difference does not exceed the delay threshold.
 
         Verifies:
         1. Verifies that timestamp values are reported properly
         for each tested frame type.
-        2. Verifies that the difference between matching host and device timestamps
-        does not exceed _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS.
+        2. Verifies that the difference between matching host and device
+        timestamps does not exceed _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS.
         """
         # 1. Mute the field before starting the emulator
         # in order to be able to trigger ON event when the test starts
         self.pn532.mute()
 
-        # 2.
+        # 2. Start emuator activity
         self._set_up_emulator(
             start_emulator_fun=self.emulator.nfc_emulator.startPollingFrameEmulatorActivity
         )
 
         timed_pn532 = TimedWrapper(self.pn532)
-
         testcases = POLLING_FRAME_ALL_TEST_CASES
 
-        # 3. Activate the NFC field
-        timed_pn532.unmute()
-
         # 3. Transmit polling frames
-        for testcase in testcases:
-            configuration = testcase.configuration
-            time.sleep(GUARD_TIME_PER_TECH[configuration.type])
-            # Skip ON/OFF events as they're handled manually.
-            if configuration.type in {"O", "X"}:
-                continue
-            timed_pn532.transceive_raw(
-                data=bytes.fromhex(testcase.data),
-                type_=configuration.type,
-                crc=configuration.crc,
-                bitrate=configuration.bitrate,
-                bits=configuration.bits,
-                timeout=configuration.timeout or 0.025,
-            )
-
-        field_off_handler = self.emulator.nfc_emulator.asyncWaitForPollingFrameOff('RfFieldOff')
-        timed_pn532.mute()
-        # Wait for field off as the last event
-        field_off_handler.waitAndGet('RfFieldOff', _FRAME_EVENT_TIMEOUT_SEC)
-
+        frames = poll_and_observe_frames(
+            pn532=timed_pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+        )
         timings = timed_pn532.timings
-
-        frames = [PollingFrame.from_dict(f) for f in self.emulator.nfc_emulator.getPollingFrames()]
 
         # Attempt to revert expedited frame delivery ordering for 'U' and 'F' frames
         # while keeping timestamp wrapping into account
@@ -1051,6 +1042,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             ],
             "frames_received": [frame.to_dict() for frame in frames],
         }
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            frames_sent_received_error_extra
+        )
 
         # For each event, calculate the amount of time elapsed since the previous one
         # Subtract the resulting host/device time delta values
@@ -1070,7 +1068,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             device_delta = us_to_ms(timestmp_device - previous_timestamp_device)
 
             _LOG.debug(
-               f"{testcase.data.upper():32} ({testcase.configuration.type}) {host_delta:6.2f}" + \
+               f"{testcase.data.upper():32}" + \
+               f" ({testcase.configuration.type}" + \
+               f", {'+' if testcase.configuration.crc else '-'}" + \
+               f", {testcase.configuration.bits}) {host_delta:6.2f}" + \
                f" -> {frame.data.hex().upper():32} ({frame.type}) {device_delta:6.2f}"
             )
 
@@ -1105,18 +1106,93 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 }
             )
 
-        # Check that there are as many polling loop events as there were commands used
-        asserts.assert_equal(
-            len(testcases), len(frames),
-            _FAILED_MISSING_POLLING_FRAMES_MSG,
-            frames_sent_received_error_extra
+    def test_polling_frame_vendor_specific_gain(self):
+        """Tests that PollingFrame object vendorSpecificGain value
+        changes when overall NFC reader output power changes
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. For each power level (0-100% with 20% step), send polling loop
+        consisting of normally encountered polling frames
+        4. For each result, calculate average vendorSpecificGain per NFC mode
+        compare those values against the previous power step, and assert that
+        they are equal or bigger than the previous one
+
+        Verifies:
+        1. Verifies that vendorSpecificGain value increases or stays the same
+        when PN532 output power increases.
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
         )
+
+        # Loop two times so that HostEmulationManager releases all frames
+        testcases = [
+            POLLING_FRAME_ON,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            POLLING_FRAME_OFF
+        ] * 2
+
+        # 6 steps; 0%, 20%, 40%, 60%, 80%, 100%
+        power_levels = [0, 1, 2, 3, 4, 5]
+        polling_frame_types = ("A", "B", "F")
+
+        results_for_power_level = {}
+
+        for power_level in power_levels:
+            # Warning for 0% might appear,
+            # as it's possible for no events to be produced
+            frames = poll_and_observe_frames(
+                testcases=testcases,
+                pn532=self.pn532,
+                emulator=emulator,
+                # Scale from 0 to 100%
+                power_level = power_level * 20
+            )
+
+            frames_for_type = {
+                type_: [
+                    f.vendor_specific_gain for f in frames if f.type == type_
+                ] for type_ in polling_frame_types
+            }
+            results_for_power_level[power_level] = {
+                # If no frames for type, assume gain is negative -1
+                type_: (sum(frames) / len(frames)) if len(frames) else -1
+                for type_, frames in frames_for_type.items()
+            }
+
+        _LOG.debug(f"Polling frame gain results {results_for_power_level}")
+
+        for power_level in power_levels:
+            # No value to compare to
+            if power_level == 0:
+                continue
+
+            for type_ in polling_frame_types:
+                previous_gain = results_for_power_level[power_level - 1][type_]
+                current_gain = results_for_power_level[power_level][type_]
+                asserts.assert_greater_equal(
+                    current_gain, previous_gain,
+                    _FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE,
+                    {
+                        "type": type_,
+                        "power_level": power_level * 20,
+                        "previous_gain": previous_gain,
+                        "current_gain": current_gain,
+                    }
+                )
 
     def teardown_test(self):
         if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
             self.emulator.nfc_emulator.closeActivity()
-            self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name +
-                                               " ***")
+            self.emulator.nfc_emulator.logInfo(
+                "*** TEST END: " + self.current_test_info.name + " ***")
         param_list = []
         if self.pn532:
             self.pn532.reset_buffers()
@@ -1124,7 +1200,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             param_list = [[self.emulator]]
         elif hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
             self.reader.nfc_reader.closeActivity()
-            self.reader.nfc_reader.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
+            self.reader.nfc_reader.logInfo(
+                "*** TEST END: " + self.current_test_info.name + " ***")
             param_list = [[self.emulator], [self.reader]]
         utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
             self.current_test_info),

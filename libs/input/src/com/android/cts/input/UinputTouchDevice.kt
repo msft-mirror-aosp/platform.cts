@@ -18,16 +18,8 @@ package com.android.cts.input
 
 import android.app.Instrumentation
 import android.graphics.Point
-import android.hardware.input.InputManager
-import android.os.Handler
-import android.os.Looper
-import android.server.wm.WindowManagerStateHelper
 import android.view.Display
 import android.view.Surface
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.TestUtils.waitOn
-import java.util.concurrent.TimeUnit
-
 
 // Attempt to transform coordinates from the logical display (screen) space to the physical display
 // space. To do this, we assume the unrotated logical display has the same aspect ratio as the
@@ -73,19 +65,7 @@ open class UinputTouchDevice(
     source: Int,
 ) : AutoCloseable {
 
-    private val DISPLAY_ASSOCIATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5)
-    private val uinputDevice = UinputDevice(instrumentation, source, registerCommand)
-    private val inputManager: InputManager
-
-    init {
-        inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
-        associateWith(display)
-
-        // Wait for display transitions to idle as associating an input device with a display could
-        // trigger one because of a display configuration change
-        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
-        instrumentation.uiAutomation.syncInputTransactions()
-    }
+    val uinputDevice = UinputDevice(instrumentation, source, registerCommand, display)
 
     private fun injectEvent(events: IntArray) {
         uinputDevice.injectEvents(events.joinToString(
@@ -142,64 +122,7 @@ open class UinputTouchDevice(
         return uinputDevice.deviceId
     }
 
-    private fun associateWith(display: Display) {
-        runWithShellPermissionIdentity(
-                { inputManager.addUniqueIdAssociationByPort(
-                      registerCommand.port,
-                      display.uniqueId!!
-                  )
-                },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
-        )
-        waitForDeviceUpdatesUntil {
-            val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
-            display.displayId == inputDevice!!.associatedDisplayId
-        }
-    }
-
-    private fun waitForDeviceUpdatesUntil(condition: () -> Boolean) {
-        val lockForInputDeviceUpdates = Object()
-        val inputDeviceListener =
-            object : InputManager.InputDeviceListener {
-                override fun onInputDeviceAdded(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-
-                override fun onInputDeviceRemoved(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-
-                override fun onInputDeviceChanged(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-            }
-
-        inputManager.registerInputDeviceListener(
-            inputDeviceListener,
-            Handler(Looper.getMainLooper())
-        )
-
-        waitOn(
-            lockForInputDeviceUpdates,
-            condition,
-            DISPLAY_ASSOCIATION_TIMEOUT_MILLIS,
-            null
-        )
-
-        inputManager.unregisterInputDeviceListener(inputDeviceListener)
-    }
-
     override fun close() {
-        runWithShellPermissionIdentity(
-                { inputManager.removeUniqueIdAssociationByPort(registerCommand.port) },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
-        )
         uinputDevice.close()
     }
 

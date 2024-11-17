@@ -18,8 +18,10 @@ package com.android.cts.input;
 
 import android.app.Instrumentation;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.annotation.GuardedBy;
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,7 +40,10 @@ public class UinputDevice extends VirtualInputDevice {
     private static final String UINPUT_COMMAND = "uinput -";
 
     @GuardedBy("mLock")
-    private List<UinputResultData> mResults = new ArrayList<UinputResultData>();
+    private final List<UinputResultData> mResults = new ArrayList<>();
+
+    @Nullable
+    private InputDeviceAssociationByDescriptor mDisplayAssociation;
 
     @Override
     protected String getShellCommand() {
@@ -69,8 +74,26 @@ public class UinputDevice extends VirtualInputDevice {
         }
     }
 
-    public UinputDevice(Instrumentation instrumentation, int sources, UinputRegisterCommand cmd) {
+    public UinputDevice(Instrumentation instrumentation, int sources, UinputRegisterCommand cmd,
+            @Nullable Display display) {
         super(instrumentation, cmd.getId(), cmd.getVid(), cmd.getPid(), sources, cmd);
+        if (display != null) {
+            mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
+                    mInstrumentation).associate(mDeviceId, display);
+        }
+    }
+
+    @Override
+    public void close() {
+        if (mDisplayAssociation != null) {
+            try {
+                mDisplayAssociation.close();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to close the device/display association: "
+                        + mDisplayAssociation, e);
+            }
+        }
+        super.close();
     }
 
     /**
@@ -112,6 +135,7 @@ public class UinputDevice extends VirtualInputDevice {
      * The above string represents an event array of [EV_KEY, KEY_9, DOWN, EV_SYN, SYN_REPORT, 0]
      * Hex strings ("0x01") are not supported inside the incoming string.
      * The number of entries in the provided string has to be a multiple of 3.
+     *
      * @param evdevEvents The uinput events to be injected.  (a JSON-formatted array of numbers)
      */
     public void injectEvents(String evdevEvents) {
