@@ -103,6 +103,13 @@ public class StaticMetadata {
         "AF_MODE_EDOF"
     };
 
+    // Access via getAePriorityModeName()
+    public static final String[] AE_PRIORITY_MODE_NAMES = new String[] {
+        "AE_PRIORITY_MODE_OFF",
+        "AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY",
+        "AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY"
+    };
+
     // Index with android.control.aeState
     public static final String[] AE_STATE_NAMES = new String[] {
         "AE_STATE_INACTIVE",
@@ -528,6 +535,12 @@ public class StaticMetadata {
     public static String getAfModeName(int afMode) {
         return (afMode >= AF_MODE_NAMES.length) ? String.format("VENDOR_AF_MODE_%d", afMode) :
                 AF_MODE_NAMES[afMode];
+    }
+
+    public static String getAePriorityModeName(int aePriorityMode) {
+        return (aePriorityMode >= AE_PRIORITY_MODE_NAMES.length) ?
+                String.format("Unknown priority mode %d", aePriorityMode) :
+                AE_PRIORITY_MODE_NAMES[aePriorityMode];
     }
 
     /**
@@ -1417,6 +1430,33 @@ public class StaticMetadata {
                     mode >= CameraMetadata.CONTROL_AE_MODE_OFF
                     && mode <= CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE);
         }
+
+        return modes;
+    }
+
+    /**
+     * Get aeAvailablePriorityModes and do the validity check.
+     *
+     * @return AE Priority available modes
+     */
+    public int[] getAeAvailablePriorityModesChecked() {
+        Key<int[]> modesKey = CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES;
+
+        int[] modes;
+        if (Flags.aePriority()) {
+            modes = getValueFromKeyNonNull(modesKey);
+        } else {
+            modes = mCharacteristics.get(modesKey);
+        }
+
+        if (modes == null) {
+            return new int[0];
+        }
+
+        List<Integer> modeList = Arrays.asList(CameraTestUtils.toObject(modes));
+        // OFF must be included.
+        checkTrueForKey(modesKey, " CONTROL_AE_PRIORITY_MODE_OFF must be included",
+                modeList.contains(CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF));
 
         return modes;
     }

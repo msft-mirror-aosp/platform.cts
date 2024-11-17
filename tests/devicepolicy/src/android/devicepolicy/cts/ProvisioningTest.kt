@@ -18,6 +18,7 @@ package android.devicepolicy.cts
 import android.Manifest
 import android.accounts.Account
 import android.app.admin.*
+import android.app.admin.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
@@ -28,6 +29,7 @@ import android.os.*
 import android.provider.Settings
 import com.android.bedstead.accounts.account
 import com.android.bedstead.accounts.accounts
+import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.deviceadminapp.DeviceAdminApp
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
@@ -38,13 +40,13 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.enterprise.dpmRoleHolder
 import com.android.bedstead.enterprise.profileOwner
 import com.android.bedstead.enterprise.workProfile
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit
@@ -85,7 +87,7 @@ import java.util.stream.Collectors
 import org.junit.*
 import org.junit.Assert.assertThrows
 import org.junit.runner.RunWith
-
+import java.lang.IllegalArgumentException
 
 @RunWith(BedsteadJUnit4::class)
 class ProvisioningTest {
@@ -141,7 +143,8 @@ class ProvisioningTest {
         deviceState.dpmRoleHolder().context().sendBroadcast(
             Intent(DeviceAdminReceiver.ACTION_PROFILE_PROVISIONING_COMPLETE).apply {
                 setComponent(deviceState.dpc().componentName())
-        })
+        }
+        )
 
         assertThat(deviceState.dpc().events().profileProvisioningComplete()).eventOccurred()
     }
@@ -298,7 +301,8 @@ class ProvisioningTest {
                     val nonRequiredAppsInProfile = TestApis.packages().installedForUser(profile)
                     nonRequiredAppsInProfile.retainAll(
                         nonRequiredApps.stream().map { TestApis.packages().find(it) }
-                            .collect(Collectors.toSet()))
+                            .collect(Collectors.toSet())
+                    )
                     assertThat(nonRequiredAppsInProfile).isEmpty()
                 }
             }
@@ -341,7 +345,8 @@ class ProvisioningTest {
     @EnsureHasWorkProfile
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#createAndProvisionManagedProfile"])
     fun createAndProvisionManagedProfile_withExistingProfile_preconditionFails() {
-        val exception = assertThrows(ProvisioningException::class.java
+        val exception = assertThrows(
+            ProvisioningException::class.java
         ) {
             localDevicePolicyManager.createAndProvisionManagedProfile(
                 MANAGED_PROFILE_PARAMS
@@ -441,7 +446,6 @@ class ProvisioningTest {
                 assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
                 assertThat(TestApis.devicePolicy().getDeviceOwner()!!.componentName())
                         .isEqualTo(SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME)
-
             } finally {
                 val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
                 deviceOwner?.remove()
@@ -1265,6 +1269,48 @@ class ProvisioningTest {
         assertThat(localDevicePolicyManager.isDpcDownloaded).isTrue()
     }
 
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasWorkProfile
+    @EnsureDoesNotHavePermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_REMOVE_MANAGED_PROFILE_ENABLED)
+    fun removeManagedProfile_withoutPermission_throwsException() {
+        assertThrows(SecurityException::class.java) {
+            localDevicePolicyManager.removeManagedProfile()
+        }
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasWorkProfile
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_REMOVE_MANAGED_PROFILE_ENABLED)
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#removeManagedProfile"])
+    fun removeManagedProfile_managedUser_returnsTrue() {
+        val workProfileUser = deviceState.workProfile()
+
+        val dpm =
+                TestApis.permissions().withPermission(CommonPermissions.INTERACT_ACROSS_USERS).use {
+                    TestApis.context().androidContextAsUser(workProfileUser)
+                            .getSystemService(DevicePolicyManager::class.java)
+                }
+
+        assertThat(dpm!!.removeManagedProfile()).isTrue()
+        assertThat(workProfileUser.exists()).isFalse();
+
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_REMOVE_MANAGED_PROFILE_ENABLED)
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#removeManagedProfile"])
+    fun removeManagedProfile_notManagedUser_returnsFalse() {
+        assertThrows(IllegalArgumentException::class.java) {
+            localDevicePolicyManager.removeManagedProfile()
+        }
+    }
+
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasWorkProfile
@@ -1272,7 +1318,7 @@ class ProvisioningTest {
     fun finalizeWorkProfileProvisioning_withoutPermission_throwsException() {
         assertThrows(SecurityException::class.java) {
             localDevicePolicyManager.finalizeWorkProfileProvisioning(
-                deviceState.workProfile().userHandle(),  /* migratedAccount= */
+                deviceState.workProfile().userHandle(), /* migratedAccount= */
                 null
             )
         }
@@ -1284,7 +1330,7 @@ class ProvisioningTest {
     fun finalizeWorkProfileProvisioning_nonExistingManagedProfileUser_throwsException() {
         assertThrows(IllegalStateException::class.java) {
             localDevicePolicyManager.finalizeWorkProfileProvisioning( /* managedProfileUser= */
-                TestApis.users().nonExisting().userHandle(),  /* migratedAccount= */
+                TestApis.users().nonExisting().userHandle(), /* migratedAccount= */
                 null
             )
         }
@@ -1302,7 +1348,7 @@ class ProvisioningTest {
         try {
             assertThrows(IllegalStateException::class.java) {
                 localDevicePolicyManager.finalizeWorkProfileProvisioning( /* managedProfileUser= */
-                    deviceState.secondaryUser().userHandle(),  /* migratedAccount= */
+                    deviceState.secondaryUser().userHandle(), /* migratedAccount= */
                     null
                 )
             }
@@ -1321,7 +1367,7 @@ class ProvisioningTest {
             dpc.remove()
             assertThrows(IllegalStateException::class.java) {
                 localDevicePolicyManager.finalizeWorkProfileProvisioning( /* managedProfileUser= */
-                    deviceState.workProfile().userHandle(),  /* migratedAccount= */
+                    deviceState.workProfile().userHandle(), /* migratedAccount= */
                     null
                 )
             }
@@ -1344,9 +1390,11 @@ class ProvisioningTest {
         ).testApp().install().use { personalInstance ->
             // We know that RemoteDPC is the Profile Owner - we need the same package on the
             // personal side to receive the broadcast
-            personalInstance.registerReceiver(IntentFilter(DevicePolicyManager.ACTION_MANAGED_PROFILE_PROVISIONED))
+            personalInstance.registerReceiver(
+                IntentFilter(DevicePolicyManager.ACTION_MANAGED_PROFILE_PROVISIONED)
+            )
             localDevicePolicyManager.finalizeWorkProfileProvisioning( /* managedProfileUser= */
-                deviceState.workProfile().userHandle(),  /* migratedAccount= */
+                deviceState.workProfile().userHandle(), /* migratedAccount= */
                 null
             )
             val event = personalInstance.events().broadcastReceived()
@@ -1374,9 +1422,11 @@ class ProvisioningTest {
         ).testApp().install().use { personalInstance ->
             // We know that RemoteDPC is the Profile Owner - we need the same package on the
             // personal side to receive the broadcast
-            personalInstance.registerReceiver(IntentFilter(DevicePolicyManager.ACTION_MANAGED_PROFILE_PROVISIONED))
+            personalInstance.registerReceiver(
+                IntentFilter(DevicePolicyManager.ACTION_MANAGED_PROFILE_PROVISIONED)
+            )
             localDevicePolicyManager.finalizeWorkProfileProvisioning( /* managedProfileUser= */
-                deviceState.workProfile().userHandle(),  /* migratedAccount= */
+                deviceState.workProfile().userHandle(), /* migratedAccount= */
                 ACCOUNT_WITH_EXISTING_TYPE
             )
             val event = personalInstance.events().broadcastReceived()
@@ -1385,7 +1435,9 @@ class ProvisioningTest {
                 .waitForEvent()
             assertThat(
                 event.intent()
-                    .getParcelableExtra(DevicePolicyManager.EXTRA_PROVISIONING_ACCOUNT_TO_MIGRATE) as Account?
+                    .getParcelableExtra(
+                        DevicePolicyManager.EXTRA_PROVISIONING_ACCOUNT_TO_MIGRATE
+                    ) as Account?
             )
                 .isEqualTo(ACCOUNT_WITH_EXISTING_TYPE)
         }
@@ -1454,7 +1506,8 @@ class ProvisioningTest {
     assertThat(
       localDevicePolicyManager.isProvisioningAllowed(
         DevicePolicyManager.ACTION_PROVISION_MANAGED_PROFILE
-    )).isFalse()
+    )
+    ).isFalse()
     }
     @Throws(IOException::class)
     private fun createNfcIntentFromMap(input: Map<String, String>): Intent {
@@ -1554,7 +1607,7 @@ class ProvisioningTest {
         private const val PROFILE_OWNER_NAME = "testDeviceAdmin"
         private const val DEVICE_OWNER_NAME = "testDeviceAdmin"
         private val DEVICE_ADMIN_COMPONENT_NAME = DeviceAdminApp.deviceAdminComponentName(context)
-        
+
         private val SINGLE_USER_DO_DEVICE_ADMIN = deviceState.testApps().query()
                 .allowInternalBedsteadTestApps().whereIsHeadlessDOSingleUser().isTrue()
                 .get()

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
@@ -704,7 +705,6 @@ public class NfcAdapterTest {
             for (String nfcee : nfceeList) {
                 assertThat(nfcee).isNotEmpty();
             }
-            nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
             nfcOemExtension.pausePolling(1000);
@@ -718,9 +718,34 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
             assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            nfcOemExtension.forceRoutingTableCommit();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionMaybeTriggerFirmwareUpdate()
+            throws InterruptedException, RemoteException {
+        NfcAdapter nfcAdapter = createMockedInstance();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        nfcOemExtension.maybeTriggerFirmwareUpdate();
+        verify(mService).checkFirmware();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionTriggerInitialization()
+            throws InterruptedException, RemoteException {
+        NfcAdapter nfcAdapter = createMockedInstance();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        nfcOemExtension.triggerInitialization();
+        verify(mService).triggerInitialization();
     }
 
     @Test
@@ -796,11 +821,11 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onEnable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onEnableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
-        public void onDisable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onDisableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
@@ -832,7 +857,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onRoutingChanged() {
+        public void onRoutingChanged(@NonNull Consumer<Boolean> isSkipped) {
         }
 
         @Override
@@ -885,7 +910,16 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onRoutingTableFull() {
+        }
+
+        @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
+        }
+
+        @Override
+        public void onExtractOemPackages(@NonNull NdefMessage message,
+                @NonNull Consumer<List<String>> packageConsumer) {
         }
     }
 

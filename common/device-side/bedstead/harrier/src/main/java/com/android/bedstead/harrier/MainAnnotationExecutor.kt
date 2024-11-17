@@ -44,6 +44,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
@@ -91,6 +92,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is RequireStorageEncryptionUnsupported -> logic()
             is RequireFactoryResetProtectionPolicySupported -> logic()
             is RequireResourcesBooleanValue -> logic()
+            is RequireResourcesIntegerValue -> logic()
             is RequireUsbDataSignalingCanBeDisabled -> logic()
             is RequireInstantApp -> logic()
             is RequireNotInstantApp -> logic()

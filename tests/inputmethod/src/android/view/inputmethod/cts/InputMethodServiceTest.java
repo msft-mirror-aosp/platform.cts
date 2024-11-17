@@ -50,6 +50,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -64,6 +65,9 @@ import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DisplayMetricsSession;
 import android.text.TextUtils;
 import android.view.Display;
@@ -73,6 +77,7 @@ import android.view.View;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorBoundsInfo;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.InputMethodInfo;
@@ -99,6 +104,7 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
@@ -108,7 +114,6 @@ import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,6 +151,10 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
     @Rule
     public final ServiceTestRule mServiceRule = new ServiceTestRule();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private final GestureNavSwitchHelper mGestureNavSwitchHelper = new GestureNavSwitchHelper();
 
     private final String mMarker = getTestMarker();
 
@@ -213,7 +222,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
     @Test
     public void testSwitchInputMethod_verifiesEnabledState() throws Exception {
-        Assume.assumeFalse(isPreventImeStartup());
+        assumeFalse(isPreventImeStartup());
         SystemUtil.runShellCommandOrThrow("ime disable " + OTHER_IME_ID);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -237,7 +246,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     }
     @Test
     public void testSwitchInputMethodWithSubtype_verifiesEnabledState() throws Exception {
-        Assume.assumeFalse(isPreventImeStartup());
+        assumeFalse(isPreventImeStartup());
         SystemUtil.runShellCommand("ime disable " + OTHER_IME_ID);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -1201,6 +1210,95 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                                 + " the height of the IME navigation bar: " + imeNavBarHeight,
                         imeHeight >= imeNavBarHeight);
             }
+        }
+    }
+
+    /**
+     * Verifies that the custom IME Switcher button is requested visible in gesture navigation mode,
+     * when the IME navigation bar is hidden.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testOnCustomImeSwitcherButtonRequestedVisible_gestureNav() throws Exception {
+        assumeFalse("Skip PC devices, as they do not support navigation bar overlays",
+                mInstrumentation.getContext().getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_PC));
+        assumeTrue(mGestureNavSwitchHelper.hasSystemGestureFeature());
+
+        try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
+                var imeSession = MockImeSession.create(
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                     new ImeSettings.Builder())) {
+            final var stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                    EXPECTED_TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            final var requestedVisibleNavHidden = expectEvent(stream,
+                    eventMatcher("onCustomImeSwitcherButtonRequestedVisible"), TIMEOUT);
+            assertWithMessage("Custom IME Switcher requested visible when IME nav bar hidden")
+                    .that(requestedVisibleNavHidden.getArguments().getBoolean("visible"))
+                    .isTrue();
+
+            try (var ignored1 = mGestureNavSwitchHelper.withThreeButtonNavigationMode()) {
+                final var requestedVisibleThreeButton = expectEvent(stream,
+                        eventMatcher("onCustomImeSwitcherButtonRequestedVisible"), TIMEOUT);
+                assertWithMessage("Custom IME Switcher requested hidden when switching"
+                        + " to three button nav")
+                        .that(requestedVisibleThreeButton.getArguments().getBoolean("visible"))
+                        .isFalse();
+            }
+
+            final var requestedVisibleGestureNav = expectEvent(stream,
+                    eventMatcher("onCustomImeSwitcherButtonRequestedVisible"), TIMEOUT);
+            assertWithMessage("Custom IME Switcher requested visible when switching"
+                    + " back to gesture nav")
+                    .that(requestedVisibleGestureNav.getArguments().getBoolean("visible"))
+                    .isTrue();
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
+            final var requestedVisibleNavShown = expectEvent(stream,
+                    eventMatcher("onCustomImeSwitcherButtonRequestedVisible"), TIMEOUT);
+            assertWithMessage("Custom IME Switcher requested hidden when IME nav bar visible")
+                    .that(requestedVisibleNavShown.getArguments().getBoolean("visible"))
+                    .isFalse();
+        }
+    }
+
+    /**
+     * Verifies that the custom IME Switcher button is never requested visible in three button
+     * navigation mode.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testOnCustomImeSwitcherButtonRequestedVisible_threeButtonNav() throws Exception {
+        assumeFalse("Skip PC devices, as they do not support navigation bar overlays",
+                mInstrumentation.getContext().getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_PC));
+
+        try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
+                var imeSession = MockImeSession.create(
+                        InstrumentationRegistry.getInstrumentation().getContext(),
+                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                        new ImeSettings.Builder())) {
+            final var stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                    EXPECTED_TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                    EXPECTED_TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                    EXPECTED_TIMEOUT);
         }
     }
 

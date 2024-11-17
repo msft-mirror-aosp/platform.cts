@@ -71,7 +71,8 @@ class A11ySlowKeysTest {
                 savedThreshold = InputSettings.getAccessibilitySlowKeysThreshold(activity)
                 InputSettings.setAccessibilitySlowKeysThreshold(activity, THRESHOLD_MILLIS)
             },
-            "android.permission.INTERACT_ACROSS_USERS_FULL"
+            "android.permission.QUERY_USERS",
+            "android.permission.INTERACT_ACROSS_USERS_FULL",
         )
         Thread.sleep(A11yBounceKeysTest.A11Y_SETTINGS_PROPAGATE_TIME_MILLIS)
     }
@@ -82,7 +83,8 @@ class A11ySlowKeysTest {
             {
                 InputSettings.setAccessibilitySlowKeysThreshold(activity, savedThreshold)
             },
-            "android.permission.INTERACT_ACROSS_USERS_FULL"
+            "android.permission.QUERY_USERS",
+            "android.permission.INTERACT_ACROSS_USERS_FULL",
         )
     }
 
