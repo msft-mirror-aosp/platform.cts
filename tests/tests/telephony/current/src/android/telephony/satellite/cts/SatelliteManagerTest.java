@@ -686,6 +686,31 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    public void testRequestSelectedNbIotSatelliteSubscriptionId() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Integer> selectedSubscriptionId = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        selectedSubscriptionId.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
     public void testRequestSatelliteAttachEnabledForCarrier() throws Exception {
         if (!shouldTestSatellite()) return;
 

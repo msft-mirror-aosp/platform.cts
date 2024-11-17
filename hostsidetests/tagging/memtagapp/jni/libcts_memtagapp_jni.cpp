@@ -17,12 +17,15 @@
 #include <jni.h>
 #include <sys/wait.h>
 
+#include <cstdint>
 #include <thread>
 
 #ifdef __aarch64__
 
+static bool global = true;
+
 extern "C" JNIEXPORT jboolean JNICALL
-Java_android_cts_tagging_stackmte_TaggingTest_isStackMteOn(JNIEnv*) {
+Java_android_cts_tagging_memtagapp_TaggingTest_isStackMteOn(JNIEnv*) {
   alignas(16) int x = 0;
   void* p = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(&x) + (1UL << 57));
   void* p_cpy = p;
@@ -33,17 +36,17 @@ Java_android_cts_tagging_stackmte_TaggingTest_isStackMteOn(JNIEnv*) {
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_android_cts_tagging_stackmte_TaggingTest_isStackMteOnThread(JNIEnv*) {
+Java_android_cts_tagging_memtagapp_TaggingTest_isStackMteOnThread(JNIEnv*) {
   bool ok = false;
   std::thread th([&ok] {
-    ok = Java_android_cts_tagging_stackmte_TaggingTest_isStackMteOn(nullptr);
+    ok = Java_android_cts_tagging_memtagapp_TaggingTest_isStackMteOn(nullptr);
   });
   th.join();
   return ok;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_android_cts_tagging_stackmte_TaggingTest_hasMteTls(JNIEnv*) {
+Java_android_cts_tagging_memtagapp_TaggingTest_hasMteTls(JNIEnv*) {
   void** dst;
   __asm__("mrs %0, TPIDR_EL0" : "=r"(dst) :);
   // -3 is TLS_SLOT_STACK_MTE
@@ -51,13 +54,24 @@ Java_android_cts_tagging_stackmte_TaggingTest_hasMteTls(JNIEnv*) {
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_android_cts_tagging_stackmte_TaggingTest_hasMteTlsThread(JNIEnv*) {
+Java_android_cts_tagging_memtagapp_TaggingTest_hasMteTlsThread(JNIEnv*) {
   bool ok = false;
   std::thread th([&ok] {
-    ok = Java_android_cts_tagging_stackmte_TaggingTest_hasMteTls(nullptr);
+    ok = Java_android_cts_tagging_memtagapp_TaggingTest_hasMteTls(nullptr);
   });
   th.join();
   return ok;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_android_cts_tagging_memtagapp_TaggingTest_hasMteGlobalTag(JNIEnv*) {
+  return (reinterpret_cast<uintptr_t>(&global) >> 56) != 0;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_android_cts_tagging_memtagapp_TaggingTest_mteGlobalTagCorrect(JNIEnv*) {
+  void* cpy = &global;
+  return __builtin_arm_ldg(cpy) == &global;
 }
 
 #endif
