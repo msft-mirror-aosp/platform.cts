@@ -116,11 +116,12 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
           'YUV width: %d, height: %d, JPEG width %d height %d',
           w, h, jpeg_w, jpeg_h)
 
-      cam.do_3a()
+      cam.do_3a(out_surfaces=[fmt_yuv, fmt_jpg])
       req = capture_request_utils.auto_capture_request()
       req['android.jpeg.quality'] = 100
 
-      cap_yuv, cap_jpg = cam.do_capture(req, [fmt_yuv, fmt_jpg])
+      cap_yuv, cap_jpg = cam.do_capture(
+          req, [fmt_yuv, fmt_jpg], reuse_session=True)
       rgb_yuv = image_processing_utils.convert_capture_to_rgb_image(
           cap_yuv, True)
       file_stem = os.path.join(log_path, _NAME)
@@ -150,10 +151,11 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
       num_fail = 0
       for use_case in _USE_CASE_NAME_MAP:
         num_tests += 1
-        cam.do_3a()
         fmt_yuv_use_case = {'format': 'yuv', 'width': w, 'height': h,
                             'useCase': use_case}
-        cap_yuv_use_case = cam.do_capture(req, [fmt_yuv_use_case])
+        cam.do_3a(out_surfaces=[fmt_yuv_use_case])
+        cap_yuv_use_case = cam.do_capture(
+            req, [fmt_yuv_use_case], reuse_session=True)
         rgb_yuv_use_case = image_processing_utils.convert_capture_to_rgb_image(
             cap_yuv_use_case, True)
         use_case_name = _USE_CASE_NAME_MAP[use_case]

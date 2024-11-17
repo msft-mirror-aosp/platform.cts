@@ -232,6 +232,18 @@ void AAudioInputStreamTest::processData(const int32_t frames, const int64_t time
     // See b/62090113. For legacy path, the device is only known after
     // the stream has been started.
     EXPECT_NE(AAUDIO_UNSPECIFIED, AAudioStream_getDeviceId(stream()));
+
+    int deviceIdSize = 4;
+    int32_t deviceIds[deviceIdSize];
+    aaudio_result_t getDeviceIdResult =
+            AAudioStream_getDeviceIds(stream(), deviceIds, &deviceIdSize);
+    ASSERT_EQ(getDeviceIdResult, AAUDIO_OK);
+    ASSERT_EQ(AAudioStream_getDeviceId(stream()), deviceIds[0]);
+    ASSERT_GT(deviceIdSize, 0);
+    for (int i = 1; i < deviceIdSize; i++) {
+        ASSERT_NE(AAUDIO_UNSPECIFIED, deviceIds[i]);
+    }
+
     for (int32_t framesLeft = frames; framesLeft > 0; ) {
         aaudio_result_t result = AAudioStream_read(
                 stream(), getDataBuffer(), std::min(frames, mFramesPerRead), timeoutNanos);
@@ -418,6 +430,17 @@ TEST_P(AAudioOutputStreamTest, testWriting) {
         // See b/62090113. For legacy path, the device is only known after
         // the stream has been started.
         ASSERT_NE(AAUDIO_UNSPECIFIED, AAudioStream_getDeviceId(stream()));
+
+        int deviceIdSize = 4;
+        int32_t deviceIds[deviceIdSize];
+        aaudio_result_t getDeviceIdResult =
+                AAudioStream_getDeviceIds(stream(), deviceIds, &deviceIdSize);
+        ASSERT_EQ(getDeviceIdResult, AAUDIO_OK);
+        ASSERT_EQ(AAudioStream_getDeviceId(stream()), deviceIds[0]);
+        ASSERT_GT(deviceIdSize, 0);
+        for (int i = 1; i < deviceIdSize; i++) {
+            ASSERT_NE(AAUDIO_UNSPECIFIED, deviceIds[i]);
+        }
 
         // Write some data while we are running. Read counter should be advancing.
         writeLoops = 1 * actual().sampleRate / framesPerBurst(); // 1 second

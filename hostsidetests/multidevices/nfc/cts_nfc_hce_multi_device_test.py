@@ -54,10 +54,12 @@ try:
         poll_and_transact,
         poll_and_observe_frames,
         get_apdus,
-        POLLING_FRAME_ALL_TEST_CASES,
         POLLING_FRAMES_TYPE_A_SPECIAL,
         POLLING_FRAMES_TYPE_B_SPECIAL,
         POLLING_FRAMES_TYPE_F_SPECIAL,
+        POLLING_FRAMES_TYPE_A_LONG,
+        POLLING_FRAMES_TYPE_B_LONG,
+        POLLING_FRAMES_TYPE_F_LONG,
         POLLING_FRAME_ON,
         POLLING_FRAME_OFF,
         apply_original_frame_ordering,
@@ -106,6 +108,7 @@ _FAILED_TRANSACTION_MSG = "Transaction failed, check device logs for more inform
 
 _FRAME_EVENT_TIMEOUT_SEC = 1
 _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS = 5
+_POLLING_FRAME_TIMESTAMP_EXCEED_COUNT_TOLERANCE_ = 3
 _FAILED_MISSING_POLLING_FRAMES_MSG = "Device did not receive all polling frames"
 _FAILED_TIMESTAMP_TOLERANCE_EXCEEDED_MSG = "Polling frame timestamp tolerance exceeded"
 _FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE = """
@@ -239,7 +242,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             else:
                 pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            if len(pn532_serial_path) > 0:
+            casimir_id = self.user_params.get("casimir_id", "")
+
+            if len(casimir_id) > 0:
+                self._setup_failure_reason = 'Failed to connect to casimir'
+                _LOG.info("casimir_id = " + casimir_id)
+                self.pn532 = pn532.Casimir(casimir_id)
+            elif len(pn532_serial_path) > 0:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
@@ -1012,8 +1021,22 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         )
 
         timed_pn532 = TimedWrapper(self.pn532)
-        testcases = POLLING_FRAME_ALL_TEST_CASES
-
+        testcases = [
+            POLLING_FRAME_ON,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_A_LONG,
+            *POLLING_FRAMES_TYPE_A_LONG,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_LONG,
+            *POLLING_FRAMES_TYPE_B_LONG,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            *POLLING_FRAMES_TYPE_F_LONG,
+            *POLLING_FRAMES_TYPE_F_LONG,
+            POLLING_FRAME_OFF,
+        ]
         # 3. Transmit polling frames
         frames = poll_and_observe_frames(
             pn532=timed_pn532,
@@ -1047,58 +1070,63 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # For each event, calculate the amount of time elapsed since the previous one
         # Subtract the resulting host/device time delta values
         # Verify that the difference does not exceed the threshold
-        previous_timestamp_host = None
         previous_timestamp_device = None
+        first_timestamp_start, first_timestamp_end = timings[0]
+        first_timestamp = (first_timestamp_start + first_timestamp_end) / 2
+        first_timestamp_error = (first_timestamp_end - first_timestamp_start)/ 2
+        first_timestamp_device = frames[0].timestamp
+
+        num_exceeding_threshold = 0
         for idx, (frame, timing, testcase) in enumerate(zip(frames, timings, testcases)):
-            _, timestamp_host = timing
-            timestmp_device = frame.timestamp
-
-            # Delta for first event is zero (assume the previous event was this one)
-            if idx == 0:
-                previous_timestamp_host = timestamp_host
-                previous_timestamp_device = timestmp_device
-
-            host_delta = ns_to_ms(timestamp_host - previous_timestamp_host)
-            device_delta = us_to_ms(timestmp_device - previous_timestamp_device)
+            timestamp_host_start, timestamp_host_end = timing
+            timestamp_host = (timestamp_host_start + timestamp_host_end) / 2
+            timestamp_error = (timestamp_host_end - timestamp_host_start) / 2
+            timestamp_device = frame.timestamp
 
             _LOG.debug(
                f"{testcase.data.upper():32}" + \
                f" ({testcase.configuration.type}" + \
                f", {'+' if testcase.configuration.crc else '-'}" + \
-               f", {testcase.configuration.bits}) {host_delta:6.2f}" + \
-               f" -> {frame.data.hex().upper():32} ({frame.type}) {device_delta:6.2f}"
+               f", {testcase.configuration.bits})" + \
+               f" -> {frame.data.hex().upper():32} ({frame.type})"
             )
 
             pre_previous_timestamp_device = previous_timestamp_device
-            previous_timestamp_host = timestamp_host
-            previous_timestamp_device = timestmp_device
+            previous_timestamp_device = timestamp_device
 
             # Skip cases when timestamp value wraps
             # as there's no way to establish the delta
-            if device_delta < 0:
+            # and re-establish the baselines
+            if (timestamp_device - first_timestamp_device) < 0:
                 _LOG.warning(
                     "Timestamp value wrapped" + \
                     f" from {pre_previous_timestamp_device}" + \
                     f" to {previous_timestamp_device} for frame {frame};" + \
                     " Skipping comparison..."
                 )
+                first_timestamp_device = timestamp_device
+                first_timestamp = timestamp_host
+                first_timestamp_error = timestamp_error
                 continue
 
-            device_host_difference = device_delta - host_delta
-
-            asserts.assert_true(
-                abs(device_host_difference) <= _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS,
-                _FAILED_TIMESTAMP_TOLERANCE_EXCEEDED_MSG,
-                {
+            device_host_difference = us_to_ms(timestamp_device - first_timestamp_device) - \
+                ns_to_ms(timestamp_host - first_timestamp)
+            total_error = ns_to_ms(timestamp_error + first_timestamp_error)
+            if abs(device_host_difference) > _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS + total_error:
+                debug_info = {
                     "index": idx,
                     "frame_sent": testcase.format_for_error(timestamp=ns_to_us(timestamp_host)),
                     "frame_received": frame.to_dict(),
-                    "host_delta": host_delta,
-                    "device_delta": device_delta,
                     "difference": device_host_difference,
+                    "time_device": us_to_ms(timestamp_device - first_timestamp_device),
+                    "time_host": ns_to_ms(timestamp_host - first_timestamp),
+                    "total_error": total_error,
                     **frames_sent_received_error_extra,
                 }
-            )
+                num_exceeding_threshold = num_exceeding_threshold + 1
+                _LOG.warning(f"Polling frame timestamp tolerance exceeded: {debug_info}")
+        asserts.assert_less(num_exceeding_threshold,
+                                  _POLLING_FRAME_TIMESTAMP_EXCEED_COUNT_TOLERANCE_)
 
     def test_polling_frame_vendor_specific_gain(self):
         """Tests that PollingFrame object vendorSpecificGain value

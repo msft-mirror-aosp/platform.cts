@@ -38,13 +38,16 @@ import android.os.Parcel;
 import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -55,6 +58,9 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualCameraConfigTest {
+
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
 
     private static final String CAMERA_NAME = "Virtual Camera";
     private static final int CAMERA_WIDTH = 640;

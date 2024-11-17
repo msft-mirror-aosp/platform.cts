@@ -1062,7 +1062,7 @@ public class PaintTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationSettings_Api35() {
         final Paint defaultPaint = new Paint();
 

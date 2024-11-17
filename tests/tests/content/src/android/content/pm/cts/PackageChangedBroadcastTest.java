@@ -83,6 +83,12 @@ public class PackageChangedBroadcastTest {
             PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME + ".NonExportedActivity";
     private static final String PACKAGE_CHANGED_TEST_APP_EXPORTED_ACTIVITY =
             PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME + ".ExportedActivity";
+    private static final String PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_APK_PATH =
+            SAMPLE_APK_BASE + "CtsPackageChangedSharedUserIdTestApp.apk";
+    private static final String PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME =
+            "android.content.cts.packagechangedtestapp.shareduserid";
+    private static final String PACKAGE_CHANGED_SHARED_USER_ID_TEST_MAIN_ACTIVITY =
+            PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME + ".MainActivity";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -97,15 +103,25 @@ public class PackageChangedBroadcastTest {
 
         final int currentUser = ActivityManager.getCurrentUser();
         assertFalse(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, currentUser));
+        assertFalse(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
+                currentUser));
 
         installPackageAsUser(PACKAGE_CHANGED_TEST_APP_APK_PATH, currentUser);
         assertTrue(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, currentUser));
+
+        installPackageAsUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_APK_PATH, currentUser);
+        assertTrue(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
+                currentUser));
     }
 
     @After
     public void uninstall() {
         uninstallPackage(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME);
         assertThat(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME,
+                ActivityManager.getCurrentUser())).isFalse();
+
+        uninstallPackage(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME);
+        assertThat(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
                 ActivityManager.getCurrentUser())).isFalse();
     }
 
@@ -162,6 +178,43 @@ public class PackageChangedBroadcastTest {
                 PACKAGE_CHANGED_TEST_APP_EXPORTED_ACTIVITY);
         testChangeComponentAndVerifyPackageChangedBroadcast(componentName,
                 true /* receiveBroadcast */);
+    }
+
+    @RequiresFlagsEnabled(FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES)
+    @Test
+    public void changeNonExportedComponentState_shareTheSameUid_shouldReceiveBroadcast()
+            throws Exception {
+        final Intent intent = new Intent(Intent.ACTION_MAIN)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .setComponent(
+                        new ComponentName(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
+                                PACKAGE_CHANGED_SHARED_USER_ID_TEST_MAIN_ACTIVITY));
+        CompletableFuture<Bundle> future = new CompletableFuture<>();
+        final RemoteCallback callback = new RemoteCallback(
+                result -> {
+                    Log.d(TAG, "Get callback from activity : "
+                            + PACKAGE_CHANGED_SHARED_USER_ID_TEST_MAIN_ACTIVITY);
+                    future.complete(result);
+                });
+        intent.putExtra(EXTRA_REMOTE_CALLBACK, callback);
+        final ComponentName testComponentName = new ComponentName(
+                PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME,
+                PACKAGE_CHANGED_TEST_APP_NON_EXPORTED_ACTIVITY);
+        intent.putExtra(EXTRA_TEST_COMPONENT_NAME, testComponentName);
+
+        mContext.startActivity(intent);
+        Log.d(TAG, "startActivity : " + intent);
+
+        Thread.sleep(1000);
+
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mPackageManager.setComponentEnabledSetting(testComponentName,
+                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+
+        Bundle bundle = future.get(LONG_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull(bundle);
+        assertThat(bundle.getString(EXTRA_REMOTE_CALLBACK_RESULT, "")).isEqualTo(
+                "RECEIVE PACKAGE CHANGED BROADCAST");
     }
 
     private void testChangeComponentAndVerifyPackageChangedBroadcast(ComponentName componentName,

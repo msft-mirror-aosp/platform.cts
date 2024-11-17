@@ -89,6 +89,7 @@
         <option name="push" value="CtsContentDeclaringSdkLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringSdkLibrary.apk" />
         <option name="push" value="CtsContentDeclaringStaticLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringStaticLibrary.apk" />
         <option name="push" value="CtsPackageChangedTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedTestApp.apk" />
+        <option name="push" value="CtsPackageChangedSharedUserIdTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedSharedUserIdTestApp.apk" />
         <option name="push" value="CtsIntentResolutionApplicationOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionApplicationOverrideTestApp.apk" />
         <option name="push" value="CtsIntentResolutionComponentOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionComponentOverrideTestApp.apk" />
     </target_preparer>

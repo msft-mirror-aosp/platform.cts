@@ -27,7 +27,7 @@ import android.provider.CloudMediaProvider
 /**
  * A default / empty [CloudMediaProvider] that implements no methods to test the default behaviors.
  */
-class DefaultCloudMediaProvider : CloudMediaProvider() {
+open class DefaultCloudMediaProvider : CloudMediaProvider() {
 
     companion object {
         const val AUTHORITY = "com.android.provider.cts.cloudproviders.cloud_default"

@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
@@ -29,6 +30,7 @@
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
         <option name="restore-settings" value="true" />
         <option name="set-global-setting" key="unused_static_shared_lib_min_cache_period" value="0" />
+        <option name="enable-testing-secondary-user-on-secondary-display" value="true" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

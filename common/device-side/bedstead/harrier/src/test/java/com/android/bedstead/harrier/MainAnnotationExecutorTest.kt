@@ -50,6 +50,7 @@ import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
 import com.android.bedstead.harrier.annotations.TestTag
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
@@ -333,6 +334,22 @@ class MainAnnotationExecutorTest {
         assertThat(
             resources().system().getBoolean("config_enableMultiUserUI")
         ).isFalse()
+    }
+
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 0)
+    @Test
+    fun requireResourcesIntegerValueIsTrue_resourceValueIs0() {
+        assertThat(
+            resources().system().getInteger("config_hsumBootStrategy")
+        ).isEqualTo(0)
+    }
+
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 1)
+    @Test
+    fun requireResourcesIntegerValueIsTrue_resourceValueIs1() {
+        assertThat(
+            resources().system().getInteger("config_hsumBootStrategy")
+        ).isEqualTo(1)
     }
 
     @Test

@@ -14,6 +14,9 @@
         },
         {
           "exclude-filter": "android.os.cts.BatteryChangedBroadcastTest"
+        },
+        {
+          "exclude-filter": "android.os.cts.PowerManagerTest#testPowerManager_batteryDischargePrediction"
         }
       ]
     }

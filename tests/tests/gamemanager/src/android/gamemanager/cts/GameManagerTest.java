@@ -182,7 +182,7 @@ public class GameManagerTest {
         // enable Angle for BATTERY mode.
         runShellCommand("device_config put game_overlay " + packageName
                 + " mode=3,useAngle=true");
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mGameManager,
                 (gameManager) -> gameManager.setGameMode(packageName,

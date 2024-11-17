@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotEquals;
 import android.annotation.TargetApi;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
+import android.app.job.PendingJobReasonsInfo;
 import android.jobscheduler.MockJobService.TestEnvironment;
 import android.jobscheduler.MockJobService.TestEnvironment.Event;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
@@ -475,6 +476,18 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                 mJobScheduler.getPendingJobReasons(JOB_ID));
     }
 
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
+    public void testPendingJobReasonsHistory_noJob() {
+        if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
+            return; // test requires flag to be enabled
+        }
+
+        try {
+            mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
+            fail("Expected IllegalArgumentException for an invalid job id");
+        } catch (IllegalArgumentException expected) { }
+    }
+
     public void testPendingJobReason_alreadyRunning() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
@@ -834,7 +847,7 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
-    public void testPendingJobReasons_deadlineAndLatency() {
+    public void testPendingJobReasons_deadlineAndLatency() throws Exception {
         if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
             return; // test requires flag to be enabled
         }
@@ -850,6 +863,80 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                         JobScheduler.PENDING_JOB_REASON_CONSTRAINT_MINIMUM_LATENCY,
                         JobScheduler.PENDING_JOB_REASON_CONSTRAINT_DEADLINE },
                 mJobScheduler.getPendingJobReasons(JOB_ID));
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
+    public void testPendingJobReasonsHistory_updatesCorrectly() throws Exception {
+        if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
+            return; // test requires flag to be enabled
+        }
+
+        if (!BatteryUtils.hasBattery()) {
+            // Can't test while the device doesn't have battery
+            return;
+        }
+        setBatteryState(false, 100);
+
+        JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setMinimumLatency(HOUR_IN_MILLIS)
+                .setRequiresCharging(true)
+                .build();
+        mJobScheduler.schedule(jobInfo);
+
+        List<PendingJobReasonsInfo> reasons = mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
+        assertNotNull(reasons);
+        int initialSize = reasons.size();
+
+        setBatteryState(true, 100); // trigger a constraint change
+        List<PendingJobReasonsInfo> newReasons = mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
+        assertEquals(initialSize + 1, newReasons.size());
+        // ensure that all previous elements are unchanged
+        for (int i = 0; i < reasons.size(); i++) {
+            PendingJobReasonsInfo originalReason = reasons.get(i);
+            PendingJobReasonsInfo newReason = newReasons.get(i);
+            assertEquals(originalReason.getTimestampMillis(), newReason.getTimestampMillis());
+            assertArrayEquals(originalReason.getPendingJobReasons(),
+                    newReason.getPendingJobReasons());
+        }
+
+        PendingJobReasonsInfo newConstraintChange = newReasons.getLast();
+        assertNotNull(newConstraintChange.getPendingJobReasons());
+        for (int r : newConstraintChange.getPendingJobReasons()) {
+            // ensure that the battery constraint is not in the latest constraint change
+            assertNotEquals(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CHARGING, r);
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
+    public void testPendingJobReasonsHistory_trimsToSize() throws Exception {
+        if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)) {
+            return; // test requires flag to be enabled
+        }
+
+        if (!BatteryUtils.hasBattery()) {
+            // Can't test while the device doesn't have battery
+            return;
+        }
+        setBatteryState(false, 100);
+
+        JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setMinimumLatency(HOUR_IN_MILLIS)
+                .setRequiresCharging(true)
+                .build();
+        mJobScheduler.schedule(jobInfo);
+
+        List<PendingJobReasonsInfo> reasons = mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
+        assertNotNull(reasons);
+        int initialSize = reasons.size();
+
+        // trigger a constraint change 12 times (limit is 10 so trigger a little more)
+        for (int i = 0; i < 12; i++) {
+            setBatteryState(i % 2 == 0, 100); // flip state on odd/even
+        }
+
+        List<PendingJobReasonsInfo> newReasons = mJobScheduler.getPendingJobReasonsHistory(JOB_ID);
+        assertTrue(newReasons.size() > initialSize);
+        assertEquals(10, newReasons.size());
     }
 
     public void testRunUserInitiatedJobsPermissionRequirement() throws Exception {

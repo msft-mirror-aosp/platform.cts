@@ -87,9 +87,13 @@ public class ExpeditedJobTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0,
-                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                .build());
     }
 
     @Test
@@ -111,9 +115,13 @@ public class ExpeditedJobTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK,
-                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                .build());
     }
 
     /** Test that EJs for the TOP app start immediately and there is no limit on the number. */

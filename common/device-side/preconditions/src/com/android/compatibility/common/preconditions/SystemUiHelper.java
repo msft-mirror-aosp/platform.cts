@@ -16,6 +16,9 @@
 
 package com.android.compatibility.common.preconditions;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
@@ -40,5 +43,26 @@ public class SystemUiHelper {
         return isTelevision || isWatch || Boolean.getBoolean(
                 "persist.sysui.nostatusbar");
 
+    }
+
+    /**
+     * Checks whether the device has non-overlapping multitasking feature enabled.
+     *
+     * When this is true, we expect the Task to not occlude other Task below it,
+     * which means both Tasks can be resumed and visible.
+     */
+    public static boolean isNonOverlappingMultiWindowMode(Activity activity) {
+        if (!activity.isInMultiWindowMode()) {
+            return false;
+        }
+        Context context = activity.getApplicationContext();
+        if (context.getPackageManager().hasSystemFeature(/* PackageManager
+        .FEATURE_CAR_SPLITSCREEN_MULTITASKING */
+                "android.software.car.splitscreen_multitasking")
+                && context.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE)) {
+            // Automotive SplitScreen Multitasking devices overlap the windows.
+            return false;
+        }
+        return true;
     }
 }

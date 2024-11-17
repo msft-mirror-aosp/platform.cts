@@ -587,6 +587,9 @@
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name="android.server.wm.taskfragment.TaskFragmentOrganizerTest$DialogActivity"
+                  android:exported="true"
+                  android:theme="@android:style/Theme.Dialog" />
         <activity android:name="android.server.wm.other.HostActivity"
                   android:exported="true">
                <intent-filter>

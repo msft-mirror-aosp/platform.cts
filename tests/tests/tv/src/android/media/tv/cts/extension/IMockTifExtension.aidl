@@ -13,17 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.cts.backportedfixes;
 
-import com.google.common.collect.ImmutableSet;
+package android.media.tv.cts.extension;
 
-/** Constants and helpers for {@link BackportedFixTest} */
-public final class BackportedFixes {
-    public static final ImmutableSet<Long> ALL_ISSUES = ImmutableSet.of(
-            350037023L,
-            350037348L
-    );
-
-    private BackportedFixes() {
-    }
+interface IMockTifExtension {
+    void test();
 }

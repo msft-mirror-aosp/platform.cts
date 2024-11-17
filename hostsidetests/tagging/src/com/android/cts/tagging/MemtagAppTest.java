@@ -43,7 +43,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class MemtagAppTest extends BaseHostJUnit4Test {
-  protected static final String TEST_PKG = "android.cts.tagging.stackmte";
+  protected static final String TEST_PKG = "android.cts.tagging.memtagapp";
   protected static final String DEVICE_TEST_CLASS_NAME = "TaggingTest";
   private static String mPreviousState = null;
 
@@ -92,5 +92,13 @@ public class MemtagAppTest extends BaseHostJUnit4Test {
   @Test
   public void testIsStackMteOnThread() throws Exception {
     runStackMteDeviceTest("testIsStackMteOnThread");
+  }
+  @Test
+  public void testHasMteGlobalTag() throws Exception {
+    runStackMteDeviceTest("testHasMteGlobalTag");
+  }
+  @Test
+  public void testMteGlobalTagCorrect() throws Exception {
+    runStackMteDeviceTest("testMteGlobalTagCorrect");
   }
 }

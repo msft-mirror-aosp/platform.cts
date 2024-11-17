@@ -38,6 +38,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "android.hardware.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",

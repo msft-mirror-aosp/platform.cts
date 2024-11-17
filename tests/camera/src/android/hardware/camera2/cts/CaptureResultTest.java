@@ -1062,6 +1062,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         if (Flags.zoomMethod()) {
             resultKeys.add(CaptureResult.CONTROL_ZOOM_METHOD);
         }
+        if (Flags.aePriority()) {
+            resultKeys.add(CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        }
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);

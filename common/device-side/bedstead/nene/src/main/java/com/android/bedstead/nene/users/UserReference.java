@@ -702,8 +702,14 @@ public final class UserReference implements AutoCloseable {
     public boolean hasLockCredential() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 INTERACT_ACROSS_USERS_FULL)) {
-            return TestApis.context().androidContextAsUser(this)
-                    .getSystemService(KeyguardManager.class).isDeviceSecure();
+            KeyguardManager keyguardManager = TestApis.context().androidContextAsUser(this)
+                    .getSystemService(KeyguardManager.class);
+            if (keyguardManager != null) {
+                return keyguardManager.isDeviceSecure();
+            } else {
+                // keyguardManager isn't available in instant apps
+                return !getScreenLockDisabled();
+            }
         }
     }
 

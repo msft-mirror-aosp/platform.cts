@@ -80,6 +80,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
@@ -1127,6 +1128,7 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser
     @EnsureHasPermission({CREATE_USERS})
     @RequireHeadlessSystemUserMode(reason = "Testing HSUM scenario")
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 0)
     public void setBootUser_providedUserIsNotSwitchable_Hsum() {
         UserReference additionalUser = additionalUser(sDeviceState);
         UserReference workProfile = workProfile(sDeviceState);

@@ -47,6 +47,7 @@
             android:exported="true"/>
         <activity android:name=".HdrConversionTestActivity" />
         <activity android:name=".HdrContentActivity" />
+        <activity android:name=".DisplayEventPropertyChangeActivity" />
         <activity android:name=".SimpleActivity" android:exported="true" />
         <activity android:name=".SimpleActivity2" android:exported="true" />
     </application>

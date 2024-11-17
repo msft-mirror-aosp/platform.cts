@@ -61,6 +61,7 @@ android_test {
     ],
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "android.hardware.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "com.android.input.flags-aconfig-java",

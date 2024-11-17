@@ -44,12 +44,14 @@
 
 namespace {
 
-static struct {
+struct {
     jclass clazz;
     jmethodID onTransactionComplete;
+    jmethodID shouldQueryTransactionStats;
+    jmethodID onTransactionStatsRead;
 } gTransactionCompleteListenerClassInfo;
 
-static struct {
+struct {
     jclass clazz;
     jmethodID onBufferRelease;
 } gBufferReleaseCallbackClassInfo;
@@ -511,7 +513,7 @@ public:
         return ret;
     }
 
-    static uint64_t getPresentTime(int presentFence) {
+    static uint64_t getSignalTime(int presentFence) {
         uint64_t presentTime = 0;
         int error = sync_wait(presentFence, 500);
         if (error < 0) {
@@ -550,9 +552,47 @@ public:
         if (mWaitForFence) {
             int presentFence = ASurfaceTransactionStats_getPresentFenceFd(stats);
             if (presentFence >= 0) {
-                presentTime = getPresentTime(presentFence);
+                presentTime = getSignalTime(presentFence);
             }
         }
+
+        jlong aSurfaceControlPtr = env->CallLongMethod(mCallbackListenerObject,
+                                                       gTransactionCompleteListenerClassInfo
+                                                               .shouldQueryTransactionStats);
+        ASurfaceControl* targetSurfaceControl =
+                reinterpret_cast<ASurfaceControl*>(aSurfaceControlPtr);
+        if (targetSurfaceControl) {
+            ASurfaceControl** surfaceControls = nullptr;
+            size_t surfaceControlsSize = 0;
+            ASurfaceTransactionStats_getASurfaceControls(stats, &surfaceControls,
+                                                         &surfaceControlsSize);
+            bool surfaceControlFound = false;
+            bool releaseFenceQueried = false;
+            bool acquireTimeQueried = false;
+            for (int i = 0; i < surfaceControlsSize; i++) {
+                ASurfaceControl* surfaceControl = surfaceControls[i];
+                if (targetSurfaceControl == surfaceControl) {
+                    surfaceControlFound = true;
+                    // Call the API, but ignore the result since the API is deprecated.
+                    ASurfaceTransactionStats_getAcquireTime(stats, targetSurfaceControl);
+                    acquireTimeQueried = true;
+                    if (mWaitForFence) {
+                        int previousReleaseFence =
+                                ASurfaceTransactionStats_getPreviousReleaseFenceFd(
+                                        stats, targetSurfaceControl);
+                        if (previousReleaseFence >= 0) {
+                            getSignalTime(previousReleaseFence);
+                        }
+                        releaseFenceQueried = true;
+                    }
+                }
+            }
+            ASurfaceTransactionStats_releaseASurfaceControls(surfaceControls);
+            env->CallVoidMethod(mCallbackListenerObject,
+                                gTransactionCompleteListenerClassInfo.onTransactionStatsRead,
+                                surfaceControlFound, releaseFenceQueried, acquireTimeQueried);
+        }
+
         env->CallVoidMethod(mCallbackListenerObject,
                             gTransactionCompleteListenerClassInfo.onTransactionComplete, latchTime,
                             presentTime);
@@ -845,6 +885,11 @@ jint register_android_view_cts_ASurfaceControlTest(JNIEnv* env) {
             static_cast<jclass>(env->NewGlobalRef(transactionCompleteListenerClazz));
     gTransactionCompleteListenerClassInfo.onTransactionComplete =
             env->GetMethodID(transactionCompleteListenerClazz, "onTransactionComplete", "(JJ)V");
+    gTransactionCompleteListenerClassInfo.shouldQueryTransactionStats =
+            env->GetMethodID(transactionCompleteListenerClazz, "shouldQueryTransactionStats",
+                             "()J");
+    gTransactionCompleteListenerClassInfo.onTransactionStatsRead =
+            env->GetMethodID(transactionCompleteListenerClazz, "onTransactionStatsRead", "(ZZZ)V");
 
     jclass bufferReleaseCallbackClazz =
             env->FindClass("android/view/cts/util/ASurfaceControlTestUtils$BufferReleaseCallback");

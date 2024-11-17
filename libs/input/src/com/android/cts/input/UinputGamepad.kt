@@ -44,4 +44,5 @@ class UinputGamepad(instrumentation: Instrumentation) : UinputDevice(
     instrumentation,
     SOURCE_KEYBOARD,
     createGamepadRegisterCommand(),
+    null // display
 )

@@ -45,6 +45,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
@@ -70,6 +71,14 @@ fun RequireResourcesBooleanValue.logic() {
     Assume.assumeThat(
         "resource with configName: $configName",
         TestApis.resources().system().getBoolean(configName),
+        CoreMatchers.`is`(requiredValue)
+    )
+}
+
+fun RequireResourcesIntegerValue.logic() {
+    Assume.assumeThat(
+        "resource with configName: $configName",
+        TestApis.resources().system().getInteger(configName),
         CoreMatchers.`is`(requiredValue)
     )
 }
@@ -261,7 +270,8 @@ fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).forEach { resolveInfoWrapper ->
         val packageName = resolveInfoWrapper.activityInfo().packageName
         EnsurePackageNotInstalled(
@@ -276,7 +286,8 @@ fun RequirePackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val packageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).size > 0
 
     if (packageResponded) {
@@ -297,7 +308,8 @@ fun RequireNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val noPackageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).isEmpty()
 
     if (noPackageResponded) {

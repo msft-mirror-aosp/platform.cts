@@ -30,7 +30,7 @@ java_test_host {
         ":CtsHostsideTaggingSdk30App",
         ":CtsHostsideTaggingSdk30MemtagApp",
         ":CtsHostsideTaggingIsMteEnabledApp",
-        ":CtsHostsideTaggingStackMteApp",
+        ":CtsHostsideTaggingMemtagApp",
     ],
 }
 

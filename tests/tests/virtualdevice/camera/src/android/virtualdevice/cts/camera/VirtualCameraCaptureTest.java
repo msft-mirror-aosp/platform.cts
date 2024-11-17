@@ -36,12 +36,9 @@ import static android.virtualdevice.cts.camera.util.ImageSubject.assertThat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
-import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -58,7 +55,6 @@ import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -82,6 +78,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Surface;
 import android.virtualdevice.cts.camera.util.ImageSubject;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import com.google.common.collect.Range;
@@ -91,8 +88,10 @@ import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -121,6 +120,9 @@ public class VirtualCameraCaptureTest {
     private static final int IMAGE_READER_MAX_IMAGES = 2;
 
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
+
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -161,9 +163,6 @@ public class VirtualCameraCaptureTest {
 
     @Before
     public void setUp() {
-        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
-                hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(

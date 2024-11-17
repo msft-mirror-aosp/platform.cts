@@ -86,7 +86,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 @Presubmit
@@ -449,13 +448,13 @@ public class ServiceTest extends ActivityTestsBase {
                             .executeShellCommand(cmd);
             byte[] buf = new byte[512];
             int bytesRead;
-            FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
-            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-            while ((bytesRead = fis.read(buf)) != -1) {
-                stdout.write(buf, 0, bytesRead);
+            try (FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd)) {
+                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                while ((bytesRead = fis.read(buf)) != -1) {
+                    stdout.write(buf, 0, bytesRead);
+                }
+                return stdout.toByteArray();
             }
-            fis.close();
-            return stdout.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

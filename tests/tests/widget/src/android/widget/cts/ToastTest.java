@@ -68,6 +68,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.preconditions.SystemUiHelper;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
@@ -640,8 +641,13 @@ public class ToastTest {
          * Change I8180e5080e0a6860b40dbb2faa791f0ede926ca7 updated how toast are displayed on the
          * watch. Unlike the phone, which displays toast centered horizontally at the bottom of the
          * screen, the watch now displays toast in the center of the screen.
+         *
+         * This also extends to implementations of SysUI where the default toast gravity is
+         * Gravity.NO_GRAVITY, such as multi-window fullscreen UI.
          */
-        if (Gravity.CENTER == mToast.getGravity()) {
+        if (Gravity.CENTER == mToast.getGravity() || (
+                SystemUiHelper.isNonOverlappingMultiWindowMode(mActivityRule.getActivity())
+                        && Gravity.NO_GRAVITY == mToast.getGravity())) {
             assertTrue(xy1[0] > xy2[0]);
             assertTrue(xy1[1] > xy2[1]);
         } else {

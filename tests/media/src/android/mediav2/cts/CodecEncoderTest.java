@@ -289,7 +289,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, getAv1CfgParams()},
         }));
 
-        if (IS_AFTER_V && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, getApvCfgParams()},
             }));
@@ -326,7 +326,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
             requireCSD = true;
-        } else if (IS_AFTER_V && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()
+        } else if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()
                 && mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
             requireCSD = true;
         }

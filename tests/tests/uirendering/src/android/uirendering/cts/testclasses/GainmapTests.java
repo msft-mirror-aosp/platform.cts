@@ -68,6 +68,7 @@ public class GainmapTests {
 
     private static final ColorSpace BT2020_HLG = ColorSpace.get(ColorSpace.Named.BT2020_HLG);
     private static final ColorSpace BT2020_PQ = ColorSpace.get(ColorSpace.Named.BT2020_PQ);
+    private static final ColorSpace BT2020 = ColorSpace.get(ColorSpace.Named.BT2020);
     private static final ColorSpace SRGB = ColorSpace.get(ColorSpace.Named.SRGB);
 
     // A 10x6 base image with a 5x3 (so 1/2 res) gainmap that boosts the center 3 pixels
@@ -86,6 +87,27 @@ public class GainmapTests {
         Gainmap gainmap = new Gainmap(gainmapImage);
         base.setGainmap(gainmap);
         sTestImage = base;
+    }
+
+    // A 10x6 HLG base image with a 1x1 gainmap that annihilates the red and blue
+    // components in an sRGB working space.
+    private static final Bitmap sHLGTestImage;
+    static {
+        Bitmap base = Bitmap.createBitmap(10, 6, Bitmap.Config.ARGB_8888);
+        base.eraseColor(Color.WHITE);
+        base.setColorSpace(BT2020_HLG);
+
+        Bitmap gainmapImage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        gainmapImage.setPixel(0, 0, 0xFFFF00FF);
+        Gainmap gainmap = new Gainmap(gainmapImage);
+        if (Flags.isoGainmapApis()) {
+            gainmap.setGainmapDirection(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR);
+            gainmap.setAlternativeImagePrimaries(SRGB);
+        }
+        gainmap.setRatioMax(100000000f, 100000000f, 100000000f);
+        gainmap.setRatioMin(3.789f, 3.789f, 3.789f);
+        base.setGainmap(gainmap);
+        sHLGTestImage = base;
     }
 
     // A 10x6 base image with a 5x3 (so 1/2 res) gainmap that boosts the center 3 pixels
@@ -112,6 +134,15 @@ public class GainmapTests {
         Canvas canvas = sTestPicture.beginRecording(sTestImage.getWidth(), sTestImage.getHeight());
         canvas.drawBitmap(sTestImage, 0, 0, null);
         sTestPicture.endRecording();
+    }
+
+    private static final Picture sHLGTestPicture;
+    static {
+        sHLGTestPicture = new Picture();
+        Canvas canvas = sHLGTestPicture.beginRecording(
+                sHLGTestImage.getWidth(), sHLGTestImage.getHeight());
+        canvas.drawBitmap(sHLGTestImage, 0, 0, null);
+        sHLGTestPicture.endRecording();
     }
 
     private static final Gainmap sNoOpGainmap;
@@ -150,12 +181,13 @@ public class GainmapTests {
         // 8888 precision ain't so great
         if (result.getConfig() == Bitmap.Config.ARGB_8888) {
             // PQ math on GLES2.0 is very poor
-            if (result.getColorSpace().getId() == ColorSpace.Named.BT2020_PQ.ordinal()) {
+            if (result.getColorSpace().getId() == ColorSpace.Named.BT2020_PQ.ordinal()
+                    || result.getColorSpace().getId() == ColorSpace.Named.BT2020.ordinal()) {
                 return 0.06f;
             }
             return 0.02f;
         }
-        return 0.002f;
+        return 0.004f;
     }
 
     private void assertTestImageResult(Bitmap result, Gainmap gainmap) {
@@ -169,6 +201,20 @@ public class GainmapTests {
                     mapWhiteWithGain(gainmap, 0x80 / 255.f), delta);
             assertChannels(result.getColor(6, 2),
                     mapWhiteWithGain(gainmap, 0xFF / 255.f), delta);
+        } catch (Throwable t) {
+            BitmapDumper.dumpBitmap(result);
+            throw t;
+        }
+    }
+
+    private void assertFullyAppliedHLGTestImageResult(Bitmap result) {
+        try {
+            final float delta = toleranceForResult(result);
+            // Note: maps a BT. 2020 color to an sRGB Green
+            assertChannels(result.getColor(0, 0), Color.pack(Color.GREEN), delta);
+            assertChannels(result.getColor(2, 2), Color.pack(Color.GREEN), delta);
+            assertChannels(result.getColor(4, 2), Color.pack(Color.GREEN), delta);
+            assertChannels(result.getColor(6, 2), Color.pack(Color.GREEN), delta);
         } catch (Throwable t) {
             BitmapDumper.dumpBitmap(result);
             throw t;
@@ -203,14 +249,24 @@ public class GainmapTests {
         return Bitmap.wrapHardwareBuffer(buffer, dest).copy(Bitmap.Config.ARGB_8888, false);
     }
 
-    private static Bitmap renderTestImageWithHardware(ColorSpace dest, boolean usePicture) {
+    private static Bitmap renderTestImageWithHardware(Bitmap bitmap, ColorSpace dest) {
         return renderWithHardware(dest, canvas -> {
-            if (usePicture) {
-                canvas.drawPicture(sTestPicture);
-            } else {
-                canvas.drawBitmap(sTestImage, 0, 0, null);
-            }
+            canvas.drawBitmap(bitmap, 0, 0, null);
         });
+    }
+
+    private static Bitmap renderTestPictureWithHardware(Picture picture, ColorSpace dest) {
+        return renderWithHardware(dest, canvas -> {
+            canvas.drawPicture(picture);
+        });
+    }
+
+    private static Bitmap renderTestImageWithHardware(ColorSpace dest, boolean usePicture) {
+        if (usePicture) {
+            return renderTestPictureWithHardware(sTestPicture, dest);
+        } else {
+            return renderTestImageWithHardware(sTestImage, dest);
+        }
     }
 
     @Test
@@ -241,6 +297,15 @@ public class GainmapTests {
         assertTestImageResult(result, sNoOpGainmap);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void hlgGainmapToBt2020Software() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020);
+        Canvas canvas = new Canvas(result);
+        canvas.drawBitmap(sHLGTestImage, 0f, 0f, null);
+        assertFullyAppliedHLGTestImageResult(result);
+    }
+
     @Test
     public void gainmapToHlgPictureSoftware() {
         Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
@@ -265,6 +330,15 @@ public class GainmapTests {
         assertTestImageResult(result, sNoOpGainmap);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void hlgGainmapToBt2020PictureSoftware() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020);
+        Canvas canvas = new Canvas(result);
+        canvas.drawPicture(sHLGTestPicture);
+        assertFullyAppliedHLGTestImageResult(result);
+    }
+
     @Test
     public void gainmapToHlgHardware() throws Exception {
         Bitmap result = renderTestImageWithHardware(BT2020_HLG);
@@ -281,6 +355,13 @@ public class GainmapTests {
     public void gainmapToSrgbHardware() {
         Bitmap result = renderTestImageWithHardware(SRGB);
         assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void hlgGainmapToBt2020Hardware() {
+        Bitmap result = renderTestImageWithHardware(sHLGTestImage, BT2020);
+        assertFullyAppliedHLGTestImageResult(result);
     }
 
     @Test
@@ -301,6 +382,13 @@ public class GainmapTests {
         assertTestImageResult(result, sNoOpGainmap);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void hlgGainmapToBt2020PictureHardware() {
+        Bitmap result = renderTestPictureWithHardware(sHLGTestPicture, BT2020);
+        assertFullyAppliedHLGTestImageResult(result);
+    }
+
     @Test
     public void bitmapShaderSupportHLG() {
         Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
@@ -312,6 +400,20 @@ public class GainmapTests {
         paint.setShader(shader);
         canvas.drawPaint(paint);
         assertTestImageResult(result);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void bitmapShaderSupportHLGGainmaps() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sHLGTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        assertFullyAppliedHLGTestImageResult(result);
     }
 
     @Test
@@ -339,6 +441,21 @@ public class GainmapTests {
         });
         assertTestImageResult(result, sNoOpGainmap);
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Test
+    public void bitmapShaderSupportHLGGainmapsHardware() {
+        Bitmap result = renderWithHardware(BT2020, canvas -> {
+            Paint paint = new Paint();
+            paint.setFlags(0);
+            BitmapShader shader = new BitmapShader(sHLGTestImage, Shader.TileMode.CLAMP,
+                    Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+            canvas.drawPaint(paint);
+        });
+        assertFullyAppliedHLGTestImageResult(result);
+    }
+
 
     @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)
     @Test

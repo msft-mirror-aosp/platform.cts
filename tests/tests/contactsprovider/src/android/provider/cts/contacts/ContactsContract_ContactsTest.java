@@ -123,13 +123,14 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
     }
 
     public void testQueryByAccount() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
-        String accountDataSet = "dataSet1";
+        String accountName = "ContactsTest_testQueryByAccount_accountName";
+        String accountType = "ContactsTest_testQueryByAccount_accountType";
+        String accountDataset = "ContactsTest_testQueryByAccount_dataset";
+
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)
-                .with(RawContacts.DATA_SET, accountDataSet)
+                .with(RawContacts.DATA_SET, accountDataset)
                 .insert().load();
         TestContact contact = rawContact.getContact().load();
         long contactId = contact.getId();
@@ -139,7 +140,7 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
         assertContactFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
 
 
@@ -147,12 +148,12 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, "a")
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, "b")
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
@@ -166,8 +167,8 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
     }
 
     public void testQueryByAccountWithNullDataSet() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
+        String accountName = "ContactsTest_testQueryByAccountWithNullDataSet_accountName";
+        String accountType = "ContactsTest_testQueryByAccountWithNullDataSet_accountType";
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)

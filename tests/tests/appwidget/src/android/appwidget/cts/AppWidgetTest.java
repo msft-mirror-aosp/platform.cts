@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -57,6 +58,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -1657,6 +1659,112 @@ public class AppWidgetTest extends AppWidgetTestCase {
             assertThat(out).isEqualTo("false");
         } finally {
             host.deleteHost();
+        }
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_CHECK_REMOTE_VIEWS_URI_PERMISSION})
+    @Test
+    public void testCheckRemoteViewsUri() throws Exception {
+        final Context context = getInstrumentation().getTargetContext();
+
+        final AppWidgetHost host = new AppWidgetHost(context, 0);
+        // Delete host to clear up any old ones.
+        host.deleteHost();
+        host.startListening();
+
+        final int myUser = UserHandle.myUserId();
+        int targetUser;
+        if (UserManager.isHeadlessSystemUserMode()) {
+            if (myUser == 10) {
+                targetUser = 11;
+            } else {
+                targetUser = 10;
+            }
+        } else {
+            if (myUser == 0) {
+                targetUser = 10;
+            } else {
+                targetUser = 0;
+            }
+        }
+        final Uri invalidContentUri = Uri.parse(
+                "content://" + targetUser + "@android.appwidget.cts/foobar.png");
+        final Uri validUri = Uri.parse(
+                "content://" + myUser + "@android.appwidget.cts/foobar.png");
+        final Uri resourceUri = Uri.parse("android.resource://android/drawable/foobar");
+        final Uri fileUri = Uri.parse("file:///data/media");
+
+        final int appWidgetId;
+        try {
+            // Configure the provider behavior.
+            final AtomicInteger invocationCounter = new AtomicInteger();
+            AppWidgetProviderCallbacks callbacks = createAppWidgetProviderCallbacks(
+                    invocationCounter);
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    final int appWidgetId = ((int[]) invocation.getArguments()[2])[0];
+
+                    // Provider should not be able to use content URI for package in another user.
+                    RemoteViews invalidRemoteViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    invalidRemoteViews.setImageViewUri(R.id.hello, invalidContentUri);
+                    assertThrows(SecurityException.class, () -> {
+                        getAppWidgetManager().updateAppWidget(appWidgetId, invalidRemoteViews);
+                    });
+
+                    // Content URI for own package should not throw.
+                    RemoteViews contentUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    contentUriViews.setImageViewUri(R.id.hello, validUri);
+                    getAppWidgetManager().updateAppWidget(appWidgetId, contentUriViews);
+
+                    // Resource URI should not throw.
+                    RemoteViews resourceUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    resourceUriViews.setImageViewUri(R.id.hello, resourceUri);
+                    getAppWidgetManager().updateAppWidget(appWidgetId, resourceUriViews);
+
+                    // File URI should throw.
+                    RemoteViews fileUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    // Disable StrictMode temporarily so setImageViewUri will not throw with file
+                    // URI.
+                    final StrictMode.VmPolicy oldPolicy = StrictMode.getVmPolicy();
+                    StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().build());
+                    try {
+                        fileUriViews.setImageViewUri(R.id.hello, fileUri);
+                    } finally {
+                        StrictMode.setVmPolicy(oldPolicy);
+                    }
+                    assertThrows(SecurityException.class, () -> {
+                        getAppWidgetManager().updateAppWidget(appWidgetId, fileUriViews);
+                    });
+
+                    synchronized (mLock) {
+                        invocationCounter.incrementAndGet();
+                        mLock.notifyAll();
+                    }
+                    return null;
+                }
+            }).when(callbacks).onUpdate(any(Context.class), any(AppWidgetManager.class),
+                    any(int[].class));
+            FirstAppWidgetProvider.setCallbacks(callbacks);
+
+            // Bind an instance of the widget
+            grantBindAppWidgetPermission();
+            final AppWidgetProviderInfo provider = getFirstAppWidgetProviderInfo();
+            appWidgetId = host.allocateAppWidgetId();
+            getAppWidgetManager().bindAppWidgetIdIfAllowed(appWidgetId,
+                    provider.getProfile(), provider.provider, null);
+
+            // Wait for onEnabled and onUpdate
+            waitForCallCount(invocationCounter, 2);
+
+        } finally {
+            FirstAppWidgetProvider.setCallbacks(null);
+            host.deleteHost();
+            revokeBindAppWidgetPermission();
         }
     }
 

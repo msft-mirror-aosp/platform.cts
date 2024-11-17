@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.cts.tagging.stackmte;
+package android.cts.tagging.memtagapp;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -29,7 +29,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public final class TaggingTest {
-  static { System.loadLibrary("cts_stack_mte_jni"); }
+  static { System.loadLibrary("cts_memtagapp_jni"); }
 
   @Test
   public void testIsStackMteOn() throws Exception {
@@ -47,8 +47,18 @@ public final class TaggingTest {
   public void testHasMteTlsThread() throws Exception {
     assertThat(hasMteTlsThread()).isTrue();
   }
+  @Test
+  public void testHasMteGlobalTag() throws Exception {
+    assertThat(hasMteGlobalTag()).isTrue();
+  }
+  @Test
+  public void testMteGlobalTagCorrect() throws Exception {
+    assertThat(mteGlobalTagCorrect()).isTrue();
+  }
   public static native boolean isStackMteOn();
   public static native boolean isStackMteOnThread();
   public static native boolean hasMteTls();
   public static native boolean hasMteTlsThread();
+  public static native boolean hasMteGlobalTag();
+  public static native boolean mteGlobalTagCorrect();
 }

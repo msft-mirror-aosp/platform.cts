@@ -43,15 +43,28 @@ java_library {
 }
 
 java_library {
-    name: "cts_backported_fixes_ids",
+    name: "cts_backported_fixes_proto",
     srcs: [
-        "src/com/android/cts/backportedfixes/BackportedFixes.java",
-    ],
-    static_libs: [
-        "guava",
+        "backported_fixes.proto",
     ],
     sdk_version: "test_current",
     host_supported: true,
+}
+
+java_library {
+    name: "cts_backported_fixes_ids",
+    srcs: [
+        "src/com/android/cts/backportedfixes/ApprovedBackportedFixes.java",
+    ],
+    static_libs: [
+        "guava",
+        "cts_backported_fixes_proto",
+    ],
+    sdk_version: "test_current",
+    host_supported: true,
+    java_resources: [
+        ":cts_backported_fixes_binpb",
+    ],
 }
 
 java_library {
@@ -64,4 +77,19 @@ java_library {
         "guava",
     ],
     sdk_version: "test_current",
+}
+
+genrule {
+    name: "cts_backported_fixes_binpb",
+    tools: ["aprotoc"],
+    srcs: [
+        "backported_fixes.proto",
+        "approved/backported_fixes.txtpb",
+    ],
+    out: ["com/android/cts/backportedfixes/backported_fixes.binpb"],
+    cmd: "$(location aprotoc)  " +
+        " --encode=com.android.cts.backportedfixes.BackportedFixes" +
+        "  $(location backported_fixes.proto)" +
+        " < $(location approved/backported_fixes.txtpb)" +
+        " > $(location com/android/cts/backportedfixes/backported_fixes.binpb)",
 }

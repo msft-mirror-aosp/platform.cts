@@ -123,6 +123,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -1271,7 +1272,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_sendsEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         // Layout. buttonTargetGrandparent has a touch delegate that covers the buttonTarget and
@@ -1289,6 +1290,11 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;

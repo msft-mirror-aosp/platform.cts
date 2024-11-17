@@ -16,6 +16,7 @@
 
 package android.mediav2.common.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
@@ -91,7 +92,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
         if (CodecTestBase.IS_AT_LEAST_U) {
             MEDIATYPE_LIST_FOR_TYPE_MP4.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         }
-        if (CodecTestBase.IS_AFTER_V) {
+        if (CodecTestBase.IS_AT_LEAST_B && apvSupport()) {
             MEDIATYPE_LIST_FOR_TYPE_MP4.add(MediaFormat.MIMETYPE_VIDEO_APV);
         }
     }

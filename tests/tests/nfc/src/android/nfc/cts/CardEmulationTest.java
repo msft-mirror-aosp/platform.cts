@@ -1,5 +1,6 @@
 package android.nfc.cts;
 
+import static android.nfc.cardemulation.CardEmulation.SET_SERVICE_ENABLED_STATUS_OK;
 import static android.nfc.cts.WalletRoleTestUtils.CTS_PACKAGE_NAME;
 import static android.nfc.cts.WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME;
 import static android.nfc.cts.WalletRoleTestUtils.WALLET_HOLDER_SERVICE_DESC;
@@ -13,6 +14,7 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
@@ -2254,6 +2256,18 @@ public class CardEmulationTest {
         final Activity activity = createAndResumeActivity();
         CardEmulation instance = CardEmulation.getInstance(adapter);
         instance.recoverRoutingTable(activity);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_SET_SERVICE_ENABLED_FOR_CATEGORY_OTHER)
+    @Test
+    public void testSetServiceEnabledForCategoryOther()
+            throws NoSuchFieldException, RemoteException {
+        CardEmulation instance = createMockedInstance();
+        when(mEmulation.setServiceEnabledForCategoryOther(
+                anyInt(), any(ComponentName.class), anyBoolean()))
+                .thenReturn(SET_SERVICE_ENABLED_STATUS_OK);
+        int result = instance.setServiceEnabledForCategoryOther(mService, true);
+        Assert.assertEquals(SET_SERVICE_ENABLED_STATUS_OK, result);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CARD_EMULATION_EUICC)

@@ -36,6 +36,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.StringBuilderPrinter;
 import android.view.MotionEvent;
+import android.view.autofill.AutofillId;
 import android.view.inputmethod.DeleteGesture;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.Flags;
@@ -209,6 +210,27 @@ public final class EditorInfoTest {
         EditorInfo targetInfo = EditorInfo.CREATOR.createFromParcel(p);
         p.recycle();
         assertEquals(info.isStylusHandwritingEnabled(), targetInfo.isStylusHandwritingEnabled());
+    }
+
+    /*
+     *  Test EditorInfo#autofillId.
+     */
+    @ApiTest(
+            apis = {
+                "android.view.inputmethod.EditorInfo#setAutofillId",
+                "android.view.inputmethod.EditorInfo#getAutofillId"
+            })
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PUBLIC_AUTOFILL_ID_IN_EDITORINFO)
+    public void testAutofillId() {
+        EditorInfo info = new EditorInfo();
+        info.setAutofillId(new AutofillId(1));
+        Parcel p = Parcel.obtain();
+        info.writeToParcel(p, 0 /* flags */);
+        p.setDataPosition(0);
+        EditorInfo targetInfo = EditorInfo.CREATOR.createFromParcel(p);
+        p.recycle();
+        assertEquals(info.getAutofillId(), targetInfo.getAutofillId());
     }
 
     @Test

@@ -350,12 +350,13 @@ public class ClipboardManagerTest {
 
     @Test
     public void testClipSourceRecordedWhenClipSet() {
+        String myPackageName = mContext.getPackageName();
+
         ClipData clipData = ClipData.newPlainText("TextLabel", "Text1");
         mClipboardManager.setPrimaryClip(clipData);
 
         adoptShellPermissionIdentity(Manifest.permission.SET_CLIP_SOURCE);
-        assertThat(
-                mClipboardManager.getPrimaryClipSource()).isEqualTo("android.content.cts");
+        assertThat(mClipboardManager.getPrimaryClipSource()).isEqualTo(myPackageName);
     }
 
     @Test

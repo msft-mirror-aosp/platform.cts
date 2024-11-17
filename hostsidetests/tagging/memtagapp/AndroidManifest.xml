@@ -15,7 +15,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.cts.tagging.stackmte">
+    package="android.cts.tagging.memtagapp">
 
     <uses-sdk android:minSdkVersion="35" android:targetSdkVersion="35" />
 
@@ -25,6 +25,6 @@
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.cts.tagging.stackmte" />
+        android:targetPackage="android.cts.tagging.memtagapp" />
 </manifest>
 

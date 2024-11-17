@@ -61,6 +61,7 @@ public class BluetoothSocketSettingsTest {
 
     @Before
     public void setUp() {
+        TestUtils.dropPermissionAsShellUid();
         assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM));
         assumeTrue(
                 TestUtils.isBleSupported(

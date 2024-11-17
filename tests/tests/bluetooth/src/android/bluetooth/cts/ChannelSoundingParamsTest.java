@@ -35,14 +35,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ChannelSoundingParams;
 import android.content.Context;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.CddTest;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -82,7 +80,6 @@ public class ChannelSoundingParamsTest {
         mAdapter = null;
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void createFromParcel() {
@@ -103,7 +100,6 @@ public class ChannelSoundingParamsTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void defaultParameters() {
@@ -113,7 +109,6 @@ public class ChannelSoundingParamsTest {
         assertEquals(CS_SECURITY_LEVEL_ONE, params.getCsSecurityLevel());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetSightType() {
@@ -123,7 +118,6 @@ public class ChannelSoundingParamsTest {
         assertEquals(SIGHT_TYPE_LINE_OF_SIGHT, params.getSightType());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetLocationType() {
@@ -133,7 +127,6 @@ public class ChannelSoundingParamsTest {
         assertEquals(LOCATION_TYPE_OUTDOOR, params.getLocationType());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetCsSecurityLevel() {

@@ -388,9 +388,9 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
 
     public void testQueryByAccount() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
-        String accountDataSet = "dataSet1";
+        String accountName = "RawContactsTest_testQueryByAccount_accountName";
+        String accountType = "RawContactsTest_testQueryByAccount_accountType";
+        String accountDataSet = "RawContactsTest_testQueryByAccount_dataSet";
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)
@@ -430,8 +430,8 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
     }
 
     public void testQueryByAccountWithNullDataSet() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
+        String accountName = "RawContactsTest_testQueryByAccountWithNullDataSet_accountName";
+        String accountType = "RawContactsTest_testQueryByAccountWithNullDataSet_accountType";
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)

@@ -6111,6 +6111,23 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSelectedNbIotSatelliteSubscriptionId() {
+        logd("testRequestSelectedNbIotSatelliteSubscriptionId:");
+        grantSatellitePermission();
+        try {
+            Pair<Integer, Integer> pairResult =
+                    requestSelectedNbIotSatelliteSubscriptionId();
+            if (pairResult == null) {
+                fail("requestSelectedNbIotSatelliteSubscriptionId: null");
+            }
+            assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID, (long) pairResult.first);
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSatelliteSubscriptionProvisionStateChanged() {
         logd("testSatelliteSubscriptionProvisionStateChanged:");
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);

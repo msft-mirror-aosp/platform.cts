@@ -17,7 +17,7 @@ package {
 }
 
 android_test_helper_app {
-    name: "CtsHostsideTaggingStackMteApp",
+    name: "CtsHostsideTaggingMemtagApp",
     defaults: ["cts_tagging_app_defaults"],
     srcs: ["src/**/*.java"],
     test_suites: [
@@ -29,14 +29,14 @@ android_test_helper_app {
     ],
     sdk_version: "test_current",
     jni_libs: [
-        "libcts_stack_mte_jni",
+        "libcts_memtagapp_jni",
         "libcts_jni",
     ],
 }
 
 cc_library {
-    name: "libcts_stack_mte_jni",
-    srcs: ["jni/libcts_stack_mte_jni.cpp"],
+    name: "libcts_memtagapp_jni",
+    srcs: ["jni/libcts_memtagapp_jni.cpp"],
     header_libs: ["jni_headers"],
     sdk_version: "current",
     stl: "libc++",

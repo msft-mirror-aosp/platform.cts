@@ -21,6 +21,7 @@ import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -29,6 +30,7 @@ import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
+import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.Image;
@@ -37,6 +39,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.SurfaceControl;
 import android.view.ViewTreeObserver;
@@ -50,6 +55,8 @@ import androidx.annotation.Nullable;
 import androidx.core.view.WindowCompat;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,6 +79,10 @@ public class DisplayManagerTest {
     @Rule
     public ActivityScenarioRule<TestActivity> mActivityRule =
             new ActivityScenarioRule<>(TestActivity.class);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private TestActivity mActivity;
     private Instrumentation mInstrumentation;
@@ -173,6 +184,16 @@ public class DisplayManagerTest {
         assertTrue(exception instanceof SecurityException);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IS_ALWAYS_ON_AVAILABLE_API)
+    public void testIsAlwaysOnDisplayCurrentlyAvailable() {
+        AmbientDisplayConfiguration ambientDisplayConfiguration =
+                new AmbientDisplayConfiguration(mActivity);
+
+        DisplayManager displayManager = mActivity.getSystemService(DisplayManager.class);
+        assertEquals(ambientDisplayConfiguration.alwaysOnAvailableForUser(mActivity.getUserId()),
+                displayManager.isAlwaysOnDisplayCurrentlyAvailable());
+    }
 
     private static class OnImageAvailableListener implements ImageReader.OnImageAvailableListener {
         private final Consumer<Image> mImageConsumer;

@@ -132,7 +132,6 @@ import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -2005,8 +2004,8 @@ public final class ActivityManagerTest {
         final ParcelFileDescriptor[] pfds = InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().executeShellCommandRw("am observe-foreground-process");
         final ParcelFileDescriptor stdOut = pfds[0];
-        try (InputStream in = new ParcelFileDescriptor.AutoCloseInputStream(stdOut)) {
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new ParcelFileDescriptor.AutoCloseInputStream(stdOut)))) {
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
