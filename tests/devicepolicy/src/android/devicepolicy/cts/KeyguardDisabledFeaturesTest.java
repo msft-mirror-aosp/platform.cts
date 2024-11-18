@@ -20,16 +20,19 @@ import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.admin.DevicePolicyManager;
+import static org.junit.Assume.assumeTrue;
 
+import android.app.admin.DevicePolicyManager;
+import android.app.admin.flags.Flags;
+
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.policies.KeyguardDisableFeatures;
-import com.android.bedstead.harrier.policies.KeyguardDisableFeaturesForOrgOwnedParentProfileOwner;
+import com.android.bedstead.harrier.policies.KeyguardDisabledFeatures;
+import com.android.bedstead.harrier.policies.KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;
@@ -37,7 +40,7 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
-public final class KeyguardDisableFeaturesTest {
+public final class KeyguardDisabledFeaturesTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
@@ -45,11 +48,15 @@ public final class KeyguardDisableFeaturesTest {
             TestApis.context().instrumentedContext().getSystemService(DevicePolicyManager.class);
 
     @PolicyAppliesTest(policy = {
-            KeyguardDisableFeatures.class,
-            KeyguardDisableFeaturesForOrgOwnedParentProfileOwner.class
+            KeyguardDisabledFeatures.class,
+            KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner.class
     })
     @Postsubmit(reason = "new test")
     public void setKeyguardDisabledFeature_isSet(@PolicyArgument int flag) {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setKeyguardDisabledFeaturesCoexistence());
+
         try {
             dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
                     dpc(sDeviceState).componentName(), flag);
@@ -64,11 +71,15 @@ public final class KeyguardDisableFeaturesTest {
     }
 
     @PolicyDoesNotApplyTest(policy = {
-            KeyguardDisableFeatures.class,
-            KeyguardDisableFeaturesForOrgOwnedParentProfileOwner.class
+            KeyguardDisabledFeatures.class,
+            KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner.class
     })
     @Postsubmit(reason = "new test")
     public void setKeyguardDisabledFeature_cannotSet_isNotSet(@PolicyArgument int flag) {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null
+                || Flags.setKeyguardDisabledFeaturesCoexistence());
+
         try {
             dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
                     dpc(sDeviceState).componentName(), flag);
