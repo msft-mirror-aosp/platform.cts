@@ -81,6 +81,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.carrier.CarrierIdentifier;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -7443,5 +7444,31 @@ public class TelephonyManagerTest {
                     .dropShellPermissionIdentity();
         }
         return null;
+    }
+
+    /**
+     * Tests that getCarrierIdFromCarrierIdentifier methods don't crash.
+     */
+    @Test
+    public void testGetCarrierIdFromCarrierIdentifier() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        CarrierIdentifier carrier =
+                new CarrierIdentifier("", "", null, null, null, null);
+
+        // The API requires READ_PRIVILEGED_PHONE_STATE privilege
+        try {
+            mTelephonyManager.getCarrierIdFromCarrierIdentifier(carrier);
+            fail("Telephony#getCarrierIdFromCarrierIdentifie should throw SecurityException without"
+                    + " READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException expected) {
+        }
+
+        // With READ_PRIVILEGED_PHONE_STATE, it should work
+        int carrierId =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getCarrierIdFromCarrierIdentifier(carrier));
+        assertTrue(carrierId == TelephonyManager.UNKNOWN_CARRIER_ID);
+
     }
 }
