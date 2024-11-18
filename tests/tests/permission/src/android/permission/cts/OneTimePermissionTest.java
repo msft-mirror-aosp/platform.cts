@@ -291,10 +291,10 @@ public class OneTimePermissionTest {
                 if (mDreamManager.isDreaming()) {
                     mDreamManager.stopDream();
                 }
+                Assert.assertFalse("Unable to exit application",
+                        mActivityManager.getPackageImportance(APP_PKG_NAME)
+                                <= IMPORTANCE_FOREGROUND);
             });
-            Assert.assertFalse("Unable to exit application",
-                    mActivityManager.getPackageImportance(APP_PKG_NAME)
-                            <= IMPORTANCE_FOREGROUND);
         });
     }
 
