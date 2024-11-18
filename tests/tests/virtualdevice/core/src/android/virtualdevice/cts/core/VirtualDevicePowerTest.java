@@ -43,6 +43,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.server.wm.UiDeviceUtils;
 import android.view.Display;
+import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -66,6 +67,7 @@ public class VirtualDevicePowerTest {
 
     private static final int FAST_SCREEN_OFF_TIMEOUT_MS = 500;
     private static final int DISPLAY_TIMEOUT_MS = 2000;
+    private static final float DEFAULT_BRIGHTNESS = 0.4f;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -355,6 +357,33 @@ public class VirtualDevicePowerTest {
         assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
     }
 
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void customDefaultBrightness_windowManagerOverrideRequestTriggersCallback() {
+        createVirtualDeviceAndDisplay(VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                .setDefaultBrightness(DEFAULT_BRIGHTNESS));
+
+        Activity activity = mVirtualDeviceRule.startActivityOnDisplaySync(
+                mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        reset(mVirtualDisplayCallback);
+        setBrightnessOverride(activity, 0.1f);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onRequestedBrightnessChanged(0.1f);
+
+        reset(mVirtualDisplayCallback);
+        setBrightnessOverride(activity, 1f);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onRequestedBrightnessChanged(1f);
+
+        reset(mVirtualDisplayCallback);
+        setBrightnessOverride(activity, -1f);
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onRequestedBrightnessChanged(DEFAULT_BRIGHTNESS);
+    }
+
     private void assumeScreenOffSupported() {
         assumeFalse("Skipping test: Automotive main display is always on",
                 FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
@@ -368,6 +397,14 @@ public class VirtualDevicePowerTest {
 
     private void setScreenOffTimeoutMs(String timeoutMs) {
         Settings.System.putString(mContentResolver, Settings.System.SCREEN_OFF_TIMEOUT, timeoutMs);
+    }
+
+    private void setBrightnessOverride(Activity activity, float brightness) {
+        getInstrumentation().runOnMainSync(() -> {
+            WindowManager.LayoutParams layout = activity.getWindow().getAttributes();
+            layout.screenBrightness = brightness;
+            activity.getWindow().setAttributes(layout);
+        });
     }
 
     void createVirtualDeviceAndDisplay() {
