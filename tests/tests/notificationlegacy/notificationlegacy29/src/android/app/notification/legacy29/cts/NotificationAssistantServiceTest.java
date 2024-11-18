@@ -995,7 +995,7 @@ public class NotificationAssistantServiceTest {
                     sbn.getUser());
             mAssistant.adjustNotification(adjustment);
 
-            notificationRankingLatch.await(500, TimeUnit.MILLISECONDS);
+            notificationRankingLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
 
             mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
