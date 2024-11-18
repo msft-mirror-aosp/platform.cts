@@ -34,7 +34,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
-import android.security.forensic.ForensicManager;
+import android.security.intrusiondetection.IntrusionDetectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -51,10 +51,10 @@ import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AFL_API)
-public class ForensicManagerTest {
+public class IntrusionDetectionManagerTest {
     private Context mContext;
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
-    private ForensicManager mForensicManager;
+    private IntrusionDetectionManager mIntrusionDetectionManager;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -62,8 +62,8 @@ public class ForensicManagerTest {
     @Before
     public void setup() throws InterruptedException {
         mContext = mInstrumentation.getContext();
-        mForensicManager = mContext.getSystemService(ForensicManager.class);
-        assertNotNull(mForensicManager);
+        mIntrusionDetectionManager = mContext.getSystemService(IntrusionDetectionManager.class);
+        assertNotNull(mIntrusionDetectionManager);
         reset();
     }
 
@@ -74,13 +74,13 @@ public class ForensicManagerTest {
 
     private void reset() throws InterruptedException {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_FORENSIC_STATE,
-                Manifest.permission.MANAGE_FORENSIC_STATE);
+                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
         var commandLatch = new CountDownLatch(1);
 
         var executor = newSingleThreadExecutor();
-        mForensicManager.disable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.disable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch.countDown();
@@ -95,11 +95,11 @@ public class ForensicManagerTest {
         assertTrue(commandLatch.await(1, SECONDS));
 
         var stateLatch = new CountDownLatch(1);
-        mForensicManager.addStateCallback(executor,
+        mIntrusionDetectionManager.addStateCallback(executor,
                 state -> {
                     if (stateLatch.getCount() > 0) {
                         stateLatch.countDown();
-                        assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                        assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                     }
                 });
         assertTrue(stateLatch.await(1, SECONDS));
@@ -110,7 +110,7 @@ public class ForensicManagerTest {
     @Test
     public void testAddStateCallback_NoPermission() {
         var executor = newSingleThreadExecutor();
-        assertThrows(SecurityException.class, () -> mForensicManager.addStateCallback(
+        assertThrows(SecurityException.class, () -> mIntrusionDetectionManager.addStateCallback(
                 executor, state -> {}));
         executor.close();
     }
@@ -118,21 +118,22 @@ public class ForensicManagerTest {
     @Test
     public void testRemoveStateCallback_NoPermission() {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_FORENSIC_STATE);
+                Manifest.permission.READ_INTRUSION_DETECTION_STATE);
         var executor = newSingleThreadExecutor();
         Consumer<Integer> scb = state -> {};
-        mForensicManager.addStateCallback(executor, scb);
+        mIntrusionDetectionManager.addStateCallback(executor, scb);
 
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mForensicManager.removeStateCallback(scb));
+        assertThrows(SecurityException.class,
+                () -> mIntrusionDetectionManager.removeStateCallback(scb));
         executor.close();
     }
 
     @Test
     public void testEnable_NoPermission() {
         var executor = newSingleThreadExecutor();
-        assertThrows(SecurityException.class, () -> mForensicManager.enable(
-                executor, new ForensicManager.CommandCallback() {
+        assertThrows(SecurityException.class, () -> mIntrusionDetectionManager.enable(
+                executor, new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         fail("onSuccess shall not be called");
@@ -149,8 +150,8 @@ public class ForensicManagerTest {
     @Test
     public void testDisable_NoPermission() {
         var executor = newSingleThreadExecutor();
-        assertThrows(SecurityException.class, () -> mForensicManager.disable(
-                executor, new ForensicManager.CommandCallback() {
+        assertThrows(SecurityException.class, () -> mIntrusionDetectionManager.disable(
+                executor, new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         fail("onSuccess shall not be called");
@@ -167,8 +168,8 @@ public class ForensicManagerTest {
     @Test
     public void testRemoveStateCallback() throws InterruptedException {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_FORENSIC_STATE,
-                Manifest.permission.MANAGE_FORENSIC_STATE);
+                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
 
         var executor = newSingleThreadExecutor();
 
@@ -179,15 +180,15 @@ public class ForensicManagerTest {
         scb0Counter.set(0);
         Consumer<Integer> scb0 = state -> {
             if (scb0Counter.get() == 0) {
-                assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                 scb0Latch0.countDown();
                 scb0Counter.getAndIncrement();
             } else if (scb0Counter.get() == 1) {
-                assertEquals(ForensicManager.STATE_ENABLED, state.intValue());
+                assertEquals(IntrusionDetectionManager.STATE_ENABLED, state.intValue());
                 scb0Latch1.countDown();
                 scb0Counter.getAndIncrement();
             } else if (scb0Counter.get() == 2) {
-                assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                 scb0Latch2.countDown();
                 scb0Counter.getAndIncrement();
             } else {
@@ -201,11 +202,11 @@ public class ForensicManagerTest {
         scb1Counter.set(0);
         Consumer<Integer> scb1 = state -> {
             if (scb1Counter.get() == 0) {
-                assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                 scb1Latch0.countDown();
                 scb1Counter.getAndIncrement();
             } else if (scb1Counter.get() == 1) {
-                assertEquals(ForensicManager.STATE_ENABLED, state.intValue());
+                assertEquals(IntrusionDetectionManager.STATE_ENABLED, state.intValue());
                 scb1Latch1.countDown();
                 scb1Counter.getAndIncrement();
             } else {
@@ -213,12 +214,12 @@ public class ForensicManagerTest {
             }
         };
 
-        mForensicManager.addStateCallback(executor, scb0);
-        mForensicManager.addStateCallback(executor, scb1);
+        mIntrusionDetectionManager.addStateCallback(executor, scb0);
+        mIntrusionDetectionManager.addStateCallback(executor, scb1);
 
         var commandLatch0 = new CountDownLatch(1);
-        mForensicManager.enable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.enable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch0.countDown();
@@ -236,10 +237,10 @@ public class ForensicManagerTest {
         assertThat(scb0Latch1.await(1, SECONDS)).isTrue();
         assertThat(scb1Latch1.await(1, SECONDS)).isTrue();
 
-        mForensicManager.removeStateCallback(scb1);
+        mIntrusionDetectionManager.removeStateCallback(scb1);
         var commandLatch1 = new CountDownLatch(1);
-        mForensicManager.disable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.disable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch1.countDown();
@@ -259,18 +260,18 @@ public class ForensicManagerTest {
     @Test
     public void testDisable_FromDisable() throws InterruptedException {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_FORENSIC_STATE,
-                Manifest.permission.MANAGE_FORENSIC_STATE);
+                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
 
         var executor = newSingleThreadExecutor();
 
         var stateLatch0 = new CountDownLatch(1);
         AtomicInteger stateCounter = new AtomicInteger();
         stateCounter.set(0);
-        mForensicManager.addStateCallback(executor,
+        mIntrusionDetectionManager.addStateCallback(executor,
                 state -> {
                     if (stateCounter.get() == 0) {
-                        assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                        assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                         stateLatch0.countDown();
                         stateCounter.getAndIncrement();
                     } else {
@@ -279,8 +280,8 @@ public class ForensicManagerTest {
                 });
 
         var commandLatch0 = new CountDownLatch(1);
-        mForensicManager.disable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.disable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch0.countDown();
@@ -301,8 +302,8 @@ public class ForensicManagerTest {
     @Test
     public void testEnable_FromEnable() throws InterruptedException {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_FORENSIC_STATE,
-                Manifest.permission.MANAGE_FORENSIC_STATE);
+                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
 
         var executor = newSingleThreadExecutor();
 
@@ -310,14 +311,14 @@ public class ForensicManagerTest {
         var stateLatch1 = new CountDownLatch(1);
         AtomicInteger stateCounter = new AtomicInteger();
         stateCounter.set(0);
-        mForensicManager.addStateCallback(executor,
+        mIntrusionDetectionManager.addStateCallback(executor,
                 state -> {
                     if (stateCounter.get() == 0) {
-                        assertEquals(ForensicManager.STATE_DISABLED, state.intValue());
+                        assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
                         stateLatch0.countDown();
                         stateCounter.getAndIncrement();
                     } else if (stateCounter.get() == 1) {
-                        assertEquals(ForensicManager.STATE_ENABLED, state.intValue());
+                        assertEquals(IntrusionDetectionManager.STATE_ENABLED, state.intValue());
                         stateLatch1.countDown();
                         stateCounter.getAndIncrement();
                     } else {
@@ -326,8 +327,8 @@ public class ForensicManagerTest {
                 });
 
         var commandLatch0 = new CountDownLatch(1);
-        mForensicManager.enable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.enable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch0.countDown();
@@ -344,8 +345,8 @@ public class ForensicManagerTest {
         assertThat(stateLatch1.await(1, SECONDS)).isTrue();
 
         var commandLatch1 = new CountDownLatch(1);
-        mForensicManager.enable(executor,
-                new ForensicManager.CommandCallback() {
+        mIntrusionDetectionManager.enable(executor,
+                new IntrusionDetectionManager.CommandCallback() {
                     @Override
                     public void onSuccess() {
                         commandLatch1.countDown();
