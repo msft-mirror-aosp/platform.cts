@@ -1735,6 +1735,40 @@ public class SatelliteManagerTestBase {
         }
     }
 
+    protected static Pair<Integer, Integer> requestSelectedNbIotSatelliteSubscriptionId() {
+        final AtomicReference<Integer> selectedSatelliteSubscriptionId =
+                new AtomicReference<>();
+        final AtomicReference<Integer> callback = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        logd("requestSelectedNbIotSatelliteSubscriptionId.onResult: result=" +
+                                result);
+                        selectedSatelliteSubscriptionId.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("requestSelectedNbIotSatelliteSubscriptionId.onError: onError="
+                                + exception.getErrorCode());
+                        callback.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
+    }
+
     protected static Pair<Boolean, Integer> provisionSatellite(List<SatelliteSubscriberInfo> list) {
         final AtomicReference<Boolean> requestResult = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
