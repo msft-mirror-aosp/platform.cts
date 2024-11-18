@@ -667,6 +667,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
          transport service with the duration averaging under 60 ms per single
          exchange.
          """
+        asserts.skip_if("_cf_x86_" in self.emulator.adb.getprop("ro.product.name"),
+                        "Skipping throughput test on Cuttlefish")
         self.emulator.nfc_emulator.startThroughputEmulatorActivity()
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduUnderThreshold')
