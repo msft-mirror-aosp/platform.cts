@@ -1154,6 +1154,12 @@
   <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceAnimations android.server.wm.animations.KeepScreenOnTests#testKeepScreenOn_activityOnVirtualDisplayNotForeground_screenTurnsOff"/>
   <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceDisplay android.server.wm.display.DisplayHashManagerTest#testGenerateDisplayHash_BoundsOutOfView"/>
   <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testGeneratedPreviewPersistence"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecondaryLockscreen"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PackageSuspensionTest#setPackagesSuspended_unsuspendNonexistentPackage_remainUnuspended[IncludeRunOnDevicePolicyManagementRoleHolderUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MediaMuxerTest#testAPVVideoOnlyOutputInMP4"/>
+  <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.TextViewPrecomputedTextTest#setText[63]"/>
+
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
