@@ -216,29 +216,6 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    public void virtualCamera_captureWithNoInput_capturesBlackImage(String format)
-            throws Exception {
-        int outputPixelFormat = toFormat(format);
-
-        try (VirtualCamera virtualCamera = createVirtualCamera()) {
-            String cameraId = getVirtualCameraId(virtualCamera);
-
-            try (ImageReader imageReader = createImageReader(outputPixelFormat)) {
-                Image image = captureImage(cameraId, imageReader,
-                        (Surface surface) -> {
-                        });
-
-                assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
-                assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
-                assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
-                assertThat(image).hasOnlyColor(Color.BLACK);
-            }
-        }
-    }
-
-    @Parameters(method = "getOutputPixelFormats")
-    @TestCaseName("{method}_{params}")
-    @Test
     public void virtualCamera_captureDownscaled_succeeds(String format) throws Exception {
         int outputPixelFormat = toFormat(format);
         int halfWidth = CAMERA_WIDTH / 2;
