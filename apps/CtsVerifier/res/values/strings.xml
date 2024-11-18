@@ -1529,7 +1529,7 @@
     <!-- String for DynamicSensorDiscoveryTest -->
     <string name="snsr_dynamic_sensor_discovery_test">Dynamic Sensor Discovery Test</string>
 
-<!-- String for Barometer sensor tests -->
+    <!-- String for Barometer sensor tests -->
     <string name="snsr_baro_m_test">Barometer Measurement Test</string>
     <string name="snsr_baro_not_implemented">This device does not have a high quality barometer, skipping tests.</string>
     <string name="snsr_baro_flashlight_test_prep_instruction">Put the device under test on a flat surface in a dark room, and have a ~100 lumens flashlight ready. Do not turn on the flashlight yet.</string>
@@ -1546,7 +1546,13 @@
     <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. Please wait while the device collects readings.</string>
     <string name="snsr_baro_squeeze_test_prep_instruction"> Hold the device steady in your hand, do not change the elevation of the device or rotate it during the test. When you hear a sound, squezze the device quickly and release as you would to crumple a soda can. The sound will be played twice.</string>
     <string name="snsr_baro_test_in_progress">Test in progress. </string>
-<!-- String for Barometer reference device -->
+    <string name="snsr_baro_turn_off_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn off airplane mode on this device.</string>
+    <string name="snsr_baro_turn_on_cellular_data"> You will be redirected to the cellular data settings screen. Please turn on cellular data on this device.</string>
+    <string name="snsr_baro_turn_on_wifi"> You will be redirected to the wifi settings screen. Please turn on wifi on this device.</string>
+    <string name="snsr_baro_turn_on_bluetooth"> You will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device.</string>
+    <string name="snsr_baro_turn_on_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn on airplane mode on this device.</string>
+
+    <!-- String for Barometer reference device -->
     <string name="snsr_baro_ref_device">Barometer Reference Device</string>
     <string name="snsr_baro_ref_device_start_collection_instruction">Now that the two devices are connected, click the Next button on both devices simultaneously to start collecting readings.</string>
 
