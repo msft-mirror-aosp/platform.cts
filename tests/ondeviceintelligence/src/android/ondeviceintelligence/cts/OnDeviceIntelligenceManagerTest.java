@@ -1133,6 +1133,7 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
                         "android.permission.WRITE_DEVICE_CONFIG",
+                        "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG",
                         "android.permission.READ_DEVICE_CONFIG",
                         "android.permission.MONITOR_DEVICE_CONFIG_ACCESS");
         Feature feature = new Feature.Builder(1).build();
