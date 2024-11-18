@@ -888,6 +888,10 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeUpdated() {
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
