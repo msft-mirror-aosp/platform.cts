@@ -43,48 +43,6 @@ _PERCENTAGE = 100
 _REGION_DURATION_MS = 1800  # 1.8 seconds
 
 
-def _convert_image_coords_to_sensor_coords(
-    aa_width, aa_height, coords, img_width, img_height):
-  """Transform image coordinates to sensor coordinate system.
-
-  Calculate the difference between sensor active array and image aspect ratio.
-  Taking the difference into account, figure out if the width or height has been
-  cropped. Using this information, transform the image coordinates to sensor
-  coordinates.
-
-  Args:
-    aa_width: int; active array width.
-    aa_height: int; active array height.
-    coords: coordinates; defined by aruco markers from camera capture.
-    img_width: int; width of image.
-    img_height: int; height of image.
-  Returns:
-    sensor_coords: coordinates; corresponding coorediates on
-      sensor coordinate system.
-  """
-  # TODO: b/330382627 - find out if distortion correction is ON/OFF
-  aa_aspect_ratio = aa_width / aa_height
-  image_aspect_ratio = img_width / img_height
-  if aa_aspect_ratio >= image_aspect_ratio:
-    # If aa aspect ratio is greater than image aspect ratio, then
-    # sensor width is being cropped
-    aspect_ratio_multiplication_factor = aa_height / img_height
-    crop_width = img_width * aspect_ratio_multiplication_factor
-    buffer = (aa_width - crop_width) / 2
-    sensor_coords = (coords[0] * aspect_ratio_multiplication_factor + buffer,
-                     coords[1] * aspect_ratio_multiplication_factor)
-  else:
-    # If aa aspect ratio is less than image aspect ratio, then
-    # sensor height is being cropped
-    aspect_ratio_multiplication_factor = aa_width / img_width
-    crop_height = img_height * aspect_ratio_multiplication_factor
-    buffer = (aa_height - crop_height) / 2
-    sensor_coords = (coords[0] * aspect_ratio_multiplication_factor,
-                     coords[1] * aspect_ratio_multiplication_factor + buffer)
-  logging.debug('Sensor coordinates: %s', sensor_coords)
-  return sensor_coords
-
-
 def _define_metering_regions(img, img_path, chart_path, props, width, height):
   """Define 4 metering rectangles for AE/AWB regions based on ArUco markers.
 
@@ -110,13 +68,13 @@ def _define_metering_regions(img, img_path, chart_path, props, width, height):
   aa = props['android.sensor.info.activeArraySize']
   aa_width, aa_height = aa['right'] - aa['left'], aa['bottom'] - aa['top']
   logging.debug('Active array size: %s', aa)
-  sc_tl = _convert_image_coords_to_sensor_coords(
+  sc_tl = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, tl, width, height)
-  sc_tr = _convert_image_coords_to_sensor_coords(
+  sc_tr = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, tr, width, height)
-  sc_br = _convert_image_coords_to_sensor_coords(
+  sc_br = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, br, width, height)
-  sc_bl = _convert_image_coords_to_sensor_coords(
+  sc_bl = image_processing_utils.convert_image_coords_to_sensor_coords(
       aa_width, aa_height, bl, width, height)
 
   # Define AE/AWB regions through ArUco markers' positions
