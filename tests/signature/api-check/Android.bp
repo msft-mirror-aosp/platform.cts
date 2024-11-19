@@ -30,6 +30,7 @@ java_library {
     srcs: ["src/java/**/*.java"],
     sdk_version: "test_current",
     static_libs: [
+        "junit",
         "cts-signature-common",
         "repackaged.android.test.base",
         "repackaged.android.test.runner",
