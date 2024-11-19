@@ -70,7 +70,7 @@ public class ClipDescriptionTest {
 
         // Clear any dialogs and launch an activity as focus is needed to access clipboard.
         mUiDevice.pressHome();
-        mUiDevice.pressBack();
+        //mUiDevice.pressBack();
         launchActivity(MockActivity.class);
     }
 
