@@ -45,6 +45,11 @@ filegroup {
     ],
 }
 
+filegroup {
+    name: "cts-wm-window-policy-test-base",
+    srcs: ["src/android/server/wm/window/WindowPolicyTestBase.java"],
+}
+
 java_defaults {
     name: "CtsWindowManagerDeviceDefault",
 

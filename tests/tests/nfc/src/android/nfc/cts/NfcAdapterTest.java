@@ -888,6 +888,10 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeUpdated() {
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
@@ -1028,5 +1032,34 @@ public class NfcAdapterTest {
                 .thenReturn(PackageManager.PERMISSION_DENIED);
         doThrow(new SecurityException()).when(mContext)
                 .enforceCallingOrSelfPermission(eq(permission), anyString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
+        when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAppPreferenceSupported();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
     }
 }
