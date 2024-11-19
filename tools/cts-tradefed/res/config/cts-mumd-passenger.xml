@@ -159,7 +159,6 @@
     <option name="compatibility:include-filter" value="CtsMatchFlagTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaAudioPermissionTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases" />
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaCodecTestCases" />
     <option name="compatibility:include-filter" value="CtsMediaCUJLargeTest" />
     <option name="compatibility:include-filter" value="CtsMediaCUJSmallTest" />
@@ -251,7 +250,6 @@
     <option name="compatibility:include-filter" value="CtsProcessTest" />
     <option name="compatibility:include-filter" value="CtsProtoTestCases" />
     <option name="compatibility:include-filter" value="CtsProviderTestCases" />
-    <option name="compatibility:include-filter" value="CtsProviderUiTestCases" />
     <option name="compatibility:include-filter" value="CtsQuickAccessWalletTestCases" />
     <option name="compatibility:include-filter" value="CtsRenderscriptTestCases" />
     <option name="compatibility:include-filter" value="CtsResolverServiceTestCases" />
