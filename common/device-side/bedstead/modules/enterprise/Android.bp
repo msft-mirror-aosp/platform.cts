@@ -34,6 +34,7 @@ android_library {
         "bedstead-testapps",
         "bedstead-accounts",
     ],
+    plugins: ["auto_annotation_plugin"],
 }
 
 android_test {

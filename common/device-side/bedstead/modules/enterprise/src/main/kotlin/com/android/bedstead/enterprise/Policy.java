@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier;
+package com.android.bedstead.enterprise;
 
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
@@ -64,6 +64,10 @@ import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requ
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUser;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUser;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DynamicParameterizedAnnotation;
+import com.android.bedstead.harrier.EnterprisePolicyWrapper;
+import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
