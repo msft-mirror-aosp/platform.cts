@@ -63,8 +63,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
-        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "current",
@@ -115,6 +113,7 @@ android_test {
     test_suites: [
         "general-tests",
         "cts",
+        "mts-media",
         "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
