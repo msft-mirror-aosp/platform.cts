@@ -16,6 +16,7 @@
 
 #include <errno.h>
 #include <jni.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sstream>
@@ -378,6 +379,22 @@ static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
     return nullptr;
 }
 
+static jlong nativeBorrowSessionFromJava(JNIEnv* env, jobject, jobject sessionObj) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return 0;
+
+    APerformanceHintSession* session = APerformanceHint_borrowSessionFromJava(env, sessionObj);
+
+    // Test a basic synchronous operation to ensure the session is valid.
+    int32_t pid = getpid();
+    int retval = APerformanceHint_setThreads(session, &pid, 1u);
+    if (retval != 0) {
+        return 0;
+    }
+
+    return reinterpret_cast<jlong>(session);
+}
+
 static JNINativeMethod gMethods[] = {
         {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
         {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
@@ -399,7 +416,8 @@ static JNINativeMethod gMethods[] = {
         {"nativeTestReportActualWorkDuration2WithIllegalArgument", "()Ljava/lang/String;",
          (void*)nativeTestReportActualWorkDuration2WithIllegalArgument},
         {"nativeTestLoadHints", "()Ljava/lang/String;", (void*)nativeTestLoadHints},
-
+        {"nativeBorrowSessionFromJava", "(Landroid/os/PerformanceHintManager$Session;)J",
+        (void*)nativeBorrowSessionFromJava},
 };
 
 int register_android_os_cts_PerformanceHintManagerTest(JNIEnv *env) {

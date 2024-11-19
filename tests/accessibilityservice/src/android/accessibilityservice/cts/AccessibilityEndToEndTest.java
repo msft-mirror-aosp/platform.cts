@@ -1322,12 +1322,17 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_doesNotSendEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;

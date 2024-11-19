@@ -353,6 +353,16 @@ public class PerformanceHintManagerTest {
         }
     }
 
+    @Test
+    // TODO(b/304828176): Support NDK API annotation.
+    @ApiTest(apis = {"APerformanceHint_borrowSessionFromJava"})
+    public void testNativeBorrowSessionFromJava() {
+        Session session = createSession();
+        assumeNotNull(session);
+        long nativeSession = nativeBorrowSessionFromJava(session);
+        assertNotEquals(0, nativeSession);
+    }
+
     private native String nativeTestCreateHintSession();
     private native String nativeTestGetPreferredUpdateRateNanos();
     private native String nativeUpdateTargetWorkDuration();
@@ -364,4 +374,5 @@ public class PerformanceHintManagerTest {
     private native String nativeTestReportActualWorkDuration2();
     private native String nativeTestReportActualWorkDuration2WithIllegalArgument();
     private native String nativeTestLoadHints();
+    private native long nativeBorrowSessionFromJava(Session session);
 }

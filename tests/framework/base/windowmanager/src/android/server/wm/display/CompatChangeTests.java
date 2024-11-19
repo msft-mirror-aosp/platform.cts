@@ -63,6 +63,7 @@ import static android.server.wm.propertycameracompatallowforcerotation.Component
 import static android.server.wm.propertycameracompatallowrefresh.Components.CAMERA_COMPAT_ALLOW_REFRESH_ACTIVITY;
 import static android.server.wm.propertycameracompatenablerefreshviapauseoptin.Components.CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE_OPT_IN_ACTIVITY;
 import static android.server.wm.propertycameracompatenablerefreshviapauseoptout.Components.CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE_OPT_OUT_ACTIVITY;
+import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
 
@@ -97,6 +98,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.server.wm.HelperActivities;
+import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.app.AbstractLifecycleLogActivity;
@@ -810,6 +812,44 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             // be resizeable.
             assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
         }
+    }
+
+    /**
+     * Test that a target sdk >= 36 activity on large screen won't be able to set fixed orientation
+     * and it will be considered as resizable.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_UNIVERSAL_RESIZABLE_BY_DEFAULT)
+    @EnableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
+    @Test
+    public void testUnrestrictedResizability() {
+        assumeTrue("Skipping test: not large screen", isTablet());
+        mObjectTracker.manage(new IgnoreOrientationRequestSession(/* enable */ true));
+
+        final TestActivitySession<HelperActivities.NonResizeablePortraitActivity> session =
+                createManagedTestActivitySession();
+        session.launchTestActivityOnDisplaySync(
+                HelperActivities.NonResizeablePortraitActivity.class, DEFAULT_DISPLAY,
+                WINDOWING_MODE_FULLSCREEN);
+        final HelperActivities.NonResizeablePortraitActivity activity = session.getActivity();
+        mWmState.computeState();
+        final Rect taskBounds = mWmState.getTaskByActivity(
+                NON_RESIZEABLE_PORTRAIT_ACTIVITY).getBounds();
+        assertEquals("Activity must fill task bounds", taskBounds,
+                mWmState.getActivity(NON_RESIZEABLE_PORTRAIT_ACTIVITY).getBounds());
+        // The activity started by requesting a fixed PORTRAIT orientation.
+        // Now change the requested orientation to LANDSCAPE and verify there is
+        // no difference between when the app requests PORTRAIT and LANDSCAPE.
+        activity.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
+        mWmState.computeState();
+        final WindowManagerState.Activity activityRecord =
+                mWmState.getActivity(NON_RESIZEABLE_PORTRAIT_ACTIVITY);
+        assertEquals("Fixed orientation request must not take effect", taskBounds,
+                activityRecord.getBounds());
+        assertEquals("Override orientation must be unspecified",
+                SCREEN_ORIENTATION_UNSPECIFIED, activityRecord.getOverrideOrientation());
+
+        runSizeCompatTestForActivity(NON_RESIZEABLE_PORTRAIT_ACTIVITY, /* resizeRatio */ 2,
+                /* inSizeCompatModeAfterResize */ false);
     }
 
     /**

@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.DeviceConfig;
 import android.util.DisplayMetrics;
@@ -247,10 +248,29 @@ public class PackageInstallerCujTestBase {
     /**
      * Touch outside of the PackageInstaller dialog.
      */
-    public static void touchOutside() {
+    public static void touchOutside() throws Exception {
+        Rect bound = getPackageInstallerDialogBound();
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        getUiDevice().click(displayMetrics.widthPixels / 3, displayMetrics.heightPixels / 10);
+
+        // x is the center of the dialog
+        int x = (bound.left + bound.right) / 2;
+        // y is the maximum of the (display height / 10) and the top of the dialog minus 20 dp
+        int y = Math.max(bound.top - (int) (20 * displayMetrics.density),
+                displayMetrics.heightPixels / 10);
+        Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
+        getUiDevice().click(x, y);
         waitForUiIdle();
+    }
+
+    private static Rect getPackageInstallerDialogBound() {
+        UiObject2 object = getUiDevice().findObject(By.pkg(getPackageInstallerPackageName()));
+        UiObject2 parent = object.getParent();
+        while (parent != null) {
+            object = parent;
+            parent = object.getParent();
+        }
+        logUiObject(object);
+        return object.getVisibleBounds();
     }
 
     /**
@@ -264,15 +284,15 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Get the new BySelector with the package name is {@link #sPackageInstallerPackageName}.
+     * Get the new BySelector with the package name is {@link #getPackageInstallerPackageName()}.
      */
     public static BySelector getPackageInstallerBySelector(BySelector bySelector) {
-        return bySelector.pkg(sPackageInstallerPackageName);
+        return bySelector.pkg(getPackageInstallerPackageName());
     }
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}.
+     * {@link #getPackageInstallerPackageName()}.
      */
     public static UiObject2 findPackageInstallerObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
@@ -281,8 +301,8 @@ public class PackageInstallerCujTestBase {
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
-     * is not null.
+     * {@link #getPackageInstallerPackageName()}. If {@code checkNull} is true, also check the
+     * object is not null.
      */
     public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull)
             throws Exception {
