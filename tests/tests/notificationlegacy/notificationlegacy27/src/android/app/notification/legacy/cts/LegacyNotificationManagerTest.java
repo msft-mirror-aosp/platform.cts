@@ -122,6 +122,9 @@ public class LegacyNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testPrePCannotToggleAlarmsAndMediaTest() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -162,6 +165,9 @@ public class LegacyNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testSetNotificationPolicy_preP_setOldFields() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -185,6 +191,9 @@ public class LegacyNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testSetNotificationPolicy_preP_setNewFields() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -301,6 +310,9 @@ public class LegacyNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testSetNotificationPolicy_preP_setOldNewFields() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
