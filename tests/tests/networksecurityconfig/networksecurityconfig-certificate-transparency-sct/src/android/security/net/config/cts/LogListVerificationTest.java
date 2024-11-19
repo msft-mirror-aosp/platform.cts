@@ -16,7 +16,11 @@
 
 package android.security.net.config.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -36,9 +40,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.CertificateException;
 import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLHandshakeException;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled({
@@ -50,7 +56,7 @@ public class LogListVerificationTest extends BaseTestCase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final String SCT_PROVIDED_DOMAIN = "https://android.com";
+    private static final String NO_SCT_PROVIDED_DOMAIN = "https://no-sct.badssl.com/";
     private static final int HTTP_OK_RESPONSE_CODE = 200;
 
     // Path copied from com.android.server.net.ct.Config
@@ -59,23 +65,24 @@ public class LogListVerificationTest extends BaseTestCase {
     private static final String CT_ROOT_DIRECTORY_PATH = "/data/misc/keychain/ct/";
 
     @Test
-    public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
+    public void testCTVerification_whenLogListPresent_noSctDomain_exceptionsThrown()
             throws IOException {
         assumeTrue(isLogListFilePresent());
-        URL url = new URL(SCT_PROVIDED_DOMAIN);
+        URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-        urlConnection.connect();
+        SSLHandshakeException expected = assertThrows(SSLHandshakeException.class,
+                () -> urlConnection.connect());
 
-        assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
-        urlConnection.disconnect();
+        assertThat(expected.getCause()).isInstanceOf(CertificateException.class);
+        assertTrue(expected.getMessage().contains("NOT_ENOUGH_SCTS"));
     }
 
     @Test
-    public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws IOException {
+    public void testCTVerification_whenLogListAbsent_noSctDomain_failsOpen() throws IOException {
         // TODO(b/378424118): look into a way to delete log list for this test
         assumeFalse(isLogListFilePresent());
-        URL url = new URL(SCT_PROVIDED_DOMAIN);
+        URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         urlConnection.connect();
