@@ -242,6 +242,22 @@ public final class TestUtils {
     }
 
     /**
+     * Simulates a {@link KeyEvent} event to app.
+     * @param keyCode for the {@link KeyEvent} to inject.
+     * @param instrumentation test {@link Instrumentation} used for injection.
+     */
+    public static void injectKeyEvent(int keyCode, Instrumentation instrumentation)
+            throws Exception {
+        final long timestamp = SystemClock.uptimeMillis();
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_DOWN, keyCode, 0)
+                        , true /* sync */);
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_UP, keyCode, 0)
+                        , true /* sync */);
+    }
+
+    /**
      * Returns given display's rotation.
      */
     public static String getRotation(int displayId) {
