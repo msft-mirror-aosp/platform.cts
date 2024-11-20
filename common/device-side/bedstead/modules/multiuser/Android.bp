@@ -10,15 +10,6 @@ filegroup {
     ],
 }
 
-//TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
-filegroup {
-    name: "bedstead-multiuser-harrier-temporary-srcs",
-    srcs: [
-        "src/main/kotlin/**/*.kt",
-        "src/main/kotlin/**/*.java",
-    ],
-}
-
 android_library {
     name: "bedstead-multiuser",
     srcs: [
@@ -28,7 +19,7 @@ android_library {
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     static_libs: [
-        "Harrier",
+        "HarrierInternal",
         "Nene",
     ],
 }
@@ -43,8 +34,6 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "Harrier",
-        "Nene",
         "bedstead-multiuser",
         "truth",
         "testng", // used for assertThrows
