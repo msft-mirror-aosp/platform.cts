@@ -21,12 +21,16 @@ import static android.app.appsearch.testutil.AppSearchTestUtils.convertSearchRes
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.LongPropertyConfig;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.AppSearchSessionShim;
+import android.app.appsearch.EmbeddingVector;
+import android.app.appsearch.Features;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.PropertyPath;
 import android.app.appsearch.PutDocumentsRequest;
@@ -39,6 +43,11 @@ import android.app.appsearch.ast.operators.AndNode;
 import android.app.appsearch.ast.operators.ComparatorNode;
 import android.app.appsearch.ast.operators.OrNode;
 import android.app.appsearch.ast.operators.PropertyRestrictNode;
+import android.app.appsearch.ast.query.GetSearchStringParameterNode;
+import android.app.appsearch.ast.query.HasPropertyNode;
+import android.app.appsearch.ast.query.PropertyDefinedNode;
+import android.app.appsearch.ast.query.SearchNode;
+import android.app.appsearch.ast.query.SemanticSearchNode;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -59,6 +68,13 @@ import java.util.List;
 public abstract class AbstractSyntaxTreeSearchCtsTestBase {
     static final String DB_NAME_1 = "";
     private AppSearchSessionShim mDb1;
+
+    private static final EmbeddingVector EMBEDDING_1 =
+            new EmbeddingVector(new float[] {1, 1, 1, 1, 2}, "model_v1");
+    private static final EmbeddingVector EMBEDDING_2 =
+            new EmbeddingVector(new float[] {1, 1, 1, 1, 0}, "model_v1");
+    private static final EmbeddingVector EMBEDDING_3 =
+            new EmbeddingVector(new float[] {1, 1, 1, 1, -2}, "model_v1");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -587,5 +603,778 @@ public abstract class AbstractSyntaxTreeSearchCtsTestBase {
                                 .build());
         List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(fooBodyEmail);
+    }
+
+    @Test
+    public void testGetSearchStringParameterNode_toString_retrievesSearchString() throws Exception {
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        AppSearchEmail fooEmail =
+                new AppSearchEmail.Builder("namespace", "id1").setBody("foo").build();
+
+        AppSearchEmail barEmail =
+                new AppSearchEmail.Builder("namespace", "id2").setBody("bar").build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(fooEmail, barEmail)
+                                .build()));
+
+        // Query for the document.
+        GetSearchStringParameterNode getSearchStringParameterNode =
+                new GetSearchStringParameterNode(0);
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        getSearchStringParameterNode.toString(),
+                        new SearchSpec.Builder()
+                                .addSearchStringParameters("foo")
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(documents).containsExactly(fooEmail);
+    }
+
+    @Test
+    public void testHasProperty_toString_returnsDocumentsWithProperty() throws Exception {
+        // Schema Registration
+        AppSearchSchema noBodySchema =
+                new AppSearchSchema.Builder("NoBodySchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA, noBodySchema)
+                                .build())
+                .get();
+
+        GenericDocument noBodyPropertyDoc =
+                new GenericDocument.Builder<>("namespace", "genericId1", "NoBodySchema").build();
+        AppSearchEmail emptyBodyEmail = new AppSearchEmail.Builder("namespace", "emailId1").build();
+        AppSearchEmail nonEmptyBodyEmail =
+                new AppSearchEmail.Builder("namespace", "emailId2").setBody("bar").build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(
+                                        noBodyPropertyDoc, emptyBodyEmail, nonEmptyBodyEmail)
+                                .build()));
+
+        HasPropertyNode hasPropertyNode = new HasPropertyNode(new PropertyPath("body"));
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        hasPropertyNode.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterHasPropertyFunctionEnabled(true)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(documents).containsExactly(nonEmptyBodyEmail);
+    }
+
+    @Test
+    public void testPropertyDefined_toString_returnsDocumentsWithPropertyDefined()
+            throws Exception {
+        // Schema Registration
+        AppSearchSchema noBodySchema =
+                new AppSearchSchema.Builder("NoBodySchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA, noBodySchema)
+                                .build())
+                .get();
+
+        GenericDocument noBodyPropertyDoc =
+                new GenericDocument.Builder<>("namespace", "id1", "NoBodySchema").build();
+        AppSearchEmail emptyBodyEmail = new AppSearchEmail.Builder("namespace", "id2").build();
+        AppSearchEmail nonEmptyBodyEmail =
+                new AppSearchEmail.Builder("namespace", "id3").setBody("bar").build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(
+                                        noBodyPropertyDoc, emptyBodyEmail, nonEmptyBodyEmail)
+                                .build()));
+
+        // Query for the document.
+        PropertyDefinedNode propertyDefinedNode = new PropertyDefinedNode(new PropertyPath("body"));
+
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        propertyDefinedNode.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterHasPropertyFunctionEnabled(true)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).containsExactly(emptyBodyEmail, nonEmptyBodyEmail);
+    }
+
+    @Test
+    public void testSearchNode_toString_noPropertyRestricts_retrievesSameDocuments()
+            throws Exception {
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        AppSearchEmail barBodyEmail =
+                new AppSearchEmail.Builder("namespace", "id0").setBody("bar").build();
+
+        AppSearchEmail fooBodyEmail =
+                new AppSearchEmail.Builder("namespace", "id1").setBody("foo").build();
+
+        AppSearchEmail fooFromEmail =
+                new AppSearchEmail.Builder("namespace", "id2")
+                        .setFrom("foo")
+                        .setTo("baz")
+                        .setBody("bar")
+                        .build();
+        AppSearchEmail fooToEmail =
+                new AppSearchEmail.Builder("namespace", "id3").setFrom("baz").setTo("foo").build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(
+                                        barBodyEmail, fooBodyEmail, fooFromEmail, fooToEmail)
+                                .build()));
+
+        // Query for the document
+        TextNode body = new TextNode("foo");
+        SearchNode search = new SearchNode(body);
+
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        search.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).containsExactly(fooBodyEmail, fooFromEmail, fooToEmail);
+    }
+
+    @Test
+    public void testSearchNode_toString_hasPropertyRestricts_retrievesDocumentsWithProperty()
+            throws Exception {
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        AppSearchEmail fooBodyEmail =
+                new AppSearchEmail.Builder("namespace", "id1").setBody("foo").build();
+
+        AppSearchEmail fooFromEmail =
+                new AppSearchEmail.Builder("namespace", "id2").setFrom("foo").setTo("baz").build();
+        AppSearchEmail fooToEmail =
+                new AppSearchEmail.Builder("namespace", "id3").setFrom("baz").setTo("foo").build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(fooBodyEmail, fooFromEmail, fooToEmail)
+                                .build()));
+
+        // Query for the document
+        TextNode body = new TextNode("foo");
+        List<PropertyPath> properties = List.of(new PropertyPath("from"), new PropertyPath("to"));
+        SearchNode search = new SearchNode(body, properties);
+
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        search.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).containsExactly(fooFromEmail, fooToEmail);
+    }
+
+    @Test
+    public void testSearchNode_toString_handlesStringLiterals() throws Exception {
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("VerbatimSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("verbatimProp")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                        .setVerbatimSearchEnabled(true)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+
+        GenericDocument doc =
+                new GenericDocument.Builder<>("namespace", "id1", "VerbatimSchema")
+                        .setPropertyString("verbatimProp", "Hello, world!")
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc).build()));
+
+        // Check that searching using the query without setting it as a verbatim returns nothing.
+        TextNode nonVerbatimQuery = new TextNode("Hello, world!");
+        SearchNode searchNode = new SearchNode(nonVerbatimQuery);
+        SearchResultsShim emptySearchResults = mDb1.search(searchNode.toString(), searchSpec);
+        List<GenericDocument> emptyDocuments = convertSearchResultsToDocuments(emptySearchResults);
+        assertThat(emptyDocuments).isEmpty();
+
+        // Now check that search using the query with setting it as a verbatim returns the document.
+        TextNode verbatimQuery = new TextNode("Hello, world!");
+        verbatimQuery.setVerbatim(true);
+        searchNode.setChild(verbatimQuery);
+        SearchResultsShim searchResults = mDb1.search(searchNode.toString(), searchSpec);
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).containsExactly(doc);
+    }
+
+    @Test
+    public void testSearchNode_toString_handlesPrefixedStringLiterals() throws Exception {
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("VerbatimSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("verbatimProp")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                        .setVerbatimSearchEnabled(true)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+
+        GenericDocument doc =
+                new GenericDocument.Builder<>("namespace", "id1", "VerbatimSchema")
+                        .setPropertyString("verbatimProp", "Hello, world!")
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc).build()));
+
+        // Check that searching using the verbatim query without setting it as a prefix returns
+        // nothing.
+        TextNode nonPrefixedVerbatimQuery = new TextNode("Hello, wor");
+        nonPrefixedVerbatimQuery.setVerbatim(true);
+        SearchNode searchNode = new SearchNode(nonPrefixedVerbatimQuery);
+        SearchResultsShim emptySearchResults = mDb1.search(searchNode.toString(), searchSpec);
+        List<GenericDocument> emptyDocuments = convertSearchResultsToDocuments(emptySearchResults);
+        assertThat(emptyDocuments).isEmpty();
+
+        // Check that Prefixed Verbatim Queries returns the document
+        TextNode prefixedVerbatimQuery = new TextNode("Hello, wor");
+        prefixedVerbatimQuery.setVerbatim(true);
+        prefixedVerbatimQuery.setPrefix(true);
+        searchNode.setChild(prefixedVerbatimQuery);
+        SearchResultsShim prefixedSearchResults = mDb1.search(searchNode.toString(), searchSpec);
+        List<GenericDocument> prefixDocuments =
+                convertSearchResultsToDocuments(prefixedSearchResults);
+        assertThat(prefixDocuments).containsExactly(doc);
+    }
+
+    @Test
+    public void testSearchNode_toString_handlesNestedSearch() throws Exception {
+        // Schema Registration
+        AppSearchSchema verbatimSchema =
+                new AppSearchSchema.Builder("VerbatimSchema")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("from")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("to")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(
+                                                StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(AppSearchEmail.SCHEMA, verbatimSchema)
+                                .build())
+                .get();
+
+        GenericDocument fooBodyEmail =
+                new GenericDocument.Builder<>("namespace", "id1", "VerbatimSchema")
+                        .setPropertyString("body", "foo")
+                        .build();
+        GenericDocument fooFromEmail =
+                new GenericDocument.Builder<>("namespace", "id2", "VerbatimSchema")
+                        .setPropertyString("from", "foo")
+                        .setPropertyString("to", "bar")
+                        .build();
+        GenericDocument fooToEmail =
+                new GenericDocument.Builder<>("namespace", "id3", "VerbatimSchema")
+                        .setPropertyString("from", "bar")
+                        .setPropertyString("to", "foo")
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(fooBodyEmail, fooFromEmail, fooToEmail)
+                                .build()));
+
+        // Check that the nested query returns the correct document.
+        TextNode body = new TextNode("foo");
+        body.setVerbatim(true);
+        List<PropertyPath> properties = List.of(new PropertyPath("from"), new PropertyPath("to"));
+        SearchNode nestedSearch = new SearchNode(body, properties);
+        SearchResultsShim nestedSearchResults =
+                mDb1.search(
+                        nestedSearch.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .setVerbatimSearchEnabled(true)
+                                .build());
+        List<GenericDocument> nestedDocuments =
+                convertSearchResultsToDocuments(nestedSearchResults);
+        assertThat(nestedDocuments).containsExactly(fooFromEmail, fooToEmail);
+
+        // Now check that the outer query returns the same documents as the nested query.
+        SearchNode searchNode = new SearchNode(nestedSearch);
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        searchNode.toString(),
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .setListFilterQueryLanguageEnabled(true)
+                                .setVerbatimSearchEnabled(true)
+                                .build());
+        List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
+        assertThat(documents).isEqualTo(nestedDocuments);
+    }
+
+    @Test
+    public void testSemanticSearchNode_toString_allDefaults_returnsDocuments() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding3")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding2", EMBEDDING_2)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .build();
+
+        GenericDocument doc3 = new GenericDocument.Builder<>("namespace", "id3", "Email").build();
+
+        GenericDocument doc4 =
+                new GenericDocument.Builder<>("namespace", "id4", "Email")
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(new float[] {1, 2, 3}, "model_v2"))
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc0, doc1, doc2, doc3, doc4)
+                                .build()));
+        // Matched embeddings for each doc are:
+        // - document 0: -2 (embedding 1), 0 (embedding 2), 2 (embedding 3)
+        // - document 1: -2 (embedding 1), 2 (embedding 3)
+        // - document 2: -2 (embedding 1)
+        // - document 3: (No embedding vectors)
+        // - document 4: (No embedding vectors that share the model signature with searchEmbedding)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "model_v1");
+
+        // Matched embeddings for each doc are:
+        // - document 0: -2 (embedding 1), 0 (embedding 2), 2 (embedding 3)
+        // - document 1: -2 (embedding 1), 2 (embedding 3)
+        // - document 2: -2 (embedding 1)
+        // - document 3:
+        // - document 4:
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SemanticSearchNode semanticSearchNode = new SemanticSearchNode(0);
+
+        SearchResultsShim searchResults = mDb1.search(semanticSearchNode.toString(), searchSpec);
+        List<GenericDocument> results = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(results).containsExactly(doc0, doc1, doc2);
+    }
+
+    @Test
+    public void testSemanticSearchNode_toString_lowerBoundSet_returnsDocuments() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding3")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding2", EMBEDDING_2)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc0, doc1, doc2)
+                                .build()));
+        // Matched embeddings for each doc are:
+        // - document 0: -2 (embedding 1), 0 (embedding 2), 2 (embedding 3)
+        // - document 1: -2 (embedding 1), 2 (embedding 3)
+        // - document 2: -2 (embedding 1)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "model_v1");
+
+        // Matched embeddings for each doc after filtering are:
+        // - document 0: 0 (embedding 2), 2 (embedding 3)
+        // - document 1: 2 (embedding 3)
+        // - document 2:
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SemanticSearchNode semanticSearchNode = new SemanticSearchNode(0, -1);
+
+        SearchResultsShim searchResults = mDb1.search(semanticSearchNode.toString(), searchSpec);
+        List<GenericDocument> results = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(results).containsExactly(doc0, doc1);
+    }
+
+    @Test
+    public void testSemanticSearchNode_toString_boundsSet_returnsDocuments() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding3")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding2", EMBEDDING_2)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc0, doc1, doc2)
+                                .build()));
+        // Matched embeddings for each doc are:
+        // - document 0: -2 (embedding 1), 0 (embedding 2), 2 (embedding 3)
+        // - document 1: -2 (embedding 1), 2 (embedding 3)
+        // - document 2: -2 (embedding 1)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "model_v1");
+
+        // Matched embeddings for each doc after filtering are:
+        // - document 0: 0 (embedding 2)
+        // - document 1:
+        // - document 2:
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SemanticSearchNode semanticSearchNode = new SemanticSearchNode(0, -1, 0.1f);
+
+        SearchResultsShim searchResults = mDb1.search(semanticSearchNode.toString(), searchSpec);
+        List<GenericDocument> results = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(results).containsExactly(doc0);
+    }
+
+    @Test
+    public void testSemanticSearchNode_toString_noDefaults_returnsDocuments() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding3")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding2", EMBEDDING_2)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .setPropertyEmbedding("embedding3", EMBEDDING_3)
+                        .build();
+
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "Email")
+                        .setPropertyEmbedding("embedding1", EMBEDDING_1)
+                        .build();
+
+        GenericDocument doc3 =
+                new GenericDocument.Builder<>("namespace", "id3", "Email")
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(new float[] {1, -1, -1, 1, -1.05f}, "model_v1"))
+                        .build();
+
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc0, doc1, doc2, doc3)
+                                .build()));
+        // Matched embeddings for each doc are:
+        // - document 0: 3 (embedding 1), 3 (embedding 2), 4.123106 (embedding 3)
+        // - document 1: 3 (embedding 1), 4.123106 (embedding 3)
+        // - document 2: 3 (embedding 1)
+        // - document 3: 0.05 (embedding 3)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "model_v1");
+
+        // Matched embeddings for each doc are:
+        // - document 0:
+        // - document 1:
+        // - document 2:
+        // - document 3: 0.05
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SemanticSearchNode semanticSearchNode =
+                new SemanticSearchNode(
+                        0, -1, 0.1f, SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_EUCLIDEAN);
+
+        SearchResultsShim searchResults = mDb1.search(semanticSearchNode.toString(), searchSpec);
+        List<GenericDocument> results = convertSearchResultsToDocuments(searchResults);
+
+        assertThat(results).containsExactly(doc3);
     }
 }

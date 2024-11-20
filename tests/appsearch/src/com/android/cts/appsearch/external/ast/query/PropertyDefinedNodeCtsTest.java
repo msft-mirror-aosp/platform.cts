@@ -39,6 +39,17 @@ public class PropertyDefinedNodeCtsTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
+    public void testEquals_identical() {
+        PropertyDefinedNode propertyDefinedOne =
+                new PropertyDefinedNode(new PropertyPath("example.property.path"));
+        PropertyDefinedNode propertyDefinedTwo =
+                new PropertyDefinedNode(new PropertyPath("example.property.path"));
+
+        assertThat(propertyDefinedOne).isEqualTo(propertyDefinedTwo);
+        assertThat(propertyDefinedOne.hashCode()).isEqualTo(propertyDefinedTwo.hashCode());
+    }
+
+    @Test
     public void testConstructor_throwsOnNullPointer() {
         assertThrows(NullPointerException.class, () -> new PropertyDefinedNode(null));
     }
@@ -111,5 +122,17 @@ public class PropertyDefinedNodeCtsTest {
         propertyDefinedNode.setProperty(anotherProperty);
 
         assertThat(propertyDefinedNode.getProperty()).isEqualTo(anotherProperty);
+    }
+
+    @Test
+    public void testToString_returnsCorrectString() {
+        List<PropertyPath.PathSegment> pathSegmentList =
+                List.of(
+                        PropertyPath.PathSegment.create("property"),
+                        PropertyPath.PathSegment.create("path"));
+        PropertyPath propertyPath = new PropertyPath(pathSegmentList);
+        PropertyDefinedNode propertyDefinedNode = new PropertyDefinedNode(propertyPath);
+
+        assertThat(propertyDefinedNode.toString()).isEqualTo("propertyDefined(\"property.path\")");
     }
 }
