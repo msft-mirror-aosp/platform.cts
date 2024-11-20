@@ -1531,8 +1531,6 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
-    // TODO(b/372861776): Add tests for enabling dependency installer once the changes for installer
-    // behavior have been merged.
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testInstallAppWithoutDependantSdk_dependencyInstallerDisabled_failsLater()
@@ -1547,6 +1545,28 @@ public class PackageManagerShellCommandInstallTest {
                     /*enableAutoInstallDependencies=*/false,
                     /*expectedStatus=*/null,
                     "Reconcile failed");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallAppWithoutDependantSdk_dependencyInstallerEnabled_succeeds()
+            throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+
+        getUiAutomation().adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES);
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/true,
+                    /*expectedStatus=*/PackageInstaller.STATUS_SUCCESS,
+                    "INSTALL_SUCCEEDED");
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
