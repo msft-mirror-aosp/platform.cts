@@ -37,6 +37,7 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
+import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
@@ -717,7 +718,9 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
-            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
+            assertThat(entries).isNotNull();
+            entries.getFirst().getType();
             nfcOemExtension.forceRoutingTableCommit();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
