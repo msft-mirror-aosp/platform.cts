@@ -18,6 +18,7 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -48,25 +49,31 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.SatelliteAccessConfiguration;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
+import android.telephony.satellite.SatelliteInfo;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
+import android.telephony.satellite.SatellitePosition;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
+import android.telephony.satellite.SystemSelectionSpecifier;
 import android.text.TextUtils;
+import android.util.IntArray;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.UwbManager;
@@ -78,12 +85,14 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 public class SatelliteManagerTestBase {
     protected static String TAG = "SatelliteManagerTestBase";
@@ -866,7 +875,10 @@ public class SatelliteManagerTestBase {
     protected static class SatelliteCommunicationAllowedStateCallbackTest implements
             SatelliteCommunicationAllowedStateCallback {
         public boolean isAllowed = false;
+        @Nullable
+        private SatelliteAccessConfiguration mSatelliteAccessConfiguration;
         private final Semaphore mSemaphore = new Semaphore(0);
+        private final Semaphore mSatelliteAccessConfigurationChangedSemaphore = new Semaphore(0);
 
         @Override
         public void onSatelliteCommunicationAllowedStateChanged(boolean allowed) {
@@ -877,6 +889,20 @@ public class SatelliteManagerTestBase {
                 mSemaphore.release();
             } catch (Exception e) {
                 loge("onSatelliteCommunicationAllowedStateChanged: Got exception, ex=" + e);
+            }
+        }
+
+        @Override
+        public void onSatelliteAccessConfigurationChanged(
+                @Nullable SatelliteAccessConfiguration satelliteAccessConfiguration) {
+            logd("onSatelliteAccessConfigurationChanged: satelliteAccessConfiguration="
+                    + satelliteAccessConfiguration);
+            mSatelliteAccessConfiguration = satelliteAccessConfiguration;
+
+            try {
+                mSatelliteAccessConfigurationChangedSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteAccessConfigurationChanged: Got exception, ex=" + e);
             }
         }
 
@@ -895,8 +921,33 @@ public class SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilSatelliteAccessConfigurationChangedEvent(
+                int expectedNumberOfEvents) {
+            logd("waitUntilSatelliteAccessConfigurationChangedEvent");
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(TIMEOUT,
+                            TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive "
+                                + "waitUntilSatelliteAccessConfigurationChangedEvent");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("waitUntilSatelliteAccessConfigurationChangedEvent: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void drainPermits() {
             mSemaphore.drainPermits();
+            mSatelliteAccessConfigurationChangedSemaphore.drainPermits();
+        }
+
+        @Nullable
+        public SatelliteAccessConfiguration getSatelliteAccessConfiguration() {
+            return mSatelliteAccessConfiguration;
         }
     }
 
@@ -1958,5 +2009,117 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+    }
+
+    protected List<SatelliteAccessConfiguration> getExpectedSatelliteConfiguration() {
+        UUID uuid1 = UUID.fromString("0db0312f-d73f-444d-b99b-a893dfb42edf");
+        SatellitePosition satellitePosition1 = new SatellitePosition(-150.3, 35786000);
+        List<Integer> bandList1 = new ArrayList<>(List.of(259, 260));
+        EarfcnRange earfcnRange1 = new EarfcnRange(3000, 4300);
+        List<Integer> tagIdList1 = new ArrayList<>(List.of(6, 7, 8));
+
+        SatelliteInfo satelliteInfo1 = new SatelliteInfo(uuid1, satellitePosition1, bandList1,
+                new ArrayList<>(List.of(earfcnRange1)));
+
+        SatelliteAccessConfiguration configuration1 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo1)), tagIdList1);
+
+        UUID uuid2 = UUID.fromString("1dec24f8-9223-4196-ad7a-a03002db7af7");
+        SatellitePosition satellitePosition2 = new SatellitePosition(15.5, 35786000);
+        List<Integer> bandList2 = new ArrayList<>(List.of(257, 258));
+        EarfcnRange earfcnRange2 = new EarfcnRange(3200, 3200);
+        List<Integer> tagIdList2 = new ArrayList<>(List.of(9, 10, 11));
+
+        SatelliteInfo satelliteInfo2 = new SatelliteInfo(uuid2, satellitePosition2, bandList2,
+                new ArrayList<>(List.of(earfcnRange2)));
+
+        SatelliteAccessConfiguration configuration2 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
+
+        UUID uuid3 = UUID.fromString("f60cb479-d85b-4f4e-b050-cc428f5eb4a4");
+        SatellitePosition satellitePosition3 = new SatellitePosition(-150, 35786000);
+        List<Integer> bandList3 = new ArrayList<>(List.of(259, 260));
+        EarfcnRange earfcnRange3 = new EarfcnRange(3300, 3400);
+        List<Integer> tagIdList3 = new ArrayList<>(List.of(12, 13, 14));
+
+        SatelliteInfo satelliteInfo3 = new SatelliteInfo(uuid3, satellitePosition3, bandList3,
+                new ArrayList<>(List.of(earfcnRange3)));
+
+        SatelliteAccessConfiguration configuration3 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo3)), tagIdList3);
+
+        UUID uuid4 = UUID.fromString("c5837d96-9585-46aa-8dd0-a974583737fb");
+        SatellitePosition satellitePosition4 = new SatellitePosition(-155, 35786000);
+        List<Integer> bandList4 = new ArrayList<>(List.of(261, 262));
+        EarfcnRange earfcnRange4 = new EarfcnRange(3500, 3600);
+        List<Integer> tagIdList4 = new ArrayList<>(List.of(15, 16, 17));
+
+        SatelliteInfo satelliteInfo4 = new SatelliteInfo(uuid4, satellitePosition4, bandList4,
+                new ArrayList<>(List.of(earfcnRange4)));
+
+        SatelliteAccessConfiguration configuration4 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo4)), tagIdList4);
+
+        UUID uuid5 = UUID.fromString("6ef2a128-0477-4271-895f-dc4a221d2b23");
+        SatellitePosition satellitePosition5 = new SatellitePosition(-66, 35786000);
+        List<Integer> bandList5 = new ArrayList<>(List.of(263, 264));
+        EarfcnRange earfcnRange5 = new EarfcnRange(3700, 3800);
+        List<Integer> tagIdList5 = new ArrayList<>(List.of(18, 19, 20));
+
+        SatelliteInfo satelliteInfo5 = new SatelliteInfo(uuid5, satellitePosition5, bandList5,
+                new ArrayList<>(List.of(earfcnRange5)));
+
+        SatelliteAccessConfiguration configuration5 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo5)), tagIdList5);
+
+        return new ArrayList<>(
+                List.of(configuration1, configuration2, configuration3, configuration4,
+                        configuration5));
+    }
+
+    protected void verifySatelliteAccessConfiguration(
+            @NonNull SatelliteAccessConfiguration expectedConfiguration,
+            @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier) {
+
+        List<SatelliteInfo> expectedSatelliteInfos =
+                expectedConfiguration.getSatelliteInfos();
+        List<Integer> expectedBandList = new ArrayList<>();
+        List<Integer> expectedEarfcnList = new ArrayList<>();
+        for (SatelliteInfo expectedSatelliteInfo : expectedSatelliteInfos) {
+            expectedBandList.addAll(expectedSatelliteInfo.getBands());
+            List<EarfcnRange> earfcnRangeList = expectedSatelliteInfo.getEarfcnRanges();
+            earfcnRangeList.stream().flatMapToInt(
+                    earfcnRange -> IntStream.of(earfcnRange.getStartEarfcn(),
+                            earfcnRange.getEndEarfcn())).boxed().forEach(expectedEarfcnList::add);
+        }
+
+        IntArray actualBands = actualSystemSelectionSpecifier.getBands();
+        List<Integer> actualBandList =  IntStream.range(0, actualBands.size())
+                .map(actualBands::get)
+                .boxed()
+                .toList();
+
+        IntArray actualEarfcns = actualSystemSelectionSpecifier.getEarfcns();
+        List<Integer> actualEarfcnList =  IntStream.range(0, actualEarfcns.size())
+                .map(actualEarfcns::get)
+                .boxed()
+                .toList();
+
+        SatelliteInfo[] expectedSatelliteInfoArray =
+                expectedConfiguration.getSatelliteInfos().toArray(new SatelliteInfo[0]);
+        SatelliteInfo[] actualSatelliteInfoArray =
+                actualSystemSelectionSpecifier.getSatelliteInfos();
+
+        List<Integer> expectedTagIdList = expectedConfiguration.getTagIds();
+        IntArray actualTagIdArray = actualSystemSelectionSpecifier.getTagIds();
+        List<Integer> actualTagIdList =  IntStream.range(0, actualTagIdArray.size())
+                .map(actualTagIdArray::get)
+                .boxed()
+                .toList();
+
+        assertEquals(expectedBandList, actualBandList);
+        assertEquals(expectedEarfcnList, actualEarfcnList);
+        assertArrayEquals(expectedSatelliteInfoArray, actualSatelliteInfoArray);
+        assertEquals(expectedTagIdList, actualTagIdList);
     }
 }
