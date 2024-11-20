@@ -75,7 +75,7 @@ android_library {
 }
 
 android_library {
-    name: "HarrierInternal",
+    name: "Harrier",
     sdk_version: "system_current",
 
     srcs: [
@@ -83,11 +83,21 @@ android_library {
         "src/main/java/**/*.kt",
         // TODO(329826539): Move this into a separate target
         ":bedstead-permissions-harrier-srcs",
+
+        //TODO(b/336991736) below lines are temporary for compatibility with other repositories
+        ":bedstead-enterprise-harrier-temporary-srcs",
+
+        //TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
+        ":bedstead-multiuser-harrier-temporary-srcs",
+
+        ":bedstead-testapps-harrier-temporary-srcs",
+        ":bedstead-accounts-harrier-temporary-srcs",
     ],
 
     static_libs: [
         "Nene",
-        "EventLib",
+        "RemoteDPC",
+        "RemoteAccountAuthenticator",
         "HarrierCommonAndroid",
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
@@ -99,19 +109,6 @@ android_library {
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     plugins: ["auto_annotation_plugin"],
-}
-
-android_library {
-    name: "bedstead",
-    sdk_version: "system_current",
-
-    static_libs: [
-        "HarrierInternal",
-        "bedstead-multiuser",
-    ],
-
-    manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "29",
 }
 
 android_test {
@@ -127,9 +124,7 @@ android_test {
     ],
     static_libs: [
         "Nene",
-        "bedstead",
-        "bedstead-enterprise",
-        "bedstead-root",
+        "Harrier",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
