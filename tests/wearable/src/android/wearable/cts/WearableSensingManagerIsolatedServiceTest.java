@@ -107,6 +107,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -685,37 +686,45 @@ public class WearableSensingManagerIsolatedServiceTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void removeConnection_connectionPreviouslyProvidedAndNotYetRemoved_returnsTrue() {
+    public void removeConnection_connectionPreviouslyProvidedAndNotYetRemoved_noException() {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
         verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
 
-        assertThat(mWearableSensingManager.removeConnection(mWearableConnection0)).isTrue();
+        mWearableSensingManager.removeConnection(mWearableConnection0);
+        // no exception
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void removeConnection_connectionNotPreviouslyProvided_returnsFalse() {
-        assertThat(mWearableSensingManager.removeConnection(mWearableConnection0)).isFalse();
+    public void removeConnection_connectionNotPreviouslyProvided_throwsNoSuchElementException() {
+        assertThrows(
+                NoSuchElementException.class,
+                () -> mWearableSensingManager.removeConnection(mWearableConnection0));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void removeConnection_connectionAlreadyRemoved_returnsFalse() {
+    public void removeConnection_connectionAlreadyRemoved_throwsNoSuchElementException() {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
         verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
         mWearableSensingManager.removeConnection(mWearableConnection0);
 
-        assertThat(mWearableSensingManager.removeConnection(mWearableConnection0)).isFalse();
+        assertThrows(
+                NoSuchElementException.class,
+                () -> mWearableSensingManager.removeConnection(mWearableConnection0));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
-    public void removeConnection_connectionAlreadyRemovedFromRemoveAll_returnsFalse() {
+    public void
+            removeConnection_connectionAlreadyRemovedFromRemoveAll_throwsNoSuchElementException() {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
         verify(mMockStatusConsumer0, timeout(2000)).accept(WearableSensingManager.STATUS_SUCCESS);
         mWearableSensingManager.removeAllConnections();
 
-        assertThat(mWearableSensingManager.removeConnection(mWearableConnection0)).isFalse();
+        assertThrows(
+                NoSuchElementException.class,
+                () -> mWearableSensingManager.removeConnection(mWearableConnection0));
     }
 
     @Test
@@ -810,7 +819,9 @@ public class WearableSensingManagerIsolatedServiceTest {
                 .isEqualTo(quotaAfterProvidingThreeConnections + 1);
 
         // Removing an already removed connection does not further increase quota
-        mWearableSensingManager.removeConnection(mWearableConnection1);
+        assertThrows(
+                NoSuchElementException.class,
+                () -> mWearableSensingManager.removeConnection(mWearableConnection1));
         assertThat(mWearableSensingManager.getAvailableConnectionCount())
                 .isEqualTo(quotaAfterProvidingThreeConnections + 1);
 
