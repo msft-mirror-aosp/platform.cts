@@ -718,6 +718,7 @@ public class NfcAdapterTest {
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
             assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            nfcOemExtension.forceRoutingTableCommit();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
@@ -820,11 +821,11 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onEnable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onEnableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
-        public void onDisable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onDisableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
@@ -856,7 +857,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onRoutingChanged() {
+        public void onRoutingChanged(@NonNull Consumer<Boolean> isSkipped) {
         }
 
         @Override
@@ -887,6 +888,10 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeUpdated() {
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
@@ -914,6 +919,11 @@ public class NfcAdapterTest {
 
         @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
+        }
+
+        @Override
+        public void onExtractOemPackages(@NonNull NdefMessage message,
+                @NonNull Consumer<List<String>> packageConsumer) {
         }
     }
 
@@ -1022,5 +1032,34 @@ public class NfcAdapterTest {
                 .thenReturn(PackageManager.PERMISSION_DENIED);
         doThrow(new SecurityException()).when(mContext)
                 .enforceCallingOrSelfPermission(eq(permission), anyString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
+        when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAppPreferenceSupported();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
     }
 }

@@ -26,6 +26,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.cts.kernelinfo.KernelInfo;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +65,8 @@ public class SonyDualshock4BluetoothTest extends InputHidTestCase {
     }
 
     @Test
+    @Ignore("b/330522990 introduced changes in a QPR, and the test cannot be made permissive to "
+            + "both behaviours, so it's disabled on Android 15.")
     public void testAllTouch() throws Throwable {
         assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
                 KernelInfo.isKernelVersionGreaterThan("6.2"));

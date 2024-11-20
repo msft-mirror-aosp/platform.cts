@@ -16,14 +16,9 @@
 
 package android.virtualdevice.cts.common;
 
-import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
-import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
 import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
-import static android.graphics.ImageFormat.YUV_420_888;
-import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 
-import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -40,9 +35,6 @@ import android.companion.AssociationInfo;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.VirtualCamera;
-import android.companion.virtual.camera.VirtualCameraCallback;
-import android.companion.virtual.camera.VirtualCameraConfig;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -70,8 +62,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -469,53 +459,4 @@ public class VirtualDeviceRule implements TestRule {
         }
     }
 
-    /**
-     * Internal rule that checks whether virtual camera is supported by the device, before executing
-     * any test.
-     */
-    private static final class VirtualCameraSupportRule extends ExternalResource {
-        private static final int VIRTUAL_CAMERA_SUPPORT_UNKNOWN = 0;
-        private static final int VIRTUAL_CAMERA_SUPPORT_AVAILABLE = 1;
-        private static final int VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE = 2;
-
-        @Mock
-        private VirtualCameraCallback mVirtualCameraCallback;
-
-        private final VirtualDeviceRule mVirtualDeviceRule;
-        private int mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_UNKNOWN;
-
-        private VirtualCameraSupportRule(VirtualDeviceRule virtualDeviceRule) {
-            mVirtualDeviceRule = virtualDeviceRule;
-        }
-
-        @Override
-        protected void before() {
-            MockitoAnnotations.initMocks(this);
-            assumeTrue("Virtual camera not available on this device",
-                    getVirtualCameraSupport() == VIRTUAL_CAMERA_SUPPORT_AVAILABLE);
-        }
-
-        private int getVirtualCameraSupport() {
-            if (mVirtualCameraSupport != VIRTUAL_CAMERA_SUPPORT_UNKNOWN) {
-                return mVirtualCameraSupport;
-            }
-
-            try (VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(
-                    new VirtualDeviceParams.Builder().setDevicePolicy(POLICY_TYPE_CAMERA,
-                            DEVICE_POLICY_CUSTOM).build())) {
-                VirtualCameraConfig config = new VirtualCameraConfig.Builder("dummycam")
-                        .setVirtualCameraCallback(getApplicationContext().getMainExecutor(),
-                                mVirtualCameraCallback)
-                        .addStreamConfig(640, 480, YUV_420_888, 30)
-                        .setLensFacing(LENS_FACING_BACK)
-                        .build();
-                try (VirtualCamera ignored = virtualDevice.createVirtualCamera(config)) {
-                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_AVAILABLE;
-                } catch (UnsupportedOperationException e) {
-                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE;
-                }
-            }
-            return mVirtualCameraSupport;
-        }
-    }
 }
