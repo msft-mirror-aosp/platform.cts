@@ -2031,7 +2031,8 @@ public class TunerTest {
             assertEquals(Tuner.RESULT_SUCCESS, tunerB.connectCiCam(ciCamId));
 
             // unlink CiCam to Demux in tunerA and transfer ownership
-            assertEquals(Tuner.RESULT_SUCCESS, tunerA.disconnectCiCam());
+            // UNAVAILABLE is expected when the Demux resource is limited. SUCCESS otherwise.
+            tunerA.disconnectCiCam();
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.transferOwner(tunerB));
 
             // close the original owner
