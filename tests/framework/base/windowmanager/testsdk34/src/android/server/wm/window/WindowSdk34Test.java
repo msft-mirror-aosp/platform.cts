@@ -26,11 +26,13 @@ import static org.junit.Assert.assertNull;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.graphics.Insets;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
+import android.server.wm.cts.testsdk34.R;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -90,8 +92,7 @@ public class WindowSdk34Test {
     }
 
     @Test
-    public void testSetFitsContentForInsets_defaultLegacy_sysuiFlags()
-            throws Throwable {
+    public void testSetFitsContentForInsets_defaultLegacy_sysuiFlags() throws Throwable {
         mActivityRule.runOnUiThread(() -> {
             mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
             mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
@@ -102,8 +103,7 @@ public class WindowSdk34Test {
     }
 
     @Test
-    public void testSetFitsContentForInsets_displayCutoutInsets_areApplied()
-            throws Throwable {
+    public void testSetFitsContentForInsets_displayCutoutInsets_areApplied() throws Throwable {
         try (IgnoreOrientationRequestSession session =
                      new IgnoreOrientationRequestSession(false /* enable */)) {
             setMayAffectDisplayRotation();
@@ -131,8 +131,7 @@ public class WindowSdk34Test {
     }
 
     @Test
-    public void testSetFitsContentForInsets_defaultLegacy_none()
-            throws Throwable {
+    public void testSetFitsContentForInsets_defaultLegacy_none() throws Throwable {
         mInstrumentation.waitForIdleSync();
 
         // We don't expect that we even got called.
@@ -140,8 +139,7 @@ public class WindowSdk34Test {
     }
 
     @Test
-    public void testSetFitsContentForInsets_true()
-            throws Throwable {
+    public void testSetFitsContentForInsets_true() throws Throwable {
         mActivityRule.runOnUiThread(() -> {
             mWindow.setDecorFitsSystemWindows(true);
         });
@@ -149,6 +147,42 @@ public class WindowSdk34Test {
 
         // We don't expect that we even got called.
         assertNull(mActivity.getLastInsets());
+    }
+
+    @Test
+    public void testSystemBarColors_fromResource() throws Throwable {
+        mActivityRule.runOnUiThread(() -> {
+            // Force mWindow to read system bar colors from resource.
+            mWindow.getDecorView();
+
+            assertEquals(
+                    mActivity.getColor(R.color.status_bar_color),
+                    mWindow.getStatusBarColor());
+            assertEquals(
+                    mActivity.getColor(R.color.navigation_bar_color),
+                    mWindow.getNavigationBarColor());
+            assertEquals(
+                    mActivity.getColor(R.color.navigation_bar_divider_color),
+                    mWindow.getNavigationBarDividerColor());
+        });
+    }
+
+    @Test
+    public void testSystemBarColors_fromMethod() throws Throwable {
+        mActivityRule.runOnUiThread(() -> {
+            mWindow.setStatusBarColor(Color.RED);
+            mWindow.setNavigationBarColor(Color.GREEN);
+            mWindow.setNavigationBarDividerColor(Color.BLUE);
+            assertEquals(
+                    Color.RED,
+                    mWindow.getStatusBarColor());
+            assertEquals(
+                    Color.GREEN,
+                    mWindow.getNavigationBarColor());
+            assertEquals(
+                    Color.BLUE,
+                    mWindow.getNavigationBarDividerColor());
+        });
     }
 
     public static class TestActivity extends Activity {
