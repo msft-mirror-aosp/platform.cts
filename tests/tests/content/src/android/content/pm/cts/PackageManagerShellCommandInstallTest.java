@@ -2892,7 +2892,7 @@ public class PackageManagerShellCommandInstallTest {
         final PackageInstaller installer = getPackageInstaller();
         final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
         params.setAppPackageName(packageName);
-        params.setEnableAutoInstallDependencies(enableAutoInstallDependencies);
+        params.setAutoInstallDependenciesEnabled(enableAutoInstallDependencies);
 
         final int sessionId = installer.createSession(params);
         PackageInstaller.Session session = installer.openSession(sessionId);
