@@ -47,7 +47,7 @@ public abstract class BaseAdvancedProtectionTest {
                 .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
-                Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
     }
@@ -72,7 +72,7 @@ public abstract class BaseAdvancedProtectionTest {
             return;
         }
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.SET_ADVANCED_PROTECTION_MODE);
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
