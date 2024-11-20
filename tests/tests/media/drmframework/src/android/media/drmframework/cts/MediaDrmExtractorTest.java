@@ -29,6 +29,7 @@ import android.test.AndroidTestCase;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -36,6 +37,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.UUID;
 
+@FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaDrmExtractorTest extends AndroidTestCase {
     private static final String TAG = "MediaDrmExtractorTest";
