@@ -28,6 +28,7 @@ android_test {
         "mockito-target-minus-junit4",
         "android-common",
         "compatibility-device-util-axt",
+        "compatibility-device-preconditions",
         "ctstestrunner-axt",
         "platform-test-annotations",
         "truth-prebuilt",
