@@ -28,6 +28,8 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "flag-junit",
+        "framework",
+        "framework-bluetooth.stubs.system",
         "PlatformProperties",
     ],
     libs: [
@@ -44,4 +46,5 @@ android_test {
         "mts-bluetooth",
     ],
     min_sdk_version: "Tiramisu",
+    sdk_version: "module_current",
 }
