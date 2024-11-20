@@ -27,6 +27,6 @@
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsHostsideTaggingIsMteEnabledApp.apk" />
-        <option name="test-file-name" value="CtsHostsideTaggingStackMteApp.apk" />
+        <option name="test-file-name" value="CtsHostsideTaggingMemtagApp.apk" />
     </target_preparer>
 </configuration>
