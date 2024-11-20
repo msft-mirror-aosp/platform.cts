@@ -19,6 +19,9 @@ package android.packageinstaller.criticaluserjourney.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.os.UserManager;
+import android.text.TextUtils;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -34,11 +37,19 @@ public class UpdateOwnershipTestBase extends InstallationTestBase {
 
     private String mIsUpdateOwnershipEnforcementAvailable = null;
 
+    private String assumeRunOnPrimaryUser() {
+        UserManager um = getContext().getSystemService(UserManager.class);
+        String userType = um.getUserType();
+        android.util.Log.d(TAG, um.getUserType());
+        Assume.assumeTrue("Don't support to run the test cases in a profile.",
+                TextUtils.equals(userType, UserManager.USER_TYPE_FULL_SYSTEM));
+        return userType;
+    }
+
     @Before
     @Override
     public void setup() throws Exception {
-        UserManager um = getContext().getSystemService(UserManager.class);
-        Assume.assumeFalse("Don't support to run the test cases in a profile.", um.isProfile());
+        SystemUtil.callWithShellPermissionIdentity(this::assumeRunOnPrimaryUser);
 
         super.setup();
 
