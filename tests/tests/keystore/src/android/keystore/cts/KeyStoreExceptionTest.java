@@ -56,6 +56,7 @@ public class KeyStoreExceptionTest {
         Field[] errorFields = ErrorCode.class.getDeclaredFields();
         List<Integer> excludedErrorCodes = new ArrayList<Integer>();
         excludedErrorCodes.add(-62); // -62 is KEY_REQUIRES_UPGRADE and is handled by Keystore.
+        excludedErrorCodes.add(-86); // -86 is MODULE_HASH_ALREADY_SET and is internal to Keystore.
         for (Field code : errorFields) {
             final int codeVal = code.getInt(null);
             if (excludedErrorCodes.contains(codeVal)) {
