@@ -25,11 +25,11 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "tests-tests-networksecurityconfig-lib",
+        "android.security.flags-aconfig-java",
     ],
     libs: [
-        "org.apache.http.legacy",
-        "android.security.flags-aconfig-java",
-        "android.test.base",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
