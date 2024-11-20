@@ -49,7 +49,9 @@ public class KeystoreFeatureMapTest {
         List<String> skipFields = Arrays.asList("APPLICATION_DATA", "ASSOCIATED_DATA",
                 "ATTESTATION_APPLICATION_ID", "BOOTLOADER_ONLY", "EARLY_BOOT_ONLY", "HARDWARE_TYPE",
                 "IDENTITY_CREDENTIAL_KEY", "MAX_BOOT_LEVEL", "OS_PATCHLEVEL", "OS_VERSION",
-                "ROLLBACK_RESISTANCE", "STORAGE_KEY");
+                "ROLLBACK_RESISTANCE", "STORAGE_KEY",
+                // TODO(b/380020528): remove this exception
+                "MODULE_HASH");
         List<String> missingFields = new ArrayList<>();
 
         for (Field kmField : Tag.class.getFields()) {
