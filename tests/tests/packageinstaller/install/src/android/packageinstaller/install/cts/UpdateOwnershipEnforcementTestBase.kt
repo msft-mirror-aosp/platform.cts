@@ -16,7 +16,9 @@
 
 package android.packageinstaller.install.cts
 
+import android.os.UserManager
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 
 open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
@@ -33,6 +35,8 @@ open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
      */
     @Before
     fun setUpdateOwnershipEnforcementAvailable() {
+        val um = instrumentation.targetContext.getSystemService(UserManager::class.java)
+        Assume.assumeFalse("Don't support to run the test cases in a profile.", um.isProfile)
         isUpdateOwnershipEnforcementAvailable =
                 getDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE)
         setDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE, "true")

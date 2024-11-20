@@ -850,6 +850,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         if self.pn532:
             command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
                                                       _PREFIX_TRANSPORT_SERVICE_2)
+            test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+                'ApduSuccess'
+            )
             poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
         else:
             self.reader.nfc_reader.startConflictingNonPaymentPrefixReaderActivity()
@@ -866,7 +869,51 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 'ApduSuccess'
             )
             self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    #@CddTest(requirements = {"TODO"})
+    def test_event_listener(self):
+        """ This test registers an event listener with the emulator and ensures
+        that the event listener receives callbacks when the field status changes and
+        when an AID goes unrouted.
+
+        Test Steps:
+        1. Start the emulator.
+        2. Start the reader.
+        3. Select an unrouted AID on the emulator.
+        4. Select a routed AID on the emulator.
+
+        Verifies:
+        1. Verifies that the event listener receives callbacks when the field
+        status changes and when an AID goes unrouted.
+        """
+        self._set_up_emulator(
+            start_emulator_fun=self.emulator.nfc_emulator.startEventListenerActivity,
+            is_payment=False
+        )
+
+        if not self.pn532:
+            asserts.skip('PN532 is required for this test.')
+
+        # unrouted AID
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                    _ACCESS_SERVICE)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'EventListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_false(transacted, _FAILED_TRANSACTION_MSG)
+
+        # routed AID
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                    _TRANSPORT_SERVICE_1)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('EventListenerSuccess', _NFC_TIMEOUT_SEC)
+
 
     #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
     def test_protocol_params(self):
