@@ -132,8 +132,6 @@ java_defaults {
         ":CtsDeviceDisplaySizeApp",
         ":CtsDevicePrereleaseSdkApp",
         ":CtsDeviceProfileableApp",
-        ":CtsDeviceTranslucentTestApp",
-        ":CtsDeviceTranslucentTestApp26",
         ":CtsMockInputMethod",
         ":CtsDeviceServicesTestShareUidAppA",
         ":CtsDeviceServicesTestShareUidAppB",
