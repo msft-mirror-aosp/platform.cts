@@ -45,12 +45,16 @@ import android.service.notification.StatusBarNotification;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.SystemUtil;
 
 import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,10 +67,13 @@ import java.io.InputStream;
  */
 @RunWith(AndroidJUnit4.class)
 public class NotificationManager29Test {
-    final String TAG = "LegacyNoManTest29";
     private static final String PKG = "android.app.notification.legacy29.cts";
+    private static final String NOTIFICATION_CHANNEL_ID = "LegacyNoManTest29";
 
-    final String NOTIFICATION_CHANNEL_ID = "LegacyNoManTest29";
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private NotificationManager mNotificationManager;
     private Context mContext;
     NotificationHelper mHelper;
@@ -157,6 +164,9 @@ public class NotificationManager29Test {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testApi29CannotToggleConversationsTest() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -181,6 +191,9 @@ public class NotificationManager29Test {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testApi29CannotToggleConversationsOffTest() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
