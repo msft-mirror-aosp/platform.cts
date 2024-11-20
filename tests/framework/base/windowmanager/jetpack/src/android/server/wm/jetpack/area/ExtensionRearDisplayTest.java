@@ -173,7 +173,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             "androidx.window.extensions.area.WindowAreaComponent#removeRearDisplayStatusListener"})
     @Test
     public void testRearDisplayStatusListeners() throws Throwable {
-        Set<Integer> requestedStates = new HashSet<>();
+        final Set<Integer> requestedStates = new HashSet<>();
         while (requestedStates.size() != mSupportedDeviceStates.size()) {
             int newState = determineNewState(mCurrentDeviceState.getIdentifier(),
                     mSupportedDeviceStates, requestedStates);
@@ -186,7 +186,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == newState);
                 // If the state does not put the device into the rear display configuration,
                 // then the listener should receive the STATUS_AVAILABLE value.
-                if (!isRearDisplayActive(mCurrentDeviceState.getIdentifier())) {
+                if (!isRearDisplayActive(mCurrentDeviceState)) {
                     waitAndAssert(
                             () -> mWindowAreaStatus == WindowAreaComponent.STATUS_AVAILABLE);
                 } else {
@@ -416,11 +416,11 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
      * Helper method to determine if a rear display session is currently active by checking
      * if the current device configuration matches that of rear display. This would be true
      * if there is a device override currently active (base state != current state) and the current
-     * state is that which corresponds to {@code mRearDisplayState}
+     * state has PROPERTY_FEATURE_REAR_DISPLAY.
      * @return {@code true} if the device is in rear display mode and {@code false} if not
      */
-    private boolean isRearDisplayActive(int currentDeviceState) {
-        return currentDeviceState == mRearDisplayState;
+    private boolean isRearDisplayActive(@NonNull DeviceState currentDeviceState) {
+        return currentDeviceState.hasProperty(DeviceState.PROPERTY_FEATURE_REAR_DISPLAY);
     }
 
     private void resetActivityConfigurationChangeValues(@NonNull TestRearDisplayActivity activity) {
