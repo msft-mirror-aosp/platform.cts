@@ -28,9 +28,6 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.Bundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -76,9 +73,6 @@ public class AccessibilityEventAndCacheTest {
                     .around(mInstrumentedAccessibilityServiceRule)
                     .around(mDumpOnFailureRule);
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Before
     public void setUp() throws Throwable {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -97,7 +91,6 @@ public class AccessibilityEventAndCacheTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FIX_MERGED_CONTENT_CHANGE_EVENT_V2)
     public void testSimultaneousChangesUpdatesAllChildNodes() throws Exception {
         // Makes sure that all nodes are fetched in client side.
         final List<AccessibilityNodeInfo> nodes = sUiAutomation.getRootInActiveWindow()

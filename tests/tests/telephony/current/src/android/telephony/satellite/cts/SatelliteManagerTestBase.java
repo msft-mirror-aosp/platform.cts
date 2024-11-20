@@ -57,6 +57,7 @@ import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
+import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
@@ -74,6 +75,7 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -861,6 +863,47 @@ public class SatelliteManagerTestBase {
 
         public void drainPermits() {
             mSemaphore.drainPermits();
+        }
+    }
+
+    protected static class SatelliteDisallowedReasonsCallbackTest
+            implements SatelliteDisallowedReasonsCallback {
+        private int[] mSatelliteDisabledReasons;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteDisallowedReasonsChanged(@NonNull int[] disallowedReasons) {
+            logd("onSatelliteDisallowedReasonsChanged: disallowedReasons="
+                     + Arrays.toString(disallowedReasons));
+            mSatelliteDisabledReasons = disallowedReasons;
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteDisallowedReasonsChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteDisallowedReasonsChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSatelliteDisallowedReasonsChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
+
+        public boolean hasSatelliteDisabledReason(int reason) {
+            return Arrays.stream(mSatelliteDisabledReasons).anyMatch(i -> i == reason);
         }
     }
 
