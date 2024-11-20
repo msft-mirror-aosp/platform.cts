@@ -24,7 +24,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "bedstead",
+        "Harrier",
         "truth",
         "bedstead-adb",
         "Interactive",
@@ -42,7 +42,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "bedstead",
+        "Harrier",
         "truth",
         "bedstead-adb",
         "Interactive",

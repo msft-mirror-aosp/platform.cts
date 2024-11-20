@@ -29,7 +29,7 @@ android_test {
     ],
     static_libs: [
         "Nene",
-        "bedstead",
+        "Harrier",
         "EventLib",
         "DeviceAdminApp",
         "androidx.test.ext.junit",
