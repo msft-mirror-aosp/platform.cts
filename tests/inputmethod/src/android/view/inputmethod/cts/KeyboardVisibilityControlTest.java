@@ -1959,11 +1959,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible", View.GONE,
                     TIMEOUT);
 
-            // Make sure the activity was closed by the second back key event.
+            // Make sure the activity was stopped by the second back key event.
             try {
-                TestUtils.waitOnMainUntil(testActivity::isDestroyed, TIMEOUT);
+                TestUtils.waitOnMainUntil(testActivity::isStopped, TIMEOUT);
             } catch (TimeoutException e) {
-                throw new AssertionError("Activity should have been closed", e);
+                throw new AssertionError("Activity should have been stopped", e);
             }
         }
     }
