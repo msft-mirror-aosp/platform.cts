@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
@@ -34,18 +35,16 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputManager;
 import android.opengl.GLES20;
-import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 
 import androidx.test.filters.SmallTest;
 
-import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,14 +77,15 @@ import java.util.Objects;
 @RunWith(Parameterized.class)
 public class EncoderColorAspectsTest extends CodecEncoderTestBase {
     private static final String LOG_TAG = EncoderColorAspectsTest.class.getSimpleName();
+    private static final ArrayList<String> IGNORE_COLOR_BOX_LIST = new ArrayList<>();
 
     private Surface mInpSurface;
     private InputSurface mEGLWindowInpSurface;
 
     private int mLatency;
     private boolean mReviseLatency;
-
-    private static final ArrayList<String> IGNORE_COLOR_BOX_LIST = new ArrayList<>();
+    private final ArrayList<String> mTmpFiles = new ArrayList<>();
+    private final boolean mTestingContainerColorAspects = !TestUtils.isTestingModules();
 
     static {
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_AV1);
@@ -93,7 +93,14 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
     }
 
-    private static boolean sIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
+    @After
+    public void tearDown() {
+        for (String tmpFile : mTmpFiles) {
+            File tmp = new File(tmpFile);
+            if (tmp.exists()) assertTrue("unable to delete file " + tmpFile, tmp.delete());
+        }
+        mTmpFiles.clear();
+    }
 
     public EncoderColorAspectsTest(String encoder, String mediaType,
             EncoderConfigParams encCfgParams, @SuppressWarnings("unused") String testLabel,
@@ -106,42 +113,32 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             int[] ranges, int[] standards, int[] transfers, int colorFormat, int bitDepth) {
         // Assuming all combinations are supported by the standard which is true for AVC, HEVC, AV1,
         // VP8 and VP9.
-        int[] maxBFrames = {0, 2};
         for (String mediaType : mediaTypes) {
             for (int range : ranges) {
                 for (int standard : standards) {
                     for (int transfer : transfers) {
-                        for (int maxBFrame : maxBFrames) {
-                            if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                                    && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                                    && maxBFrame != 0) {
-                                continue;
-                            }
-                            Object[] testArgs = new Object[3];
-                            testArgs[0] = mediaType;
-                            EncoderConfigParams.Builder foreman =
-                                    new EncoderConfigParams.Builder(mediaType)
-                                            .setRange(range)
-                                            .setStandard(standard)
-                                            .setTransfer(transfer)
-                                            .setMaxBFrames(maxBFrame)
-                                            .setColorFormat(colorFormat)
-                                            .setInputBitDepth(bitDepth);
-                            if ((colorFormat == COLOR_FormatSurface && bitDepth == 10)
-                                    || colorFormat == COLOR_FormatYUVP010) {
-                                foreman.setProfile(
-                                        Objects.requireNonNull(PROFILE_HLG_MAP.get(mediaType))[0]);
-                            }
-                            EncoderConfigParams cfg = foreman.build();
-                            testArgs[1] = cfg;
-                            testArgs[2] = String.format("%s_%s_%s_%s_%d-bframes",
-                                    rangeToString(range),
-                                    colorStandardToString(standard),
-                                    colorTransferToString(transfer),
-                                    colorFormatToString(colorFormat, bitDepth),
-                                    maxBFrame);
-                            exhaustiveArgsList.add(testArgs);
+                        Object[] testArgs = new Object[3];
+                        testArgs[0] = mediaType;
+                        EncoderConfigParams.Builder foreman =
+                                new EncoderConfigParams.Builder(mediaType)
+                                        .setRange(range)
+                                        .setStandard(standard)
+                                        .setTransfer(transfer)
+                                        .setColorFormat(colorFormat)
+                                        .setInputBitDepth(bitDepth);
+                        if ((colorFormat == COLOR_FormatSurface && bitDepth == 10)
+                                || colorFormat == COLOR_FormatYUVP010) {
+                            foreman.setProfile(
+                                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mediaType))[0]);
                         }
+                        EncoderConfigParams cfg = foreman.build();
+                        testArgs[1] = cfg;
+                        testArgs[2] = String.format("%s_%s_%s_%s",
+                                rangeToString(range),
+                                colorStandardToString(standard),
+                                colorTransferToString(transfer),
+                                colorFormatToString(colorFormat, bitDepth));
+                        exhaustiveArgsList.add(testArgs);
                     }
                 }
             }
@@ -278,46 +275,17 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
      * vpx streams are muxed using webm writer and others are muxed using mp4 writer.
      * Briefly, the test checks OMX/c2 framework, plugins, encoder, muxer ability to SIGNAL color
      * metadata.
-     *
-     * When running CTS, both testColorAspectsEndToEnd and testColorAspectsEncoderOnly
-     * execute, with some duplication of effort.
+     * <p>
+     * As muxer is not a mainline module, validating of containers for color aspects is done only
+     * in cts runs and skipped in mts runs.
      */
     @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
             "android.media.MediaFormat#KEY_COLOR_STANDARD",
             "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @FrameworkSpecificTest
-    public void testColorAspectsEndToEnd() throws IOException, InterruptedException {
-        doFullColorAspects(true /* includeMuxing */);
-    }
-
-    /**
-     * ColorAspects are passed to the encoder at the time of configuration. The encoder is
-     * expected to pass this information to outputFormat() so that a consumer can use this
-     * information to populate color metadata.
-     * ColorAspects encoded in the bitstream itself -- the test only checks those after muxing
-     * the outputs (e.g. the EndToEnd test above).
-     *
-     * This is therefore a subset of the testColorAspectsEndToEnd() test above, skipping
-     * the muxing (which is outside of mainline), the re-reading via extractors, and
-     * the bitstream contents (e.g. the CSD) that we get from decoding.
-     * TODO: It would be good if we could validate the bitstream (CSD) without the
-     * muxer/extractor steps in between.
-     *
-     */
-    @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
-            "android.media.MediaFormat#KEY_COLOR_STANDARD",
-            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
-    @SmallTest
-    @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    public void testColorAspectsEncoderOnly() throws IOException, InterruptedException {
-        doFullColorAspects(false /* includeMuxing */);
-    }
-
-    private void doFullColorAspects(boolean includeMuxing) throws IOException,
-            InterruptedException {
-        Assume.assumeTrue("Test introduced with Android 11", sIsAtLeastR);
+    public void testColorAspects() throws IOException, InterruptedException {
+        Assume.assumeTrue("Test introduced with Android 11", IS_AT_LEAST_R);
 
         mActiveEncCfg = mEncCfgParams[0];
         if (mActiveEncCfg.mInputBitDepth > 8) {
@@ -402,10 +370,12 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             mCodec.stop();
             mCodec.release();
 
-            if (includeMuxing) {
+            // TODO(b/361213055) muxOutput on all supported writers instead of just first.
+            if (mTestingContainerColorAspects) {
                 int muxerFormat = getMuxerFormatForMediaType(mMediaType);
                 String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit"
                                                                                       : "");
+                mTmpFiles.add(tmpPath);
                 muxOutput(tmpPath, muxerFormat, fmt, mOutputBuff.getBuffer(), mInfoList);
 
                 // verify if the muxed file contains color aspects as expected

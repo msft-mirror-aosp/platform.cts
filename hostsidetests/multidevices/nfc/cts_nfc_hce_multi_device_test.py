@@ -36,6 +36,10 @@ import sys
 import time
 import logging
 
+from http.client import HTTPSConnection
+import ssl
+import json
+
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
@@ -190,6 +194,21 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun()
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
+    def _is_cuttlefish_device(self, ad: android_device.AndroidDevice) -> bool:
+        product_name = ad.adb.getprop("ro.product.name")
+        return "cf_x86" in product_name
+
+    def _get_casimir_id_for_device(self):
+        host = "localhost"
+        conn = HTTPSConnection(host, 1443, context=ssl._create_unverified_context())
+        path = '/devices'
+        headers = {'Content-type': 'application/json'}
+        conn.request("GET", path, {}, headers)
+        response = conn.getresponse()
+        json_obj = json.loads(response.read())
+        first_device = json_obj[0]
+        return first_device["device_id"]
+
     def setup_class(self):
         """
         Sets up class by registering an emulator device, enabling NFC, and loading snippets.
@@ -242,9 +261,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             else:
                 pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            casimir_id = self.user_params.get("casimir_id", "")
+            casimir_id = None
+            if self._is_cuttlefish_device(self.emulator):
+                self._setup_failure_reason = 'Failed to set up casimir connection for Cuttlefish device'
+                casimir_id = self._get_casimir_id_for_device()
 
-            if len(casimir_id) > 0:
+            if casimir_id is not None and len(casimir_id) > 0:
                 self._setup_failure_reason = 'Failed to connect to casimir'
                 _LOG.info("casimir_id = " + casimir_id)
                 self.pn532 = pn532.Casimir(casimir_id)
