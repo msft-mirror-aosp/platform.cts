@@ -30,8 +30,7 @@ android_test {
     static_libs: [
         "RemoteDPC",
         "Nene",
-        "bedstead",
-        "bedstead-enterprise",
+        "Harrier",
         "TestApp",
         "EventLib",
         "androidx.test.ext.junit",
