@@ -115,11 +115,8 @@ public class CodecDecoderMultiAccessUnitDrmTest extends CodecDecoderMultiAccessU
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_stereo_48kHz_192kbps_opus_cenc.mp4"},
         }));
-        // cts -- check them all
-        // mcts/mts -- just check codecs implemented in modules
-        boolean ignoreModule = (TestUtils.currentTestMode() == TestUtils.TESTMODE_CTS);
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                        false /*testingallCodecs*/, ignoreModule /*ignoreModeDuringSelection*/);
+                        false /*testingallCodecs*/);
     }
 
     /**
