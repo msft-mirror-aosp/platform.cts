@@ -156,7 +156,6 @@ android_library {
         "src/com/android/cts/verifier/*.java",
         "src/**/I*.aidl",
     ],
-    libs: ["PlatformProperties"],
     static_libs: [
         "androidx.legacy_legacy-support-v4",
         "compatibility-common-util-devicesidelib",

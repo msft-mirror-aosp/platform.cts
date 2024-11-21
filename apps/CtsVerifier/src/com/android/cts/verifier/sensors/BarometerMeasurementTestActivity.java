@@ -47,7 +47,6 @@ import android.widget.RadioGroup;
 import android.widget.GridLayout;
 import android.widget.GridLayout.LayoutParams;
 import android.view.Gravity;
-import android.sysprop.SensorProperties;
 
 import android.view.View;
 import android.app.AlertDialog;
@@ -57,6 +56,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
+import com.android.compatibility.common.util.PropertyUtil;
+
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -114,8 +115,8 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (!SensorProperties.isHighQualityBarometerImplemented().isPresent()
-                || !SensorProperties.isHighQualityBarometerImplemented().get()) {
+        if (!Boolean.parseBoolean(
+                PropertyUtil.getProperty("hardware.sensor.barometer.high_quality.implemented"))) {
             getTestLogger().logMessage(R.string.snsr_baro_not_implemented);
             finish();
         }
