@@ -353,7 +353,36 @@ public class PerformanceHintManagerTest {
         }
     }
 
+    @Test
+    // TODO(b/304828176): Support NDK API annotation.
+    @ApiTest(apis = {"APerformanceHint_borrowSessionFromJava"})
+    public void testNativeBorrowSessionFromJava() {
+        Session session = createSession();
+        assumeNotNull(session);
+        long nativeSession = nativeBorrowSessionFromJava(session);
+        assertNotEquals(0, nativeSession);
+    }
+
+    public void testNativeCreateHintSessionUsingConfig() {
+        final String resultMessage = nativeTestCreateHintSessionUsingConfig();
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
+
+    @Test
+    public void testNativeCreateGraphicsPipelineSessionOverLimit() {
+        final String resultMessage = nativeTestCreateGraphicsPipelineSessionOverLimit();
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
+
+
+    private native String nativeTestCreateGraphicsPipelineSessionOverLimit();
     private native String nativeTestCreateHintSession();
+    private native String nativeTestCreateHintSessionUsingConfig();
+    private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
     private native String nativeTestGetPreferredUpdateRateNanos();
     private native String nativeUpdateTargetWorkDuration();
     private native String nativeUpdateTargetWorkDurationWithNegativeDuration();
@@ -364,4 +393,5 @@ public class PerformanceHintManagerTest {
     private native String nativeTestReportActualWorkDuration2();
     private native String nativeTestReportActualWorkDuration2WithIllegalArgument();
     private native String nativeTestLoadHints();
+    private native long nativeBorrowSessionFromJava(Session session);
 }

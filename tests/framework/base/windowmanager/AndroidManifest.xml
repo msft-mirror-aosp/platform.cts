@@ -403,13 +403,8 @@
 
         <!-- The test tests insets dispatching. Here disables action bar because it might intercept
              the insets and dispatch modified ones. -->
-        <activity android:name="android.server.wm.window.WindowPolicyTests$TestActivity"
+        <activity android:name="android.server.wm.window.WindowPolicyTestBase$TestActivity"
                   android:theme="@android:style/Theme.Material.NoActionBar"/>
-
-        <!-- INSETS_DECOUPLED_CONFIGURATION_ENFORCED can only be opted out before creating the
-             activity. -->
-        <activity android:name="android.server.wm.window.WindowPolicyTests$OptOutEdgeToEdgeActivity"
-                  android:theme="@style/OptOutEdgeToEdge"/>
 
         <activity android:name="android.server.wm.window.WindowCtsActivity"
              android:theme="@style/OptOutEdgeToEdge.NoActionBar"
@@ -587,6 +582,9 @@
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name="android.server.wm.taskfragment.TaskFragmentOrganizerTest$DialogActivity"
+                  android:exported="true"
+                  android:theme="@android:style/Theme.Dialog" />
         <activity android:name="android.server.wm.other.HostActivity"
                   android:exported="true">
                <intent-filter>

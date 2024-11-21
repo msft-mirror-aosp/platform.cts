@@ -17,15 +17,25 @@
 package android.service.settings.preferences
 
 import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth.assertThat
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @SmallTest
+@RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
 class SettingsPreferenceValueTest {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     fun buildSettingsPreferenceValue_booleanFieldSet() {
         val preferenceValue = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_BOOLEAN)
@@ -34,6 +44,16 @@ class SettingsPreferenceValueTest {
 
         assertThat(preferenceValue.type).isEqualTo(SettingsPreferenceValue.TYPE_BOOLEAN)
         assertThat(preferenceValue.booleanValue).isTrue()
+    }
+
+    @Test
+    fun buildSettingsPreferenceValue_IntFieldSet() {
+        val preferenceValue = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_INT)
+            .setIntValue(25)
+            .build()
+
+        assertThat(preferenceValue.type).isEqualTo(SettingsPreferenceValue.TYPE_INT)
+        assertThat(preferenceValue.intValue).isEqualTo(25)
     }
 
     @Test

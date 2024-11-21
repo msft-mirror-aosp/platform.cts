@@ -17,50 +17,54 @@
 package android.service.settings.preferences
 
 import android.Manifest
-import android.content.ComponentName
 import android.content.Context
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.nene.TestApis
 import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
+import com.android.settingslib.flags.Flags.FLAG_WRITE_SYSTEM_PREFERENCE_PERMISSION_ENABLED
 import com.google.common.truth.Truth
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
 class SettingsPreferenceServiceClientTest {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private lateinit var context: Context
     private lateinit var client: SettingsPreferenceServiceClient
-    private lateinit var connectionListener: ServiceConnection
 
     @Before
     fun setup() {
         val connectionLatch = CountDownLatch(1)
-        connectionListener = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                connectionLatch.countDown()
-            }
-            override fun onServiceDisconnected(name: ComponentName?) {}
-        }
         context = InstrumentationRegistry.getInstrumentation().context
-        client = SettingsPreferenceServiceClient(
-            context,
-            "android.service.settings.preferences.cts",
-            false,
-            connectionListener
-        )
         TestApis.permissions().withPermission(Manifest.permission.READ_SYSTEM_PREFERENCES).use {
-            client.start()
+            client = SettingsPreferenceServiceClient(
+                context,
+                "android.service.settings.preferences.cts",
+                false,
+                context.mainExecutor,
+                object : OutcomeReceiver<SettingsPreferenceServiceClient, Exception> {
+                    override fun onResult(result: SettingsPreferenceServiceClient) {
+                        connectionLatch.countDown()
+                    }
+
+                    override fun onError(error: Exception) {
+                        throw AssertionError("Binding failed")
+                    }
+                }
+            )
             if (!connectionLatch.await(1, TimeUnit.SECONDS)) {
                 throw AssertionError("Binding timeout")
             }
@@ -72,6 +76,7 @@ class SettingsPreferenceServiceClientTest {
         client.close()
     }
 
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
     fun getAllPreferenceMetadata_retrievesResult() {
         val statusLatch = CountDownLatch(1)
@@ -88,6 +93,7 @@ class SettingsPreferenceServiceClientTest {
         Truth.assertThat(statusLatch.await(1, TimeUnit.SECONDS)).isTrue()
     }
 
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
     fun getPreferenceValue_retrievesResult() {
         val statusLatch = CountDownLatch(1)
@@ -105,6 +111,7 @@ class SettingsPreferenceServiceClientTest {
         Truth.assertThat(statusLatch.await(1, TimeUnit.SECONDS)).isTrue()
     }
 
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
     fun getPreferenceValue_unsupportedKey_retrievesNoResult() {
         val statusLatch = CountDownLatch(1)
@@ -122,13 +129,14 @@ class SettingsPreferenceServiceClientTest {
         Truth.assertThat(statusLatch.await(1, TimeUnit.SECONDS)).isTrue()
     }
 
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST, FLAG_WRITE_SYSTEM_PREFERENCE_PERMISSION_ENABLED)
     @Test
     fun setPreferenceValue_retrievesResult() {
         val statusLatch = CountDownLatch(1)
         TestApis.permissions().withPermission(
             Manifest.permission.READ_SYSTEM_PREFERENCES,
             Manifest.permission.WRITE_SYSTEM_PREFERENCES
-        ).use {
+        ).withAppOp("android:write_system_preferences").use {
             client.setPreferenceValue(
                 SetValueRequest.Builder(
                     "s",
@@ -146,6 +154,7 @@ class SettingsPreferenceServiceClientTest {
         Truth.assertThat(statusLatch.await(1, TimeUnit.SECONDS)).isTrue()
     }
 
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST, FLAG_WRITE_SYSTEM_PREFERENCE_PERMISSION_ENABLED)
     @Test
     fun setPreferenceValue_withoutPermission_throwsException() {
         val statusLatch = CountDownLatch(1)

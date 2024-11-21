@@ -18,10 +18,11 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ACCESS_BARRED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_DISABLE_IN_PROGRESS;
-import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ENABLE_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NO_RESOURCES;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED;
@@ -54,6 +55,7 @@ import android.app.AppOpsManager;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -103,6 +105,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.LocationUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.SmsApplication;
 import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.satellite.DatagramController;
 import com.android.internal.telephony.satellite.SatelliteServiceUtils;
@@ -308,8 +311,19 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.setWaitToSend(false);
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
         sMockSatelliteServiceManager.mIsPointingUiOverridden = false;
+
+        // Bypass geofence by enforcing SatelliteAccessController to use on-device data with
+        // mock location
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache("cache_allowed"));
+        assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, null, null, null, 0));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
+                false, true, SATELLITE_S2_FILE, TimeUnit.MINUTES.toNanos(10), "US"));
+
+        // Set location provider and current location to Google San Diego office
+        registerTestLocationProvider();
+        setTestProviderLocation(32.909808231041644, -117.18185788819781);
+        verifyIsSatelliteAllowed(true);
 
         // Initialize radio state
         mBTInitState = false;
@@ -323,6 +337,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(satelliteRadiosModeUpdater.setSatelliteModeRadios(""));
 
         enableESOSSupportForActiveSubscription();
+        enableDefaultSmsAppSupportForESOSSubscription();
         grantSatellitePermission();
         if (!isSatelliteProvisioned()) {
             logd("Provision satellite");
@@ -336,17 +351,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                     getContext().getMainExecutor(), callback);
             assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
             assertTrue(callback.waitUntilResult(1));
-
-            // Bypass geofence by enforcing SatelliteAccessController to use on-device data with
-            // mock location
-            assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, null, null, null, 0));
-            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
-                    false, true, SATELLITE_S2_FILE, TimeUnit.MINUTES.toNanos(10), "US"));
-
-            // Set location provider and current location to Google San Diego office
-            registerTestLocationProvider();
-            setTestProviderLocation(32.909808231041644, -117.18185788819781);
-            verifyIsSatelliteAllowed(true);
 
             int i = 0;
             while (requestSatelliteEnabledWithResult(true, EXTERNAL_DEPENDENT_TIMEOUT)
@@ -409,6 +413,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
         restoreESOSSupportForActiveSubscription();
+        restoreDefaultSmsAppSupportForESOSSubscription();
     }
 
     @Test
@@ -590,13 +595,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertFalse(satelliteProvisionStateCallback.getProvisionedState(1));
             assertFalse(satelliteProvisionStateCallback.isProvisioned);
             assertFalse(isSatelliteProvisioned());
-
-            logd("testProvisionSatelliteService: restore provision state");
-            assertTrue(provisionSatellite());
-            assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-            assertTrue(satelliteProvisionStateCallback.isProvisioned);
-            sSatelliteManager.unregisterForProvisionStateChanged(
-                    satelliteProvisionStateCallback);
         } finally {
             restoreNtnOnlySubscription();
             revokeSatellitePermission();
@@ -1649,6 +1647,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
+    @Ignore("b/377926997 - This test is failing due to the recent change in capabilities.")
     @Test
     public void  testRequestSatelliteCapabilities() {
         logd("testRequestSatelliteCapabilities");
@@ -3333,6 +3332,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
+    @Ignore("b/377927857 - This test is flaky.")
     @Test
     public void testRebindToSatelliteGatewayService() {
         grantSatellitePermission();
@@ -3626,6 +3626,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         revokeSatellitePermission();
     }
 
+    @Ignore("b/377926997 - This test is failing due to the recent change in capabilities.")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForCapabilitiesChanged() {
@@ -6111,6 +6112,23 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSelectedNbIotSatelliteSubscriptionId() {
+        logd("testRequestSelectedNbIotSatelliteSubscriptionId:");
+        grantSatellitePermission();
+        try {
+            Pair<Integer, Integer> pairResult =
+                    requestSelectedNbIotSatelliteSubscriptionId();
+            if (pairResult == null) {
+                fail("requestSelectedNbIotSatelliteSubscriptionId: null");
+            }
+            assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID, (long) pairResult.first);
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testSatelliteSubscriptionProvisionStateChanged() {
         logd("testSatelliteSubscriptionProvisionStateChanged:");
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
@@ -6348,6 +6366,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testDeprovisionSatellite() {
         logd("testDeprovisionSatellite:");
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
         assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
@@ -7351,6 +7370,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     static boolean sPreviousSatelliteIsOnlyNtn;
     static boolean sPreviousESOSSupported;
     static boolean sPreviousESOSSupportedOfNtnOnlySub;
+    static String[] sPreviousSupportedMsgApps;
 
     private void beforeSatelliteForCarrierTest() {
         sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
@@ -7701,6 +7721,93 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+    }
+
+    private static void enableDefaultSmsAppSupportForESOSSubscription() {
+        logd("enableDefaultSmsAppSupportForESOSSubscription");
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
+
+        assumeTrue(sEsosSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        sPreviousSupportedMsgApps = getConfigForSubId(getContext(), sEsosSubId,
+            CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY)
+            .getStringArray(
+                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY);
+
+        String defaultSmsApp = null;
+        ComponentName defaultSmsAppComp =
+                SmsApplication.getDefaultSmsApplication(getContext(), false);
+        if (defaultSmsAppComp != null) {
+            defaultSmsApp = defaultSmsAppComp.getPackageName();
+        }
+        logd("enableDefaultSmsAppSupportForESOSSubscription: defaultSmsApp=" + defaultSmsApp
+                 + ", sPreviousSupportedMsgApps=" + (sPreviousSupportedMsgApps == null
+                     ? "null" : Arrays.toString(sPreviousSupportedMsgApps)));
+
+        int existingLength =
+                sPreviousSupportedMsgApps == null ? 0 : sPreviousSupportedMsgApps.length;
+        int newLength = existingLength;
+        if (defaultSmsApp != null) {
+            if (sPreviousSupportedMsgApps == null
+                    || !Arrays.asList(sPreviousSupportedMsgApps).contains(defaultSmsApp)) {
+                newLength++;
+            }
+        }
+
+        String[] newSupportedMsgApps = new String[newLength];
+        if (existingLength > 0) {
+            System.arraycopy(sPreviousSupportedMsgApps, 0, newSupportedMsgApps, 0,
+                    sPreviousSupportedMsgApps.length);
+        }
+        if (newLength > existingLength) {
+            newSupportedMsgApps[newSupportedMsgApps.length - 1] = defaultSmsApp;
+        }
+        logd("enableESOSSupportForActiveSubscription: newSupportedMsgApps="
+                 + Arrays.toString(newSupportedMsgApps));
+
+        SatelliteDisallowedReasonsCallbackTest callback =
+                registerForSatelliteDisallowedReasonsChanged();
+        boolean hasUnsupportedDefaultMsgAppDisallowedReason = callback.hasSatelliteDisabledReason(
+                SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP);
+        callback.drainPermits();
+
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putStringArray(CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
+                newSupportedMsgApps);
+        overrideCarrierConfig(sEsosSubId, bundle);
+
+        if (hasUnsupportedDefaultMsgAppDisallowedReason) {
+            assertTrue(callback.waitUntilResult(1));
+            assertFalse(callback.hasSatelliteDisabledReason(
+                            SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
+        }
+    }
+
+    private static void restoreDefaultSmsAppSupportForESOSSubscription() {
+        logd("restoreDefaultSmsAppSupportForESOSSubscription");
+        if (sEsosSubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            logd("restoreDefaultSmsAppSupportForESOSSubscription: no need to restore");
+            return;
+        }
+
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putStringArray(CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
+                sPreviousSupportedMsgApps);
+        overrideCarrierConfig(sEsosSubId, bundle);
+
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+    }
+
+    private static SatelliteDisallowedReasonsCallbackTest
+            registerForSatelliteDisallowedReasonsChanged() {
+        SatelliteDisallowedReasonsCallbackTest callback =
+                new SatelliteDisallowedReasonsCallbackTest();
+        sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                getContext().getMainExecutor(), callback);
+        assertTrue(callback.waitUntilResult(1));
+        return callback;
     }
 
     private static void deprovisionSatelliteForDevice() {

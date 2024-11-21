@@ -16,33 +16,29 @@
 
 package android.service.settings.preferences
 
-import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import androidx.test.platform.app.InstrumentationRegistry
+import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.google.common.truth.Truth.assertThat
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @SmallTest
+@RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
 class SettingsPreferenceMetadataTest {
 
-    private lateinit var pendingIntent: PendingIntent
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    @Before
-    fun setup() {
-        pendingIntent = PendingIntent.getActivity(
-            InstrumentationRegistry.getInstrumentation().context,
-            0,
-            Intent().setPackage("test"),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-    }
+    private val intent = Intent(Intent.ACTION_VIEW).setPackage("test")
 
     private val metadata: SettingsPreferenceMetadata
         get() = SettingsPreferenceMetadata.Builder("screenKey", "key")
@@ -56,7 +52,7 @@ class SettingsPreferenceMetadataTest {
             .setWritable(true)
             .setRestricted(true)
             .setWriteSensitivity(SettingsPreferenceMetadata.SENSITIVE)
-            .setLaunchIntent(pendingIntent)
+            .setLaunchIntent(intent)
             .setExtras(Bundle().apply { putString("bKey", "bValue") })
             .build()
 
@@ -75,7 +71,7 @@ class SettingsPreferenceMetadataTest {
             assertThat(isWritable).isTrue()
             assertThat(isRestricted).isTrue()
             assertThat(writeSensitivity).isEqualTo(SettingsPreferenceMetadata.SENSITIVE)
-            assertThat(launchIntent!!).isEqualTo(pendingIntent)
+            assertThat(launchIntent!!).isEqualTo(intent)
             assertThat(extras.getString("bKey")!!).isEqualTo("bValue")
         }
     }
@@ -100,7 +96,7 @@ class SettingsPreferenceMetadataTest {
             assertThat(isWritable).isTrue()
             assertThat(isRestricted).isTrue()
             assertThat(writeSensitivity).isEqualTo(SettingsPreferenceMetadata.SENSITIVE)
-            assertThat(launchIntent!!).isEqualTo(pendingIntent)
+            assertThat(launchIntent!!.toUri(0)).isEqualTo(intent.toUri(0))
             assertThat(extras.getString("bKey")!!).isEqualTo("bValue")
         }
     }

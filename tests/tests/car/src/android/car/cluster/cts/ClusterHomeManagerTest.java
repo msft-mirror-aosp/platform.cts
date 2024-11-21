@@ -44,17 +44,28 @@ import android.view.WindowInsetsController;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "ClusterHomeManager is not intended for"
+            + " visible background users, so skipping tests for"
+            + " secondary_user_on_secondary_display.")
 public final class ClusterHomeManagerTest {
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long TIMEOUT_MS = 10_000;
     private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
             "android.software.car.splitscreen_multitasking";

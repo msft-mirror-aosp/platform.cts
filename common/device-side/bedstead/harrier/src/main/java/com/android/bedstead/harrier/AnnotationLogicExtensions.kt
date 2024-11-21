@@ -23,6 +23,8 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE
@@ -37,6 +39,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -133,6 +136,20 @@ fun RequireLowRamDevice.logic() {
             .isLowRamDevice,
         failureMode
     )
+}
+
+fun RequireMinimumAdvertisedRamDevice.logic() {
+    if (SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        val memoryInfo = ActivityManager.MemoryInfo()
+        context().instrumentedContext()
+                .getSystemService(ActivityManager::class.java)!!
+                .getMemoryInfo(memoryInfo)
+        checkFailOrSkip(
+            reason,
+            memoryInfo.advertisedMem >= ramDeviceSize,
+            failureMode
+        )
+    }
 }
 
 fun RequireNotLowRamDevice.logic() {

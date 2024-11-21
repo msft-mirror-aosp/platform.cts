@@ -16,6 +16,7 @@
 
 package android.server.wm.keyguard;
 
+import static android.Manifest.permission.SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -43,12 +44,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import android.app.Activity;
 import android.app.KeyguardManager;
+import android.app.KeyguardManager.DeviceLockedStateListener;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
@@ -64,8 +73,10 @@ import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
+import com.android.wm.shell.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -85,6 +96,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     private UiDevice mUiDevice;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -96,6 +110,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     }
 
     @Test
+    @RequiresFlagsDisabled(android.app.Flags.FLAG_DEVICE_UNLOCK_LISTENER)
     public void testLockAndUnlock() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential().gotoKeyguard();
@@ -148,6 +163,40 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         mWmState.waitAndAssertKeyguardGone();
         mWmState.assertVisibility(DISMISS_KEYGUARD_ACTIVITY, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_DEVICE_UNLOCK_LISTENER)
+    public void testDeviceLockedAndUlockedWithStateListener() {
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE);
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+
+        final DeviceLockedStateListener listener = mock(DeviceLockedStateListener.class);
+        mKeyguardManager.addDeviceLockedStateListener(mContext.getMainExecutor(), listener);
+        try {
+            lockScreenSession.setLockCredential().gotoKeyguard();
+            assertTrue(mKeyguardManager.isKeyguardLocked());
+            assertTrue(mKeyguardManager.isDeviceLocked());
+            assertTrue(mKeyguardManager.isDeviceSecure());
+            assertTrue(mKeyguardManager.isKeyguardSecure());
+            mWmState.assertKeyguardShowingAndNotOccluded();
+            verify(listener, times(1)).onDeviceLockedStateChanged(true);
+
+            launchActivity(DISMISS_KEYGUARD_ACTIVITY);
+            lockScreenSession.enterAndConfirmLockCredential();
+
+            mWmState.waitAndAssertKeyguardGone();
+            assertFalse(mKeyguardManager.isDeviceLocked());
+            assertFalse(mKeyguardManager.isKeyguardLocked());
+            mWmState.assertVisibility(DISMISS_KEYGUARD_ACTIVITY, true);
+            verify(listener, times(1)).onDeviceLockedStateChanged(false);
+        } finally {
+            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                    SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE);
+            mKeyguardManager.removeDeviceLockedStateListener(listener);
+            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     @Test
@@ -256,7 +305,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assertTrue(ActivityManagerTestBase.isDisplayOn(DEFAULT_DISPLAY));
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testEnterPipOverKeyguard() {
         assumeTrue(supportsPip());
 
@@ -285,7 +336,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 ACTIVITY_TYPE_STANDARD);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedActivityAndPipActivity() {
         assumeTrue(supportsPip());
 
@@ -313,7 +366,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedPipActivity() {
         assumeTrue(supportsPip());
 
@@ -335,7 +390,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testDismissKeyguardPipActivity() {
         assumeTrue(supportsPip());
 
