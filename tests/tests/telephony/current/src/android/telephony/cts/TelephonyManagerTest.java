@@ -3896,6 +3896,22 @@ public class TelephonyManagerTest {
                     CarrierConfigManager.IMSI_CARRIER_PUBLIC_KEY_WLAN_STRING,
                     IMSI_CERT_STRING_WLAN);
             overrideCarrierConfig(carrierConfig);
+
+            // Clear downloaded carrier keys just after override above.
+            // Otherwise, downloaded key would be used instead of the override value above.
+            if (Flags.forceImsiCertificateDelete()) {
+                Log.i(TAG, "forceDeleteImsiEncryptionKey");
+                try {
+                    TelephonyUtils.forceDeleteImsiEncryptionKey(
+                            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
+                } catch (Exception exp) {
+                    fail("forceDeleteImsiEncryptionKey thrown the exp = " + exp);
+                }
+            } else {
+                Log.i(TAG,
+                        "forceDeleteImsiEncryptionKey: forceImsiCertificateDelete flag not"
+                                + " enabled");
+            }
         } catch (Exception e) {
             fail("Could not override carrier config. e=" + e.toString());
         }
