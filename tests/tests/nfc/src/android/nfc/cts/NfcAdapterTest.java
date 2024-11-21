@@ -8,6 +8,7 @@ import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,6 +83,7 @@ import java.util.function.Consumer;
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
 
+    private static final long MAX_POLLING_PAUSE_TIMEOUT = 40000;
     @Mock private INfcAdapter mService;
     @Mock private DevicePolicyManager mDevicePolicyManager;
     private INfcAdapter mSavedService;
@@ -743,6 +745,8 @@ public class NfcAdapterTest {
             assertThat(entries).isNotNull();
             entries.getFirst().getType();
             nfcOemExtension.forceRoutingTableCommit();
+            assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
+                    nfcOemExtension.getMaxPausePollingTimeoutMills());
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
