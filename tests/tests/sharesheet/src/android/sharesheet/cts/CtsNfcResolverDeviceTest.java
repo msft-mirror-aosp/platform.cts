@@ -17,7 +17,6 @@ package android.sharesheet.cts;
 
 import static android.Manifest.permission.SHOW_CUSTOMIZED_RESOLVER;
 import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
-import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,7 +44,6 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
@@ -164,10 +162,6 @@ public class CtsNfcResolverDeviceTest {
 
         // Finally ensure the device is awake
         mDevice.wakeUp();
-        // a workaround for the b/360030797 (the test suit may cause the Launcher wallpaper & style
-        // window to be left visible)
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_HOME));
     }
 
     @Test
