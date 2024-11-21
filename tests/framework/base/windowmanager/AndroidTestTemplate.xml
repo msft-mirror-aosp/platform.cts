@@ -74,8 +74,6 @@
         <option name="test-file-name" value="CtsDeviceDisplaySizeApp.apk" />
         <option name="test-file-name" value="CtsDevicePrereleaseSdkApp.apk" />
         <option name="test-file-name" value="CtsDeviceProfileableApp.apk" />
-        <option name="test-file-name" value="CtsDeviceTranslucentTestApp.apk" />
-        <option name="test-file-name" value="CtsDeviceTranslucentTestApp26.apk" />
         <option name="test-file-name" value="CtsMockInputMethod.apk" />
         <option name="test-file-name" value="CtsDeviceServicesTestShareUidAppA.apk" />
         <option name="test-file-name" value="CtsDeviceServicesTestShareUidAppB.apk" />

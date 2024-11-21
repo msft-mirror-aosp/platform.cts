@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-package android.server.wm.translucentapp26;
+package android.server.wm.app;
 
-import static android.server.wm.translucentapp.Components.TRANSLUCENT_LANDSCAPE_ACTIVITY;
+import android.app.Activity;
 
-import android.content.ComponentName;
-import android.server.wm.component.ComponentsBase;
-
-public class Components extends ComponentsBase {
-
-    public static final ComponentName SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY = component(
-            Components.class, TRANSLUCENT_LANDSCAPE_ACTIVITY.getClassName());
+public class TranslucentLandscapeActivity extends Activity {
 }

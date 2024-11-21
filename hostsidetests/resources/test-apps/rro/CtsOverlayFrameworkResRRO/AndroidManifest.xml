@@ -21,6 +21,5 @@
     <overlay
         android:targetPackage="android"
         android:resourcesMap="@xml/overlays"
-        android:targetName="framework-res"
         android:isStatic="true" />
 </manifest>

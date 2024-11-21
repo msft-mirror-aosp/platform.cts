@@ -10,31 +10,31 @@ filegroup {
     ],
 }
 
+//TODO(b/336991736) below filegroup is temporary for compatibility with other repositories
+filegroup {
+    name: "bedstead-enterprise-harrier-temporary-srcs",
+    srcs: [
+        "src/main/kotlin/**/*.kt",
+        "src/main/kotlin/**/*.java",
+    ],
+}
+
 android_library {
     name: "bedstead-enterprise",
     srcs: [
         "src/main/kotlin/**/*.kt",
         "src/main/kotlin/**/*.java",
-        ":bedstead-accounts-harrier-temporary-srcs",
     ],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     static_libs: [
+        "bedstead-multiuser",
+        "Harrier",
+        "Nene",
         "bedstead-testapps",
-        "RemoteAccountAuthenticator",
+        "bedstead-accounts",
     ],
     plugins: ["auto_annotation_plugin"],
-}
-
-// this is just a legacy name of old Bedstead where everything was in one module,
-// use bedstead-enterprise or bedstead instead
-android_library {
-    name: "Harrier",
-    manifest: "src/main/AndroidManifest.xml",
-    min_sdk_version: "29",
-    static_libs: [
-        "bedstead-enterprise",
-    ],
 }
 
 android_test {
@@ -47,6 +47,9 @@ android_test {
         "general-tests",
     ],
     static_libs: [
+        "Harrier",
+        "Nene",
+        "bedstead-multiuser",
         "bedstead-enterprise",
         "truth",
         "testng", // used for assertThrows
