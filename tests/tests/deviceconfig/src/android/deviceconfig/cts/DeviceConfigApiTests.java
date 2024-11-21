@@ -62,6 +62,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -1475,6 +1476,14 @@ public final class DeviceConfigApiTests {
                 + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_CONFIG_WRITABLE_NAMESPACES_API)
+    public void testGetAdbWritableNamespaces_returnsNamespaces() {
+        Set<String> namespaces = DeviceConfig.getAdbWritableNamespaces();
+
+        assertTrue(namespaces.size() > 0);
     }
 
     private class TestMonitorCallback implements DeviceConfig.MonitorCallback {
