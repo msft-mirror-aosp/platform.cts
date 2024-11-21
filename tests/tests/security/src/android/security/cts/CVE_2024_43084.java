@@ -16,6 +16,7 @@
 
 package android.security.cts;
 
+import static android.Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG;
 import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
@@ -193,7 +194,7 @@ public class CVE_2024_43084 extends StsExtraBusinessLogicTestCase {
                                                             .get(null),
                                             "true" /* value */,
                                             true /* makeDefault */),
-                            WRITE_DEVICE_CONFIG);
+                            WRITE_DEVICE_CONFIG, WRITE_ALLOWLISTED_DEVICE_CONFIG);
                 } else {
                     // Set 'visitPersonUri' as 'true'.
                     getDeclaredField(featureFlagsImplClass, "visitPersonUri").set(null, true);

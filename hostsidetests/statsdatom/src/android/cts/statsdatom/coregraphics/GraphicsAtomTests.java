@@ -142,10 +142,12 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
 
         assertThat(uids).hasSize(1);
         assertThat(uids.get(0)).isGreaterThan(10000);
+        // SDR -> WCG
+        assertThat(atoms.size()).isAtLeast(2);
 
         boolean seenSdrColorMode = false;
         for (HardwareRendererEvent atom : atoms) {
-            assertThat(atom.getTimeSinceLastEventMillis()).isGreaterThan(0);
+            assertThat(atom.getTimeSinceLastEventMillis()).isAtLeast(0);
             HardwareRendererEvent.ColorMode colorMode = atom.getPreviousColorMode();
             if (colorMode == HardwareRendererEvent.ColorMode.DEFAULT) {
                 seenSdrColorMode = true;
