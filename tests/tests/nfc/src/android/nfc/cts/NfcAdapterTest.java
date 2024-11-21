@@ -73,6 +73,7 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -704,9 +705,9 @@ public class NfcAdapterTest {
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
-            List<String> nfceeList = nfcOemExtension.getActiveNfceeList();
-            for (String nfcee : nfceeList) {
-                assertThat(nfcee).isNotEmpty();
+            Map<String, Integer> nfceeMap = nfcOemExtension.getActiveNfceeList();
+            for (var nfcee : nfceeMap.entrySet()) {
+                assertThat(nfcee.getKey()).isNotEmpty();
             }
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
