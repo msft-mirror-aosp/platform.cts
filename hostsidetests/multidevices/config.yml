@@ -5,4 +5,3 @@ TestBeds:
           - serial: "<device-id>"
     TestParams:
         pn532_serial_path: "<pn532-serial-path>"
-        casimir_id: "<casimir-id>" # casimir_id is for specifying the id of a cuttlefish emulator.
