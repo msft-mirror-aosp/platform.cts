@@ -159,6 +159,11 @@ public class ActivityManagementTest {
                         WindowManager.LayoutParams.FLAG_SECURE));
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onSecureWindowShown(
                 eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUser()));
+
+        getInstrumentation().runOnMainSync(() ->
+                activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE));
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onSecureWindowHidden(
+                eq(mVirtualDisplayId));
     }
 
     @Test
