@@ -238,6 +238,71 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     }
 
     @SuppressWarnings("unused")
+    public String testRadioImpact() throws Throwable {
+        List<TestSensorEvent> events = new ArrayList<>();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect baseline data for 15 seconds under airplane mode.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        // Have the user turn off airplane mode and turn on Bluetooth, WiFi, and cellular data.
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_off_airplane_mode);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_wifi);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_cellular_data);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_bluetooth);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+
+        // Collect data for 15 seconds with radio on.
+        sensorOperation = TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        sensorOperation.execute(getCurrentTestNode());
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        // Turn on airplane mode.
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_airplane_mode);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+        // Collect data for 15 seconds with radio off.
+        sensorOperation = TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        sensorOperation.execute(getCurrentTestNode());
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+        boolean failed =
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change under radio impact is larger than 0.12 hPa");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
     public String testTemperatureCompensation() throws Throwable {
         getTestLogger().logInstructions(R.string.snsr_baro_fridge_wait);
         waitForUserToContinue();
