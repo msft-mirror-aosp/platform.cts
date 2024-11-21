@@ -32,14 +32,14 @@ a card emulator and the other acting as an NFC reader. The devices should be
 placed back to back.
 """
 
+from http.client import HTTPSConnection
+import json
+import logging
+import ssl
 import sys
 import time
-import logging
 
-from http.client import HTTPSConnection
-import ssl
-import json
-
+from android.platform.test.annotations import CddTest
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
@@ -47,6 +47,7 @@ from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers import android_device_lib
 from mobly.snippet import errors
+
 
 _LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -331,7 +332,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                     destination=self.current_test_info.output_path,
                 )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_single_non_payment_service(self):
         """Tests successful APDU exchange between non-payment service and
         reader.
@@ -359,7 +360,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_single_payment_service(self):
         """Tests successful APDU exchange between payment service and
         reader.
@@ -391,7 +392,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
             self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_dual_payment_service(self):
         """Tests successful APDU exchange between a payment service and
         reader when two payment services are set up on the emulator.
@@ -421,7 +422,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startDualPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_foreground_payment_emulator(self):
         """Tests successful APDU exchange between non-default payment service and
         reader when the foreground app sets a preference for the non-default
@@ -453,7 +454,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startForegroundPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dynamic_aid_emulator(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has registered dynamic AIDs.
@@ -481,7 +482,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startDynamicAidReaderActivity if not self.pn532 else
             None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_payment_prefix_emulator(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has statically registered prefix AIDs.
@@ -511,7 +512,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_prefix_payment_emulator_2(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has statically registered prefix AIDs.
@@ -543,7 +544,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_other_prefix(self):
         """Tests successful APDU exchange when the emulator dynamically
         registers prefix AIDs for a non-payment service.
@@ -568,7 +569,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_offhost_service(self):
         """Tests successful APDU exchange between offhost service and reader.
 
@@ -591,7 +592,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startOffHostReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_on_and_offhost_service(self):
         """Tests successful APDU exchange between when reader selects both an on-host and off-host
         service.
@@ -615,7 +616,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startOnAndOffHostReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dual_non_payment(self):
         """Tests successful APDU exchange between transport service and reader
         when two non-payment services are enabled.
@@ -643,7 +644,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startDualNonPaymentReaderActivity if not
             self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_foreground_non_payment(self):
         """Tests successful APDU exchange between non-payment service and
           reader when the foreground app sets a preference for the
@@ -673,7 +674,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startForegroundNonPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_throughput(self):
         """Tests that APDU sequence exchange occurs with under 60ms per APDU.
 
@@ -702,7 +703,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startThroughputReaderActivity()
         test_pass_handler.waitAndGet('ApduUnderThreshold', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_tap_50_times(self):
         """Tests that 50 consecutive APDU exchanges are successful.
 
@@ -742,7 +743,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
                 self.reader.nfc_reader.closeActivity()
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_large_num_aids(self):
         """Tests that a long APDU sequence (256 commands/responses) is
         successfully exchanged.
@@ -766,7 +767,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startLargeNumAidsReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_off_payment(self):
         """Tests that APDU exchange occurs when device screen is off.
 
@@ -803,7 +804,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_conflicting_non_payment(self):
         """ This test registers two non-payment services with conflicting AIDs,
         selects a service to use, and ensures the selected service exchanges
@@ -846,7 +847,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_conflicting_non_payment_prefix(self):
         """ This test registers two non-payment services with conflicting
         prefix AIDs, selects a service to use, and ensures the selected
@@ -939,7 +940,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         test_pass_handler.waitAndGet('EventListenerSuccess', _NFC_TIMEOUT_SEC)
 
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_protocol_params(self):
         """ Tests that the Nfc-A and ISO-DEP protocol parameters are being
         set correctly.
@@ -975,7 +976,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startProtocolParamsReaderActivity()
             test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_on_only_off_host_service(self):
         """
         Test Steps:
