@@ -36,6 +36,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -83,6 +84,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
             is RequireLowRamDevice -> logic()
+            is RequireMinimumAdvertisedRamDevice -> logic()
             is RequireNotLowRamDevice -> logic()
             is EnsureScreenIsOn -> logic()
             is EnsureUnlocked -> logic()

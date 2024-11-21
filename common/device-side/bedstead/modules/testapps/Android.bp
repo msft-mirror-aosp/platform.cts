@@ -11,10 +11,17 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
-        "bedstead",
-        "RemoteDPC",
+        "Harrier",
     ],
     min_sdk_version: "29",
+}
+
+filegroup {
+    name: "bedstead-testapps-harrier-temporary-srcs",
+    srcs: [
+        "src/main/kotlin/**/*.kt",
+        "src/main/kotlin/**/*.java",
+    ],
 }
 
 android_test {
@@ -27,7 +34,7 @@ android_test {
     ],
     static_libs: [
         "Nene",
-        "bedstead",
+        "Harrier",
         "bedstead-testapps",
         "androidx.test.ext.junit",
         "truth",

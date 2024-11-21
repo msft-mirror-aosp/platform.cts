@@ -11,7 +11,7 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
-        "bedstead",
+        "Harrier",
         "bedstead-testapps",
     ],
     min_sdk_version: "29",

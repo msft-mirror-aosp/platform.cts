@@ -29,9 +29,11 @@
         <package android:name="android.server.wm.scvh" />
     </queries>
 
+    <!-- Make application debuggable to enable checkjni for all tests -->
     <application android:label="Android TestCase"
          android:maxRecents="1"
          android:multiArch="true"
+         android:debuggable="true"
          android:supportsRtl="true">
         <uses-library android:name="android.test.runner"/>
 

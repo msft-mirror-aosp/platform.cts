@@ -34,12 +34,14 @@ import android.bluetooth.le.DistanceMeasurementSession;
 import android.content.Context;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -51,6 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementManagerTest {
@@ -135,5 +138,16 @@ public class DistanceMeasurementManagerTest {
     private boolean isValidSecurityLevel(int securityLevel) {
         return (securityLevel >= ChannelSoundingParams.CS_SECURITY_LEVEL_UNKNOWN
                 && securityLevel <= ChannelSoundingParams.CS_SECURITY_LEVEL_FOUR);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getChannelSoundingSupportedSecurityLevels() {
+        Set<Integer> securityLevels =
+                mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+        assertNotNull(securityLevels);
+        // TODO(b/378926246): check the CS availability.
+        // assertTrue(securityLevels.size() > 0);
     }
 }
