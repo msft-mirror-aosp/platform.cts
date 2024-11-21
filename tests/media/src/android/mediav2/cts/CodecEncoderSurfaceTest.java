@@ -17,9 +17,9 @@
 package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
-import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
