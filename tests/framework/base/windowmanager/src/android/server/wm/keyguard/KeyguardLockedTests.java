@@ -531,6 +531,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 activity.getClass().getName()
                         + "/" + Long.toString(SystemClock.elapsedRealtimeNanos()));
         final LinearLayout layout = new LinearLayout(activity);
+        layout.setFitsSystemWindows(true);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(editor);
         activity.setContentView(layout);
