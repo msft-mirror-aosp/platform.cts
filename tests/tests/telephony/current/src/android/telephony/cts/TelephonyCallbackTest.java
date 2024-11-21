@@ -1738,7 +1738,7 @@ public class TelephonyCallbackTest {
 
         @Override
         public void onCarrierRoamingNtnAvailableServicesChanged(
-                @NetworkRegistrationInfo.ServiceType List<Integer> availableServices) {
+                @NetworkRegistrationInfo.ServiceType int[] availableServices) {
             synchronized (mLock) {
                 mOnCarrierRoamingNtnAvailableServiceCalled = true;
                 mLock.notify();
