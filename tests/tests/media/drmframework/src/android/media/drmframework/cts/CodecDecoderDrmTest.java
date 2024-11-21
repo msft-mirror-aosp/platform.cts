@@ -28,9 +28,11 @@ import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderBlockModelDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
+import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -52,6 +54,9 @@ import java.util.UUID;
  * normal mode and block model mode. The test expects consistent output in both scenarios.
  * <p>
  */
+// This test is limited to V and above as it doesn't work as intended on the older versions
+// due to issues in block model buffer handling. Refer: b/331921194, b/325512893 and b/329767811.
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
@@ -94,11 +99,8 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_stereo_48kHz_192kbps_opus_cenc.mp4"},
         }));
-        // cts -- check them all
-        // mcts/mts -- just check codecs implemented in modules
-        boolean ignoreModule = (TestUtils.currentTestMode() == TestUtils.TESTMODE_CTS);
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                        false /*testingallCodecs*/, ignoreModule /*ignoreModeDuringSelection*/);
+                        false /*testingallCodecs*/);
     }
 
     static byte[] convert(int[] intArray) {
@@ -121,23 +123,24 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
     public void testSimpleDecode() throws IOException, InterruptedException,
             UnsupportedSchemeException, NotProvisionedException, ResourceBusyException,
             MediaCryptoException {
-        CodecDecoderDrmTestBase cddrmtb =
+        CodecDecoderDrmTestBase decoder =
                 new CodecDecoderDrmTestBase(mCodecName, mMediaType, null, mAllTestParams);
-        cddrmtb.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][]{CLEAR_KEY_CENC});
-        cddrmtb.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+        decoder.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA, new byte[][]{CLEAR_KEY_CENC});
+        decoder.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
                 Integer.MAX_VALUE);
-        cddrmtb.tearDownCrypto();
+        decoder.tearDownCrypto();
 
         if (IS_AT_LEAST_R) {
-            OutputManager ref = cddrmtb.getOutputManager();
-            CodecDecoderBlockModelDrmTestBase cdbmdrmtb = new CodecDecoderBlockModelDrmTestBase(
-                    mCodecName, mMediaType, null, mAllTestParams);
+            OutputManager ref = decoder.getOutputManager();
+            CodecDecoderBlockModelDrmTestBase decoderBlockModel =
+                    new CodecDecoderBlockModelDrmTestBase(mCodecName, mMediaType, null,
+                    mAllTestParams);
             OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-            cdbmdrmtb.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA,
+            decoderBlockModel.setUpCrypto(CLEAR_KEY_IDENTIFIER, DRM_INIT_DATA,
                     new byte[][]{CLEAR_KEY_CENC});
-            cdbmdrmtb.decodeToMemory(mTestFile, mCodecName, test, 0,
+            decoderBlockModel.decodeToMemory(mTestFile, mCodecName, test, 0,
                     MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
-            cdbmdrmtb.tearDownCrypto();
+            decoderBlockModel.tearDownCrypto();
             if (!ref.equals(test)) {
                 fail("Output in block model mode is not same as output in normal mode. \n"
                         + mTestConfig + mTestEnv + test.getErrMsg());
