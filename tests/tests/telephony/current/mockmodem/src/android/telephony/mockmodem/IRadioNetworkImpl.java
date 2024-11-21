@@ -1045,6 +1045,43 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     }
 
     @Override
+    public void setSatellitePlmn(int serial, int simSlot, String[] carrierPlmnArray,
+            String[] allSatellitePlmnArray) {
+        Log.d(TAG, "setSatellitePlmn");
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioNetworkResponse.setSatellitePlmnResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to setSatellitePlmn from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
+    public void setSatelliteEnabledForCarrier(int serial, int simSlot, boolean satelliteEnabled) {
+        Log.d(TAG, "setSatelliteEnabledForCarrier");
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioNetworkResponse.setSatelliteEnabledForCarrierResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to setSatelliteEnabledForCarrier from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
+    public void isSatelliteEnabledForCarrier(int serial, int simSlot) {
+        Log.d(TAG, "isSatelliteEnabledForCarrier");
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioNetworkResponse.isSatelliteEnabledForCarrierResponse(rsp, false);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to isSatelliteEnabledForCarrier from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
     public String getInterfaceHash() {
         return IRadioNetwork.HASH;
     }
