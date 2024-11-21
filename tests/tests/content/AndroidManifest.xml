@@ -390,7 +390,7 @@
             android:name="android.content.pm.cts.TestDependencyInstallerService"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.INSTALL_DEPENDENCY" />
+                <action android:name="android.content.pm.action.INSTALL_DEPENDENCY" />
             </intent-filter>
         </service>
         <!--Test for PackageManager-->
