@@ -19,6 +19,7 @@ package com.android.compatibility.common.util;
 import static org.junit.Assert.assertNotNull;
 
 import android.graphics.Rect;
+import android.os.Build;
 import android.util.Log;
 import android.util.TypedValue;
 
@@ -26,6 +27,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
@@ -34,6 +36,7 @@ import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -56,6 +59,8 @@ public class UiAutomatorUtils2 {
 
     private static Pattern sCollapsingToolbarResPattern =
             Pattern.compile(".*:id/collapsing_toolbar");
+
+    private static final UserHelper USER_HELPER = new UserHelper();
 
     public static UiDevice getUiDevice() {
         return UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
@@ -121,6 +126,15 @@ public class UiAutomatorUtils2 {
 
     public static UiObject2 waitFindObjectOrNull(BySelector selector, long timeoutMs)
             throws UiObjectNotFoundException {
+        // If the target user is a visible background user, find the object on the main display
+        // assigned to the user. This is because UiScrollable does not support multi-display,
+        // so any scroll actions from UiScrollable will be performed on the default display,
+        // regardless of which display the test is running on.
+        // This is specifically for the tests that support secondary_user_on_secondary_display.
+        if (USER_HELPER.isVisibleBackgroundUser()) {
+            return waitFindObjectOrNullOnDisplay(
+                    selector, timeoutMs, USER_HELPER.getMainDisplayId());
+        }
         UiObject2 view = null;
         long start = System.currentTimeMillis();
 
@@ -203,6 +217,52 @@ public class UiAutomatorUtils2 {
                 } else {
                     // There might be a collapsing toolbar, but no scrollable view. Try to collapse
                     scrollPastCollapsibleToolbar(null, deadZone);
+                }
+            }
+        }
+        return view;
+    }
+
+    /**
+     * Finds the object on the given display.
+     *
+     * @param selector The selector to match.
+     * @param timeoutMs The timeout in milliseconds.
+     * @param displayId The display to search on.
+     * @return The object that matches the selector, or null if not found.
+     */
+    public static UiObject2 waitFindObjectOrNullOnDisplay(
+            BySelector selector, long timeoutMs, int displayId) throws UiObjectNotFoundException {
+        // Only supported in API level 30 or higher versions.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return null;
+        }
+
+        UiObject2 view = null;
+        long start = System.currentTimeMillis();
+
+        while (view == null && start + timeoutMs > System.currentTimeMillis()) {
+            view = getUiDevice().wait(Until.findObject(selector), 1000);
+            if (view != null) {
+                break;
+            }
+
+            List<UiObject2> scrollableViews = getUiDevice().findObjects(
+                    By.displayId(displayId).scrollable(true));
+            if (scrollableViews == null || scrollableViews.isEmpty()) {
+                break;
+            }
+
+            for (int i = 0; i < scrollableViews.size(); i++) {
+                UiObject2 scrollableView = scrollableViews.get(i);
+                // Swipe far away from the edges to avoid triggering navigation gestures
+                scrollableView.setGestureMarginPercentage((float) getSwipeDeadZonePct());
+                // Scroll from the top to the bottom until the view object is found.
+                scrollableView.scroll(Direction.UP, 1.0f);
+                scrollableView.scrollUntil(Direction.DOWN, Until.findObject(selector));
+                view = getUiDevice().findObject(selector);
+                if (view != null) {
+                    break;
                 }
             }
         }
