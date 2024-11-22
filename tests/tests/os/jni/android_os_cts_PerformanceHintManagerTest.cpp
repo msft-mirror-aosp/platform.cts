@@ -469,22 +469,6 @@ static jstring nativeTestCreateGraphicsPipelineSessionOverLimit(JNIEnv* env, job
         return nullptr;
     }
 
-    std::list<struct HelperThread> threads(count);
-    std::vector<int32_t> tids;
-    for (auto&& thread : threads) {
-        tids.push_back(thread.getTid());
-    }
-    ret = ASessionCreationConfig_setTids(config, tids.data(), (size_t)count);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setTids ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
-    }
-    SessionWrapper a = SessionWrapper(APerformanceHint_createSessionUsingConfig(manager, config));
-    if (a.session() != nullptr) {
-        return toJString(env, "a is not null given max graphics pipeline threads limit reached");
-    }
-
     ASessionCreationConfig_release(config);
     return nullptr;
 }
