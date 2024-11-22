@@ -21,6 +21,10 @@ import static android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTAL
 import static android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES;
 import static android.content.pm.PackageManager.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
+
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -40,7 +44,6 @@ import android.content.pm.dependencyinstaller.DependencyInstallerCallback;
 import android.content.pm.dependencyinstaller.DependencyInstallerService;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.util.ArraySet;
 import android.util.Log;
 import android.util.PackageUtils;
 
@@ -55,7 +58,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /*
  * A DependencyInstallerService for test.
@@ -74,31 +76,39 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     private static final String TEST_SDK2_APK_NAME = "HelloWorldSdk2";
 
     static final String METHOD_NAME = "method-name";
+    static final String ERROR_MESSAGE = TAG + "error-message";
     static final String METHOD_INSTALL_SYNC = "install-sync";
     static final String METHOD_INSTALL_ASYNC = "install-async";
+    static final String METHOD_INVALID_SESSION_ID = "invalid-session-id";
 
-    private final Set<Integer> mPendingSessionIds = new ArraySet<>();
     private String mCertDigest;
 
     @Override
     public void onDependenciesRequired(List<SharedLibraryInfo> neededLibraries,
             DependencyInstallerCallback callback) {
-        Log.i(TAG, "onDependenciesRequired call received");
 
         String methodName = getMethodName();
+
+        Log.d(TAG, "onDependenciesRequired call received: " + methodName);
 
         try {
             if (methodName.equals(METHOD_INSTALL_SYNC)) {
                 installDependencies(neededLibraries, callback, /*sync=*/ true);
             } else if (methodName.equals(METHOD_INSTALL_ASYNC)) {
                 installDependencies(neededLibraries, callback, /*sync=*/ false);
+            } else if (methodName.equals(METHOD_INVALID_SESSION_ID)) {
+                testInvalidSessionId(neededLibraries, callback);
             } else {
                 throw new IllegalStateException("Unknown method name: " + methodName);
             }
-        } catch (Exception e) {
-            Log.e(TAG, e.getMessage(), e);
-            callback.onFailureToResolveAllDependencies();
-            return;
+        } catch (Throwable e) {
+            Log.w(TAG, e.getMessage(), e);
+            setErrorMessage(e.getMessage());
+            try {
+                callback.onFailureToResolveAllDependencies();
+            } catch (Exception e2) {
+                Log.w(TAG, e2.getMessage());
+            }
         }
     }
 
@@ -118,10 +128,27 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             && info.getCertDigests().get(0).equals(mCertDigest);
     }
 
+    private void testInvalidSessionId(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        // Pass a session id that doesn't exist
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> {
+                            callback.onAllDependenciesResolved(new int[] {100});
+                        });
+
+        assertThat(exception).hasMessageThat().contains("Failed to find session: 100");
+
+        // Proceed with installation normally
+        installDependencies(neededLibraries, callback, /*sync=*/true);
+    }
+
     private void installDependencies(List<SharedLibraryInfo> neededLibraries,
             DependencyInstallerCallback callback, boolean sync) throws Exception {
 
-        mPendingSessionIds.clear();
+        Log.d(TAG, "Installing dependencies normally. sync: " + sync);
 
         // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
         // have will be same cert as our current package.
@@ -148,13 +175,14 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         for (int i = 0; i < size; i++) {
             SessionParams params = new SessionParams(MODE_FULL_INSTALL);
             int sessionId = installer.createSession(params);
-            Log.i(TAG, "Session created: " + sessionId);
+            Log.d(TAG, "Session created: " + sessionId);
             sessionIds.add(sessionId);
         }
 
         // Return the session ids immediately
-        if (!sync) {
+        if (!sync && callback != null) {
             callback.onAllDependenciesResolved(toIntArray(sessionIds));
+            callback = null;
         }
 
         SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionIds);
@@ -173,6 +201,10 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
 
     private String getMethodName() {
         return getDefaultSharedPreferences().getString(METHOD_NAME, "");
+    }
+
+    private void setErrorMessage(String msg) {
+        getDefaultSharedPreferences().edit().putString(ERROR_MESSAGE, msg).commit();
     }
 
     private void writeApk(@NonNull Session session, @NonNull String name) throws IOException {
@@ -214,11 +246,11 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             if (status == PackageInstaller.STATUS_SUCCESS) {
                 synchronized (this) {
                     mPendingSessionCount--;
-                    if (mPendingSessionCount == 0) {
+                    if (mPendingSessionCount == 0 && mCallback != null) {
                         mCallback.onAllDependenciesResolved(mSessionIds);
                     }
                 }
-            } else {
+            } else if (mCallback != null) {
                 mCallback.onFailureToResolveAllDependencies();
             }
         }
