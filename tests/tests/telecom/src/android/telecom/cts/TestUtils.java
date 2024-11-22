@@ -40,6 +40,7 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
+import android.telephony.SubscriptionManager;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -460,6 +461,14 @@ public class TestUtils {
         final PackageManager pm = context.getPackageManager();
         return (pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) && pm.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_CALLING));
+    }
+
+    /**
+     * @return true if the device has a default cellular subscription, false otherwise
+     */
+    public static boolean hasDefaultSubscription(Context context) {
+        return hasTelephonyFeature(context) && SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                != SubscriptionManager.getDefaultSubscriptionId();
     }
 
     /**

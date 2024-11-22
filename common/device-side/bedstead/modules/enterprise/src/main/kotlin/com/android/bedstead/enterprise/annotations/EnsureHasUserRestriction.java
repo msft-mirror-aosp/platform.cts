@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.multiuser.annotations;
+package com.android.bedstead.enterprise.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
@@ -29,21 +31,30 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test requires a given user restriction be not set.
+ * Mark that a test requires a given user restriction be set.
  *
  * <p>You should use {@code DeviceState} to ensure that the device enters
  * the correct state for the method.
- * TODO(b/336991736) move it into enterprise module
+ *
+ * <p>Note that when relying on {@code DeviceState} to enforce this policy, it will make use of a
+ * Profile Owner. This should not be used in states where no profile owner is wanted on the
+ * user the restriction is required on.
  */
+// TODO(264844667): Enforce no use of @EnsureHasNoProfileOwner
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(EnsureDoesNotHaveUserRestrictionGroup.class)
+@Repeatable(EnsureHasUserRestrictionGroup.class)
+// This is only required because the user restrictions are applied by a Device Admin.
+@RequireFeature(FEATURE_DEVICE_ADMIN)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
-public @interface EnsureDoesNotHaveUserRestriction {
+public @interface EnsureHasUserRestriction {
+
+    int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;
+
     /** The restriction to be set. */
     String value();
 
-    /** The user the restriction should not be set on. */
+    /** The user the restriction should be set on. */
     UserType onUser() default UserType.INSTRUMENTED_USER;
 
      /**
@@ -57,5 +68,5 @@ public @interface EnsureDoesNotHaveUserRestriction {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default LATE;
+    int priority() default ENSURE_HAS_USER_RESTRICTION_PRIORITY;
 }
