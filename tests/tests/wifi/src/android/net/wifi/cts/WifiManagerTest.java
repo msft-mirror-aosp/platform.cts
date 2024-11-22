@@ -7639,7 +7639,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     /**
      * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_WEP_DISABLED_IN_APM)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AAPM_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
             codeName = "Baklava")
     @Test
@@ -7649,9 +7649,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.adoptShellPermissionIdentity();
             List<AdvancedProtectionFeature> features =
                     sWifiManager.getAvailableAdvancedProtectionFeatures();
-            // Should have the WEP disabled feature at least.
             assertNotNull(features);
-            assertFalse(features.isEmpty());
+            if (Flags.wepDisabledInApm()) {
+                // Should have the WEP disabled feature at least.
+                assertFalse(features.isEmpty());
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
