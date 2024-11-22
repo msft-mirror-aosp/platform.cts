@@ -363,6 +363,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testFullscreenAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         separateTestJournal();
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
