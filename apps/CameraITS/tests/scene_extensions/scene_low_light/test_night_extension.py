@@ -134,7 +134,6 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       else:
         raise e
 
-
   def test_night_extension(self):
     # Handle subdirectory
     self.scene = 'scene_low_light'
@@ -233,7 +232,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       else:
         raise AssertionError('No supported sizes/formats found!')
 
-      file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
+      file_stem = (
+          f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
+      )
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
