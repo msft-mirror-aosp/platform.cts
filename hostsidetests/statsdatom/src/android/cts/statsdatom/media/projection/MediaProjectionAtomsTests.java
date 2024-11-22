@@ -27,7 +27,7 @@ import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionSt
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_INITIATED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_STOPPED;
-import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_BOUNDS;
+import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_POSITION;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_WINDOWING_MODE;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetType.TARGET_TYPE_DISPLAY;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.WindowingMode.WINDOWING_MODE_FULLSCREEN;
@@ -179,7 +179,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         MediaProjectionTargetChanged a0 =
                 data.get(0).getAtom().getExtension(mediaProjectionTargetChanged);
         assertThat(a0.getTargetType()).isEqualTo(TARGET_TYPE_DISPLAY);
-        assertThat(a0.getTargetChangeType()).isEqualTo(TARGET_CHANGE_BOUNDS);
+        assertThat(a0.getTargetChangeType()).isEqualTo(TARGET_CHANGE_POSITION);
 
         MediaProjectionTargetChanged a1 =
                 data.get(1).getAtom().getExtension(mediaProjectionTargetChanged);
