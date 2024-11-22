@@ -36,13 +36,15 @@ class GetValueResultTest {
     @get:Rule
     val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    private val value = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING)
-        .setStringValue("string")
-        .build()
-    private val metadata = SettingsPreferenceMetadata.Builder("screenKey", "prefKey")
-        .setTitle("title")
-        .setEnabled(true)
-        .build()
+    private val value: SettingsPreferenceValue
+        get() = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING)
+            .setStringValue("string")
+            .build()
+    private val metadata: SettingsPreferenceMetadata
+        get() = SettingsPreferenceMetadata.Builder("screenKey", "prefKey")
+            .setTitle("title")
+            .setEnabled(true)
+            .build()
 
     @Test
     fun buildGetValueResult_failureResult_fieldsNull() {
