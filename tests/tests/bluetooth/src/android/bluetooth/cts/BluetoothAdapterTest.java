@@ -352,6 +352,18 @@ public class BluetoothAdapterTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void isRfcommSocketOffloadSupported() {
+        assumeTrue(mHasBluetooth);
+
+        assertThrows(SecurityException.class, () -> mAdapter.isRfcommSocketOffloadSupported());
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.isRfcommSocketOffloadSupported()).isAnyOf(true, false);
+        }
+    }
+
     @Test
     public void isDistanceMeasurementSupported() throws IOException {
         assumeTrue(mHasBluetooth);

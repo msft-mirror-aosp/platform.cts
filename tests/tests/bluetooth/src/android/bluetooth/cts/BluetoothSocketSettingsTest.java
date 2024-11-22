@@ -163,6 +163,14 @@ public class BluetoothSocketSettingsTest {
         return result;
     }
 
+    private boolean isRfcommSocketOffloadSupported() {
+        boolean result;
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            result = sAdapter.isRfcommSocketOffloadSupported();
+        }
+        return result;
+    }
+
     /* BluetoothSocketSettings interface related tests */
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
@@ -349,6 +357,26 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
+    public void createListeningInsecureRfcommOffloadSocket() throws IOException {
+        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_RFCOMM)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setRfcommUuid(TEST_UUID)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createServerSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
     public void createListeningInsecureLeCocOffloadSocket() throws IOException {
         Assume.assumeTrue(isLeCocSocketOffloadSupported());
         BluetoothSocketSettings.Builder builder =
@@ -449,6 +477,27 @@ public class BluetoothSocketSettingsTest {
 
         BluetoothSocketSettings settings = builder.build();
         createClientSocketUsingSettings(settings);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createClientInsecureRfcommOffloadSocket() throws IOException {
+        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_RFCOMM)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setRfcommServiceName(TEST_SERVICE_NAME)
+                        .setRfcommUuid(TEST_UUID)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createClientSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
