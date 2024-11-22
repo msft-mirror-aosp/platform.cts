@@ -16,7 +16,6 @@
 package android.sharesheet.cts;
 
 import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
-import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -61,7 +60,6 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
@@ -229,10 +227,6 @@ public class CtsSharesheetDeviceTest {
 
         // Finally ensure the device is awake
         mDevice.wakeUp();
-        // a workaround for the b/360030797 (the test suit may cause the Launcher wallpaper & style
-        // window to be left visible)
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_HOME));
     }
 
     /**

@@ -47,7 +47,6 @@ import android.widget.RadioGroup;
 import android.widget.GridLayout;
 import android.widget.GridLayout.LayoutParams;
 import android.view.Gravity;
-import android.sysprop.SensorProperties;
 
 import android.view.View;
 import android.app.AlertDialog;
@@ -57,6 +56,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
+import com.android.compatibility.common.util.PropertyUtil;
+
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -114,8 +115,8 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (!SensorProperties.isHighQualityBarometerImplemented().isPresent()
-                || !SensorProperties.isHighQualityBarometerImplemented().get()) {
+        if (!Boolean.parseBoolean(
+                PropertyUtil.getProperty("hardware.sensor.barometer.high_quality.implemented"))) {
             getTestLogger().logMessage(R.string.snsr_baro_not_implemented);
             finish();
         }
@@ -186,6 +187,163 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
                 minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
         if (failed) {
             Assert.fail("FAILED - Pressure change under flashlight impact is larger than 0.12 hPa");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
+    public String testSqueezingImpact() throws Throwable {
+        List<TestSensorEvent> events = new ArrayList<>();
+        getTestLogger().logInstructions(R.string.snsr_baro_squeeze_test_prep_instruction);
+        waitForUserToContinue();
+        // Initial collection to get a baseline reading for barometer measurements without the
+        // impact of squeezing.
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 35 seconds - 2 * 15 seconds for baseline, 2 seconds for the impact, and
+        // 3 seconds for extra room.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 35, TimeUnit.SECONDS);
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                SystemClock.sleep(15000);
+                                playSound();
+                                SystemClock.sleep(15000);
+                                playSound();
+                            } catch (InterruptedException e) {
+                                Assert.fail("FAILED - Unable to play sound.");
+                            }
+                        });
+        thread.start();
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+        boolean failed =
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.12 hPa");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
+    public String testWalkingImpact() throws Throwable {
+        List<TestSensorEvent> events = new ArrayList<>();
+        getTestLogger().logInstructions(R.string.snsr_baro_walking_impact_instruction);
+        waitForUserToContinue();
+        // Initial collection to get a baseline reading for barometer measurements with the device
+        // being stationary.
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 15 seconds for baseline, 15 seconds for the impact, and 3 seconds for
+        // extra room.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 33, TimeUnit.SECONDS);
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                SystemClock.sleep(15000);
+                                playSound();
+                                SystemClock.sleep(15000);
+                                playSound();
+                            } catch (InterruptedException e) {
+                                Assert.fail("FAILED - Unable to play sound.");
+                            }
+                        });
+        thread.start();
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+        boolean failed =
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change under walking impact is larger than 0.12 hPa");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
+    public String testRadioImpact() throws Throwable {
+        List<TestSensorEvent> events = new ArrayList<>();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect baseline data for 15 seconds under airplane mode.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        // Have the user turn off airplane mode and turn on Bluetooth, WiFi, and cellular data.
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_off_airplane_mode);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_wifi);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_cellular_data);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_bluetooth);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+
+        // Collect data for 15 seconds with radio on.
+        sensorOperation = TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        sensorOperation.execute(getCurrentTestNode());
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        // Turn on airplane mode.
+        getTestLogger().logInstructions(R.string.snsr_baro_turn_on_airplane_mode);
+        waitForUserToContinue();
+        startActivity(new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+        // Collect data for 15 seconds with radio off.
+        sensorOperation = TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        waitForUserToContinue();
+        sensorOperation.execute(getCurrentTestNode());
+        getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        currentEvents = sensorOperation.getCollectedEvents();
+        // Drop the first 20% of the readings to account for the sensor settling
+        events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+        boolean failed =
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change under radio impact is larger than 0.12 hPa");
         }
         return failed ? "FAILED" : "PASSED";
     }

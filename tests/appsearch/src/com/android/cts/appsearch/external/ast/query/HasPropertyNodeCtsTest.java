@@ -39,6 +39,17 @@ public class HasPropertyNodeCtsTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
+    public void testEquals_identical() {
+        HasPropertyNode hasPropertyOne =
+                new HasPropertyNode(new PropertyPath("example.property.path"));
+        HasPropertyNode hasPropertyTwo =
+                new HasPropertyNode(new PropertyPath("example.property.path"));
+
+        assertThat(hasPropertyOne).isEqualTo(hasPropertyTwo);
+        assertThat(hasPropertyOne.hashCode()).isEqualTo(hasPropertyTwo.hashCode());
+    }
+
+    @Test
     public void testConstructor_throwsOnNullPointer() {
         assertThrows(NullPointerException.class, () -> new HasPropertyNode(null));
     }
@@ -111,5 +122,17 @@ public class HasPropertyNodeCtsTest {
         hasPropertyNode.setProperty(newPropertyPath);
 
         assertThat(hasPropertyNode.getProperty()).isEqualTo(newPropertyPath);
+    }
+
+    @Test
+    public void testToString_correctString() {
+        List<PropertyPath.PathSegment> pathSegmentList =
+                List.of(
+                        PropertyPath.PathSegment.create("property"),
+                        PropertyPath.PathSegment.create("path"));
+        PropertyPath propertyPath = new PropertyPath(pathSegmentList);
+        HasPropertyNode hasPropertyNode = new HasPropertyNode(propertyPath);
+
+        assertThat(hasPropertyNode.toString()).isEqualTo("hasProperty(\"property.path\")");
     }
 }

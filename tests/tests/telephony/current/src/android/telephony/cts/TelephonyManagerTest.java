@@ -81,6 +81,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.carrier.CarrierIdentifier;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -3895,6 +3896,22 @@ public class TelephonyManagerTest {
                     CarrierConfigManager.IMSI_CARRIER_PUBLIC_KEY_WLAN_STRING,
                     IMSI_CERT_STRING_WLAN);
             overrideCarrierConfig(carrierConfig);
+
+            // Clear downloaded carrier keys just after override above.
+            // Otherwise, downloaded key would be used instead of the override value above.
+            if (Flags.forceImsiCertificateDelete()) {
+                Log.i(TAG, "forceDeleteImsiEncryptionKey");
+                try {
+                    TelephonyUtils.forceDeleteImsiEncryptionKey(
+                            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
+                } catch (Exception exp) {
+                    fail("forceDeleteImsiEncryptionKey thrown the exp = " + exp);
+                }
+            } else {
+                Log.i(TAG,
+                        "forceDeleteImsiEncryptionKey: forceImsiCertificateDelete flag not"
+                                + " enabled");
+            }
         } catch (Exception e) {
             fail("Could not override carrier config. e=" + e.toString());
         }
@@ -7443,5 +7460,31 @@ public class TelephonyManagerTest {
                     .dropShellPermissionIdentity();
         }
         return null;
+    }
+
+    /**
+     * Tests that getCarrierIdFromCarrierIdentifier methods don't crash.
+     */
+    @Test
+    public void testGetCarrierIdFromCarrierIdentifier() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        CarrierIdentifier carrier =
+                new CarrierIdentifier("", "", null, null, null, null);
+
+        // The API requires READ_PRIVILEGED_PHONE_STATE privilege
+        try {
+            mTelephonyManager.getCarrierIdFromCarrierIdentifier(carrier);
+            fail("Telephony#getCarrierIdFromCarrierIdentifie should throw SecurityException without"
+                    + " READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException expected) {
+        }
+
+        // With READ_PRIVILEGED_PHONE_STATE, it should work
+        int carrierId =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getCarrierIdFromCarrierIdentifier(carrier));
+        assertTrue(carrierId == TelephonyManager.UNKNOWN_CARRIER_ID);
+
     }
 }
