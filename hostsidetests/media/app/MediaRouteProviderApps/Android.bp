@@ -35,6 +35,12 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
+    name: "CtsMediaRouterHostSideTestProviderRequiresPermissionsApp",
+    manifest: "AndroidManifestProviderRequiresPermissions.xml",
+    defaults: ["CtsMediaRouterHostSizeTestProviderAppDefaults"],
+}
+
+android_test_helper_app {
     name: "CtsMediaRouterHostSideTestProviderSelfScanOnlyApp",
     manifest: "AndroidManifestProviderSelfScanOnly.xml",
     defaults: ["CtsMediaRouterHostSizeTestProviderAppDefaults"],
@@ -60,6 +66,7 @@ java_defaults {
     ],
     static_libs: [
         "androidx.test.rules",
+        "com.android.media.flags.bettertogether-aconfig-java",
         "compatibility-device-util-axt",
     ],
     sdk_version: "test_current",
