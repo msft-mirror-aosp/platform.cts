@@ -54,7 +54,10 @@ private:
 
 struct HelperThread {
     HelperThread() : helpThread(&HelperThread::run, &(*this)) {}
-    ~HelperThread() { closurePromise.set_value(true); }
+    ~HelperThread() {
+        closurePromise.set_value(true);
+        closureFinishedFuture.get();
+    }
 
     // calling getTid() more than once would break
     pid_t getTid() { return pidFuture.get(); }
@@ -62,12 +65,15 @@ struct HelperThread {
     void run() {
         pidPromise.set_value(getTid());
         closureFuture.get();
+        closureFinishedPromise.set_value(true);
     }
 
     std::promise<pid_t> pidPromise{};
     std::future<pid_t> pidFuture = pidPromise.get_future();
     std::promise<bool> closurePromise{};
     std::future<bool> closureFuture = closurePromise.get_future();
+    std::promise<bool> closureFinishedPromise{};
+    std::future<bool> closureFinishedFuture = closureFinishedPromise.get_future();
     std::thread helpThread;
 };
 
@@ -467,6 +473,22 @@ static jstring nativeTestCreateGraphicsPipelineSessionOverLimit(JNIEnv* env, job
         return toJString(env, "creation config setGraphicsPipeline ret is EINVAL");
     } else if (ret == ENOTSUP) {
         return nullptr;
+    }
+
+    std::list<struct HelperThread> threads(count);
+    std::vector<int32_t> tids;
+    for (auto&& thread : threads) {
+        tids.push_back(thread.getTid());
+    }
+    ret = ASessionCreationConfig_setTids(config, tids.data(), (size_t)count);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTids ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    SessionWrapper a = SessionWrapper(APerformanceHint_createSessionUsingConfig(manager, config));
+    if (a.session() != nullptr) {
+        return toJString(env, "a is not null given max graphics pipeline threads limit reached");
     }
 
     ASessionCreationConfig_release(config);
