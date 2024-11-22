@@ -191,7 +191,9 @@ public class CloseSystemDialogsTest {
         compat(APP_COMPAT_RESET, ActivityManager.LOCK_DOWN_CLOSE_SYSTEM_DIALOGS, APP_HELPER);
         compat(APP_COMPAT_RESET, "NOTIFICATION_TRAMPOLINE_BLOCK", APP_HELPER);
         mNotificationHelper.disableListener(APP_SELF);
-        mNotificationListener.resetData();
+        if (mNotificationListener != null) {
+            mNotificationListener.resetData();
+        }
         // Use test API to prevent PermissionManager from killing the test process when revoking
         // permission.
         SystemUtil.runWithShellPermissionIdentity(
