@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.multiuser.annotations;
+package com.android.bedstead.enterprise.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 
+import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Mark that a test requires a given user restriction be not set.
+ *
+ * <p>You should use {@code DeviceState} to ensure that the device enters
+ * the correct state for the method.
+ */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RepeatingAnnotation
-public @interface EnsureHasUserRestrictionGroup {
-    EnsureHasUserRestriction[] value();
+@Repeatable(EnsureDoesNotHaveUserRestrictionGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
+public @interface EnsureDoesNotHaveUserRestriction {
+    /** The restriction to be set. */
+    String value();
+
+    /** The user the restriction should not be set on. */
+    UserType onUser() default UserType.INSTRUMENTED_USER;
 
      /**
      * Priority sets the order that annotations will be resolved.
