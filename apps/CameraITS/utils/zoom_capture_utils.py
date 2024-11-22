@@ -66,7 +66,7 @@ class ZoomTestData:
   result_zoom: float
   radius_tol: float
   offset_tol: float
-  focal_length: float
+  focal_length: Optional[float] = None
   # (x, y) coordinates of ArUco marker corners in clockwise order from top left.
   aruco_corners: Optional[Iterable[float]] = None
   aruco_offset: Optional[float] = None
@@ -539,7 +539,7 @@ def verify_zoom_data(
   for i, data in enumerate(test_data):
     if i == 0:
       continue
-    if test_data[i-1].focal_length != data.focal_length:
+    if test_data[i-1].physical_id != data.physical_id:
       id_to_next_offset[previous_id] = data.aruco_offset
       previous_id = data.physical_id
 
@@ -549,7 +549,8 @@ def verify_zoom_data(
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
-    logging.debug('Zoom: %.2f, fl: %.2f', data.result_zoom, data.focal_length)
+    logging.debug('Zoom: %.2f, physical ID: %s',
+                  data.result_zoom, data.physical_id)
     offset_x, offset_y = _get_aruco_marker_x_y_offset(data.aruco_corners, size)
     offset_x_values.append(offset_x)
     offset_y_values.append(offset_y)
@@ -592,7 +593,7 @@ def verify_zoom_data(
     hypots.append(data.aruco_offset)
     if i == 0:
       continue
-    if test_data[i-1].focal_length != data.focal_length:
+    if test_data[i-1].physical_id != data.physical_id:
       initial_zoom = float(data.result_zoom)
       initial_offset = data.aruco_offset
       logging.debug('offset_hypot_init: %.3f', initial_offset)
