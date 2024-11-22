@@ -27,6 +27,8 @@ import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionSt
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_INITIATED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_STOPPED;
+import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_BOUNDS;
+import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetChangeType.TARGET_CHANGE_WINDOWING_MODE;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.TargetType.TARGET_TYPE_DISPLAY;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged.WindowingMode.WINDOWING_MODE_FULLSCREEN;
 import static com.android.os.framework.FrameworkExtensionAtoms.mediaProjectionStateChanged;
@@ -172,11 +174,23 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
 
         // Check the expected MediaProjectionTargetChanged atoms were logged in the expected order
-        assertThat(data.size()).isEqualTo(1);
+        assertThat(data.size()).isEqualTo(2);
+
         MediaProjectionTargetChanged a0 =
                 data.get(0).getAtom().getExtension(mediaProjectionTargetChanged);
         assertThat(a0.getTargetType()).isEqualTo(TARGET_TYPE_DISPLAY);
-        assertThat(a0.getTargetWindowingMode()).isEqualTo(WINDOWING_MODE_FULLSCREEN);
+        assertThat(a0.getTargetChangeType()).isEqualTo(TARGET_CHANGE_BOUNDS);
+
+        MediaProjectionTargetChanged a1 =
+                data.get(1).getAtom().getExtension(mediaProjectionTargetChanged);
+        assertThat(a1.getTargetType()).isEqualTo(TARGET_TYPE_DISPLAY);
+        assertThat(a1.getTargetChangeType()).isEqualTo(TARGET_CHANGE_WINDOWING_MODE);
+        assertThat(a1.getTargetWindowingMode()).isEqualTo(WINDOWING_MODE_FULLSCREEN);
+
+        assertThat(a1.getCenterX()).isEqualTo(a0.getCenterX());
+        assertThat(a1.getCenterY()).isEqualTo(a0.getCenterY());
+        assertThat(a1.getWidth()).isEqualTo(a0.getWidth());
+        assertThat(a1.getHeight()).isEqualTo(a0.getHeight());
     }
 
     @Test
