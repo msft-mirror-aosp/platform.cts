@@ -19,6 +19,7 @@ package android.input.cts
 import android.Manifest.permission.INJECT_EVENTS
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
 import android.content.Context
+import android.content.pm.PackageManager
 import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -40,6 +41,7 @@ import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import kotlin.test.assertNotNull
 import org.junit.After
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -95,6 +97,9 @@ class PointerIconTest {
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
+        /* b/370678789 skip for Automotive platform in this release */
+        assumeFalse(context.getPackageManager().hasSystemFeature(
+            PackageManager.FEATURE_AUTOMOTIVE))
         activity = virtualDisplayRule.activity
         activity.runOnUiThread {
             activity.actionBar?.hide()
