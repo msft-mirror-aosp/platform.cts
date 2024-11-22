@@ -119,6 +119,7 @@ public abstract class AudioDataPathsBaseActivity
     private DuplexAudioManager mDuplexAudioManager;
 
     protected AppCallback mAnalysisCallbackHandler;
+    private File mRecordingDir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -208,6 +209,13 @@ public abstract class AudioDataPathsBaseActivity
         getPassButton().setEnabled(!mIsHandheld || !hasPeripheralSupport());
         if (!mIsHandheld) {
             displayNonHandheldMessage();
+        }
+
+        // Write to a directory that can be read on production builds using 'adb pull'.
+        // This works because we have WRITE_EXTERNAL_STORAGE permission.
+        mRecordingDir = new File(Environment.getExternalStorageDirectory(), "verifierWaves");
+        if (!mRecordingDir.exists()) {
+            mRecordingDir.mkdir();
         }
     }
 
@@ -1639,15 +1647,34 @@ public abstract class AudioDataPathsBaseActivity
         }
     }
 
-    private String saveWaveFile(BaseSineAnalyzer mAnalyzer, int index) {
-        // Write to a directory that can be read on production builds using 'adb pull'.
-        // This works because we have WRITE_EXTERNAL_STORAGE permission.
-        File recordingDir = new File(Environment.getExternalStorageDirectory(), "verifierWaves");
-        if (!recordingDir.exists()) {
-            recordingDir.mkdir();
+    /**
+     * @return short name of the physical route
+     */
+    abstract String getRouteDescription();
+
+    /**
+     * Delete all the previously saved WAV files so the user does not
+     * debug obsolete data.
+     */
+    public void deleteOldWaveFiles() {
+        if (mRecordingDir.exists()) {
+            File[] files = mRecordingDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        if (!file.delete()) {
+                            Log.e(TAG, "Failed to delete file: " + file.getAbsolutePath());
+                        }
+                    }
+                }
+            }
         }
-        File waveFile = new File(recordingDir,
-                String.format(Locale.US, "datapaths_%03d.wav", index));
+    }
+
+    private String saveWaveFile(BaseSineAnalyzer mAnalyzer, int index) {
+        File waveFile = new File(mRecordingDir,
+                String.format(Locale.US, "paths_%s_%03d.wav",
+                        getRouteDescription(), index));
 
         float[] data = mAnalyzer.getRecordedData();
         int numSamples = data.length;
@@ -1678,6 +1705,7 @@ public abstract class AudioDataPathsBaseActivity
 
         enableTestButtons(false, true);
         getPassButton().setEnabled(false);
+        deleteOldWaveFiles();
 
         mTestManager.startTest(api);
     }

@@ -8,6 +8,7 @@ import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +38,10 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
+import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
+import android.nfc.T4tNdefNfcee;
+import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
 import android.nfc.cardemulation.ApduServiceInfo;
@@ -70,6 +74,7 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +83,7 @@ import java.util.function.Consumer;
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
 
+    private static final long MAX_POLLING_PAUSE_TIMEOUT = 40000;
     @Mock private INfcAdapter mService;
     @Mock private DevicePolicyManager mDevicePolicyManager;
     private INfcAdapter mSavedService;
@@ -701,9 +707,9 @@ public class NfcAdapterTest {
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
-            List<String> nfceeList = nfcOemExtension.getActiveNfceeList();
-            for (String nfcee : nfceeList) {
-                assertThat(nfcee).isNotEmpty();
+            Map<String, Integer> nfceeMap = nfcOemExtension.getActiveNfceeList();
+            for (var nfcee : nfceeMap.entrySet()) {
+                assertThat(nfcee.getKey()).isNotEmpty();
             }
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
@@ -712,13 +718,35 @@ public class NfcAdapterTest {
             nfcOemExtension.getRoutingStatus();
             nfcOemExtension.setAutoChangeEnabled(true);
             assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
+            T4tNdefNfcee ndefNfcee = nfcOemExtension.getT4tNdefNfcee();
+            assertThat(ndefNfcee).isNotNull();
+            if (ndefNfcee.isSupported()) {
+                byte[] ndefData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+                assertThat(ndefNfcee.writeData(5, ndefData))
+                               .isEqualTo(T4tNdefNfcee.WRITE_DATA_SUCCESS);
+                assertThat(ndefNfcee.readData(5)).isEqualTo(ndefData);
+                assertThat(ndefNfcee.isOperationOngoing()).isEqualTo(false);
+                T4tNdefNfceeCcFileInfo ccFileInfo = ndefNfcee.readCcfile();
+                assertThat(ccFileInfo).isNotNull();
+                assertThat(ccFileInfo.getCcFileLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getVersion()).isGreaterThan(0);
+                assertThat(ccFileInfo.getMaxReadLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getMaxWriteLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getFileId()).isGreaterThan(5);
+                assertThat(ccFileInfo.getMaxSize()).isGreaterThan(0);
+                assertThat(ndefNfcee.clearData()).isEqualTo(T4tNdefNfcee.CLEAR_DATA_SUCCESS);
+            }
             if (Flags.nfcOverrideRecoverRoutingTable()) {
                 nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
-            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
+            assertThat(entries).isNotNull();
+            entries.getFirst().getType();
             nfcOemExtension.forceRoutingTableCommit();
+            assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
+                    nfcOemExtension.getMaxPausePollingTimeoutMills());
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
