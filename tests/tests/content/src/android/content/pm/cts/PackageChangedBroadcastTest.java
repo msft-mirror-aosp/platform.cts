@@ -20,6 +20,7 @@ import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.pm.Flags.FLAG_REDUCE_BROADCASTS_FOR_COMPONENT_STATE_CHANGES;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 import static android.content.pm.PackageManager.DONT_KILL_APP;
+import static android.os.Process.myUserHandle;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -28,7 +29,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -96,33 +96,35 @@ public class PackageChangedBroadcastTest {
     private Context mContext;
     private PackageManager mPackageManager;
 
+    private int mUserId;
+
     @Before
     public void setup() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mPackageManager = mContext.getPackageManager();
+        mUserId = myUserHandle().getIdentifier();
 
-        final int currentUser = ActivityManager.getCurrentUser();
-        assertFalse(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, currentUser));
+        assertFalse(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, mUserId));
         assertFalse(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
-                currentUser));
+                mUserId));
 
-        installPackageAsUser(PACKAGE_CHANGED_TEST_APP_APK_PATH, currentUser);
-        assertTrue(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, currentUser));
+        installPackageAsUser(PACKAGE_CHANGED_TEST_APP_APK_PATH, mUserId);
+        assertTrue(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME, mUserId));
 
-        installPackageAsUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_APK_PATH, currentUser);
+        installPackageAsUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_APK_PATH, mUserId);
         assertTrue(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
-                currentUser));
+                mUserId));
     }
 
     @After
     public void uninstall() {
         uninstallPackage(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME);
         assertThat(isAppInstalledForUser(PACKAGE_CHANGED_TEST_APP_PACKAGE_NAME,
-                ActivityManager.getCurrentUser())).isFalse();
+                mUserId)).isFalse();
 
         uninstallPackage(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME);
         assertThat(isAppInstalledForUser(PACKAGE_CHANGED_SHARED_USER_ID_TEST_APP_PACKAGE_NAME,
-                ActivityManager.getCurrentUser())).isFalse();
+                mUserId)).isFalse();
     }
 
     @Test
