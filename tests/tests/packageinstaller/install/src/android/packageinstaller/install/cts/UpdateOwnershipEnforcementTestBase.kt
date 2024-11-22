@@ -16,8 +16,13 @@
 
 package android.packageinstaller.install.cts
 
+import android.os.UserManager
+import android.text.TextUtils
+import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.DeviceState
+import com.android.compatibility.common.util.SystemUtil
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -36,11 +41,23 @@ open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
 
     private var isUpdateOwnershipEnforcementAvailable: String? = null
 
+    private fun assumeRunOnPrimaryUser(): String {
+        val um = InstrumentationRegistry.getInstrumentation()
+                         .targetContext.getSystemService(UserManager::class.java)
+        val userType = um.userType
+        Assume.assumeTrue(
+            "Don't support to run the test cases in a profile.",
+            TextUtils.equals(userType, UserManager.USER_TYPE_FULL_SYSTEM)
+        )
+        return userType
+    }
+
     /**
      * Make sure the feature flag of update ownership enforcement is available.
      */
     @Before
     fun setUpdateOwnershipEnforcementAvailable() {
+        SystemUtil.callWithShellPermissionIdentity { assumeRunOnPrimaryUser() }
         isUpdateOwnershipEnforcementAvailable =
                 getDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE)
         setDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE, "true")
