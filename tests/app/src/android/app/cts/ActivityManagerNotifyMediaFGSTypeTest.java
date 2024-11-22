@@ -163,4 +163,29 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         cleanUpMediaForegroundService();
         uid1Watcher.finish();
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceInternal() throws Exception {
+        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
+                WAITFOR_MSEC);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue("Failed to start media foreground service with notification",
+                notificationId > 0);
+        runShellCommand(mInstrumentation,
+                String.format("am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        runShellCommand(mInstrumentation,
+                String.format("am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
 }
