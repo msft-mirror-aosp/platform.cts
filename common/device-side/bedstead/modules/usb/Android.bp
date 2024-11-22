@@ -27,7 +27,7 @@ android_test {
         "Interactive",
         "Nene",
         "EventLib",
-        "bedstead",
+        "Harrier",
         "bedstead-usb",
         "androidx.test.ext.junit",
         "truth",

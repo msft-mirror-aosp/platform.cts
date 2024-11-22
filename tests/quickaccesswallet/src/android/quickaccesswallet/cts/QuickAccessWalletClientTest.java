@@ -37,6 +37,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.quickaccesswallet.NoPermissionQuickAccessWalletService;
 import android.quickaccesswallet.QuickAccessWalletActivity;
@@ -67,6 +69,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -99,6 +102,10 @@ public class QuickAccessWalletClientTest {
     private final UserSettings mUserSettings = new UserSettings(mContext);
 
     private String mDefaultPaymentApp;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {

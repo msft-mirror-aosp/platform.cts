@@ -633,6 +633,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
         }
 
+        // TODO: b/380150519 Remove once AE_PRIORITY_MODE default is
+        // correctly populated in the framework
+        if (Flags.aePriority()) {
+            waiverKeys.add(CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        }
+
         /*
          * Extension keys. Tested in extension related tests.
          */

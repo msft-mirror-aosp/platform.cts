@@ -1442,7 +1442,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithMissingDependency_resolveSdk1_success() throws Exception {
+    public void testAppWithMissingDependency_resolveSdk1_sync() throws Exception {
         onBeforeSdkTests();
 
         installPackage(TEST_SDK1);
@@ -1477,6 +1477,28 @@ public class PackageManagerShellCommandInstallTest {
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_resolveSdk2_async() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK2);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK2_PACKAGE));
+        uninstallPackageSilently(TEST_SDK2_PACKAGE);
+
+        //TODO(samiul): INSTALL_DEPENDENCY_PACKAGE permission from role should bypass user action
+        // requirement
+        getUiAutomation().adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            // Dependency Installer Service should resolve missing SDK1
+            installPackage(TEST_USING_SDK1_AND_SDK2);
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
