@@ -75,6 +75,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
@@ -178,14 +179,40 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     @Nullable
     protected UiObject2 findView(String id) {
-        Log.d(TAG, "Finding view: " + id);
-        return mDevice.findObject(By.res(mBiometricManager.getUiPackage(), id));
+        Log.d(TAG, "Finding view by id: " + id);
+
+        UiObject2 view = findViewByIdInternal(id);
+        if (view != null) {
+            return view;
+        }
+
+        UiObject2 parentView = mDevice.findObject(By.scrollable(true));
+        if (parentView != null) {
+            parentView.scroll(Direction.DOWN, 1.0f, 1000);
+            do {
+                view = findViewByIdInternal(id);
+            } while (view == null && parentView.scroll(Direction.DOWN, 1.0f, 1000));
+        }
+        return view;
     }
 
     @Nullable
     protected UiObject2 findViewByText(String text) {
         Log.d(TAG, "Finding view by text: " + text);
-        return mDevice.findObject(By.text(text));
+
+        UiObject2 view = findViewByTextInternal(text);
+        if (view != null) {
+            return view;
+        }
+
+        UiObject2 parentView = mDevice.findObject(By.scrollable(true));
+        if (parentView != null) {
+            parentView.scroll(Direction.DOWN, 1.0f, 1000);
+            do {
+                view = findViewByTextInternal(text);
+            } while (view == null && parentView.scroll(Direction.DOWN, 1.0f, 1000));
+        }
+        return view;
     }
 
     @Nullable
@@ -684,5 +711,15 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     private boolean hasDeviceFeature(final String requiredFeature) {
         return mContext.getPackageManager().hasSystemFeature(requiredFeature);
+    }
+
+    private UiObject2 findViewByIdInternal(String id) {
+        Log.d(TAG, "Finding view by id internally: " + id);
+        return mDevice.findObject(By.res(mBiometricManager.getUiPackage(), id));
+    }
+
+    private UiObject2 findViewByTextInternal(String text) {
+        Log.d(TAG, "Finding view by text internally: " + text);
+        return mDevice.findObject(By.text(text));
     }
 }
