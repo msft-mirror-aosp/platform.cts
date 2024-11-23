@@ -1043,8 +1043,8 @@ public class SearchSpecCtsTest {
 
     @Test
     @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_ADDITIONAL_BUILDER_COPY_CONSTRUCTORS,
-            Flags.FLAG_ENABLE_SCORABLE_PROPERTY
+        Flags.FLAG_ENABLE_ADDITIONAL_BUILDER_COPY_CONSTRUCTORS,
+        Flags.FLAG_ENABLE_SCORABLE_PROPERTY
     })
     public void testSearchSpecBuilder_copyConstructorWithScorableProperty() {
         List<String> expectedPropertyPaths1 = ImmutableList.of("path1", "path2");

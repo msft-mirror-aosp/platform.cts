@@ -23,8 +23,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchBlobHandle;
-import android.app.appsearch.AppSearchCommitBlobResponse;
 import android.app.appsearch.AppSearchResult;
+import android.app.appsearch.CommitBlobResponse;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
-public class AppSearchCommitBlobResponseTest {
+public class CommitBlobResponseTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -74,11 +74,9 @@ public class AppSearchCommitBlobResponseTest {
                         .setResult(blobHandle4, failureResult)
                         .build();
 
-        AppSearchCommitBlobResponse appSearchCommitBlobResponse =
-                new AppSearchCommitBlobResponse(batchResult);
+        CommitBlobResponse commitBlobResponse = new CommitBlobResponse(batchResult);
 
-        AppSearchBatchResult<AppSearchBlobHandle, Void> outResult =
-                appSearchCommitBlobResponse.getResult();
+        AppSearchBatchResult<AppSearchBlobHandle, Void> outResult = commitBlobResponse.getResult();
         assertThat(outResult.getSuccesses()).containsExactly(blobHandle1, null, blobHandle3, null);
         assertThat(outResult.getFailures())
                 .containsExactly(blobHandle2, failureResult, blobHandle4, failureResult);
