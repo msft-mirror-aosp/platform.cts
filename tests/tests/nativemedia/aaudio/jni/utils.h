@@ -319,4 +319,6 @@ void enableAudioHotwordPermission();
 
 void disablePermissions();
 
+bool isCompressedFormat(aaudio_format_t format);
+
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

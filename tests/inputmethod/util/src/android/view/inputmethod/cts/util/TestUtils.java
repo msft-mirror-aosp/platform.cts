@@ -20,6 +20,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.MotionEvent.ACTION_DOWN;
 import static android.view.MotionEvent.ACTION_UP;
 import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
+import static android.view.WindowInsets.Type.systemGestures;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
@@ -49,11 +51,14 @@ import android.view.WindowMetrics;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -358,10 +363,32 @@ public final class TestUtils {
      */
     public static UinputTouchDevice.Pointer injectStylusDownEvent(
             @NonNull UinputTouchDevice device, @NonNull View view, int x, int y) {
+        return injectStylusDownEventInternal(device, view, x, y);
+    }
+
+    /**
+     * Inject a stylus ACTION_DOWN event in a multi-touch environment to the screen using given
+     * view's coordinates.
+     *
+     * @param device {@link UinputTouchDevice}  stylus device.
+     * @param x      the x coordinates of the stylus event in display's coordinates.
+     * @param y      the y coordinates of the stylus event in display's coordinates.
+     * @return The object associated with the down pointer, which will later be used to
+     * trigger move or lift.
+     */
+    public static UinputTouchDevice.Pointer injectStylusDownEvent(
+            @NonNull UinputTouchDevice device, int x, int y) {
+        return injectStylusDownEventInternal(device, null /* view */, x, y);
+    }
+
+    private static UinputTouchDevice.Pointer injectStylusDownEventInternal(
+            @NonNull UinputTouchDevice device, @Nullable View view, int x, int y) {
         int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
-        x += xy[0];
-        y += xy[1];
+        if (view != null) {
+            view.getLocationOnScreen(xy);
+            x += xy[0];
+            y += xy[1];
+        }
 
         return device.touchDown(x, y, 255/* pressure */);
     }
@@ -475,8 +502,36 @@ public final class TestUtils {
     public static void injectStylusMoveEvents(
             @NonNull UinputTouchDevice.Pointer pointer, @NonNull View view, int startX, int startY,
             int endX, int endY, int number) {
+        injectStylusMoveEventsInternal(
+                pointer, view, startX, startY, endX, endY, number);
+    }
+
+    /**
+     * Inject Stylus ACTION_MOVE events in a multi-device environment tp the screen using the given
+     * view's coordinates.
+     *
+     * @param pointer {@link #injectStylusDownEvent(UinputTouchDevice, View, int, int)} returned
+     * Pointer.
+     * @param startX the start x coordinates of the stylus event in the display's coordinates.
+     * @param startY the start y coordinates of the stylus event in the display's coordinates.
+     * @param endX the end x coordinates of the stylus event in the display's coordinates.
+     * @param endY the end y coordinates of the stylus event in the display's coordinates.
+     * @param number the number of the motion events injected to the view.
+     */
+    public static void injectStylusMoveEvents(
+            @NonNull UinputTouchDevice.Pointer pointer, int startX, int startY, int endX, int endY,
+            int number) {
+        injectStylusMoveEventsInternal(
+                pointer, null /* view */, startX, startY, endX, endY, number);
+    }
+
+    private static void injectStylusMoveEventsInternal(
+            @NonNull UinputTouchDevice.Pointer pointer, @Nullable View view, int startX, int startY,
+            int endX, int endY, int number) {
         int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
+        if (view != null) {
+            view.getLocationOnScreen(xy);
+        }
 
         final float incrementX = ((float) (endX - startX)) / (number - 1);
         final float incrementY = ((float) (endY - startY)) / (number - 1);
@@ -610,7 +665,7 @@ public final class TestUtils {
 
     /**
      * Inject Motion Events for swipe up on navbar with stylus.
-     * @param activity
+     * @param activity current test activity.
      * @param toolType of input {@link MotionEvent#getToolType(int)}.
      */
     public static void injectNavBarToHomeGestureEvents(
@@ -618,40 +673,21 @@ public final class TestUtils {
         WindowMetrics metrics = activity.getWindowManager().getCurrentWindowMetrics();
 
         var bounds = new Rect(metrics.getBounds());
-        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(displayCutout()));
-
+        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(
+                displayCutout() | systemBars() | systemGestures()));
         int startY = bounds.bottom;
         int startX = bounds.centerX();
         int endY = bounds.bottom - bounds.height() / 3; // move a third of the screen up
         int endX = startX;
         int steps = 10;
 
-        final float incrementX = ((float) (endX - startX)) / (steps - 1);
-        final float incrementY = ((float) (endY - startY)) / (steps - 1);
-
-        // Inject stylus ACTION_MOVE & finally ACTION_UP.
-        for (int i = 0; i < steps; i++) {
-            long time = SystemClock.uptimeMillis();
-            float x = startX + incrementX * i;
-            float y = startY + incrementY * i;
-            if (i == 0) {
-                // ACTION_DOWN
-                injectMotionEvent(getMotionEvent(
-                        time, time, ACTION_DOWN, x, y, toolType),
-                        true /* sync */);
-            }
-
-            // ACTION_MOVE
-            injectMotionEvent(getMotionEvent(
-                    time, time, MotionEvent.ACTION_MOVE, x, y, toolType),
-                    true /* sync */);
-
-            if (i == steps - 1) {
-                // ACTION_UP
-                injectMotionEvent(getMotionEvent(
-                        time, time, ACTION_UP, x, y, toolType),
-                        true /* sync */);
-            }
-        }
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        UinputTouchDevice device = (toolType == MotionEvent.TOOL_TYPE_STYLUS)
+                ? new UinputStylus(instrumentation, activity.getDisplay())
+                : new UinputTouchScreen(instrumentation, activity.getDisplay());
+        UinputTouchDevice.Pointer pointer;
+        pointer = TestUtils.injectStylusDownEvent(device, startX, startY);
+        TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, steps);
+        TestUtils.injectStylusUpEvent(pointer);
     }
 }

@@ -25,8 +25,11 @@ import android.content.pm.PackageManager;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.advancedprotection.AdvancedProtectionManager;
+import android.telephony.TelephonyManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -37,6 +40,9 @@ public abstract class BaseAdvancedProtectionTest {
     protected AdvancedProtectionManager mManager;
     private boolean mInitialApmState;
 
+    private TelephonyManager mTelephonyManager;
+    private long mInitialAllowedNetworks;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -45,6 +51,16 @@ public abstract class BaseAdvancedProtectionTest {
         assumeTrue(shouldTestAdvancedProtection(mInstrumentation.getContext()));
         mManager = (AdvancedProtectionManager) mInstrumentation
                 .getContext().getSystemService(Context.ADVANCED_PROTECTION_SERVICE);
+
+        mTelephonyManager = mInstrumentation.getContext().getSystemService(TelephonyManager.class);
+        mInitialAllowedNetworks =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager,
+                        (tm) ->
+                                tm.getAllowedNetworkTypesForReason(
+                                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
@@ -71,6 +87,15 @@ public abstract class BaseAdvancedProtectionTest {
         if (mManager == null) {
             return;
         }
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mTelephonyManager,
+                (tm) ->
+                        tm.setAllowedNetworkTypesForReason(
+                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G,
+                                mInitialAllowedNetworks),
+                Manifest.permission.MODIFY_PHONE_STATE);
+
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);

@@ -19,11 +19,14 @@ package android.security.cts.camera.open.lib;
 import android.content.AttributionSource;
 import android.content.Intent;
 
-interface IOpenCameraActivity {
+interface ICameraOpener {
     Intent openCamera1(in AttributionSource attributionSource, boolean shouldStream,
             boolean shouldRepeat);
 
     Intent openCamera2(in AttributionSource attributionSource, boolean shouldStream,
+            boolean shouldRepeat);
+
+    Intent openCameraNdk(in AttributionSource attributionSource, boolean shouldStream,
             boolean shouldRepeat);
 
     void stopRepeating();

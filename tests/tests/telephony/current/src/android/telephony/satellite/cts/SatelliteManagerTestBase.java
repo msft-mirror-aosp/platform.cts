@@ -65,6 +65,7 @@ import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
+import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -762,6 +763,39 @@ public class SatelliteManagerTestBase {
                     }
                 } catch (Exception ex) {
                     loge("onSatelliteCapabilitiesChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    protected static class SelectedNbIotSatelliteSubscriptionCallbackTest implements
+            SelectedNbIotSatelliteSubscriptionCallback {
+        public int mSelectedSubId;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSelectedNbIotSatelliteSubscriptionChanged(int selectedSubId) {
+            logd("onSelectedNbIotSatelliteSubscriptionChanged: selectedSubId=" + selectedSubId);
+            mSelectedSubId = selectedSubId;
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSelectedNbIotSatelliteSubscriptionChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSelectedNbIotSatelliteSubscriptionChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSelectedNbIotSatelliteSubscriptionChanged: Got exception=" + ex);
                     return false;
                 }
             }
