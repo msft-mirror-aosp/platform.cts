@@ -30,6 +30,7 @@ import video_processing_utils
 
 _CV2_GREEN = (0, 255, 0)
 _CV2_LINE_THICKNESS = 3
+_CV2_RADIUS = 10
 _FD_MODE_OFF, _FD_MODE_SIMPLE, _FD_MODE_FULL = 0, 1, 2
 _FRAME_INDEX = -1  # last frame
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -40,6 +41,52 @@ _TEST_REQUIRED_MPC = 34
 _VALID_FD_MODES = {_FD_MODE_OFF, _FD_MODE_SIMPLE, _FD_MODE_FULL}
 
 
+def _check_face_landmarks(
+    crop, face, fd_mode, index, preview_img, preview_size):
+  """Checks face landmarks fall within face bounding box.
+
+  Face ID should be -1 for SIMPLE and unique for FULL
+  Args:
+    crop: dict; crop region size with 'top', 'right', 'left', 'bottom'
+        as keys to desired region of the sensor to read out.
+    face: dict; from face detection algorithm.
+    fd_mode: int; of face detection mode.
+    index: int; to designate face number.
+    preview_img: str; Numpy image array.
+    preview_size: str; preview size used for recording. Ex: 1920x1080.
+  """
+  logging.debug('Checking landmarks in face %d: %s', index, str(face))
+  if fd_mode == _FD_MODE_SIMPLE:
+    if 'leftEye' in face or 'rightEye' in face:
+      raise AssertionError('Eyes not supported in FD_MODE_SIMPLE.')
+    if 'mouth' in face:
+      raise AssertionError('Mouth not supported in FD_MODE_SIMPLE.')
+    if face['id'] != -1:
+      raise AssertionError('face_id should be -1 in FD_MODE_SIMPLE.')
+  elif fd_mode == _FD_MODE_FULL:
+    l, r = face['bounds']['left'], face['bounds']['right']
+    t, b = face['bounds']['top'], face['bounds']['bottom']
+    l_eye_x, l_eye_y = face['leftEye']['x'], face['leftEye']['y']
+    r_eye_x, r_eye_y = face['rightEye']['x'], face['rightEye']['y']
+    mouth_x, mouth_y = face['mouth']['x'], face['mouth']['y']
+    _draw_facial_features(crop, l_eye_x, l_eye_y, mouth_x, mouth_y,
+                          preview_img, preview_size, r_eye_x, r_eye_y)
+    if not l <= l_eye_x <= r:
+      raise AssertionError(f'Face l: {l}, r: {r}, left eye x: {l_eye_x}')
+    if not t <= l_eye_y <= b:
+      raise AssertionError(f'Face t: {t}, b: {b}, left eye y: {l_eye_y}')
+    if not l <= r_eye_x <= r:
+      raise AssertionError(f'Face l: {l}, r: {r}, right eye x: {r_eye_x}')
+    if not t <= r_eye_y <= b:
+      raise AssertionError(f'Face t: {t}, b: {b}, right eye y: {r_eye_y}')
+    if not l <= mouth_x <= r:
+      raise AssertionError(f'Face l: {l}, r: {r}, mouth x: {mouth_x}')
+    if not t <= mouth_y <= b:
+      raise AssertionError(f'Face t: {t}, b: {b}, mouth y: {mouth_y}')
+  else:
+    raise AssertionError(f'Unknown face detection mode: {fd_mode}.')
+
+
 def _do_preview_recording_and_retrieve_result(
     dut, cam, preview_size, fd_mode, log_path):
   """Issue a preview request and read back the preview recording object.
@@ -47,7 +94,7 @@ def _do_preview_recording_and_retrieve_result(
   Args:
     dut: obj; Android controller device object.
     cam: obj; Camera obj.
-    preview_size: str; Preview resolution at which to record. ex. "1920x1080".
+    preview_size: str; Preview resolution at which to record. Ex. "1920x1080".
     fd_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None.
     log_path: str; Log path to save preview recording.
 
@@ -65,6 +112,46 @@ def _do_preview_recording_and_retrieve_result(
   return result
 
 
+def _draw_facial_features(crop, l_eye_x, l_eye_y, mouth_x, mouth_y,
+                          preview_img, preview_size, r_eye_x, r_eye_y):
+  """Mark facial features with green circles.
+
+  Args:
+    crop: dict; crop region size with 'top', 'right', 'left', 'bottom'
+        as keys to desired region of the sensor to read out.
+    l_eye_x: int; x-coordinate of the center of the left eye.
+    l_eye_y: int; y-coordinate of the center of the left eye.
+    mouth_x: int; x-coordinate of the center of the mouth.
+    mouth_y: int; y-coordinate of the center of the mouth.
+    preview_img: str; Numpy image array.
+    preview_size: str; preview size used for recording. ex: 1920x1080.
+    r_eye_x: int; x-coordinate of the center of the right eye.
+    r_eye_y: int; y-coordinate of the center of the right eye.
+  """
+  # Find out the size of active arrays and image.
+  aa_width = crop['right'] - crop['left']
+  aa_height = crop['bottom'] - crop['top']
+  img_width = int(preview_size.split('x')[0])
+  img_height = int(preview_size.split('x')[1])
+  # Convert sensor coordinates to image coordinates.
+  l_eye = image_processing_utils.convert_sensor_coords_to_image_coords(
+      aa_width, aa_height, (l_eye_x, l_eye_y), img_width, img_height)
+  r_eye = image_processing_utils.convert_sensor_coords_to_image_coords(
+      aa_width, aa_height, (r_eye_x, r_eye_y), img_width, img_height)
+  mouth = image_processing_utils.convert_sensor_coords_to_image_coords(
+      aa_width, aa_height, (mouth_x, mouth_y), img_width, img_height)
+  # Draw circles at the center of facial features.
+  cv2.circle(
+      preview_img, (int(l_eye[0]), int(l_eye[1])), _CV2_RADIUS,
+      _CV2_GREEN, _CV2_LINE_THICKNESS)
+  cv2.circle(
+      preview_img, (int(r_eye[0]), int(r_eye[1])), _CV2_RADIUS,
+      _CV2_GREEN, _CV2_LINE_THICKNESS)
+  cv2.circle(
+      preview_img, (int(mouth[0]), int(mouth[1])), _CV2_RADIUS,
+      _CV2_GREEN, _CV2_LINE_THICKNESS)
+
+
 def _draw_face_rectangles(result, faces, preview_img):
   """Draw boxes around faces in green and save image.
 
@@ -76,8 +163,10 @@ def _draw_face_rectangles(result, faces, preview_img):
   # draw boxes around faces in green
   crop_region = result['captureMetadata'][_FRAME_INDEX][
       'android.scaler.cropRegion']
-  faces_cropped = opencv_processing_utils.correct_faces_for_crop(
-      faces, preview_img, crop_region)
+  faces_cropped = (
+      opencv_processing_utils.correct_faces_for_crop(
+          faces, preview_img, crop_region)
+      )
   for (l, r, t, b) in faces_cropped:
     cv2.rectangle(
         preview_img, (l, t), (r, b), _CV2_GREEN, _CV2_LINE_THICKNESS)
@@ -167,7 +256,16 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
         # Draw boxes around faces in green and save image.
         _draw_face_rectangles(result, faces, preview_img)
 
-        # Save image with green rectangles
+        # Face landmarks (if provided) are within face bounding box.
+        crop = result['captureMetadata'][_FRAME_INDEX][
+            'android.scaler.cropRegion']
+        if (its_session_utils.get_first_api_level(self.dut.serial) >=
+            its_session_utils.ANDROID16_API_LEVEL):
+          for i, face in enumerate(faces):
+            _check_face_landmarks(
+                crop, face, fd_mode, i, preview_img, preview_size)
+
+        # Save image with green rectangles.
         img_name = f'{file_name_stem}_fd_mode_{fd_mode}.jpg'
         image_processing_utils.write_image(
             preview_img / _RGB_FULL_CHANNEL, img_name)

@@ -16,16 +16,26 @@
 
 package com.android.cts.verifier.camera.fov;
 
-import com.android.cts.verifier.R;
-
 import android.os.Bundle;
+import android.view.View;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.preference.PreferenceFragmentCompat;
+
+import com.android.cts.verifier.R;
 
 public class CalibrationPreferenceFragment extends PreferenceFragmentCompat {
 
-  @Override
-  public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-    // Load the preferences from an XML resource
-    setPreferencesFromResource(R.xml.camera_fov_calibration_preferences, rootKey);
-  }
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+        // Load the preferences from an XML resource
+        setPreferencesFromResource(R.xml.camera_fov_calibration_preferences, rootKey);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        view.setFitsSystemWindows(true);
+    }
 }

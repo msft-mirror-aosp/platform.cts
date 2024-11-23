@@ -17,6 +17,8 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import static android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -31,11 +33,13 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.DeviceConfig;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -53,6 +57,7 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.ClassRule;
 
@@ -252,11 +257,40 @@ public class PackageInstallerCujTestBase {
         Rect bound = getPackageInstallerDialogBound();
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
 
+        // Get the insets of system bars and displayCutOut
+        WindowManager wm = getContext().getSystemService(WindowManager.class);
+        Insets insets = wm.getCurrentWindowMetrics().getWindowInsets().getInsets(
+                displayCutout() | systemBars());
+
+        // the minimum of top is the maximum of (display height / 10) and
+        // the top of the insets + 24 * dp
+        int gapBuffer = (int) (24 * displayMetrics.density);
+        int minTop = Math.max(insets.top + gapBuffer, displayMetrics.heightPixels / 10);
+        int maxTop = bound.top - gapBuffer;
+
+        Log.d(TAG, "touchOutside heightPixels = " + displayMetrics.heightPixels
+                + ", displayMetrics.density = " + displayMetrics.density + ", insets = " + insets
+                + ", minTop = " + minTop + ", maxTop = " + maxTop);
+
         // x is the center of the dialog
         int x = (bound.left + bound.right) / 2;
-        // y is the maximum of the (display height / 10) and the top of the dialog minus 20 dp
-        int y = Math.max(bound.top - (int) (20 * displayMetrics.density),
-                displayMetrics.heightPixels / 10);
+        // The default value of y is the (minTop + maxTop) / 2
+        int y = (minTop + maxTop) / 2;
+        if (minTop > maxTop) {
+            // the maximum of bottom is the minimum of (display height * 9 / 10) and
+            // the display height - the bottom of the insets - 24 * dp
+            int maxBottom = Math.min(displayMetrics.heightPixels - insets.bottom - gapBuffer,
+                    displayMetrics.heightPixels * 9 / 10);
+            int minBottom = bound.bottom + gapBuffer;
+            Log.d(TAG, "minBottom = " + minBottom + ", maxBottom = " + maxBottom);
+            if (minBottom > maxBottom) {
+                // close the dialog
+                pressBack();
+                throw new AssumptionViolatedException("There is no space to touch outside!");
+            }
+            y = (minBottom + maxBottom) / 2;
+        }
+
         Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
         getUiDevice().click(x, y);
         waitForUiIdle();
