@@ -38,8 +38,9 @@ public class AppSearchDeviceTest {
 
     private static final String NAMESPACE = "namespace";
     private static final String ID = "id";
+    private static final String SCHEMA = "testSchema";
     private static final GenericDocument DOCUMENT =
-            new GenericDocument.Builder<>(NAMESPACE, ID, "testSchema")
+            new GenericDocument.Builder<>(NAMESPACE, ID, SCHEMA)
                     .setPropertyString("subject", "testPut example1")
                     .setCreationTimestampMillis(12345L)
                     .build();
@@ -56,6 +57,7 @@ public class AppSearchDeviceTest {
         List<GenericDocument> outDocuments = convertSearchResultsToDocuments(
                 mGlobalSearch.search(/*queryExpression=*/"",
                         new SearchSpec.Builder().setTermMatch(SearchSpec.TERM_MATCH_PREFIX)
+                                .addFilterSchemas(SCHEMA)
                                 .build()));
         assertThat(outDocuments).containsExactly(DOCUMENT);
     }
@@ -65,6 +67,7 @@ public class AppSearchDeviceTest {
         List<GenericDocument> outDocuments = convertSearchResultsToDocuments(
                 mGlobalSearch.search(/*queryExpression=*/"",
                         new SearchSpec.Builder().setTermMatch(SearchSpec.TERM_MATCH_PREFIX)
+                                .addFilterSchemas(SCHEMA)
                                 .build()));
         assertThat(outDocuments).isEmpty();
     }

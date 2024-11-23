@@ -18,6 +18,7 @@ package android.server.wm;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -359,12 +360,22 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                     mWmState.getTaskDisplayArea(ASSISTANT_ACTIVITY)
                             == mWmState.getTaskDisplayArea(ANIMATION_TEST_ACTIVITY)
             );
-            // Wait for animation finished.
-            mWmState.waitForActivityState(ANIMATION_TEST_ACTIVITY, STATE_RESUMED);
 
+            final int testActivityWindowingMode =
+                    mWmState.getTaskByActivity(ANIMATION_TEST_ACTIVITY).getWindowingMode();
             if (isAssistantOnTopOfDream()) {
+                mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
+            } else if (testActivityWindowingMode == WINDOWING_MODE_FREEFORM) {
+                // TODO(b/361233418): It is possible for the test activity to be launched in
+                // freeform windowing mode despite requesting to be launched in fullscreen.
+                // Revisit this once the referenced bug is resolved.
+                mWmState.waitAndAssertActivityState(ANIMATION_TEST_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ANIMATION_TEST_ACTIVITY, true);
+                mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
                 mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
             } else {
+                mWmState.waitAndAssertActivityState(ANIMATION_TEST_ACTIVITY, STATE_RESUMED);
                 mWmState.waitAndAssertVisibilityGone(ASSISTANT_ACTIVITY);
             }
 

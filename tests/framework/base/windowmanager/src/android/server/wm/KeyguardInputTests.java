@@ -65,6 +65,7 @@ public class KeyguardInputTests extends KeyguardTestBase {
         final ComponentName KEY_EVENT_ACTIVITY = new ComponentName("android.server.wm.cts",
                 "android.server.wm.KeyEventActivity");
         lockScreenSession.gotoKeyguard(KEY_EVENT_ACTIVITY);
+        WindowUtil.waitForFocus(mActivity);
         pressEnterButton();
         assertReceivedKey(KeyEvent.KEYCODE_ENTER);
         assertNoMoreEvents();

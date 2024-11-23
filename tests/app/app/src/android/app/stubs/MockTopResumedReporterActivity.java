@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package android.security.cts.dynamicpermissiontestattackerapp
+package android.app.stubs;
 
-import android.app.Service
-import android.content.Intent
-import android.os.IBinder
+import android.app.Activity;
 
-class RemovePermissionService : Service() {
-    private val binder = object : IRemovePermissionService.Stub() {
-        override fun removePermission(permissionName: String) {
-            packageManager.removePermission(permissionName)
-        }
+public class MockTopResumedReporterActivity extends Activity {
+    public boolean isTopResumed;
+
+    @Override
+    public void onTopResumedActivityChanged(boolean isTopResumedActivity) {
+        isTopResumed = isTopResumedActivity;
     }
-
-    override fun onBind(intent: Intent): IBinder = binder
 }

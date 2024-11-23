@@ -159,7 +159,7 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
     @Test
     public void cect_11_1_13_5_RemoteControlPassthroughWithMultipleDevices() throws Exception {
         hdmiCecClient.broadcastReportPhysicalAddress(LogicalAddress.RECORDER_1);
-        hdmiCecClient.broadcastReportPhysicalAddress(LogicalAddress.RECORDER_2, 0x2100);
+        hdmiCecClient.broadcastReportPhysicalAddress(LogicalAddress.RECORDER_2, 0x1100);
         validateMultipleKeyeventToUserControlPress(
                 LogicalAddress.RECORDER_1, LogicalAddress.RECORDER_2);
     }

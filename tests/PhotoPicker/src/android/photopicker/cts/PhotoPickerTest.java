@@ -498,7 +498,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
                 .isEqualTo("Play");
 
         // Swipe to next video and verify preview gains audio focus
-        swipeLeftAndWait();
+        findPlayButton().swipeLeft(5);
         findPauseButton().waitForExists(SHORT_TIMEOUT);
         // Video preview is now in unmute mode. Hence, PhotoPicker will request audio focus. Verify
         // that test lost the audio focus.

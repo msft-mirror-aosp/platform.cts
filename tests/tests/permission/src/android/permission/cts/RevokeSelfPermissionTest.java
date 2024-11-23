@@ -271,7 +271,6 @@ public class RevokeSelfPermissionTest {
         try {
             new Thread(() -> {
                 while (!hasExited[0]) {
-                    mUiDevice.pressHome();
                     mUiDevice.pressBack();
                     try {
                         Thread.sleep(1000);

@@ -47,7 +47,7 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
      * <p>Tests that the device ignores any additional trailing parameters in an otherwise correct
      * CEC message.
      *
-     * <p>e.g. If {@code 4F:82:20:00:80:20:00:00:00 (<Active Source>)} is sent to the DUT, the DUT
+     * <p>e.g. If {@code 4F:82:12:00:80 (<Active Source>)} is sent to the DUT, the DUT
      * should ignore the last byte of the parameter and treat it as a {@code <Active Source>}
      * message.
      */
@@ -56,17 +56,18 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
         setCec20();
 
         int clientPhysicalAddress = hdmiCecClient.getPhysicalAddress();
-        int playbackPhysicalAddress = 0x2000;
-        if (playbackPhysicalAddress == clientPhysicalAddress) {
-            playbackPhysicalAddress = 0x1000;
-        }
+        int playbackPhysicalAddress = 0x1200;
+        int recorderPhysicalAddress = 0x1300;
 
         String parameterPlaybackPhysicalAddress = CecMessage.formatParams(playbackPhysicalAddress,
                 HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH);
         String routingChange = CecMessage.formatParams(String.valueOf(CecOperand.ROUTING_CHANGE));
 
         hdmiCecClient.broadcastReportPhysicalAddress(
-                LogicalAddress.RECORDER_1, clientPhysicalAddress);
+                LogicalAddress.AUDIO_SYSTEM, clientPhysicalAddress);
+
+        hdmiCecClient.broadcastReportPhysicalAddress(
+                LogicalAddress.RECORDER_1, recorderPhysicalAddress);
         hdmiCecClient.broadcastActiveSource(LogicalAddress.RECORDER_1, clientPhysicalAddress);
         waitForCondition(() ->
                         getDumpsysActiveSourceLogicalAddress().equals(LogicalAddress.RECORDER_1),
@@ -84,7 +85,7 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
      * <p>Tests that the device ignores any additional trailing parameters in an otherwise correct
      * CEC message.
      *
-     * <p>e.g. If {@code 4F:82:20:00:80:20:00:00:00 (<Active Source>)} is sent to the DUT, the DUT
+     * <p>e.g. If {@code 4F:82:12:00:80:12:00:10:00 (<Active Source>)} is sent to the DUT, the DUT
      * should ignore the bytes after the first physical address, the additional <Routing Change>
      * operand and physical addresses, and treat it as a {@code <Active Source>} message.
      *
@@ -95,10 +96,12 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
         setCec20();
 
         int clientPhysicalAddress = hdmiCecClient.getPhysicalAddress();
-        int playbackPhysicalAddress = 0x2000;
-        if (playbackPhysicalAddress == clientPhysicalAddress) {
-            playbackPhysicalAddress = 0x1000;
-        }
+        int playbackPhysicalAddress = 0x1200;
+        int recorderPhysicalAddress = 0x1300;
+
+        hdmiCecClient.broadcastReportPhysicalAddress(
+                LogicalAddress.AUDIO_SYSTEM, clientPhysicalAddress);
+
         String parameterClientPhysicalAddress = CecMessage.formatParams(clientPhysicalAddress,
                 HdmiCecConstants.PHYSICAL_ADDRESS_LENGTH);
         String parameterPlaybackPhysicalAddress = CecMessage.formatParams(playbackPhysicalAddress,
@@ -106,8 +109,8 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
         String routingChange = CecMessage.formatParams(String.valueOf(CecOperand.ROUTING_CHANGE));
 
         hdmiCecClient.broadcastReportPhysicalAddress(
-                LogicalAddress.RECORDER_1, clientPhysicalAddress);
-        hdmiCecClient.broadcastActiveSource(LogicalAddress.RECORDER_1, clientPhysicalAddress);
+                LogicalAddress.RECORDER_1, recorderPhysicalAddress);
+        hdmiCecClient.broadcastActiveSource(LogicalAddress.RECORDER_1, recorderPhysicalAddress);
         waitForCondition(() ->
                         getDumpsysActiveSourceLogicalAddress().equals(LogicalAddress.RECORDER_1),
                 "Device has not registered expected logical address as active source.");

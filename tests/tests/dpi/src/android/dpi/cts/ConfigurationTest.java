@@ -117,6 +117,8 @@ public class ConfigurationTest extends AndroidTestCase {
         allowedDensities.add(520);
         // Backport of DENSITY_390 to android14-tests-dev
         allowedDensities.add(390);
+        //Backport of DENSITY_250 to android14-tests-dev
+        allowedDensities.add(250);
         assertTrue("DisplayMetrics.DENSITY_DEVICE_STABLE must be one of the DisplayMetrics.DENSITY_* values: "
                 + allowedDensities, allowedDensities.contains(DisplayMetrics.DENSITY_DEVICE_STABLE));
 

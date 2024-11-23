@@ -232,13 +232,16 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
     }
 
     public void testGetAdnForPhoneAccountPermissions() throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext) || mPhoneAccountHandle == null) {
             return;
         }
         try {
             mTelecomManager.getAdnUriForPhoneAccount(mPhoneAccountHandle);
             fail("TelecomManager.getAdnUriForPhoneAccount should throw SecurityException if "
-                    + "not default dialer");
+                    + "not default dialer; current is: "
+                    + TestUtils.getDefaultDialer(getInstrumentation())
+                    + ", system is: "
+                    + mTelecomManager.getSystemDialerPackage());
         } catch (SecurityException e) {
         }
 

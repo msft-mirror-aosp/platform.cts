@@ -122,6 +122,9 @@ public abstract class CodecTestBase {
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean VNDK_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_BEFORE_U =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -205,6 +208,11 @@ public abstract class CodecTestBase {
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
+    static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
+            DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
+            DolbyVisionProfileDvheDtr, DolbyVisionProfileDvheStn, DolbyVisionProfileDvheDth,
+            DolbyVisionProfileDvheDtb, DolbyVisionProfileDvheSt, DolbyVisionProfileDvavSe,
+            DolbyVisionProfileDvav110};
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
@@ -426,6 +434,7 @@ public abstract class CodecTestBase {
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_PROFILES);

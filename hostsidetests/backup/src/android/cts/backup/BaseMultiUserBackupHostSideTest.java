@@ -19,11 +19,13 @@ package android.cts.backup;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.fail;
 
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.compatibility.common.util.CommonTestUtils;
+import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -131,6 +133,10 @@ public abstract class BaseMultiUserBackupHostSideTest extends BaseBackupHostSide
 
         mBackupUtils.enableBackupForUser(true, userId);
         assertThat(mBackupUtils.isBackupEnabledForUser(userId)).isTrue();
+
+        // In case the user was just start, wait for the broadcast queue to get idle to avoid
+        // any backup service registered during the testing.
+        waitForBroadcastIdle();
     }
 
     /**
@@ -217,5 +223,22 @@ public abstract class BaseMultiUserBackupHostSideTest extends BaseBackupHostSide
             throws DeviceNotAvailableException {
         boolean result = runDeviceTests(mDevice, packageName, className, testName, userId, null);
         assertThat(result).isTrue();
+    }
+
+    // Copied over from BackupPreparer
+    private void waitForBroadcastIdle() throws DeviceNotAvailableException, IOException {
+        CollectingOutputReceiver receiver = new CollectingOutputReceiver();
+        try {
+            // we allow 10 min for the command to complete and 5 min for the command to start to
+            // output something
+            mDevice.executeShellCommand(
+                    "am wait-for-broadcast-idle", receiver, 10, 5, TimeUnit.MINUTES, 0);
+        } finally {
+            String output = receiver.getOutput();
+            if (!output.contains("All broadcast queues are idle!")) {
+                CLog.e("Output from 'am wait-for-broadcast-idle': %s", output);
+                fail("'am wait-for-broadcase-idle' did not complete.");
+            }
+        }
     }
 }

@@ -161,7 +161,7 @@ class AutoRevokeTest {
 
     @After
     fun cleanUp() {
-        goHome()
+        goBack()
         resetBatterySavingRestrictions(context)
     }
 

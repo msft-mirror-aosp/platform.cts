@@ -549,7 +549,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Assert that the top activity was relaunched.
         waitAndAssertActivityStates(state(topOpaqueActivity, ON_RESUME));
-        assertRelaunchSequence(SecondActivity.class, getTransitionLog(), ON_RESUME);
+        // If the device uses a close-to-square display, we allow activity to relaunch
+        // multiple-times. It may receive multiple configuration change events due to task bar
+        // re-creation. Note that it won't happen after V+.
+        assertRelaunchSequence(SecondActivity.class, getTransitionLog(), ON_RESUME,
+                isCloseToSquareDisplay() /* allowMultipleTimes */);
 
         // Finish the top activity
         getTransitionLog().clear();
@@ -739,7 +743,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final Activity testActivity = new Launcher(FirstActivity.class)
                 .setOptions(activityOptions)
                 .launch();
-        final boolean isTranslucent = isTranslucent(testActivity);
+        final boolean isTranslucent =
+            isTranslucent(testActivity) || testActivity.isInMultiWindowMode();
         mWmState.waitForActivityState(
                 targetActivity, isTranslucent ? STATE_PAUSED : STATE_STOPPED);
 
@@ -780,8 +785,14 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 .setOptions(activityOptions)
                 .launch();
 
-        // Wait for first activity to become occluded
-        waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
+        // Wait for the first activity to become occluded, or in case of multi-window environments,
+        // to be pushed out of their top position.
+        boolean isNonOverlappingMultiWindowMode = isNonOverlappingMultiWindowMode(secondActivity);
+        if (isNonOverlappingMultiWindowMode) {
+            waitAndAssertActivityStates(state(recreatingActivity, ON_TOP_POSITION_LOST));
+        } else {
+            waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
+        }
 
         // Launch the activity again to recreate
         getTransitionLog().clear();
@@ -795,7 +806,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Wait for activity to relaunch and resume
         final List<String> expectedRelaunchSequence;
-        if (isTranslucent(secondActivity)) {
+        if (isNonOverlappingMultiWindowMode) {
+            // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
+            expectedRelaunchSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
+                    ON_PAUSE, ON_STOP, ON_DESTROY, ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME);
+        } else if (isTranslucent(secondActivity)) {
             expectedRelaunchSequence = Arrays.asList(ON_NEW_INTENT, ON_RESUME,
                     ON_PAUSE, ON_STOP, ON_DESTROY, ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME);
         } else {
@@ -845,7 +860,14 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 .setOptions(activityOptions)
                 .launch();
 
-        waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
+        // Wait for the first activity to become occluded, or in case of multi-window environments,
+        // to be pushed out of their top position.
+        boolean isNonOverlappingMultiWindowMode = isNonOverlappingMultiWindowMode(secondActivity);
+        if (isNonOverlappingMultiWindowMode) {
+            waitAndAssertActivityStates(state(singleTopActivity, ON_TOP_POSITION_LOST));
+        } else {
+            waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
+        }
 
         // Try to launch again
         getTransitionLog().clear();
@@ -856,7 +878,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Verify that the first activity was restarted, new intent was delivered and resumed again
         final List<String> expectedSequence;
-        if (isTranslucent(singleTopActivity)) {
+        if (isNonOverlappingMultiWindowMode) {
+            // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
+            expectedSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
+                    ON_TOP_POSITION_GAINED);
+        } else if (isTranslucent(singleTopActivity)) {
             expectedSequence = Arrays.asList(ON_NEW_INTENT, ON_RESUME, ON_TOP_POSITION_GAINED);
         } else {
             expectedSequence = Arrays.asList(ON_RESTART, ON_START, ON_NEW_INTENT, ON_RESUME,
