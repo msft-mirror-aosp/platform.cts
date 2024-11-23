@@ -36,9 +36,10 @@ class SetValueRequestTest {
     @get:Rule
     val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    private val value = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING)
-        .setStringValue("string")
-        .build()
+    private val value: SettingsPreferenceValue
+        get() = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_STRING)
+            .setStringValue("string")
+            .build()
 
     @Test(expected = IllegalArgumentException::class)
     fun buildSetValueRequest_emptyKey_shouldCrash() {

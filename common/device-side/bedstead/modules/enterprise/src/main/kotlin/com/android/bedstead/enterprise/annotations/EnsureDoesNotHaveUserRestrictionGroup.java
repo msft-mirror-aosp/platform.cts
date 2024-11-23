@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.multiuser.annotations;
+package com.android.bedstead.enterprise.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.LATE;
 

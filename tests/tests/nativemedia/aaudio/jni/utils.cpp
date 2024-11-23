@@ -451,3 +451,15 @@ void disablePermissions() {
     callJavaStaticVoidFunction(
             nullptr, "android/nativemedia/aaudio/AAudioTests", "disablePermissions", "()V");
 }
+
+bool isCompressedFormat(aaudio_format_t format) {
+    switch (format) {
+        case AAUDIO_FORMAT_PCM_I16:
+        case AAUDIO_FORMAT_PCM_FLOAT:
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+        case AAUDIO_FORMAT_PCM_I32:
+            return false;
+        default:
+            return true;
+    }
+}
