@@ -747,17 +747,6 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GenericDocumentCtsTest#testRetrieveTopLevelPropertiesIndexOutOfRange"/>
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionCtsTest#testGlobalQuery_propertyWeights"/>
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_hasProperty"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_deviceOwner_fail"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_emptyPackage"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_failed_noSuchMethod"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_runInManagedProfile_fail"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_startActivity"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_success"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_success_async"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_timedOut"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.ExecuteAppFunctionRequestCtsTest#build"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.ExecuteAppFunctionResponseCtsTest#build"/>
     <!-- CtsAppSecurityHostTestCases -->
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#rebootWithDuplicatePermission"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAdbInstallFile_full"/>

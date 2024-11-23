@@ -145,8 +145,6 @@ public class MediaProjectionStoppingTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_MEDIA_PROJECTION_KEYGUARD_RESTRICTIONS)
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionStopsOnKeyguard() throws Exception {
         startMediaProjection();
@@ -173,8 +171,6 @@ public class MediaProjectionStoppingTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_MEDIA_PROJECTION_KEYGUARD_RESTRICTIONS)
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionWithoutDisplayDoesNotStopOnKeyguard() throws Exception {
         startMediaProjection();
