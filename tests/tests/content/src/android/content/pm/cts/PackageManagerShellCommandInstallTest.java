@@ -61,6 +61,7 @@ import android.content.IIntentSender;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.ApkChecksum;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.DataLoaderParams;
@@ -87,6 +88,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.preference.PreferenceManager;
 import android.util.PackageUtils;
 
 import androidx.test.InstrumentationRegistry;
@@ -359,6 +361,8 @@ public class PackageManagerShellCommandInstallTest {
 
         setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest", "invalid");
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "invalid");
+
+        getDefaultSharedPreferences().edit().clear().commit();
     }
 
     @AfterClass
@@ -1428,9 +1432,19 @@ public class PackageManagerShellCommandInstallTest {
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
     }
 
+    private SharedPreferences getDefaultSharedPreferences() {
+        final Context appContext = getContext().getApplicationContext();
+        return PreferenceManager.getDefaultSharedPreferences(appContext);
+    }
+
+    private void setDependencyInstallerRunMethod(String methodName) {
+        getDefaultSharedPreferences().edit().putString(
+                TestDependencyInstallerService.METHOD_NAME, methodName).commit();
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_dependencyInstallerDisabledShellCommand()
+    public void testAppWithMissingDependency_dependencyInstallerDisabledShellCommand()
             throws Exception {
         onBeforeSdkTests();
 
@@ -1442,7 +1456,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_failDependencyResolution() throws Exception {
+    public void testAppWithMissingDependency_failDependencyResolution() throws Exception {
         onBeforeSdkTests();
 
         setDependencyInstallerRoleHolder();
@@ -1468,6 +1482,7 @@ public class PackageManagerShellCommandInstallTest {
         setDependencyInstallerRoleHolder();
         try {
             // Dependency Installer Service should resolve missing SDK1
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             installPackage(TEST_USING_SDK1);
         } finally {
             removeDependencyInstallerRoleHolder();
@@ -1484,6 +1499,7 @@ public class PackageManagerShellCommandInstallTest {
         setDependencyInstallerRoleHolder();
         try {
             // Dependency Installer Service should try to resolve dependency but fail
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
@@ -1505,6 +1521,7 @@ public class PackageManagerShellCommandInstallTest {
         setDependencyInstallerRoleHolder();
         try {
             // Dependency Installer Service should resolve missing SDK1
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_ASYNC);
             installPackage(TEST_USING_SDK1_AND_SDK2);
         } finally {
             removeDependencyInstallerRoleHolder();
