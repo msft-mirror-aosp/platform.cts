@@ -282,22 +282,6 @@ bool AAudioExtensions::loadLibrary() {
         return false;
     }
 
-    mAAudio_getPlatformMMapPolicy =
-            (aaudio_policy_t(*)(aaudio_device_t device, aaudio_direction_t direction))
-                    dlsym(mLibHandle, FUNCTION_GET_PLATFORM_MMAP_POLICY);
-    if (mAAudio_getPlatformMMapPolicy == nullptr) {
-        // LOGI("%s() could not find " FUNCTION_GET_PLATFORM_MMAP_POLICY, __func__);
-        return false;
-    }
-
-    mAAudio_getPlatformMMapExclusivePolicy =
-            (aaudio_policy_t(*)(aaudio_device_t device, aaudio_direction_t direction))
-                    dlsym(mLibHandle, FUNCTION_GET_PLATFORM_MMAP_EXCLUSIVE_POLICY);
-    if (mAAudio_getPlatformMMapExclusivePolicy == nullptr) {
-        // LOGI("%s() could not find " FUNCTION_GET_PLATFORM_MMAP_EXCLUSIVE_POLICY, __func__);
-        return false;
-    }
-
     mFunctionsLoaded = true;
     return mFunctionsLoaded;
 }
