@@ -477,9 +477,13 @@ public class WifiRttTest extends TestBase {
             } else {
                 numFailures++;
             }
+            long minWait = TimeUnit.MICROSECONDS.toMillis(
+                    result.getMinTimeBetweenNtbMeasurementsMicros());
+            if (isSecure && result.getPasnComebackCookie() != null) {
+                minWait = Math.max(minWait, result.getPasnComebackAfterMillis());
+            }
             // Wait for the minimum measurement time
-            Thread.sleep(TimeUnit.MICROSECONDS.toMillis(
-                    result.getMinTimeBetweenNtbMeasurementsMicros()));
+            Thread.sleep(minWait);
         }
 
         // Save results to log

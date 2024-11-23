@@ -3700,6 +3700,38 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        logd("testRegisterForSelectedNbIotSatelliteSubscriptionChanged: start");
+        grantSatellitePermission();
+
+        SelectedNbIotSatelliteSubscriptionCallbackTest
+                selectedNbIotSatelliteSubscriptionCallbackTest =
+                        new SelectedNbIotSatelliteSubscriptionCallbackTest();
+
+        /* register callback for satellite subscription id changed event */
+        @SatelliteManager.SatelliteResult int registerError =
+                sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(),
+                        selectedNbIotSatelliteSubscriptionCallbackTest);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+
+        /* Wait for the callback to be called */
+        assertTrue(selectedNbIotSatelliteSubscriptionCallbackTest.waitUntilResult(1));
+
+        /* Verify whether notified and requested subscription are equal */
+        Pair<Integer, Integer> pairResult = requestSelectedNbIotSatelliteSubscriptionId();
+        assertEquals(selectedNbIotSatelliteSubscriptionCallbackTest.mSelectedSubId,
+                (long) pairResult.first);
+        assertNull(pairResult.second);
+
+        /* unregister */
+        sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                selectedNbIotSatelliteSubscriptionCallbackTest);
+
+        revokeSatellitePermission();
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSendSatelliteDatagram_DemoMode_WithDeviceConfig() {
         logd("testSendSatelliteDatagram_DemoMode_WithDeviceConfig");

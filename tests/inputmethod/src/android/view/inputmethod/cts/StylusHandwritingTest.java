@@ -728,7 +728,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     public void testStylusSession_stylusWouldNotTriggerNavbarGestures() throws Exception {
         assumeTrue(sGestureNavRule.isGestureMode());
-
+        final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -738,6 +738,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
+            addVirtualStylusIdForTestSession();
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    imm.setStylusWindowIdleTimeoutForTest(TIMEOUT * 2));
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(
                     stream,

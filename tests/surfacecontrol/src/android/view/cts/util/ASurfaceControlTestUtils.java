@@ -221,6 +221,9 @@ public class ASurfaceControlTestUtils {
             long surfaceControl, long surfaceTransaction, float desiredRatio);
     public static native void nSurfaceTransaction_setDataSpace(
             long surfaceControl, long surfaceTransaction, int dataspace);
+    public static native void nSurfaceTransaction_setLuts(
+            long surfaceControl, long surfaceTransaction, float[] buffers, int[] offsets,
+            int[] dimensions, int[] sizes, int[] samplingKeys);
 
     public static native HardwareBuffer getSolidBuffer(int width, int height, int color);
     public static native HardwareBuffer getQuadrantBuffer(int width, int height,

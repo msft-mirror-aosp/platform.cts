@@ -30,6 +30,8 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodConfig;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
@@ -62,6 +64,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -149,6 +152,10 @@ public final class DeviceConfigApiTests {
 
     @Rule public final TestName testName = new TestName();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @RavenwoodConfig.Config
     public static final RavenwoodConfig sConfig = new RavenwoodConfig.Builder()
             .setProvideMainThread(true)
@@ -170,11 +177,6 @@ public final class DeviceConfigApiTests {
                     + sContext.getUserId();
             return;
         }
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                WRITE_DEVICE_CONFIG_PERMISSION, WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
-                READ_DEVICE_CONFIG_PERMISSION, MONITOR_DEVICE_CONFIG_ACCESS,
-                READ_WRITE_SYNC_DISABLED_MODE_CONFIG_PERMISSION);
     }
 
     @Before
@@ -184,6 +186,12 @@ public final class DeviceConfigApiTests {
 
     @Before
     public void setUpSyncDisabledMode() {
+        // Adoption of the shell permission identity is required before each test since the
+        // CheckFlagRule will drop the shell permission identity.
+        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                WRITE_DEVICE_CONFIG_PERMISSION, WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
+                READ_DEVICE_CONFIG_PERMISSION, MONITOR_DEVICE_CONFIG_ACCESS,
+                READ_WRITE_SYNC_DISABLED_MODE_CONFIG_PERMISSION);
         mInitialSyncDisabledMode = DeviceConfig.getSyncDisabledMode();
         DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
     }
@@ -1482,6 +1490,14 @@ public final class DeviceConfigApiTests {
                 + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_CONFIG_WRITABLE_NAMESPACES_API)
+    public void testGetAdbWritableNamespaces_returnsNamespaces() {
+        Set<String> namespaces = DeviceConfig.getAdbWritableNamespaces();
+
+        assertTrue(namespaces.size() > 0);
     }
 
     private class TestMonitorCallback implements DeviceConfig.MonitorCallback {

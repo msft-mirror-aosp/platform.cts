@@ -970,12 +970,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         SoftApCapability currentSoftApCapability;
         MacAddress lastBlockedClientMacAddress;
         int lastBlockedClientReason;
+        int mLastDisconnectedClientReason;
         boolean onStateChangedCalled = false;
         boolean mOnSoftApStateChangedCalled = false;
         boolean onSoftApCapabilityChangedCalled = false;
         boolean onConnectedClientCalled = false;
         boolean onConnectedClientChangedWithInfoCalled = false;
         boolean onBlockedClientConnectingCalled = false;
+        boolean mOnClientsDisconnected = false;
         int onSoftapInfoChangedCalledCount = 0;
         int onSoftapInfoChangedWithListCalledCount = 0;
 
@@ -1031,6 +1033,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         public boolean getOnBlockedClientConnectingCalled() {
             synchronized (mSoftApLock) {
                 return onBlockedClientConnectingCalled;
+            }
+        }
+
+        /**
+         * Returns {@code true} if #onClientsDisconnected was called, else {@code false}.
+         */
+        public boolean getOnClientsDisconnectedCalled() {
+            synchronized (mSoftApLock) {
+                return mOnClientsDisconnected;
             }
         }
 
@@ -1156,6 +1167,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 lastBlockedClientMacAddress = client.getMacAddress();
                 lastBlockedClientReason = blockedReason;
                 onBlockedClientConnectingCalled = true;
+            }
+        }
+
+        @Override
+        public void onClientsDisconnected(SoftApInfo info, List<WifiClient> clients) {
+            synchronized (mSoftApLock) {
+                WifiClient client = clients.getFirst();
+                mLastDisconnectedClientReason = client.getDisconnectReason();
+                mOnClientsDisconnected = true;
             }
         }
     }
@@ -7639,7 +7659,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     /**
      * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_WEP_DISABLED_IN_APM)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AAPM_API)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
             codeName = "Baklava")
     @Test
@@ -7649,9 +7669,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             uiAutomation.adoptShellPermissionIdentity();
             List<AdvancedProtectionFeature> features =
                     sWifiManager.getAvailableAdvancedProtectionFeatures();
-            // Should have the WEP disabled feature at least.
             assertNotNull(features);
-            assertFalse(features.isEmpty());
+            if (Flags.wepDisabledInApm()) {
+                // Should have the WEP disabled feature at least.
+                assertFalse(features.isEmpty());
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

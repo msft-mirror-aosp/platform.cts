@@ -95,7 +95,6 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -1831,15 +1830,11 @@ public class AccessibilityMagnificationTest {
     }
 
     private String getSetterErrorMessage(String rawMessage) {
-        if (Flags.alwaysDrawMagnificationFullscreenBorder()) {
-            String postfix = ". The failure may be because the service connection does not exist"
-                    + ", the given setter info does not make the magnification spec changed"
-                    + ", or the SystemUI connection does not exist."
-                    + " Please ensure your SystemUI implements the IMagnificationConnection AIDL.";
-            return rawMessage + postfix;
-        } else {
-            return rawMessage;
-        }
+        String postfix = ". The failure may be because the service connection does not exist"
+                + ", the given setter info does not make the magnification spec changed"
+                + ", or the SystemUI connection does not exist."
+                + " Please ensure your SystemUI implements the IMagnificationConnection AIDL.";
+        return rawMessage + postfix;
     }
 
     private Bundle waitForExtraTextData(AccessibilityNodeInfo info, String key) {
