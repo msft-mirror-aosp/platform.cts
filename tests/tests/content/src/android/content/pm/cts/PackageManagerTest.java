@@ -84,7 +84,6 @@ import static org.testng.Assert.expectThrows;
 import android.Manifest;
 import android.annotation.NonNull;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.ActivityThread;
 import android.app.Instrumentation;
@@ -478,7 +477,7 @@ public class PackageManagerTest {
 
     public static void launchMainActivity(String packageName) {
         SystemUtil.runShellCommand("am start -W "
-                + "--user current "
+                + "--user " + Process.myUserHandle().getIdentifier() + " "
                 + "-a android.intent.action.MAIN "
                 + "-c android.intent.category.LAUNCHER "
                 + packageName + "/.MainActivity");
@@ -3084,22 +3083,28 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     public void testInstallArchivedUpdate() throws Exception {
-        installPackage(HELLO_WORLD_APK);
+        final int userId = mContext.getUserId();
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        assertEquals("Success\n", SystemUtil.runShellCommand(
+                String.format("pm install --user %d -r -t -g %s", userId,
+                        HELLO_WORLD_APK)));
         byte[] archivedPackage = SystemUtil.runShellCommandByteOutput(
                 mInstrumentation.getUiAutomation(),
-                "pm get-archived-package-metadata " + HELLO_WORLD_PACKAGE_NAME);
+                String.format("pm get-archived-package-metadata --user %d %s",
+                        userId, HELLO_WORLD_PACKAGE_NAME));
 
         // Try to install archived on top of fully installed app.
         assertThat(executeShellCommand(
-                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
-                        archivedPackage.length), archivedPackage)).startsWith(
-                "Failure [INSTALL_FAILED_SESSION_INVALID: Archived");
+                String.format("pm install-archived --user %d -r -i %s -t -S %s", userId,
+                        mContext.getPackageName(), archivedPackage.length), archivedPackage))
+                .startsWith("Failure [INSTALL_FAILED_SESSION_INVALID: Archived");
 
         // Uninstall and retry.
         uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
         assertEquals("Success\n", executeShellCommand(
-                String.format("pm install-archived -r -i %s -t -S %s", mContext.getPackageName(),
-                        archivedPackage.length), archivedPackage));
+                String.format("pm install-archived --user %d -r -i %s -t -S %s", userId,
+                        mContext.getPackageName(), archivedPackage.length), archivedPackage));
         assertTrue(isPackagePresent(HELLO_WORLD_PACKAGE_NAME));
         // Pending restore.
         String pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
@@ -3108,16 +3113,17 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertDataAppExists(HELLO_WORLD_PACKAGE_NAME);
         // Wrong signature.
         assertThat(SystemUtil.runShellCommand(
-                "pm install -t -g " + HELLO_WORLD_DIFF_SIGNER_APK)).startsWith(
-                "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE");
+                String.format("pm install --user %d -t -g %s", userId,
+                        HELLO_WORLD_DIFF_SIGNER_APK)))
+                .startsWith("Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE");
         // Update fails because we can't derive an existing APK.
         assertThat(SystemUtil.runShellCommand(
-                "pm install -t -p " + HELLO_WORLD_PACKAGE_NAME + " -g "
-                        + HELLO_WORLD_UPDATED_APK)).startsWith(
+                String.format("pm install --user %d -t -p %s -g %s", userId,
+                        HELLO_WORLD_PACKAGE_NAME, HELLO_WORLD_UPDATED_APK))).startsWith(
                 "Failure [INSTALL_FAILED_INVALID_APK: Missing existing base package");
         // Unarchive/full install succeeds.
         assertEquals("Success\n", SystemUtil.runShellCommand(
-                "pm install -t -g " + HELLO_WORLD_UPDATED_APK));
+                String.format("pm install --user %d -t -g %s", userId, HELLO_WORLD_UPDATED_APK)));
         assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
         // pendingRestore flag will only be unset if the restore is successfully performed.
         // On devices that don't support backup & restore, the following checks will be skipped.
@@ -3127,8 +3133,9 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                     "    pendingRestore=");
             assertThat(pendingRestore).isNull();
             // Uninstall, keep data.
-            assertEquals("Success\n",
-                    SystemUtil.runShellCommand("pm uninstall -k " + HELLO_WORLD_PACKAGE_NAME));
+            assertEquals("Success\n", SystemUtil.runShellCommand(
+                    String.format("pm uninstall --user %d -k %s", userId,
+                            HELLO_WORLD_PACKAGE_NAME)));
             // Not pending restore.
             pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
                     "    pendingRestore=");
@@ -3193,15 +3200,15 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
      */
     @Test
     public void testInstallArchivedBroadcasts() throws Exception {
-        int currentUser = ActivityManager.getCurrentUser();
+        int testUserId = Process.myUserHandle().getIdentifier();
         final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_ADDED
         );
         final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_REMOVED
         );
         final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -3369,15 +3376,15 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         // Wait ACTION_PACKAGE_REMOVED was dispatched for uninstall HELLO_WORLD_PACKAGE_NAME
         SystemClock.sleep(2_000);
 
-        int currentUser = ActivityManager.getCurrentUser();
+        int testUserId = Process.myUserHandle().getIdentifier();
         final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_ADDED
         );
         final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_REMOVED
         );
         final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -3504,16 +3511,16 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     @Test
     public void testPackageRemovedBroadcastsSingleUser() throws Exception {
         installPackage(HELLO_WORLD_APK);
-        final int currentUser = ActivityManager.getCurrentUser();
+        final int testUserId = Process.myUserHandle().getIdentifier();
         final PackageBroadcastReceiver
                 removedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_REMOVED
         );
         final PackageBroadcastReceiver fullyRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_FULLY_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_FULLY_REMOVED
         );
         final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
@@ -3534,7 +3541,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             removedBroadcastReceiver.reset();
             // Test uninstall -k with --user
             installPackage(HELLO_WORLD_APK);
-            uninstallPackageKeepDataForUser(HELLO_WORLD_PACKAGE_NAME, currentUser);
+            uninstallPackageKeepDataForUser(HELLO_WORLD_PACKAGE_NAME, testUserId);
             removedBroadcastReceiver.assertBroadcastReceived();
             fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
             uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
@@ -3550,7 +3557,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             uidRemovedBroadcastReceiver.reset();
             // Test uninstall --user without -k
             installPackage(HELLO_WORLD_APK);
-            uninstallPackageForUser(HELLO_WORLD_PACKAGE_NAME, currentUser);
+            uninstallPackageForUser(HELLO_WORLD_PACKAGE_NAME, testUserId);
             removedBroadcastReceiver.assertBroadcastReceived();
             fullyRemovedBroadcastReceiver.assertBroadcastReceived();
             uidRemovedBroadcastReceiver.assertBroadcastReceived();
@@ -3567,13 +3574,13 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         installPackage(HELLO_WORLD_APK);
         // Test uninstall -k
         uninstallPackageKeepData(HELLO_WORLD_PACKAGE_NAME);
-        final int currentUser = ActivityManager.getCurrentUser();
+        final int testUserId = Process.myUserHandle().getIdentifier();
         final PackageBroadcastReceiver
                 replacedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REPLACED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_REPLACED
         );
         final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
+                HELLO_WORLD_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_ADDED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_REPLACED);
@@ -3612,20 +3619,20 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             Log.w(TAG, "Device doesn't have " + CTS_SHIM_PACKAGE_NAME + " installed, skipping");
         }
         assumeTrue(ctsShimPackageInfo != null);
-        final int currentUser = ActivityManager.getCurrentUser();
+        final int testUserId = Process.myUserHandle().getIdentifier();
         try {
             // Delete the system package with DELETE_SYSTEM_APP
-            uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, currentUser);
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, currentUser,
+            uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
+            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
                     0)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, currentUser,
+            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
                     MATCH_DISABLED_COMPONENTS)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, currentUser,
+            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
                     MATCH_DISABLED_UNTIL_USED_COMPONENTS)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, currentUser,
+            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
                     MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS)).isTrue();
         } finally {
-            installExistingPackageForUser(CTS_SHIM_PACKAGE_NAME, currentUser);
+            installExistingPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
         }
     }
 
@@ -3639,16 +3646,16 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             Log.w(TAG, "Device doesn't have " + CTS_SHIM_PACKAGE_NAME + " installed, skipping");
         }
         assumeTrue(ctsShimPackageInfo != null);
-        final int currentUser = ActivityManager.getCurrentUser();
+        final int testUserId = Process.myUserHandle().getIdentifier();
         try {
             // Delete the system package with DELETE_SYSTEM_APP
-            uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, currentUser);
+            uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
             String result = SystemUtil.runShellCommand(
-                    "pm install-existing --instant --user " + currentUser + " "
+                    "pm install-existing --instant --user " + testUserId + " "
                             + CTS_SHIM_PACKAGE_NAME);
             assertThat(result).contains("NameNotFoundException");
         } finally {
-            installExistingPackageForUser(CTS_SHIM_PACKAGE_NAME, currentUser);
+            installExistingPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
         }
     }
 
@@ -3898,15 +3905,15 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         }
         assertThat(result).isEqualTo("Success\n");
         assertTrue(isPackagePresent(HELLO_WORLD_SETTINGS_PACKAGE_NAME));
-        int currentUser = ActivityManager.getCurrentUser();
+        int testUserId = Process.myUserHandle().getIdentifier();
         PackageBroadcastReceiver packageRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_SETTINGS_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+                HELLO_WORLD_SETTINGS_PACKAGE_NAME, testUserId, Intent.ACTION_PACKAGE_REMOVED
         );
         final IntentFilter packageRemovedIntentFilter =
                 new IntentFilter(Intent.ACTION_PACKAGE_REMOVED);
         packageRemovedIntentFilter.addDataScheme("package");
         PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
-                HELLO_WORLD_SETTINGS_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
+                HELLO_WORLD_SETTINGS_PACKAGE_NAME, testUserId, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter uidRemovedIntentFilter = new IntentFilter(Intent.ACTION_UID_REMOVED);
         mContext.registerReceiver(packageRemovedBroadcastReceiver, packageRemovedIntentFilter);
@@ -4130,7 +4137,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         filter.addDataScheme("package");
         final PackageBroadcastReceiver packageChangedBroadcastReceiver =
                 new PackageBroadcastReceiver(expectedPackageName,
-                        ActivityManager.getCurrentUser(), Intent.ACTION_PACKAGE_CHANGED);
+                        Process.myUserHandle().getIdentifier(), Intent.ACTION_PACKAGE_CHANGED);
         mContext.registerReceiver(packageChangedBroadcastReceiver, filter, RECEIVER_EXPORTED);
         try {
             mPackageManager.setMimeGroup(MIME_GROUP, mimeTypes);

@@ -35,6 +35,7 @@ import android.bluetooth.BluetoothLeAudioCodecStatus;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -432,6 +433,35 @@ public class BluetoothLeAudioTest {
         mTestCallback.onGroupStatusChanged(mTestGroupId, mTestGroupStatus);
         mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
         mTestCallback.onBroadcastToUnicastFallbackGroupChanged(mTestGroupId);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void broadcastToUnicastFallbackGroup() {
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeAudio);
+
+        mTestGroupId = 1;
+
+        Permissions.enforceEachPermissions(
+                () -> {
+                        mBluetoothLeAudio.setBroadcastToUnicastFallbackGroup(mTestGroupId);
+                        return null;
+                },
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothLeAudio.getBroadcastToUnicastFallbackGroup(),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            mBluetoothLeAudio.setBroadcastToUnicastFallbackGroup(mTestGroupId);
+
+            /* There is no such group - verify if it's not updated */
+            assertTrue(mBluetoothLeAudio.getBroadcastToUnicastFallbackGroup()
+                    == BluetoothLeAudio.GROUP_ID_INVALID);
+        }
     }
 
     private boolean waitForProfileConnect() {

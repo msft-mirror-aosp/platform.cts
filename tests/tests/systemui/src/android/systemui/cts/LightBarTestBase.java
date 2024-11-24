@@ -22,7 +22,6 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.util.Log;
 import android.view.DisplayCutout;
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Locale;
 
 public class LightBarTestBase {
 
@@ -46,8 +44,6 @@ public class LightBarTestBase {
             .getPath("/sdcard/LightBarTestBase/");
 
     public static final int WAIT_TIME = 2000;
-
-    private static final int COLOR_DIFF_THESHOLDS = 2;
 
     private ArrayList<Rect> mCutouts;
 
@@ -87,57 +83,6 @@ public class LightBarTestBase {
                 }
             }
         }
-    }
-
-    protected void checkNavigationBarDivider(LightBarBaseActivity activity, int dividerColor,
-            int backgroundColor, String methodName) {
-        final Bitmap bitmap = takeNavigationBarScreenshot(activity);
-        int[] pixels = new int[bitmap.getHeight() * bitmap.getWidth()];
-        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-
-        loadCutout(activity);
-        int backgroundColorPixelCount = 0;
-        int shiftY = activity.getBottom();
-        for (int i = 0; i < pixels.length; i++) {
-            int x = i % bitmap.getWidth();
-            int y = i / bitmap.getWidth();
-            if (isColorSame(pixels[i], backgroundColor) || isInsideCutout(x, shiftY + y)) {
-                backgroundColorPixelCount++;
-            }
-        }
-        assumeNavigationBarChangesColor(backgroundColorPixelCount, pixels.length);
-
-        int diffCount = 0;
-        for (int col = 0; col < bitmap.getWidth(); col++) {
-            if (isInsideCutout(col, shiftY)) {
-                continue;
-            }
-
-            if (!isColorSame(dividerColor, pixels[col])) {
-                diffCount++;
-            }
-        }
-
-        boolean success = false;
-        try {
-            assertLessThan(String.format(Locale.ENGLISH,
-                    "There are invalid color pixels. expected= 0x%08x", dividerColor),
-                    0.3f, (float) diffCount / (float)bitmap.getWidth(),
-                    "Is the divider colored according to android:navigationBarDividerColor "
-                            + " in the theme?");
-            success = true;
-        } finally {
-            if (!success) {
-                dumpBitmap(bitmap, methodName);
-            }
-        }
-    }
-
-    private static boolean isColorSame(int c1, int c2) {
-        return Math.abs(Color.alpha(c1) - Color.alpha(c2)) < COLOR_DIFF_THESHOLDS
-                && Math.abs(Color.red(c1) - Color.red(c2)) < COLOR_DIFF_THESHOLDS
-                && Math.abs(Color.green(c1) - Color.green(c2)) < COLOR_DIFF_THESHOLDS
-                && Math.abs(Color.blue(c1) - Color.blue(c2)) < COLOR_DIFF_THESHOLDS;
     }
 
     protected void assumeNavigationBarChangesColor(int backgroundColorPixelCount, int totalPixel) {

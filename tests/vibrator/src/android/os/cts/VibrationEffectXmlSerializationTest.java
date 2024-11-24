@@ -16,6 +16,8 @@
 
 package android.os.cts;
 
+import static android.os.VibrationEffect.Composition.DELAY_TYPE_PAUSE;
+import static android.os.VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_CLICK;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_LOW_TICK;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_SPIN;
@@ -23,6 +25,7 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
 import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
@@ -951,17 +954,73 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_VENDOR_VIBRATION_EFFECTS)
-    public void testSerializeVendorEffect_withFeatureFlagDisabled_fails() {
-        PersistableBundle vendorData = new PersistableBundle();
-        vendorData.putInt("id", 1);
+    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testParsePrimitiveWithDelayType_withFeatureFlagEnabled_isSuccessful()
+            throws Exception {
+        assertSuccessfulParse(
+                """
+                <vibration-effect>
+                    <primitive-effect name="tick" delayType="relative_start_offset"/>
+                    <primitive-effect name="click" scale="0.123" delayType="pause"/>
+                    <primitive-effect name="low_tick" delayMs="900" delayType="pause"/>
+                    <primitive-effect name="spin" scale="0.404" delayMs="10"
+                            delayType="relative_start_offset" />
+                </vibration-effect>
+                """,
+                VibrationEffect.startComposition()
+                        .addPrimitive(PRIMITIVE_TICK, 1.0f, 0, DELAY_TYPE_RELATIVE_START_OFFSET)
+                        .addPrimitive(PRIMITIVE_CLICK, 0.123f, 0, DELAY_TYPE_PAUSE)
+                        .addPrimitive(PRIMITIVE_LOW_TICK, 1.0f, 900, DELAY_TYPE_PAUSE)
+                        .addPrimitive(PRIMITIVE_SPIN, 0.404f, 10, DELAY_TYPE_RELATIVE_START_OFFSET)
+                        .compose());
+    }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testParseInvalidPrimitiveDelayType_withFeatureFlagEnabled_fails() {
+        assertFailedParse(
+                """
+                <vibration-effect>
+                    <primitive-effect name="tick" delayType="invalid"/>
+                </vibration-effect>
+                """);
+        assertFailedParse(
+                """
+                <vibration-effect>
+                    <primitive-effect name="tick" delayType=""/>
+                </vibration-effect>
+                """);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testParsePrimitiveWithDelayType_withFeatureFlagDisabled_fails() {
+        assertFailedParse(
+                """
+                <vibration-effect>
+                    <primitive-effect name="tick" delayType="relative_start_offset"/>
+                    <primitive-effect name="click" scale="0.123" delayType="pause"/>
+                </vibration-effect>
+                """);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testSerializePrimitiveWithDelayType_withFeatureFlagEnabled_isSuccessful()
+            throws Exception {
+        VibrationEffect effect = VibrationEffect.startComposition()
+                .addPrimitive(PRIMITIVE_TICK, 0.5f, 0, DELAY_TYPE_RELATIVE_START_OFFSET)
+                .addPrimitive(PRIMITIVE_CLICK, 0.75f, 20, DELAY_TYPE_PAUSE)
+                .compose();
         StringWriter writer = new StringWriter();
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.createVendorEffect(vendorData),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
+        VibrationXmlSerializer.serialize(effect, writer);
+        assertSameXml(
+                """
+                <vibration-effect>
+                    <primitive-effect name="tick" scale="0.5" delayType="relative_start_offset"/>
+                    <primitive-effect name="click" scale="0.75" delayMs="20"/>
+                </vibration-effect>
+                """, writer.toString());
     }
 
     @Test

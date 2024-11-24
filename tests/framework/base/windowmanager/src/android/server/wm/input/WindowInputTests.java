@@ -18,12 +18,14 @@ package android.server.wm.input;
 
 import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
+import static android.server.wm.app.Components.OverlayTestService.EXTRA_DISPLAY_ID_PARAM;
 import static android.server.wm.input.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -67,9 +69,11 @@ import android.window.WindowInfosListenerForTest.WindowInfo;
 
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputTouchScreen;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -95,6 +99,10 @@ import java.util.function.Predicate;
 @Presubmit
 public class WindowInputTests {
     private static final String TAG = "WindowInputTests";
+
+    private static final long TOUCH_EVENT_PROPAGATION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
+    private static final long TOUCH_EVENT_PROPAGATION_TIMEOUT_SHORT = 100L;
+
     private final ActivityTestRule<TestActivity> mActivityRule =
             new ActivityTestRule<>(TestActivity.class);
     private static final int TAPPING_TARGET_WINDOW_SIZE = 100;
@@ -106,15 +114,15 @@ public class WindowInputTests {
     private static final Duration WINDOW_WAIT_TIMEOUT = Duration.ofSeconds(20);
 
     private Instrumentation mInstrumentation;
-    private CtsTouchUtils mCtsTouchUtils;
     private TestActivity mActivity;
     private InputManager mInputManager;
+    private UinputTouchScreen mTouchScreen;
 
     private View mView;
     private final Random mRandom = new Random(1);
 
     private int mClickCount = 0;
-    private final long EVENT_FLAGS_WAIT_TIME = 2;
+    private static final long EVENT_FLAGS_WAIT_TIME = 10L * HW_TIMEOUT_MULTIPLIER;
 
     @Before
     public void setUp() throws InterruptedException {
@@ -123,7 +131,6 @@ public class WindowInputTests {
         launchHomeActivityNoWait();
 
         mInstrumentation = getInstrumentation();
-        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.launchActivity(null);
         mInputManager = mActivity.getSystemService(InputManager.class);
         mInstrumentation.waitForIdleSync();
@@ -131,6 +138,14 @@ public class WindowInputTests {
         assertTrue("Failed to reach stable window geometry",
                 waitForStableWindowGeometry(WINDOW_WAIT_TIMEOUT));
         mClickCount = 0;
+        mTouchScreen = new UinputTouchScreen(mInstrumentation, mActivity.getDisplay());
+    }
+
+    @After
+    public void tearDown() {
+        if (mTouchScreen != null) {
+            mTouchScreen.close();
+        }
     }
 
     /** Synchronously adds a window that is owned by the test activity. */
@@ -180,6 +195,7 @@ public class WindowInputTests {
         final Intent intent = new Intent();
         intent.setComponent(Components.OVERLAY_TEST_SERVICE);
         intent.putExtra(EXTRA_LAYOUT_PARAMS, lp);
+        intent.putExtra(EXTRA_DISPLAY_ID_PARAM, mActivity.getDisplay().getDisplayId());
         mActivity.startForegroundService(intent);
 
         mInstrumentation.waitForIdleSync();
@@ -225,8 +241,9 @@ public class WindowInputTests {
                     insets.top + insets.bottom + lp.height);
         });
 
+        final int displayId = mActivity.getDisplayId();
         final Rect previousWindowBoundsInDisplay = Objects.requireNonNull(
-                getWindowBoundsInDisplaySpace(mView::getWindowToken));
+                getWindowBoundsInDisplaySpace(mView::getWindowToken, displayId));
 
         // Move the window to a random location in the window and attempt to tap on view multiple
         // times.
@@ -243,8 +260,9 @@ public class WindowInputTests {
             mInstrumentation.waitForIdleSync();
 
             // Wait for window bounds to update. Since we are trying to avoid insets, it is
-            // difficult to calculate the exact expected bounds from the client. Instead, we just
-            // wait until the window is moved to a new position, assuming there is no animation.
+            // difficult to calculate the exact expected bounds from the client. Instead, we
+            // just wait until the window is moved to a new position, assuming there is no
+            // animation.
             Predicate<WindowInfo> hasUpdatedBounds =
                     windowInfo -> {
                         if (previousWindowBoundsInDisplay.equals(windowInfo.bounds)) {
@@ -254,16 +272,15 @@ public class WindowInputTests {
                         return true;
                     };
             assertTrue(waitForWindowInfo(hasUpdatedBounds, WINDOW_WAIT_TIMEOUT,
-                    mView::getWindowToken, mView.getDisplay().getDisplayId()));
-
+                    mView::getWindowToken, displayId));
             final int previousCount = mClickCount;
 
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
             mInstrumentation.waitForIdleSync();
-            assertEquals(previousCount + 1, mClickCount);
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT,
+                    () -> previousCount + 1 == mClickCount);
         }
-
         assertEquals(totalClicks, mClickCount);
     }
 
@@ -284,15 +301,19 @@ public class WindowInputTests {
             view.setFilterTouchesWhenObscured(true);
             view.setOnClickListener((v) -> mClickCount++);
         });
+        final var touchedSecondaryView = new AtomicBoolean();
         addActivityWindow((view, lp) -> {
             lp.setTitle("Additional Window");
             lp.width = 20;
             lp.height = 20;
             lp.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
             lp.flags &= ~FLAG_NOT_TOUCH_MODAL;
+            view.setOnClickListener((v) -> touchedSecondaryView.set(true));
         });
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+        mTouchScreen.tapOnViewCenter(mView);
+
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchedSecondaryView.get());
         assertEquals(0, mClickCount);
     }
 
@@ -320,9 +341,9 @@ public class WindowInputTests {
             lp.flags |= FLAG_NOT_TOUCHABLE;
         });
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+        mTouchScreen.tapOnViewCenter(mView);
 
-        assertTrue(touchReceived.get());
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
         assertEquals(
                 0,
                 eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
@@ -353,9 +374,11 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
             // Touch not received due to setFilterTouchesWhenObscured(true)
+            // Give time for the touch event to be propagted.
+            SystemClock.sleep(TOUCH_EVENT_PROPAGATION_TIMEOUT_SHORT);
             assertFalse(touchReceived.get());
             assertEquals(0, mClickCount);
         }
@@ -385,9 +408,9 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
-            assertTrue(touchReceived.get());
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
             assertEquals(
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
@@ -419,9 +442,9 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
-            assertTrue(touchReceived.get());
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
             assertEquals(
                     0,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
@@ -453,9 +476,9 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
-            assertTrue(touchReceived.get());
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
             assertEquals(
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
@@ -491,9 +514,9 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
-            assertTrue(touchReceived.get());
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
             assertEquals(
                     MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
@@ -528,9 +551,9 @@ public class WindowInputTests {
         };
 
         try (var overlay = addForeignOverlayWindow(overlayConfig)) {
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
 
-            assertTrue(touchReceived.get());
+            PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchReceived.get());
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS) & (
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED
                             | MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED));
@@ -550,9 +573,9 @@ public class WindowInputTests {
                 view.setOnClickListener((v) -> mClickCount++);
             });
 
-            mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+            mTouchScreen.tapOnViewCenter(mView);
         }
-        assertEquals(1, mClickCount);
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1);
     }
 
     @Test
@@ -563,13 +586,17 @@ public class WindowInputTests {
             view.setOnClickListener((v) -> mClickCount++);
         });
 
+        final var touchedSecondaryView = new AtomicBoolean();
         final View overlapView = addActivityWindow((view, lp) -> {
             lp.setTitle("Overlap Window");
             lp.width = 100;
             lp.height = 100;
+            view.setOnClickListener((v) -> touchedSecondaryView.set(true));
         });
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+        mTouchScreen.tapOnViewCenter(mView);
+
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> touchedSecondaryView.get());
         assertEquals(0, mClickCount);
 
         mActivityRule.runOnUiThread(() -> {
@@ -583,8 +610,9 @@ public class WindowInputTests {
         assertTrue(waitForWindowInfo(hasInputConfigFlags, WINDOW_WAIT_TIMEOUT,
                 overlapView::getWindowToken, overlapView.getDisplay().getDisplayId()));
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
-        assertEquals(1, mClickCount);
+        mTouchScreen.tapOnViewCenter(mView);
+
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> mClickCount == 1);
     }
 
     @Test
@@ -601,9 +629,9 @@ public class WindowInputTests {
             });
         });
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mView);
+        mTouchScreen.tapOnViewCenter(mView);
 
-        assertEquals(1, events.size());
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> events.size() == 1);
         MotionEvent event = events.iterator().next();
         assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
     }
@@ -625,9 +653,13 @@ public class WindowInputTests {
         });
 
         // Tap outside the untouchable window
-        mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mView, size + 5, size + 5);
+        final int[] location = new int[2];
+        mView.getLocationOnScreen(location);
+        final int x = location[0] + mView.getWidth() + 5;
+        final int y = location[1] + mView.getHeight() + 5;
+        mTouchScreen.touchDown(x, y);
 
-        assertEquals(1, events.size());
+        PollingCheck.waitFor(TOUCH_EVENT_PROPAGATION_TIMEOUT, () -> events.size() == 1);
         MotionEvent event = events.iterator().next();
         assertEquals(MotionEvent.ACTION_OUTSIDE, event.getAction());
     }
@@ -663,6 +695,7 @@ public class WindowInputTests {
                         decorViewLocation[1] + decorView.getHeight() / 2);
 
         final long downTime = SystemClock.uptimeMillis();
+        final int displayId = mActivity.getDisplayId();
         final MotionEvent eventDown =
                 MotionEvent.obtain(
                         downTime,
@@ -671,6 +704,7 @@ public class WindowInputTests {
                         testPoint.x,
                         testPoint.y,
                         /* metaState= */ 0);
+        eventDown.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(eventDown);
 
         final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -688,6 +722,7 @@ public class WindowInputTests {
                                         testPoint.x,
                                         testPoint.y,
                                         /* metaState= */ 0);
+                        eventMove.setDisplayId(displayId);
                         try {
                             mInstrumentation.sendPointerSync(eventMove);
                         } catch (SecurityException e) {

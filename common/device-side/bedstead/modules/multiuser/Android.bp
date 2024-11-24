@@ -27,6 +27,7 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
+    sdk_version: "test_current",
     static_libs: [
         "Harrier",
         "Nene",

@@ -2489,10 +2489,27 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST"/>
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_sensors"/>
-                <meta-data android:name="CddTest" android:value="7.4.1/C-4-1|7.4.2/C-1-1" />
-
+            <meta-data android:name="CddTest" android:value="7.4.1/C-4-1|7.4.2/C-1-1" />
             <meta-data android:name="test_required_features"
-                       android:value="android.hardware.sensor.barometer"/>
+                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le"/>
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.automotive"/>
+            <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+        </activity>
+    <activity android:name=".sensors.BarometerReferenceDeviceActivity"
+                  android:label="@string/snsr_baro_ref_device"
+                  android:exported="true"
+                  android:screenOrientation="locked"
+                  android:turnScreenOn="true"
+            android:keepScreenOn="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.cts.intent.category.MANUAL_TEST"/>
+            </intent-filter>
+            <meta-data android:name="CddTest" android:value="7.4.1/C-4-1|7.4.2/C-1-1" />
+            <meta-data android:name="test_required_features"
+                       android:value="android.hardware.sensor.barometer:android.hardware.bluetooth_le"/>
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
@@ -2726,7 +2743,7 @@
             android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
-            android:theme="@style/FullscreenTheme" >
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
             <intent-filter android:label="@string/camera_fov_calibration" >
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -2751,7 +2768,7 @@
         <activity
             android:name=".camera.fov.DetermineFovActivity"
             android:label="@string/camera_fov_calibration"
-            android:theme="@style/FullscreenTheme" >
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
@@ -6609,7 +6626,7 @@
         </activity>
 
         <activity android:name=".displaycutout.DisplayCutoutTestActivity"
-            android:theme="@style/FullscreenTheme"
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"
             android:exported="true"
             android:label="@string/display_cutout_test">
             <intent-filter>

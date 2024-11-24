@@ -17,7 +17,7 @@ package android.hardware.input.cts.tests
 
 import android.Manifest
 import android.companion.virtual.VirtualDeviceManager
-import android.companion.virtual.flags.Flags
+import android.companion.virtualdevice.flags.Flags
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -82,13 +82,9 @@ class VirtualInputDeviceGenericTest {
                 VirtualInputDeviceFactory(
                     VirtualInputDeviceCreator::createAndPrepareNavigationTouchpad
                 ),
+                VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareStylus),
             )
-        if (Flags.virtualStylus()) {
-            deviceFactories.add(
-                VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareStylus)
-            )
-        }
-        if (android.companion.virtualdevice.flags.Flags.virtualRotary()) {
+        if (Flags.virtualRotary()) {
             deviceFactories.add(
                 VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareRotary)
             )

@@ -168,6 +168,12 @@ public interface Features {
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SearchSpec.Builder#addFilterDocumentIds}.
+     */
+    String SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS = "SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * AppSearchSchema.StringPropertyConfig#JOINABLE_VALUE_TYPE_QUALIFIED_ID}, {@link
      * SearchSpec.Builder#setJoinSpec}, and all other join features.
      */

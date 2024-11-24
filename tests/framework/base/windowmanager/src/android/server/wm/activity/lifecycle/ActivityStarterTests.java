@@ -40,8 +40,8 @@ import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -153,6 +153,12 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityShowWhenLocked() {
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         // Allow TV devices to skip this test.
         assumeFalse(isLeanBack());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();

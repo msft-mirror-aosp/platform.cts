@@ -37,7 +37,6 @@ import android.companion.virtual.camera.VirtualCameraConfig;
 import android.os.Parcel;
 import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -54,7 +53,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Executor;
 
-@RequiresFlagsEnabled(android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA)
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualCameraConfigTest {

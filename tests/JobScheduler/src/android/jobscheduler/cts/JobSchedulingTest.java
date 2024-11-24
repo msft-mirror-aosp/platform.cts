@@ -38,6 +38,7 @@ import android.app.job.PendingJobReasonsInfo;
 import android.jobscheduler.MockJobService.TestEnvironment;
 import android.jobscheduler.MockJobService.TestEnvironment.Event;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.os.Temperature;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.DeviceConfig;
 import android.text.TextUtils;
@@ -49,6 +50,7 @@ import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.ThermalUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -863,6 +865,25 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
                         JobScheduler.PENDING_JOB_REASON_CONSTRAINT_MINIMUM_LATENCY,
                         JobScheduler.PENDING_JOB_REASON_CONSTRAINT_DEADLINE },
                 mJobScheduler.getPendingJobReasons(JOB_ID));
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    public void testPendingJobReasons_thermal() throws Exception {
+        if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)) {
+            return; // test requires flag to be enabled
+        }
+
+        try {
+            ThermalUtils.overrideThermalStatus(Temperature.THROTTLING_CRITICAL);
+
+            JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
+            mJobScheduler.schedule(jobInfo);
+
+            assertArrayEquals(new int[]{ JobScheduler.PENDING_JOB_REASON_DEVICE_STATE },
+                    mJobScheduler.getPendingJobReasons(JOB_ID));
+        } finally {
+            ThermalUtils.resetThermalStatus();
+        }
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)

@@ -136,58 +136,10 @@ class OutputStreamBuilderHelper : public StreamBuilderHelper {
     const int32_t kBufferCapacityFrames = 2000;
 };
 
-
 #define LIB_AAUDIO_NAME          "libaaudio.so"
 #define FUNCTION_IS_MMAP         "AAudioStream_isMMapUsed"
 #define FUNCTION_SET_MMAP_POLICY "AAudio_setMMapPolicy"
 #define FUNCTION_GET_MMAP_POLICY "AAudio_getMMapPolicy"
-#define FUNCTION_GET_PLATFORM_MMAP_POLICY "AAudio_getPlatformMMapPolicy"
-#define FUNCTION_GET_PLATFORM_MMAP_EXCLUSIVE_POLICY "AAudio_getPlatformMMapExclusivePolicy"
-
-enum {
-    AAUDIO_POLICY_UNSPECIFIED = 0,
-/* These definitions are from aaudio/AAudioTesting.h */
-    AAUDIO_POLICY_NEVER = 1,
-    AAUDIO_POLICY_AUTO = 2,
-    AAUDIO_POLICY_ALWAYS = 3
-};
-typedef int32_t aaudio_policy_t;
-
-enum {
-    // These definitions are from aaudio/AAudioTesting.h
-    AAUDIO_DEVICE_BUILTIN_EARPIECE = 1,
-    AAUDIO_DEVICE_BUILTIN_SPEAKER = 2,
-    AAUDIO_DEVICE_WIRED_HEADSET = 3,
-    AAUDIO_DEVICE_WIRED_HEADPHONES = 4,
-    AAUDIO_DEVICE_LINE_ANALOG = 5,
-    AAUDIO_DEVICE_LINE_DIGITAL = 6,
-    AAUDIO_DEVICE_BLUETOOTH_SCO = 7,
-    AAUDIO_DEVICE_BLUETOOTH_A2DP = 8,
-    AAUDIO_DEVICE_HDMI = 9,
-    AAUDIO_DEVICE_HDMI_ARC = 10,
-    AAUDIO_DEVICE_USB_DEVICE = 11,
-    AAUDIO_DEVICE_USB_ACCESSORY = 12,
-    AAUDIO_DEVICE_DOCK = 13,
-    AAUDIO_DEVICE_FM = 14,
-    AAUDIO_DEVICE_BUILTIN_MIC = 15,
-    AAUDIO_DEVICE_FM_TUNER = 16,
-    AAUDIO_DEVICE_TV_TUNER = 17,
-    AAUDIO_DEVICE_TELEPHONY = 18,
-    AAUDIO_DEVICE_AUX_LINE = 19,
-    AAUDIO_DEVICE_IP = 20,
-    AAUDIO_DEVICE_BUS = 21,
-    AAUDIO_DEVICE_USB_HEADSET = 22,
-    AAUDIO_DEVICE_HEARING_AID = 23,
-    AAUDIO_DEVICE_BUILTIN_SPEAKER_SAFE = 24,
-    AAUDIO_DEVICE_REMOTE_SUBMIX = 25,
-    AAUDIO_DEVICE_BLE_HEADSET = 26,
-    AAUDIO_DEVICE_BLE_SPEAKER = 27,
-    // AAUDIO_DEVICE_ECHO_REFERENCE = 28,
-    AAUDIO_DEVICE_HDMI_EARC = 29,
-    AAUDIO_DEVICE_BLE_BROADCAST = 30,
-    AAUDIO_DEVICE_DOCK_ANALOG = 31
-};
-typedef int32_t aaudio_device_t;
 
 /**
  * Call some AAudio test routines that are not part of the normal API.
@@ -206,7 +158,7 @@ public:
     }
 
     static int getMMapPolicyProperty() {
-        return getIntegerProperty("aaudio.mmap_policy", AAUDIO_POLICY_UNSPECIFIED);
+        return getIntegerProperty("aaudio.mmap_policy", AAUDIO_UNSPECIFIED);
     }
 
     aaudio_policy_t getMMapPolicy() {
@@ -240,16 +192,14 @@ public:
         return mMMapExclusiveSupported;
     }
 
-    aaudio_policy_t getPlatformMMapPolicy(aaudio_device_t device,
+    aaudio_policy_t getPlatformMMapPolicy(AAudio_DeviceType device,
                                           aaudio_direction_t direction) const {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_getPlatformMMapPolicy(device, direction);
+        return AAudio_getPlatformMMapPolicy(device, direction);
     }
 
-    aaudio_policy_t getPlatformMMapExclusivePolicy(aaudio_device_t device,
+    aaudio_policy_t getPlatformMMapExclusivePolicy(AAudio_DeviceType device,
                                                    aaudio_direction_t direction) const {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_getPlatformMMapExclusivePolicy(device, direction);
+        return AAudio_getPlatformMMapExclusivePolicy(device, direction);
     }
 
 private:
@@ -268,10 +218,6 @@ private:
     bool    (*mAAudioStream_isMMap)(AAudioStream *stream) = nullptr;
     int32_t (*mAAudio_setMMapPolicy)(aaudio_policy_t policy) = nullptr;
     aaudio_policy_t (*mAAudio_getMMapPolicy)() = nullptr;
-    aaudio_policy_t (*mAAudio_getPlatformMMapPolicy)(aaudio_device_t device,
-                                                     aaudio_direction_t direction) = nullptr;
-    aaudio_policy_t (*mAAudio_getPlatformMMapExclusivePolicy)(
-            aaudio_device_t device, aaudio_direction_t direction) = nullptr;
 
     const bool   mMMapSupported;
     const bool   mMMapExclusiveSupported;
@@ -318,5 +264,7 @@ void enableAudioOutputPermission();
 void enableAudioHotwordPermission();
 
 void disablePermissions();
+
+bool isCompressedFormat(aaudio_format_t format);
 
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

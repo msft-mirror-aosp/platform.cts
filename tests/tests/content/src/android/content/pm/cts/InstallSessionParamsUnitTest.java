@@ -262,7 +262,7 @@ public class InstallSessionParamsUnitTest {
         if (Flags.sdkDependencyInstaller()) {
             // Verify that auto install of dependencies is enabled by default.
             assertThat(params.isAutoInstallDependenciesEnabled).isTrue();
-            enableAutoDependencyInstall.ifPresent(params::setEnableAutoInstallDependencies);
+            enableAutoDependencyInstall.ifPresent(params::setAutoInstallDependenciesEnabled);
         }
 
         int sessionId;

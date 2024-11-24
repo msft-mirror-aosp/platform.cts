@@ -36,14 +36,16 @@ class MetadataResultTest {
     @get:Rule
     val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    private val metadata1 = SettingsPreferenceMetadata.Builder("screenKey", "prefKey")
-        .setTitle("title")
-        .setEnabled(true)
-        .build()
-    private val metadata2 = SettingsPreferenceMetadata.Builder("screenKey2", "prefKey2")
-        .setTitle("title2")
-        .setEnabled(false)
-        .build()
+    private val metadata1: SettingsPreferenceMetadata
+        get() = SettingsPreferenceMetadata.Builder("screenKey", "prefKey")
+            .setTitle("title")
+            .setEnabled(true)
+            .build()
+    private val metadata2: SettingsPreferenceMetadata
+        get() = SettingsPreferenceMetadata.Builder("screenKey2", "prefKey2")
+            .setTitle("title2")
+            .setEnabled(false)
+            .build()
 
     @Test
     fun buildMetadataResult_failureResult_fieldEmpty() {

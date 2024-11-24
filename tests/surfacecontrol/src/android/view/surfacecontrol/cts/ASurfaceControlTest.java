@@ -39,6 +39,7 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setDesiredPresentTime;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setExtendedRangeBrightness;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setFrameTimeline;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setLuts;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setOnCommitCallback;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setOnCommitCallbackWithoutContext;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setOnCompleteCallback;
@@ -1174,6 +1175,110 @@ public class ASurfaceControlTest {
                         return pixelCount > 9000 && pixelCount < 11000;
                     }
                 });
+    }
+
+    // @ApiTest = ASurfaceTransaction_setLuts(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull surface_control,
+    //                                        ADisplayLuts* _Nullable luts)
+    @Test
+    public void testSurfaceTransaction_setLuts_1DLut() {
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    long surfaceControl = createFromWindow(holder.getSurface());
+                    long surfaceTransaction = createSurfaceTransaction();
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                            Color.MAGENTA);
+                    nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
+                            DataSpace.DATASPACE_SRGB);
+                    nSurfaceTransaction_setLuts(surfaceControl, surfaceTransaction,
+                            new float[]{0.0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            new int[]{0} /* offsets */, new int[]{1} /* dimension */,
+                            new int[]{8} /* sizeForEachDim */, new int[]{0} /* key */);
+                    nSurfaceTransaction_apply(surfaceTransaction);
+                    nSurfaceTransaction_delete(surfaceTransaction);
+                }
+            },
+
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                final PixelColor mResult = new PixelColor(0xFFBC00BC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            });
+    }
+
+    // @ApiTest = ASurfaceTransaction_setLuts(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull surface_control,
+    //                                        ADisplayLuts* _Nullable luts)
+    @Test
+    public void testSurfaceTransaction_setLuts_twoLuts() {
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    long surfaceControl = createFromWindow(holder.getSurface());
+                    long surfaceTransaction = createSurfaceTransaction();
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                            Color.CYAN);
+                    nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
+                            DataSpace.DATASPACE_SRGB);
+                    nSurfaceTransaction_setLuts(surfaceControl, surfaceTransaction,
+                            new float[]{0.0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            new int[]{0, 8} /* offsets */, new int[]{1, 3} /* dimension */,
+                            new int[]{8, 2} /* sizeForEachDim */, new int[]{0, 0} /* key */);
+                    nSurfaceTransaction_apply(surfaceTransaction);
+                    nSurfaceTransaction_delete(surfaceTransaction);
+                }
+            },
+
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                final PixelColor mResult = new PixelColor(0xFFBCBCBC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            });
+    }
+
+    // @ApiTest = ASurfaceTransaction_setLuts(ASurfaceTransaction* _Nonnull transaction,
+    //                                        ASurfaceControl* _Nonnull surface_control,
+    //                                        ADisplayLuts* _Nullable luts)
+    @Test
+    public void testSurfaceTransaction_setLuts_3DLut() {
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    long surfaceControl = createFromWindow(holder.getSurface());
+                    long surfaceTransaction = createSurfaceTransaction();
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                            Color.YELLOW);
+                    nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
+                            DataSpace.DATASPACE_SRGB);
+                    nSurfaceTransaction_setLuts(surfaceControl, surfaceTransaction,
+                            new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
+                                        1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f},
+                            new int[]{0} /* offsets */, new int[]{3} /* dimension */,
+                            new int[]{2} /* sizeForEachDim */, new int[]{0} /* key */);
+                    nSurfaceTransaction_apply(surfaceTransaction);
+                    nSurfaceTransaction_delete(surfaceTransaction);
+                }
+            },
+
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                final PixelColor mResult = new PixelColor(0xFFBC00FF);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            });
     }
 
     // @ApiTest = ASurfaceTransaction_setZOrder(ASurfaceTransaction* _Nonnull transaction,

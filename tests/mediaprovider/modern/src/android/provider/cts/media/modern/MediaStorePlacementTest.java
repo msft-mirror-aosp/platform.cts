@@ -21,10 +21,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -61,6 +63,7 @@ public class MediaStorePlacementTest {
 
     private Uri mExternalImages;
     private Uri mExternalVideo;
+    private boolean mAutomotiveDevice;
 
     private ContentValues mValues = new ContentValues();
     private Bundle mExtras = new Bundle();
@@ -81,6 +84,8 @@ public class MediaStorePlacementTest {
         Log.d(TAG, "Using volume " + mVolumeName);
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
         mExternalVideo = MediaStore.Video.Media.getContentUri(mVolumeName);
+        mAutomotiveDevice = mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE);
 
         mValues.clear();
         mExtras.clear();
@@ -285,6 +290,7 @@ public class MediaStorePlacementTest {
 
     @Test
     public void testRelated_InvalidMime() throws Exception {
+        assumeFalse("not testable in automotive device", mAutomotiveDevice);
         final Uri unusualUri = stageImageInAudio();
 
         // Normal file creation should fail (video doesn't match related image)
@@ -301,6 +307,7 @@ public class MediaStorePlacementTest {
 
     @Test
     public void testRelated_InvalidPath() throws Exception {
+        assumeFalse("not testable in automotive device", mAutomotiveDevice);
         final Uri unusualUri = stageImageInAudio();
 
         // Normal file creation should fail (path not exact match)

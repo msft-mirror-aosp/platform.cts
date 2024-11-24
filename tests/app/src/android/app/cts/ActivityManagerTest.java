@@ -2104,6 +2104,8 @@ public final class ActivityManagerTest {
     @Test
     public void testSwitchToHeadlessSystemUser_whenCanSwitchToHeadlessSystemUserEnabled() {
         assumeHeadlessSystemUserMode();
+        assumeFalse(isAutomotive());
+
         assumeTrue("Switch to Non-full headless SYSTEM user is only allowed when "
                         + "config_canSwitchToHeadlessSystemUser is enabled.",
                 canSwitchToHeadlessSystemUser());
@@ -2588,6 +2590,11 @@ public final class ActivityManagerTest {
     private void assumeNonHeadlessSystemUserMode() {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
+    }
+
+    private boolean isAutomotive() {
+        PackageManager pm = mTargetContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private static class BlockingResultReceiver {

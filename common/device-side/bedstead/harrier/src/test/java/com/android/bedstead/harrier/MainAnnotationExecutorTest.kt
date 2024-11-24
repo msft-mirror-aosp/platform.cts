@@ -44,6 +44,7 @@ import com.android.bedstead.harrier.annotations.RequireGmsBuild
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNotCnGmsBuild
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -189,6 +190,16 @@ class MainAnnotationExecutorTest {
                 .getSystemService(ActivityManager::class.java)
                 .isLowRamDevice
         ).isTrue()
+    }
+
+    @Test
+    @RequireMinimumAdvertisedRamDevice(ramDeviceSize = 4_000_000_000L, reason = "Test")
+    fun requireMinimumAdvertisedRamDeviceAnnotation_isMinimumAdvertisedRamDevice() {
+        val memoryInfo = ActivityManager.MemoryInfo()
+        context().instrumentedContext()
+            .getSystemService(ActivityManager::class.java)!!
+            .getMemoryInfo(memoryInfo)
+        assertThat(memoryInfo.advertisedMem >= 4_000_000_000L).isTrue()
     }
 
     @Test

@@ -428,9 +428,6 @@ public class SplitAppTest {
 
     private static void assertActivityThemeApplied(Activity activity, TestTheme testTheme) {
         assertBaseLayoutBGColor(activity, testTheme.mBaseColor);
-        assertThat(activity.getWindow().getStatusBarColor(), equalTo(testTheme.mStatusBarColor));
-        assertThat(activity.getWindow().getNavigationBarColor(),
-                equalTo(testTheme.mNavigationBarColor));
         assertDrawableColor(activity.getWindow().getDecorView().getBackground(),
                 testTheme.mWindowBackground);
     }

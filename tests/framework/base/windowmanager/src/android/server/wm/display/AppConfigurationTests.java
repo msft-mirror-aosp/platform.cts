@@ -41,7 +41,7 @@ import static android.server.wm.app.Components.NIGHT_MODE_ACTIVITY;
 import static android.server.wm.app.Components.PORTRAIT_ORIENTATION_ACTIVITY;
 import static android.server.wm.app.Components.RESIZEABLE_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.server.wm.translucentapp26.Components.SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY;
+import static android.server.wm.app.Components.TRANSLUCENT_LANDSCAPE_ACTIVITY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
@@ -414,8 +414,8 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         separateTestJournal();
 
-        launchActivity(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        assumeNotIgnoringOrientation(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
+        launchActivity(TRANSLUCENT_LANDSCAPE_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        assumeNotIgnoringOrientation(TRANSLUCENT_LANDSCAPE_ACTIVITY);
         mWmState.waitAndAssertLastOrientation(
                 "Legacy translucent activity requested landscape orientation",
                 SCREEN_ORIENTATION_LANDSCAPE);
@@ -542,25 +542,6 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 appConfigInfo.sizeInfo.displayWidth > appConfigInfo.sizeInfo.displayHeight);
         assertEquals("The app display metrics must be landscape", isLandscape,
                 appConfigInfo.sizeInfo.metricsWidth > appConfigInfo.sizeInfo.metricsHeight);
-    }
-
-    @Test
-    public void testTranslucentActivityPermitted() throws Exception {
-        assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
-
-        disableIgnoreOrientationRequest();
-
-        final RotationSession rotationSession = createManagedRotationSession();
-        rotationSession.set(ROTATION_0);
-
-        launchActivity(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        assumeNotIgnoringOrientation(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        mWmState.assertResumedActivity(
-                "target SDK <= 26 translucent activity should be allowed to launch",
-                SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        mWmState.waitAndAssertLastOrientation(
-                "Translucent activity requested landscape orientation",
-                SCREEN_ORIENTATION_LANDSCAPE);
     }
 
     /**

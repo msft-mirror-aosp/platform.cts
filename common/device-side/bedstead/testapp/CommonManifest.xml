@@ -245,6 +245,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.READ_NEARBY_STREAMING_POLICY" />
+    <uses-permission android:name="android.permission.COPY_ACCOUNTS" />
+    <uses-permission android:name="android.permission.REMOVE_ACCOUNTS" />
 
     <application
         android:appComponentFactory="com.android.bedstead.testapp.TestAppAppComponentFactory"

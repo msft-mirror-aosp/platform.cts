@@ -212,6 +212,7 @@ public class PackageSignatureTest extends AndroidTestCase {
             "com.replica.replicaisland",
 
             // CTS test
+            "android.adpf.atom.app",
             "android.core.tests.libcore.package.com",
             "android.core.tests.libcore.package.conscrypt",
             "android.core.tests.libcore.package.dalvik",
@@ -219,7 +220,14 @@ public class PackageSignatureTest extends AndroidTestCase {
             "android.core.tests.libcore.package.org",
             "android.core.tests.libcore.package.sun",
             "android.core.tests.libcore.package.tests",
+            "android.media.audio.app",
+            "android.permission.cts.storageescalation",
             "com.android.cts.RemoteDPC",
+            "com.android.cts.RemoteDPCV23",
+            "com.android.cts.RemoteDPCV24",
+            "com.android.cts.RemoteDPCV28",
+            "com.android.cts.RemoteDPCV30",
+            "com.android.cts.crossprofilepermissioncontrol",
             "com.android.testutils.connectivitychecker",
 
             // Test package to verify upgrades to privileged applications

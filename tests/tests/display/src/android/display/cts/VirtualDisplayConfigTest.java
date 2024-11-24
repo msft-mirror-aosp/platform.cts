@@ -61,7 +61,6 @@ public class VirtualDisplayConfigTest {
 
     @Test
     public void parcelAndUnparcel_matches() {
-        final boolean customHomeEnabled = android.companion.virtual.flags.Flags.vdmCustomHome();
         final boolean cutoutEnabled =
                 android.companion.virtualdevice.flags.Flags.virtualDisplayInsets();
         final boolean forceAppUniversalResizableEnabled =
@@ -82,10 +81,8 @@ public class VirtualDisplayConfigTest {
                         .setSurface(surface)
                         .setDisplayCategories(Set.of("C1", "C2"))
                         .addDisplayCategory("C3")
-                        .setRequestedRefreshRate(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            builder.setHomeSupported(true);
-        }
+                        .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
+                        .setHomeSupported(true);
         if (cutoutEnabled) {
             builder.setDisplayCutout(displayCutout);
         }
@@ -105,9 +102,7 @@ public class VirtualDisplayConfigTest {
         assertThat(originalConfig.getSurface()).isEqualTo(surface);
         assertThat(originalConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(originalConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
-        }
+        assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
         if (cutoutEnabled) {
             assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
         }
@@ -132,9 +127,7 @@ public class VirtualDisplayConfigTest {
         assertThat(recreatedConfig.getSurface()).isNotNull();
         assertThat(recreatedConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(recreatedConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
-        }
+        assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
         if (cutoutEnabled) {
             assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
         }
@@ -145,7 +138,6 @@ public class VirtualDisplayConfigTest {
 
     @Test
     public void virtualDisplayConfig_onlyRequiredFields() {
-        final boolean customHomeEnabled = android.companion.virtual.flags.Flags.vdmCustomHome();
         final VirtualDisplayConfig config =
                 new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY).build();
 
@@ -153,9 +145,7 @@ public class VirtualDisplayConfigTest {
         assertThat(config.getSurface()).isNull();
         assertThat(config.getDisplayCategories()).isEmpty();
         assertThat(config.getRequestedRefreshRate()).isEqualTo(0.0f);
-        if (customHomeEnabled) {
-            assertThat(config.isHomeSupported()).isFalse();
-        }
+        assertThat(config.isHomeSupported()).isFalse();
         if (android.companion.virtualdevice.flags.Flags.virtualDisplayInsets()) {
             assertThat(config.getDisplayCutout()).isNull();
         }

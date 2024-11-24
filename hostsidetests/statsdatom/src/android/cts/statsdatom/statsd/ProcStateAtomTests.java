@@ -73,6 +73,7 @@ public class ProcStateAtomTests extends DeviceTestCase implements IBuildReceiver
     private static final int STATSD_REPORT_WAIT_TIME_MS = 500; // make sure statsd finishes log.
 
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
     // The tests here are using the BatteryStats definition of 'background'.
     private static final Set<Integer> BG_STATES = new HashSet<>(
@@ -221,6 +222,8 @@ public class ProcStateAtomTests extends DeviceTestCase implements IBuildReceiver
 
     public void testTopSleeping() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
+
         Set<Integer> onStates = new HashSet<>(Arrays.asList(
                 ProcessStateEnum.PROCESS_STATE_TOP_SLEEPING_VALUE));
         Set<Integer> offStates = complement(onStates);

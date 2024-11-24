@@ -69,6 +69,7 @@ class ModifierKeyRemappingTest {
             activity = it
             verifier = EventVerifier(activity::getInputEvent)
         }
+        inputManager.resetLockedModifierState()
         PollingCheck.waitFor { activity.hasWindowFocus() }
 
         // Save existing remappings
@@ -83,6 +84,9 @@ class ModifierKeyRemappingTest {
             existingRemappings.forEach { entry ->
                 remapModifierKey(entry.key, entry.value)
             }
+        }
+        if (this::inputManager.isInitialized) {
+            inputManager.resetLockedModifierState()
         }
     }
 

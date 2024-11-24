@@ -72,6 +72,7 @@ public class TestActivity extends Activity {
     private long mOnBackPressedCallCount;
 
     private boolean mPaused = false;
+    private boolean mStopped = false;
 
     private TextView mOverlayView;
     private OnBackInvokedCallback mIgnoreBackKeyCallback = () -> {
@@ -171,11 +172,22 @@ public class TestActivity extends Activity {
     @Override
     protected void onResume() {
         mPaused = false;
+        mStopped = false;
         super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        mStopped = true;
+        super.onStop();
     }
 
     public boolean isPaused() {
         return mPaused;
+    }
+
+    public boolean isStopped() {
+        return mStopped;
     }
 
     /**

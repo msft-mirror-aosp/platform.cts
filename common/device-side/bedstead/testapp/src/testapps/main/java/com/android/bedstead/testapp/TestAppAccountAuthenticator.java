@@ -27,7 +27,6 @@ import android.os.Bundle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * An account authenticator which can be configured by tests.
@@ -138,6 +137,26 @@ public final class TestAppAccountAuthenticator extends AbstractAccountAuthentica
 
         Bundle result = new Bundle();
         result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, hasFeatures);
+        return result;
+    }
+
+    @Override
+    public Bundle getAccountCredentialsForCloning(AccountAuthenticatorResponse response,
+            Account account) throws NetworkErrorException {
+        Bundle result = new Bundle();
+        result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, true);
+        return result;
+    }
+
+    @Override
+    public Bundle addAccountFromCredentials(final AccountAuthenticatorResponse response,
+            Account account,
+            Bundle accountCredentials) throws NetworkErrorException {
+        AccountManager accountManager = mContext.getSystemService(AccountManager.class);
+        accountManager.addAccountExplicitly(account, "password", new Bundle());
+
+        Bundle result = new Bundle();
+        result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, true);
         return result;
     }
 }

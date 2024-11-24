@@ -21,6 +21,8 @@
 
     <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS_TRUSTED" />
     <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
 
     <queries>
         <package android:name="android.app.appfunctions.helper" />

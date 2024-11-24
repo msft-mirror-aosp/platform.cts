@@ -29,7 +29,6 @@ import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -47,8 +46,6 @@ import java.util.UUID;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_ENABLE_NATIVE_VDM,
-        android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DRM})
 public class VirtualDeviceDrmTest {
 
     private static final String TAG = "MediaDrmTest";

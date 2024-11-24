@@ -17,7 +17,6 @@ package com.android.bedstead.testapps
 
 import android.app.AppOpsManager
 import android.content.pm.PackageManager
-import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType

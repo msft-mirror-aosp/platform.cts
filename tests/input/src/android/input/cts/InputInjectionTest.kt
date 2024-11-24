@@ -32,6 +32,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
+import com.android.compatibility.common.util.UserHelper
 import com.android.test.inputinjection.IInputInjectionTestCallbacks
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -73,6 +74,7 @@ class InputInjectionTest {
     private lateinit var targetContext: Context
     private lateinit var activityManager: ActivityManager
     private lateinit var windowFocusLatch: CountDownLatch
+    private val displayId = UserHelper().mainDisplayId
 
     @Before
     fun setUp() {
@@ -125,6 +127,7 @@ class InputInjectionTest {
     fun testCannotInjectPointerEventsFromInstrumentationToUnownedApp() {
         startInjectionActivitySync(withCallbacks()).use {
             clickInCenterOfInjectionActivity { eventToInject ->
+                eventToInject.displayId = displayId
                 // The Instrumentation class should not be allowed to inject the start of a new
                 // gesture to a window owned by another uid. However, it should be allowed to inject
                 // the end of the gesture to ensure consistency.
@@ -151,6 +154,7 @@ class InputInjectionTest {
         val keyPressLatch = CountDownLatch(2)
         startInjectionActivitySync(
                 withCallbacks(onKey = { keyPressLatch.countDown() })).use {
+            // sendKeyDownUpSync will eventually update the displayId to the test main display
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_A)
             assertEquals(0, keyPressLatch.count,
                 "Instrumentation should synchronously send key events to the activity")
@@ -167,6 +171,7 @@ class InputInjectionTest {
         startInjectionActivitySync(
                 withCallbacks(onTouch = { clickLatch.countDown() })).use {
             clickInCenterOfInjectionActivity { eventToInject ->
+                eventToInject.displayId = displayId
                 instrumentation.uiAutomation.injectInputEvent(eventToInject, true /*sync*/)
             }
             assertEquals(0, clickLatch.count,
@@ -182,17 +187,23 @@ class InputInjectionTest {
     fun testInjectKeyEventsFromUiAutomation() {
         val keyPressLatch = CountDownLatch(2)
         startInjectionActivitySync(
-                withCallbacks(onKey = { keyPressLatch.countDown() })).use {
+                withCallbacks(onKey = { keyPressLatch.countDown() })
+        ).use {
             val downTime = SystemClock.uptimeMillis()
-            instrumentation.uiAutomation.injectInputEvent(
-                KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 0),
-                true /*sync*/)
+            val keyDownEvent =
+                    KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 0)
+            keyDownEvent.displayId = displayId
+            instrumentation.uiAutomation.injectInputEvent(keyDownEvent, true /*sync*/)
+
             val upTime = SystemClock.uptimeMillis()
-            instrumentation.uiAutomation.injectInputEvent(
-                KeyEvent(downTime, upTime, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, 0),
-                true /*sync*/)
-            assertEquals(0, keyPressLatch.count,
-                "UiAutomation should synchronously send key events to the activity")
+            val keyUpEvent = KeyEvent(downTime, upTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 0)
+            keyUpEvent.displayId = displayId
+            instrumentation.uiAutomation.injectInputEvent(keyUpEvent, true /*sync*/)
+            assertEquals(
+                    0,
+                    keyPressLatch.count,
+                    "UiAutomation should synchronously send key events to the activity"
+            )
         }
     }
 
@@ -221,13 +232,26 @@ class InputInjectionTest {
     private fun clickInCenterOfInjectionActivity(injector: (MotionEvent) -> Unit) {
         val bounds = getActivityBounds(INPUT_INJECTION_COMPONENT)
         val downTime = SystemClock.uptimeMillis()
-        injector(
-            MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN,
-                bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0))
+        val downEvent = MotionEvent.obtain(
+                downTime,
+                downTime,
+                MotionEvent.ACTION_DOWN,
+                bounds.centerX().toFloat(),
+                bounds.centerY().toFloat(),
+                0)
+        downEvent.displayId = displayId
+        injector(downEvent)
+
         val upTime = SystemClock.uptimeMillis()
-        injector(
-            MotionEvent.obtain(downTime, upTime, MotionEvent.ACTION_UP,
-                bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0))
+        val upEvent = MotionEvent.obtain(
+                downTime,
+                upTime,
+                MotionEvent.ACTION_UP,
+                bounds.centerX().toFloat(),
+                bounds.centerY().toFloat(),
+                0)
+        upEvent.displayId = displayId
+        injector(upEvent)
     }
 
     private fun withCallbacks(

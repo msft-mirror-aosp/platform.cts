@@ -134,8 +134,7 @@ public class ActivityManagementTest {
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onDisplayEmpty(mVirtualDisplayId);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_ACTIVITY_CONTROL_API,
-            android.companion.virtual.flags.Flags.FLAG_DYNAMIC_POLICY})
+    @RequiresFlagsEnabled({Flags.FLAG_ACTIVITY_CONTROL_API})
     @Test
     public void activityListener_shouldCallOnActivityLaunchBlocked() {
         mVirtualDevice.addActivityPolicyExemption(mEmptyActivityComponent);

@@ -38,6 +38,7 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
@@ -153,6 +154,10 @@ public class RingtoneTest extends InstrumentationTestCase {
                 .hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
     }
 
+    private boolean hasVibrator() {
+        return mContext.getSystemService(Vibrator.class).hasVibrator();
+    }
+
     public void testRingtone() {
         if (isTV()) {
             return;
@@ -240,6 +245,10 @@ public class RingtoneTest extends InstrumentationTestCase {
         if (isTV()) {
             return;
         }
+        if (!hasVibrator()) {
+            Log.i(TAG, "Skipping testRingtoneVibration(): device doesn't have a vibrator.");
+            return;
+        }
         if (!hasAudioOutput()) {
             Log.i(TAG, "Skipping testRingtoneVibration(): device doesn't have audio output.");
             return;
@@ -265,6 +274,11 @@ public class RingtoneTest extends InstrumentationTestCase {
 
     public void testRingtoneVibrationPlayback() throws IOException {
         if (isTV()) {
+            return;
+        }
+        if (!hasVibrator()) {
+            Log.i(TAG, "Skipping testRingtoneVibrationPlayback(): "
+                    + "device doesn't have a vibrator.");
             return;
         }
         if (!hasAudioOutput()) {

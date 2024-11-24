@@ -34,12 +34,14 @@ import android.jobscheduler.cts.UserInitiatedJobTest.WatchUidRunner;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import java.util.Collections;
 import java.util.Map;
@@ -49,6 +51,7 @@ import java.util.Map;
  * {@link JobService#setNotification(JobParameters, int, Notification, int)}
  */
 public class NotificationTest extends BaseJobSchedulerTest {
+    private static final String TAG = NotificationTest.class.getSimpleName();
     private static final int JOB_ID = NotificationTest.class.hashCode();
     private static final long DEFAULT_WAIT_TIMEOUT_MS = 2_000;
     private static final String NOTIFICATION_CHANNEL_ID =
@@ -56,6 +59,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
 
     private NotificationManager mNotificationManager;
     private NetworkingHelper mNetworkingHelper;
+    private UserHelper mUserHelper;
 
     @Override
     public void setUp() throws Exception {
@@ -66,6 +70,7 @@ public class NotificationTest extends BaseJobSchedulerTest {
         mNotificationManager.createNotificationChannel(channel);
         mNetworkingHelper =
                 new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @Override
@@ -153,6 +158,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     public void testNotificationRemovedOnForceStop() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         mNetworkingHelper.setAllNetworksEnabled(true);
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              TestNotificationListener.NotificationHelper notificationHelper =
@@ -183,6 +195,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     public void testNotificationRemovedOnPackageRestriction() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         String initialActivityManagerConstants = null;
         try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
              TestNotificationListener.NotificationHelper notificationHelper =
@@ -232,6 +251,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     public void testNotificationRemovedOnTaskManagerStop() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         mNetworkingHelper.setAllNetworksEnabled(true);
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              TestNotificationListener.NotificationHelper notificationHelper =
@@ -268,6 +294,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
      * but doesn't provide one.
      */
     public void testNotification_userInitiated_anrWhenNotProvided() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         mNetworkingHelper.setAllNetworksEnabled(true);
         try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
              AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
@@ -298,6 +331,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
      */
     @LargeTest
     public void testNotification_userInitiated_noAnrWhenProvided() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         mNetworkingHelper.setAllNetworksEnabled(true);
         try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
              AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
@@ -329,6 +369,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
      */
     @LargeTest
     public void testNotification_regular_noAnrWhenNotProvided() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         try (TestAppInterface testAppInterface = new TestAppInterface(mContext, JOB_ID);
              AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
                      TEST_APP_PACKAGE);
@@ -350,6 +397,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     public void testUserInitiatedJob_hasUijNotificationFlag() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         mNetworkingHelper.setAllNetworksEnabled(true);
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              TestNotificationListener.NotificationHelper notificationHelper =
@@ -374,6 +428,13 @@ public class NotificationTest extends BaseJobSchedulerTest {
     }
 
     public void testNonUserInitiatedJob_doesNotHaveUijNotificationFlag() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         try (TestAppInterface mTestAppInterface = new TestAppInterface(mContext, JOB_ID);
              TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(

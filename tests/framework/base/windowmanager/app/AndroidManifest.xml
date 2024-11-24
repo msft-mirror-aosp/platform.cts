@@ -82,6 +82,11 @@
              android:resizeableActivity="true"
              android:taskAffinity="nobody.but.TranslucentActivity"
              android:exported="true"/>
+        <activity
+             android:name=".TranslucentLandscapeActivity"
+             android:screenOrientation="landscape"
+             android:theme="@android:style/Theme.Translucent.NoTitleBar"
+             android:exported="true" />
         <activity android:name=".DialogWhenLargeActivity"
              android:exported="true"
              android:theme="@android:style/Theme.DeviceDefault.Light.DialogWhenLarge"/>
@@ -103,6 +108,7 @@
              android:exported="true"
              android:taskAffinity="nobody.but.LaunchingActivity"/>
         <activity android:name=".PipActivity"
+             android:enableOnBackInvokedCallback="true"
              android:resizeableActivity="false"
              android:supportsPictureInPicture="true"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"

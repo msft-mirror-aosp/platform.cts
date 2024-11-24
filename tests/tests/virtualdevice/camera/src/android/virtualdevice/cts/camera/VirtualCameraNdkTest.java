@@ -38,13 +38,11 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
 import android.virtualdevice.cts.camera.util.NativeCameraManager;
 import android.virtualdevice.cts.camera.util.NativeCameraTestActivity;
@@ -69,8 +67,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(AndroidJUnit4.class)
 public class VirtualCameraNdkTest {

@@ -339,16 +339,14 @@ public class VirtualDevicePowerTest {
     public void customSleepTimeout_goesToSleep() {
         assumeScreenOffSupported();
 
+        // Ensure the default display timeout is different.
+        setScreenOffTimeoutMs(mMinimumScreenOffTimeoutMs * 3);
         createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
-                .setScreenOffTimeout(Duration.ofMillis(FAST_SCREEN_OFF_TIMEOUT_MS))
+                .setScreenOffTimeout(Duration.ofMillis(DISPLAY_TIMEOUT_MS))
                 .build());
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-
-        // Ensure the default display timeout is different.
-        setScreenOffTimeoutMs(mMinimumScreenOffTimeoutMs * 3);
-        SystemClock.sleep(mMinimumScreenOffTimeoutMs);
 
         verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
 

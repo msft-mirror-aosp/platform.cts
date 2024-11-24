@@ -49,6 +49,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.google.common.collect.Range;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,6 +81,7 @@ public class BrightnessTest extends TestBase {
         }
     }
 
+    @Ignore("b/359582534")
     @Test
     public void testBrightnessSliderTracking() throws InterruptedException {
         // Only run if we have a valid ambient light sensor.

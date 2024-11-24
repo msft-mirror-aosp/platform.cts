@@ -33,4 +33,43 @@ public class StreamState {
     public static final int CLOSING = 11;       // AAUDIO_STREAM_STATE_CLOSING,
     public static final int CLOSED = 12;        // AAUDIO_STREAM_STATE_CLOSED,
     public static final int DISCONNECTED = 13;  // AAUDIO_STREAM_STATE_DISCONNECTED,
+
+    /**
+     * @param state a constant from above
+     * @return A textual name for the specified state code
+     */
+    public static String toString(int state) {
+        switch(state) {
+            case UNINITIALIZED:
+                return "UNINITIALIZED";
+            case UNKNOWN:
+                return "UNKNOWN";
+            case OPEN:
+                return "OPEN";
+            case STARTING:
+                return "STARTING";
+            case STARTED:
+                return "STARTED";
+            case PAUSING:
+                return "PAUSING";
+            case PAUSED:
+                return "PAUSED";
+            case FLUSHING:
+                return "FLUSHING";
+            case FLUSHED:
+                return "FLUSHED";
+            case STOPPING:
+                return "STOPPING";
+            case STOPPED:
+                return "STOPPED";
+            case CLOSING:
+                return "CLOSING";
+            case CLOSED:
+                return "CLOSED";
+            case DISCONNECTED:
+                return "DISCONNECTED";
+            default:
+                return "Unknown Stream State" + state;
+        }
+    }
 }

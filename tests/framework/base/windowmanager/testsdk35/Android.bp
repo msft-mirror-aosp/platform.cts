@@ -26,6 +26,7 @@ android_test {
         "src/**/*.java",
         ":cts-wm-activity-record-input-sink-test-base",
         ":cts-wm-untrusted-touch-test-base",
+        ":cts-wm-window-policy-test-base",
     ],
 
     static_libs: [

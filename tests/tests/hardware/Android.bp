@@ -77,7 +77,6 @@ android_test {
         "junit-params",
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
-        "android.companion.virtual.flags-aconfig-java",
         "android.media.codec-aconfig-java",
         "ui-trace-collector",
         "collector-device-lib",

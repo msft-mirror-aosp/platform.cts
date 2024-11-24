@@ -18,11 +18,7 @@ package {
 
 android_test {
     name: "bluetooth_multi_devices_snippet",
-    srcs: [
-        "BluetoothGattMultiDevicesClient.java",
-        "BluetoothGattMultiDevicesServer.java",
-        "BluetoothGattMultiDevicesSnippet.java",
-    ],
+    srcs: ["*.java"],
     manifest: "AndroidManifest.xml",
     static_libs: [
         "androidx.test.runner",
@@ -30,5 +26,6 @@ android_test {
         "mobly-snippet-lib",
     ],
     platform_apis: true,
+    sdk_version: "system_current",
     min_sdk_version: "UpsideDownCake",
 }

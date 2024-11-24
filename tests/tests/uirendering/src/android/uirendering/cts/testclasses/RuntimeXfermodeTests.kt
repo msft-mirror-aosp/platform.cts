@@ -22,6 +22,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RuntimeColorFilter
 import android.graphics.RuntimeXfermode
 import android.graphics.Shader
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -56,6 +57,20 @@ class RuntimeXfermodeTests : ActivityTestBase() {
           float blue = clamp(inputFloat, 0.0, 255.0) / 255.0;
           return vec4(src.r, dst.g, blue, alpha);
        }"""
+
+    private val samplingInputColorFilter = """
+        uniform colorFilter inputFilter;
+        vec4 main(half4 src, half4 dst) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputFilter.eval(color).rgba;
+        }"""
+
+    private val samplingInputXfermode = """
+        uniform blender inputBlender;
+        vec4 main(half4 src, half4 dst) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputBlender.eval(color, color).rgba;
+        }"""
 
     @get:Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
@@ -245,5 +260,45 @@ class RuntimeXfermodeTests : ActivityTestBase() {
             { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
             true
         ).runWithVerifier(RectVerifier(Color.WHITE, Color.TRANSPARENT, rect))
+    }
+
+    @Test
+    fun testChildColorFilter() {
+        val redFilter = """
+            vec4 main(half4 inColor) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val redInputColorFilter = RuntimeColorFilter(redFilter)
+
+        val xfermode = RuntimeXfermode(samplingInputColorFilter)
+        xfermode.setInputColorFilter("inputFilter", redInputColorFilter)
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testChildXfermode() {
+        val redXfermode = """
+            vec4 main(half4 src, half4 dst) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val redInputXfermode = RuntimeXfermode(redXfermode)
+        val rect = Rect(10, 10, 80, 80)
+
+        val paint = Paint()
+        val xfermode = RuntimeXfermode(samplingInputXfermode)
+        xfermode.setInputXfermode("inputBlender", redInputXfermode)
+        paint.xfermode = xfermode
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 }

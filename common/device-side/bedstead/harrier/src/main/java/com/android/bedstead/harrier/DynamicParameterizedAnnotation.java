@@ -29,7 +29,7 @@ public final class DynamicParameterizedAnnotation implements Annotation {
     @SuppressWarnings("ImmutableAnnotationChecker")
     private final Annotation[] mAnnotations;
 
-    DynamicParameterizedAnnotation(String name, Annotation[] annotations) {
+    public DynamicParameterizedAnnotation(String name, Annotation[] annotations) {
         mName = name;
         mAnnotations = Arrays.stream(annotations).filter(Objects::nonNull)
                 .toArray(Annotation[]::new);

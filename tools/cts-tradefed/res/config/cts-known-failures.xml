@@ -374,6 +374,4 @@
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest" />
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.FrameRateOverrideTest" />
 </configuration>

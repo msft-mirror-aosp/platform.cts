@@ -43,6 +43,7 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import java.util.Collections;
 import java.util.Map;
@@ -66,6 +67,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private NetworkingHelper mNetworkingHelper;
     private WifiManager mWifiManager;
     private ConnectivityManager mCm;
+    private UserHelper mUserHelper;
 
     /** Whether the device running these tests supports WiFi. */
     private boolean mHasWifi;
@@ -88,6 +90,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         setDataSaverEnabled(false);
         mNetworkingHelper.setAllNetworksEnabled(true);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @Override
@@ -930,6 +933,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even when Data Saver is on and the device is not connected to WiFi.
      */
     public void testBgUiJobBypassesDataSaver() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;
@@ -971,6 +981,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even if a user-initiated job is running at the same time.
      */
     public void testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;

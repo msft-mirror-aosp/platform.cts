@@ -64,6 +64,8 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
             collectAttestation(
                     store, "strong_box_key_attestation",
                     TEST_ALIAS_STRONGBOX, /* strongBoxBacked= */ true);
+        } else {
+            Log.i(TAG, "StrongBox-backed Keystore not supported");
         }
     }
 
@@ -73,13 +75,13 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
             String keyAlias,
             boolean strongBoxBacked)
             throws Exception {
-        KeyStore mKeyStore = KeyStore.getInstance("AndroidKeyStore");
-        mKeyStore.load(null);
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
 
         // If this collector ran on this device before, there might already be a key
         // with this alias, so delete it before trying to generate a fresh key with
         // the same alias.
-        mKeyStore.deleteEntry(keyAlias);
+        keyStore.deleteEntry(keyAlias);
 
         KeyGenParameterSpec spec =
                 new KeyGenParameterSpec.Builder(keyAlias, PURPOSE_SIGN)
@@ -106,7 +108,7 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
         }
 
         List<X509Certificate> x509Certificates = new ArrayList<>();
-        for (Certificate certificate : mKeyStore.getCertificateChain(keyAlias)) {
+        for (Certificate certificate : keyStore.getCertificateChain(keyAlias)) {
             if (certificate instanceof X509Certificate) {
                 x509Certificates.add((X509Certificate) certificate);
             }

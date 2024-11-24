@@ -861,10 +861,15 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     File apkFile = null;
                     try {
                         apkFile = pullJarFromDevice(getDevice(), apk);
-                        final ImmutableSet<String> apkClasses =
-                                Classpaths.getClassDefsFromJar(apkFile).stream()
+                        final ImmutableSet<String> apkClasses;
+                        try {
+                            apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to get class defs from APK: "
+                                                           + apkFile.getAbsolutePath(), e);
+                        }
                         // b/226559955: The directory paths containing APKs contain the build ID,
                         // so strip out the @BUILD_ID portion.
                         // e.g. /apex/com.android.btservices/app/Bluetooth@SC-DEV/Bluetooth.apk ->

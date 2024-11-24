@@ -91,10 +91,10 @@ public:
      */
     double getConfidence();
 
-    /**
-     * Returns true if the stream was successfully opened in low-latency mode.
-     */
-    bool isLowLatencyStream();
+    // These are the same as in NativeAnalyzerThread.java and need to stay in sync.
+    static const uint32_t NUM_STREAM_TYPES = 2;
+    static const uint32_t STREAM_INPUT = 0;
+    static const uint32_t STREAM_OUTPUT = 1;
 
     /**
      * Returns true if the hardware supports 24 bit audio.
@@ -105,6 +105,50 @@ public:
      * Gets the hardware format.
      */
     int getHardwareFormat();
+
+    /**
+     * @param streamId One of STREAM_INPUT or STREAM_OUTPUT
+     * @return true if the specified stream was opened in low-latency mode.
+     */
+    bool isLowLatencyStream(int streamId) {
+        if (streamId != STREAM_OUTPUT && streamId != STREAM_INPUT) {
+            return -1;
+        }
+        return mIsLowLatencyStream[streamId];
+    }
+
+    /**
+     * @param streamId One of STREAM_INPUT or STREAM_OUTPUT
+     * @return The burst size in frames of the specified stream.
+     */
+    int32_t getFramesPerBurst(int streamId) {
+        if (streamId != STREAM_OUTPUT && streamId != STREAM_INPUT) {
+            return -1;
+        }
+        return mBurstFrames[streamId];
+    }
+
+    /**
+     * @param streamId One of STREAM_INPUT or STREAM_OUTPUT
+     * @return The capacity in frames of the specified stream.
+     */
+    int32_t getCapacityFrames(int streamId) {
+        if (streamId != STREAM_OUTPUT && streamId != STREAM_INPUT) {
+            return -1;
+        }
+        return mCapacityFrames[streamId];
+    }
+
+    /**
+     * @param streamId One of STREAM_INPUT or STREAM_OUTPUT
+     * @return true if the specified stream was opened as a MMAP stream.
+     */
+    bool isMMapStream(int streamId) {
+        if (streamId != STREAM_OUTPUT && streamId != STREAM_INPUT) {
+            return -1;
+        }
+        return mIsMMap[streamId];
+    }
 
     aaudio_result_t getError() {
         return mInputError ? mInputError : mOutputError;
@@ -117,6 +161,7 @@ public:
     aaudio_format_t    mActualInputFormat = AAUDIO_FORMAT_INVALID;
     int16_t           *mInputShortData = nullptr;
     float             *mInputFloatData = nullptr;
+
     int32_t            mOutputSampleRate = 0;
 
     aaudio_result_t    mInputError = AAUDIO_OK;
@@ -148,9 +193,13 @@ private:
     int32_t            mFramesReadTotal = 0;
     int32_t            mFramesWrittenTotal = 0;
     bool               mIsDone = false;
-    bool               mIsLowLatencyStream = false;
     bool               mHas24BitHardwareSupport = false;
     int32_t            mHardwareFormat = 0;
+
+    int32_t            mBurstFrames[NUM_STREAM_TYPES] = {-1, -1};
+    int32_t            mCapacityFrames[NUM_STREAM_TYPES] = {-1, -1};
+    bool               mIsLowLatencyStream[NUM_STREAM_TYPES] = {false, false};
+    bool               mIsMMap[NUM_STREAM_TYPES] = {false, false};
 
     int32_t            mOutputDeviceId = 0;
     int32_t            mInputDeviceId = 0;

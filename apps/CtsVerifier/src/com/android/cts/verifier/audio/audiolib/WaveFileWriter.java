@@ -218,6 +218,7 @@ public class WaveFileWriter {
         writeByte('F');
         writeByte('F');
         mRiffSizePosition = mBytesWritten;
+        // This will be overwritten by fixSizes() when the writer is closed.
         writeIntLittle(Integer.MAX_VALUE);
         writeByte('W');
         writeByte('A');
@@ -256,6 +257,7 @@ public class WaveFileWriter {
         writeByte('t');
         writeByte('a');
         mDataSizePosition = mBytesWritten;
+        // This will be overwritten by fixSizes() when the writer is closed.
         writeIntLittle(Integer.MAX_VALUE); // size
     }
 

@@ -63,9 +63,11 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
     public static final int TEST_TYPE_JOIN_EXIST_CONFERENCE = 1 << 7;
     public static final int TEST_TYPE_JOIN_EXIST_CONFERENCE_AFTER_SWAP = 1 << 8;
     public static final int TEST_TYPE_JOIN_EXIST_CONFERENCE_FAILED_AFTER_SWAP = 1 << 9;
-
+    public static final int TEST_TYPE_TRANSFERRED = 1 << 10;
+    public static final int TEST_TYPE_TRANSFER_FAILED = 1 << 11;
     private int mTestType = TEST_TYPE_NONE;
     private boolean mIsOnHold = false;
+    private boolean mIsTransferResultNotified = false;
     private int[] mAnbrValues = new int[3];
 
     private TestImsCallSessionImpl mConfSession = null;
@@ -331,6 +333,52 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
             }
         });
         setState(ImsCallSessionImplBase.State.TERMINATED);
+    }
+
+    @Override
+    public void transfer(ImsCallSessionImplBase otherSession) {
+        if (isTestType(TEST_TYPE_TRANSFER_FAILED)) {
+            transferFailed();
+        } else if (isTestType(TEST_TYPE_TRANSFERRED)) {
+            postAndRunTask(() -> {
+                try {
+                    if (mListener == null) {
+                        return;
+                    }
+                    Log.d(LOG_TAG, "invokeTransferred");
+                    mListener.callSessionTransferred();
+                    mIsTransferResultNotified = true;
+                } catch (Throwable t) {
+                    Throwable cause = t.getCause();
+                    if (t instanceof DeadObjectException
+                            || (cause != null && cause instanceof DeadObjectException)) {
+                        fail("starting cause Throwable to be thrown: " + t);
+                    }
+                }
+            });
+        } else {
+            fail("unknown transfer test type");
+        }
+    }
+
+    private void transferFailed() {
+        postAndRunTask(() -> {
+            try {
+                if (mListener == null) {
+                    return;
+                }
+                Log.d(LOG_TAG, "invokeTransferFailed");
+                mListener.callSessionTransferFailed(getReasonInfo(
+                        ImsReasonInfo.CODE_LOCAL_INTERNAL_ERROR, ImsReasonInfo.CODE_UNSPECIFIED));
+                mIsTransferResultNotified = true;
+            } catch (Throwable t) {
+                Throwable cause = t.getCause();
+                if (t instanceof DeadObjectException
+                        || (cause != null && cause instanceof DeadObjectException)) {
+                    fail("starting cause Throwable to be thrown: " + t);
+                }
+            }
+        });
     }
 
     @Override
@@ -906,5 +954,12 @@ public class TestImsCallSessionImpl extends ImsCallSessionImplBase {
         mAnbrValues[0] = -1;
         mAnbrValues[1] = -1;
         mAnbrValues[2] = -1;
+    }
+
+    /**
+     * Returns whether IMS call session transfer result is notified.
+     */
+    public boolean isTransferResultNotified() {
+        return mIsTransferResultNotified;
     }
 }

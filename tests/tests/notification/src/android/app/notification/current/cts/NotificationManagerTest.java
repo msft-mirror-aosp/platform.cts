@@ -3679,7 +3679,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
     public void testCanPostPromotedNotifications() {
-        assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+        boolean initialValue = mNotificationManager.canPostPromotedNotifications();
 
         try {
             SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -3689,10 +3689,17 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
             assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
 
-        } finally {
             SystemUtil.runWithShellPermissionIdentity(() -> {
                 mNotificationManager.setCanPostPromotedNotifications(
                         mContext.getPackageName(), android.os.Process.myUid(), false);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), initialValue);
             });
         }
     }

@@ -105,8 +105,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
 public class VirtualCameraCaptureTest {
@@ -690,21 +688,11 @@ public class VirtualCameraCaptureTest {
     }
 
     private static String getVirtualCameraId(VirtualCamera virtualCamera) {
-        if (Flags.cameraDeviceAwareness()) {
-            switch (virtualCamera.getConfig().getLensFacing()) {
-                case LENS_FACING_FRONT -> {
-                    return FRONT_CAMERA_ID;
-                }
-                case LENS_FACING_BACK -> {
-                    return BACK_CAMERA_ID;
-                }
-                default -> {
-                    return virtualCamera.getId();
-                }
-            }
-        }
-
-        return virtualCamera.getId();
+        return switch (virtualCamera.getConfig().getLensFacing()) {
+            case LENS_FACING_FRONT -> FRONT_CAMERA_ID;
+            case LENS_FACING_BACK -> BACK_CAMERA_ID;
+            default -> virtualCamera.getId();
+        };
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests

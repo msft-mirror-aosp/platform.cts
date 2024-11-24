@@ -173,4 +173,9 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
     protected boolean hasPeripheralSupport() {
         return mCanRunTest;
     }
+
+    @Override
+    String getRouteDescription() {
+        return "usb";
+    }
 }

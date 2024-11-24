@@ -47,6 +47,7 @@ import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
+import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -708,6 +709,37 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
                         getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    public void testUnregisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                        callback));
     }
 
     @Test

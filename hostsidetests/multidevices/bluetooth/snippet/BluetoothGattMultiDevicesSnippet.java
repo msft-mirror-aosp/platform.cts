@@ -24,6 +24,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+
 public class BluetoothGattMultiDevicesSnippet implements Snippet {
     private static final String TAG = "BluetoothGattMultiDevicesSnippet";
 
@@ -60,8 +65,34 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
     }
 
     @Rpc(description = "Connect to the peer device advertising the specified UUID")
-    public boolean connectGatt(String uuid) {
-        return mGattClient.connect(uuid);
+    public String connectGatt(String uuid) throws JSONException {
+        return Utils.convertBtDeviceToJson(mGattClient.connect(uuid));
+    }
+
+    @Rpc(description = "Disconnect to the peer device advertising the specified UUID")
+    public boolean disconnectGatt(String uuid) throws JSONException {
+        return mGattClient.disconnect(uuid);
+    }
+
+    @Rpc(description = "Get all the devices connected to the GATT server")
+    public JSONArray getConnectedDevices() throws JSONException {
+        return Utils.convertBtDevicesToJson(mGattServer.getConnectedDevices());
+    }
+
+    @Rpc(description = "Generate local OOB data to used for bonding with the server")
+    public JSONObject generateServerLocalOobData() throws JSONException {
+        return Utils.convertOobDataToJson(mGattServer.generateLocalOObData());
+    }
+
+    @Rpc(description = "Create a bond with the server using local OOB data generated on the server")
+    public String createBondOob(String uuid, JSONObject jsonObject) throws JSONException {
+        return Utils.convertBtDeviceToJson(mGattClient.createBondOob(
+                uuid, Utils.convertJsonToOobData(jsonObject)));
+    }
+
+    @Rpc(description = "Create a bond with the server using local OOB data generated on the server")
+    public boolean removeBond(String uuid) {
+        return mGattClient.removeBond(uuid);
     }
 
     @Rpc(description = "Enables Bluetooth")

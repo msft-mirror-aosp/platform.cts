@@ -47,6 +47,16 @@ class SettingsPreferenceValueTest {
     }
 
     @Test
+    fun buildSettingsPreferenceValue_IntFieldSet() {
+        val preferenceValue = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_INT)
+            .setIntValue(25)
+            .build()
+
+        assertThat(preferenceValue.type).isEqualTo(SettingsPreferenceValue.TYPE_INT)
+        assertThat(preferenceValue.intValue).isEqualTo(25)
+    }
+
+    @Test
     fun buildSettingsPreferenceValue_LongFieldSet() {
         val preferenceValue = SettingsPreferenceValue.Builder(SettingsPreferenceValue.TYPE_LONG)
             .setLongValue(50L)

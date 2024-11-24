@@ -24,6 +24,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RuntimeColorFilter
+import android.graphics.RuntimeXfermode
 import android.graphics.Shader
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -42,6 +43,11 @@ import org.junit.runner.RunWith
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class RuntimeColorFilterTests : ActivityTestBase() {
+    val redFilter = """
+        vec4 main(half4 inColor) {
+          return vec4(1.0, 0.0, 0.0, 1.0);
+        }"""
+
     private val simpleColorInputFilter = """
        layout(color) uniform vec4 inputColor;
        uniform vec4 inputNonColor;
@@ -57,6 +63,20 @@ class RuntimeColorFilterTests : ActivityTestBase() {
           float blue = clamp(inputFloat, 0.0, 255.0) / 255.0;
           return vec4(color.r, color.g, blue, alpha);
        }"""
+
+    val samplingInputColorFilter = """
+        uniform colorFilter inputFilter;
+        vec4 main(half4 c) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputFilter.eval(color).rgba;
+        }"""
+
+    val samplingInputXfermode = """
+        uniform blender inputBlender;
+        vec4 main(half4 c) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputBlender.eval(color, color).rgba;
+        }"""
 
     private val bitmapShader = BitmapShader(
         Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
@@ -262,5 +282,61 @@ class RuntimeColorFilterTests : ActivityTestBase() {
             { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
             true
         ).runWithVerifier(RectVerifier(Color.WHITE, Color.TRANSPARENT, rect))
+    }
+
+    @Test
+    fun testSimpleColorUniform() {
+        val cf = RuntimeColorFilter(redFilter)
+
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testChildColorFilter() {
+        val redFilter = """
+            vec4 main(half4 inColor) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val redInputColorFilter = RuntimeColorFilter(redFilter)
+
+        val colorFilter = RuntimeColorFilter(samplingInputColorFilter)
+        colorFilter.setInputColorFilter("inputFilter", redInputColorFilter)
+        val paint = Paint()
+        paint.colorFilter = colorFilter
+
+        val rect = Rect(10, 10, 80, 80)
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testChildXfermode() {
+        val redXfermode = """
+            vec4 main(half4 src, half4 dst) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val redInputXfermode = RuntimeXfermode(redXfermode)
+        val rect = Rect(10, 10, 80, 80)
+
+        val paint = Paint()
+        val colorFilter = RuntimeColorFilter(samplingInputXfermode)
+        colorFilter.setInputXfermode("inputBlender", redInputXfermode)
+        paint.colorFilter = colorFilter
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 }

@@ -2045,6 +2045,38 @@ public class SurfaceControlTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_1DLut_withCIEy() throws Throwable {
+        mActivity.awaitReadyState();
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry = new DisplayLuts.Entry(
+                            new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_CIE_Y);
+                    displayLuts.set(entry);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                   Color.WHITE, DataSpace.DATASPACE_SRGB);
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                }
+            },
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(0xFFBCBCBC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
     public void testSurfaceTransaction_setLuts_1DLut_withCYAN() throws Throwable {
         mActivity.awaitReadyState();
         verifyTest(

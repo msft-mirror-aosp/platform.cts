@@ -124,20 +124,22 @@ public class ApduServiceInfoTest {
         assertEquals(apduServiceInfo.getSettingsActivityName(), "");
     }
 
-    private ResolveInfo findForegroundServiceResolveInfo() {
+    private ResolveInfo findServiceResolveInfo(ComponentName componentName) {
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
         List<ResolveInfo> resolvedServices = pm.queryIntentServicesAsUser(
                 new Intent(HostApduService.SERVICE_INTERFACE),
                 PackageManager.ResolveInfoFlags.of(PackageManager.GET_META_DATA),
                 UserHandle.SYSTEM);
         for (ResolveInfo resolvedService : resolvedServices) {
-            ServiceInfo si = resolvedService.serviceInfo;
-            ComponentName componentName = new ComponentName(si.packageName, si.name);
-            if (componentName.equals(WalletRoleTestUtils.getForegroundService())) {
+            if (resolvedService.getComponentInfo().getComponentName().equals(componentName)) {
                 return resolvedService;
             }
         }
         return null;
+    }
+
+    private ResolveInfo findForegroundServiceResolveInfo() {
+        return findServiceResolveInfo(WalletRoleTestUtils.getForegroundService());
     }
 
     @Test
@@ -164,6 +166,17 @@ public class ApduServiceInfoTest {
         assertFalse(apduServiceInfo.requiresUnlock());
         assertTrue(apduServiceInfo.requiresScreenOn());
         assertEquals(apduServiceInfo.getDescription(), "Foreground CTS Nfc Test Service");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_ASSOCIATED_ROLE_SERVICES)
+    @Test
+    public void test_Constructor_ParseManifest_AssociatedApduService() throws Exception {
+        final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        ResolveInfo resolvedService = findServiceResolveInfo(
+                WalletRoleTestUtils.getAssociatedService());
+        assertNotNull(resolvedService);
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(pm, resolvedService, true);
+        assertTrue(apduServiceInfo.shareRolePriority());
     }
 
     @Test

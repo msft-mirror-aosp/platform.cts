@@ -1591,3 +1591,46 @@ def convert_image_coords_to_sensor_coords(
                      coords[1] * aspect_ratio_multiplication_factor + buffer)
   logging.debug('Sensor coordinates: %s', sensor_coords)
   return sensor_coords
+
+
+def convert_sensor_coords_to_image_coords(
+    aa_width, aa_height, coords, img_width, img_height):
+  """Transform sensor coordinates to image coordinate system.
+
+  Calculate the difference between sensor active array and image aspect ratio.
+  Taking the difference into account, figure out if the width or height has been
+  cropped. Using this information, transform the sensor coordinates to image
+  coordinates.
+
+  Args:
+    aa_width: int; active array width.
+    aa_height: int; active array height.
+    coords: coordinates; a pair of (x, y) coordinates from sensor.
+    img_width: int; width of image.
+    img_height: int; height of image.
+  Returns:
+    image_coords: coordinates; corresponding coordinates on
+      image coordinate system.
+  """
+  aa_aspect_ratio = aa_width / aa_height
+  image_aspect_ratio = img_width / img_height
+  if aa_aspect_ratio >= image_aspect_ratio:
+    # If aa aspect ratio is greater than image aspect ratio, then
+    # sensor width is being cropped
+    aspect_ratio_multiplication_factor = aa_height / img_height
+    crop_width = img_width * aspect_ratio_multiplication_factor
+    buffer = (aa_width - crop_width) / 2
+    image_coords = (
+        (coords[0] - buffer) / aspect_ratio_multiplication_factor,
+        coords[1] / aspect_ratio_multiplication_factor)
+  else:
+    # If aa aspect ratio is less than image aspect ratio, then
+    # sensor height is being cropped
+    aspect_ratio_multiplication_factor = aa_width / img_width
+    crop_height = img_height * aspect_ratio_multiplication_factor
+    buffer = (aa_height - crop_height) / 2
+    image_coords = (
+        coords[0] / aspect_ratio_multiplication_factor,
+        (coords[1] - buffer) / aspect_ratio_multiplication_factor)
+  logging.debug('Image coordinates: %s', image_coords)
+  return image_coords

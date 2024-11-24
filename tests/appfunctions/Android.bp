@@ -48,6 +48,7 @@ android_test {
     ],
     asset_dirs: ["assets"],
     manifest: "AndroidManifest.xml",
+    platform_apis: true,
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
