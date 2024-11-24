@@ -37,7 +37,10 @@ import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
+import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
+import android.nfc.T4tNdefNfcee;
+import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
 import android.nfc.cardemulation.ApduServiceInfo;
@@ -712,12 +715,33 @@ public class NfcAdapterTest {
             nfcOemExtension.getRoutingStatus();
             nfcOemExtension.setAutoChangeEnabled(true);
             assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
+            T4tNdefNfcee ndefNfcee = nfcOemExtension.getT4tNdefNfcee();
+            assertThat(ndefNfcee).isNotNull();
+            if (ndefNfcee.isSupported()) {
+                byte[] ndefData = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+                assertThat(ndefNfcee.writeData(5, ndefData))
+                               .isEqualTo(T4tNdefNfcee.WRITE_DATA_SUCCESS);
+                assertThat(ndefNfcee.readData(5)).isEqualTo(ndefData);
+                assertThat(ndefNfcee.isOperationOngoing()).isEqualTo(false);
+                T4tNdefNfceeCcFileInfo ccFileInfo = ndefNfcee.readCcfile();
+                assertThat(ccFileInfo).isNotNull();
+                assertThat(ccFileInfo.getCcFileLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getVersion()).isGreaterThan(0);
+                assertThat(ccFileInfo.getMaxReadLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getMaxWriteLength()).isGreaterThan(0);
+                assertThat(ccFileInfo.getFileId()).isGreaterThan(5);
+                assertThat(ccFileInfo.getMaxSize()).isGreaterThan(0);
+                assertThat(ndefNfcee.clearData()).isEqualTo(T4tNdefNfcee.CLEAR_DATA_SUCCESS);
+            }
             if (Flags.nfcOverrideRecoverRoutingTable()) {
                 nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
-            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
+            List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
+            assertThat(entries).isNotNull();
+            entries.getFirst().getType();
+            nfcOemExtension.forceRoutingTableCommit();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
@@ -820,11 +844,11 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onEnable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onEnableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
-        public void onDisable(@NonNull Consumer<Boolean> isAllowed) {
+        public void onDisableRequested(@NonNull Consumer<Boolean> isAllowed) {
         }
 
         @Override
@@ -856,7 +880,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onRoutingChanged() {
+        public void onRoutingChanged(@NonNull Consumer<Boolean> isSkipped) {
         }
 
         @Override
@@ -887,6 +911,10 @@ public class NfcAdapterTest {
         }
 
         @Override
+        public void onEeUpdated() {
+        }
+
+        @Override
         public void onGetOemAppSearchIntent(@NonNull List<String> packages,
                                             @NonNull Consumer<Intent> intentConsumer) {
         }
@@ -914,6 +942,11 @@ public class NfcAdapterTest {
 
         @Override
         public void onLogEventNotified(@NonNull OemLogItems item) {
+        }
+
+        @Override
+        public void onExtractOemPackages(@NonNull NdefMessage message,
+                @NonNull Consumer<List<String>> packageConsumer) {
         }
     }
 
@@ -1022,5 +1055,34 @@ public class NfcAdapterTest {
                 .thenReturn(PackageManager.PERMISSION_DENIED);
         doThrow(new SecurityException()).when(mContext)
                 .enforceCallingOrSelfPermission(eq(permission), anyString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
+        when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAppPreferenceSupported();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
+    public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
+             RemoteException {
+        when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.isTagIntentAllowed();
+        Assert.assertTrue(result);
     }
 }

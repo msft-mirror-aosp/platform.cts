@@ -53,6 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementManagerTest {
@@ -118,7 +119,6 @@ public class DistanceMeasurementManagerTest {
         assertNotNull(list);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getChannelSoundingMaxSupportedSecurityLevel() {
@@ -127,7 +127,6 @@ public class DistanceMeasurementManagerTest {
         assertTrue(isValidSecurityLevel(securityLevel));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getLocalChannelSoundingMaxSupportedSecurityLevel() {
@@ -139,5 +138,16 @@ public class DistanceMeasurementManagerTest {
     private boolean isValidSecurityLevel(int securityLevel) {
         return (securityLevel >= ChannelSoundingParams.CS_SECURITY_LEVEL_UNKNOWN
                 && securityLevel <= ChannelSoundingParams.CS_SECURITY_LEVEL_FOUR);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getChannelSoundingSupportedSecurityLevels() {
+        Set<Integer> securityLevels =
+                mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+        assertNotNull(securityLevels);
+        // TODO(b/378926246): check the CS availability.
+        // assertTrue(securityLevels.size() > 0);
     }
 }
