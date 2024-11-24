@@ -354,6 +354,8 @@
     <!-- b/330018295 -->
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <!-- b/380538323 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[foldable:5:OPENED] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
 
     <!-- b/341195751 -->
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
