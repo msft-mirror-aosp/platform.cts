@@ -36,6 +36,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CameraMetadataInfo
 import android.hardware.camera2.ICameraDeviceCallbacks
 import android.hardware.camera2.impl.CameraMetadataNative
 import android.hardware.camera2.impl.CaptureResultExtras
@@ -95,7 +96,7 @@ class CameraPermissionTest {
     }
 
     override fun onResultReceived(
-        result: CameraMetadataNative,
+        result: CameraMetadataInfo,
         resultExtras: CaptureResultExtras,
         physicalResults: Array<PhysicalCaptureResultInfo>
     ) {
