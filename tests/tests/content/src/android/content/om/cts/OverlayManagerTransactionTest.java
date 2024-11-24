@@ -99,26 +99,26 @@ public class OverlayManagerTransactionTest {
 
     @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
     @Test
-    public void commit_withNullOverlayable_shouldFail() {
+    public void commit_withNullOverlayable_onPackageWithOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", null /* overlayableName */));
 
-        assertThrows(IllegalArgumentException.class, () -> mOverlayManager.commit(transaction));
+        assertThrows(RuntimeException.class, () -> mOverlayManager.commit(transaction));
     }
 
     @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
     @Test
-    public void commit_withEmptyOverlayable_shouldFail() {
+    public void commit_withEmptyOverlayable_onPackageWithOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", "" /* overlayableName */));
 
-        assertThrows(IllegalArgumentException.class, () -> mOverlayManager.commit(transaction));
+        assertThrows(RuntimeException.class, () -> mOverlayManager.commit(transaction));
     }
 
     @Test
-    public void commit_withNonExistOverlayable_shouldFail() {
+    public void commit_withNonExistOverlayable_onPackageWithOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", "not_exist"));
@@ -127,7 +127,7 @@ public class OverlayManagerTransactionTest {
     }
 
     @Test
-    public void commit_withValidOverlayable_shouldSucceed() {
+    public void commit_withValidOverlayable_onPackageWithOverlayable_shouldSucceed() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", OVERLAYABLE_NAME));

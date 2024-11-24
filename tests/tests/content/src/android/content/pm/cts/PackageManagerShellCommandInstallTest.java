@@ -50,6 +50,7 @@ import static org.testng.Assert.expectThrows;
 
 import android.Manifest;
 import android.app.UiAutomation;
+import android.app.role.RoleManager;
 import android.app.usage.StorageStats;
 import android.app.usage.StorageStatsManager;
 import android.content.BroadcastReceiver;
@@ -60,6 +61,7 @@ import android.content.IIntentSender;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.ApkChecksum;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.DataLoaderParams;
@@ -86,6 +88,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.preference.PreferenceManager;
 import android.util.PackageUtils;
 
 import androidx.test.InstrumentationRegistry;
@@ -98,6 +101,7 @@ import com.android.internal.util.HexDump;
 import libcore.util.HexEncoding;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -122,6 +126,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -203,6 +208,9 @@ public class PackageManagerShellCommandInstallTest {
 
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
 
+    private static final String ROLE_SYSTEM_DEPENDENCY_INSTALLER =
+            "android.app.role.SYSTEM_DEPENDENCY_INSTALLER";
+
     static final long DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS = 3 * 1000;
     static final long VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS = 10 * 1000;
 
@@ -226,6 +234,9 @@ public class PackageManagerShellCommandInstallTest {
     private boolean mVerifierTimeoutTest = false;
     private String mInstall = "";
     private String mDisableDependencyInstall = "";
+    private RoleManager mRoleManager;
+    private String mPreviousDependencyInstallerRoleHolder;
+
     private static long sStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
 
     private static PackageInstaller getPackageInstaller() {
@@ -334,6 +345,8 @@ public class PackageManagerShellCommandInstallTest {
 
         uninstallPackageSilently(TEST_APP_PACKAGE);
 
+        mRoleManager = (RoleManager) getContext().getSystemService(Context.ROLE_SERVICE);
+
         executeShellCommand("settings put global verifier_verify_adb_installs 0");
     }
 
@@ -348,6 +361,8 @@ public class PackageManagerShellCommandInstallTest {
 
         setSystemProperty("debug.pm.uses_sdk_library_default_cert_digest", "invalid");
         setSystemProperty("debug.pm.prune_unused_shared_libraries_delay", "invalid");
+
+        getDefaultSharedPreferences().edit().clear().commit();
     }
 
     @AfterClass
@@ -1417,9 +1432,19 @@ public class PackageManagerShellCommandInstallTest {
         assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
     }
 
+    private SharedPreferences getDefaultSharedPreferences() {
+        final Context appContext = getContext().getApplicationContext();
+        return PreferenceManager.getDefaultSharedPreferences(appContext);
+    }
+
+    private void setDependencyInstallerRunMethod(String methodName) {
+        getDefaultSharedPreferences().edit().putString(
+                TestDependencyInstallerService.METHOD_NAME, methodName).commit();
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_dependencyInstallerDisabledShellCommand()
+    public void testAppWithMissingDependency_dependencyInstallerDisabledShellCommand()
             throws Exception {
         onBeforeSdkTests();
 
@@ -1431,33 +1456,36 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_failDependencyResolution() throws Exception {
+    public void testAppWithMissingDependency_failDependencyResolution() throws Exception {
         onBeforeSdkTests();
 
-        // Dependency Installer Service cannot resolve SDK3
-        String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
-        assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
-        assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+        setDependencyInstallerRoleHolder();
+        try {
+            // Dependency Installer Service cannot resolve SDK3
+            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
+            assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
+            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithMissingDependency_resolveSdk1_success() throws Exception {
+    public void testAppWithMissingDependency_resolveSdk1_sync() throws Exception {
         onBeforeSdkTests();
 
         installPackage(TEST_SDK1);
         overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
         uninstallPackageSilently(TEST_SDK1_PACKAGE);
 
-        //TODO(372862145): INSTALL_DEPENDENCY_PACKAGE permission from role should bypass user action
-        // requirement.
-        getUiAutomation().adoptShellPermissionIdentity();
-
+        setDependencyInstallerRoleHolder();
         try {
             // Dependency Installer Service should resolve missing SDK1
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             installPackage(TEST_USING_SDK1);
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            removeDependencyInstallerRoleHolder();
         }
     }
 
@@ -1468,23 +1496,41 @@ public class PackageManagerShellCommandInstallTest {
 
         overrideUsesSdkLibraryCertificateDigest("RANDOMCERT");
 
-        //TODO(372862145): INSTALL_DEPENDENCY_PACKAGE permission from role should bypass user action
-        // requirement. Until we have that, bypass with EMERGENCY_INSTALL_PACKAGES
-        getUiAutomation().adoptShellPermissionIdentity();
-
+        setDependencyInstallerRoleHolder();
         try {
             // Dependency Installer Service should try to resolve dependency but fail
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
         } finally {
-            getUiAutomation().dropShellPermissionIdentity();
+            removeDependencyInstallerRoleHolder();
+        }
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testAppWithoutDependantSdk_resolveSdk2_async() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK2);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK2_PACKAGE));
+        uninstallPackageSilently(TEST_SDK2_PACKAGE);
+
+        setDependencyInstallerRoleHolder();
+        try {
+            // Dependency Installer Service should resolve missing SDK1
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_ASYNC);
+            installPackage(TEST_USING_SDK1_AND_SDK2);
+        } finally {
+            removeDependencyInstallerRoleHolder();
         }
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithMssingDependency_multiSessionFailsLater() throws Exception {
+    public void testAppWithMissingDependency_multiSessionFailsLater() throws Exception {
         onBeforeSdkTests();
 
         // Create a multi session without all the dependencies
@@ -1518,7 +1564,17 @@ public class PackageManagerShellCommandInstallTest {
         installPackage(TEST_SDK1);
         overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
-        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "INSTALL_SUCCEEDED");
+        getUiAutomation().adoptShellPermissionIdentity();
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    /*expectedStatus=*/PackageInstaller.STATUS_SUCCESS,
+                    "INSTALL_SUCCEEDED");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     @Test
@@ -1527,37 +1583,36 @@ public class PackageManagerShellCommandInstallTest {
             throws Exception {
         onBeforeSdkTests();
 
-        installAppUsingDependantSdk(/*enableAutoInstallDependencies=*/false, "Reconcile failed");
-    }
-
-    // TODO(b/372861776): Add tests for enabling dependency installer once the changes for installer
-    // behavior have been merged.
-    private void installAppUsingDependantSdk(
-            boolean enableAutoInstallDependencies, String expectedMsg) throws Exception {
         getUiAutomation().adoptShellPermissionIdentity();
         try {
-            final PackageInstaller installer = getPackageInstaller();
-            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
-            params.setAppPackageName(TEST_SDK_USER_PACKAGE);
-            params.setEnableAutoInstallDependencies(enableAutoInstallDependencies);
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    /*expectedStatus=*/null,
+                    "Reconcile failed");
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
 
-            final int sessionId = installer.createSession(params);
-            PackageInstaller.Session session = installer.openSession(sessionId);
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallAppWithoutDependantSdk_dependencyInstallerEnabled_succeeds()
+            throws Exception {
+        onBeforeSdkTests();
 
-            writeFileToSession(session, "sdk1_user", TEST_USING_SDK1);
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
 
-            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
-            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
-                @Override
-                public void send(int code, Intent intent, String resolvedType,
-                        IBinder allowlistToken, IIntentReceiver finishedReceiver,
-                        String requiredPermission, Bundle options) {
-                    statusMessage.complete(
-                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
-                }
-            }));
-
-            assertThat(statusMessage.get()).contains(expectedMsg);
+        getUiAutomation().adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES);
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/true,
+                    /*expectedStatus=*/PackageInstaller.STATUS_SUCCESS,
+                    "INSTALL_SUCCEEDED");
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
@@ -2822,6 +2877,96 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallSdk_withoutInstallDependencyPackagePermission() throws Exception {
+        onBeforeSdkTests();
+
+        commitApk(
+                TEST_SDK1_PACKAGE,
+                TEST_SDK1,
+                /*enableAutoInstallDependencies=*/false,
+                PackageInstaller.STATUS_PENDING_USER_ACTION,
+                /*expectedMsg=*/null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallSdk_withInstallDependencyPackagePermission() throws Exception {
+        onBeforeSdkTests();
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES);
+        try {
+            commitApk(
+                    TEST_SDK1_PACKAGE,
+                    TEST_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    PackageInstaller.STATUS_SUCCESS,
+                    /*expectedMsg=*/null);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testInstallNonDependency_withInstallDependencyPackagePermission_fails()
+            throws Exception {
+        onBeforeSdkTests();
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES);
+        try {
+            commitApk(
+                    TEST_SDK_USER_PACKAGE,
+                    TEST_USING_SDK1,
+                    /*enableAutoInstallDependencies=*/false,
+                    PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    /*expectedMsg=*/null);
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private void commitApk(
+            String packageName, String apk, boolean enableAutoInstallDependencies,
+            Integer expectedStatus, String expectedMsg)
+            throws Exception {
+        final PackageInstaller installer = getPackageInstaller();
+        final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(packageName);
+        params.setAutoInstallDependenciesEnabled(enableAutoInstallDependencies);
+
+        final int sessionId = installer.createSession(params);
+        PackageInstaller.Session session = installer.openSession(sessionId);
+
+        writeFileToSession(session, "test", apk);
+
+        final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+        final CompletableFuture<Integer> status = new CompletableFuture<>();
+        session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+            @Override
+            public void send(int code, Intent intent, String resolvedType,
+                    IBinder allowlistToken, IIntentReceiver finishedReceiver,
+                    String requiredPermission, Bundle options) {
+                status.complete(
+                        intent.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE));
+                statusMessage.complete(
+                        intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+            }
+        }));
+
+        if (expectedStatus != null) {
+            assertEquals(statusMessage.get(), expectedStatus, status.get());
+        }
+        if (expectedMsg != null) {
+            assertThat(statusMessage.get()).contains(expectedMsg);
+        }
+    }
+
     private List<SharedLibraryInfo> getSharedLibraries() {
         getUiAutomation().adoptShellPermissionIdentity();
         try {
@@ -3152,6 +3297,65 @@ public class PackageManagerShellCommandInstallTest {
            formattedOutput = " (" + formattedOutput + ")";
         }
         return Long.toString(size) + " bytes" + formattedOutput;
+    }
+
+    private void setDependencyInstallerRoleHolder() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MANAGE_ROLE_HOLDERS,
+                Manifest.permission.BYPASS_ROLE_QUALIFICATION
+        );
+        try {
+            mPreviousDependencyInstallerRoleHolder = mRoleManager
+                    .getRoleHoldersAsUser(
+                            ROLE_SYSTEM_DEPENDENCY_INSTALLER, Process.myUserHandle())
+                    .stream().findFirst().orElse(null);
+            mRoleManager.setBypassingRoleQualification(true);
+            mRoleManager.addRoleHolderAsUser(
+                    ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
+                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                    getContext().getMainExecutor(),
+                    success -> {
+                        if (success) {
+                            latch.countDown();
+                        } else {
+                            Assert.fail("Failed to set dependency installer role holder");
+                        }
+                    });
+
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private void removeDependencyInstallerRoleHolder() {
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MANAGE_ROLE_HOLDERS,
+                Manifest.permission.BYPASS_ROLE_QUALIFICATION
+        );
+        try {
+            mRoleManager.setBypassingRoleQualification(false);
+            if (mPreviousDependencyInstallerRoleHolder == null) {
+                mRoleManager.removeRoleHolderAsUser(
+                        ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
+                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                        getContext().getMainExecutor(), ignored -> {
+                        });
+            } else {
+                // If there was a previous role holder, replace the one set in the test with the
+                // previous one.
+                mRoleManager.addRoleHolderAsUser(
+                        ROLE_SYSTEM_DEPENDENCY_INSTALLER,
+                        mPreviousDependencyInstallerRoleHolder,
+                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                        getContext().getMainExecutor(), ignored -> {
+                        });
+            }
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     static class PackageBroadcastReceiver extends BroadcastReceiver {

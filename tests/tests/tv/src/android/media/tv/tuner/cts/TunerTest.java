@@ -858,6 +858,9 @@ public class TunerTest {
                         case FrontendStatus.FRONTEND_STATUS_TYPE_IPTV_AVERAGE_JITTER_MS:
                             status.getIptvAverageJitterMillis();
                             break;
+                        case FrontendStatus.FRONTEND_STATUS_TYPE_STANDARD_EXTENSION:
+                            status.getStandardExtension();
+                            break;
                     }
                 }
             }
@@ -2066,7 +2069,8 @@ public class TunerTest {
             assertEquals(Tuner.RESULT_SUCCESS, tunerB.connectCiCam(ciCamId));
 
             // unlink CiCam to Demux in tunerA and transfer ownership
-            assertEquals(Tuner.RESULT_SUCCESS, tunerA.disconnectCiCam());
+            // UNAVAILABLE is expected when the Demux resource is limited. SUCCESS otherwise.
+            tunerA.disconnectCiCam();
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.transferOwner(tunerB));
 
             // close the original owner

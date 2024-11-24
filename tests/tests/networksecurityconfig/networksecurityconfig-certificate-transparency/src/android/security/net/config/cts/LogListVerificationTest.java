@@ -41,7 +41,10 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION)
+@RequiresFlagsEnabled({
+    Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION,
+    com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
+})
 public class LogListVerificationTest extends BaseTestCase {
 
     @Rule

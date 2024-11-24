@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <android/performance_hint.h>
 #include <errno.h>
 #include <jni.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <future>
+#include <list>
 #include <sstream>
 #include <vector>
-
-#include <android/performance_hint.h>
 
 static jstring toJString(JNIEnv *env, const char* c_str) {
     return env->NewStringUTF(c_str);
@@ -50,6 +52,31 @@ private:
     APerformanceHintSession* mSession;
 };
 
+struct HelperThread {
+    HelperThread() : helpThread(&HelperThread::run, &(*this)) {}
+    ~HelperThread() {
+        closurePromise.set_value(true);
+        closureFinishedFuture.get();
+    }
+
+    // calling getTid() more than once would break
+    pid_t getTid() { return pidFuture.get(); }
+
+    void run() {
+        pidPromise.set_value(getTid());
+        closureFuture.get();
+        closureFinishedPromise.set_value(true);
+    }
+
+    std::promise<pid_t> pidPromise{};
+    std::future<pid_t> pidFuture = pidPromise.get_future();
+    std::promise<bool> closurePromise{};
+    std::future<bool> closureFuture = closurePromise.get_future();
+    std::promise<bool> closureFinishedPromise{};
+    std::future<bool> closureFinishedFuture = closureFinishedPromise.get_future();
+    std::thread helpThread;
+};
+
 static SessionWrapper createSession(APerformanceHintManager* manager) {
     int32_t pid = getpid();
     return SessionWrapper(APerformanceHint_createSession(manager, &pid, 1u, DEFAULT_TARGET_NS));
@@ -62,7 +89,7 @@ struct WorkDurationCreator {
     int64_t gpuDuration;
 };
 
-static AWorkDuration * createWorkDuration(WorkDurationCreator creator) {
+static AWorkDuration* createWorkDuration(WorkDurationCreator creator) {
     AWorkDuration* out = AWorkDuration_create();
     AWorkDuration_setWorkPeriodStartTimestampNanos(out, creator.workPeriodStart);
     AWorkDuration_setActualTotalDurationNanos(out, creator.totalDuration);
@@ -77,13 +104,41 @@ static jstring nativeTestCreateHintSession(JNIEnv *env, jobject) {
     SessionWrapper a = createSession(manager);
     SessionWrapper b = createSession(manager);
     if (a.session() == nullptr) {
-        if (b.session() != nullptr) {
-            return toJString(env, "b is not null");
-        }
+        return toJString(env, "a is null");
     } else if (b.session() == nullptr) {
-        if (a.session() != nullptr) {
-            return toJString(env, "a is not null");
-        }
+        return toJString(env, "b is null");
+    } else if (a.session() == b.session()) {
+        return toJString(env, "a and b matches");
+    }
+    return nullptr;
+}
+
+static jstring nativeTestCreateHintSessionUsingConfig(JNIEnv* env, jobject) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+    ASessionCreationConfig* config = ASessionCreationConfig_create();
+    if (config == nullptr) {
+        return toJString(env, "config is null");
+    }
+    int32_t pid = getpid();
+    int ret = ASessionCreationConfig_setTids(config, &pid, 1u);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTids ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    ret = ASessionCreationConfig_setTargetWorkDurationNanos(config, DEFAULT_TARGET_NS);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTargetWorkDurationNanos ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    SessionWrapper a = SessionWrapper(APerformanceHint_createSessionUsingConfig(manager, config));
+    SessionWrapper b = SessionWrapper(APerformanceHint_createSessionUsingConfig(manager, config));
+    if (a.session() == nullptr) {
+        return toJString(env, "a is null");
+    } else if (b.session() == nullptr) {
+        return toJString(env, "b is null");
     } else if (a.session() == b.session()) {
         return toJString(env, "a and b matches");
     }
@@ -256,7 +311,7 @@ static jstring nativeTestReportActualWorkDuration2(JNIEnv* env, jobject) {
     };
 
     for (auto && testCase : testCases) {
-        AWorkDuration * testObj = createWorkDuration(testCase);
+        AWorkDuration* testObj = createWorkDuration(testCase);
         int result = APerformanceHint_reportActualWorkDuration2(wrapper.session(), testObj);
         if (result != 0) {
             std::stringstream stream;
@@ -315,7 +370,7 @@ static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* en
     };
 
     for (auto && testCase : testCases) {
-        AWorkDuration * testObj = createWorkDuration(testCase);
+        AWorkDuration* testObj = createWorkDuration(testCase);
         int result = APerformanceHint_reportActualWorkDuration2(wrapper.session(), testObj);
         if (result != EINVAL) {
             std::stringstream stream;
@@ -378,8 +433,74 @@ static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
     return nullptr;
 }
 
+static jlong nativeBorrowSessionFromJava(JNIEnv* env, jobject, jobject sessionObj) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return 0;
+
+    APerformanceHintSession* session = APerformanceHint_borrowSessionFromJava(env, sessionObj);
+
+    // Test a basic synchronous operation to ensure the session is valid.
+    int32_t pid = getpid();
+    int retval = APerformanceHint_setThreads(session, &pid, 1u);
+    if (retval != 0) {
+        return 0;
+    }
+
+    return reinterpret_cast<jlong>(session);
+}
+static jstring nativeTestCreateGraphicsPipelineSessionOverLimit(JNIEnv* env, jobject) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+
+    const int count = APerformanceHint_getMaxGraphicsPipelineThreadsCount(manager);
+
+    ASessionCreationConfig* config = ASessionCreationConfig_create();
+    int32_t pid = getpid();
+    int ret = ASessionCreationConfig_setTids(config, &pid, 1u);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTids ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    ret = ASessionCreationConfig_setTargetWorkDurationNanos(config, DEFAULT_TARGET_NS);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTargetWorkDurationNanos ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    ret = ASessionCreationConfig_setGraphicsPipeline(config, true);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setGraphicsPipeline ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+
+    std::list<struct HelperThread> threads(count);
+    std::vector<int32_t> tids;
+    for (auto&& thread : threads) {
+        tids.push_back(thread.getTid());
+    }
+    ret = ASessionCreationConfig_setTids(config, tids.data(), (size_t)count);
+    if (ret == EINVAL) {
+        return toJString(env, "creation config setTids ret is EINVAL");
+    } else if (ret == ENOTSUP) {
+        return nullptr;
+    }
+    SessionWrapper a = SessionWrapper(APerformanceHint_createSessionUsingConfig(manager, config));
+    if (a.session() != nullptr) {
+        return toJString(env, "a is not null given max graphics pipeline threads limit reached");
+    }
+
+    ASessionCreationConfig_release(config);
+    return nullptr;
+}
+
 static JNINativeMethod gMethods[] = {
         {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
+        {"nativeTestCreateGraphicsPipelineSessionOverLimit", "()Ljava/lang/String;",
+         (void*)nativeTestCreateGraphicsPipelineSessionOverLimit},
+        {"nativeTestCreateHintSessionUsingConfig", "()Ljava/lang/String;",
+         (void*)nativeTestCreateHintSessionUsingConfig},
         {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
          (void*)nativeTestGetPreferredUpdateRateNanos},
         {"nativeUpdateTargetWorkDuration", "()Ljava/lang/String;",
@@ -399,12 +520,12 @@ static JNINativeMethod gMethods[] = {
         {"nativeTestReportActualWorkDuration2WithIllegalArgument", "()Ljava/lang/String;",
          (void*)nativeTestReportActualWorkDuration2WithIllegalArgument},
         {"nativeTestLoadHints", "()Ljava/lang/String;", (void*)nativeTestLoadHints},
-
+        {"nativeBorrowSessionFromJava", "(Landroid/os/PerformanceHintManager$Session;)J",
+         (void*)nativeBorrowSessionFromJava},
 };
 
-int register_android_os_cts_PerformanceHintManagerTest(JNIEnv *env) {
+int register_android_os_cts_PerformanceHintManagerTest(JNIEnv* env) {
     jclass clazz = env->FindClass("android/os/cts/PerformanceHintManagerTest");
 
-    return env->RegisterNatives(clazz, gMethods,
-            sizeof(gMethods) / sizeof(JNINativeMethod));
+    return env->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(JNINativeMethod));
 }

@@ -36,7 +36,6 @@ import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -46,7 +45,6 @@ import android.hardware.display.VirtualDisplay;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.view.WindowManager;
@@ -79,7 +77,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
 public class VirtualDeviceImeTest {
 
     private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
