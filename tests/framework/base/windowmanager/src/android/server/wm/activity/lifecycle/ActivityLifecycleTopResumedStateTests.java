@@ -690,29 +690,29 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            new Launcher(CallbackTrackingActivity.class)
+            new Launcher(activityClass)
                     .setExpectedState(ON_STOP)
                     .setNoInstance()
                     .launch();
             TransitionVerifier.assertLaunchAndStopSequence(
-                    CallbackTrackingActivity.class, getTransitionLog(), true /* onTop */);
+                    activityClass, getTransitionLog(), true /* onTop */);
 
             getTransitionLog().clear();
         }
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class, getTransitionLog());
-            waitAndAssertActivityCurrentState(CallbackTrackingActivity.class,
-                    ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(
-                    state(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class, getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
@@ -722,29 +722,28 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
-        final Activity activity = launchActivityAndWait(CallbackTrackingActivity.class);
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
+        launchActivityAndWait(activityClass);
 
         getTransitionLog().clear();
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            waitAndAssertActivityStates(state(activity, ON_STOP));
-            assertResumeToStopSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_STOP));
+            assertResumeToStopSequence(activityClass, getTransitionLog());
 
             getTransitionLog().clear();
         }
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
-            waitAndAssertActivityCurrentState(activity.getClass(), ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(state(activity, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
@@ -1233,4 +1232,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED)),
                 "finishAlwaysFocusablePip");
     }
+
+    public static class NoRelaunchCallbackTrackingActivity extends CallbackTrackingActivity {}
 }

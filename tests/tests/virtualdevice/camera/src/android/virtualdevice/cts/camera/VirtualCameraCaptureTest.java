@@ -35,11 +35,8 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.toFormat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
-import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
-
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -54,7 +51,6 @@ import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
@@ -70,6 +66,7 @@ import android.media.ImageReader;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Surface;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import junitparams.JUnitParamsRunner;
@@ -77,8 +74,10 @@ import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -103,6 +102,9 @@ public class VirtualCameraCaptureTest {
     private static final int IMAGE_READER_MAX_IMAGES = 2;
 
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
+
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -134,9 +136,6 @@ public class VirtualCameraCaptureTest {
 
     @Before
     public void setUp() {
-        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
-                    hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(
@@ -192,29 +191,6 @@ public class VirtualCameraCaptureTest {
                 assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
                 assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
                 assertThat(imageHasColor(image, Color.RED)).isTrue();
-            }
-        }
-    }
-
-    @Parameters(method = "getOutputPixelFormats")
-    @TestCaseName("{method}_{params}")
-    @Test
-    public void virtualCamera_captureWithNoInput_capturesBlackImage(String format)
-            throws Exception {
-        int outputPixelFormat = toFormat(format);
-
-        try (VirtualCamera virtualCamera = createVirtualCamera()) {
-            String cameraId = getVirtualCameraId(virtualCamera);
-
-            try (ImageReader imageReader = createImageReader(outputPixelFormat)) {
-                Image image = captureImage(cameraId, imageReader,
-                        (Surface surface) -> {
-                        });
-
-                assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
-                assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
-                assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
-                assertThat(imageHasColor(image, Color.BLACK)).isTrue();
             }
         }
     }

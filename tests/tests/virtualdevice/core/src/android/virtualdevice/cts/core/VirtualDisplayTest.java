@@ -295,7 +295,8 @@ public class VirtualDisplayTest {
                 new VirtualDeviceParams.Builder()
                         .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
                         .build());
-        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(virtualDevice);
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
 
         assertThat(virtualDisplay).isNotNull();
         Display display = virtualDisplay.getDisplay();
