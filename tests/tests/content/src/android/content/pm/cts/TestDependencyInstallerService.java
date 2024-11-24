@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.Session;
@@ -38,6 +39,8 @@ import android.content.pm.SigningInfo;
 import android.content.pm.dependencyinstaller.DependencyInstallerCallback;
 import android.content.pm.dependencyinstaller.DependencyInstallerService;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.PackageUtils;
 
@@ -52,17 +55,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /*
  * A DependencyInstallerService for test.
  *
- * It resolves dependency on SDK_1 synchronously, i.e., waits for installation to complete before
- * notifying.
+ * The behavior of the service is controlled by the test by passing specific method names via
+ * SharedPreferences.
  *
- * If there is dependency on SDK_2, then it resolves them asynchronously, i.e., returns session id
- * to caller without waiting for installation to complete. It's up to the caller to wait.
- *
- * Anything else can't be resolved by this installer.
  */
 public class TestDependencyInstallerService extends DependencyInstallerService {
 
@@ -73,6 +73,11 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     private static final String TEST_SDK1_APK_NAME = "HelloWorldSdk1";
     private static final String TEST_SDK2_APK_NAME = "HelloWorldSdk2";
 
+    static final String METHOD_NAME = "method-name";
+    static final String METHOD_INSTALL_SYNC = "install-sync";
+    static final String METHOD_INSTALL_ASYNC = "install-async";
+
+    private final Set<Integer> mPendingSessionIds = new ArraySet<>();
     private String mCertDigest;
 
     @Override
@@ -80,36 +85,21 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             DependencyInstallerCallback callback) {
         Log.i(TAG, "onDependenciesRequired call received");
 
-        // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
-        // have will be same cert as our current package.
+        String methodName = getMethodName();
+
         try {
-            mCertDigest = getPackageCertDigest(getContext().getPackageName());
+            if (methodName.equals(METHOD_INSTALL_SYNC)) {
+                installDependencies(neededLibraries, callback, /*sync=*/ true);
+            } else if (methodName.equals(METHOD_INSTALL_ASYNC)) {
+                installDependencies(neededLibraries, callback, /*sync=*/ false);
+            } else {
+                throw new IllegalStateException("Unknown method name: " + methodName);
+            }
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
             callback.onFailureToResolveAllDependencies();
             return;
         }
-
-        boolean sync = true;
-        for (SharedLibraryInfo info: neededLibraries) {
-            if (isSdk1(info)) {
-                Log.i(TAG, "SDK1 missing dependency found");
-                continue;
-            }
-
-            if (isSdk2(info)) {
-                Log.i(TAG, "SDK2 missing dependency found");
-                sync = false;
-                continue;
-            }
-            // For everything else, fail.
-            Log.i(TAG, "Unsupported SDK found: " + info.getName() + " "
-                    + info.getCertDigests().get(0));
-            callback.onFailureToResolveAllDependencies();
-            return;
-        }
-
-        installDependencies(neededLibraries, callback, sync);
     }
 
     private boolean isSdk1(SharedLibraryInfo info) {
@@ -129,39 +119,60 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     }
 
     private void installDependencies(List<SharedLibraryInfo> neededLibraries,
-            DependencyInstallerCallback callback, boolean sync) {
-        try {
-            PackageInstaller installer = getPackageManager().getPackageInstaller();
-            int size = neededLibraries.size();
-            List<Integer> sessionIds = new ArrayList<>();
-            for (int i = 0; i < size; i++) {
-                SessionParams params = new SessionParams(MODE_FULL_INSTALL);
-                int sessionId = installer.createSession(params);
-                Log.i(TAG, "Session created: " + sessionId);
-                sessionIds.add(sessionId);
+            DependencyInstallerCallback callback, boolean sync) throws Exception {
+
+        mPendingSessionIds.clear();
+
+        // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
+        // have will be same cert as our current package.
+        mCertDigest = getPackageCertDigest(getContext().getPackageName());
+
+        for (SharedLibraryInfo info: neededLibraries) {
+            if (isSdk1(info)) {
+                Log.i(TAG, "SDK1 missing dependency found");
+                continue;
             }
 
-            // Return the session ids immediately
-            if (!sync) {
-                callback.onAllDependenciesResolved(sessionIds.stream().mapToInt(i->i).toArray());
+            if (isSdk2(info)) {
+                Log.i(TAG, "SDK2 missing dependency found");
+                continue;
             }
-
-            for (int i = 0; i < size; i++) {
-                int sessionId = sessionIds.get(i);
-                Session session = installer.openSession(sessionId);
-                SharedLibraryInfo info = neededLibraries.get(i);
-                if (isSdk1(info)) {
-                    writeApk(session, TEST_SDK1_APK_NAME);
-                } else if (isSdk2(info)) {
-                    writeApk(session, TEST_SDK2_APK_NAME);
-                }
-                SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionId);
-                session.commit(sender.getIntentSender(this));
-            }
-        } catch (Exception e) {
-            Log.e(TAG, e.getMessage(), e);
-            callback.onFailureToResolveAllDependencies();
+            // For everything else, fail.
+            throw new IllegalStateException("Unsupported SDK found: " + info.getName() + " "
+                    + info.getCertDigests().get(0));
         }
+
+        PackageInstaller installer = getPackageManager().getPackageInstaller();
+        int size = neededLibraries.size();
+        List<Integer> sessionIds = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            SessionParams params = new SessionParams(MODE_FULL_INSTALL);
+            int sessionId = installer.createSession(params);
+            Log.i(TAG, "Session created: " + sessionId);
+            sessionIds.add(sessionId);
+        }
+
+        // Return the session ids immediately
+        if (!sync) {
+            callback.onAllDependenciesResolved(toIntArray(sessionIds));
+        }
+
+        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionIds);
+        for (int i = 0; i < size; i++) {
+            int sessionId = sessionIds.get(i);
+            Session session = installer.openSession(sessionId);
+            SharedLibraryInfo info = neededLibraries.get(i);
+            if (isSdk1(info)) {
+                writeApk(session, TEST_SDK1_APK_NAME);
+            } else if (isSdk2(info)) {
+                writeApk(session, TEST_SDK2_APK_NAME);
+            }
+            session.commit(sender.getIntentSender(this));
+        }
+    }
+
+    private String getMethodName() {
+        return getDefaultSharedPreferences().getString(METHOD_NAME, "");
     }
 
     private void writeApk(@NonNull Session session, @NonNull String name) throws IOException {
@@ -184,27 +195,15 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         return new String(HexEncoding.encode(digest));
     }
 
-    private static Context getContext() {
-        return InstrumentationRegistry.getContext();
-    }
-
-    private static void copyStream(InputStream in, OutputStream out) throws IOException {
-        int total = 0;
-        byte[] buffer = new byte[8192];
-        int c;
-        while ((c = in.read(buffer)) != -1) {
-            total += c;
-            out.write(buffer, 0, c);
-        }
-    }
-
     private static class SyncBroadcastReceiver extends BroadcastReceiver {
         private final DependencyInstallerCallback mCallback;
-        private final int mSessionId;
+        private final int[] mSessionIds;
+        private int mPendingSessionCount;
 
-        SyncBroadcastReceiver(DependencyInstallerCallback callback, int sessionId) {
+        SyncBroadcastReceiver(DependencyInstallerCallback callback, List<Integer> sessionIds) {
             mCallback = callback;
-            mSessionId = sessionId;
+            mSessionIds = toIntArray(sessionIds);
+            mPendingSessionCount = sessionIds.size();
         }
 
         @Override
@@ -213,8 +212,12 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                     PackageInstaller.STATUS_FAILURE);
             if (status == PackageInstaller.STATUS_SUCCESS) {
-                int[] result = {mSessionId};
-                mCallback.onAllDependenciesResolved(result);
+                synchronized (this) {
+                    mPendingSessionCount--;
+                    if (mPendingSessionCount == 0) {
+                        mCallback.onAllDependenciesResolved(mSessionIds);
+                    }
+                }
             } else {
                 mCallback.onFailureToResolveAllDependencies();
             }
@@ -244,7 +247,31 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         }
     }
 
-    static String createApkPath(String baseName) {
+    private static String createApkPath(String baseName) {
         return TEST_APK_PATH + baseName + ".apk";
     }
+
+    private SharedPreferences getDefaultSharedPreferences() {
+        final Context appContext = getContext().getApplicationContext();
+        return PreferenceManager.getDefaultSharedPreferences(appContext);
+    }
+
+    private static Context getContext() {
+        return InstrumentationRegistry.getContext();
+    }
+
+    private static int[] toIntArray(List<Integer> list) {
+        return list.stream().mapToInt(i->i).toArray();
+    }
+
+    private static void copyStream(InputStream in, OutputStream out) throws IOException {
+        int total = 0;
+        byte[] buffer = new byte[8192];
+        int c;
+        while ((c = in.read(buffer)) != -1) {
+            total += c;
+            out.write(buffer, 0, c);
+        }
+    }
+
 }
