@@ -43,7 +43,7 @@ import android.companion.virtual.ActivityPolicyExemption;
 import android.companion.virtual.VirtualDeviceManager.ActivityListener;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -162,7 +162,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_removeExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -174,7 +173,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_removeExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -186,7 +184,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void defaultActivityPolicy_addExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -198,7 +195,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_addPackageExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -212,7 +209,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void customActivityPolicy_addExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -224,7 +220,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void customActivityPolicy_addPackageExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -238,7 +234,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void defaultActivityPolicy_removeExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -251,7 +246,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_removePackageExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -268,7 +263,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void customActivityPolicy_removeExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -281,7 +275,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void customActivityPolicy_removePackageExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -298,7 +292,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void customActivityPolicy_changeToDefault_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -310,7 +303,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void defaultActivityPolicy_changeToCustom_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -322,7 +314,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void defaultActivityPolicy_changePolicy_clearsExemptions() {
         // Initially, allow launches by default except for the monitored component.
@@ -353,7 +344,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_changePolicy_clearsPackageExemptions() {
         // Initially, allow launches by default except for the monitored component.
@@ -390,7 +381,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testPerDisplayActivityPolicy() {
         // Allow launches by default except for the monitored component.
@@ -438,7 +429,7 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testPerDisplayActivityPolicy_packageExemption() {
         // Allow launches by default except for the monitored component.
@@ -493,7 +484,7 @@ public class ActivityBlockingTest {
     }
 
     /** Test all combinations of default policy, package exemption and component exemption. */
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testActivityPolicy_componentAndPackageExemptions() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -619,7 +610,7 @@ public class ActivityBlockingTest {
         assertBlockedAppStreamingActivityLaunched();
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_customBlockedActivityLaunchPolicy() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -634,7 +625,7 @@ public class ActivityBlockingTest {
         assertNoActivityLaunched(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_intentSenderPassedToListener() {
         createVirtualDeviceAndTrustedDisplay();
@@ -668,7 +659,7 @@ public class ActivityBlockingTest {
         mRule.waitAndAssertActivityResumed(blockedIntent.getComponent(), DEFAULT_DISPLAY);
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_resultExpected_intentSenderNotPassedToListener() {
         createVirtualDeviceAndTrustedDisplay();
@@ -726,7 +717,7 @@ public class ActivityBlockingTest {
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(
                 mContext, display.getDisplay().getDisplayId(), intent)).isFalse();
         mRule.sendIntentToDisplay(intent, display);
-        if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
+        if (Flags.activityControlApi()) {
             verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
                     eq(display.getDisplay().getDisplayId()),
                     eq(intent.getComponent()), any(), any());

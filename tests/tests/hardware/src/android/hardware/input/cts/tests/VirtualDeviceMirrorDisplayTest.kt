@@ -16,7 +16,7 @@
 package android.hardware.input.cts.tests
 
 import android.companion.virtual.VirtualDeviceManager
-import android.companion.virtual.flags.Flags
+import android.companion.virtualdevice.flags.Flags
 import android.graphics.Point
 import android.graphics.PointF
 import android.hardware.display.DisplayManager
@@ -76,9 +76,12 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
     override fun onSetUp() {
         // TODO(b/376071769): Remove the annotation after the source display for mirroring
         // on the virtual display supports the secondary display for the visible background user.
-        Assume.assumeFalse("Since the source display for mirroring on the virtual display"
-                + " only supports the default display, it cannot be tested for the"
-                + " visible background user", mUserHelper.isVisibleBackgroundUser)
+        Assume.assumeFalse(
+            "Since the source display for mirroring on the virtual display" +
+                " only supports the default display, it cannot be tested for the" +
+                " visible background user",
+            mUserHelper.isVisibleBackgroundUser
+        )
         // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
         // display. Use the same size for the virtual display to avoid scaling the mirrored content.
         val displayMetrics = DisplayMetrics()
@@ -526,7 +529,6 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         )
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylus_touchEvent() {
         val stylus: VirtualStylus = VirtualInputDeviceCreator.createAndPrepareStylus(
@@ -614,7 +616,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         verifyEvents(expectedEvents)
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotary_scrollEvent() {
         val rotary: VirtualRotaryEncoder = VirtualInputDeviceCreator.createAndPrepareRotary(

@@ -27,6 +27,7 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
+    sdk_version: "test_current",
     static_libs: [
         "bedstead-multiuser",
         "Harrier",
@@ -34,6 +35,7 @@ android_library {
         "bedstead-testapps",
         "bedstead-accounts",
     ],
+    plugins: ["auto_annotation_plugin"],
 }
 
 android_test {

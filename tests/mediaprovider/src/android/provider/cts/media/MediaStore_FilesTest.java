@@ -208,9 +208,9 @@ public class MediaStore_FilesTest {
         mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
                 null);
         try {
-            File fileA = createMediaInDownloads(R.raw.testmp3, mVolumeName);
-            File fileB = createMediaInDownloads(R.raw.testmp3, mVolumeName);
-            File fileC = createMediaInDownloads(R.raw.testmp3, mVolumeName);
+            File fileA = createMediaInDownloads(mResolver, mVolumeName);
+            File fileB = createMediaInDownloads(mResolver, mVolumeName);
+            File fileC = createMediaInDownloads(mResolver, mVolumeName);
 
             final Bundle extras = new Bundle();
             extras.putBoolean(MediaStore.QUERY_ARG_MEDIA_STANDARD_SORT_ORDER, true);
