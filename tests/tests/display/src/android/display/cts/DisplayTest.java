@@ -1253,7 +1253,8 @@ public class DisplayTest extends TestBase {
                     break;
                 }
             }
-            assertTrue(isMatchFound);
+            assertTrue("Failed to find the refresh rate "
+                    + refreshRateLegacy + " in " + Arrays.toString(refreshRates), isMatchFound);
         }
     }
 
@@ -1278,8 +1279,8 @@ public class DisplayTest extends TestBase {
                     break;
                 }
             }
-            assertTrue("refreshRate " + refreshRate + " can not be achieved",
-                    isDivisorRateFound);
+            assertTrue("refreshRate " + refreshRate + " can not be achieved with "
+                    + rates, isDivisorRateFound);
         }
     }
 
