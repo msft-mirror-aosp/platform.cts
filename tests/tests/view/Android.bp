@@ -80,6 +80,8 @@ test_module_config {
     include_filters: ["android.view.cts.SurfaceOOMTest"],
 }
 
+// Instrumentation tests don't allow mixing package and Class
+// names in include filters, so we pull out the package here.
 test_module_config {
     name: "CtsViewTestCases_cts_input",
     base: "CtsViewTestCases",
@@ -88,17 +90,17 @@ test_module_config {
 }
 
 test_module_config {
-    name: "CtsViewTestCases_",
+    name: "CtsViewTestCases_input_related",
     base: "CtsViewTestCases",
     test_suites: ["general-tests"],
     include_filters: [
-        "android.view.cts.MotionEventTest",
         "android.view.cts.HoverTest",
-        "android.view.cts.ViewTest",
+        "android.view.cts.MotionEventTest",
         "android.view.cts.PointerCaptureTest",
-        "android.view.cts.ViewUnbufferedTest",
         "android.view.cts.TooltipTest",
-        "android.view.cts.VerifyInputEventTest",
         "android.view.cts.TouchDelegateTest",
+        "android.view.cts.VerifyInputEventTest",
+        "android.view.cts.ViewTest",
+        "android.view.cts.ViewUnbufferedTest",
     ],
 }
