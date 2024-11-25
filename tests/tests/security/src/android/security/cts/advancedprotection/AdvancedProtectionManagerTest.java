@@ -82,6 +82,9 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         };
 
         mManager.setAdvancedProtectionEnabled(true);
+        // TODO(b/369361373): Remove temporary sleep in AdvancedProtectionManagerTest to ensure
+        //  protections are enabled.
+        Thread.sleep(1000);
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
