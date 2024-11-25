@@ -24,6 +24,8 @@ import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED;
 import static android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -40,10 +42,12 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -64,6 +68,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -688,10 +693,58 @@ public class PackageInstallerCujTestBase {
     /**
      * Touch outside of the PackageInstaller dialog.
      */
-    public static void touchOutside() {
+    public static void touchOutside() throws Exception {
+        Rect bound = getPackageInstallerDialogBound();
         DisplayMetrics displayMetrics = sContext.getResources().getDisplayMetrics();
-        sUiDevice.click(displayMetrics.widthPixels / 3, displayMetrics.heightPixels / 10);
+
+        // Get the insets of system bars and displayCutOut
+        WindowManager wm = sContext.getSystemService(WindowManager.class);
+        Insets insets = wm.getCurrentWindowMetrics().getWindowInsets().getInsets(
+                displayCutout() | systemBars());
+
+        // the minimum of top is the maximum of (display height / 10) and
+        // the top of the insets + 24 * dp
+        int gapBuffer = (int) (24 * displayMetrics.density);
+        int minTop = Math.max(insets.top + gapBuffer, displayMetrics.heightPixels / 10);
+        int maxTop = bound.top - gapBuffer;
+
+        Log.d(TAG, "touchOutside heightPixels = " + displayMetrics.heightPixels
+                + ", displayMetrics.density = " + displayMetrics.density + ", insets = " + insets
+                + ", minTop = " + minTop + ", maxTop = " + maxTop);
+
+        // x is the center of the dialog
+        int x = (bound.left + bound.right) / 2;
+        // The default value of y is the (minTop + maxTop) / 2
+        int y = (minTop + maxTop) / 2;
+        if (minTop > maxTop) {
+            // the maximum of bottom is the minimum of (display height * 9 / 10) and
+            // the display height - the bottom of the insets - 24 * dp
+            int maxBottom = Math.min(displayMetrics.heightPixels - insets.bottom - gapBuffer,
+                    displayMetrics.heightPixels * 9 / 10);
+            int minBottom = bound.bottom + gapBuffer;
+            Log.d(TAG, "minBottom = " + minBottom + ", maxBottom = " + maxBottom);
+            if (minBottom > maxBottom) {
+                // close the dialog
+                pressBack();
+                throw new AssumptionViolatedException("There is no space to touch outside!");
+            }
+            y = (minBottom + maxBottom) / 2;
+        }
+
+        Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
+        sUiDevice.click(x, y);
         waitForUiIdle();
+    }
+
+    private static Rect getPackageInstallerDialogBound() {
+        UiObject2 object = sUiDevice.findObject(By.pkg(getPackageInstallerPackageName()));
+        UiObject2 parent = object.getParent();
+        while (parent != null) {
+            object = parent;
+            parent = object.getParent();
+        }
+        logUiObject(object);
+        return object.getVisibleBounds();
     }
 
     private static void waitForInstallingDialogGone() {
