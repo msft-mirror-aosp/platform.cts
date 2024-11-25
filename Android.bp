@@ -82,7 +82,10 @@ java_defaults {
     },
     lint: {
         strict_updatability_linting: false,
-        extra_check_modules: ["AndroidFrameworkLintChecker"],
+        extra_check_modules: [
+            "AndroidFrameworkLintChecker",
+            "CtsLintChecker",
+        ],
         disabled_checks: ["NonUserGetterCalled"],
     },
 }
