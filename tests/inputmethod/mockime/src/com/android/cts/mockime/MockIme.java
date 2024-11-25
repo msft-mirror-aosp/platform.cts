@@ -52,6 +52,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -1045,6 +1046,16 @@ public final class MockIme extends InputMethodService {
         private void updateBottomPaddingIfNecessary(int newPaddingBottom) {
             if (getPaddingBottom() != newPaddingBottom) {
                 setPadding(getPaddingLeft(), getPaddingTop(), getPaddingRight(), newPaddingBottom);
+
+                // TODO (b/381512167): Remove this when b/381512167 is fixed.
+                clearMeasureCacheOfAncestors(getParent());
+            }
+        }
+
+        private void clearMeasureCacheOfAncestors(ViewParent parent) {
+            while (parent instanceof View view) {
+                view.forceLayout();
+                parent = view.getParent();
             }
         }
 
@@ -1052,20 +1063,9 @@ public final class MockIme extends InputMethodService {
         public WindowInsets onApplyWindowInsets(WindowInsets insets) {
             if (insets.isConsumed()
                     || mDrawsBehindNavBar
-                    || (getSystemUiVisibility() & SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) == 0) {
+                    || (getSystemUiVisibility() & SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) != 0) {
                 // In this case we are not interested in consuming NavBar region.
                 // Make sure that the bottom padding is empty.
-                updateBottomPaddingIfNecessary(0);
-                return insets;
-            }
-
-            // In some cases the bottom system window inset is not a navigation bar. Wear devices
-            // that have bottom chin are examples.  For now, assume that it's a navigation bar if it
-            // has the same height as the root window's stable bottom inset.
-            final WindowInsets rootWindowInsets = getRootWindowInsets();
-            if (rootWindowInsets != null && (rootWindowInsets.getStableInsetBottom()
-                    != insets.getSystemWindowInsetBottom())) {
-                // This is probably not a NavBar.
                 updateBottomPaddingIfNecessary(0);
                 return insets;
             }
