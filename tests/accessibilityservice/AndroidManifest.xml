@@ -29,6 +29,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+    <uses-permission android:name="android.permission.MANAGE_ACTIVITY_TASKS" />
 
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
@@ -59,6 +60,10 @@
         <activity android:label="@string/accessibility_text_traversal_test_activity"
              android:name=".activities.AccessibilityTextTraversalActivity"
              android:screenOrientation="locked"/>
+
+        <activity android:label="@string/accessibility_text_view_test_activity"
+            android:name=".activities.AccessibilityTextViewActivity"
+            android:screenOrientation="locked"/>
 
         <!-- Use windowSoftInputMode STATE_HIDDEN so that the IME does not launch
              when opening the activity, which confuses the test window checks. -->

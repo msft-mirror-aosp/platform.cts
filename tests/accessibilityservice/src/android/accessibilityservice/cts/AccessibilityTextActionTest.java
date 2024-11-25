@@ -14,12 +14,18 @@
 
 package android.accessibilityservice.cts;
 
+import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScreenOrBust;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_START_INDEX;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -34,14 +41,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.cts.activities.AccessibilityTextTraversalActivity;
+import android.accessibilityservice.cts.activities.AccessibilityTextViewActivity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Message;
 import android.os.Parcelable;
+import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -56,17 +68,20 @@ import android.text.style.URLSpan;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.accessibility.AccessibilityRequestPreparer;
+import android.view.accessibility.AccessibilityWindowInfo;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
@@ -83,7 +98,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -315,18 +329,18 @@ public class AccessibilityTextActionTest {
     @Test
     @FlakyTest
     public void testTextLocations_textOutsideOfViewBounds_locationsShouldBeNull() {
-        testTextOusideOfViewBounds_locationsInWindowsNull(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+        testTextOutsideOfViewBounds_locationsInWindowsNull(EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
     }
 
     @Test
     @FlakyTest
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
     public void testTextLocations_textOutsideOfViewBounds_locationsInWindowShouldBeNull() {
-        testTextOusideOfViewBounds_locationsInWindowsNull(
+        testTextOutsideOfViewBounds_locationsInWindowsNull(
                 EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
     }
 
-    private void testTextOusideOfViewBounds_locationsInWindowsNull(String extraDataKey) {
+    private void testTextOutsideOfViewBounds_locationsInWindowsNull(String extraDataKey) {
         final EditText editText = mActivity.findViewById(R.id.edit);
         makeTextViewVisibleAndSetText(editText, mActivity.getString(R.string.android_wiki));
 
@@ -341,8 +355,7 @@ public class AccessibilityTextActionTest {
         Parcelable[] parcelables = extras.getParcelableArray(
                 extraDataKey, RectF.class);
         assertNotNull(parcelables);
-        final RectF[] locationsBeforeScroll = Arrays.copyOf(
-                parcelables, parcelables.length, RectF[].class);
+        final RectF[] locationsBeforeScroll = (RectF[]) parcelables;
         assertEquals(text.getText().length(), locationsBeforeScroll.length);
         // The first character should be visible immediately
         assertFalse(locationsBeforeScroll[0].isEmpty());
@@ -372,8 +385,7 @@ public class AccessibilityTextActionTest {
         parcelables = extras
                 .getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
-        final RectF[] locationsAfterScroll = Arrays.copyOf(
-                parcelables, parcelables.length, RectF[].class);
+        final RectF[] locationsAfterScroll = (RectF[]) parcelables;
         // Now the first character should be off the screen
         assertNull(locationsAfterScroll[0]);
         // The first character that was off the screen should now be on it
@@ -521,9 +533,123 @@ public class AccessibilityTextActionTest {
 
         final Parcelable[] parcelables = extras.getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
-        final RectF[] locations = Arrays.copyOf(parcelables, parcelables.length, RectF[].class);
+        final RectF[] locations = (RectF[]) parcelables;
         assertEquals(locations.length,
                 AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_MAX_LENGTH);
+    }
+
+    @Test
+    public void testTextLocations_inFreeform_screenCoordinates() throws Exception {
+        final int top = 100;
+        final int left = 200;
+        try (ActivityScenario<AccessibilityTextViewActivity> scenario =
+                launchTextViewActivityInFreeform(left, top)) {
+            scenario.onActivity(
+                    textViewActivity -> {
+                        // Waits for the node to be on-screen.
+                        final AccessibilityNodeInfo info =
+                                findNodeByText(textViewActivity.getString(R.string.foo_bar_baz));
+                        Bundle extras =
+                                waitForExtraTextData(info, EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+                        final Parcelable[] parcelables =
+                                extras.getParcelableArray(
+                                        EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+                        assertThat(parcelables).isNotNull();
+                        final RectF[] charLocations = (RectF[]) parcelables;
+                        assertThat(charLocations).hasLength(info.getText().length());
+
+                        Rect windowBounds = new Rect();
+                        info.getWindow().getBoundsInScreen(windowBounds);
+                        assertThat(windowBounds.left).isWithin(1).of(left);
+                        assertThat(windowBounds.top).isWithin(1).of(top);
+
+                        Rect nodeBoundsInScreen = new Rect();
+                        info.getBoundsInScreen(nodeBoundsInScreen);
+
+                        for (RectF location : charLocations) {
+                            // The character locations are within the window's location
+                            // when both are represented in screen coordinates.
+                            assertWithMessage(
+                                            "windowBounds %s contains character location %s",
+                                            windowBounds, location)
+                                    .that(new RectF(windowBounds).contains(location))
+                                    .isTrue();
+
+                            // Double-check that the screen coordinates of the character are within
+                            // the screen coordinates of the node.
+                            assertWithMessage(
+                                            "nodeBoundsInScreen %s contains character location %s",
+                                            nodeBoundsInScreen, location)
+                                    .that(new RectF(nodeBoundsInScreen).contains(location))
+                                    .isTrue();
+                        }
+                    });
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocations_inFreeform_windowCoordinates() throws Exception {
+        final int top = 100;
+        final int left = 200;
+        try (ActivityScenario<AccessibilityTextViewActivity> scenario =
+                launchTextViewActivityInFreeform(left, top)) {
+            scenario.onActivity(
+                    textViewActivity -> {
+                        // Waits for the node to be on-screen.
+                        final AccessibilityNodeInfo info =
+                                findNodeByText(textViewActivity.getString(R.string.foo_bar_baz));
+                        Bundle extras =
+                                waitForExtraTextData(
+                                        info, EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+                        final Parcelable[] parcelables =
+                                extras.getParcelableArray(
+                                        EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY,
+                                        RectF.class);
+                        assertThat(parcelables).isNotNull();
+                        final RectF[] charLocations = (RectF[]) parcelables;
+                        assertThat(charLocations).hasLength(info.getText().length());
+
+                        // Check the window is in the right part of the screen.
+                        Rect windowBounds = new Rect();
+                        info.getWindow().getBoundsInScreen(windowBounds);
+                        assertThat(windowBounds.left).isWithin(1).of(left);
+                        assertThat(windowBounds.top).isWithin(1).of(top);
+
+                        // The first primary location should be at the left edge of the window.
+                        assertThat(charLocations[0].left).isLessThan(1);
+
+                        Rect nodeBoundsInWindow = new Rect();
+                        info.getBoundsInWindow(nodeBoundsInWindow);
+
+                        for (RectF location : charLocations) {
+                            // Check that the window coordinates of the character are within the
+                            // window coordinates of the node.
+                            assertWithMessage(
+                                            "nodeBoundsInWindow %s contains character location %s",
+                                            nodeBoundsInWindow, location)
+                                    .that(new RectF(nodeBoundsInWindow).contains(location))
+                                    .isTrue();
+                        }
+                    });
+        }
+    }
+
+    private ActivityScenario<AccessibilityTextViewActivity> launchTextViewActivityInFreeform(
+            int left, int top) {
+        assumeTrue(
+                sInstrumentation
+                        .getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
+        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+        mActivityRule.getScenario().close();
+
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FREEFORM);
+        options.setLaunchBounds(new Rect(left, top, left + 400, top + 400));
+        options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
+        return ActivityScenario.launch(AccessibilityTextViewActivity.class, options.toBundle());
     }
 
     @Test
@@ -634,7 +760,7 @@ public class AccessibilityTextActionTest {
         Bundle extras = waitForExtraTextData(info, extraDataKey);
         final Parcelable[] parcelables = extras.getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
-        final RectF[] locations = Arrays.copyOf(parcelables, parcelables.length, RectF[].class);
+        final RectF[] locations = (RectF[]) parcelables;
         assertEquals(info.getText().length(), locations.length);
         // The text should all be on one line, running left to right
         for (int i = 0; i < locations.length; i++) {
@@ -726,5 +852,33 @@ public class AccessibilityTextActionTest {
         }
 
         return info.getExtraRenderingInfo();
+    }
+
+    private AccessibilityNodeInfo findNodeByText(String text) {
+        AccessibilityServiceInfo serviceInfo = sUiAutomation.getServiceInfo();
+        serviceInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        sUiAutomation.setServiceInfo(serviceInfo);
+
+        for (int attempts = 0; attempts < 5; attempts++) {
+            // Find the AccessibilityNodeInfo within a window with the text.
+            List<AccessibilityWindowInfo> windows = sUiAutomation.getWindows();
+            int numWindows = windows.size();
+
+            for (int i = 0; i < numWindows; i++) {
+                AccessibilityWindowInfo window = windows.get(i);
+                AccessibilityNodeInfo root = window.getRoot();
+                if (root == null) {
+                    continue;
+                }
+                List<AccessibilityNodeInfo> infos = root.findAccessibilityNodeInfosByText(text);
+                if (!infos.isEmpty()) {
+                    return infos.getFirst();
+                }
+            }
+            // Wait for the system to settle.
+            SystemClock.sleep(1000);
+        }
+        fail("Unable to find AccessibilityNodeInfo with text " + text);
+        return null;
     }
 }
