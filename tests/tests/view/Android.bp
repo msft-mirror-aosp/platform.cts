@@ -54,11 +54,13 @@ android_test {
         "flag-junit",
         "android.view.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.hardware.input-aconfig-java",
         "com.android.input.flags-aconfig-java",
         "ui-trace-collector",
         "collector-device-lib",
         "hwui_flags_java_lib",
         "framework_graphics_flags_java_lib",
+        "Harrier",
     ],
 
     jni_libs: [

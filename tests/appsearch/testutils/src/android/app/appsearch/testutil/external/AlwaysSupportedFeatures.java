@@ -49,9 +49,13 @@ public class AlwaysSupportedFeatures implements Features {
                 // fall through
             case Features.LIST_FILTER_HAS_PROPERTY_FUNCTION:
                 // fall through
+            case Features.LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION:
+                // fall through
             case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
                 // fall through
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
+                // fall through
+            case Features.SCHEMA_EMBEDDING_QUANTIZATION:
                 // fall through
             case Features.SEARCH_SPEC_GROUPING_TYPE_PER_SCHEMA:
                 // fall through
@@ -84,6 +88,10 @@ public class AlwaysSupportedFeatures implements Features {
             case Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS:
                 // fall through
             case Features.BLOB_STORAGE:
+                // fall through
+            case Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS:
+                // fall through
+            case Features.SCHEMA_SCORABLE_PROPERTY_CONFIG:
                 return true;
             default:
                 return false;

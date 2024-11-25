@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 
 import camera_properties_utils
@@ -35,7 +36,8 @@ _TEST_REQUIRED_MPC = 33
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 # Wider zoom ratio range will be tested by test_zoom_tele
-_WIDE_ZOOM_RATIO_MAX = 2.0
+_WIDE_ZOOM_RATIO_MAX = 2.2
+_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 
 class ZoomTest(its_base_test.ItsBaseTest):
@@ -133,6 +135,16 @@ class ZoomTest(its_base_test.ItsBaseTest):
           cap_physical_id = (
               cap['metadata']['android.logicalMultiCamera.activePhysicalId']
           )
+          cap_zoom_ratio = float(cap['metadata']['android.control.zoomRatio'])
+          if not math.isclose(cap_zoom_ratio, z,
+                              rel_tol=_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL):
+            raise AssertionError(
+                'Request and result zoom ratios too different! '
+                f'Request zoom ratio: {z}. '
+                f'Result zoom ratio: {cap_zoom_ratio}. ',
+                f'RTOL: {_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL}'
+            )
+
           physical_ids.add(cap_physical_id)
           logging.debug('Physical IDs: %s', physical_ids)
 
@@ -172,7 +184,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           test_data.append(
               zoom_capture_utils.ZoomTestData(
-                  result_zoom=z,
+                  result_zoom=cap_zoom_ratio,
                   radius_tol=radius_tol,
                   offset_tol=offset_tol,
                   focal_length=cap_fl,

@@ -30,6 +30,7 @@ import static android.keystore.cts.AuthorizationList.KM_PURPOSE_DECRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_ENCRYPT;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_SIGN;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_VERIFY;
+import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_UNVERIFIED;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
@@ -221,8 +222,9 @@ public class KeyAttestationTest {
             return;
         }
 
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
 
         final int[] purposes = {
                 KM_PURPOSE_SIGN, KM_PURPOSE_VERIFY, KM_PURPOSE_SIGN | KM_PURPOSE_VERIFY
@@ -235,15 +237,15 @@ public class KeyAttestationTest {
 
         if (isStrongBox) {
             // StrongBox only supports secp256r1 keys.
-            curves = new String[] {"secp256r1"};
-            keySizes = new int[] {256};
-            challenges = new byte[][] {
+            curves = new String[]{"secp256r1"};
+            keySizes = new int[]{256};
+            challenges = new byte[][]{
                     // Empty challange is not accepted by StrongBox.
                     "challenge".getBytes(), // short challenge
                     new byte[128], // long challenge
             };
         } else {
-            curves = new String[] {
+            curves = new String[]{
                     "secp224r1", "secp256r1", "secp384r1", "secp521r1"
             };
             keySizes = new int[]{
@@ -260,7 +262,8 @@ public class KeyAttestationTest {
             for (int challengeIndex = 0; challengeIndex < challenges.length; ++challengeIndex) {
                 for (int purposeIndex = 0; purposeIndex < purposes.length; ++purposeIndex) {
                     for (boolean includeValidityDates : includeValidityDatesValues) {
-                        for (boolean devicePropertiesAttestation : devicePropertiesAttestationValues) {
+                        for (boolean devicePropertiesAttestation :
+                                devicePropertiesAttestationValues) {
                             try {
                                 testEcAttestation(challenges[challengeIndex], includeValidityDates,
                                         curves[curveIndex], keySizes[curveIndex],
@@ -299,8 +302,8 @@ public class KeyAttestationTest {
         }
         String assertMessage = String.format(
                 "The KeyMint implementation may only return INVALID_INPUT_LENGTH or "
-                + "CANNOT_ATTEST_IDSs as errors when the attestation challenge is "
-                + "too large (error code was %d, attestation properties %b)",
+                        + "CANNOT_ATTEST_IDSs as errors when the attestation challenge is "
+                        + "too large (error code was %d, attestation properties %b)",
                 errorCode, devicePropertiesAttestation);
         assertTrue(assertMessage, expectedErrs.contains(errorCode));
     }
@@ -393,7 +396,7 @@ public class KeyAttestationTest {
             keyStore.load(null);
 
             try {
-                Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+                Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
                 assertEquals(1, certificates.length);
 
                 X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -410,22 +413,23 @@ public class KeyAttestationTest {
             return;
         }
 
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
 
         String keystoreAlias = "test_key";
         Date now = new Date();
         Date originationEnd = new Date(now.getTime() + ORIGINATION_TIME_OFFSET);
         Date consumptionEnd = new Date(now.getTime() + CONSUMPTION_TIME_OFFSET);
         KeyGenParameterSpec.Builder builder =
-            new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
-                    .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
-                    .setDigests(TestUtils.getDigestsForKeyMintImplementation(expectStrongBox))
-                    .setAttestationChallenge(new byte[128])
-                    .setKeyValidityStart(now)
-                    .setKeyValidityForOriginationEnd(originationEnd)
-                    .setKeyValidityForConsumptionEnd(consumptionEnd)
-                    .setIsStrongBoxBacked(expectStrongBox);
+                new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
+                        .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
+                        .setDigests(TestUtils.getDigestsForKeyMintImplementation(expectStrongBox))
+                        .setAttestationChallenge(new byte[128])
+                        .setKeyValidityStart(now)
+                        .setKeyValidityForOriginationEnd(originationEnd)
+                        .setKeyValidityForConsumptionEnd(consumptionEnd)
+                        .setIsStrongBoxBacked(expectStrongBox);
 
         generateKeyPair(KEY_ALGORITHM_EC, builder.build());
 
@@ -433,7 +437,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, expectStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -456,15 +460,17 @@ public class KeyAttestationTest {
     @Test
     @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testEcAttestation_DeviceLockedStrongbox() throws Exception {
-        if (!TestUtils.hasStrongBox(getContext()))
+        if (!TestUtils.hasStrongBox(getContext())) {
             return;
+        }
         testEcAttestation_DeviceLocked(true /* expectStrongBox */);
     }
 
     @Test
     public void testAttestationKmVersionMatchesFeatureVersion() throws Exception {
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
         assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         testAttestationKmVersionMatchesFeatureVersion(false);
@@ -472,8 +478,9 @@ public class KeyAttestationTest {
 
     @Test
     public void testAttestationKmVersionMatchesFeatureVersionStrongBox() throws Exception {
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
         assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         int keyStoreFeatureVersionStrongBox =
@@ -511,7 +518,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, isStrongBox /* expectStrongBox */);
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
@@ -585,6 +592,7 @@ public class KeyAttestationTest {
     public void testEcAttestation_UniqueIdWorksWithCorrectPermission() throws Exception {
         testEcAttestation_UniqueIdWorksWithCorrectPermission(false);
     }
+
     @Test
     public void testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox()
             throws Exception {
@@ -612,10 +620,11 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try (PermissionContext c = TestApis.permissions().withPermission(
-                  "android.permission.REQUEST_UNIQUE_ID_ATTESTATION")) {
+                "android.permission.REQUEST_UNIQUE_ID_ATTESTATION")) {
             generateKeyPair(KEY_ALGORITHM_EC, spec);
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
-            Attestation attestation = Attestation.loadFromCertificate((X509Certificate) certificates[0]);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
+            Attestation attestation = Attestation.loadFromCertificate(
+                    (X509Certificate) certificates[0]);
             byte[] firstUniqueId = attestation.getUniqueId();
             assertTrue("UniqueId must not be empty", firstUniqueId.length > 0);
 
@@ -638,8 +647,7 @@ public class KeyAttestationTest {
                     secondUniqueId = null;
                 }
             }
-            assertTrue("UniqueIds must be consistent",
-                    Arrays.equals(firstUniqueId, secondUniqueId));
+            assertArrayEquals("UniqueIds must be consistent", firstUniqueId, secondUniqueId);
 
         } finally {
             keyStore.deleteEntry(keystoreAlias);
@@ -669,8 +677,9 @@ public class KeyAttestationTest {
             return;
         }
 
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
 
         final int[] purposes = {
                 PURPOSE_SIGN | PURPOSE_VERIFY,
@@ -695,12 +704,12 @@ public class KeyAttestationTest {
 
         if (isStrongBox) {
             // StrongBox has to support 2048 bit key.
-            keySizes = new int[] {2048};
-            challenges = new byte[][] {
+            keySizes = new int[]{2048};
+            challenges = new byte[][]{
                     "challenge".getBytes(), // short challenge
                     new byte[128] // long challenge
             };
-            encryptionPaddingModes = new String [][] {
+            encryptionPaddingModes = new String[][]{
                     {
                             ENCRYPTION_PADDING_RSA_OAEP,
                     },
@@ -781,7 +790,7 @@ public class KeyAttestationTest {
                         null /* paddingModes; may be empty because we'll never test them */,
                         devicePropertiesAttestation, isStrongBox);
                 fail("Attestation challenges larger than 128 bytes should be rejected");
-            } catch(ProviderException e){
+            } catch (ProviderException e) {
                 KeyStoreException cause = (KeyStoreException) e.getCause();
                 assertAttestationKeyMintError(cause, devicePropertiesAttestation);
                 assertPublicAttestationError(cause, devicePropertiesAttestation);
@@ -824,7 +833,7 @@ public class KeyAttestationTest {
             keyStore.load(null);
 
             try {
-                Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+                Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
                 assertEquals(1, certificates.length);
 
                 X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -840,21 +849,22 @@ public class KeyAttestationTest {
             return;
         }
 
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;
+        }
 
         String keystoreAlias = "test_key";
         Date now = new Date();
         Date originationEnd = new Date(now.getTime() + ORIGINATION_TIME_OFFSET);
         Date consumptionEnd = new Date(now.getTime() + CONSUMPTION_TIME_OFFSET);
         KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
-                  .setDigests(TestUtils.getDigestsForKeyMintImplementation(expectStrongBox))
-                  .setAttestationChallenge("challenge".getBytes())
-                  .setKeyValidityStart(now)
-                  .setKeyValidityForOriginationEnd(originationEnd)
-                  .setKeyValidityForConsumptionEnd(consumptionEnd)
-                  .setIsStrongBoxBacked(expectStrongBox)
-                  .build();
+                .setDigests(TestUtils.getDigestsForKeyMintImplementation(expectStrongBox))
+                .setAttestationChallenge("challenge".getBytes())
+                .setKeyValidityStart(now)
+                .setKeyValidityForOriginationEnd(originationEnd)
+                .setKeyValidityForConsumptionEnd(consumptionEnd)
+                .setIsStrongBoxBacked(expectStrongBox)
+                .build();
 
         generateKeyPair(KEY_ALGORITHM_RSA, spec);
 
@@ -862,7 +872,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, expectStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -885,8 +895,9 @@ public class KeyAttestationTest {
     @Test
     @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLockedStrongbox() throws Exception {
-        if (!TestUtils.hasStrongBox(getContext()))
+        if (!TestUtils.hasStrongBox(getContext())) {
             return;
+        }
 
         testRsaAttestation_DeviceLocked(true /* expectStrongbox */);
     }
@@ -1071,7 +1082,7 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("deprecation")
     private void testCurve25519Attestations(String curve, byte[] challenge,
-                                         int purpose, boolean devicePropertiesAttestation)
+            int purpose, boolean devicePropertiesAttestation)
             throws Exception {
         Log.i(TAG, curve + " curve key attestation with: "
                 + " / challenge " + Arrays.toString(challenge)
@@ -1104,7 +1115,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate []certificates = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, false /* expectStrongBox */);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -1134,7 +1145,7 @@ public class KeyAttestationTest {
         Date originationEnd = new Date(startTime.getTime() + ORIGINATION_TIME_OFFSET);
         Date consumptionEnd = new Date(startTime.getTime() + CONSUMPTION_TIME_OFFSET);
         KeyGenParameterSpec.Builder builder =
-            new KeyGenParameterSpec.Builder(keystoreAlias, purposes)
+                new KeyGenParameterSpec.Builder(keystoreAlias, purposes)
                         .setKeySize(keySize)
                         .setDigests(TestUtils.getDigestsForKeyMintImplementation(isStrongBox))
                         .setAttestationChallenge(challenge)
@@ -1161,7 +1172,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, isStrongBox /* expectStrongBox */);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -1172,7 +1183,7 @@ public class KeyAttestationTest {
                             ? new HashSet<String>() : ImmutableSet.copyOf(paddingModes));
             checkKeyUsage(attestationCert, purposes);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
-                includeValidityDates, devicePropertiesAttestation, attestation);
+                    includeValidityDates, devicePropertiesAttestation, attestation);
         } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
@@ -1210,11 +1221,11 @@ public class KeyAttestationTest {
         Date consumptionEnd = new Date(startTime.getTime() + CONSUMPTION_TIME_OFFSET);
         KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(keystoreAlias,
                 purposes)
-                        .setAlgorithmParameterSpec(new ECGenParameterSpec(ecCurve))
-                        .setDigests(TestUtils.getDigestsForKeyMintImplementation(isStrongBox))
-                        .setAttestationChallenge(challenge)
-                        .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation)
-                        .setIsStrongBoxBacked(isStrongBox);
+                .setAlgorithmParameterSpec(new ECGenParameterSpec(ecCurve))
+                .setDigests(TestUtils.getDigestsForKeyMintImplementation(isStrongBox))
+                .setAttestationChallenge(challenge)
+                .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation)
+                .setIsStrongBoxBacked(isStrongBox);
 
         if (includeValidityDates) {
             builder.setKeyValidityStart(startTime)
@@ -1228,7 +1239,7 @@ public class KeyAttestationTest {
         keyStore.load(null);
 
         try {
-            Certificate certificates[] = keyStore.getCertificateChain(keystoreAlias);
+            Certificate[] certificates = keyStore.getCertificateChain(keystoreAlias);
             verifyCertificateChain(certificates, isStrongBox /* expectStrongBox */);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
@@ -1237,7 +1248,7 @@ public class KeyAttestationTest {
             checkEcKeyDetails(attestationCert, attestation, ecCurve, keySize);
             checkKeyUsage(attestationCert, purposes);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
-                includeValidityDates, devicePropertiesAttestation, attestation);
+                    includeValidityDates, devicePropertiesAttestation, attestation);
         } finally {
             keyStore.deleteEntry(keystoreAlias);
         }
@@ -1279,7 +1290,7 @@ public class KeyAttestationTest {
         if (devicePropertiesAttestation) {
             final String platformReportedBrand =
                     TestUtils.isPropertyEmptyOrUnknown(Build.BRAND_FOR_ATTESTATION)
-                    ? Build.BRAND : Build.BRAND_FOR_ATTESTATION;
+                            ? Build.BRAND : Build.BRAND_FOR_ATTESTATION;
             assertThat(keyDetailsList.getBrand()).isEqualTo(platformReportedBrand);
             final String platformReportedDevice =
                     TestUtils.isPropertyEmptyOrUnknown(Build.DEVICE_FOR_ATTESTATION)
@@ -1287,7 +1298,7 @@ public class KeyAttestationTest {
             assertThat(keyDetailsList.getDevice()).isEqualTo(platformReportedDevice);
             final String platformReportedProduct =
                     TestUtils.isPropertyEmptyOrUnknown(Build.PRODUCT_FOR_ATTESTATION)
-                    ? Build.PRODUCT : Build.PRODUCT_FOR_ATTESTATION;
+                            ? Build.PRODUCT : Build.PRODUCT_FOR_ATTESTATION;
             assertThat(keyDetailsList.getProduct()).isEqualTo(platformReportedProduct);
             final String platformReportedManufacturer =
                     TestUtils.isPropertyEmptyOrUnknown(Build.MANUFACTURER_FOR_ATTESTATION)
@@ -1295,7 +1306,7 @@ public class KeyAttestationTest {
             assertThat(keyDetailsList.getManufacturer()).isEqualTo(platformReportedManufacturer);
             final String platformReportedModel =
                     TestUtils.isPropertyEmptyOrUnknown(Build.MODEL_FOR_ATTESTATION)
-                    ? Build.MODEL : Build.MODEL_FOR_ATTESTATION;
+                            ? Build.MODEL : Build.MODEL_FOR_ATTESTATION;
             assertThat(keyDetailsList.getModel()).isEqualTo(platformReportedModel);
         } else {
             assertNull(keyDetailsList.getBrand());
@@ -1454,8 +1465,8 @@ public class KeyAttestationTest {
 
         // A bug in Android S leads Android S devices with KeyMint1 not to add a creationDateTime.
         boolean creationDateTimeBroken =
-            Build.VERSION.SDK_INT == Build.VERSION_CODES.S &&
-            attestation.getKeymasterVersion() == Attestation.KM_VERSION_KEYMINT_1;
+                Build.VERSION.SDK_INT == Build.VERSION_CODES.S
+                        && attestation.getKeymasterVersion() == Attestation.KM_VERSION_KEYMINT_1;
 
         if (!creationDateTimeBroken) {
             assertNull(nonValidityPeriodList.getCreationDateTime());
@@ -1463,19 +1474,19 @@ public class KeyAttestationTest {
             Date creationDateTime = validityPeriodList.getCreationDateTime();
 
             boolean requireCreationDateTime =
-                attestation.getKeymasterVersion() >= Attestation.KM_VERSION_KEYMINT_1;
+                    attestation.getKeymasterVersion() >= Attestation.KM_VERSION_KEYMINT_1;
 
             if (requireCreationDateTime || creationDateTime != null) {
                 assertNotNull(creationDateTime);
 
                 assertTrue("Test start time (" + startTime.getTime() + ") and key creation time (" +
-                        creationDateTime.getTime() + ") should be close",
+                                creationDateTime.getTime() + ") should be close",
                         Math.abs(creationDateTime.getTime() - startTime.getTime()) <= 2000);
 
                 // Allow 1 second leeway in case of nearest-second rounding.
                 Date now = new Date();
                 assertTrue("Key creation time (" + creationDateTime.getTime() + ") must be now (" +
-                        now.getTime() + ") or earlier.",
+                                now.getTime() + ") or earlier.",
                         now.getTime() >= (creationDateTime.getTime() - 1000));
             }
         }
@@ -1486,17 +1497,17 @@ public class KeyAttestationTest {
             Date usageExpirationDateTime = validityPeriodList.getUsageExpireDateTime();
 
             assertNotNull("Active date time should not be null in SoftwareEnforced"
-                            + " authorization list.", activeDateTime);
+                    + " authorization list.", activeDateTime);
             assertNotNull("Origination expiration date time should not be null in"
                             + " SoftwareEnforced authorization list.",
                     originationExpirationDateTime);
             assertNotNull("Usage expiration date time should not be null in SoftwareEnforced"
-                            + " authorization list.", usageExpirationDateTime);
+                    + " authorization list.", usageExpirationDateTime);
 
             assertNull("Active date time must not be included in TeeEnforced authorization list.",
                     nonValidityPeriodList.getActiveDateTime());
             assertNull("Origination date time must not be included in TeeEnforced authorization"
-                            + "list.", nonValidityPeriodList.getOriginationExpireDateTime());
+                    + "list.", nonValidityPeriodList.getOriginationExpireDateTime());
             assertNull("Usage expiration date time must not be included in TeeEnforced"
                             + " authorization list.",
                     nonValidityPeriodList.getUsageExpireDateTime());
@@ -1521,7 +1532,7 @@ public class KeyAttestationTest {
             teeEnforcedDigests = ImmutableSet.of();
         }
 
-        Set<Integer> allDigests = ImmutableSet.<Integer> builder()
+        Set<Integer> allDigests = ImmutableSet.<Integer>builder()
                 .addAll(softwareEnforcedDigests)
                 .addAll(teeEnforcedDigests)
                 .build();
@@ -1541,9 +1552,9 @@ public class KeyAttestationTest {
             if (attestation.getKeymasterVersion() == 1) {
                 // KM1 implementations may not support SHA512 in the TEE
                 assertTrue("KeyMaster version 1 may not support SHA256, in which case it must be"
-                        + " software-emulated.",
+                                + " software-emulated.",
                         softwareEnforcedDigests.contains(KM_DIGEST_SHA_2_512)
-                        || teeEnforcedDigests.contains(KM_DIGEST_SHA_2_512));
+                                || teeEnforcedDigests.contains(KM_DIGEST_SHA_2_512));
 
                 assertThat("Tee enforced digests should have digests {none and SHA2-256}",
                         teeEnforcedDigests, hasItems(KM_DIGEST_NONE, KM_DIGEST_SHA_2_256));
@@ -1588,7 +1599,7 @@ public class KeyAttestationTest {
         assertThat("Attestation version must be one of: {1, 2, 3, 4, 100, 200, 300, 400}",
                 attestation.getAttestationVersion(),
                 either(is(1)).or(is(2)).or(is(3)).or(is(4))
-                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                        .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
         AuthorizationList teeEnforced = attestation.getTeeEnforced();
         AuthorizationList softwareEnforced = attestation.getSoftwareEnforced();
@@ -1602,8 +1613,8 @@ public class KeyAttestationTest {
                         attestation.getKeymasterSecurityLevel(),
                         is(KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT));
                 assertThat("KeyMaster version is not valid.", attestation.getKeymasterVersion(),
-                           either(is(2)).or(is(3)).or(is(4)).or(is(41))
-                           .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
+                        either(is(2)).or(is(3)).or(is(4)).or(is(41))
+                                .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 assertThat("TEE enforced OS version and system OS version must be same.",
@@ -1673,13 +1684,16 @@ public class KeyAttestationTest {
             default:
                 // TEE attestation has been required since Android 7.0.
                 fail("Unexpected attestation security level: " +
-                     attestation.securityLevelToString(attestationSecurityLevel));
+                        Attestation.securityLevelToString(attestationSecurityLevel));
                 break;
         }
     }
 
     private void checkVerifiedBootHash(byte[] verifiedBootHash) {
         assertNotNull(verifiedBootHash);
+        assertEquals(32, verifiedBootHash.length);
+        checkEntropy(verifiedBootHash, "rootOfTrust.verifiedBootHash" /* dataName */);
+
         StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
         for (byte b : verifiedBootHash) {
             hexVerifiedBootHash.append(String.format("%02x", b));
@@ -1696,61 +1710,78 @@ public class KeyAttestationTest {
         assertNotNull(rootOfTrust);
         assertNotNull(rootOfTrust.getVerifiedBootKey());
         assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                   " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
-            checkEntropy(rootOfTrust.getVerifiedBootKey());
+            checkEntropy(rootOfTrust.getVerifiedBootKey(),
+                    "rootOfTrust.verifiedBootKey" /* dataName */);
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
-            if (PropertyUtil.getFirstApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Verified boot hash was not previously checked in CTS, so set an api level check
-                // to avoid running into waiver issues.
-                return;
+
+            if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // The Verified Boot hash was not previously checked in CTS, so set an API level
+                // check to avoid running into waiver issues.
+                checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
             }
-            assertNotNull(rootOfTrust.getVerifiedBootHash());
-            assertEquals(32, rootOfTrust.getVerifiedBootHash().length);
-            checkEntropy(rootOfTrust.getVerifiedBootHash());
-            checkVerifiedBootHash(rootOfTrust.getVerifiedBootHash());
+        } else {
+            // We expect exactly one of these combinations of values because either:
+            //   1) CTS is running on a signed bootloader-locked build verified with the OEM's root
+            //      of trust, so the Verified Boot state is KM_VERIFIED_BOOT_VERIFIED.
+            //   OR
+            //   2) CTS is running on a signed GSI. This requires an unlocked bootloader and
+            //      therefore a chain of trust cannot be established, so the Verified Boot state is
+            //      KM_VERIFIED_BOOT_UNVERIFIED.
+            // Builds with a custom root of trust (which would result in
+            // KM_VERIFIED_BOOT_SELF_SIGNED and could have a locked or unlocked bootloader)
+            // shouldn't pass CTS since they don't comply with CDD requirement 9.10 [C-1-3] which
+            // requires use of the fused OEM root of trust for Verified Boot.
+            boolean isLocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_VERIFIED
+                    && rootOfTrust.isDeviceLocked();
+            boolean isUnlocked = rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_UNVERIFIED
+                    && !rootOfTrust.isDeviceLocked();
+            assertTrue("Unexpected combination of device locked state and Verified Boot "
+                    + "state.", isLocked || isUnlocked);
         }
     }
 
-    private void checkEntropy(byte[] entropyData) {
-        byte[] entropyDataCopy = Arrays.copyOf(entropyData, entropyData.length);
-        assertTrue("Failed Shannon entropy check", checkShannonEntropy(entropyDataCopy));
-        assertTrue("Failed BiEntropy check", checkTresBiEntropy(entropyDataCopy));
+    private void checkEntropy(byte[] data, String dataName) {
+        byte[] dataCopy = Arrays.copyOf(data, data.length);
+        assertTrue("Failed Shannon entropy check", checkShannonEntropy(dataCopy, dataName));
+        assertTrue("Failed BiEntropy check", checkTresBiEntropy(dataCopy, dataName));
     }
 
-    private boolean checkShannonEntropy(byte[] verifiedBootKey) {
-        double probabilityOfSetBit = countSetBits(verifiedBootKey) / (double)(verifiedBootKey.length * 8);
-        return calculateShannonEntropy(probabilityOfSetBit) > 0.8;
+    private boolean checkShannonEntropy(byte[] data, String dataName) {
+        double probabilityOfSetBit = countSetBits(data) / (double) (data.length * 8);
+        return calculateShannonEntropy(probabilityOfSetBit, dataName) > 0.8;
     }
 
-    private double calculateShannonEntropy(double probabilityOfSetBit) {
+    private double calculateShannonEntropy(double probabilityOfSetBit, String dataName) {
         if (probabilityOfSetBit <= 0.001 || probabilityOfSetBit >= .999) return 0;
         double entropy = (-probabilityOfSetBit * logTwo(probabilityOfSetBit)) -
-                            ((1 - probabilityOfSetBit) * logTwo(1 - probabilityOfSetBit));
-        Log.i(TAG, "Shannon entropy of VB Key: " + entropy);
+                ((1 - probabilityOfSetBit) * logTwo(1 - probabilityOfSetBit));
+        Log.i(TAG, "Shannon entropy of " + dataName + ": " + entropy);
         return entropy;
     }
 
     /**
      * Note: This method modifies the input parameter while performing bit entropy check.
      */
-    private boolean checkTresBiEntropy(byte[] verifiedBootKey) {
+    private boolean checkTresBiEntropy(byte[] data, String dataName) {
         double weightingFactor = 0;
         double weightedEntropy = 0;
         double probabilityOfSetBit = 0;
-        int length = verifiedBootKey.length * 8;
-        for(int i = 0; i < (verifiedBootKey.length * 8) - 2; i++) {
-            probabilityOfSetBit = countSetBits(verifiedBootKey) / (double)length;
-            weightingFactor += logTwo(i+2);
-            weightedEntropy += calculateShannonEntropy(probabilityOfSetBit) * logTwo(i+2);
-            deriveBitString(verifiedBootKey, length);
+        int length = data.length * 8;
+        for (int i = 0; i < (data.length * 8) - 2; i++) {
+            probabilityOfSetBit = countSetBits(data) / (double) length;
+            weightingFactor += logTwo(i + 2);
+            weightedEntropy += calculateShannonEntropy(probabilityOfSetBit, dataName)
+                    * logTwo(i + 2);
+            deriveBitString(data, length);
             length -= 1;
         }
         double tresBiEntropy = (1 / weightingFactor) * weightedEntropy;
-        Log.i(TAG, "BiEntropy of VB Key: " + tresBiEntropy);
+        Log.i(TAG, "BiEntropy of " + dataName + ": " + tresBiEntropy);
         return tresBiEntropy > 0.9;
     }
 
@@ -1763,17 +1794,17 @@ public class KeyAttestationTest {
             length += 1;
         }
 
-        byte mask = (byte)((byte)0x80 >>> ((activeLength + 6) % 8));
+        byte mask = (byte) ((byte) 0x80 >>> ((activeLength + 6) % 8));
         if (activeLength % 8 == 1) {
-            mask = (byte)~mask;
+            mask = (byte) ~mask;
         }
 
-        for(int i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             if (i == length - 1) {
                 bitString[i] ^= ((bitString[i] & 0xFF) << 1);
                 bitString[i] &= mask;
             } else {
-                bitString[i] ^= ((bitString[i] & 0xFF) << 1) | ((bitString[i+1] & 0xFF) >>> 7);
+                bitString[i] ^= ((bitString[i] & 0xFF) << 1) | ((bitString[i + 1] & 0xFF) >>> 7);
             }
         }
     }
@@ -1784,7 +1815,7 @@ public class KeyAttestationTest {
 
     private int countSetBits(byte[] toCount) {
         int setBitCount = 0;
-        for(int i = 0; i < toCount.length; i++) {
+        for (int i = 0; i < toCount.length; i++) {
             setBitCount += countSetBits(toCount[i]);
         }
         return setBitCount;
@@ -1792,7 +1823,7 @@ public class KeyAttestationTest {
 
     private int countSetBits(byte toCount) {
         int setBitCounter = 0;
-        while(toCount != 0) {
+        while (toCount != 0) {
             toCount &= (toCount - 1);
             setBitCounter++;
         }
@@ -1800,7 +1831,7 @@ public class KeyAttestationTest {
     }
 
     private void checkRsaKeyDetails(X509Certificate attestationCert, Attestation attestation,
-                                    int keySize, Set<String> expectedPaddingModes)
+            int keySize, Set<String> expectedPaddingModes)
             throws CertificateParsingException {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
@@ -1855,7 +1886,7 @@ public class KeyAttestationTest {
     }
 
     private void checkEcKeyDetails(X509Certificate attestationCert, Attestation attestation,
-                                   String ecCurve, int keySize) {
+            String ecCurve, int keySize) {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
@@ -1921,14 +1952,18 @@ public class KeyAttestationTest {
 
     private ImmutableSet<Integer> buildPurposeSet(int purposes) {
         ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
-        if ((purposes & PURPOSE_SIGN) != 0)
+        if ((purposes & PURPOSE_SIGN) != 0) {
             builder.add(KM_PURPOSE_SIGN);
-        if ((purposes & PURPOSE_VERIFY) != 0)
+        }
+        if ((purposes & PURPOSE_VERIFY) != 0) {
             builder.add(KM_PURPOSE_VERIFY);
-        if ((purposes & PURPOSE_ENCRYPT) != 0)
+        }
+        if ((purposes & PURPOSE_ENCRYPT) != 0) {
             builder.add(KM_PURPOSE_ENCRYPT);
-        if ((purposes & PURPOSE_DECRYPT) != 0)
+        }
+        if ((purposes & PURPOSE_DECRYPT) != 0) {
             builder.add(KM_PURPOSE_DECRYPT);
+        }
         if ((purposes & PURPOSE_AGREE_KEY) != 0) {
             builder.add(KM_PURPOSE_AGREE_KEY);
         }
@@ -1975,7 +2010,7 @@ public class KeyAttestationTest {
                 // Use .toASN1Object().equals() rather than .equals() because .equals() is case
                 // insensitive, and we want to verify an exact match.
                 assertTrue(String.format("Certificate Issuer (%s) is not matching with parent"
-                            + " certificate's Subject (%s).",
+                                        + " certificate's Subject (%s).",
                                 signedCertIssuer.toString(), signingCertSubject.toString()),
                         signedCertIssuer.toASN1Object().equals(signingCertSubject.toASN1Object()));
 
@@ -1988,10 +2023,10 @@ public class KeyAttestationTest {
                     strongBoxSubjectFound = true;
                 }
             } catch (InvalidKeyException | CertificateException | NoSuchAlgorithmException
-                    | NoSuchProviderException | SignatureException e) {
+                     | NoSuchProviderException | SignatureException e) {
                 throw new GeneralSecurityException("Using StrongBox: " + expectStrongBox + "\n"
-                                + "Failed to verify certificate " + certChain[i - 1]
-                                + " with public key " + certChain[i].getPublicKey(),
+                        + "Failed to verify certificate " + certChain[i - 1]
+                        + " with public key " + certChain[i].getPublicKey(),
                         e);
             }
         }
@@ -2002,7 +2037,7 @@ public class KeyAttestationTest {
     private void testDeviceIdAttestationFailure(int idType,
             String acceptableDeviceIdAttestationFailureMessage) throws Exception {
         try {
-            AttestationUtils.attestDeviceIds(getContext(), new int[] {idType}, "123".getBytes());
+            AttestationUtils.attestDeviceIds(getContext(), new int[]{idType}, "123".getBytes());
             fail("Attestation should have failed.");
         } catch (SecurityException e) {
             // Attestation is expected to fail. If the device has the device ID type we are trying
@@ -2032,7 +2067,7 @@ public class KeyAttestationTest {
             return false;
         }
         if (!getContext().getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+                PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
             Log.i(TAG, "key attestation with device IDs not supported; test skipped");
             return true;
         }
@@ -2050,8 +2085,8 @@ public class KeyAttestationTest {
                 // On more current devices, raise a different Exception to give out a hint
                 // that the vendor properties should be set.
                 throw new Exception("Failed to generate key with device ID attestation under GSI.  "
-                                + "Check that the relevant ro.product.vendor.<device-id> field is "
-                                + "set correctly in the vendor image.",
+                        + "Check that the relevant ro.product.vendor.<device-id> field is "
+                        + "set correctly in the vendor image.",
                         e);
             }
         }

@@ -19,7 +19,6 @@ package android.server.wm.activity;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -57,6 +56,7 @@ import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -204,8 +204,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
-        assumeRunNotOnVisibleBackgroundNonProfileUser(
-                "Keyguard not supported for visible background users");
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
@@ -252,7 +256,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         // The activity will be paused first because the flags turn-screen-on and show-when-locked
@@ -277,8 +286,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FULLSCREEN);
 
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
-        assertTrue("Display turns on by " + (useWindowFlags ? "flags" : "APIs"),
-                isDisplayOn(DEFAULT_DISPLAY));
+        int displayId = activity.getConfigInfo().displayId;
+        assertTrue("Display " + displayId + " turns on by "
+                        + (useWindowFlags ? "flags" : "APIs"),
+                isDisplayOn(displayId));
 
         activity.finish();
         mWmState.waitForActivityRemoved(activity.getName());
@@ -815,6 +826,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
         assumeTrue(supportsLockScreen());
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 

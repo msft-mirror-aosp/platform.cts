@@ -26,6 +26,7 @@ import static android.server.wm.ShellCommandHelper.executeShellCommand;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_IDLE;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_PENDING_CONFIRM;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_STARTED_UI_SHOWING;
@@ -331,8 +332,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         Log.d(TAG, "Focusing, entering, submitting credential");
         passwordField.click();
         passwordField.setText(LOCK_CREDENTIAL);
-        if (mInstrumentation.getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_AUTOMOTIVE)) {
+        if (isCar()) {
             final UiObject2 enterButton = findView(KEY_ENTER);
             enterButton.click();
         } else {
@@ -406,7 +406,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     }
 
     /**
-     * SHows a BiometricPrompt that sets
+     * Shows a BiometricPrompt that sets
      * {@link BiometricPrompt.Builder#setDeviceCredentialAllowed(boolean)} to true.
      */
     protected void showDeviceCredentialAllowedBiometricPrompt(
@@ -669,6 +669,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
             waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
             BiometricServiceState state = getCurrentState();
             assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);
+            hideKeyboard();
         } else {
             Utils.waitForIdleService(this::getSensorStates);
         }
@@ -684,5 +685,9 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     private boolean hasDeviceFeature(final String requiredFeature) {
         return mContext.getPackageManager().hasSystemFeature(requiredFeature);
+    }
+
+    private void hideKeyboard() {
+        runShellCommand("input keyevent KEYCODE_ESCAPE");
     }
 }

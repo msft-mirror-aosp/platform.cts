@@ -71,7 +71,8 @@ class A11yBounceKeysTest {
                 savedThreshold = InputSettings.getAccessibilityBounceKeysThreshold(activity)
                 InputSettings.setAccessibilityBounceKeysThreshold(activity, THRESHOLD_MILLIS)
             },
-            "android.permission.INTERACT_ACROSS_USERS_FULL"
+            "android.permission.QUERY_USERS",
+            "android.permission.INTERACT_ACROSS_USERS_FULL",
         )
         Thread.sleep(A11Y_SETTINGS_PROPAGATE_TIME_MILLIS)
     }
@@ -82,7 +83,8 @@ class A11yBounceKeysTest {
             {
                 InputSettings.setAccessibilityBounceKeysThreshold(activity, savedThreshold)
             },
-            "android.permission.INTERACT_ACROSS_USERS_FULL"
+            "android.permission.QUERY_USERS",
+            "android.permission.INTERACT_ACROSS_USERS_FULL",
         )
     }
 

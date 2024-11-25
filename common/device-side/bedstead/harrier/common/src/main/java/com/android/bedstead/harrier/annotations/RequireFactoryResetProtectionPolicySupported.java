@@ -25,4 +25,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface RequireFactoryResetProtectionPolicySupported {
+    FailureMode failureMode() default FailureMode.SKIP;
 }

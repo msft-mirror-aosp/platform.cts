@@ -16,10 +16,13 @@
 
 package android.deviceconfig.cts;
 
+import static android.provider.DeviceConfig.DUMP_ARG_NAMESPACE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -27,6 +30,8 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodConfig;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
@@ -59,6 +64,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -119,15 +125,21 @@ public final class DeviceConfigApiTests {
     private static final long WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS = 2000; // 2 sec
     private final Object mLock = new Object();
 
-
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
             "android.permission.WRITE_DEVICE_CONFIG";
+
+    private static final String WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG";
 
     private static final String READ_DEVICE_CONFIG_PERMISSION =
             "android.permission.READ_DEVICE_CONFIG";
 
     private static final String MONITOR_DEVICE_CONFIG_ACCESS =
             "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
+
+    private static final String READ_WRITE_SYNC_DISABLED_MODE_CONFIG_PERMISSION =
+            "android.permission.READ_WRITE_SYNC_DISABLED_MODE_CONFIG";
+
 
     // String used to skip tests if not support.
     // TODO: ideally it would be simpler to just use assumeTrue() in the @BeforeClass method, but
@@ -139,6 +151,10 @@ public final class DeviceConfigApiTests {
     @Rule public final Expect expect = Expect.create();
 
     @Rule public final TestName testName = new TestName();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @RavenwoodConfig.Config
     public static final RavenwoodConfig sConfig = new RavenwoodConfig.Builder()
@@ -161,10 +177,6 @@ public final class DeviceConfigApiTests {
                     + sContext.getUserId();
             return;
         }
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                WRITE_DEVICE_CONFIG_PERMISSION, READ_DEVICE_CONFIG_PERMISSION,
-                MONITOR_DEVICE_CONFIG_ACCESS);
     }
 
     @Before
@@ -174,6 +186,12 @@ public final class DeviceConfigApiTests {
 
     @Before
     public void setUpSyncDisabledMode() {
+        // Adoption of the shell permission identity is required before each test since the
+        // CheckFlagRule will drop the shell permission identity.
+        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                WRITE_DEVICE_CONFIG_PERMISSION, WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
+                READ_DEVICE_CONFIG_PERMISSION, MONITOR_DEVICE_CONFIG_ACCESS,
+                READ_WRITE_SYNC_DISABLED_MODE_CONFIG_PERMISSION);
         mInitialSyncDisabledMode = DeviceConfig.getSyncDisabledMode();
         DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
     }
@@ -1406,10 +1424,16 @@ public final class DeviceConfigApiTests {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
     public void testDump_empty() throws Exception {
-        String dump = dump();
-
-        expect.withMessage("dump()").that(dump)
+        expect.withMessage("dump()").that(dump())
             .isEqualTo(DUMP_PREFIX + "0 listeners for 0 namespaces:\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
+    public void testDump_invalidArgs() throws Exception {
+
+        // Should have 1 extra argument
+        assertThrows(IllegalArgumentException.class, () -> dump(DUMP_ARG_NAMESPACE));
     }
 
     @Test
@@ -1425,16 +1449,55 @@ public final class DeviceConfigApiTests {
         // Next call will remove listener1 from NAMESPACE1
         DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, Runnable::run, listener1);
 
-        String dump = dump();
-
-        expect.withMessage("dump()").that(dump).isEqualTo(DUMP_PREFIX
+        String dumpForAllListeners = DUMP_PREFIX
                 + "3 listeners for 2 namespaces:\n"
                 + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n"
                 + DUMP_PREFIX + NAMESPACE2 + ": 1 listeners\n"
-                + DUMP_PREFIX + DUMP_PREFIX + listener1 + "\n"
-        );
+                + DUMP_PREFIX + DUMP_PREFIX + listener1 + "\n";
+
+        // Dump without args first
+        expect.withMessage("dump()").that(dump()).isEqualTo(dumpForAllListeners);
+
+        // Then argument that would not match
+        String arg0 = DUMP_ARG_NAMESPACE;
+        String arg1 = "ARRRRRRGH!!!!";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(DUMP_PREFIX + "0 listeners for 0 namespaces:\n");
+
+        // Then arg which's a substring of all listeners
+        arg1 = "";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "namespace";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "name";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "space";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        // Finally, use a specific value
+        arg1 = NAMESPACE1;
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1)).isEqualTo(DUMP_PREFIX
+                + "2 listeners for 1 namespaces:\n"
+                + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_CONFIG_WRITABLE_NAMESPACES_API)
+    public void testGetAdbWritableNamespaces_returnsNamespaces() {
+        Set<String> namespaces = DeviceConfig.getAdbWritableNamespaces();
+
+        assertTrue(namespaces.size() > 0);
     }
 
     private class TestMonitorCallback implements DeviceConfig.MonitorCallback {

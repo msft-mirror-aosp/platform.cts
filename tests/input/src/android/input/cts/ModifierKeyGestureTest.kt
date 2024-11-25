@@ -29,6 +29,7 @@ import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
 import com.android.cts.input.inputeventmatchers.withModifierState
 import org.hamcrest.Matchers
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -65,7 +66,15 @@ class ModifierKeyGestureTest {
             activity = it
             verifier = EventVerifier(activity::getInputEvent)
         }
+        inputManager.resetLockedModifierState()
         PollingCheck.waitFor { activity.hasWindowFocus() }
+    }
+
+    @After
+    fun tearDown() {
+        if (this::inputManager.isInitialized) {
+            inputManager.resetLockedModifierState()
+        }
     }
 
     @Test

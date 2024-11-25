@@ -16,10 +16,6 @@
 
 package android.server.wm.window;
 
-import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -38,7 +34,6 @@ import static org.mockito.Mockito.verify;
 import android.app.Instrumentation;
 import android.app.Presentation;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -53,8 +48,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.IgnoreOrientationRequestSession;
-import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.cts.R;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -111,10 +104,6 @@ public class WindowTest {
     private ProjectedPresentation mPresentation;
     private VirtualDisplay mVirtualDisplay;
 
-    /** Used by {@link #setMayAffectDisplayRotation()}. */
-    private WindowManagerStateHelper mWmState;
-    private int mOriginalRotation = -1;
-
     @Rule
     public ActivityTestRule<WindowCtsActivity> mActivityRule =
             new ActivityTestRule<>(WindowCtsActivity.class);
@@ -139,13 +128,6 @@ public class WindowTest {
     public void tearDown() {
         if (mActivity != null) {
             mActivity.setFlagFalse();
-        }
-        if (mOriginalRotation >= 0) {
-            // The test might launch an activity that changes display rotation. Finish the
-            // activity explicitly and wait for the original rotation to avoid the rotation
-            // affects the next test.
-            mActivityRule.finishActivity();
-            mWmState.waitForRotation(mOriginalRotation);
         }
     }
 
@@ -677,66 +659,6 @@ public class WindowTest {
         verify(mWindowCallback, times(1)).onWindowAttributesChanged(attrs);
     }
 
-    @Test
-    public void testSetFitsContentForInsets_false() throws Throwable {
-        mActivityRule.runOnUiThread(() -> mWindow.setDecorFitsSystemWindows(false));
-        mInstrumentation.waitForIdleSync();
-        assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
-                mActivity.getLastInsets().getSystemWindowInsets());
-    }
-
-    @Test
-    public void testSetFitsContentForInsets_defaultLegacy_sysuiFlags()
-            throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-            mWindow.getDecorView().setSystemUiVisibility(SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        });
-        mInstrumentation.waitForIdleSync();
-        assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
-                mActivity.getLastInsets().getSystemWindowInsets());
-    }
-
-    @Test
-    public void testSetFitsContentForInsets_displayCutoutInsets_areApplied()
-            throws Throwable {
-        try (IgnoreOrientationRequestSession session =
-                     new IgnoreOrientationRequestSession(false /* enable */)) {
-            setMayAffectDisplayRotation();
-            mActivityRule.runOnUiThread(() -> {
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                mWindow.setDecorFitsSystemWindows(true);
-                WindowManager.LayoutParams attrs = mWindow.getAttributes();
-                attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-                mWindow.setAttributes(attrs);
-            });
-            mInstrumentation.waitForIdleSync();
-            assertEquals(mActivity.getContentView().getRootWindowInsets().getSystemWindowInsets(),
-                    mActivity.getAppliedInsets());
-        }
-    }
-
-    @Test
-    public void testSetFitsContentForInsets_defaultLegacy_none()
-            throws Throwable {
-        mInstrumentation.waitForIdleSync();
-
-        // We don't expect that we even got called.
-        assertNull(mActivity.getLastInsets());
-    }
-
-    @Test
-    public void testSetFitsContentForInsets_true()
-            throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            mWindow.setDecorFitsSystemWindows(true);
-        });
-        mInstrumentation.waitForIdleSync();
-
-        // We don't expect that we even got called.
-        assertNull(mActivity.getLastInsets());
-    }
-
     /**
      * Test setLocalFocus together with injectInputEvent.
      */
@@ -836,16 +758,6 @@ public class WindowTest {
                 x, y, 0);
         upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         window.injectInputEvent(upEvent);
-    }
-
-    /**
-     * Stores the current rotation of device so {@link #tearDown()} can wait for the device to
-     * restore to its previous rotation.
-     */
-    private void setMayAffectDisplayRotation() {
-        mWmState = new WindowManagerStateHelper();
-        mWmState.computeState();
-        mOriginalRotation = mWmState.getRotation();
     }
 
     private void createPresentation(final Surface surface, final int width,

@@ -38,16 +38,15 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
 import android.virtualdevice.cts.camera.util.NativeCameraManager;
 import android.virtualdevice.cts.camera.util.NativeCameraTestActivity;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -56,8 +55,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.google.common.collect.Iterables;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -66,11 +67,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(AndroidJUnit4.class)
 public class VirtualCameraNdkTest {
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
+
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final String CAMERA_NAME = "Virtual camera";
     private static final int CAMERA_WIDTH = 640;

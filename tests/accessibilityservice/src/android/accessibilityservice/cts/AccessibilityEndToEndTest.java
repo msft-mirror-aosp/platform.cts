@@ -123,6 +123,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -1271,7 +1272,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_sendsEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         // Layout. buttonTargetGrandparent has a touch delegate that covers the buttonTarget and
@@ -1289,6 +1290,11 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -1316,12 +1322,17 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_doesNotSendEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -2556,6 +2567,30 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
         assertThat(label).isNotNull();
         assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testAddLabeledBy_viewOnInitializeAccessibilityNodeInfoInternal() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(editText).isNotNull();
+
+        labelOne.setLabelFor(R.id.edittext);
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
     }
 
     @Test

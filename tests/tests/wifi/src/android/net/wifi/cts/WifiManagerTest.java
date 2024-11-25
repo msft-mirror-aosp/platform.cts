@@ -28,6 +28,9 @@ import static android.net.wifi.WifiManager.COEX_RESTRICTION_SOFTAP;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
 import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
+import static android.net.wifi.WifiManager.WIFI_STATE_DISABLED;
+import static android.net.wifi.WifiManager.WIFI_STATE_DISABLING;
+import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
 import static android.os.Process.myUid;
 
@@ -118,6 +121,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.security.advancedprotection.AdvancedProtectionFeature;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -296,11 +300,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 int newState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
                         WifiManager.WIFI_STATE_UNKNOWN);
                 synchronized (sMySync) {
-                    if (newState == WifiManager.WIFI_STATE_ENABLED) {
+                    if (newState == WIFI_STATE_ENABLED) {
                         Log.d(TAG, "*** New WiFi state is ENABLED ***");
                         sMySync.expectedState = STATE_WIFI_ENABLED;
                         sMySync.notifyAll();
-                    } else if (newState == WifiManager.WIFI_STATE_DISABLED) {
+                    } else if (newState == WIFI_STATE_DISABLED) {
                         Log.d(TAG, "*** New WiFi state is DISABLED ***");
                         sMySync.expectedState = STATE_WIFI_DISABLED;
                         sMySync.notifyAll();
@@ -723,10 +727,92 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         setWifiEnabled(true);
         assertTrue(sWifiManager.isWifiEnabled());
         assertNotNull(sWifiManager.getDhcpInfo());
-        assertEquals(WifiManager.WIFI_STATE_ENABLED, sWifiManager.getWifiState());
+        assertEquals(WIFI_STATE_ENABLED, sWifiManager.getWifiState());
         sWifiManager.getConnectionInfo();
         setWifiEnabled(false);
         assertFalse(sWifiManager.isWifiEnabled());
+    }
+
+
+    public static class TestWifiStateChangedListener
+            implements WifiManager.WifiStateChangedListener {
+        private final Object mWifiStateLock;
+        private final List<Integer> mWifiStates = new ArrayList<>();
+
+        TestWifiStateChangedListener(Object lock) {
+            mWifiStateLock = lock;
+        }
+
+        @Override
+        public void onWifiStateChanged(int state) {
+            synchronized (mWifiStateLock) {
+                mWifiStates.add(state);
+                mWifiStateLock.notify();
+            }
+        }
+
+        /**
+         * Gets the Nth Wi-Fi state seen since registering this listener.
+         */
+        public int getWifiState(int index) {
+            synchronized (mWifiStateLock) {
+                return mWifiStates.get(index);
+            }
+        }
+
+        /**
+         * Gets the number of Wi-fi states recorded since registering this listener.
+         */
+        public int getWifiStatesSize() {
+            synchronized (mWifiStateLock) {
+                return mWifiStates.size();
+            }
+        }
+    }
+
+    /**
+     * Test that WifiStateChangedListener receives updates to the Wifi enabled state.
+     */
+    @Test
+    public void testWifiStateChangedListener() throws Exception {
+        synchronized (mLock) {
+            try {
+                setWifiEnabled(true);
+                final TestWifiStateChangedListener listener =
+                        new TestWifiStateChangedListener(mLock);
+                sWifiManager.addWifiStateChangedListener(mExecutor, listener);
+
+                // Callback should be called after registering
+                long now = System.currentTimeMillis();
+                long deadline = now + TEST_WAIT_DURATION_MS;
+                while (now < deadline) {
+                    mLock.wait(deadline - now);
+                    if (listener.getWifiStatesSize() > 0) {
+                        break;
+                    }
+                    now = System.currentTimeMillis();
+                }
+                assertEquals(WIFI_STATE_ENABLED, listener.getWifiState(0));
+                assertEquals(1, listener.getWifiStatesSize());
+
+                setWifiEnabled(false);
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (now < deadline) {
+                    mLock.wait(deadline - now);
+                    if (listener.getWifiStatesSize() > 2) {
+                        break;
+                    }
+                    now = System.currentTimeMillis();
+                }
+                assertEquals(WIFI_STATE_DISABLING, listener.getWifiState(1));
+                assertEquals(WIFI_STATE_DISABLED, listener.getWifiState(2));
+                assertEquals(3, listener.getWifiStatesSize());
+            } catch (InterruptedException e) {
+                throw new AssertionError(
+                        "Thread interrupted unexpectedly while waiting on mLock", e);
+            }
+        }
     }
 
     /**
@@ -884,12 +970,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         SoftApCapability currentSoftApCapability;
         MacAddress lastBlockedClientMacAddress;
         int lastBlockedClientReason;
+        int mLastDisconnectedClientReason;
         boolean onStateChangedCalled = false;
         boolean mOnSoftApStateChangedCalled = false;
         boolean onSoftApCapabilityChangedCalled = false;
         boolean onConnectedClientCalled = false;
         boolean onConnectedClientChangedWithInfoCalled = false;
         boolean onBlockedClientConnectingCalled = false;
+        boolean mOnClientsDisconnected = false;
         int onSoftapInfoChangedCalledCount = 0;
         int onSoftapInfoChangedWithListCalledCount = 0;
 
@@ -945,6 +1033,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         public boolean getOnBlockedClientConnectingCalled() {
             synchronized (mSoftApLock) {
                 return onBlockedClientConnectingCalled;
+            }
+        }
+
+        /**
+         * Returns {@code true} if #onClientsDisconnected was called, else {@code false}.
+         */
+        public boolean getOnClientsDisconnectedCalled() {
+            synchronized (mSoftApLock) {
+                return mOnClientsDisconnected;
             }
         }
 
@@ -1070,6 +1167,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 lastBlockedClientMacAddress = client.getMacAddress();
                 lastBlockedClientReason = blockedReason;
                 onBlockedClientConnectingCalled = true;
+            }
+        }
+
+        @Override
+        public void onClientsDisconnected(SoftApInfo info, List<WifiClient> clients) {
+            synchronized (mSoftApLock) {
+                WifiClient client = clients.getFirst();
+                mLastDisconnectedClientReason = client.getDisconnectReason();
+                mOnClientsDisconnected = true;
             }
         }
     }
@@ -2824,6 +2930,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
+
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                assertEquals(currentConfig.isClientIsolationEnabled(),
+                        testSoftApConfig.isClientIsolationEnabled());
+            }
         }
     }
 
@@ -3199,7 +3310,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
                 softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
             }
-
+            if (Flags.apIsolate() && WifiBuildCompat.isAtLeastB()) {
+                softApConfigBuilder.setClientIsolationEnabled(true);
+            }
             // Test SoftApConfiguration set and get
             verifySetGetSoftApConfig(softApConfigBuilder.build());
 
@@ -3262,7 +3375,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 softApConfigBuilder.setBridgedModeOpportunisticShutdownEnabled(false);
                 verifySetGetSoftApConfig(softApConfigBuilder.build());
             }
-
         } finally {
             sWifiManager.unregisterSoftApCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
@@ -3362,6 +3474,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
             if (callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertTrue(callback.getCurrentSoftApInfo().getAutoShutdownTimeoutMillis() > 0);
+                if (Flags.mloSap()) {
+                    // Test AP configuration is WPA2, MldAddress should be NULL
+                    assertNull(callback.getCurrentSoftApInfo().getMldAddress());
+                }
             }
         } finally {
             // stop tethering which used to verify stopSoftAp
@@ -3780,6 +3896,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 ShellIdentityUtils.invokeWithShellPermissions(
                         () -> sWifiManager.enableNetwork(disabledNetworkId, true));
             }
+            turnScreenOn();
         }
     }
 
@@ -3884,7 +4001,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             // check if we got the state changed callback with both data in and out
             assertTrue(success);
         } finally {
-            turnScreenOff();
             sWifiManager.unregisterTrafficStateCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -7535,6 +7651,29 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             assertTrue("retrieve Wi-Fi backup data fail", isQuerySucceeded.value);
             sWifiManager.restoreWifiBackupData(backupWifiData.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#getAvailableAdvancedProtectionFeatures()}.
+     */
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AAPM_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA,
+            codeName = "Baklava")
+    @Test
+    public void testGetSupportedAdvancedProtectionFeaturesOverWifi() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            List<AdvancedProtectionFeature> features =
+                    sWifiManager.getAvailableAdvancedProtectionFeatures();
+            assertNotNull(features);
+            if (Flags.wepDisabledInApm()) {
+                // Should have the WEP disabled feature at least.
+                assertFalse(features.isEmpty());
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

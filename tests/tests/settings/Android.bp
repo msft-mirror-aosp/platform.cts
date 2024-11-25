@@ -19,6 +19,7 @@ android_test {
         "androidx.slice_slice-view",
         "androidx.window_window",
         "aconfig_settings_flags_lib",
+        "android.provider.flags-aconfig-java",
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",

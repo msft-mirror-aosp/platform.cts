@@ -26,6 +26,7 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -42,12 +43,12 @@ import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
+import com.android.cts.verifier.audio.audiolib.WaveFileWriter;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
 import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
-// MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.Globals;
 import org.hyphonate.megaaudio.common.StreamBase;
@@ -57,6 +58,8 @@ import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -116,6 +119,7 @@ public abstract class AudioDataPathsBaseActivity
     private DuplexAudioManager mDuplexAudioManager;
 
     protected AppCallback mAnalysisCallbackHandler;
+    private File mRecordingDir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -206,6 +210,13 @@ public abstract class AudioDataPathsBaseActivity
         if (!mIsHandheld) {
             displayNonHandheldMessage();
         }
+
+        // Write to a directory that can be read on production builds using 'adb pull'.
+        // This works because we have WRITE_EXTERNAL_STORAGE permission.
+        mRecordingDir = new File(Environment.getExternalStorageDirectory(), "verifierWaves");
+        if (!mRecordingDir.exists()) {
+            mRecordingDir.mkdir();
+        }
     }
 
     @Override
@@ -295,6 +306,8 @@ public abstract class AudioDataPathsBaseActivity
 
         private String mSectionTitle = null;
         private String mDescription = "";
+
+        private String mSavedFileMessage; // OK if null
 
         private static final String PLAYER_FAILED_TO_GET_STRING = "Player failed to get ";
         private static final String RECORDER_FAILED_TO_GET_STRING = "Recorder failed to get ";
@@ -439,6 +452,19 @@ public abstract class AudioDataPathsBaseActivity
 
         public void setModuleIndex(int index) {
             this.mModuleIndex = index;
+        }
+
+        public void setSavedFileMessage(String s) {
+            mSavedFileMessage = s;
+        }
+
+        /**
+         * A message generated when saving a WAV file.
+         *
+         * @return message or null
+         */
+        public String getSavedFileMessage() {
+            return mSavedFileMessage;
         }
 
         public void setAnalysisType(int type) {
@@ -964,6 +990,11 @@ public abstract class AudioDataPathsBaseActivity
                     }
                 }
                 textFormatter.closeItalic();
+
+                String savedFileMessage = getSavedFileMessage();
+                if (savedFileMessage != null) {
+                    textFormatter.appendBreak().appendText(savedFileMessage);
+                }
             } else {
                 // results == null
                 textFormatter.appendBreak()
@@ -1341,6 +1372,11 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 sb.append(testModule.getTestStateString(mApi));
+
+                String savedFileMessage = testModule.getSavedFileMessage();
+                if (savedFileMessage != null) {
+                    sb.append("\n").append(savedFileMessage);
+                }
                 testStep++;
             }
             mRoutesTx.setText(sb.toString());
@@ -1522,6 +1558,12 @@ public abstract class AudioDataPathsBaseActivity
                 if (testModule != null) {
                     if (testModule.canRun()) {
                         testModule.setTestResults(mApi, mAnalyzer);
+                        if (!testModule.hasPassed(mApi)) {
+                            String message = saveWaveFile(mAnalyzer, testModule.getModuleIndex());
+                            testModule.setSavedFileMessage(message);
+                        } else {
+                            testModule.setSavedFileMessage(null); // erase any old messages
+                        }
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -1605,6 +1647,54 @@ public abstract class AudioDataPathsBaseActivity
         }
     }
 
+    /**
+     * @return short name of the physical route
+     */
+    abstract String getRouteDescription();
+
+    /**
+     * Delete all the previously saved WAV files so the user does not
+     * debug obsolete data.
+     */
+    public void deleteOldWaveFiles() {
+        if (mRecordingDir.exists()) {
+            File[] files = mRecordingDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        if (!file.delete()) {
+                            Log.e(TAG, "Failed to delete file: " + file.getAbsolutePath());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String saveWaveFile(BaseSineAnalyzer mAnalyzer, int index) {
+        File waveFile = new File(mRecordingDir,
+                String.format(Locale.US, "paths_%s_%03d.wav",
+                        getRouteDescription(), index));
+
+        float[] data = mAnalyzer.getRecordedData();
+        int numSamples = data.length;
+        if (numSamples > 0) {
+            try {
+                WaveFileWriter writer = new WaveFileWriter(waveFile);
+                writer.setFrameRate(mAnalyzer.getSampleRate());
+                writer.setBitsPerSample(24);
+                writer.write(data);
+                writer.close();
+                return "Wrote " + numSamples + " samples to " + waveFile.getAbsolutePath();
+            } catch (IOException e) {
+                return "FAILED to save " + waveFile.getAbsolutePath()
+                        + ", " + e.getMessage();
+            }
+        } else {
+            return "No recorded data!";
+        }
+    }
+
     //
     // Process Handling
     //
@@ -1615,6 +1705,7 @@ public abstract class AudioDataPathsBaseActivity
 
         enableTestButtons(false, true);
         getPassButton().setEnabled(false);
+        deleteOldWaveFiles();
 
         mTestManager.startTest(api);
     }

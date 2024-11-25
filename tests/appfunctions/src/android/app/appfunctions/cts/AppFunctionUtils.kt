@@ -15,6 +15,7 @@
  */
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.AppFunctionRuntimeMetadata
@@ -28,6 +29,7 @@ import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
+import android.content.Context
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
 import kotlin.coroutines.resume
@@ -39,14 +41,24 @@ object AppFunctionUtils {
     suspend fun executeAppFunctionAndWait(
         manager: AppFunctionManager,
         request: ExecuteAppFunctionRequest,
-    ): ExecuteAppFunctionResponse {
+    ): Result<ExecuteAppFunctionResponse> {
         return suspendCancellableCoroutine { continuation ->
             val cancellationSignal = CancellationSignal()
             continuation.invokeOnCancellation { cancellationSignal.cancel() }
-            manager.executeAppFunction(request, Runnable::run, cancellationSignal) {
-                response: ExecuteAppFunctionResponse ->
-                continuation.resume(response)
-            }
+            manager.executeAppFunction(
+                request,
+                Runnable::run,
+                cancellationSignal,
+                object : OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> {
+                    override fun onResult(result: ExecuteAppFunctionResponse) {
+                        continuation.resume(Result.success(result))
+                    }
+
+                    override fun onError(e: AppFunctionException) {
+                        continuation.resume(Result.failure(e))
+                    }
+                },
+            )
         }
     }
 
@@ -73,16 +85,15 @@ object AppFunctionUtils {
     }
 
     /** Gets all the static metadata packages. */
-    fun getAllStaticMetadataPackages() =
-        searchStaticMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
+    fun getAllStaticMetadataPackages(context: Context? = null) =
+        searchStaticMetadata(context).map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
 
     /** Gets all the runtime metadata packages. */
-    fun getAllRuntimeMetadataPackages() =
-        searchRuntimeMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
+    fun getAllRuntimeMetadataPackages(context: Context? = null) =
+        searchRuntimeMetadata(context).map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
 
-    private fun searchStaticMetadata(): List<GenericDocument> {
-        val globalSearchSession: GlobalSearchSessionShim =
-            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+    private fun searchStaticMetadata(context: Context? = null): List<GenericDocument> {
+        val globalSearchSession = getGlobalSearchSession(context)
 
         val searchResults: SearchResultsShim =
             globalSearchSession.search(
@@ -97,9 +108,8 @@ object AppFunctionUtils {
         return collectAllSearchResults(searchResults)
     }
 
-    private fun searchRuntimeMetadata(): List<GenericDocument> {
-        val globalSearchSession: GlobalSearchSessionShim =
-            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+    private fun searchRuntimeMetadata(context: Context? = null): List<GenericDocument> {
+        val globalSearchSession = getGlobalSearchSession(context)
 
         val searchResults: SearchResultsShim =
             globalSearchSession.search(
@@ -111,6 +121,14 @@ object AppFunctionUtils {
                     .build(),
             )
         return collectAllSearchResults(searchResults)
+    }
+
+    private fun getGlobalSearchSession(context: Context? = null): GlobalSearchSessionShim {
+        return if (context == null) {
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+        } else {
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(context).get()
+        }
     }
 
     private const val PROPERTY_PACKAGE_NAME = "packageName"

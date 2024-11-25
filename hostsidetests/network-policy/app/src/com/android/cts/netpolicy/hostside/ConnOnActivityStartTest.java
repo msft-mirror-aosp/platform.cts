@@ -30,11 +30,9 @@ import static com.android.cts.netpolicy.hostside.Property.METERED_NETWORK;
 import static com.android.cts.netpolicy.hostside.Property.NON_METERED_NETWORK;
 
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ThrowingRunnable;
-import com.android.server.net.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -104,7 +102,6 @@ public class ConnOnActivityStartTest extends AbstractRestrictBackgroundNetworkTe
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testStartActivity_default() throws Exception {
         assertLaunchedActivityHasNetworkAccess("testStartActivity_default", () -> {
             assertProcessStateBelow(PROCESS_STATE_TOP_SLEEPING);
