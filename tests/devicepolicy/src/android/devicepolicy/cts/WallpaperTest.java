@@ -98,7 +98,7 @@ public final class WallpaperTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sOriginalWallpaper);
+            TestApis.wallpaper().setBitmap(sOriginalWallpaper);
         }
     }
 
