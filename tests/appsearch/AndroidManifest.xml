@@ -32,19 +32,6 @@
 
     <application android:label="CtsAppSearchTestCases">
         <uses-library android:name="android.test.runner"/>
-
-        <activity android:name="android.app.appsearch.testutil.functions.ActivityCreationSynchronizer"
-                  android:exported="true"/>
-        <service android:name="android.app.appsearch.testutil.functions.TestAppFunctionService"
-                 android:exported="true"
-                 android:process=":appfunctions">
-            <intent-filter>
-                <action android:name="android.app.appsearch.functions.AppFunctionService"/>
-            </intent-filter>
-        </service>
-        <receiver
-            android:name="android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver"
-            android:exported="false"/>
     </application>
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="com.android.cts.appsearch"

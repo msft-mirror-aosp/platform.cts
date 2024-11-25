@@ -228,6 +228,52 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
+    /**
+     * Test USD publish with operating frequencies
+     */
+    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+            "android.net.wifi.usd.UsdManager.PublishConfig.Builder#setOperatingFrequenciesMhz",
+            "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
+            "android.net.wifi.usd.UsdManager#publish",
+            "android.net.wifi.usd.PublishSession#cancel",
+            "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
+            "android.net.wifi.usd.PublishSessionCallback#onSessionTerminated"})
+    public void testPublishWithOperatingFrequencies() {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+            assertNotNull(mUsdManager);
+            // Check whether publisher is supported or not
+            if (!mUsdManager.isPublisherSupported()) {
+                return;
+            }
+            // Check whether publish is available or not
+            if (!mUsdManager.isPublisherAvailable()) {
+                return;
+            }
+            // Publish only on channels 1, 6 and 11
+            int[] operatingFrequencies = new int[] {2412, 2437, 2462};
+            PublishConfig publishConfig = new PublishConfig.Builder(USD_SERVICE_NAME)
+                    .setOperatingFrequenciesMhz(operatingFrequencies)
+                    .build();
+            assertEquals(operatingFrequencies, publishConfig.getOperatingFrequenciesMhz());
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            PublishSessionCallbackTest publishSessionCallbackTest =
+                    new PublishSessionCallbackTest();
+            mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
+            // Check whether publish is started or not
+            assertEquals(PublishSessionCallbackTest.STARTED,
+                    publishSessionCallbackTest.waitForAnyCallback());
+            assertNotNull(publishSessionCallbackTest.getPublishSession());
+            // Cancel
+            publishSessionCallbackTest.getPublishSession().cancel();
+            // Check whether publish is terminated or not
+            assertEquals(PublishSessionCallbackTest.TERMINATED,
+                    publishSessionCallbackTest.waitForAnyCallback());
+            assertEquals(PublishSessionCallback.TERMINATION_REASON_USER_INITIATED,
+                    publishSessionCallbackTest.getReasonCode());
+        }
+    }
+
     private static class SubscribeSessionCallbackTest extends SubscribeSessionCallback {
         static final int ERROR = 0;
         static final int FAILED = 1;
@@ -333,4 +379,49 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
+    /**
+     * Test USD subscribe with operating frequencies
+     */
+    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+            "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#setOperatingFrequenciesMhz",
+            "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#getOperatingFrequenciesMhz",
+            "android.net.wifi.usd.UsdManager#subscribe",
+            "android.net.wifi.usd.SubscribeSession#cancel",
+            "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
+            "android.net.wifi.usd.SubscribeSessionCallback#onSessionTerminated"})
+    public void testSubscribeWithOperatingFrequencies() {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+            assertNotNull(mUsdManager);
+            // Check whether USD is supported or not
+            if (!mUsdManager.isSubscriberSupported()) {
+                return;
+            }
+            // Check whether subscribe is available or not
+            if (!mUsdManager.isSubscriberAvailable()) {
+                return;
+            }
+            // Subscribe on channel 1, 6 or 11
+            int[] operatingFrequencies = new int[] {2412, 2437, 2462};
+            SubscribeConfig subscribeConfig = new SubscribeConfig.Builder(USD_SERVICE_NAME)
+                    .setOperatingFrequenciesMhz(operatingFrequencies)
+                    .build();
+            assertEquals(operatingFrequencies, subscribeConfig.getOperatingFrequenciesMhz());
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            SubscribeSessionCallbackTest subscribeSessionCallbackTest =
+                    new SubscribeSessionCallbackTest();
+            mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
+            // Check whether subscribe operation is started or not
+            assertEquals(SubscribeSessionCallbackTest.STARTED,
+                    subscribeSessionCallbackTest.waitForAnyCallback());
+            assertNotNull(subscribeSessionCallbackTest.getSubscribeSession());
+            // Cancel Subscribe
+            subscribeSessionCallbackTest.getSubscribeSession().cancel();
+            // Make sure terminate notification is generated
+            assertEquals(SubscribeSessionCallbackTest.TERMINATED,
+                    subscribeSessionCallbackTest.waitForAnyCallback());
+            assertEquals(SubscribeSessionCallback.TERMINATION_REASON_USER_INITIATED,
+                    subscribeSessionCallbackTest.getReasonCode());
+        }
+    }
 }
