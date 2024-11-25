@@ -27,6 +27,8 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -46,6 +48,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.Assert;
 
@@ -70,6 +73,7 @@ public class NotificationManager29Test {
     private NotificationManager mNotificationManager;
     private Context mContext;
     NotificationHelper mHelper;
+    UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -80,6 +84,7 @@ public class NotificationManager29Test {
         mNotificationManager.createNotificationChannel(new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT));
         mHelper = new NotificationHelper(mContext);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @After
@@ -137,6 +142,10 @@ public class NotificationManager29Test {
 
     @Test
     public void testPostFullScreenIntent_noPermission() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         assertNotNull(mHelper.enableListener(PKG));
         // no permission? no full screen intent
         int id = 6000;
