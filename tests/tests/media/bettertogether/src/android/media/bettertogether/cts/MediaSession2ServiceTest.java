@@ -35,9 +35,12 @@ import android.os.Process;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -51,10 +54,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Tests {@link MediaSession2Service}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link MediaSession2Service}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 @AppModeNonSdkSandbox(reason = "MediaSession2Service use is restricted to the sandbox.")
 public class MediaSession2ServiceTest {
@@ -109,10 +110,11 @@ public class MediaSession2ServiceTest {
     }
 
     /**
-     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)}
-     * is called when controller tries to connect, with the proper arguments.
+     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)} is called when
+     * controller tries to connect, with the proper arguments.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnGetSessionIsCalled() throws InterruptedException {
         final List<ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -142,12 +144,13 @@ public class MediaSession2ServiceTest {
     }
 
     /**
-     * Tests whether the controller is connected to the session which is returned from
-     * {@link MediaSession2Service#onGetSession(ControllerInfo)}.
-     * Also checks whether the connection hints are properly passed to
-     * {@link MediaSession2.SessionCallback#onConnect(MediaSession2, ControllerInfo)}.
+     * Tests whether the controller is connected to the session which is returned from {@link
+     * MediaSession2Service#onGetSession(ControllerInfo)}. Also checks whether the connection hints
+     * are properly passed to {@link MediaSession2.SessionCallback#onConnect(MediaSession2,
+     * ControllerInfo)}.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnGetSession_returnsSession() throws InterruptedException {
         final List<ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(2);
@@ -208,10 +211,11 @@ public class MediaSession2ServiceTest {
     }
 
     /**
-     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)}
-     * can return different sessions for different controllers.
+     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)} can return different
+     * sessions for different controllers.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnGetSession_returnsDifferentSessions() throws InterruptedException {
         final List<Session2Token> tokens = new ArrayList<>();
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
@@ -237,10 +241,11 @@ public class MediaSession2ServiceTest {
     }
 
     /**
-     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)}
-     * can reject incoming connection by returning null.
+     * Tests whether {@link MediaSession2Service#onGetSession(ControllerInfo)} can reject incoming
+     * connection by returning null.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnGetSession_rejectsConnection() throws InterruptedException {
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
             @Override
@@ -264,6 +269,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAllControllersDisconnected_oneSession() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         final MediaSession2 testSession =
@@ -292,6 +298,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAllControllersDisconnected_multipleSessions() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
@@ -319,6 +326,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSessions() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -338,6 +346,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAddSessions_removedWhenClose() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -357,6 +366,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnUpdateNotification() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -392,6 +402,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnBind() throws Exception {
         MediaController2 controller1 = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -404,6 +415,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testMediaNotification() {
         final int testId = 1001;
         final String testChannelId = "channelId";
