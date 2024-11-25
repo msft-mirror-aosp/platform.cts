@@ -1467,8 +1467,7 @@ public class PackageManagerShellCommandInstallTest {
             throws Exception {
         onBeforeSdkTests();
 
-        String errorMsg = installPackageGetErrorMessage(
-                TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true);
+        String errorMsg = installPackage(TEST_USING_SDK1, /*disableAutoInstallDependencies*/true);
         assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertThat(errorMsg).contains("Reconcile failed");
         assertNoErrorInDependencyInstallerService();
@@ -1483,7 +1482,7 @@ public class PackageManagerShellCommandInstallTest {
         try {
             // Dependency Installer Service cannot resolve SDK3
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
-            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
+            String errorMsg = installPackageAsUser(TEST_USING_SDK3, mUserHelper.getUserId());
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
             assertErrorInDependencyInstallerService("Unsupported SDK found: " + TEST_SDK3_NAME);
@@ -1505,7 +1504,7 @@ public class PackageManagerShellCommandInstallTest {
         try {
             // Dependency Installer Service should resolve missing SDK1
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
-            installPackage(TEST_USING_SDK1);
+            installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
@@ -1523,7 +1522,7 @@ public class PackageManagerShellCommandInstallTest {
         try {
             // Dependency Installer Service should try to resolve dependency but fail
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
-            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            String errorMsg = installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
             assertErrorInDependencyInstallerService("Unsupported SDK found: " + TEST_SDK1_NAME);
@@ -1545,7 +1544,7 @@ public class PackageManagerShellCommandInstallTest {
         setDependencyInstallerRoleHolder();
         try {
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_ASYNC);
-            installPackage(TEST_USING_SDK1_AND_SDK2);
+            installPackageAsUser(TEST_USING_SDK1_AND_SDK2, mUserHelper.getUserId(), "Success");
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
@@ -1565,8 +1564,8 @@ public class PackageManagerShellCommandInstallTest {
         try {
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_INVALID_SESSION_ID);
-            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
-            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            String msg = installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
+            assertThat(msg).contains("Failed to resolve all dependencies automatically");
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
@@ -1586,8 +1585,8 @@ public class PackageManagerShellCommandInstallTest {
         try {
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_ABANDONED_SESSION_ID);
-            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
-            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            String msg = installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
+            assertThat(msg).contains("Failed to resolve all dependencies automatically");
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
@@ -1607,7 +1606,7 @@ public class PackageManagerShellCommandInstallTest {
         try {
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_ABANDON_SESSION_DURING_INSTALL);
-            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            String errorMsg = installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
             assertThat(errorMsg).contains("Failed to install all dependencies");
             assertNoErrorInDependencyInstallerService();
         } finally {
@@ -2301,7 +2300,7 @@ public class PackageManagerShellCommandInstallTest {
             throws Exception {
         // Install a package.
         if (mUserHelper.isVisibleBackgroundUser()) {
-            installPackageAsUser(baseName, mUserHelper.getUserId());
+            installPackageAsUser(baseName, mUserHelper.getUserId(), "Success\n");
         } else {
             installPackage(baseName);
         }
@@ -3204,9 +3203,7 @@ public class PackageManagerShellCommandInstallTest {
                 baseName, /*disableAutoInstallDependencies=*/false, expectedResultStartsWith);
     }
 
-    private void installPackage(
-            String baseName, boolean disableAutoInstallDependencies,
-            String expectedResultStartsWith)
+    private String installPackage(String baseName, boolean disableAutoInstallDependencies)
             throws IOException {
         File file = new File(createApkPath(baseName));
         String disableDependencyInstall = "";
@@ -3215,26 +3212,31 @@ public class PackageManagerShellCommandInstallTest {
         }
         String result = executeShellCommand(
                 "pm " + mInstall + " -t -g " + disableDependencyInstall + file.getPath());
-        assertThat(result).startsWith(expectedResultStartsWith);
+        return result;
     }
 
-    private void installPackageAsUser(String baseName, int userId) throws IOException {
-        File file = new File(createApkPath(baseName));
-        assertThat(file.exists()).isTrue();
-        assertEquals("Success\n", executeShellCommand(
-                "pm " + mInstall + " -t -g " + " --user " + userId + " " + file.getPath()));
+    private void installPackage(
+            String baseName, boolean disableAutoInstallDependencies,
+            String expectedResultStartsWith)
+            throws IOException {
+        String result = installPackage(baseName, disableAutoInstallDependencies);
+        assertThat(result).startsWith(expectedResultStartsWith);
     }
 
     private void installPackageAsUser(String baseName, int userId, String expectedResultStartsWith)
             throws IOException {
-        installPackageAsUser(baseName, userId,
-                /*disableAutoInstallDependencies=*/false, expectedResultStartsWith);
+        String result = installPackageAsUser(baseName, userId);
+        assertThat(result).startsWith(expectedResultStartsWith);
     }
 
-    private void installPackageAsUser(
+    private String installPackageAsUser(String baseName, int userId) throws IOException {
+        return installPackageAsUser(baseName, userId,
+                /*disableAutoInstallDependencies=*/false);
+    }
+
+    private String installPackageAsUser(
             String baseName, int userId,
-            boolean disableAutoInstallDependencies,
-            String expectedResultStartsWith)
+            boolean disableAutoInstallDependencies)
             throws IOException {
         File file = new File(createApkPath(baseName));
         String disableDependencyInstall = "";
@@ -3244,24 +3246,6 @@ public class PackageManagerShellCommandInstallTest {
         String result = executeShellCommand(
                 "pm " + mInstall + " -t -g " + " --user " + userId + " "
                 + disableDependencyInstall + file.getPath());
-        assertThat(result).startsWith(expectedResultStartsWith);
-    }
-
-    private String installPackageGetErrorMessage(String baseName) throws IOException {
-        return installPackageGetErrorMessage(baseName, /*disableAutoInstallDependencies=*/false);
-    }
-
-    private String installPackageGetErrorMessage(
-            String baseName, boolean disableAutoInstallDependencies) throws IOException {
-        File file = new File(createApkPath(baseName));
-        String disableDependencyInstall = "";
-        if (disableAutoInstallDependencies) {
-            disableDependencyInstall = mDisableDependencyInstall;
-        }
-        String result = executeShellCommand(
-                "pm " + mInstall + " -t -g " + disableDependencyInstall + file.getPath());
-        assertThat(result).isNotEqualTo("Success\n");
-        assertFalse(isAppInstalled(TEST_SDK_USER_PACKAGE));
         return result;
     }
 
