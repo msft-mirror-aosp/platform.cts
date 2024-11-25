@@ -33,6 +33,7 @@ cc_library_shared {
         "test_aaudio_offload.cpp",
         "test_aaudio_platform.cpp",
         "test_aaudio_stream_builder.cpp",
+        "test_device_ids.cpp",
         "test_session_id.cpp",
         "utils.cpp",
     ],

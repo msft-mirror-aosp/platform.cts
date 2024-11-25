@@ -390,7 +390,7 @@ public final class TestUtils {
             y += xy[1];
         }
 
-        return device.touchDown(x, y, 255/* pressure */);
+        return device.touchDown(x, y, 255 /* pressure */);
     }
 
     /**
