@@ -104,6 +104,7 @@ android_test {
         ":SplitBluetoothPermissionTestApp",
         ":CertBlocklistTestApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
+        ":CtsAdvancedProtectionTestApp",
     ],
 }
 

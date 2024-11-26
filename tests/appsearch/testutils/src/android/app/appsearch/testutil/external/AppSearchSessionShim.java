@@ -219,6 +219,23 @@ public interface AppSearchSessionShim extends Closeable {
      * match documentA. However, `propertyDefined("sender.name")` will match both documentA and
      * documentB, regardless of whether a value is actually set.
      *
+     * <p>{@link Features#LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION}: This feature covers the
+     * "matchScoreExpression" function in query expressions.
+     *
+     * <p>Usage: matchScoreExpression({score_expression}, {low}, {high})
+     *
+     * <ul>
+     *   <li>matchScoreExpression matches all documents with scores falling within the specified
+     *       range. These scores are calculated using the provided score expression, which adheres
+     *       to the syntax defined in {@link SearchSpec.Builder#setRankingStrategy(String)}.
+     *   <li>"score_expression" is a string value that specifies the score expression.
+     *   <li>"low" and "high" are floating point numbers that specify the score range. The "high"
+     *       parameter is optional; if not provided, it defaults to positive infinity.
+     * </ul>
+     *
+     * <p>Ex. `matchScoreExpression("this.documentScore()", 3, 4)` will return all documents that
+     * have document scores from 3 to 4.
+     *
      * <p>{@link Features#SCHEMA_EMBEDDING_PROPERTY_CONFIG}: This feature covers the
      * "semanticSearch" and "getEmbeddingParameter" functions in query expressions, which are used
      * for semantic search.

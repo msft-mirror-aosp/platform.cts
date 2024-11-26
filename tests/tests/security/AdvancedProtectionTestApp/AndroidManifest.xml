@@ -14,11 +14,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License
   -->
-<resources>
-    <!--
-        TODO(b/309578419): Make activities handle insets properly and then remove this.
-    -->
-    <style name="AppTheme" parent="@android:style/Theme.Holo.NoActionBar">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
-</resources>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.security.cts.advancedprotection.testadvancedprotection">
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <application>
+        <activity android:name=".TestActivity" android:exported="false"/>
+    </application>
+</manifest>
