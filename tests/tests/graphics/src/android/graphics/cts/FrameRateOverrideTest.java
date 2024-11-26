@@ -164,14 +164,8 @@ public final class FrameRateOverrideTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
-            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
-            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
-            // in the test setup, this is not communicated and thus not handled.
-            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
-            if (mode.isSynthetic()) {
-                continue;
-            }
-
+            // This is a hack for android15 only, where Display.Mode#isSynthetic is not
+            // a @TestApi. Instead, we just pick the higest refresh rate mode and test against it.
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
 
@@ -180,6 +174,12 @@ public final class FrameRateOverrideTest {
                         < MIN_SUPPORTED_FRAME_RATE_HZ + REFRESH_RATE_TOLERANCE) {
                     continue;
                 }
+
+                if (!modesWithSameResolution.isEmpty()
+                        && modesWithSameResolution.get(0).getRefreshRate() > mode.getRefreshRate()) {
+                    continue;
+                }
+                modesWithSameResolution.clear();
                 modesWithSameResolution.add(mode);
                 Log.i(TAG, "Mode added: " + mode.toString());
             }
