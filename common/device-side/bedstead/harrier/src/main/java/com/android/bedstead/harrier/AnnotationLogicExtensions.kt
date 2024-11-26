@@ -23,6 +23,8 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE
@@ -37,6 +39,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -45,6 +48,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
@@ -70,6 +74,14 @@ fun RequireResourcesBooleanValue.logic() {
     Assume.assumeThat(
         "resource with configName: $configName",
         TestApis.resources().system().getBoolean(configName),
+        CoreMatchers.`is`(requiredValue)
+    )
+}
+
+fun RequireResourcesIntegerValue.logic() {
+    Assume.assumeThat(
+        "resource with configName: $configName",
+        TestApis.resources().system().getInteger(configName),
         CoreMatchers.`is`(requiredValue)
     )
 }
@@ -124,6 +136,20 @@ fun RequireLowRamDevice.logic() {
             .isLowRamDevice,
         failureMode
     )
+}
+
+fun RequireMinimumAdvertisedRamDevice.logic() {
+    if (SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        val memoryInfo = ActivityManager.MemoryInfo()
+        context().instrumentedContext()
+                .getSystemService(ActivityManager::class.java)!!
+                .getMemoryInfo(memoryInfo)
+        checkFailOrSkip(
+            reason,
+            memoryInfo.advertisedMem >= ramDeviceSize,
+            failureMode
+        )
+    }
 }
 
 fun RequireNotLowRamDevice.logic() {
@@ -261,7 +287,8 @@ fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).forEach { resolveInfoWrapper ->
         val packageName = resolveInfoWrapper.activityInfo().packageName
         EnsurePackageNotInstalled(
@@ -276,7 +303,8 @@ fun RequirePackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val packageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).size > 0
 
     if (packageResponded) {
@@ -297,7 +325,8 @@ fun RequireNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val noPackageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).isEmpty()
 
     if (noPackageResponded) {

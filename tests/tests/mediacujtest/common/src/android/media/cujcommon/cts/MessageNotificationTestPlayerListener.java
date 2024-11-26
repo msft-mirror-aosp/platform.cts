@@ -21,11 +21,13 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class MessageNotificationTestPlayerListener extends PlayerListener {
 
   private static final int NUM_OF_MESSAGE_NOTIFICATIONS = 2;
 
-  public MessageNotificationTestPlayerListener(long sendMessagePosition) {
+  public MessageNotificationTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -57,9 +59,9 @@ public class MessageNotificationTestPlayerListener extends PlayerListener {
             } catch (Exception e) {
               throw new RuntimeException(e);
             }
-          }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition * (i + 1))
-          .setDeleteAfterDelivery(true)
-          .send();
+          }).setLooper(Looper.getMainLooper())
+          .setPosition(mSendMessagePosition.multipliedBy(i + 1).toMillis())
+          .setDeleteAfterDelivery(true).send();
     }
   }
 }

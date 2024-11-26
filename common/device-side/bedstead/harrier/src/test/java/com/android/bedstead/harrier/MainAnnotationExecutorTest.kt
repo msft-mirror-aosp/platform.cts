@@ -44,12 +44,14 @@ import com.android.bedstead.harrier.annotations.RequireGmsBuild
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNotCnGmsBuild
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
 import com.android.bedstead.harrier.annotations.TestTag
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
@@ -188,6 +190,16 @@ class MainAnnotationExecutorTest {
                 .getSystemService(ActivityManager::class.java)
                 .isLowRamDevice
         ).isTrue()
+    }
+
+    @Test
+    @RequireMinimumAdvertisedRamDevice(ramDeviceSize = 4_000_000_000L, reason = "Test")
+    fun requireMinimumAdvertisedRamDeviceAnnotation_isMinimumAdvertisedRamDevice() {
+        val memoryInfo = ActivityManager.MemoryInfo()
+        context().instrumentedContext()
+            .getSystemService(ActivityManager::class.java)!!
+            .getMemoryInfo(memoryInfo)
+        assertThat(memoryInfo.advertisedMem >= 4_000_000_000L).isTrue()
     }
 
     @Test
@@ -333,6 +345,22 @@ class MainAnnotationExecutorTest {
         assertThat(
             resources().system().getBoolean("config_enableMultiUserUI")
         ).isFalse()
+    }
+
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 0)
+    @Test
+    fun requireResourcesIntegerValueIsTrue_resourceValueIs0() {
+        assertThat(
+            resources().system().getInteger("config_hsumBootStrategy")
+        ).isEqualTo(0)
+    }
+
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 1)
+    @Test
+    fun requireResourcesIntegerValueIsTrue_resourceValueIs1() {
+        assertThat(
+            resources().system().getInteger("config_hsumBootStrategy")
+        ).isEqualTo(1)
     }
 
     @Test

@@ -78,17 +78,11 @@
         <option name="push" value="CtsContentShellTestApp.apk->/data/local/tmp/cts/content/CtsContentShellTestApp.apk" />
         <option name="push" value="CtsDeviceAdminTestApp.apk->/data/local/tmp/cts/content/CtsDeviceAdminTestApp.apk" />
         <option name="push" value="CtsQueryPackagesTestApp.apk->/data/local/tmp/cts/content/CtsQueryPackagesTestApp.apk" />
-        <option name="push" value="CtsTestVerifierApp.apk->/data/local/tmp/cts/content/CtsTestVerifierApp.apk" />
-        <option name="push" value="CtsTestVerifierAppCrash.apk->/data/local/tmp/cts/content/CtsTestVerifierAppCrash.apk" />
-        <option name="push" value="CtsTestVerifierAppReject.apk->/data/local/tmp/cts/content/CtsTestVerifierAppReject.apk" />
-        <option name="push" value="CtsTestVerifierAppRejectWithPolicyOverride.apk->/data/local/tmp/cts/content/CtsTestVerifierAppRejectWithPolicyOverride.apk" />
-        <option name="push" value="CtsTestVerifierAppTimeout.apk->/data/local/tmp/cts/content/CtsTestVerifierAppTimeout.apk" />
-        <option name="push" value="CtsTestVerifierAppIncompleteUnknown.apk->/data/local/tmp/cts/content/CtsTestVerifierAppIncompleteUnknown.apk" />
-        <option name="push" value="CtsTestVerifierAppIncompleteNetworkUnavailable.apk->/data/local/tmp/cts/content/CtsTestVerifierAppIncompleteNetworkUnavailable.apk" />
         <option name="push" value="CtsContentDeclaringLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringLibrary.apk" />
         <option name="push" value="CtsContentDeclaringSdkLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringSdkLibrary.apk" />
         <option name="push" value="CtsContentDeclaringStaticLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringStaticLibrary.apk" />
         <option name="push" value="CtsPackageChangedTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedTestApp.apk" />
+        <option name="push" value="CtsPackageChangedSharedUserIdTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedSharedUserIdTestApp.apk" />
         <option name="push" value="CtsIntentResolutionApplicationOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionApplicationOverrideTestApp.apk" />
         <option name="push" value="CtsIntentResolutionComponentOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionComponentOverrideTestApp.apk" />
     </target_preparer>

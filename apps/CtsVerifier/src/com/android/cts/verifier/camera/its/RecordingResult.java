@@ -39,7 +39,8 @@ public class RecordingResult {
             CaptureResult.CONTROL_AE_STATE,
             CaptureResult.CONTROL_AF_STATE,
             CaptureResult.CONTROL_AWB_STATE,
-            CaptureResult.STATISTICS_FACES
+            CaptureResult.STATISTICS_FACES,
+            CaptureResult.STATISTICS_FACE_DETECT_MODE
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;

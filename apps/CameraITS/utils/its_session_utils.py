@@ -43,6 +43,7 @@ import ui_interaction_utils
 ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
+ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
@@ -862,7 +863,8 @@ class ItsSession(object):
   def do_basic_recording(self, profile_id, quality, duration,
                          video_stabilization_mode=0, hlg10_enabled=False,
                          zoom_ratio=None, ae_target_fps_min=None,
-                         ae_target_fps_max=None, antibanding_mode=None):
+                         ae_target_fps_max=None, antibanding_mode=None,
+                         face_detect_mode=None):
     """Issue a recording request and read back the video recording object.
 
     The recording will be done with the format specified in quality. These
@@ -883,6 +885,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService which
       contains path at which the recording is saved on the device, quality of
@@ -916,7 +919,12 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode:
       cmd['aeAntibandingMode'] = antibanding_mode
-    else: cmd['aeAntibandingMode'] = 0
+    else:
+      cmd['aeAntibandingMode'] = 0
+    if face_detect_mode:
+      cmd['faceDetectMode'] = face_detect_mode
+    else:
+      cmd['faceDetectMode'] = 0
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
@@ -963,7 +971,7 @@ class ItsSession(object):
   def do_preview_recording_multiple_surfaces(
       self, output_surfaces, duration, stabilize, ois=False,
       zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -982,6 +990,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -1006,12 +1015,14 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode is not None:
       cmd['aeAntibandingMode'] = antibanding_mode
+    if face_detect_mode is not None:
+      cmd['faceDetectMode'] = face_detect_mode
     return self._execute_preview_recording(cmd)
 
   def do_preview_recording(
       self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
       ae_target_fps_min=None, ae_target_fps_max=None, hlg10_enabled=False,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -1030,13 +1041,15 @@ class ItsSession(object):
       hlg10_enabled: boolean; True Eanable 10-bit HLG video recording, False
                               record using the regular SDK profile.
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
     return self.do_preview_recording_multiple_surfaces(
         output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max, antibanding_mode)
+        ae_target_fps_min, ae_target_fps_max, antibanding_mode,
+        face_detect_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,

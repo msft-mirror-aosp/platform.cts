@@ -156,12 +156,13 @@ public class SurfaceControlViewHostHelper {
             try {
                 mSurfacePackage = mIAttachEmbeddedWindow.attachEmbedded(mSurfaceView.getHostToken(),
                         mInitialSize.getWidth(), mInitialSize.getHeight(), mDisplayId, mDelayMs);
-                mSurfaceView.setChildSurfacePackage(mSurfacePackage);
+                mSurfaceView.post(() -> {
+                    mSurfaceView.setChildSurfacePackage(mSurfacePackage);
+                    mReadyLatch.countDown();
+                });
             } catch (RemoteException e) {
                 Log.e(mTag, "Failed to attach embedded window");
             }
-
-            mReadyLatch.countDown();
         });
     }
 

@@ -29,20 +29,24 @@ import android.view.ScaleGestureDetector;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class PinchToZoomTestPlayerListener extends PlayerListener {
 
   private static final String TAG = PinchToZoomTestPlayerListener.class.getSimpleName();
-  private static final int ZOOM_IN_DURATION_MS = 4000;
+  private static final Duration ZOOM_IN_DURATION = Duration.ofSeconds(4);
   private static final int PINCH_STEP_COUNT = 10;
   private static final float SPAN_GAP = 50.0f;
   private static final float LEFT_MARGIN_WIDTH_FACTOR = 0.1f;
   private static final float RIGHT_MARGIN_WIDTH_FACTOR = 0.9f;
 
+  private int mXStart;
+  private int mYStart;
   private int mWidth;
   private int mHeight;
   private float mStepSize;
 
-  public PinchToZoomTestPlayerListener(long sendMessagePosition) {
+  public PinchToZoomTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -86,27 +90,31 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Programmatically pinch and zoom in
           pinchAndZoom(true /* zoomIn */);
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Programmatically pinch and zoom out
           pinchAndZoom(false /* zoomOut */);
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + ZOOM_IN_DURATION_MS)
+        .setPosition(mSendMessagePosition.plus(ZOOM_IN_DURATION).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }
 
   /** Adjusts the touchable region size, based on the main activity's display metrics. */
   private void setInputRegionSize() {
+    int[] loc = new int[2];
+    mActivity.getWindow().getDecorView().getRootView().getLocationOnScreen(loc);
+    mXStart = loc[0];
+    mYStart = loc[1];
     DisplayMetrics displayMetrics = mActivity.getResources().getDisplayMetrics();
     mWidth = displayMetrics.widthPixels;
     mHeight = displayMetrics.heightPixels;
     mStepSize = (RIGHT_MARGIN_WIDTH_FACTOR * mWidth - LEFT_MARGIN_WIDTH_FACTOR * mWidth
             - 2 * SPAN_GAP) / (2 * PINCH_STEP_COUNT);
-    Log.i(TAG, "Set the touchable region size: width=" + mWidth + ", height=" + mHeight
-            + ", stepSize=" + mStepSize);
+    Log.i(TAG, "Set the touchable region: x = " + mXStart + ", y = " + mYStart
+            + ", width=" + mWidth + ", height=" + mHeight + ", stepSize=" + mStepSize);
   }
 
   /**
@@ -140,17 +148,17 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
   PointerCoords[] getPointerCoords(boolean isZoomIn) {
     PointerCoords leftPointerStartCoords;
     PointerCoords rightPointerStartCoords;
-    float midDisplayHeight = mHeight / 2.0f;
+    float midDisplayHeight = mYStart + mHeight / 2.0f;
     if (isZoomIn) {
-      float midDisplayWidth = mWidth / 2.0f;
+      float midDisplayWidth = mXStart + mWidth / 2.0f;
       // During zoom in, start pinching from middle of the display towards the end.
       leftPointerStartCoords = getDisplayPointer(midDisplayWidth - SPAN_GAP, midDisplayHeight);
       rightPointerStartCoords = getDisplayPointer(midDisplayWidth + SPAN_GAP, midDisplayHeight);
     } else {
       // During zoom out, start pinching from end of the display towards the middle.
-      leftPointerStartCoords = getDisplayPointer(LEFT_MARGIN_WIDTH_FACTOR * mWidth,
+      leftPointerStartCoords = getDisplayPointer(mXStart + LEFT_MARGIN_WIDTH_FACTOR * mWidth,
           midDisplayHeight);
-      rightPointerStartCoords = getDisplayPointer(RIGHT_MARGIN_WIDTH_FACTOR * mWidth,
+      rightPointerStartCoords = getDisplayPointer(mXStart + RIGHT_MARGIN_WIDTH_FACTOR * mWidth,
           midDisplayHeight);
     }
     return new PointerCoords[]{leftPointerStartCoords, rightPointerStartCoords};

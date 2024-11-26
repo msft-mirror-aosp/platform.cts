@@ -282,22 +282,6 @@ bool AAudioExtensions::loadLibrary() {
         return false;
     }
 
-    mAAudio_getPlatformMMapPolicy =
-            (aaudio_policy_t(*)(aaudio_device_t device, aaudio_direction_t direction))
-                    dlsym(mLibHandle, FUNCTION_GET_PLATFORM_MMAP_POLICY);
-    if (mAAudio_getPlatformMMapPolicy == nullptr) {
-        // LOGI("%s() could not find " FUNCTION_GET_PLATFORM_MMAP_POLICY, __func__);
-        return false;
-    }
-
-    mAAudio_getPlatformMMapExclusivePolicy =
-            (aaudio_policy_t(*)(aaudio_device_t device, aaudio_direction_t direction))
-                    dlsym(mLibHandle, FUNCTION_GET_PLATFORM_MMAP_EXCLUSIVE_POLICY);
-    if (mAAudio_getPlatformMMapExclusivePolicy == nullptr) {
-        // LOGI("%s() could not find " FUNCTION_GET_PLATFORM_MMAP_EXCLUSIVE_POLICY, __func__);
-        return false;
-    }
-
     mFunctionsLoaded = true;
     return mFunctionsLoaded;
 }
@@ -450,4 +434,16 @@ void enableAudioHotwordPermission() {
 void disablePermissions() {
     callJavaStaticVoidFunction(
             nullptr, "android/nativemedia/aaudio/AAudioTests", "disablePermissions", "()V");
+}
+
+bool isCompressedFormat(aaudio_format_t format) {
+    switch (format) {
+        case AAUDIO_FORMAT_PCM_I16:
+        case AAUDIO_FORMAT_PCM_FLOAT:
+        case AAUDIO_FORMAT_PCM_I24_PACKED:
+        case AAUDIO_FORMAT_PCM_I32:
+            return false;
+        default:
+            return true;
+    }
 }

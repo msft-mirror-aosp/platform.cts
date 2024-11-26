@@ -47,7 +47,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
-import android.platform.test.annotations.EnableFlags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -455,7 +454,7 @@ public class MediaStoreTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_ENABLE_MARK_MEDIA_AS_FAVORITE_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
     public void testMarkMediaAsFavorite_onlyReadPermission_markIsFavoriteStatus()
             throws Exception {
         final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
@@ -474,7 +473,7 @@ public class MediaStoreTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_ENABLE_MARK_MEDIA_AS_FAVORITE_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
     public void testMarkMediaAsFavorite_onlyManageExternalStorage_markIsFavoriteStatus()
             throws Exception {
         final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
@@ -493,7 +492,7 @@ public class MediaStoreTest {
     }
 
     @Test
-    @EnableFlags(Flags.FLAG_ENABLE_MARK_MEDIA_AS_FAVORITE_API)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
     public void testMarkMediaAsFavorite_noPermission_throwsException() throws Exception {
         final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
 

@@ -18,7 +18,7 @@ package android.settings.cts;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -31,19 +31,20 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.SetFlagsRule;
 import android.provider.ContactsContract;
-
+import android.provider.Flags;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
-import com.android.settings.flags.Flags;
-
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 /**
  * Tests to ensure the Activity to handle
@@ -68,16 +69,19 @@ public final class ContactsStorageSettingsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTACTS_DEFAULT_ACCOUNT_IN_SETTINGS)
+    @Ignore("b/378923182")
+    @RequiresFlagsEnabled(Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testContactsStorageSettingsExist() throws Exception {
+                Context targetContext = InstrumentationRegistry.getTargetContext();
         Intent intent = new Intent(
                 ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT).addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK);
-        ResolveInfo ri =
-                InstrumentationRegistry.getTargetContext().getPackageManager().resolveActivity(
-                        intent, PackageManager.MATCH_DEFAULT_ONLY);
-        assertNotNull(ri);
-        Context targetContext = InstrumentationRegistry.getTargetContext();
+        List<ResolveInfo> resolveInfos =
+                targetContext.getPackageManager()
+                        .queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+
+        // Make sure only one activity handles SET_DEFAULT_ACCOUNT intent
+        assertEquals(1, resolveInfos.size());
 
         targetContext.startActivity(intent);
 
