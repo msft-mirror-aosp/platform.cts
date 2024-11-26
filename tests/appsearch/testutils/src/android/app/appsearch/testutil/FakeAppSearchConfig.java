@@ -279,6 +279,18 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
         return DEFAULT_BUILD_PROPERTY_EXISTENCE_METADATA_HITS;
     }
 
+    @Override
+    public long getOrphanBlobTimeToLiveMs() {
+        throwIfClosed();
+        return DEFAULT_ORPHAN_BLOB_TIME_TO_LIVE_MS;
+    }
+
+    @Override
+    public int getMaxOpenBlobCount() {
+        throwIfClosed();
+        return DEFAULT_MAX_OPEN_BLOB_COUNT;
+    }
+
     private void throwIfClosed() {
         if (mIsClosed.get()) {
             throw new IllegalStateException(

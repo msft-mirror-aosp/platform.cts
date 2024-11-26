@@ -19,14 +19,18 @@ package android.app.appsearch.testutil;
 import android.annotation.NonNull;
 import android.annotation.UserIdInt;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.AppSearchSession;
 import android.app.appsearch.AppSearchSessionShim;
+import android.app.appsearch.CommitBlobResponse;
 import android.app.appsearch.Features;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
+import android.app.appsearch.OpenBlobForReadResponse;
+import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportUsageRequest;
@@ -144,6 +148,36 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
         mAppSearchSession.getByDocumentId(
                 request, mExecutor, new BatchResultCallbackAdapter<>(future));
         return future;
+    }
+
+    @Override
+    @NonNull
+    public ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        SettableFuture<AppSearchResult<OpenBlobForWriteResponse>> future =
+                SettableFuture.create();
+        mAppSearchSession.openBlobForWrite(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
+    }
+
+    @Override
+    @NonNull
+    public ListenableFuture<CommitBlobResponse> commitBlobAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        SettableFuture<AppSearchResult<CommitBlobResponse>> future =
+                SettableFuture.create();
+        mAppSearchSession.commitBlob(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
+    }
+
+    @Override
+    @NonNull
+    public ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        SettableFuture<AppSearchResult<OpenBlobForReadResponse>> future =
+                SettableFuture.create();
+        mAppSearchSession.openBlobForRead(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
     }
 
     @Override
