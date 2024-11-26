@@ -223,9 +223,6 @@ public final class FrameRateOverrideTest {
         Log.i(TAG, "\n");
     }
 
-    // b/350443755 Ignore for flaky test.
-    @Ignore
-    @FlakyTest(bugId = 350443755)
     @Test
     public void testAppBackpressure()
             throws InterruptedException, IOException {
