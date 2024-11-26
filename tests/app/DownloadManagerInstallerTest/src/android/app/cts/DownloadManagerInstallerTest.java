@@ -17,6 +17,7 @@ package android.app.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.app.DownloadManager;
 import android.content.Context;
@@ -48,7 +49,7 @@ public class DownloadManagerInstallerTest extends DownloadManagerTestBase {
         String otherAppObbPath = obbDir.getPath().replace(mContext.getPackageName(),
                 "android.app.cts.some_random_package");
         File destPath = new File(otherAppObbPath);
-        destPath.mkdirs();
+        assertTrue(destPath.mkdirs());
 
         File destFile = new File(destPath, "test.obb");
         deleteFromShell(destFile);
