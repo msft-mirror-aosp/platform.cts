@@ -101,9 +101,15 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
-    public int getMaxDocumentCount() {
+    public int getPerPackageDocumentCountLimit() {
         throwIfClosed();
-        return DEFAULT_LIMIT_CONFIG_MAX_DOCUMENT_COUNT;
+        return DEFAULT_LIMIT_CONFIG_PER_PACKAGE_DOCUMENT_COUNT_LIMIT;
+    }
+
+    @Override
+    public int getDocumentCountLimitStartThreshold() {
+        throwIfClosed();
+        return DEFAULT_LIMIT_CONFIG_DOCUMENT_COUNT_LIMIT_START_THRESHOLD;
     }
 
     @Override

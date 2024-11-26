@@ -29,7 +29,6 @@ import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
 import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
 import static android.net.wifi.WifiManager.WIFI_STATE_DISABLED;
-import static android.net.wifi.WifiManager.WIFI_STATE_DISABLING;
 import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
 import static android.os.Process.myUid;
@@ -737,35 +736,26 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public static class TestWifiStateChangedListener
             implements WifiManager.WifiStateChangedListener {
         private final Object mWifiStateLock;
-        private final List<Integer> mWifiStates = new ArrayList<>();
+        private int mWifiStateChangedCount;
 
         TestWifiStateChangedListener(Object lock) {
             mWifiStateLock = lock;
         }
 
         @Override
-        public void onWifiStateChanged(int state) {
+        public void onWifiStateChanged() {
             synchronized (mWifiStateLock) {
-                mWifiStates.add(state);
+                mWifiStateChangedCount++;
                 mWifiStateLock.notify();
-            }
-        }
-
-        /**
-         * Gets the Nth Wi-Fi state seen since registering this listener.
-         */
-        public int getWifiState(int index) {
-            synchronized (mWifiStateLock) {
-                return mWifiStates.get(index);
             }
         }
 
         /**
          * Gets the number of Wi-fi states recorded since registering this listener.
          */
-        public int getWifiStatesSize() {
+        public int getWifiStateChangedCount() {
             synchronized (mWifiStateLock) {
-                return mWifiStates.size();
+                return mWifiStateChangedCount;
             }
         }
     }
@@ -775,6 +765,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
      */
     @Test
     public void testWifiStateChangedListener() throws Exception {
+        if (!Flags.wifiStateChangedListener()) {
+            // Skip the test if flag is not enabled.
+            return;
+        }
         synchronized (mLock) {
             try {
                 setWifiEnabled(true);
@@ -782,32 +776,18 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         new TestWifiStateChangedListener(mLock);
                 sWifiManager.addWifiStateChangedListener(mExecutor, listener);
 
-                // Callback should be called after registering
+                // Set Wi-Fi disabled and verify WifiStateChangedListener was called twice.
+                setWifiEnabled(false);
                 long now = System.currentTimeMillis();
                 long deadline = now + TEST_WAIT_DURATION_MS;
                 while (now < deadline) {
                     mLock.wait(deadline - now);
-                    if (listener.getWifiStatesSize() > 0) {
+                    if (listener.getWifiStateChangedCount() > 1) {
                         break;
                     }
                     now = System.currentTimeMillis();
                 }
-                assertEquals(WIFI_STATE_ENABLED, listener.getWifiState(0));
-                assertEquals(1, listener.getWifiStatesSize());
-
-                setWifiEnabled(false);
-                now = System.currentTimeMillis();
-                deadline = now + TEST_WAIT_DURATION_MS;
-                while (now < deadline) {
-                    mLock.wait(deadline - now);
-                    if (listener.getWifiStatesSize() > 2) {
-                        break;
-                    }
-                    now = System.currentTimeMillis();
-                }
-                assertEquals(WIFI_STATE_DISABLING, listener.getWifiState(1));
-                assertEquals(WIFI_STATE_DISABLED, listener.getWifiState(2));
-                assertEquals(3, listener.getWifiStatesSize());
+                assertEquals(2, listener.getWifiStateChangedCount());
             } catch (InterruptedException e) {
                 throw new AssertionError(
                         "Thread interrupted unexpectedly while waiting on mLock", e);
