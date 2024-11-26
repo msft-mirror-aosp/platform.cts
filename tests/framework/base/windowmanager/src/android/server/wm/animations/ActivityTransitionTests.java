@@ -492,11 +492,10 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
         // Extending default transition animation duration, to ensure here can be more reliably to
         // capture the transition state.
-        runWithShellPermission(() -> {
-            Settings.Global.putFloat(
-                    mContext.getContentResolver(),
-                    Settings.Global.TRANSITION_ANIMATION_SCALE, 10.0f);
-        });
+        mObjectTracker.manage(new SettingsSession<>(
+                Settings.Secure.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                Settings.Secure::getFloat, Settings.Secure::putFloat)).set(10f);
+
         final Intent update = new Intent(ACTION_UPDATE);
         update.putExtra(TEST_METHOD_KEY, TEST_METHOD_CLEAR_OVERRIDE_ACTIVITY_TRANSITION);
         update.putExtra(TRANSITION_TYPE_KEY, TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE);
