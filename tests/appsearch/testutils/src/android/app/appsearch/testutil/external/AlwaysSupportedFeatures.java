@@ -92,6 +92,10 @@ public class AlwaysSupportedFeatures implements Features {
             case Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS:
                 // fall through
             case Features.SCHEMA_SCORABLE_PROPERTY_CONFIG:
+                // fall through
+            case Features.SEARCH_RESULT_PARENT_TYPES:
+                // fall through
+            case Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM:
                 return true;
             default:
                 return false;
