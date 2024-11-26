@@ -691,6 +691,7 @@ class AutoRevokeTest {
                 .addFlags(FLAG_ACTIVITY_CLEAR_TASK))
 
         waitForIdle()
+        scrollToLabel("Permissions")
 
         click("Permissions")
     }
