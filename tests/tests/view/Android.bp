@@ -58,6 +58,7 @@ android_test {
         "ui-trace-collector",
         "collector-device-lib",
         "hwui_flags_java_lib",
+        "Harrier",
     ],
 
     jni_libs: [
