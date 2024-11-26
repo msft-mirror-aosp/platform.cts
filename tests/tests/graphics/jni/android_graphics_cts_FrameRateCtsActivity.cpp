@@ -181,20 +181,6 @@ jint nativeWindowSetFrameRate(JNIEnv* env, jclass, jobject jSurface, jfloat fram
             changeFrameRateStrategy);
 }
 
-jint nativeWindowSetFrameRateParams(JNIEnv* env, jclass, jobject jSurface, jfloat desiredMinRate,
-                                    jfloat desiredMaxRate, jfloat fixedSourceRate,
-                                    jint changeFrameRateStrategy) {
-    ANativeWindowRAII window;
-    if (jSurface) {
-        window.mNw = ANativeWindow_fromSurface(env, jSurface);
-    }
-
-    return ANativeWindow_setFrameRateParams(window.mNw, desiredMinRate, desiredMaxRate,
-                                            fixedSourceRate,
-                                            static_cast<ANativeWindow_ChangeFrameRateStrategy>(
-                                                    changeFrameRateStrategy));
-}
-
 jint nativeWindowClearFrameRate(JNIEnv* env, jclass, jobject jSurface) {
     ANativeWindowRAII window;
     if (jSurface) {
@@ -307,11 +293,9 @@ jboolean surfaceControlPostBuffer(JNIEnv*, jclass, jlong surfaceControlLong, jin
     return JNI_TRUE;
 }
 
-const std::array<JNINativeMethod, 10> JNI_METHODS = {{
+const std::array<JNINativeMethod, 9> JNI_METHODS = {{
         {"nativeWindowSetFrameRate", "(Landroid/view/Surface;FII)I",
          (void*)nativeWindowSetFrameRate},
-        {"nativeWindowSetFrameRateParams", "(Landroid/view/Surface;FFFI)I",
-         (void*)nativeWindowSetFrameRateParams},
         {"nativeSurfaceControlCreate", "(Landroid/view/Surface;Ljava/lang/String;IIII)J",
          (void*)surfaceControlCreate},
         {"nativeSurfaceControlDestroy", "(J)V", (void*)surfaceControlDestroy},
