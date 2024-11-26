@@ -104,7 +104,7 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
     }
 
     public void testSizeCompatRestartButtonAppearedAndClicked() throws Exception {
-        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AppCompatTests",
+        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".appcompat.AppCompatTests",
                 "testClickSizeCompatRestartButton");
 
         // Wait to make sure metric event is reported.

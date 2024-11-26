@@ -18,6 +18,8 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.Mockito.mock;
+
 import android.bluetooth.BluetoothFrameworkInitializer;
 import android.os.BluetoothServiceManager;
 import android.test.AndroidTestCase;
@@ -39,7 +41,7 @@ public class BluetoothFrameworkInitializerTest extends AndroidTestCase {
     public void test_SetBluetoothServiceManager() {
         assertThrows(IllegalStateException.class,
                 () -> BluetoothFrameworkInitializer.setBluetoothServiceManager(
-                    new BluetoothServiceManager()));
+                    mock(BluetoothServiceManager.class)));
     }
 
     public void test_SetBinderCallsStatsInitializer() {
