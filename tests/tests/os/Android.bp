@@ -22,8 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
-        "android-sdk-flags-java",
         "android.hidl.manager-V1.0-java",
+        "android.sdk.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -90,7 +90,7 @@ android_ravenwood_test {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     static_libs: [
-        "android-sdk-flags-java",
+        "android.sdk.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt-ravenwood",

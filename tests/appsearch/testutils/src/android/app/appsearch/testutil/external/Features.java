@@ -118,6 +118,16 @@ public interface Features {
     String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "matchScoreExpression" function in query expressions.
+     *
+     * <p>For details on the "matchScoreExpression" function in the query language, see {@link
+     * AppSearchSession#search}.
+     */
+    String LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION =
+            FeatureConstants.LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION;
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
      * AppSearch backend can store the descriptions returned by {@link
      * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
@@ -133,6 +143,12 @@ public interface Features {
      * language.
      */
     String SCHEMA_EMBEDDING_PROPERTY_CONFIG = "SCHEMA_EMBEDDING_PROPERTY_CONFIG";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.EmbeddingPropertyConfig.Builder#setQuantizationType(int)}.
+     */
+    String SCHEMA_EMBEDDING_QUANTIZATION = "SCHEMA_EMBEDDING_QUANTIZATION";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
@@ -202,6 +218,15 @@ public interface Features {
      * AppSearchSchema.DocumentPropertyConfig.Builder#addIndexableNestedProperties(String...)}
      */
     String SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES = "SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.LongPropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
+     * AppSearchSchema.DoublePropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
+     * AppSearchSchema.BooleanPropertyConfig.Builder#setScoringEnabled(boolean)}. {@link
+     * SearchSpec.Builder#setScorablePropertyRankingEnabled(boolean)}.
+     */
+    String SCHEMA_SCORABLE_PROPERTY_CONFIG = FeatureConstants.SCHEMA_SCORABLE_PROPERTY_CONFIG;
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
