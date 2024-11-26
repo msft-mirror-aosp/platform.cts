@@ -23,6 +23,7 @@ import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.overlay.Components.UntrustedTouchTestService.EXTRA_DISPLAY_ID;
 import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
 import static android.view.WindowInsets.Type.navigationBars;
 import static android.view.WindowInsets.Type.statusBars;
@@ -1056,6 +1057,7 @@ public class WindowUntrustedTouchTest {
                 new FutureConnection<>(IUntrustedTouchTestService.Stub::asInterface);
         Intent intent = new Intent();
         intent.setComponent(repackage(packageName, Components.UntrustedTouchTestService.COMPONENT));
+        intent.putExtra(EXTRA_DISPLAY_ID, mActivity.getDisplay().getDisplayId());
         assertTrue(mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE));
         return connection;
     }
