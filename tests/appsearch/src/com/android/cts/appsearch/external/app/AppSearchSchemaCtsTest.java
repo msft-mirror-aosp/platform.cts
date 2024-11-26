@@ -78,6 +78,14 @@ public class AppSearchSchemaCtsTest {
         LongPropertyConfig builder = new LongPropertyConfig.Builder("test").build();
         assertThat(builder.getIndexingType()).isEqualTo(LongPropertyConfig.INDEXING_TYPE_NONE);
         assertThat(builder.getCardinality()).isEqualTo(PropertyConfig.CARDINALITY_OPTIONAL);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCORABLE_PROPERTY)
+    public void testLongPropertyConfigDefaultValuesWithScorableConfig() {
+        LongPropertyConfig builder = new LongPropertyConfig.Builder("test").build();
+        assertThat(builder.getIndexingType()).isEqualTo(LongPropertyConfig.INDEXING_TYPE_NONE);
+        assertThat(builder.getCardinality()).isEqualTo(PropertyConfig.CARDINALITY_OPTIONAL);
         assertThat(builder.isScoringEnabled()).isEqualTo(false);
     }
 
