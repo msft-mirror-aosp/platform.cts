@@ -13,6 +13,7 @@ java_test_helper_library {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
+        "mcts",
         "general-tests",
         "sts",
         "mcts-mediaprovider",
