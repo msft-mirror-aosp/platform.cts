@@ -60,7 +60,7 @@ android_test {
         "collector-device-lib",
         "hwui_flags_java_lib",
         "framework_graphics_flags_java_lib",
-        "Harrier",
+        "bedstead",
     ],
 
     jni_libs: [
