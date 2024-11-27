@@ -1270,11 +1270,13 @@ public class DisplayTest extends TestBase {
                 rates.add(mode.getVsyncRate());
             }
         }
-        final float epsilon = 0.0001F;
+        final float epsilon = 0.001F;
         for (float refreshRate : refreshRates) {
             boolean isDivisorRateFound = false;
             for (float vsyncRate : rates) {
-                isDivisorRateFound =  vsyncRate % refreshRate <= epsilon;
+                final double result = vsyncRate / refreshRate;
+                final double resultRounded = Math.round(vsyncRate / refreshRate);
+                isDivisorRateFound = Math.abs(result - resultRounded) <= epsilon;
                 if (isDivisorRateFound) {
                     break;
                 }
