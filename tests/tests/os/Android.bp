@@ -37,6 +37,7 @@ android_test {
         "junit-params",
         "bedstead",
         "CtsMockInputMethodLib",
+        "CtsSurfaceValidatorLib",
         "hamcrest-library",
         "platformprotosnano",
         "device-time-shell-utils",
