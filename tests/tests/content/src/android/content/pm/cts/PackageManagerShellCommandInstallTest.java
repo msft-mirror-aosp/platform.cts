@@ -1480,9 +1480,9 @@ public class PackageManagerShellCommandInstallTest {
         onBeforeSdkTests();
 
         setDependencyInstallerRoleHolder();
-        setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
         try {
             // Dependency Installer Service cannot resolve SDK3
+            setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
@@ -1544,7 +1544,6 @@ public class PackageManagerShellCommandInstallTest {
 
         setDependencyInstallerRoleHolder();
         try {
-            // Dependency Installer Service should resolve missing SDK1
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_ASYNC);
             installPackage(TEST_USING_SDK1_AND_SDK2);
             assertNoErrorInDependencyInstallerService();
@@ -1564,10 +1563,52 @@ public class PackageManagerShellCommandInstallTest {
 
         setDependencyInstallerRoleHolder();
         try {
-            // Dependency Installer Service should resolve missing SDK1
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_INVALID_SESSION_ID);
-            installPackage(TEST_USING_SDK1);
+            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            assertNoErrorInDependencyInstallerService();
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testDependencyInstallerService_sendsAbandonedSessionId() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        setDependencyInstallerRoleHolder();
+        try {
+            setDependencyInstallerRunMethod(
+                    TestDependencyInstallerService.METHOD_ABANDONED_SESSION_ID);
+            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            assertNoErrorInDependencyInstallerService();
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testDependencyInstallerService_abandonSession() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        setDependencyInstallerRoleHolder();
+        try {
+            setDependencyInstallerRunMethod(
+                    TestDependencyInstallerService.METHOD_ABANDON_SESSION_DURING_INSTALL);
+            String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
+            assertThat(errorMsg).contains("Failed to install all dependencies");
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
