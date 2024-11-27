@@ -54,13 +54,12 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     private static final int TEST_TASK_OFFSET = 20;
     private static final int TEST_TASK_OFFSET_2 = 100;
-    private static final int TEST_TASK_SIZE_1 = 900;
-    private static final int TEST_TASK_SIZE_2 = TEST_TASK_SIZE_1 * 2;
+    private static final int TEST_TASK_SIZE = 1000;
     private static final int TEST_TASK_SIZE_DP_1 = 220;
     private static final int TEST_TASK_SIZE_DP_2 = TEST_TASK_SIZE_DP_1 * 2;
 
     // NOTE: Launching the FreeformActivity will automatically launch the TestActivity
-    // with bounds (0, 0, 900, 900)
+    // with bounds (0, 0, 1000, 1000)
 
     @Test
     public void testFreeformWindowManagementSupport() {
@@ -88,7 +87,7 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         mWmState.assertVisibility(TEST_ACTIVITY, true);
         mWmState.assertFocusedActivity(
                 TEST_ACTIVITY + " must be focused Activity", TEST_ACTIVITY);
-        assertEquals(new Rect(0, 0, TEST_TASK_SIZE_1, TEST_TASK_SIZE_1),
+        assertEquals(new Rect(0, 0, TEST_TASK_SIZE, TEST_TASK_SIZE),
                 mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds());
     }
 
