@@ -55,6 +55,7 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.ThermalUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -98,6 +99,7 @@ public class JobThrottlingTest {
             InstrumentationRegistry.getInstrumentation());
     private NetworkingHelper mNetworkingHelper;
     private PowerManager mPowerManager;
+    private UserHelper mUserHelper;
     private final int mTestJobId = (int) (SystemClock.uptimeMillis() / 1000);
     private boolean mDeviceIdleEnabled;
     private boolean mDeviceLightIdleEnabled;
@@ -186,6 +188,7 @@ public class JobThrottlingTest {
         // Kill as many things in the background as possible so we avoid LMK interfering with the
         // test.
         mUiDevice.executeShellCommand("am kill-all");
+        mUserHelper = new UserHelper(mContext);
     }
 
     @Test
@@ -456,6 +459,10 @@ public class JobThrottlingTest {
 
     @Test
     public void testBackgroundUIJsThermal() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TestAppInterface.TEST_APP_PACKAGE)) {
@@ -974,6 +981,10 @@ public class JobThrottlingTest {
     @Test
     public void testUserInitiatedJobBypassesBatterySaverOn() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mNetworkingHelper.setAllNetworksEnabled(true);
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
@@ -997,6 +1008,10 @@ public class JobThrottlingTest {
     @Test
     public void testUserInitiatedJobBypassesBatterySaver_toggling() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mNetworkingHelper.setAllNetworksEnabled(true);
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
@@ -1024,6 +1039,10 @@ public class JobThrottlingTest {
     @Test
     public void testUserInitiatedJobBypassesDeviceIdle() throws Exception {
         assumeTrue("device idle not enabled", mDeviceIdleEnabled);
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mNetworkingHelper.setAllNetworksEnabled(true);
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
@@ -1046,6 +1065,10 @@ public class JobThrottlingTest {
     @Test
     public void testUserInitiatedJobBypassesDeviceIdle_toggling() throws Exception {
         assumeTrue("device idle not enabled", mDeviceIdleEnabled);
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mNetworkingHelper.setAllNetworksEnabled(true);
 
         try (TestNotificationListener.NotificationHelper notificationHelper =
