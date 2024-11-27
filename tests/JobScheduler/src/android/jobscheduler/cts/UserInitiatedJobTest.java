@@ -156,10 +156,13 @@ public class UserInitiatedJobTest {
 
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
-            mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND,
-                    ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
-                    | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK,
-                    201 /* ProcessList.PERCEPTIBLE_APP_ADJ + 1 */);
+            mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                    .setProcState(ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND)
+                    .setExpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                            | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                    .setOomScoreAdj(201 /* ProcessList.PERCEPTIBLE_APP_ADJ + 1 */)
+                    .build());
         }
     }
 
@@ -348,9 +351,15 @@ public class UserInitiatedJobTest {
 
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
-            mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                    ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK,
-                    227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+
+            mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                    .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                    .setExpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK)
+                    .setUnexpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                    .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                    .build());
         }
     }
 

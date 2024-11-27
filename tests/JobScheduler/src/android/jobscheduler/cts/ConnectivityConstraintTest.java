@@ -708,9 +708,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0, // Regular jobs should not have any privileged network capabilities
-                250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */)
+                .build());
     }
 
     // --------------------------------------------------------------------------------------------
