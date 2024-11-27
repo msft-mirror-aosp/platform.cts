@@ -1446,6 +1446,21 @@ public class PackageManagerShellCommandInstallTest {
                 TestDependencyInstallerService.METHOD_NAME, methodName).commit();
     }
 
+    private void assertNoErrorInDependencyInstallerService() throws Exception {
+        String msg = getDefaultSharedPreferences().getString(
+                TestDependencyInstallerService.ERROR_MESSAGE, "");
+
+        assertWithMessage("Expected no error in DependencyInstallerService").that(msg).isEmpty();
+    }
+
+    private void assertErrorInDependencyInstallerService(String expected) throws Exception {
+        String msg = getDefaultSharedPreferences().getString(
+                TestDependencyInstallerService.ERROR_MESSAGE, "");
+
+        assertWithMessage("Expected error in DependencyInstallerService")
+                .that(msg).contains(expected);
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testAppWithMissingDependency_dependencyInstallerDisabledShellCommand()
@@ -1456,6 +1471,7 @@ public class PackageManagerShellCommandInstallTest {
                 TEST_USING_SDK1, /*disableAutoInstallDependencies=*/true);
         assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
         assertThat(errorMsg).contains("Reconcile failed");
+        assertNoErrorInDependencyInstallerService();
     }
 
     @Test
@@ -1464,11 +1480,13 @@ public class PackageManagerShellCommandInstallTest {
         onBeforeSdkTests();
 
         setDependencyInstallerRoleHolder();
+        setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
         try {
             // Dependency Installer Service cannot resolve SDK3
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK3);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            assertErrorInDependencyInstallerService("Unsupported SDK found: " + TEST_SDK3_NAME);
         } finally {
             removeDependencyInstallerRoleHolder();
         }
@@ -1488,6 +1506,7 @@ public class PackageManagerShellCommandInstallTest {
             // Dependency Installer Service should resolve missing SDK1
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_SYNC);
             installPackage(TEST_USING_SDK1);
+            assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
         }
@@ -1507,6 +1526,7 @@ public class PackageManagerShellCommandInstallTest {
             String errorMsg = installPackageGetErrorMessage(TEST_USING_SDK1);
             assertThat(errorMsg).contains("Failure [INSTALL_FAILED_MISSING_SHARED_LIBRARY");
             assertThat(errorMsg).contains("Failed to resolve all dependencies automatically");
+            assertErrorInDependencyInstallerService("Unsupported SDK found: " + TEST_SDK1_NAME);
         } finally {
             removeDependencyInstallerRoleHolder();
         }
@@ -1515,7 +1535,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testAppWithoutDependantSdk_resolveSdk2_async() throws Exception {
+    public void testAppWithMissingDependency_resolveSdk2_async() throws Exception {
         onBeforeSdkTests();
 
         installPackage(TEST_SDK2);
@@ -1527,6 +1547,28 @@ public class PackageManagerShellCommandInstallTest {
             // Dependency Installer Service should resolve missing SDK1
             setDependencyInstallerRunMethod(TestDependencyInstallerService.METHOD_INSTALL_ASYNC);
             installPackage(TEST_USING_SDK1_AND_SDK2);
+            assertNoErrorInDependencyInstallerService();
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testDependencyInstallerService_sendsInvalidSessionId() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        setDependencyInstallerRoleHolder();
+        try {
+            // Dependency Installer Service should resolve missing SDK1
+            setDependencyInstallerRunMethod(
+                    TestDependencyInstallerService.METHOD_INVALID_SESSION_ID);
+            installPackage(TEST_USING_SDK1);
+            assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
         }
@@ -1557,6 +1599,7 @@ public class PackageManagerShellCommandInstallTest {
         // Installation should fail.
         String msg = executeShellCommand("pm install-commit " + parentSessionId);
         assertThat(msg).contains("Reconcile failed");
+        assertNoErrorInDependencyInstallerService();
     }
 
     @Test
