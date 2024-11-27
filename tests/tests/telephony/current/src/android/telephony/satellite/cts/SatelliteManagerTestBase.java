@@ -922,11 +922,11 @@ public class SatelliteManagerTestBase {
         }
 
         public boolean waitUntilSatelliteAccessConfigurationChangedEvent(
-                int expectedNumberOfEvents) {
+                int expectedNumberOfEvents, long timeOutMilliSec) {
             logd("waitUntilSatelliteAccessConfigurationChangedEvent");
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
-                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(TIMEOUT,
+                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(timeOutMilliSec,
                             TimeUnit.MILLISECONDS)) {
                         loge("Timeout to receive "
                                 + "waitUntilSatelliteAccessConfigurationChangedEvent");
