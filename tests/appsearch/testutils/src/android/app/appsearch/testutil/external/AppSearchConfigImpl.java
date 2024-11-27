@@ -144,6 +144,11 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     }
 
     @Override
+    public int getMaxOpenBlobCount() {
+        return mLimitConfig.getMaxOpenBlobCount();
+    }
+
+    @Override
     public boolean shouldStoreParentInfoAsSyntheticProperty() {
         return mStoreParentInfoAsSyntheticProperty;
     }
@@ -151,5 +156,10 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     @Override
     public boolean shouldRetrieveParentInfo() {
         return mShouldRetrieveParentInfo;
+    }
+
+    @Override
+    public long getOrphanBlobTimeToLiveMs() {
+        return mIcingOptionsConfig.getOrphanBlobTimeToLiveMs();
     }
 }

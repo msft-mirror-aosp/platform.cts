@@ -36,6 +36,7 @@ import static android.content.pm.PackageManager.VERIFICATION_ALLOW;
 import static android.content.pm.PackageManager.VERIFICATION_REJECT;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -101,7 +102,6 @@ import com.android.internal.util.HexDump;
 import libcore.util.HexEncoding;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -3299,6 +3299,13 @@ public class PackageManagerShellCommandInstallTest {
         return Long.toString(size) + " bytes" + formattedOutput;
     }
 
+    private String getDependencyInstallerRoleHolder() throws Exception {
+        return mRoleManager
+            .getRoleHoldersAsUser(
+                    ROLE_SYSTEM_DEPENDENCY_INSTALLER, Process.myUserHandle())
+            .stream().findFirst().orElse(null);
+    }
+
     private void setDependencyInstallerRoleHolder() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -3307,42 +3314,39 @@ public class PackageManagerShellCommandInstallTest {
                 Manifest.permission.BYPASS_ROLE_QUALIFICATION
         );
         try {
-            mPreviousDependencyInstallerRoleHolder = mRoleManager
-                    .getRoleHoldersAsUser(
-                            ROLE_SYSTEM_DEPENDENCY_INSTALLER, Process.myUserHandle())
-                    .stream().findFirst().orElse(null);
+            mPreviousDependencyInstallerRoleHolder = getDependencyInstallerRoleHolder();
             mRoleManager.setBypassingRoleQualification(true);
             mRoleManager.addRoleHolderAsUser(
                     ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
                     RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
                     getContext().getMainExecutor(),
-                    success -> {
-                        if (success) {
-                            latch.countDown();
-                        } else {
-                            Assert.fail("Failed to set dependency installer role holder");
-                        }
+                    ignore -> {
+                        latch.countDown();
                     });
 
             assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+            assertWithMessage("Failed to set dependency installer role holder")
+                    .that(getDependencyInstallerRoleHolder()).isEqualTo(CTS_PACKAGE_NAME);
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
-    private void removeDependencyInstallerRoleHolder() {
+    private void removeDependencyInstallerRoleHolder() throws Exception {
         getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MANAGE_ROLE_HOLDERS,
                 Manifest.permission.BYPASS_ROLE_QUALIFICATION
         );
+        CountDownLatch latch = new CountDownLatch(1);
         try {
-            mRoleManager.setBypassingRoleQualification(false);
             if (mPreviousDependencyInstallerRoleHolder == null) {
                 mRoleManager.removeRoleHolderAsUser(
                         ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
                         RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
                         getContext().getMainExecutor(), ignored -> {
+                            latch.countDown();
                         });
+                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             } else {
                 // If there was a previous role holder, replace the one set in the test with the
                 // previous one.
@@ -3351,9 +3355,15 @@ public class PackageManagerShellCommandInstallTest {
                         mPreviousDependencyInstallerRoleHolder,
                         RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
                         getContext().getMainExecutor(), ignored -> {
+                            latch.countDown();
                         });
+                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+                assertWithMessage("Failed to set dependency installer role holder")
+                        .that(getDependencyInstallerRoleHolder())
+                        .isEqualTo(mPreviousDependencyInstallerRoleHolder);
             }
         } finally {
+            mRoleManager.setBypassingRoleQualification(false);
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
