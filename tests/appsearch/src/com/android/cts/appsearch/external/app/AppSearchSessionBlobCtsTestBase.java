@@ -32,16 +32,20 @@ import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchResult;
+import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSessionShim;
 import android.app.appsearch.CommitBlobResponse;
 import android.app.appsearch.Features;
+import android.app.appsearch.GenericDocument;
+import android.app.appsearch.GetByDocumentIdRequest;
+import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.OpenBlobForReadResponse;
 import android.app.appsearch.OpenBlobForWriteResponse;
+import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.SetSchemaRequest;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -54,6 +58,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,9 +67,7 @@ import java.io.OutputStream;
 public abstract class AppSearchSessionBlobCtsTestBase {
     static final String DB_NAME_1 = "";
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
     private final String mPackageName =
             ApplicationProvider.getApplicationContext().getPackageName();
 
@@ -474,6 +477,62 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testSetBlobSchema() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Type")
+                        .addProperty(
+                                new AppSearchSchema.BlobHandlePropertyConfig.Builder("blob")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setDescription("this is a blob.")
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemas()).containsExactly(schema);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testPutDocumentWithBlobProperty() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Type")
+                        .addProperty(
+                                new AppSearchSchema.BlobHandlePropertyConfig.Builder("blob")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setDescription("this is a blob.")
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle =
+                AppSearchBlobHandle.createWithSha256(digest, mPackageName, DB_NAME_1, "namespace");
+        GenericDocument document =
+                new GenericDocument.Builder<>("namespace", "id", "Type")
+                        .setPropertyBlobHandle("blob", handle)
+                        .build();
+
+        mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(document).build())
+                .get();
+
+        AppSearchBatchResult<String, GenericDocument> getResult =
+                mDb1.getByDocumentIdAsync(
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                        .addIds("id")
+                                        .build())
+                        .get();
+        assertThat(getResult.isSuccess()).isTrue();
+        assertThat(getResult.getSuccesses().get("id")).isEqualTo(document);
+    }
+
+    @Test
     public void testWriteAndReadBlob_notSupported() throws Exception {
         assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
         byte[] data = generateRandomBytes(10); // 10 Bytes
@@ -503,6 +562,63 @@ public abstract class AppSearchSessionBlobCtsTestBase {
                 assertThrows(
                         UnsupportedOperationException.class,
                         () -> mDb1.openBlobForReadAsync(ImmutableSet.of(handle)));
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.BLOB_STORAGE
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    public void testSetBlobSchema_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Type")
+                        .addProperty(
+                                new AppSearchSchema.BlobHandlePropertyConfig.Builder("blob")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .build())
+                        .build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () ->
+                                mDb1.setSchemaAsync(
+                                                new SetSchemaRequest.Builder()
+                                                        .addSchemas(schema)
+                                                        .build())
+                                        .get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.BLOB_STORAGE
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    public void testPutDocumentWithBlobProperty_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle =
+                AppSearchBlobHandle.createWithSha256(digest, mPackageName, DB_NAME_1, "namespace");
+        GenericDocument document =
+                new GenericDocument.Builder<>("namespace", "id", "Type")
+                        .setPropertyBlobHandle("blob", handle)
+                        .build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () ->
+                                mDb1.putAsync(
+                                                new PutDocumentsRequest.Builder()
+                                                        .addGenericDocuments(document)
+                                                        .build())
+                                        .get());
         assertThat(exception)
                 .hasMessageThat()
                 .contains(
