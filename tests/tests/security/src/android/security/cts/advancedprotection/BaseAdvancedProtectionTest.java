@@ -31,6 +31,8 @@ import android.os.UserManager;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.advancedprotection.AdvancedProtectionManager;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -56,10 +58,9 @@ public abstract class BaseAdvancedProtectionTest {
     private IPackageManager mIPackageManager;
     private UserManager mUserManager;
     private PackageManager mPackageManager;
-    private TelephonyManager mTelephonyManager;
 
     private boolean mInitialApmState;
-    private long mInitialAllowedNetworks;
+    private HashMap<Integer, Long> mInitialAllowedNetworks = new HashMap<>();
     private HashMap<Integer, HashMap<String, Integer>> mInitialOpRequestInstallPackages =
             new HashMap<>();
 
@@ -113,24 +114,53 @@ public abstract class BaseAdvancedProtectionTest {
     }
 
     private void setupInitialAllowedNetworks() {
-        mTelephonyManager = mInstrumentation.getContext().getSystemService(TelephonyManager.class);
-        mInitialAllowedNetworks =
+        SubscriptionManager subscriptionManager =
+                mInstrumentation.getContext().getSystemService(SubscriptionManager.class);
+
+        List<SubscriptionInfo> subscriptions =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mTelephonyManager,
-                        (tm) ->
-                                tm.getAllowedNetworkTypesForReason(
-                                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
+                        subscriptionManager,
+                        (sm) -> sm.getActiveSubscriptionInfoList(),
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+        for (SubscriptionInfo subscription : subscriptions) {
+            int subId = subscription.getSubscriptionId();
+            TelephonyManager telephonyManager =
+                    mInstrumentation
+                            .getContext()
+                            .getSystemService(TelephonyManager.class)
+                            .createForSubscriptionId(subId);
+
+            long allowedNetworks =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            telephonyManager,
+                            (tm) ->
+                                    tm.getAllowedNetworkTypesForReason(
+                                            TelephonyManager
+                                                    .ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
+                            Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+            mInitialAllowedNetworks.put(subId, allowedNetworks);
+        }
     }
 
     private void teardownInitialAllowedNetworks() {
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mTelephonyManager,
-                (tm) ->
-                        tm.setAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G,
-                                mInitialAllowedNetworks),
-                Manifest.permission.MODIFY_PHONE_STATE);
+        for (int subId : mInitialAllowedNetworks.keySet()) {
+            long allowedNetworks = mInitialAllowedNetworks.get(subId);
+            TelephonyManager telephonyManager =
+                    mInstrumentation
+                            .getContext()
+                            .getSystemService(TelephonyManager.class)
+                            .createForSubscriptionId(subId);
+
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    telephonyManager,
+                    (tm) ->
+                            tm.setAllowedNetworkTypesForReason(
+                                    TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G,
+                                    allowedNetworks),
+                    Manifest.permission.MODIFY_PHONE_STATE);
+        }
     }
 
     private void setupInitialOpRequestInstallPackages() {
