@@ -142,12 +142,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
           cap_physical_id = (
               cap['metadata']['android.logicalMultiCamera.activePhysicalId']
           )
-          if cap_physical_id not in id_to_fov:
-            physical_props = cam.get_camera_properties_by_id(cap_physical_id)
-            physical_fov = float(cam.calc_camera_fov(physical_props))
-            id_to_fov[cap_physical_id] = physical_fov
-          physical_fov = id_to_fov[cap_physical_id]
-          is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
+          logging.debug('cap_physical_id: %s', cap_physical_id)
+          is_tele = False
+          if cap_physical_id:
+            if cap_physical_id not in id_to_fov:
+              physical_props = cam.get_camera_properties_by_id(cap_physical_id)
+              physical_fov = float(cam.calc_camera_fov(physical_props))
+              id_to_fov[cap_physical_id] = physical_fov
+            physical_fov = id_to_fov[cap_physical_id]
+            is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
           if is_tele:
             z_max = max(data.result_zoom for data in test_data)
             break
