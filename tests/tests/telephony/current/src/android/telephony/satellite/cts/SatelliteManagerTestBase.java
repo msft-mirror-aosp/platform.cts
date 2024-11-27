@@ -73,7 +73,6 @@ import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.text.TextUtils;
-import android.util.IntArray;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.UwbManager;
@@ -1898,14 +1897,14 @@ public class SatelliteManagerTestBase {
         return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
     }
 
-    protected static Pair<String, Integer> requestSatelliteDisplayName() {
-        final AtomicReference<String> displayNameForSubscription = new AtomicReference<>();
+    protected static Pair<CharSequence, Integer> requestSatelliteDisplayName() {
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<String, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(String result) {
+                    public void onResult(CharSequence result) {
                         logd("requestSatelliteDisplayName.onResult: result=" +
                                 result);
                         displayNameForSubscription.set(result);
