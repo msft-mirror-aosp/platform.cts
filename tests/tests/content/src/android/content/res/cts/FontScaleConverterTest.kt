@@ -19,10 +19,7 @@ package android.content.res.cts
 import android.content.res.Flags
 import android.content.res.FontScaleConverter
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider
-import android.platform.test.ravenwood.RavenwoodRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth.assertThat
@@ -34,14 +31,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_FONT_SCALE_CONVERTER_PUBLIC)
 class FontScaleConverterTest {
-    @get:Rule val ravenwoodRule: RavenwoodRule = RavenwoodRule.Builder().build()
-
-    @get:Rule val checkFlagsRule: CheckFlagsRule =
-        if (RavenwoodRule.isOnRavenwood()) {
-            RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-        } else {
-            DeviceFlagsValueProvider.createCheckFlagsRule()
-        }
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @SmallTest
     @Test
