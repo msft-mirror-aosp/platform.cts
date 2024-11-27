@@ -21,6 +21,11 @@
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
         <activity android:name="android.app.Activity" />
+        <activity android:name=".VirtualDevicePowerTest$TurnScreenOnActivity"
+                  android:turnScreenOn="true" />
+        <activity android:name=".VirtualDevicePowerTest$TurnScreenOnShowWhenLockedActivity"
+                  android:turnScreenOn="true"
+                  android:showWhenLocked="true" />
     </application>
 
     <uses-feature android:name="android.software.companion_device_setup" />
@@ -28,6 +33,7 @@
     <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
     <uses-permission android:name="android.permission.ADD_ALWAYS_UNLOCKED_DISPLAY" />
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+    <uses-permission android:name="android.permission.ADD_MIRROR_DISPLAY" />
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.virtualdevice.cts.core"

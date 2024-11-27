@@ -62,6 +62,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -121,6 +122,7 @@ public class VirtualDisplayTest {
 
     private Context mContext;
     private DisplayManager mDisplayManager;
+    private WindowManagerStateHelper mWindowManagerStateHelper;
     private Handler mHandler;
     private final Lock mImageReaderLock = new ReentrantLock(true /*fair*/);
     private ImageReader mImageReader;
@@ -158,6 +160,7 @@ public class VirtualDisplayTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mDisplayManager = (DisplayManager)mContext.getSystemService(Context.DISPLAY_SERVICE);
+        mWindowManagerStateHelper = new WindowManagerStateHelper();
         mHandler = new Handler(Looper.getMainLooper());
         mImageListener = new ImageListener();
         // thread for image checking
@@ -752,8 +755,10 @@ public class VirtualDisplayTest {
                 PackageManager.FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_SCREEN_PORTRAIT);
-        return (supportsLandscape && supportsPortrait)
-                || (!supportsLandscape && !supportsPortrait);
+        mWindowManagerStateHelper.computeState();
+        final boolean isFixedToUserRotation = mWindowManagerStateHelper.isFixedToUserRotation();
+        return (supportsLandscape && supportsPortrait && !isFixedToUserRotation)
+                || (!supportsLandscape && !supportsPortrait && !isFixedToUserRotation);
     }
 
     private void runOnUiThread(Runnable runnable) {

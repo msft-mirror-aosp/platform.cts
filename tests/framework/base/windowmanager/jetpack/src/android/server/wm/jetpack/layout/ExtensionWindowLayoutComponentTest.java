@@ -66,6 +66,7 @@ import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
@@ -569,6 +570,17 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
                 firstBounds, secondBounds, doesDisplayRotateForOrientation);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    @ApiTest(apis = {
+            "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
+    public void testWindowLayoutComponent_addWindowLayoutInfoListener_nonUiContext_throwsError() {
+        final Context context = ApplicationProvider.getApplicationContext();
+        final TestValueCountConsumer<WindowLayoutInfo> windowLayoutInfoConsumer =
+                new TestValueCountConsumer<>();
+
+        mWindowLayoutComponent.addWindowLayoutInfoListener(context, windowLayoutInfoConsumer);
+    }
+
     @Test
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#getCurrentWindowLayoutInfo"})
@@ -618,6 +630,15 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
                 getExtensionWindowLayoutInfo(testActivity);
 
         assertEquals(windowLayoutInfoFromGetter, windowLayoutInfoFromListener);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @ApiTest(apis = {
+            "androidx.window.extensions.layout.WindowLayoutComponent#getCurrentWindowLayoutInfo"})
+    public void testWindowLayoutComponent_getCurrentWindowLayoutInfo_nonUiContext_throwsError() {
+        final Context context = ApplicationProvider.getApplicationContext();
+
+        mWindowLayoutComponent.getCurrentWindowLayoutInfo(context);
     }
 
     @Test

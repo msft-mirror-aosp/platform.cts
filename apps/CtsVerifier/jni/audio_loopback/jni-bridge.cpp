@@ -88,10 +88,10 @@ JNIEXPORT jboolean JNICALL Java_com_android_cts_verifier_audio_NativeAnalyzerThr
 }
 
 JNIEXPORT jboolean JNICALL Java_com_android_cts_verifier_audio_NativeAnalyzerThread_isLowlatency
-  (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer) {
+  (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer, jint streamId) {
     NativeAudioAnalyzer * analyzer = (NativeAudioAnalyzer *) pAnalyzer;
     if (analyzer != nullptr) {
-        return analyzer->isLowLatencyStream();
+        return analyzer->isLowLatencyStream(streamId);
     }
     return false;
 }
@@ -106,6 +106,16 @@ JNIEXPORT jboolean JNICALL
     return false;
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_android_cts_verifier_audio_NativeAnalyzerThread_isMMapStream
+        (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer, jint streamId) {
+    NativeAudioAnalyzer * analyzer = (NativeAudioAnalyzer *) pAnalyzer;
+    if (analyzer != nullptr) {
+        return analyzer->isMMapStream(streamId);
+    }
+    return false;
+}
+
 JNIEXPORT jint JNICALL
 Java_com_android_cts_verifier_audio_NativeAnalyzerThread_getHardwareFormat
         (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer) {
@@ -114,6 +124,26 @@ Java_com_android_cts_verifier_audio_NativeAnalyzerThread_getHardwareFormat
         return analyzer->getHardwareFormat();
     }
     return (jint) AAUDIO_FORMAT_INVALID;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_android_cts_verifier_audio_NativeAnalyzerThread_getBurstFrames
+        (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer, jint streamId) {
+    NativeAudioAnalyzer * analyzer = (NativeAudioAnalyzer *) pAnalyzer;
+    if (analyzer != nullptr) {
+        return analyzer->getFramesPerBurst(streamId);
+    }
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_android_cts_verifier_audio_NativeAnalyzerThread_getCapacityFrames
+        (JNIEnv *env __unused, jobject obj __unused, jlong pAnalyzer, jint streamId) {
+    NativeAudioAnalyzer * analyzer = (NativeAudioAnalyzer *) pAnalyzer;
+    if (analyzer != nullptr) {
+        return analyzer->getCapacityFrames(streamId);
+    }
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_com_android_cts_verifier_audio_NativeAnalyzerThread_getError

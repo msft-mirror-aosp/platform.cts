@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Combine separate feature combinations results (.pb) into one"""
+"""Combine separate feature combinations results (.pb) into one."""
 
 import os
 import re
@@ -22,13 +22,14 @@ import feature_combination_info_pb2
 
 _DEBUG = False
 
+
 def main():
-  """ Combine the feature combination verification tests into a single file
+  """Combine the feature combination verification tests into a single file.
 
   Command line arguments:
-    pb_file_0: the relative path of the first pb file (for camera 0, for example)
+    pb_file_0: the relative path of the first pb file (camera 0, for example)
                to be combined
-    pb_file_1: the relative path of the scond pb file (for camera 1, for example)
+    pb_file_1: the relative path of the scond pb file (camera 1, for example)
                to be combined
   """
   # Validate input file paths
@@ -54,30 +55,33 @@ def main():
                          f'{msg_0.build_fingerprint} vs '
                          f'{msg_1.build_fingerprint}')
       if len(msg_0.feature_combination_for_camera) != 1:
-        raise ValueError(f'{msg_0.build_fingerprint} must contain 1 camera, '
-                         f'but contains {len(msg_0.feature_combination_for_camera)}')
+        raise ValueError(f'{msg_0.build_fingerprint} '
+                         'must contain 1 camera, but contains '
+                         f'{len(msg_0.feature_combination_for_camera)}')
       if len(msg_1.feature_combination_for_camera) != 1:
-        raise ValueError(f'{msg_1.build_fingerprint} must contain 1 camera, '
-                         f'but contains {len(msg_1.feature_combination_for_camera)}')
+        raise ValueError(f'{msg_1.build_fingerprint} '
+                         'must contain 1 camera, but contains '
+                         f'{len(msg_1.feature_combination_for_camera)}')
       if (msg_0.feature_combination_for_camera[0].camera_id ==
           msg_1.feature_combination_for_camera[0].camera_id):
         raise ValueError(f'proto files have duplicate camera id: '
                          f'{msg_0.feature_combination_for_camera[0].camera_id}')
 
-
       if msg_1.timestamp_in_sec > msg_0.timestamp_in_sec:
         msg_0.timestamp_in_sec = msg_1.timestamp_in_sec
 
-      msg_0.feature_combination_for_camera.append(msg_1.feature_combination_for_camera[0])
+      msg_0.feature_combination_for_camera.append(
+          msg_1.feature_combination_for_camera[0]
+      )
 
       build_id = re.sub(r'[/:]', '_', msg_0.build_fingerprint)
       file_name = f'{build_id}.pb'
-      with open(file_name, "wb") as f:
+      with open(file_name, 'wb') as f:
         f.write(msg_0.SerializeToString())
 
       if _DEBUG:
         txtpb_file_name = f'{build_id}.txtpb'
-        with open(txtpb_file_name, "w") as tf:
+        with open(txtpb_file_name, 'w') as tf:
           tf.write(text_format.MessageToString(msg_0))
 
 if __name__ == '__main__':

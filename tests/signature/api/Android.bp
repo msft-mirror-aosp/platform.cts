@@ -27,7 +27,7 @@ genrule_defaults {
     ],
 }
 
-genrule {
+java_genrule {
     name: "cts-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
@@ -38,7 +38,7 @@ genrule {
     ],
 }
 
-genrule {
+java_genrule {
     name: "cts-system-current-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [
@@ -49,7 +49,7 @@ genrule {
     ],
 }
 
-genrule {
+java_genrule {
     name: "cts-system-removed-api-gz",
     defaults: ["signature-cts-api-api-gz"],
     srcs: [

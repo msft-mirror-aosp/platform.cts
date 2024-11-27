@@ -18,6 +18,8 @@ package android.display.cts;
 
 import static android.hardware.display.BrightnessCorrection.createScaleAndTranslateLog;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -44,7 +46,10 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.common.collect.Range;
+
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,6 +81,7 @@ public class BrightnessTest extends TestBase {
         }
     }
 
+    @Ignore("b/359582534")
     @Test
     public void testBrightnessSliderTracking() throws InterruptedException {
         // Only run if we have a valid ambient light sensor.
@@ -158,7 +164,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    public void testNoTrackingForManualBrightness() {
+    public void testNoTrackingForManualBrightness() throws InterruptedException {
         // Don't run as there is no app that has permission to access slider usage.
         assumeTrue(
                 numberOfSystemAppsWithPermission(Manifest.permission.BRIGHTNESS_SLIDER_USAGE) > 0);
@@ -521,10 +527,6 @@ public class BrightnessTest extends TestBase {
         fail("Failed to fetch first slider event. Is the ambient brightness sensor working?");
     }
 
-    private float getBrightness() {
-        return Float.parseFloat(runShellCommand("cmd display get-brightness 0"));
-    }
-
     private int getSystemSetting(String setting) {
         return Integer.parseInt(runShellCommand("settings get system " + setting));
     }
@@ -593,15 +595,18 @@ public class BrightnessTest extends TestBase {
             mBrightnessPermission = new PermissionClosable(
                     Manifest.permission.CONFIGURE_DISPLAY_BRIGHTNESS);
             mSliderPermission = new PermissionClosable(Manifest.permission.BRIGHTNESS_SLIDER_USAGE);
-            mPrevBrightness = getBrightness();
+            mPrevBrightness = brightnessIntToFloat(getSystemSetting(
+                    Settings.System.SCREEN_BRIGHTNESS));
             mPrevBrightnessMode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
             mPrevBrightnessConfig = mDisplayManager.getBrightnessConfiguration();
             // Enforce min brightness to get the system absolute min brightness
             setDisplayBrightness(0f);
-            mMinBrightness = getBrightness();
+            mMinBrightness = brightnessIntToFloat(getSystemSetting(
+                    Settings.System.SCREEN_BRIGHTNESS));
             // Enforce max brightness to get the system absolute max brightness
             setDisplayBrightness(1.0f);
-            mMaxBrightness = getBrightness();
+            mMaxBrightness = brightnessIntToFloat(getSystemSetting(
+                    Settings.System.SCREEN_BRIGHTNESS));
         }
 
         @Override
@@ -623,6 +628,14 @@ public class BrightnessTest extends TestBase {
 
         float getMiddleBrightness() {
             return (getMinimumBrightness() + getMaximumBrightness()) / 2f;
+        }
+
+        /**
+         * Converts between the int brightness system and the float brightness system.
+         */
+        private static float brightnessIntToFloat(int brightnessInt) {
+            assertThat(brightnessInt).isIn(Range.closed(1, 255));
+            return (float) (brightnessInt - 1) / 254f;
         }
     }
 

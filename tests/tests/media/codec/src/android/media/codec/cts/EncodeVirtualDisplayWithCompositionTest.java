@@ -19,7 +19,6 @@ package android.media.codec.cts;
 import android.content.Context;
 import android.media.MediaFormat;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 import android.util.Size;
 
@@ -39,7 +38,6 @@ import org.junit.runner.RunWith;
  * tests.
  */
 @SmallTest
-@RequiresDevice
 @FrameworkSpecificTest     // exercises hw codecs, fails in windowing on pure older releases
 @RunWith(AndroidJUnit4.class)
 public class EncodeVirtualDisplayWithCompositionTest {

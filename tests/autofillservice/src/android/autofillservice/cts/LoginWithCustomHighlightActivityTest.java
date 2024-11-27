@@ -69,14 +69,6 @@ public class LoginWithCustomHighlightActivityTest
     }
 
     @Test
-    @RequiresFlagsDisabled("android.service.autofill.highlight_autofill_single_field")
-    public void testAutofillCustomHighlight_singleField_noHighlight() throws Exception {
-        testAutofillCustomHighlight(/* singleField= */ true);
-
-        MyDrawable.assertDrawableNotDrawn();
-    }
-
-    @Test
     @RequiresFlagsEnabled("android.service.autofill.highlight_autofill_single_field")
     public void testAutofillCustomHighlight_singleField_enableHighlightForSingleField_hasHighlight()
             throws Exception {

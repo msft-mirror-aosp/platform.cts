@@ -24,6 +24,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.google.android.mobly.snippet.Snippet;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+
 public class BluetoothGattMultiDevicesSnippet implements Snippet {
     private static final String TAG = "BluetoothGattMultiDevicesSnippet";
 
@@ -36,8 +41,6 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
     public BluetoothGattMultiDevicesSnippet() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mBluetoothManager = mContext.getSystemService(BluetoothManager.class);
-        var uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity();
     }
 
     @Rpc(description = "Reset the state of client + server")
@@ -48,7 +51,12 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
 
     @Rpc(description = "Creates Bluetooth GATT server with a given UUID and advertises it.")
     public void createAndAdvertiseServer(String uuid) {
-        mGattServer.createAndAdvertiseServer(uuid);
+        try {
+            Utils.adoptShellPermission();
+            mGattServer.createAndAdvertiseServer(uuid);
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 
     @Rpc(
@@ -56,22 +64,93 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
                     "Creates Bluetooth GATT server with a given UUID and ties it to an"
                             + " advertisement.")
     public void createAndAdvertiseIsolatedServer(String uuid) {
-        mGattServer.createAndAdvertiseIsolatedServer(uuid);
+        try {
+            Utils.adoptShellPermission();
+            mGattServer.createAndAdvertiseIsolatedServer(uuid);
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 
     @Rpc(description = "Connect to the peer device advertising the specified UUID")
-    public boolean connectGatt(String uuid) {
-        return mGattClient.connect(uuid);
+    public String connectGatt(String uuid) throws JSONException {
+        try {
+            Utils.adoptShellPermission();
+            return Utils.convertBtDeviceToJson(mGattClient.connect(uuid));
+        } finally {
+            Utils.dropShellPermission();
+        }
+    }
+
+    @Rpc(description = "Disconnect to the peer device advertising the specified UUID")
+    public boolean disconnectGatt(String uuid) throws JSONException {
+        try {
+            Utils.adoptShellPermission();
+            return mGattClient.disconnect(uuid);
+        } finally {
+            Utils.dropShellPermission();
+        }
+    }
+
+    @Rpc(description = "Get all the devices connected to the GATT server")
+    public JSONArray getConnectedDevices() throws JSONException {
+        try {
+            Utils.adoptShellPermission();
+            return Utils.convertBtDevicesToJson(mGattServer.getConnectedDevices());
+        } finally {
+            Utils.dropShellPermission();
+        }
+    }
+
+    @Rpc(description = "Generate local OOB data to used for bonding with the server")
+    public JSONObject generateServerLocalOobData() throws JSONException {
+        try {
+            Utils.adoptShellPermission();
+            return Utils.convertOobDataToJson(mGattServer.generateLocalOObData());
+        } finally {
+            Utils.dropShellPermission();
+        }
+    }
+
+    @Rpc(description = "Create a bond with the server using local OOB data generated on the server")
+    public String createBondOob(String uuid, JSONObject jsonObject) throws JSONException {
+        try {
+            Utils.adoptShellPermission();
+            return Utils.convertBtDeviceToJson(mGattClient.createBondOob(
+                    uuid, Utils.convertJsonToOobData(jsonObject)));
+        } finally {
+            Utils.dropShellPermission();
+        }
+    }
+
+    @Rpc(description = "Create a bond with the server using local OOB data generated on the server")
+    public boolean removeBond(String uuid) {
+        try {
+            Utils.adoptShellPermission();
+            return mGattClient.removeBond(uuid);
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 
     @Rpc(description = "Enables Bluetooth")
     public void enableBluetooth() {
-        mBluetoothManager.getAdapter().enable();
+        try {
+            Utils.adoptShellPermission();
+            mBluetoothManager.getAdapter().enable();
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 
     @Rpc(description = "Disable Bluetooth")
     public void disableBluetooth() {
-        mBluetoothManager.getAdapter().disable();
+        try {
+            Utils.adoptShellPermission();
+            mBluetoothManager.getAdapter().disable();
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 
     @Rpc(description = "Checks Bluetooth state")
@@ -81,6 +160,11 @@ public class BluetoothGattMultiDevicesSnippet implements Snippet {
 
     @Rpc(description = "Whether the connected peer has a service of the given UUID")
     public boolean containsService(String uuid) {
-        return mGattClient.containsService(uuid);
+        try {
+            Utils.adoptShellPermission();
+            return mGattClient.containsService(uuid);
+        } finally {
+            Utils.dropShellPermission();
+        }
     }
 }

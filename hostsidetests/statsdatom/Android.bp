@@ -27,6 +27,7 @@ java_test_host {
         "src/**/appops/*.java",
         "src/**/appexit/*.java",
         "src/**/appstart/*.java",
+        "src/**/backportedfixes/*.java",
         "src/**/batterycycle/*.java",
         "src/**/batterystats/*.java",
         "src/**/binderstats/*.java",
@@ -86,14 +87,18 @@ java_test_host {
         "android.os.flags-aconfig-java-host",
         "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
+        "stats_flags_lib_host",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
         "cts_adpf_atom_common-host2",
+        "uprobestats-protos",
+        "truth-liteproto-extension",
+        "truth-proto-extension",
     ],
 
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomApp",
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",

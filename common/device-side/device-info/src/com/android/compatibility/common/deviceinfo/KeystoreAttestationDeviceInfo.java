@@ -18,192 +18,167 @@ package com.android.compatibility.common.deviceinfo;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.KEY_ALGORITHM_EC;
 import static android.security.keystore.KeyProperties.PURPOSE_SIGN;
-import static android.security.keystore.KeyProperties.PURPOSE_VERIFY;
 
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ID_ATTESTATION;
 
 import static com.google.android.attestation.ParsedAttestationRecord.createParsedAttestationRecord;
 
 import android.content.pm.PackageManager;
-import android.security.keystore.DeviceIdAttestationException;
 import android.security.keystore.KeyGenParameterSpec;
 import android.util.Log;
 
 import com.android.compatibility.common.util.DeviceInfoStore;
 
 import com.google.android.attestation.AuthorizationList;
-import com.google.android.attestation.ParsedAttestationRecord;
 import com.google.android.attestation.RootOfTrust;
 
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
- * Feature Keystore Attestation device info collector. Collector collects information from the
- * device's KeyMint implementation as reflected by the data in the key attestation record. These
- * will be collected across devices and do not collect and PII outside of the device information.
+ * Key attestation collector. Collects a subset of the information attested by the device's
+ * trusted execution environment (TEE) and by its StrongBox chip (if it has one).
  */
 public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
-    private static final String LOG_TAG = "KeystoreAttestationDeviceInfo";
-    private static final String TEST_ALIAS_KEYSTORE = "testKeystore";
-    private static final String TEST_ALIAS_STRONG_BOX = "testStrongBox";
-    private static final byte[] CHALLENGE = "challenge".getBytes();
+    // Max log tag length is 23 characters, so we can't use the full class name.
+    private static final String TAG = "AttestationDeviceInfo";
+    private static final String TEST_ALIAS_TEE = "testTeeKeyAlias";
+    private static final String TEST_ALIAS_STRONGBOX = "testStrongBoxKeyAlias";
+    private static final byte[] TEST_CHALLENGE = "challenge".getBytes();
 
     @Override
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
-        collectKeystoreAttestation(store);
+        collectAttestation(
+                store, "keymint_key_attestation", TEST_ALIAS_TEE,
+                /* strongBoxBacked= */ false);
         if (getContext()
                 .getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)) {
-            collectStrongBoxAttestation(store);
+            collectAttestation(
+                    store, "strong_box_key_attestation",
+                    TEST_ALIAS_STRONGBOX, /* strongBoxBacked= */ true);
+        } else {
+            Log.i(TAG, "StrongBox-backed Keystore not supported");
         }
     }
 
-    private void generateKeyPair(String algorithm, KeyGenParameterSpec spec)
-            throws NoSuchAlgorithmException,
-            NoSuchProviderException,
-            InvalidAlgorithmParameterException {
-        KeyPairGenerator keyPairGenerator =
-                KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore");
-        keyPairGenerator.initialize(spec);
-        KeyPair kp = keyPairGenerator.generateKeyPair();
-
-        if (kp == null) {
-            Log.e(LOG_TAG, "Key generation failed");
-            return;
-        }
-    }
-
-    private void collectKeystoreAttestation(DeviceInfoStore localStore) throws Exception {
-        KeyStore mKeyStore = KeyStore.getInstance("AndroidKeyStore");
-        mKeyStore.load(null);
-        mKeyStore.deleteEntry(TEST_ALIAS_KEYSTORE);
-
-        localStore.startGroup("keymint_key_attestation");
-        loadCertAndCollectAttestation(mKeyStore, localStore, TEST_ALIAS_KEYSTORE, false);
-        localStore.endGroup();
-    }
-
-    private void collectStrongBoxAttestation(DeviceInfoStore localStore) throws Exception {
-        KeyStore mKeyStore = KeyStore.getInstance("AndroidKeyStore");
-        mKeyStore.load(null);
-        mKeyStore.deleteEntry(TEST_ALIAS_STRONG_BOX);
-
-        localStore.startGroup("strong_box_key_attestation");
-        loadCertAndCollectAttestation(mKeyStore, localStore, TEST_ALIAS_STRONG_BOX, true);
-        localStore.endGroup();
-    }
-
-    private void loadCertAndCollectAttestation(
-            KeyStore keystore,
-            DeviceInfoStore localStore,
-            String testAlias,
-            boolean isStrongBoxBacked)
+    private void collectAttestation(
+            DeviceInfoStore store,
+            String resultGroupName,
+            String keyAlias,
+            boolean strongBoxBacked)
             throws Exception {
-        Objects.requireNonNull(keystore);
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+
+        // If this collector ran on this device before, there might already be a key
+        // with this alias, so delete it before trying to generate a fresh key with
+        // the same alias.
+        keyStore.deleteEntry(keyAlias);
+
         KeyGenParameterSpec spec =
-                new KeyGenParameterSpec.Builder(testAlias, PURPOSE_SIGN | PURPOSE_VERIFY)
+                new KeyGenParameterSpec.Builder(keyAlias, PURPOSE_SIGN)
                         .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
                         .setDigests(DIGEST_SHA256)
                         .setDevicePropertiesAttestationIncluded(
                                 getContext()
                                         .getPackageManager()
                                         .hasSystemFeature(FEATURE_DEVICE_ID_ATTESTATION))
-                        .setAttestationChallenge(CHALLENGE)
-                        .setIsStrongBoxBacked(isStrongBoxBacked)
+                        .setAttestationChallenge(TEST_CHALLENGE)
+                        .setIsStrongBoxBacked(strongBoxBacked)
                         .build();
 
-        generateKeyPair(KEY_ALGORITHM_EC, spec);
+        KeyPairGenerator keyPairGenerator =
+                KeyPairGenerator.getInstance(KEY_ALGORITHM_EC, "AndroidKeyStore");
+        keyPairGenerator.initialize(spec);
 
-        Certificate[] certificates = keystore.getCertificateChain(testAlias);
-        assertTrue(certificates.length >= 1);
+        try {
+            KeyPair unusedKeyPair = keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            String keystoreType = strongBoxBacked ? "StrongBox" : "TEE";
+            Log.w(TAG, "Key pair generation failed with " + keystoreType + "-backed Keystore", e);
+            return;
+        }
 
-        final AuthorizationList keyDetailsList;
-
-        /* convert Certificate to List of X509Certificate */
         List<X509Certificate> x509Certificates = new ArrayList<>();
-        for (Certificate certificate : certificates) {
+        for (Certificate certificate : keyStore.getCertificateChain(keyAlias)) {
             if (certificate instanceof X509Certificate) {
                 x509Certificates.add((X509Certificate) certificate);
             }
         }
-        assertTrue(x509Certificates.size() >= 1);
-
-        ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(x509Certificates);
-
-        keyDetailsList = parsedAttestationRecord.teeEnforced;
-
-        collectStoredInformation(localStore, keyDetailsList);
-    }
-
-    private static void collectStoredInformation(
-            DeviceInfoStore localStore, AuthorizationList keyDetailsList)
-            throws DeviceIdAttestationException, IOException {
-        if (keyDetailsList.osVersion.isPresent()) {
-            localStore.addResult("os_version", keyDetailsList.osVersion.get());
+        if (x509Certificates.isEmpty()) {
+            Log.w(TAG, "Certificate chain is empty, so no attestation could be extracted");
+            return;
         }
-        if (keyDetailsList.osPatchLevel.isPresent()) {
-            localStore.addResult("os_patch_level", keyDetailsList.osPatchLevel.get());
+
+        AuthorizationList authorizationList;
+
+        try {
+            authorizationList = createParsedAttestationRecord(
+                    x509Certificates).teeEnforced;
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to parse the attestation extension", e);
+            return;
         }
-        if (keyDetailsList.attestationIdBrand.isPresent()) {
-            localStore.addBytesResult(
+
+        store.startGroup(resultGroupName);
+        if (authorizationList.osVersion.isPresent()) {
+            store.addResult("os_version", authorizationList.osVersion.get());
+        }
+        if (authorizationList.osPatchLevel.isPresent()) {
+            store.addResult("os_patch_level", authorizationList.osPatchLevel.get());
+        }
+        if (authorizationList.attestationIdBrand.isPresent()) {
+            store.addBytesResult(
                     "attestation_id_brand",
-                    keyDetailsList.attestationIdBrand.get());
+                    authorizationList.attestationIdBrand.get());
         }
-        if (keyDetailsList.attestationIdDevice.isPresent()) {
-            localStore.addBytesResult(
+        if (authorizationList.attestationIdDevice.isPresent()) {
+            store.addBytesResult(
                     "attestation_id_device",
-                    keyDetailsList.attestationIdDevice.get());
+                    authorizationList.attestationIdDevice.get());
         }
-        if (keyDetailsList.attestationIdProduct.isPresent()) {
-            localStore.addBytesResult(
+        if (authorizationList.attestationIdProduct.isPresent()) {
+            store.addBytesResult(
                     "attestation_id_product",
-                    keyDetailsList.attestationIdProduct.get());
+                    authorizationList.attestationIdProduct.get());
         }
-        if (keyDetailsList.attestationIdManufacturer.isPresent()) {
-            localStore.addBytesResult(
+        if (authorizationList.attestationIdManufacturer.isPresent()) {
+            store.addBytesResult(
                     "attestation_id_manufacturer",
-                    keyDetailsList.attestationIdManufacturer.get());
+                    authorizationList.attestationIdManufacturer.get());
         }
-        if (keyDetailsList.attestationIdModel.isPresent()) {
-            localStore.addBytesResult(
+        if (authorizationList.attestationIdModel.isPresent()) {
+            store.addBytesResult(
                     "attestation_id_model",
-                    keyDetailsList.attestationIdModel.get());
+                    authorizationList.attestationIdModel.get());
         }
-        if (keyDetailsList.vendorPatchLevel.isPresent()) {
-            localStore.addResult("vendor_patch_level", keyDetailsList.vendorPatchLevel.get());
+        if (authorizationList.vendorPatchLevel.isPresent()) {
+            store.addResult("vendor_patch_level", authorizationList.vendorPatchLevel.get());
         }
-        if (keyDetailsList.bootPatchLevel.isPresent()) {
-            localStore.addResult("boot_patch_level", keyDetailsList.bootPatchLevel.get());
+        if (authorizationList.bootPatchLevel.isPresent()) {
+            store.addResult("boot_patch_level", authorizationList.bootPatchLevel.get());
         }
-        if (keyDetailsList.rootOfTrust.isPresent()) {
-            collectRootOfTrust(keyDetailsList.rootOfTrust.get(), localStore);
+        if (authorizationList.rootOfTrust.isPresent()) {
+            RootOfTrust rootOfTrust = authorizationList.rootOfTrust.get();
+            store.startGroup("root_of_trust");
+            store.addBytesResult(
+                    "verified_boot_key",
+                    rootOfTrust.verifiedBootKey);
+            store.addResult("device_locked", rootOfTrust.deviceLocked);
+            store.addResult("verified_boot_state", rootOfTrust.verifiedBootState.name());
+            store.addBytesResult(
+                    "verified_boot_hash",
+                    rootOfTrust.verifiedBootHash);
+            store.endGroup();
         }
-    }
-
-    private static void collectRootOfTrust(
-            RootOfTrust rootOfTrust, DeviceInfoStore localStore) throws IOException {
-        localStore.startGroup("root_of_trust");
-        localStore.addBytesResult(
-                "verified_boot_key",
-                rootOfTrust.verifiedBootKey);
-        localStore.addResult("device_locked", rootOfTrust.deviceLocked);
-        localStore.addResult("verified_boot_state", rootOfTrust.verifiedBootState.name());
-        localStore.addBytesResult(
-                "verified_boot_hash",
-                rootOfTrust.verifiedBootHash);
-        localStore.endGroup();
+        store.endGroup();
     }
 }

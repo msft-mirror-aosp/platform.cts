@@ -32,16 +32,28 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+// TODO(b/375675436): Remove this annotation after control of the status bar for visible background
+// users is allowed.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This annotation is added to prevent"
+        + " running as a visible background user, because access to control the status bar from"
+        + " visible background users is currently not allowed. (b/332222893)")
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class StatusBarManagerTest {
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String PERMISSION_STATUS_BAR = android.Manifest.permission.STATUS_BAR;
 
     private StatusBarManager mStatusBarManager;

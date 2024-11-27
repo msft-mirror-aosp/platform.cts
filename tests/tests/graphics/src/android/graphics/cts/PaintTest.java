@@ -1062,7 +1062,7 @@ public class PaintTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationSettings_Api35() {
         final Paint defaultPaint = new Paint();
 
@@ -2358,5 +2358,19 @@ public class PaintTest {
         Typeface typeface2 = p2.getTypeface();
 
         assertThat(typeface2).isNotEqualTo(typeface);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_ELEGANT_TEXT_HEIGHT_API)
+    public void testDeprecateElegantTextHeight() {
+        final Paint p = new Paint();
+
+        // Elegant Text Height is now true by default.
+        assertThat(p.isElegantTextHeight()).isTrue();
+
+        p.setElegantTextHeight(false);
+
+        // Calling setElegantTextHeight is now no-op.
+        assertThat(p.isElegantTextHeight()).isTrue();
     }
 }

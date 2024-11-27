@@ -16,6 +16,8 @@
 
 package android.media.tv.cts;
 
+import static android.media.tv.flags.Flags.tifExtensionStandardization;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
@@ -40,14 +42,17 @@ import android.media.tv.TvInputManager.Hardware;
 import android.media.tv.TvInputManager.HardwareCallback;
 import android.media.tv.TvInputManager.Session;
 import android.media.tv.TvInputService;
+import android.media.tv.TvInputServiceExtensionManager;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvView;
 import android.media.tv.cts.TvViewTest.MockCallback;
+import android.media.tv.cts.extension.IMockTifExtension;
 import android.media.tv.flags.Flags;
 import android.media.tv.tunerresourcemanager.TunerResourceManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.UserHandle;
@@ -98,6 +103,10 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
     private static final String EXTENSION_INTERFACE_NAME_WITH_PERMISSION_UNGRANTED =
             "android.media.tv.cts.TvInputManagerTest"
             + ".EXTENSION_INTERFACE_NAME_WITH_PERMISSION_UNGRANTED";
+    private static final String EXTENSION_INTERFACE_NAME_MOCK =
+            "android.media.tv.cts.extension.IMockTifExtension";
+    private static final String EXTENSION_INTERFACE_NAME_IN_STANDARDIZATION_LIST =
+            "android.media.tv.extension.scan.IScanInterface";
     private static final String PERMISSION_GRANTED =
             "android.media.tv.cts.TvInputManagerTest.PERMISSION_GRANTED";
     private static final String PERMISSION_UNGRANTED =
@@ -184,6 +193,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         TvInputInfo info = getInfoForClassName(
                 mManager.getTvInputList(), StubHardwareTvInputService.class.getName());
         assertNotNull(info);
+
         return info.getId();
     }
 
@@ -716,6 +726,17 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         try {
             String inputId = prepareStubHardwareTvInputService();
 
+            if (tifExtensionStandardization()) {
+                List<String> names = mManager.getAvailableExtensionInterfaceNames(inputId);
+                assertTrue(names != null && !names.isEmpty());
+
+                List<String> referenceNames =
+                        TvInputServiceExtensionManager.getStandardExtensionInterfaceNames();
+                for (String name: referenceNames) {
+                    assertTrue(names.contains(name));
+                }
+                assertFalse(names.contains(EXTENSION_INTERFACE_NAME_MOCK));
+            }
             StubHardwareTvInputService.injectAvailableExtensionInterface(
                     EXTENSION_INTERFACE_NAME_WITHOUT_PERMISSION, null);
             StubHardwareTvInputService.injectAvailableExtensionInterface(
@@ -728,11 +749,6 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
             assertTrue(names.contains(EXTENSION_INTERFACE_NAME_WITHOUT_PERMISSION));
             assertTrue(names.contains(EXTENSION_INTERFACE_NAME_WITH_PERMISSION_GRANTED));
             assertFalse(names.contains(EXTENSION_INTERFACE_NAME_WITH_PERMISSION_UNGRANTED));
-
-            StubHardwareTvInputService.clearAvailableExtensionInterfaces();
-
-            names = mManager.getAvailableExtensionInterfaceNames(inputId);
-            assertTrue(names != null && names.isEmpty());
         } finally {
             StubHardwareTvInputService.clearAvailableExtensionInterfaces();
             cleanupStubHardwareTvInputService();
@@ -764,6 +780,43 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         } finally {
             StubHardwareTvInputService.clearAvailableExtensionInterfaces();
             cleanupStubHardwareTvInputService();
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TIF_EXTENSION_STANDARDIZATION)
+    public void testExtensionStandardization() {
+        if (!Utils.hasTvInputFramework(getActivity())) {
+            return;
+        }
+
+        HandlerThread handlerThread = new HandlerThread("test-helper-thread");
+        handlerThread.start();
+        try {
+            prepareStubHardwareTvInputService();
+            Handler handler = new Handler(handlerThread.getLooper());
+            handler.post(() -> {
+                IBinder mockTifExtension = new IMockTifExtension.Stub() {
+                    @Override
+                    public void test() {
+                    }
+                };
+                StubHardwareTvInputService mStubHardwareTvInputService =
+                        new StubHardwareTvInputService();
+                // fail to register IBinder because mock IBinder does not implement AIDL in the
+                // standardized interface
+                assertEquals(mStubHardwareTvInputService.registerExtensionIBinder(
+                                EXTENSION_INTERFACE_NAME_IN_STANDARDIZATION_LIST, mockTifExtension),
+                        TvInputServiceExtensionManager
+                                .REGISTER_FAIL_IMPLEMENTATION_NOT_STANDARDIZED);
+                // fail to register IBinder because attempt to register extension with
+                // non-standardized name
+                assertEquals(mStubHardwareTvInputService.registerExtensionIBinder(
+                                EXTENSION_INTERFACE_NAME_MOCK, mockTifExtension),
+                        TvInputServiceExtensionManager.REGISTER_FAIL_NAME_NOT_STANDARDIZED);
+            });
+        } finally {
+            cleanupStubHardwareTvInputService();
+            handlerThread.quitSafely();
         }
     }
 
@@ -946,9 +999,11 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
 
     public static class StubHardwareTvInputService extends TvInputService {
         private static final Map<String, String> sAvailableExtensionInterfaceMap = new HashMap<>();
-
         private ResolveInfo mResolveInfo = null;
         private TvInputInfo mTvInputInfo = null;
+
+        public StubHardwareTvInputService() {
+        }
 
         public static void clearAvailableExtensionInterfaces() {
             sAvailableExtensionInterfaceMap.clear();
@@ -956,6 +1011,14 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
 
         public static void injectAvailableExtensionInterface(String name, String permission) {
             sAvailableExtensionInterfaceMap.put(name, permission);
+        }
+
+        /**
+         * Helper method that utilizes TvInputServiceExtensionManager to register extension IBinder.
+         */
+        @RequiresFlagsEnabled(Flags.FLAG_TIF_EXTENSION_STANDARDIZATION)
+        public int registerExtensionIBinder(String name, IBinder binder) {
+            return mTvInputServiceExtensionManager.registerExtensionIBinder(name, binder);
         }
 
         @Override
@@ -966,7 +1029,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
 
         @Override
-        public  TvInputInfo onHardwareAdded(TvInputHardwareInfo hardwareInfo) {
+        public TvInputInfo onHardwareAdded(TvInputHardwareInfo hardwareInfo) {
             TvInputInfo info = null;
             if (hardwareInfo.getDeviceId() == DUMMY_DEVICE_ID) {
                 info = new TvInputInfo.Builder(this, mResolveInfo)

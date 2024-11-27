@@ -40,6 +40,7 @@ import android.bluetooth.BluetoothLeBroadcastReceiveState;
 import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -210,7 +211,6 @@ public class BluetoothLeBroadcastAssistantTest {
         assertFalse(mIsProfileReady);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_EXTRACT_PERIODIC_SCANNER_FROM_STATE_MACHINE)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void addSource() {
@@ -265,75 +265,6 @@ public class BluetoothLeBroadcastAssistantTest {
         mBluetoothLeBroadcastAssistant.addSource(testDevice, metadata, true);
         verify(mCallbacks, timeout(ADD_SOURCE_TIMEOUT_MS)).onSourceAddFailed(testDevice, metadata,
                 BluetoothStatusCodes.ERROR_BAD_PARAMETERS);
-
-        // Verify that removing null source device will throw exception
-        assertThrows(NullPointerException.class,
-                () -> mBluetoothLeBroadcastAssistant.removeSource(null, 0));
-
-        // Verify that removing unknown device will fail
-        mBluetoothLeBroadcastAssistant.removeSource(testDevice, 0);
-        verify(mCallbacks, timeout(ADD_SOURCE_TIMEOUT_MS)).onSourceRemoveFailed(
-                testDevice, 0, BluetoothStatusCodes.ERROR_REMOTE_LINK_ERROR);
-
-        // Do not forget to unregister callbacks
-        mBluetoothLeBroadcastAssistant.unregisterCallback(mCallbacks);
-    }
-
-    @RequiresFlagsDisabled(Flags.FLAG_LEAUDIO_BROADCAST_EXTRACT_PERIODIC_SCANNER_FROM_STATE_MACHINE)
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
-    @Test
-    public void addSourceObsolete() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcastAssistant);
-
-        BluetoothDevice testDevice = mAdapter.getRemoteLeDevice(TEST_ADDRESS_1,
-                BluetoothDevice.ADDRESS_TYPE_RANDOM);
-        BluetoothDevice testSourceDevice = mAdapter.getRemoteLeDevice(TEST_ADDRESS_1,
-                BluetoothDevice.ADDRESS_TYPE_RANDOM);
-
-        BluetoothLeAudioContentMetadata publicBroadcastMetadata =
-                new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).build();
-
-        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
-                .setEncrypted(false)
-                .setPublicBroadcast(false)
-                .setBroadcastName(TEST_BROADCAST_NAME)
-                .setSourceDevice(testSourceDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM)
-                .setSourceAdvertisingSid(TEST_ADVERTISER_SID)
-                .setBroadcastId(TEST_BROADCAST_ID)
-                .setBroadcastCode(null)
-                .setPaSyncInterval(TEST_PA_SYNC_INTERVAL)
-                .setPresentationDelayMicros(TEST_PRESENTATION_DELAY_MS)
-                .setAudioConfigQuality(TEST_AUDIO_QUALITY_STANDARD)
-                .setPublicBroadcastMetadata(publicBroadcastMetadata);
-
-        BluetoothLeBroadcastSubgroup[] subgroups = new BluetoothLeBroadcastSubgroup[] {
-                createBroadcastSubgroup()
-        };
-        for (BluetoothLeBroadcastSubgroup subgroup : subgroups) {
-            builder.addSubgroup(subgroup);
-        }
-        BluetoothLeBroadcastMetadata metadata = builder.build();
-
-        // Verifies that it throws exception when no callback is registered
-        assertThrows(IllegalStateException.class, () -> mBluetoothLeBroadcastAssistant
-                .addSource(testDevice, metadata, true));
-
-        mBluetoothLeBroadcastAssistant.registerCallback(mExecutor, mCallbacks);
-
-        // Verify that exceptions is thrown when sink or source is null
-        assertThrows(NullPointerException.class, () -> mBluetoothLeBroadcastAssistant
-                .addSource(testDevice, null, true));
-        assertThrows(NullPointerException.class, () -> mBluetoothLeBroadcastAssistant
-                .addSource(null, metadata, true));
-        assertThrows(NullPointerException.class, () -> mBluetoothLeBroadcastAssistant
-                .addSource(null, null, true));
-
-        // Verify that adding source to unknown test device will fail
-        mBluetoothLeBroadcastAssistant.addSource(testDevice, metadata, true);
-        verify(mCallbacks, timeout(ADD_SOURCE_TIMEOUT_MS)).onSourceAddFailed(testDevice, metadata,
-                BluetoothStatusCodes.ERROR_REMOTE_LINK_ERROR);
 
         // Verify that removing null source device will throw exception
         assertThrows(NullPointerException.class,
@@ -406,6 +337,38 @@ public class BluetoothLeBroadcastAssistantTest {
         // Verifies that it throws exception when input is null
         assertThrows(NullPointerException.class,
                 () -> mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(null));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_GET_LOCAL_METADATA)
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void getSourceMetadata() {
+        int testSourceId = 1;
+
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeBroadcastAssistant);
+
+        BluetoothDevice testDevice =
+                mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        // Verifies permissions
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, testSourceId),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        // Verifies that it throws exception when input is null
+        assertThrows(
+                NullPointerException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(null, testSourceId));
+
+        // Source id expect in range [0, 255]
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, -1));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, 256));
+
+        mBluetoothLeBroadcastAssistant.getSourceMetadata(testDevice, testSourceId);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

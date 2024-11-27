@@ -24,10 +24,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.os.Binder;
@@ -44,6 +46,7 @@ import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.ArrayMap;
@@ -358,18 +361,92 @@ public class AccessibilityNodeInfoTest {
         assertThat(info.isChecked()).isFalse();
     }
 
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setUsingApi() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        assertThat(info.getExpandedState()).isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_PARTIAL);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_COLLAPSED);
+        info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        assertThat(info.getExpandedState())
+                .isEqualTo(AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getExpandedState",
+                "android.view.accessibility.AccessibilityNodeInfo#setExpandedState"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testExpandedState_setInvalidExpectException() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    info.setExpandedState(5);
+                });
+    }
+
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getSupplementalDescription",
+            "android.view.accessibility.AccessibilityNodeInfo#setSupplementalDescription"
+    })
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPLEMENTAL_DESCRIPTION)
+    public void testSetGetSupplementalDescription() {
+        final AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        SpannableString spannableDescription =
+                new SpannableString("supplemental description");
+        spannableDescription.setSpan(
+                new ForegroundColorSpan(Color.RED),
+                8, // start
+                12, // end
+                Spannable.SPAN_EXCLUSIVE_INCLUSIVE
+        );
+
+        info.setSupplementalDescription(spannableDescription);
+        CharSequence receivedDescription = info.getSupplementalDescription();
+
+        assertTrue(TextUtils.equals(spannableDescription, receivedDescription));
+        assertThat(receivedDescription).isInstanceOf(Spanned.class);
+        Spanned receivedSpanned = (Spanned) receivedDescription;
+        assertThat(receivedSpanned).isNotNull();
+        Object[] spans = receivedSpanned.getSpans(0, receivedSpanned.length(), Object.class);
+        assertEquals(1, spans.length);
+        ForegroundColorSpan span = (ForegroundColorSpan) spans[0];
+        assertEquals(8, receivedSpanned.getSpanStart(span));
+        assertEquals(12, receivedSpanned.getSpanEnd(span));
+    }
+
     /**
      * Fully populates the {@link AccessibilityNodeInfo} to marshal.
      *
      * @param info The node info to populate.
      */
     private void fullyPopulateAccessibilityNodeInfo(AccessibilityNodeInfo info) {
-        // Populate 10 fields
+        // Populate 11 fields
         info.setBoundsInParent(new Rect(1,1,1,1));
         info.setBoundsInScreen(new Rect(3, 3, 3, 3));
         info.setBoundsInWindow(new Rect(2, 2, 2, 2));
         info.setClassName("foo.bar.baz.Class");
         info.setContentDescription("content description");
+        if (Flags.supplementalDescription()) {
+            info.setSupplementalDescription("supplemental description");
+        }
         info.setStateDescription("state description");
         info.setTooltipText("tooltip");
         info.setPackageName("foo.bar.baz");
@@ -394,8 +471,15 @@ public class AccessibilityNodeInfoTest {
         info.setUniqueId("foo.bar:id/baz10");
         info.setContainerTitle("Container title");
         info.setDrawingOrder(5);
-        info.setAvailableExtraData(
-                Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+        if (android.view.accessibility.Flags.a11yCharacterInWindowApi()) {
+            info.setAvailableExtraData(
+                      Arrays.asList(
+                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY,
+                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY));
+        } else {
+            info.setAvailableExtraData(
+                    Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+        }
         info.setPaneTitle("Pane title");
         info.setError("Error text");
         info.setMaxTextLength(42);
@@ -471,6 +555,16 @@ public class AccessibilityNodeInfoTest {
         info.setTextSelectable(true);
         info.setRequestInitialAccessibilityFocus(true);
         info.setAccessibilityDataSensitive(true);
+
+        // 1 Integer property
+        if (Flags.a11yExpansionStateApi()) {
+            info.setExpandedState(AccessibilityNodeInfo.EXPANDED_STATE_FULL);
+        }
+
+        // 1 Boolean property
+        if (Flags.a11yIsRequiredApi()) {
+            info.setFieldRequired(true);
+        }
     }
 
     /**
@@ -533,6 +627,11 @@ public class AccessibilityNodeInfoTest {
                 receivedInfo.getClassName());
         assertEquals("contentDescription has incorrect value", expectedInfo.getContentDescription(),
                 receivedInfo.getContentDescription());
+        if (Flags.supplementalDescription()) {
+            assertTrue("supplementalDescription has incorrect value",
+                    TextUtils.equals(expectedInfo.getSupplementalDescription(),
+                            receivedInfo.getSupplementalDescription()));
+        }
         assertEquals("stateDescription has incorrect value", expectedInfo.getStateDescription(),
                 receivedInfo.getStateDescription());
         assertEquals("tooltip text has incorrect value", expectedInfo.getTooltipText(),
@@ -736,6 +835,22 @@ public class AccessibilityNodeInfoTest {
         assertSame("isAccessibilityDataSensitive has incorrect value",
                 expectedInfo.isAccessibilityDataSensitive(),
                 receivedInfo.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "Expanded state has incorrect value",
+                    expectedInfo.getExpandedState(),
+                    receivedInfo.getExpandedState());
+        }
+
+        // 1 Boolean Property
+        if (Flags.a11yIsRequiredApi()) {
+            assertSame(
+                    "isFieldRequired has incorrect value",
+                    expectedInfo.isFieldRequired(),
+                    receivedInfo.isFieldRequired());
+        }
     }
 
     /**
@@ -752,6 +867,10 @@ public class AccessibilityNodeInfoTest {
         assertTrue("boundsInScreen not properly recycled", bounds.isEmpty());
         assertNull("className not properly recycled", info.getClassName());
         assertNull("contentDescription not properly recycled", info.getContentDescription());
+        if (Flags.supplementalDescription()) {
+            assertNull("supplementalDescription not properly recycled",
+                    info.getSupplementalDescription());
+        }
         assertNull("stateDescription not properly recycled", info.getStateDescription());
         assertNull("tooltiptext not properly recycled", info.getTooltipText());
         assertNull("packageName not properly recycled", info.getPackageName());
@@ -840,6 +959,19 @@ public class AccessibilityNodeInfoTest {
                 info.hasRequestInitialAccessibilityFocus());
         assertFalse("isAccessibilityDataSensitive not properly reset",
                 info.isAccessibilityDataSensitive());
+
+        // 1 Integer Property
+        if (Flags.a11yExpansionStateApi()) {
+            assertEquals(
+                    "expandedState not properly reset",
+                    info.getExpandedState(),
+                    AccessibilityNodeInfo.EXPANDED_STATE_UNDEFINED);
+        }
+
+        // 1 Boolean Proptery
+        if (Flags.a11yIsRequiredApi()) {
+            assertFalse("isFieldRequired not properly reset", info.isFieldRequired());
+        }
     }
 
     private static void replaceSpan(

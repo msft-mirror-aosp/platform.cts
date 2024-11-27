@@ -31,14 +31,21 @@ import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.hardware.biometrics.ActionEnum;
 import android.hardware.biometrics.ClientEnum;
+import android.hardware.biometrics.EnumerationResultEnum;
 import android.hardware.biometrics.ModalityEnum;
 import android.hardware.biometrics.SessionTypeEnum;
+import android.hardware.biometrics.UnenrollReasonEnum;
 
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
+import com.android.os.hardware.biometrics.BiometricEnumerated;
+import com.android.os.hardware.biometrics.BiometricUnenrolled;
+import com.android.os.hardware.biometrics.BiometricsExtensionAtoms;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.util.RunUtil;
+
+import com.google.protobuf.ExtensionRegistry;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,12 +61,15 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
     private static final String TEST_PKG = "android.server.biometrics.cts.app";
     private static final String TEST_CLASS = ".BiometricsAtomsHostSideTests";
 
+    private final ExtensionRegistry mRegistry = ExtensionRegistry.newInstance();
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        BiometricsExtensionAtoms.registerAllExtensions(mRegistry);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -113,10 +123,106 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         }
     }
 
+    @NonApiTest(exemptionReasons = {}, justification = "METRIC")
+    public void testUnenrollmentAtom() throws Exception {
+        if (!hasAidlBiometrics()) {
+            CLog.w("Skipping test - no AIDL biometrics on device");
+            return;
+        }
+
+        final List<StatsLog.EventMetricData> data = runOnDevice(
+                "testEnrollThenCleanUp",
+                new int[]{
+                        BiometricsExtensionAtoms.BIOMETRIC_UNENROLLED_FIELD_NUMBER});
+
+        if (hasFeatureFingerprint(true /* aidlOnly */)) {
+            final ModalityEnum modality = ModalityEnum.MODALITY_FINGERPRINT;
+
+            final List<BiometricUnenrolled> unenrolledAtoms =
+                    filterUnenrollmentAtoms(data, modality);
+            assertThat(unenrolledAtoms).hasSize(1);
+            assertUnenrollmentAtomData(unenrolledAtoms.get(0), modality);
+        } else {
+            CLog.w("Skipping test - no AIDL Fingerprint on device");
+        }
+
+        if (hasFeatureFace(true /* aidlOnly */)) {
+            final ModalityEnum modality = ModalityEnum.MODALITY_FACE;
+
+            final List<BiometricUnenrolled> unenrolledAtoms =
+                    filterUnenrollmentAtoms(data, modality);
+            assertThat(unenrolledAtoms).hasSize(1);
+            assertUnenrollmentAtomData(unenrolledAtoms.get(0), modality);
+        } else {
+            CLog.w("Skipping test - no AIDL Face on device");
+        }
+    }
+
+    @NonApiTest(exemptionReasons = {}, justification = "METRIC")
+    public void testEnumerationAtom() throws Exception {
+        if (!hasAidlBiometrics()) {
+            CLog.w("Skipping test - no AIDL biometrics on device");
+            return;
+        }
+
+        final List<StatsLog.EventMetricData> data = runOnDevice(
+                "testEnrollThenCleanUp",
+                new int[]{AtomsProto.Atom.BIOMETRIC_ENROLLED_FIELD_NUMBER,
+                        BiometricsExtensionAtoms.BIOMETRIC_ENUMERATED_FIELD_NUMBER});
+
+        if (hasFeatureFingerprint(true /* aidlOnly */)) {
+            final ModalityEnum modality = ModalityEnum.MODALITY_FINGERPRINT;
+
+            final List<AtomsProto.BiometricEnrolled> enrolledAtoms =
+                    filterEnrollmentAtoms(data, modality);
+            assertThat(enrolledAtoms).hasSize(1);
+            final int enrolledId = enrolledAtoms.get(0).getTemplateId();
+
+            final List<BiometricEnumerated> enumAtoms =
+                    filterEnumerationAtoms(data, modality, enrolledId);
+            assertThat(enumAtoms).hasSize(1);
+            assertEnumerationAtomData(enumAtoms.get(0), modality);
+        } else {
+            CLog.w("Skipping test - no AIDL Fingerprint on device");
+        }
+
+        if (hasFeatureFace(true /* aidlOnly */)) {
+            final ModalityEnum modality = ModalityEnum.MODALITY_FACE;
+
+            final List<AtomsProto.BiometricEnrolled> enrolledAtoms =
+                    filterEnrollmentAtoms(data, modality);
+            assertThat(enrolledAtoms).hasSize(1);
+            final int enrolledId = enrolledAtoms.get(0).getTemplateId();
+
+            final List<BiometricEnumerated> enumAtoms =
+                    filterEnumerationAtoms(data, modality, enrolledId);
+            assertThat(enumAtoms).hasSize(1);
+            assertEnumerationAtomData(enumAtoms.get(0), modality);
+        } else {
+            CLog.w("Skipping test - no AIDL Face on device");
+        }
+    }
+
     private void assertEnrollmentAtomData(AtomsProto.BiometricEnrolled atom) throws Exception {
         assertThat(atom.hasSuccess() && atom.getSuccess()).isTrue();
         assertThat(atom.getUser()).isEqualTo(getDevice().getCurrentUser());
         assertThat(atom.hasAmbientLightLux()).isTrue();
+    }
+
+    private void assertUnenrollmentAtomData(
+            BiometricUnenrolled atom, ModalityEnum modality) throws Exception {
+        assertThat(atom.getModality()).isEqualTo(modality);
+        assertThat(atom.getUser()).isEqualTo(getDevice().getCurrentUser());
+        assertThat(atom.getUnenrollReason()).isEqualTo(
+                UnenrollReasonEnum.UNENROLL_REASON_DANGLING_FRAMEWORK);
+    }
+
+    private void assertEnumerationAtomData(
+            BiometricEnumerated atom, ModalityEnum modality) throws Exception {
+        assertThat(atom.getModality()).isEqualTo(modality);
+        assertThat(atom.getUser()).isEqualTo(getDevice().getCurrentUser());
+        assertThat(atom.getEnumerationResult()).isEqualTo(
+                EnumerationResultEnum.ENUMERATION_RESULT_DANGLING_FRAMEWORK);
     }
 
     // check enrollment acquired messages match the fixed values in the test
@@ -261,7 +367,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
                 TEST_PKG + TEST_CLASS,
                 methodName);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-        return ReportUtils.getEventMetricDataList(getDevice());
+        return ReportUtils.getEventMetricDataList(getDevice(), mRegistry);
     }
 
     private static List<AtomsProto.BiometricEnrolled> filterEnrollmentAtoms(
@@ -279,6 +385,31 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
                 .filter(d -> d.getAtom().hasBiometricAcquired())
                 .map(d -> d.getAtom().getBiometricAcquired())
                 .filter(d -> d.hasModality() && d.getModality() == modality)
+                .collect(Collectors.toList());
+    }
+
+    private static List<BiometricUnenrolled> filterUnenrollmentAtoms(
+            List<StatsLog.EventMetricData> data, ModalityEnum modality) {
+        return data.stream()
+                .filter(d -> d.getAtom().hasExtension(BiometricsExtensionAtoms.biometricUnenrolled))
+                .map(d -> d.getAtom().getExtension(BiometricsExtensionAtoms.biometricUnenrolled))
+                .filter(d -> d.hasModality() && d.getModality() == modality)
+                .collect(Collectors.toList());
+    }
+
+    private static List<BiometricEnumerated> filterEnumerationAtoms(
+            List<StatsLog.EventMetricData> data, ModalityEnum modality, int enrolledId) {
+        return data.stream()
+                .filter(d -> d.getAtom().hasExtension(BiometricsExtensionAtoms.biometricEnumerated))
+                .map(d -> d.getAtom().getExtension(BiometricsExtensionAtoms.biometricEnumerated))
+                .filter(d -> d.hasModality() && d.getModality() == modality)
+                .filter(d -> {
+                    final int count = d.getTemplateIdsFrameworkCount();
+                    if (count > 0) {
+                        return d.getTemplateIdsFramework(0) == enrolledId;
+                    }
+                    return false;
+                })
                 .collect(Collectors.toList());
     }
 

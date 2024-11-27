@@ -42,7 +42,7 @@ java_test_host {
         "cts",
     ],
     test_config: "AndroidTestAppCloning.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningTestApp",
         ":CtsAppCloningIntentRedirectionCloneProfileApp",
         ":CtsAppCloningIntentRedirectionOwnerProfileApp",
@@ -72,7 +72,7 @@ java_test_host {
         "cts",
     ],
     test_config: "ContactsSharingAppCloningTest.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningNotLaunchableCloneProfileApp",
         ":CtsAppCloningLaunchableCloneProfileApp",
         ":CtsManagedProfileOwnerApp",
@@ -99,7 +99,7 @@ java_test_host {
         "cts",
     ],
     test_config: "IntentRedirectionAppCloningTest.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningIntentRedirectionCloneProfileApp",
         ":CtsAppCloningIntentRedirectionOwnerProfileApp",
         ":CtsIntentRedirectionTestApp",

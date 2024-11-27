@@ -20,7 +20,6 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.cts.TestArgs;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -44,7 +43,6 @@ import java.util.List;
  * Tests to check if MediaCodec decoding works with rotation.
  */
 @SmallTest
-@RequiresDevice
 @FrameworkSpecificTest   // fails in windowing on pure older releases
 @RunWith(Parameterized.class)
 public class VideoDecoderRotationTest {

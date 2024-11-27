@@ -37,7 +37,7 @@ java_test_host {
         "modules-utils-build-testing",
         "hamcrest-library",
     ],
-    data: [":SharedLibraryInfoTestApp"],
+    device_common_data: [":SharedLibraryInfoTestApp"],
     data_native_bins: [
         "avbtool",
     ],

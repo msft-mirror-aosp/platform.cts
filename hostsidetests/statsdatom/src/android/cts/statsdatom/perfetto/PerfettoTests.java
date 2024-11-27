@@ -183,7 +183,7 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
     public void testPerfettoTriggerAtoms() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), DeviceUtils.FEATURE_WATCH)) return;
 
-        StatsdConfig.Builder config = ConfigUtils.createConfigBuilder("AID_SHELL");
+        StatsdConfig.Builder config = ConfigUtils.createConfigBuilder("AID_NOBODY");
         ConfigUtils.addEventMetric(config, AtomsProto.Atom.PERFETTO_TRIGGER_FIELD_NUMBER);
         ConfigUtils.uploadConfig(getDevice(), config);
 

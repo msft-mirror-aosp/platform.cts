@@ -16,6 +16,7 @@
 -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:fitsSystemWindows="true"
               android:layout_width="fill_parent"
               android:layout_height="fill_parent"
               android:gravity="center"
@@ -74,52 +75,65 @@
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout android:id="@+id/buttonLayout"
-              android:layout_width="fill_parent"
-              android:layout_height="wrap_content"
-              android:gravity="center">
-        <Button android:id="@+id/button"
-                android:text="@string/button_title"
-                android:accessibilityPaneTitle="@string/paneTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="60dp"
-                android:bufferType="normal">
-        </Button>
-        <Button android:id="@id/buttonWithTooltip"
-                android:text="@string/button_title"
-                android:tooltipText="@string/button_tooltip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:bufferType="normal"
-                android:accessibilityTraversalBefore="@id/edittext">
-        </Button>
-    </LinearLayout>
-
-    <LinearLayout  android:id="@+id/buttonTargetGrandparent"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center">
-        <LinearLayout  android:id="@+id/buttonTargetParent"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:gravity="center">
-            <Button android:id="@+id/buttonTarget"
-                android:text="@string/button_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-            </Button>
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout android:id="@+id/autoImportantLinearLayout"
-                  android:layout_width="fill_parent"
-                  android:layout_height="wrap_content"
-                  android:gravity="center">
-    </LinearLayout>
-    <android.accessibilityservice.cts.utils.ProviderCustomView
-        android:id="@+id/autoImportantProviderView"
-        android:layout_width="fill_parent"
+    <ScrollView
+        android:id="@+id/scrollParent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content">
-    </android.accessibilityservice.cts.utils.ProviderCustomView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout android:id="@+id/buttonLayout"
+                      android:layout_width="fill_parent"
+                      android:layout_height="wrap_content"
+                      android:gravity="center">
+                <Button android:id="@+id/button"
+                        android:text="@string/button_title"
+                        android:accessibilityPaneTitle="@string/paneTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="60dp"
+                        android:bufferType="normal">
+                </Button>
+                <Button android:id="@id/buttonWithTooltip"
+                        android:text="@string/button_title"
+                        android:supplementalDescription="@string/foo_bar_baz"
+                        android:tooltipText="@string/button_tooltip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:bufferType="normal"
+                        android:accessibilityTraversalBefore="@id/edittext">
+                </Button>
+            </LinearLayout>
+
+            <LinearLayout  android:id="@+id/buttonTargetGrandparent"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+                <LinearLayout  android:id="@+id/buttonTargetParent"
+                    android:layout_width="fill_parent"
+                    android:layout_height="fill_parent"
+                    android:gravity="center">
+                    <Button android:id="@+id/buttonTarget"
+                        android:text="@string/button_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+                    </Button>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/autoImportantLinearLayout"
+                          android:layout_width="fill_parent"
+                          android:layout_height="wrap_content"
+                          android:gravity="center">
+            </LinearLayout>
+            <android.accessibilityservice.cts.utils.ProviderCustomView
+                android:id="@+id/autoImportantProviderView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
+            </android.accessibilityservice.cts.utils.ProviderCustomView>
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

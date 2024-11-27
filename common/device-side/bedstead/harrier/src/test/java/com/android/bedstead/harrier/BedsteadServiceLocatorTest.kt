@@ -104,4 +104,22 @@ class BedsteadServiceLocatorTest {
 
         assertThat(instance).isNotNull()
     }
+
+    @Test
+    fun getNonExistingClass_throwsException() {
+        val locator = BedsteadServiceLocator()
+
+        assertThrows {
+            locator.get("non.existing.class")
+        }
+    }
+
+    @Test
+    fun useGetOrNullForNonExistingClass_valueIsNull() {
+        val locator = BedsteadServiceLocator()
+
+        val instance: Any? = locator.getOrNull("non.existing.class")
+
+        assertThat(instance).isNull()
+    }
 }

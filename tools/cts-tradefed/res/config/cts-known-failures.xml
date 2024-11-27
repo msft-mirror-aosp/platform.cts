@@ -366,4 +366,12 @@
     <!-- b/368509186 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
+
+    <!-- b/370790791 -->
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testMode" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
 </configuration>

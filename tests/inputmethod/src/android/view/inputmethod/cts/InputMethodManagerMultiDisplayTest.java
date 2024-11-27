@@ -37,7 +37,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.LinearLayout;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
@@ -46,14 +45,12 @@ import androidx.test.uiautomator.Until;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
-public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
+public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
     private static final String MOCK_IME_PACKAGE_NAME = "com.android.cts.mockimewithsubtypes";
     private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/.MockImeWithSubtypes";
     private static final String MOCK_IME_SUBTYPE_LABEL = "CTS Subtype 1 Test String";

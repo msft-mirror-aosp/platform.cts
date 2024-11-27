@@ -48,13 +48,18 @@ import android.media.ImageWriter;
 import android.opengl.Matrix;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 
 import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenException;
+import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -63,6 +68,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * CameraDevice test by using combination of SurfaceView, TextureView and ImageReader
@@ -78,6 +84,10 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
     private final static int IMG_READER_COUNT = 2;
     private final static int YUV_IMG_READER_COUNT = 3;
     private final static double BITMAP_DIFF_THRESHOLD = 0.1;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testTextureViewPreview() throws Exception {
@@ -420,6 +430,100 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
         }
 
         stopPreview(cameraId);
+    }
+
+    /*
+     * Verify mirroring behavior with shared surfaces.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MIRROR_MODE_SHARED_SURFACES)
+    public void testPreviewMirroringForSharedSurfaces() throws Exception {
+        for (String cameraId : getCameraIdsUnderTest()) {
+            try {
+                openCamera(cameraId);
+                if (getStaticInfo(cameraId).isHardwareLevelLegacy()) {
+                    Log.i(TAG, "Camera " + cameraId + " is legacy, skipping");
+                    continue;
+                }
+                if (!getStaticInfo(cameraId).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraId
+                            + " does not support color outputs, skipping");
+                    continue;
+                }
+
+                int[] supportedModes = {
+                        OutputConfiguration.MIRROR_MODE_AUTO,
+                        OutputConfiguration.MIRROR_MODE_NONE,
+                        OutputConfiguration.MIRROR_MODE_H,
+                        OutputConfiguration.MIRROR_MODE_V };
+                Map<Integer, float[]> transformsPerMode =
+                        textureViewPreviewSharingWithMirroring(
+                                cameraId, supportedModes);
+
+                int lensFacing = getStaticInfo(cameraId).getLensFacingChecked();
+                verifyPreviewTransforms(cameraId, lensFacing, transformsPerMode);
+            } finally {
+                closeCamera(cameraId);
+            }
+        }
+    }
+
+    private Map<Integer, float[]> textureViewPreviewSharingWithMirroring(String cameraId,
+            int[] mirrorModes) throws Exception {
+        Map<Integer, float[]> transforms = new HashMap<Integer, float[]>();
+        Size previewSize = getOrderedPreviewSizes(cameraId).get(0);
+        int numSurfaces = mirrorModes.length;
+        SurfaceTexture[] previewTexture = new SurfaceTexture[numSurfaces];
+        Surface[] surfaces = new Surface[numSurfaces];
+        CameraPreviewListener[] previewListeners = new CameraPreviewListener[numSurfaces];
+
+        // Create surface textures with the same size
+        for (int i = 0; i < numSurfaces; i++) {
+            previewTexture[i] = getAvailableSurfaceTexture(
+                    WAIT_FOR_COMMAND_TO_COMPLETE, mTextureView[i]);
+            assertNotNull("Unable to get preview surface texture", previewTexture[i]);
+            previewTexture[i].setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+            surfaces[i] = new Surface(previewTexture[i]);
+            previewListeners[i] = new CameraPreviewListener();
+            mTextureView[i].setSurfaceTextureListener(previewListeners[i]);
+            // Correct the preview display rotation.
+            updatePreviewDisplayRotation(previewSize, mTextureView[i]);
+        }
+
+        // Create shared outputs for the surface textures
+        OutputConfiguration surfaceSharedOutput = new OutputConfiguration(surfaces[0]);
+        surfaceSharedOutput.setMirrorMode(surfaces[0], mirrorModes[0]);
+        assertEquals("getMirrorMode doesn't return the value set via setMirrorMode!",
+                mirrorModes[0], surfaceSharedOutput.getMirrorMode(surfaces[0]));
+        surfaceSharedOutput.enableSurfaceSharing();
+        for (int i = 1; i < numSurfaces; i++) {
+            surfaceSharedOutput.addSurface(surfaces[i]);
+            surfaceSharedOutput.setMirrorMode(surfaces[i], mirrorModes[i]);
+            assertEquals("getMirrorMode doesn't return the value set via setMirrorMode!",
+                    mirrorModes[i], surfaceSharedOutput.getMirrorMode(surfaces[i]));
+        }
+        List<OutputConfiguration> outputConfigurations = new ArrayList<>();
+        outputConfigurations.add(surfaceSharedOutput);
+
+        startPreviewWithConfigs(cameraId, outputConfigurations, null);
+        SystemClock.sleep(PREVIEW_TIME_MS);
+
+        for (int i = 0; i < numSurfaces; i++) {
+            boolean previewDone = previewListeners[i].waitForPreviewDone(
+                    WAIT_FOR_COMMAND_TO_COMPLETE);
+            assertTrue("Unable to start preview", previewDone);
+
+            float[] transform = previewListeners[i].getPreviewTransform();
+            assertNotNull("Failed to get preview transform", transform);
+            transforms.put(mirrorModes[i], transform);
+        }
+
+        for (int i = 0; i < numSurfaces; i++) {
+            mTextureView[i].setSurfaceTextureListener(null);
+        }
+        stopPreview(cameraId);
+
+        return transforms;
     }
 
     /*
@@ -1084,22 +1188,6 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
      */
     @Test
     public void testTextureViewPreviewWithMirroring() throws Exception {
-        // 4x4 GL-style matrices, as returned by SurfaceTexture#getTransformMatrix(). Note they're
-        // transforming texture coordinates ([0,1]^2), so the origin for the transforms is
-        // (0.5, 0.5), not (0,0).
-        final float[] MIRROR_HORIZONTAL_MATRIX = new float[] {
-            -1.0f,  0.0f,  0.0f,  0.0f,
-             0.0f,  1.0f,  0.0f,  0.0f,
-             0.0f,  0.0f,  1.0f,  0.0f,
-             1.0f,  0.0f,  0.0f,  1.0f,
-        };
-        final float[] MIRROR_VERTICAL_MATRIX = new float[] {
-             1.0f,  0.0f,  0.0f,  0.0f,
-             0.0f, -1.0f,  0.0f,  0.0f,
-             0.0f,  0.0f,  1.0f,  0.0f,
-             0.0f,  1.0f,  0.0f,  1.0f,
-        };
-
         for (String cameraId : getCameraIdsUnderTest()) {
             Exception prior = null;
 
@@ -1124,35 +1212,7 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
                 }
 
                 int lensFacing = getStaticInfo(cameraId).getLensFacingChecked();
-                if (lensFacing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    assertArrayEquals("Front camera's transform matrix must be the same between "
-                            + "AUTO and horizontal mirroring mode",
-                            transformsPerMode.get(OutputConfiguration.MIRROR_MODE_AUTO),
-                            transformsPerMode.get(OutputConfiguration.MIRROR_MODE_H), 0.0f);
-                } else {
-                    assertArrayEquals("Rear/external camera's transform matrix must be the same "
-                            + "between AUTO and NONE mirroring mode",
-                            transformsPerMode.get(OutputConfiguration.MIRROR_MODE_AUTO),
-                            transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0.0f);
-                }
-
-                float[] horizontalMirroredTransform = new float[16];
-                Matrix.multiplyMM(horizontalMirroredTransform, 0,
-                        transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0,
-                        MIRROR_HORIZONTAL_MATRIX, 0);
-                assertArrayEquals("Camera " + cameraId + " transform matrix in horizontal mode "
-                        + "contradicts with NONE mode",
-                        transformsPerMode.get(OutputConfiguration.MIRROR_MODE_H),
-                        horizontalMirroredTransform, 0.0f);
-
-                float[] verticalMirroredTransform = new float[16];
-                Matrix.multiplyMM(verticalMirroredTransform, 0,
-                        transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0,
-                        MIRROR_VERTICAL_MATRIX, 0);
-                assertArrayEquals("Camera " + cameraId + " transform matrix in vertical mode "
-                        + "contradicts with NONE mode",
-                        transformsPerMode.get(OutputConfiguration.MIRROR_MODE_V),
-                        verticalMirroredTransform, 0.0f);
+                verifyPreviewTransforms(cameraId, lensFacing, transformsPerMode);
             } catch (Exception e) {
                 prior = e;
             } finally {
@@ -1195,12 +1255,61 @@ public class MultiViewTest extends Camera2MultiViewTestCase {
         SystemClock.sleep(PREVIEW_TIME_MS);
 
         float[] transform = previewListener.getPreviewTransform();
-        assertNotNull("Failed to get preview transform");
+        assertNotNull("Failed to get preview transform", transform);
 
         textureView.setSurfaceTextureListener(null);
         stopPreview(cameraId);
 
         return transform;
+    }
+
+    private void verifyPreviewTransforms(String cameraId,
+            int lensFacing, Map<Integer, float[]> transformsPerMode) {
+        // 4x4 GL-style matrices, as returned by SurfaceTexture#getTransformMatrix(). Note they're
+        // transforming texture coordinates ([0,1]^2), so the origin for the transforms is
+        // (0.5, 0.5), not (0,0).
+        final float[] MIRROR_HORIZONTAL_MATRIX = new float[] {
+            -1.0f,  0.0f,  0.0f,  0.0f,
+            0.0f,  1.0f,  0.0f,  0.0f,
+            0.0f,  0.0f,  1.0f,  0.0f,
+            1.0f,  0.0f,  0.0f,  1.0f,
+        };
+        final float[] MIRROR_VERTICAL_MATRIX = new float[] {
+            1.0f,  0.0f,  0.0f,  0.0f,
+            0.0f, -1.0f,  0.0f,  0.0f,
+            0.0f,  0.0f,  1.0f,  0.0f,
+            0.0f,  1.0f,  0.0f,  1.0f,
+        };
+
+        if (lensFacing == CameraCharacteristics.LENS_FACING_FRONT) {
+            assertArrayEquals("Front camera's transform matrix must be the same between "
+                    + "AUTO and horizontal mirroring mode",
+                    transformsPerMode.get(OutputConfiguration.MIRROR_MODE_AUTO),
+                    transformsPerMode.get(OutputConfiguration.MIRROR_MODE_H), 0.0f);
+        } else {
+            assertArrayEquals("Rear/external camera's transform matrix must be the same "
+                    + "between AUTO and NONE mirroring mode",
+                    transformsPerMode.get(OutputConfiguration.MIRROR_MODE_AUTO),
+                    transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0.0f);
+        }
+
+        float[] horizontalMirroredTransform = new float[16];
+        Matrix.multiplyMM(horizontalMirroredTransform, 0,
+                transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0,
+                MIRROR_HORIZONTAL_MATRIX, 0);
+        assertArrayEquals("Camera " + cameraId + " transform matrix in horizontal mode "
+                + "contradicts with the calculated values from NONE mode",
+                transformsPerMode.get(OutputConfiguration.MIRROR_MODE_H),
+                horizontalMirroredTransform, 0.0f);
+
+        float[] verticalMirroredTransform = new float[16];
+        Matrix.multiplyMM(verticalMirroredTransform, 0,
+                transformsPerMode.get(OutputConfiguration.MIRROR_MODE_NONE), 0,
+                MIRROR_VERTICAL_MATRIX, 0);
+        assertArrayEquals("Camera " + cameraId + " transform matrix in vertical mode "
+                + "contradicts with the calculated values from NONE mode",
+                transformsPerMode.get(OutputConfiguration.MIRROR_MODE_V),
+                verticalMirroredTransform, 0.0f);
     }
 
     /**

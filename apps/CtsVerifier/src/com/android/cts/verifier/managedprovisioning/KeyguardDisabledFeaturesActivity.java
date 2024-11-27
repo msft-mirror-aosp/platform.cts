@@ -91,6 +91,7 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
         if (mDpm.isAdminActive(adminComponent)) {
             mDpm.removeActiveAdmin(adminComponent);
         }
+        clearKeyguardDisabledFeatures();
         super.finish();
     }
 
@@ -99,6 +100,13 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
         Intent setKeyguardDisabledFeaturesIntent = new Intent(
                 ByodHelperActivity.ACTION_KEYGUARD_DISABLED_FEATURES)
                         .putExtra(ByodHelperActivity.EXTRA_PARAMETER_1, flags);
+        startActivity(setKeyguardDisabledFeaturesIntent);
+    }
+
+    private void clearKeyguardDisabledFeatures() {
+        Intent setKeyguardDisabledFeaturesIntent = new Intent(
+                ByodHelperActivity.ACTION_KEYGUARD_DISABLED_FEATURES)
+                        .putExtra(ByodHelperActivity.EXTRA_PARAMETER_1, 0);
         startActivity(setKeyguardDisabledFeaturesIntent);
     }
 
@@ -128,10 +136,12 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
                     R.string.provisioning_byod_fingerprint_disabled_in_settings_instruction,
                     new Intent(Settings.ACTION_SECURITY_SETTINGS)));
             */
+            /* Disabled due to b/359388643
             adapter.add(new DialogTestListItem(this, R.string.provisioning_byod_disable_fingerprint,
                     getTestIdPrefix() + "DisableFingerprint",
                     R.string.provisioning_byod_disable_fingerprint_instruction,
                     ByodHelperActivity.createLockIntent()));
+            */
         }
     }
 

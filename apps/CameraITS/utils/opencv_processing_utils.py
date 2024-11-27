@@ -396,9 +396,9 @@ class Chart(object):
     opt_values = [x[0] for x in max_match]
     if not opt_values or max(opt_values) < OPT_VALUE_THRESH:
       raise AssertionError(
-            'Unable to find chart in scene!\n'
-            'Check camera distance and self-reported '
-            'pixel pitch, focal length and hyperfocal distance.')
+          'Unable to find chart in scene!\n'
+          'Check camera distance and self-reported '
+          'pixel pitch, focal length and hyperfocal distance.')
     else:
       # find max and draw bbox
       matched_scale_and_loc = max(max_match, key=lambda x: x[0])

@@ -21,6 +21,7 @@ import android.accounts.Account;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
@@ -383,5 +384,103 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
         rawContact.load();
         assertEquals(0, rawContact.getLong(RawContacts.TIMES_CONTACTED));
         assertEquals(0, rawContact.getLong(RawContacts.LAST_TIME_CONTACTED));
+    }
+
+
+    public void testQueryByAccount() throws Exception {
+        String accountName = "RawContactsTest_testQueryByAccount_accountName";
+        String accountType = "RawContactsTest_testQueryByAccount_accountType";
+        String accountDataSet = "RawContactsTest_testQueryByAccount_dataSet";
+        TestRawContact rawContact = mBuilder.newRawContact()
+                .with(RawContacts.ACCOUNT_NAME, accountName)
+                .with(RawContacts.ACCOUNT_TYPE, accountType)
+                .with(RawContacts.DATA_SET, accountDataSet)
+                .insert().load();
+        long rawContactId = rawContact.getId();
+
+        // verify we can get raw contact with no filters, or with correct account filters
+        assertRawContactFound(RawContacts.CONTENT_URI, rawContactId);
+
+        assertRawContactFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .build(), rawContactId);
+
+        // verify we can filter the raw contact out
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, "a")
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .build(), rawContactId);
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, "b")
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .build(), rawContactId);
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .appendQueryParameter(RawContacts.DATA_SET, "c")
+                .build(), rawContactId);
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .build(), rawContactId);
+    }
+
+    public void testQueryByAccountWithNullDataSet() throws Exception {
+        String accountName = "RawContactsTest_testQueryByAccountWithNullDataSet_accountName";
+        String accountType = "RawContactsTest_testQueryByAccountWithNullDataSet_accountType";
+        TestRawContact rawContact = mBuilder.newRawContact()
+                .with(RawContacts.ACCOUNT_NAME, accountName)
+                .with(RawContacts.ACCOUNT_TYPE, accountType)
+                .insert().load();
+        long rawContactId = rawContact.getId();
+
+        // verify we can get raw contact with no filters, or with correct account filters
+        assertRawContactFound(RawContacts.CONTENT_URI, rawContactId);
+
+        assertRawContactFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .build(), rawContactId);
+
+        // verify we can filter the raw contact out
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, "a")
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .build(), rawContactId);
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, "b")
+                .build(), rawContactId);
+        assertRawContactNotFound(RawContacts.CONTENT_URI.buildUpon()
+                .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+                .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+                .appendQueryParameter(RawContacts.DATA_SET, "c")
+                .build(), rawContactId);
+    }
+
+    private void assertRawContactFound(Uri uri, long rawContactId) {
+        try (Cursor c = mResolver.query(uri,
+                new String[]{RawContacts._ID},
+                RawContacts._ID + "=?",
+                new String[]{String.valueOf(rawContactId)},
+                null)) {
+            assertEquals(1, c.getCount());
+            c.moveToFirst();
+            assertEquals(rawContactId, c.getLong(0));
+        }
+    }
+
+    private void assertRawContactNotFound(Uri uri, long rawContactId) {
+        try (Cursor c = mResolver.query(uri,
+                new String[]{RawContacts._ID},
+                RawContacts._ID + "=?",
+                new String[]{String.valueOf(rawContactId)},
+                null)) {
+            assertEquals(0, c.getCount());
+        }
     }
 }

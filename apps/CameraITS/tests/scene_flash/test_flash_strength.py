@@ -70,11 +70,12 @@ def _take_captures(out_surfaces, cam, img_name, ae_mode, strength=0):
         'android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
     cap_req['android.control.aeMode'] = 0
     cap = cam.do_capture(cap_req, out_surfaces)
+    logging.debug('Capturing base image without flash')
   # Take capture with flash strength
   else:
     cap = capture_request_utils.take_captures_with_flash_strength(
         cam, out_surfaces, ae_mode, strength)
-
+    logging.debug('Capturing image with flash strength: %s', strength)
   img = image_processing_utils.convert_capture_to_rgb_image(cap)
   # Save captured image
   image_processing_utils.write_image(img, img_name)
@@ -141,12 +142,12 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
     for mean in range(1, len(formats_means)-1):
       if formats_means[mean] >= formats_means[mean+1]:
         msg = (
-            f'Capture with AE_CONTROL_MODE OFF/ON. '
-            f'{flash_strengths[mean]} mean: {formats_means[mean]}, '
-            f'{flash_strengths[mean+1]} mean: '
+            f'Capture with CONTROL_AE_MODE {_AE_MODES[ae_mode]}. '
+            f'Strength {flash_strengths[mean]} mean: {formats_means[mean]}; '
+            f'Strength {flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
-            f'{flash_strengths[mean+1]} should be brighter than '
-            f'{flash_strengths[mean]}. '
+            f'Mean of {flash_strengths[mean+1]} should be brighter than '
+            f'Mean of {flash_strengths[mean]}. '
         )
         failure_messages.append(msg)
   else:
@@ -154,9 +155,9 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
       diff = abs(formats_means[mean] - formats_means[mean+1])
       if diff > _BRIGHTNESS_MEAN_ATOL:
         msg = (
-            f'Capture with AE_CONTROL_MODE ON_AUTO_FLASH. '
-            f'{flash_strengths[mean]} mean: {formats_means[mean]}, '
-            f'{flash_strengths[mean+1]} mean: '
+            f'Capture with CONTROL_AE_MODE {_AE_MODES[ae_mode]}. '
+            f'Strength {flash_strengths[mean]} mean: {formats_means[mean]}; '
+            f'Strength {flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
             f'Diff: {diff}; ATOL: {_BRIGHTNESS_MEAN_ATOL}. '
         )
@@ -229,7 +230,10 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
             formats_means.append(_get_mean(cap, props))
         check_mean = True
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-        if ae_mode == 1 and first_api_level <= its_session_utils.ANDROID15_API_LEVEL:
+        if (
+            ae_mode == 1 and
+            first_api_level <= its_session_utils.ANDROID15_API_LEVEL
+        ):
           check_mean = False
         # Compare means and assert PASS/FAIL
         if check_mean:

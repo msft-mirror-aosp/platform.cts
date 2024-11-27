@@ -265,19 +265,23 @@ TEST_F(NdkBinderTest_APersistableBundle, EmptyStringKeys) {
   int32_t sizeBytes = sizeof(char*);
   char** outKeys = (char**)malloc(sizeBytes);
   APersistableBundle* bundle = APersistableBundle_new();
-  ASSERT_NE(nullptr, bundle);
+  EXPECT_NE(nullptr, bundle);
 
-  // No keys yet, should be size 0
-  int32_t outSizeBytes =
-      APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &stringAllocator, nullptr);
-  ASSERT_EQ(outSizeBytes, 0);
+  if (bundle) {
+    // No keys yet, should be size 0
+    int32_t outSizeBytes =
+        APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &stringAllocator, nullptr);
+    EXPECT_EQ(outSizeBytes, 0);
 
-  // Empty string as a key needs an entry like any other key
-  APersistableBundle_putBoolean(bundle, "", kBoolVal);
-  outSizeBytes =
-      APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &stringAllocator, nullptr);
-  ASSERT_EQ(outSizeBytes, sizeof(char*));
-  EXPECT_EQ(0, std::strcmp("", outKeys[0]));
+    // Empty string as a key needs an entry like any other key
+    APersistableBundle_putBoolean(bundle, "", kBoolVal);
+    outSizeBytes =
+        APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &stringAllocator, nullptr);
+    EXPECT_EQ(outSizeBytes, sizeof(char*));
+    EXPECT_EQ(0, std::strcmp("", outKeys[0]));
+  }
+  free(outKeys[0]);
+  free(outKeys);
 }
 
 static char* failAllocator(int32_t, void*) {
@@ -288,12 +292,15 @@ TEST_F(NdkBinderTest_APersistableBundle, FailAllocatorKeys) {
   int32_t sizeBytes = sizeof(char*);
   char** outKeys = (char**)malloc(sizeBytes);
   APersistableBundle* bundle = APersistableBundle_new();
-  ASSERT_NE(nullptr, bundle);
+  EXPECT_NE(nullptr, bundle);
 
-  APersistableBundle_putBoolean(bundle, "This will fail to allocate", kBoolVal);
-  int32_t outSizeBytes =
-      APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &failAllocator, nullptr);
-  EXPECT_EQ(outSizeBytes, APERSISTABLEBUNDLE_ALLOCATOR_FAILED);
+  if (bundle) {
+    APersistableBundle_putBoolean(bundle, "This will fail to allocate", kBoolVal);
+    int32_t outSizeBytes =
+        APersistableBundle_getBooleanKeys(bundle, outKeys, sizeBytes, &failAllocator, nullptr);
+    EXPECT_EQ(outSizeBytes, APERSISTABLEBUNDLE_ALLOCATOR_FAILED);
+  }
+  free(outKeys);
 }
 
 // Check bytes and string arrays for equality and free all of the outKeys
@@ -392,4 +399,5 @@ TEST_F(NdkBinderTest_APersistableBundle, getKeys) {
   outSizeBytes = APersistableBundle_getPersistableBundleKeys(bundle, outKeys, sizeBytes,
                                                              &stringAllocator, nullptr);
   checkAndFree(sizeBytes, outSizeBytes, keys, outKeys, numKeys);
+  free(outKeys);
 }

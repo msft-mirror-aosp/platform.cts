@@ -16,6 +16,7 @@
 import logging
 import math
 import os
+import time
 
 from matplotlib import pyplot as plt
 from mobly import test_runner
@@ -32,9 +33,10 @@ _RAD_TO_DEG = 180/math.pi
 _GYRO_DRIFT_ATOL = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro accumulated drift
 _GYRO_MEAN_THRESH = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro mean drift
 _GYRO_VAR_ATOL = 1E-7  # rad^2/sec^2/Hz from CDD C-1-7
-_IMU_EVENTS_WAIT_TIME = 30  # seconds
+_IMU_EVENTS_WAIT_TIME = 120  # seconds (Increased from 30s in Android 15)
 _NAME = os.path.basename(__file__).split('.')[0]
 _NSEC_TO_SEC = 1E-9
+_PREVIEW_RECORDING_TIME = 60  # seconds (>60 often crashes)
 _REAR_MAIN_CAMERA_ID = '0'
 _RV_DRIFT_THRESH = 0.01*_RAD_TO_DEG  # PASS/FAIL for rotation vector drift
 _SEC_TO_MIN = 1/60
@@ -242,14 +244,18 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
           camera_properties_utils.preview_stabilization_supported(props)
       )
       cam.do_preview_recording(
-          video_size=preview_size, duration=_IMU_EVENTS_WAIT_TIME,
+          video_size=preview_size, duration=_PREVIEW_RECORDING_TIME,
           stabilize=preview_stabilization_supported
       )
+
+      if _IMU_EVENTS_WAIT_TIME > _PREVIEW_RECORDING_TIME:
+        time.sleep(_IMU_EVENTS_WAIT_TIME - _PREVIEW_RECORDING_TIME)
 
       # dump IMU events
       sensor_events = cam.get_sensor_events()
       gyro_events = sensor_events['gyro']  # raw gyro output
-      rv_events = sensor_events['rv']  # rotation vector
+      if 'rv' in sensor_events.keys():
+        rv_events = sensor_events['rv']  # rotation vector
 
     # process gyro data
     x_gyro, y_gyro, z_gyro, times = convert_events_to_arrays(
@@ -261,14 +267,15 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     x_gyro_drift, y_gyro_drift, z_gyro_drift = do_riemann_sums(
         x_gyro, y_gyro, z_gyro, times, self.log_path)
 
-    # process rotation vector data
-    x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
-        rv_events, _NSEC_TO_SEC, 1)
-    # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
-    calc_effective_sampling_rate(t_rv, 'rv')
+    if rv_events:
+      # process rotation vector data
+      x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
+          rv_events, _NSEC_TO_SEC, 1)
+      # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
+      calc_effective_sampling_rate(t_rv, 'rv')
 
-    # plot rotation vector data
-    plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
+      # plot rotation vector data
+      plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
 
     # assert correct gyro behavior
     gyro_var_atol = _GYRO_VAR_ATOL * gyro_sampling_rate * _RAD_TO_DEG**2

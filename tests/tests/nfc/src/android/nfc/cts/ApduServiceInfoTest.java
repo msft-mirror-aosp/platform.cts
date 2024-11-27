@@ -59,6 +59,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
 @RunWith(AndroidJUnit4.class)
@@ -123,20 +124,22 @@ public class ApduServiceInfoTest {
         assertEquals(apduServiceInfo.getSettingsActivityName(), "");
     }
 
-    private ResolveInfo findForegroundServiceResolveInfo() {
+    private ResolveInfo findServiceResolveInfo(ComponentName componentName) {
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
         List<ResolveInfo> resolvedServices = pm.queryIntentServicesAsUser(
                 new Intent(HostApduService.SERVICE_INTERFACE),
                 PackageManager.ResolveInfoFlags.of(PackageManager.GET_META_DATA),
                 UserHandle.SYSTEM);
         for (ResolveInfo resolvedService : resolvedServices) {
-            ServiceInfo si = resolvedService.serviceInfo;
-            ComponentName componentName = new ComponentName(si.packageName, si.name);
-            if (componentName.equals(WalletRoleTestUtils.getForegroundService())) {
+            if (resolvedService.getComponentInfo().getComponentName().equals(componentName)) {
                 return resolvedService;
             }
         }
         return null;
+    }
+
+    private ResolveInfo findForegroundServiceResolveInfo() {
+        return findServiceResolveInfo(WalletRoleTestUtils.getForegroundService());
     }
 
     @Test
@@ -163,6 +166,17 @@ public class ApduServiceInfoTest {
         assertFalse(apduServiceInfo.requiresUnlock());
         assertTrue(apduServiceInfo.requiresScreenOn());
         assertEquals(apduServiceInfo.getDescription(), "Foreground CTS Nfc Test Service");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_ASSOCIATED_ROLE_SERVICES)
+    @Test
+    public void test_Constructor_ParseManifest_AssociatedApduService() throws Exception {
+        final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        ResolveInfo resolvedService = findServiceResolveInfo(
+                WalletRoleTestUtils.getAssociatedService());
+        assertNotNull(resolvedService);
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(pm, resolvedService, true);
+        assertTrue(apduServiceInfo.shareRolePriority());
     }
 
     @Test
@@ -277,4 +291,106 @@ public class ApduServiceInfoTest {
         assertTrue(apduServiceInfo.isCategoryOtherServiceEnabled());
     }
 
+    @Test
+    public void test_offHostService_addPollingLoopFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_onHostService_addPollingLoopFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, true,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertTrue(addedFilters.contains(plFilter2));
+        assertEquals(2, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopFilter_sameFilterTwice() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopFilters();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopPatternFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
+
+    @Test
+    public void test_onHostService_addPollingLoopPatternFilter() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, true,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertTrue(addedFilters.contains(plFilter2));
+        assertEquals(2, addedFilters.size());
+    }
+
+    @Test
+    public void test_offHostService_addPollingLoopPatternFilter_sameFilterTwice() {
+        ApduServiceInfo apduServiceInfo = new ApduServiceInfo(mResolveInfo, false,
+                "", new ArrayList<>(), mDynamicAidGroups, false,
+                0, 0, "", "", "");
+        String plFilter1 = "plFilter1";
+        String plFilter2 = "plFilter2";
+
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter1, true);
+        apduServiceInfo.addPollingLoopPatternFilter(plFilter2, false);
+
+        List<String> addedFilters = apduServiceInfo.getPollingLoopPatternFilters().stream().map(
+                Pattern::pattern).toList();
+        assertTrue(addedFilters.contains(plFilter1));
+        assertEquals(1, addedFilters.size());
+    }
 }

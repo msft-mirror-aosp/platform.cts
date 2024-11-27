@@ -106,7 +106,7 @@ java_test_host {
 
     test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
 
-    data: [
+    device_common_data: [
         // AppSecurityTests
         ":CtsAppAccessData",
         ":CtsAppWithData",
@@ -226,7 +226,7 @@ java_test_host {
         "src/**/LocationPolicyTest.java",
         "src/**/PermissionEscalationTest.java",
     ],
-    data: [
+    device_common_data: [
         // AccessSerialNumberTest
         ":CtsAccessSerialLegacy",
         ":CtsAccessSerialModern",
@@ -248,7 +248,7 @@ java_test_host {
     srcs: [
         "src/**/AppDataIsolationTests.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsAppDataIsolationAppA",
         ":CtsAppDataIsolationAppApi29A",
         ":CtsAppDataIsolationAppB",
@@ -268,7 +268,7 @@ java_test_host {
     srcs: [
         "src/**/UseEmbeddedDexTest.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsUseEmbeddedDexApp_Canonical",
         ":CtsUseEmbeddedDexApp_Canonical_PerProcess",
         ":CtsUseEmbeddedDexApp_DexCompressed",
@@ -306,7 +306,7 @@ java_test_host {
         "flag-junit-host",
         "android.content.pm.flags-aconfig-java-host",
     ],
-    data: [
+    device_common_data: [
         // ApplicationVisibilityTest
         ":CtsPkgInstallTinyApp",
         ":CtsApplicationVisibilityCrossUserApp",
@@ -419,7 +419,7 @@ java_test_host {
         "src/**/InstantAppUserTest.java",
         "src/**/InstantCookieHostTest.java",
     ],
-    data: [
+    device_common_data: [
         // EphemeralTest deps
         ":CtsEphemeralTestsNormalApp",
         ":CtsEphemeralTestsUnexposedApp",
@@ -457,7 +457,7 @@ java_test_host {
     srcs: [
         "src/**/*DirectBoot*.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsEncryptionApp",
         ":CtsSplitApp",
     ],
@@ -477,7 +477,7 @@ java_test_host {
     srcs: [
         "src/**/*Storage*.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsExternalStorageApp",
         ":CtsReadExternalStorageApp",
         ":CtsWriteExternalStorageApp",
@@ -497,7 +497,7 @@ java_test_host {
     test_config: "StorageTests.xml",
 }
 
-genrule {
+java_genrule {
     name: "CtsStorageAppC_profile",
     defaults: ["profile_defaults"],
     srcs: [
@@ -507,7 +507,7 @@ genrule {
     out: ["CtsStorageAppC.prof"],
 }
 
-genrule {
+java_genrule {
     name: "CtsStorageAppC_dm",
     defaults: ["dm_defaults"],
     srcs: [
@@ -527,7 +527,7 @@ java_test_host {
         "src/**/BootCountTrackerRule.java",
         "src/**/NormalizeScreenStateRule.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsEncryptionApp",
         ":CtsSplitApp",
     ],
@@ -546,7 +546,7 @@ java_test_host {
     srcs: [
         "src/**/ApkVerityInstallTest.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsApkVerityTestPrebuiltFiles",
     ],
     static_libs: [
@@ -562,7 +562,7 @@ java_test_host {
 
     test_suites: CTS_TEST_SUITES_DEFAULT,
 
-    data: [
+    device_common_data: [
         ":CtsCorruptApkTests_b71360999",
         ":CtsCorruptApkTests_b71361168",
         ":CtsCorruptApkTests_b79488511",
@@ -586,7 +586,7 @@ java_test_host {
     srcs: [
         "src/**/OverlayHostTest.java",
     ],
-    data: [
+    device_common_data: [
         ":CtsOverlayApp",
         ":CtsOverlayAndroid",
         ":CtsOverlayPolicyAll",

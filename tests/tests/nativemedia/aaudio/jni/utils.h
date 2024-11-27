@@ -136,24 +136,6 @@ class OutputStreamBuilderHelper : public StreamBuilderHelper {
     const int32_t kBufferCapacityFrames = 2000;
 };
 
-
-#define LIB_AAUDIO_NAME          "libaaudio.so"
-#define FUNCTION_IS_MMAP         "AAudioStream_isMMapUsed"
-#define FUNCTION_SET_MMAP_POLICY "AAudio_setMMapPolicy"
-#define FUNCTION_GET_MMAP_POLICY "AAudio_getMMapPolicy"
-
-enum {
-    AAUDIO_POLICY_UNSPECIFIED = 0,
-/* These definitions are from aaudio/AAudioTesting.h */
-    AAUDIO_POLICY_NEVER = 1,
-    AAUDIO_POLICY_AUTO = 2,
-    AAUDIO_POLICY_ALWAYS = 3
-};
-typedef int32_t aaudio_policy_t;
-
-/**
- * Call some AAudio test routines that are not part of the normal API.
- */
 class AAudioExtensions {
 public:
     AAudioExtensions();
@@ -168,31 +150,20 @@ public:
     }
 
     static int getMMapPolicyProperty() {
-        return getIntegerProperty("aaudio.mmap_policy", AAUDIO_POLICY_UNSPECIFIED);
+        return getIntegerProperty("aaudio.mmap_policy", AAUDIO_UNSPECIFIED);
     }
 
-    aaudio_policy_t getMMapPolicy() {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_getMMapPolicy();
-    }
+    aaudio_policy_t getMMapPolicy() { return AAudio_getMMapPolicy(); }
 
-    int32_t setMMapPolicy(aaudio_policy_t policy) {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_setMMapPolicy(policy);
-    }
+    int32_t setMMapPolicy(aaudio_policy_t policy) { return AAudio_setMMapPolicy(policy); }
 
-    bool isMMapUsed(AAudioStream *aaudioStream) {
-        if (!mFunctionsLoaded) return false;
-        return mAAudioStream_isMMap(aaudioStream);
-    }
+    bool isMMapUsed(AAudioStream* aaudioStream) { return AAudioStream_isMMapUsed(aaudioStream); }
 
     int32_t setMMapEnabled(bool enabled) {
         return setMMapPolicy(enabled ? AAUDIO_POLICY_AUTO : AAUDIO_POLICY_NEVER);
     }
 
-    bool isMMapEnabled() {
-        return isPolicyEnabled(mAAudio_getMMapPolicy());
-    }
+    bool isMMapEnabled() { return isPolicyEnabled(AAudio_getMMapPolicy()); }
 
     bool isMMapSupported() const {
         return mMMapSupported;
@@ -202,22 +173,19 @@ public:
         return mMMapExclusiveSupported;
     }
 
+    aaudio_policy_t getPlatformMMapPolicy(AAudio_DeviceType device,
+                                          aaudio_direction_t direction) const {
+        return AAudio_getPlatformMMapPolicy(device, direction);
+    }
+
+    aaudio_policy_t getPlatformMMapExclusivePolicy(AAudio_DeviceType device,
+                                                   aaudio_direction_t direction) const {
+        return AAudio_getPlatformMMapExclusivePolicy(device, direction);
+    }
+
 private:
 
     static int getIntegerProperty(const char *name, int defaultValue);
-
-    /**
-     * Load some AAudio test functions.
-     * This should only be called once from the constructor.
-     * @return true if it succeeds
-     */
-    bool loadLibrary();
-
-    bool      mFunctionsLoaded = false;
-    void     *mLibHandle = nullptr;
-    bool    (*mAAudioStream_isMMap)(AAudioStream *stream) = nullptr;
-    int32_t (*mAAudio_setMMapPolicy)(aaudio_policy_t policy) = nullptr;
-    aaudio_policy_t (*mAAudio_getMMapPolicy)() = nullptr;
 
     const bool   mMMapSupported;
     const bool   mMMapExclusiveSupported;
@@ -264,5 +232,7 @@ void enableAudioOutputPermission();
 void enableAudioHotwordPermission();
 
 void disablePermissions();
+
+bool isCompressedFormat(aaudio_format_t format);
 
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

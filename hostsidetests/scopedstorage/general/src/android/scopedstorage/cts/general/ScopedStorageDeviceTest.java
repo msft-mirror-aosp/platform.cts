@@ -2550,6 +2550,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 assertThat(pfd).isNotNull();
             }
 
+            // Give time to kernel to update dentry cache and close listeners to finish its job
+            Thread.sleep(100);
 
             assertThat(imageFile.delete()).isTrue();
             assertThat(createFileAs(APP_B_NO_PERMS, imageFile.getAbsolutePath())).isTrue();
@@ -2590,6 +2592,9 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             try (ParcelFileDescriptor pfd = cr.openFileDescriptor(oldUri, "rw")) {
                 assertThat(pfd).isNotNull();
             }
+
+            // Give time to kernel to update dentry cache and close listeners to finish its job
+            Thread.sleep(100);
         } finally {
             imageFile.delete();
             temporaryFile.delete();

@@ -30,7 +30,6 @@ import android.media.MediaFormat;
 import android.media.cts.MediaTestBase;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -55,7 +54,6 @@ import java.util.Arrays;
 import java.util.zip.Adler32;
 
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class NativeDecoderTest extends MediaTestBase {

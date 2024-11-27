@@ -20,7 +20,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.MediaCas;
 import android.media.MediaCas.PluginDescriptor;
 import android.media.MediaCas.Session;
@@ -29,6 +32,7 @@ import android.media.MediaCasException.UnsupportedCasException;
 import android.media.MediaCasStateException;
 import android.media.MediaCodec;
 import android.media.MediaDescrambler;
+import android.media.tv.tunerresourcemanager.TunerResourceManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -398,6 +402,144 @@ public class MediaCasTest {
     }
 
     /**
+     * Test setResourceOwnershipRetention API when resource challenger is favoured
+     *
+     * When resource challenger and resource holder have the same process and the same priority with
+     * limited resources, resource challenger wins the resource.
+     */
+    @Test
+    public void testResourceChallengerWins() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
+        MediaCas mediaCasA = null;
+        MediaCas mediaCasB = null;
+        Session resourceHolderSession = null, resourceChallengerSession = null;
+        TunerResourceManager mTunerResourceManager = null;
+
+        try {
+            if (mIsAtLeastR) {
+                mediaCasA = new MediaCas(
+                                InstrumentationRegistry.getContext(),
+                                sClearKeySystemId,
+                                null,
+                                android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+                mediaCasB = new MediaCas(
+                                InstrumentationRegistry.getContext(),
+                                sClearKeySystemId,
+                                null,
+                                android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+            } else {
+                mediaCasA = new MediaCas(sClearKeySystemId);
+                mediaCasB = new MediaCas(sClearKeySystemId);
+            }
+            mTunerResourceManager =
+                    (TunerResourceManager) InstrumentationRegistry.getContext().getSystemService(
+                            Context.TV_TUNER_RESOURCE_MGR_SERVICE);
+            mTunerResourceManager.updateCasInfo(sClearKeySystemId, 1);
+
+            resourceHolderSession = mediaCasA.openSession();
+            if (resourceHolderSession == null) {
+                fail("Can't open session for program");
+            }
+            // Set the policy such that the resource challenger will win the resource.
+            mediaCasB.setResourceOwnershipRetention(false);
+            resourceChallengerSession = mediaCasB.openSession();
+            if (resourceChallengerSession == null) {
+                fail("resourceHolderSession did not release the resource as "
+                        + "setResourceOwnershipRetention API is enabled");
+            }
+        } finally {
+            if (resourceHolderSession != null) {
+                resourceHolderSession.close();
+            }
+            if (resourceChallengerSession != null) {
+                resourceChallengerSession.close();
+            }
+            if (mediaCasA != null) {
+                mediaCasA.close();
+            }
+            if (mediaCasB != null) {
+                mediaCasB.close();
+            }
+        }
+    }
+
+    /**
+     * Test setResourceOwnershipRetention API when resource holder is favoured
+     *
+     * When resource challenger and resource holder have the same process and the same priority with
+     * limited resources, resource holder retains the resource.
+     */
+    @Test
+    public void testResourceHolderWins() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
+        MediaCas mediaCasA = null;
+        MediaCas mediaCasB = null;
+        Session resourceHolderSession = null, resourceChallengerSession = null;
+        TunerResourceManager mTunerResourceManager = null;
+
+        try {
+            if (mIsAtLeastR) {
+                mediaCasA = new MediaCas(
+                                InstrumentationRegistry.getContext(),
+                                sClearKeySystemId,
+                                null,
+                                android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+                mediaCasB = new MediaCas(
+                                InstrumentationRegistry.getContext(),
+                                sClearKeySystemId,
+                                null,
+                                android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+            } else {
+                mediaCasA = new MediaCas(sClearKeySystemId);
+                mediaCasB = new MediaCas(sClearKeySystemId);
+            }
+            mTunerResourceManager =
+                    (TunerResourceManager) InstrumentationRegistry.getContext().getSystemService(
+                            Context.TV_TUNER_RESOURCE_MGR_SERVICE);
+            mTunerResourceManager.updateCasInfo(sClearKeySystemId, 1);
+
+            resourceHolderSession = mediaCasA.openSession();
+            if (resourceHolderSession == null) {
+                fail("Can't open session for program");
+            }
+            // Set the policy such as resource holder will be retaining the resource
+            // in resource challeger situation.
+            mediaCasA.setResourceOwnershipRetention(true);
+
+            try {
+                resourceChallengerSession = mediaCasA.openSession();
+                fail("The session should not be created because the limited resource "
+                        + "is not allocated to the resource challenger.");
+            } catch (MediaCasException.InsufficientResourceException e) {
+                Log.d(TAG,
+                        "InsufficientResourceException is expected as resources are limited"
+                                + "and held by resource holder");
+            }
+        } finally {
+            if (resourceHolderSession != null) {
+                resourceHolderSession.close();
+            }
+            if (resourceChallengerSession != null) {
+                resourceChallengerSession.close();
+            }
+            if (mediaCasA != null) {
+                mediaCasA.close();
+            }
+            if (mediaCasB != null) {
+                mediaCasB.close();
+            }
+        }
+    }
+
+    /**
      * Test that all sessions are closed after a MediaCas object is released.
      */
     @Test
@@ -582,6 +724,11 @@ public class MediaCasTest {
      */
     @Test
     public void testUpdateResourcePriority() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
         MediaCas mediaCas = null;
         if (!MediaUtils.check(mIsAtLeastS, "test needs Android 12")) return;
 

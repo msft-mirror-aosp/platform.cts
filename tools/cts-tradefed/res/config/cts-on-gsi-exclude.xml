@@ -137,11 +137,6 @@
     <!-- b/285247534 Remove WM Extension tests on GSI -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
 
-    <!-- b/284917528 -->
-    <option name="compatibility:exclude-filter" value="MicrodroidHostTestCases" />
-    <option name="compatibility:exclude-filter" value="MicrodroidTestApp" />
-    <option name="compatibility:exclude-filter" value="odsign_e2e_tests" />
-
     <!-- b/285455242 Temporarily exclude some save save UI tests failing due to layout issue -->
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.MultiScreenLoginTest#testSaveBothFieldsAtOnceNoClientStateOnSecondRequest" />
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.MultipleFragmentLoginTest#loginOnTwoFragments" />
@@ -179,10 +174,6 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 
-    <!-- b/353142444 -->
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppChoreographer" />
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppBackpressure" />
-
     <!-- b/342028446 Remove SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked" />
 
@@ -213,4 +204,11 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.CustomAudienceTest#testGetCustomAudienceService_lowRamDevice_throwsIllegalStateException" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testMeasurementApiDisabled_lowRamDevice" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testGetTopics_lowRamDevice" />
+
+    <!-- b/372032447 Remove Bionic minimum compiler optimizations CTS Tests -->
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_aarch64_compiler_values" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_x86_compiler_values" />
+
+    <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
+
 </configuration>

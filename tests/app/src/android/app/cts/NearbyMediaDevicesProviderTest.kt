@@ -6,9 +6,13 @@ import android.media.NearbyMediaDevicesProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.function.Consumer
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.ThrowingSupplier
 import org.junit.Before
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -16,8 +20,20 @@ import org.junit.runner.RunWith
  * Tests for {@link StatusBarManager.registerNearbyMediaDevicesProvider} and
  * {@link StatusBarManager.unregisterNearbyMediaDevicesProvider}.
  */
+// TODO(b/375675436): Remove this annotation after control of the status bar for visible background
+// users is allowed.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This annotation is added to prevent"
+        + " running as a visible background user, because access to control the status bar from"
+        + " visible background users is currently not allowed. (b/332222893)")
 @RunWith(AndroidJUnit4::class)
 class NearbyMediaDevicesProviderTest {
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
+
     private lateinit var statusBarManager: StatusBarManager
 
     @Before

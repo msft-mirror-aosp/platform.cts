@@ -58,6 +58,7 @@ import java.io.IOException;
 public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     private static final String TAG = BaseJobSchedulerTest.class.getSimpleName();
     static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+    static final int USER_ID = UserHandle.myUserId();
 
     /** Environment that notifies of JobScheduler callbacks. */
     static MockJobService.TestEnvironment kTestEnvironment =
@@ -171,7 +172,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
             mStorageStateChanged = false;
         }
         SystemUtil.runShellCommand(getInstrumentation(),
-                "cmd jobscheduler reset-execution-quota -u current "
+                "cmd jobscheduler reset-execution-quota -u " + USER_ID + " "
                         + kJobServiceComponent.getPackageName());
         mDeviceConfigStateHelper.restoreOriginalValues();
 
@@ -306,7 +307,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
 
     String getJobState(int jobId) throws Exception {
         return SystemUtil.runShellCommand(getInstrumentation(),
-                "cmd jobscheduler get-job-state --user cur "
+                "cmd jobscheduler get-job-state --user " + USER_ID + " "
                         + kJobServiceComponent.getPackageName() + " " + jobId).trim();
     }
 
@@ -408,7 +409,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         }
         SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler run -s"
-                + " -u " + UserHandle.myUserId()
+                + " -u " + USER_ID
                 + (namespace == null ? "" : " -n " + namespace)
                 + " " + kJobServiceComponent.getPackageName()
                 + " " + jobId);

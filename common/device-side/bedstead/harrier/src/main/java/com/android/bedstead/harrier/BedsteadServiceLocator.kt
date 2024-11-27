@@ -84,6 +84,19 @@ class BedsteadServiceLocator : DeviceStateComponent {
         }
     }
 
+    /**
+     * Obtains the instance of the given [className] or null if it's not available
+     * @param className – the fully qualified name of the desired class.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> getOrNull(className: String): T? {
+        return try {
+            (get(Class.forName(className))) as T
+        } catch (e: ClassNotFoundException) {
+            null
+        }
+    }
+
     private fun <T : Any> createDependencyByReflection(clazz: Class<T>): T {
         return try {
             clazz.getDeclaredConstructor().newInstance()

@@ -32,7 +32,7 @@ java_test_host {
         "compatibility-host-util",
         "androidx.annotation_annotation",
     ],
-    data: [
+    device_common_data: [
         ":HdmiCecHelperApp",
     ],
 }

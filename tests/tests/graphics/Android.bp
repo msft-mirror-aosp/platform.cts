@@ -105,6 +105,8 @@ android_ravenwood_test {
 
         ":CtsGraphicsTestCases-res{.aapt.srcjar}",
     ],
+    // Graphics on Ravenwood is still experimental, so the ravenwood team owns it for now.
+    team: "trendy_team_ravenwood",
     resource_apk: "CtsGraphicsTestCases-res",
     auto_gen_config: true,
     sdk_version: "test_current",

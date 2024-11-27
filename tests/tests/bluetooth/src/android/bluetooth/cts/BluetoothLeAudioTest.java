@@ -35,19 +35,26 @@ import android.bluetooth.BluetoothLeAudioCodecStatus;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,6 +66,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothLeAudioTest {
+    @Rule public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = BluetoothLeAudioTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
@@ -128,6 +137,8 @@ public class BluetoothLeAudioTest {
             assertTrue(groupId == mTestGroupId);
             assertTrue(groupStreamStatus == mTestGroupStreamStatus);
         }
+        @Override
+        public void onBroadcastToUnicastFallbackGroupChanged(int groupId) {}
     };
 
     @Before
@@ -228,7 +239,8 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void getAudioLocation() {
+    @RequiresFlagsDisabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
+    public void getAudioLocation_Old() {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
@@ -238,6 +250,22 @@ public class BluetoothLeAudioTest {
 
         // Verify returns false if bluetooth is not enabled
         assertEquals(BluetoothLeAudio.AUDIO_LOCATION_INVALID,
+                mBluetoothLeAudio.getAudioLocation(mTestDevice));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
+    public void getAudioLocation() {
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeAudio);
+
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+
+        // Verify returns false if bluetooth is not enabled
+        assertEquals(BluetoothLeAudio.AUDIO_LOCATION_UNKNOWN,
                 mBluetoothLeAudio.getAudioLocation(mTestDevice));
     }
 
@@ -307,49 +335,6 @@ public class BluetoothLeAudioTest {
         } catch (Exception e) {
             fail("Exception caught from unregister(): " + e.toString());
         }
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
-    public void callback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeAudio);
-
-        mTestGroupId = 1;
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mTestGroupStatus = 0;
-
-        mCodecConfigChangedCalled = false;
-        mGroupNodeAddedCalled = false;
-        mGroupStatusChangedCalled = false;
-        mGroupNodeRemovedCalled = false;
-
-        mTestCallback.onCodecConfigChanged(mTestGroupId, TEST_CODEC_STATUS);
-        mTestCallback.onGroupNodeAdded(mTestDevice, mTestGroupId);
-        mTestCallback.onGroupNodeRemoved(mTestDevice, mTestGroupId);
-        mTestCallback.onGroupStatusChanged(mTestGroupId, mTestGroupStatus);
-
-        assertTrue(mCodecConfigChangedCalled);
-        assertTrue(mGroupNodeAddedCalled);
-        assertTrue(mGroupNodeRemovedCalled);
-        assertTrue(mGroupStatusChangedCalled);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
-    public void streamStatusCallback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeAudio);
-
-        mTestGroupId = 1;
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mTestGroupStreamStatus = 1;
-
-        mGroupStreamStatusChangedCalled = false;
-
-        mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
-
-        assertTrue(mGroupStreamStatusChangedCalled);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -428,6 +413,54 @@ public class BluetoothLeAudioTest {
             fail("Exception caught from getGroupId(): " + e.toString());
         } finally {
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void leAudioCallbackCoverage() {
+        // TODO: b/376934446 - This test does nothing and only covers the callbacks API as
+        // there is no current solution to have meaningful tests that exerce these callbacks
+        mTestGroupId = 1;
+        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        mTestGroupStreamStatus = 1;
+        mTestGroupStatus = 0;
+
+        mTestCallback.onCodecConfigChanged(mTestGroupId, TEST_CODEC_STATUS);
+        mTestCallback.onGroupNodeAdded(mTestDevice, mTestGroupId);
+        mTestCallback.onGroupNodeRemoved(mTestDevice, mTestGroupId);
+        mTestCallback.onGroupStatusChanged(mTestGroupId, mTestGroupStatus);
+        mTestCallback.onGroupStreamStatusChanged(mTestGroupId, mTestGroupStreamStatus);
+        mTestCallback.onBroadcastToUnicastFallbackGroupChanged(mTestGroupId);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void broadcastToUnicastFallbackGroup() {
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothLeAudio);
+
+        mTestGroupId = 1;
+
+        Permissions.enforceEachPermissions(
+                () -> {
+                        mBluetoothLeAudio.setBroadcastToUnicastFallbackGroup(mTestGroupId);
+                        return null;
+                },
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothLeAudio.getBroadcastToUnicastFallbackGroup(),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            mBluetoothLeAudio.setBroadcastToUnicastFallbackGroup(mTestGroupId);
+
+            /* There is no such group - verify if it's not updated */
+            assertTrue(mBluetoothLeAudio.getBroadcastToUnicastFallbackGroup()
+                    == BluetoothLeAudio.GROUP_ID_INVALID);
         }
     }
 

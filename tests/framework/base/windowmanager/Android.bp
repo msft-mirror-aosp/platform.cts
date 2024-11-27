@@ -45,6 +45,11 @@ filegroup {
     ],
 }
 
+filegroup {
+    name: "cts-wm-window-policy-test-base",
+    srcs: ["src/android/server/wm/window/WindowPolicyTestBase.java"],
+}
+
 java_defaults {
     name: "CtsWindowManagerDeviceDefault",
 
@@ -82,6 +87,7 @@ java_defaults {
         "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
         "flag-junit",
+        "com_android_wm_shell_flags_lib",
     ],
 
     test_suites: [
@@ -122,6 +128,7 @@ java_defaults {
         ":CtsDeviceServicesTestApp",
         ":CtsDeviceServicesTestApp27",
         ":CtsDeviceServicesTestApp30",
+        ":CtsDeviceServicesTestAppTv",
         ":CtsDeviceServicesTestSecondApp",
         ":CtsDeviceServicesTestThirdApp",
         ":CtsDeviceDeprecatedAbiApp",
@@ -130,8 +137,6 @@ java_defaults {
         ":CtsDeviceDisplaySizeApp",
         ":CtsDevicePrereleaseSdkApp",
         ":CtsDeviceProfileableApp",
-        ":CtsDeviceTranslucentTestApp",
-        ":CtsDeviceTranslucentTestApp26",
         ":CtsMockInputMethod",
         ":CtsDeviceServicesTestShareUidAppA",
         ":CtsDeviceServicesTestShareUidAppB",

@@ -87,7 +87,8 @@ public class SimCallManagerTest extends InstrumentationTestCase {
     }
 
     public void testGetSimCallManager() throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext)
+                || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

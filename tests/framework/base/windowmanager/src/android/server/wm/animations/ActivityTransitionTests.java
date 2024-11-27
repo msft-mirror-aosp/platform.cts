@@ -489,6 +489,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         launcherActivity.startActivity(null, EdgeExtensionActivity.class, extras);
 
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
+
+        // Extending default transition animation duration, to ensure here can be more reliably to
+        // capture the transition state.
+        mObjectTracker.manage(new SettingsSession<>(
+                Settings.Secure.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                Settings.Secure::getFloat, Settings.Secure::putFloat)).set(10f);
+
         final Intent update = new Intent(ACTION_UPDATE);
         update.putExtra(TEST_METHOD_KEY, TEST_METHOD_CLEAR_OVERRIDE_ACTIVITY_TRANSITION);
         update.putExtra(TRANSITION_TYPE_KEY, TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE);
@@ -599,7 +606,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         int sleepDurationMilliseconds = 1;
         Bitmap screenshot = null;
         for (int i = 0; i < 13; i++) {
-            mWmState.computeState();
             final boolean isTransitionRunning = WindowManagerState.APP_STATE_RUNNING.equals(
                     mWmState.getDisplay(getMainDisplayId()).getAppTransitionState());
 
@@ -617,6 +623,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             }
             failedResults.add(result);
             SystemClock.sleep(sleepDurationMilliseconds);
+            mWmState.computeState();
             sleepDurationMilliseconds *= 2;
         }
         dumpOnFailure.dumpOnFailure("last_screenshot",  screenshot);

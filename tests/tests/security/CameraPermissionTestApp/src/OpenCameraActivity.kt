@@ -16,65 +16,55 @@
 
 package android.security.cts.camera.open
 
-import android.content.AttributionSource
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
-import android.content.ContextParams
 import android.content.Intent
 import android.content.IntentFilter
-import android.hardware.Camera
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
 import android.os.Bundle
-import android.security.cts.camera.open.lib.IOpenCameraActivity
+import android.os.Process
 import android.security.cts.camera.open.lib.IntentKeys
 import android.util.Log
+import android.view.TextureView
+import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import java.util.concurrent.Executors
-import kotlin.coroutines.resume
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 class OpenCameraActivity : AppCompatActivity() {
   private val cameraProxyAppKeys = IntentKeys(CAMERA_PROXY_APP_PACKAGE_NAME)
   private lateinit var keys: IntentKeys
-  private lateinit var cameraManager: CameraManager
   private lateinit var broadcastReceiver: BroadcastReceiver
+  private lateinit var textureView: TextureView
+  private lateinit var cameraOpener: CameraOpener
   private val startForResult =
       registerForActivityResult(StartActivityForResult()) { activityResult: ActivityResult ->
         setResult(activityResult.resultCode, activityResult.data)
         finish()
-      }
-  private val cameraExecutor = Executors.newSingleThreadExecutor()
-
-  private val aidlInterface =
-      object : IOpenCameraActivity.Stub() {
-        override fun openCamera1(attributionSource: AttributionSource): Intent = runBlocking {
-          Log.v(TAG, "AIDL openCamera1")
-          openCamera1Async(attributionSource)
-        }
-
-        override fun openCamera2(attributionSource: AttributionSource): Intent = runBlocking {
-          Log.v(TAG, "AIDL openCamera2")
-          openCamera2Async(attributionSource)
-        }
       }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     Log.v(TAG, "onCreate")
 
-    keys = IntentKeys(packageName)
+    textureView = TextureView(this)
+    textureView.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+    setContentView(textureView)
 
+    keys = IntentKeys(packageName)
+    cameraOpener = CameraOpener(context = this, keys, textureView, surfaceTexture = null)
+
+    val shouldStream = intent.getBooleanExtra(keys.shouldStream, false)
+    val shouldRepeat = intent.getBooleanExtra(keys.shouldRepeat, false)
     if (intent.getBooleanExtra(keys.shouldOpenCamera1, false)) {
-      openCamera1AndFinish()
+      openCamera1AndFinish(shouldStream, shouldRepeat)
     } else if (intent.getBooleanExtra(keys.shouldOpenCamera2, false)) {
-      openCamera2AndFinish()
+      openCamera2AndFinish(shouldStream, shouldRepeat)
+    } else if (intent.getBooleanExtra(keys.shouldOpenCameraNdk, false)) {
+      openCameraNdkAndFinish(shouldStream, shouldRepeat)
     }
   }
 
@@ -88,18 +78,35 @@ class OpenCameraActivity : AppCompatActivity() {
             Log.v(TAG, "onReceive")
             when (intent.action) {
               keys.finish -> {
+                Log.v(TAG, "onReceive: finish")
                 setResult(RESULT_OK)
                 finish()
               }
 
               keys.openCamera1ByProxy -> {
-                Log.v(TAG, "openCamera1ByProxy")
-                openCamera1ByProxy()
+                Log.v(TAG, "onReceive: openCamera1ByProxy")
+                openCamera1ByProxy(
+                    intent.getBooleanExtra(keys.shouldStream, false),
+                    intent.getBooleanExtra(keys.shouldRepeat, false))
               }
 
               keys.openCamera2ByProxy -> {
-                Log.v(TAG, "openCamera2ByProxy")
-                openCamera2ByProxy()
+                Log.v(TAG, "onReceive: openCamera2ByProxy")
+                openCamera2ByProxy(
+                    intent.getBooleanExtra(keys.shouldStream, false),
+                    intent.getBooleanExtra(keys.shouldRepeat, false))
+              }
+
+              keys.openCameraNdkByProxy -> {
+                Log.v(TAG, "onReceive: openCameraNdkByProxy")
+                openCameraNdkByProxy(
+                    intent.getBooleanExtra(keys.shouldStream, false),
+                    intent.getBooleanExtra(keys.shouldRepeat, false))
+              }
+
+              keys.stopRepeating -> {
+                Log.v(TAG, "onReceive: stopRepeating")
+                cameraOpener.onStopRepeating()
               }
             }
           }
@@ -110,10 +117,12 @@ class OpenCameraActivity : AppCompatActivity() {
           addAction(keys.finish)
           addAction(keys.openCamera1ByProxy)
           addAction(keys.openCamera2ByProxy)
+          addAction(keys.openCameraNdkByProxy)
+          addAction(keys.stopRepeating)
         }
     registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
 
-    val onResumeIntent = Intent(keys.onResume)
+    val onResumeIntent = Intent(keys.onResume).apply { putExtra(keys.pid, Process.myPid()) }
     onResumeIntent.setPackage("android.security.cts")
     sendBroadcast(onResumeIntent)
   }
@@ -127,97 +136,56 @@ class OpenCameraActivity : AppCompatActivity() {
   override fun onDestroy() {
     super.onDestroy()
     Log.v(TAG, "onDestroy")
+    cameraOpener.release()
   }
 
-  private suspend fun openCamera1Async(attributionSource: AttributionSource? = null): Intent {
-    val result = Intent().apply { putExtra(keys.attributionSource, attributionSource.toString()) }
-    try {
-      if (Camera.getNumberOfCameras() > 0) {
-        Camera.open(0).release()
-        return result.apply { putExtra(keys.cameraOpened1, true) }
-      } else {
-        return result.apply { putExtra(keys.noCamera, true) }
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "Received exception: ${e.message}")
-      return result.apply { putExtra(keys.exception, e.message) }
-    }
-  }
-
-  private suspend fun openCamera2Async(attributionSource: AttributionSource? = null): Intent =
-      suspendCancellableCoroutine { continuation ->
-        val result =
-            Intent().apply { putExtra(keys.attributionSource, attributionSource.toString()) }
-        try {
-          var context: Context = this
-          attributionSource?.let {
-            val contextParams = ContextParams.Builder().setNextAttributionSource(it).build()
-            context = createContext(contextParams)
-          }
-          cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-          if (cameraManager.getCameraIdList().size > 0) {
-            val cameraId = cameraManager.getCameraIdList()[0]
-            cameraManager.openCamera(
-                cameraId,
-                cameraExecutor,
-                object : CameraDevice.StateCallback() {
-                  override fun onOpened(cameraDevice: CameraDevice) {
-                    Log.v(TAG, "onOpened")
-                    cameraDevice.close()
-                    continuation.resume(result.apply { putExtra(keys.cameraOpened2, true) })
-                  }
-
-                  override fun onDisconnected(cameraDevice: CameraDevice) {
-                    Log.v(TAG, "onDisconnected")
-                    cameraDevice.close()
-                  }
-
-                  override fun onError(cameraDevice: CameraDevice, error: Int) {
-                    Log.v(TAG, "onError: " + error)
-                    cameraDevice.close()
-
-                    if (continuation.isActive) { // continuation may already have been resumed
-                      continuation.resume(result.apply { putExtra(keys.error, error) })
-                    }
-                  }
-                })
-          } else {
-            continuation.resume(result.apply { putExtra(keys.noCamera, true) })
-          }
-        } catch (e: Exception) {
-          Log.e(TAG, "Received exception: ${e::class.java.simpleName}/${e.message}")
-          continuation.resume(result.apply { putExtra(keys.exception, e.message) })
-        }
-      }
-
-  private fun openCamera1AndFinish() {
+  private fun openCamera1AndFinish(shouldStream: Boolean, shouldRepeat: Boolean) {
     lifecycleScope.launch {
-      setResult(RESULT_OK, openCamera1Async())
+      setResult(RESULT_OK, cameraOpener.openCamera1Async(shouldStream, shouldRepeat))
       finish()
     }
   }
 
-  private fun openCamera2AndFinish() {
+  private fun openCamera2AndFinish(shouldStream: Boolean, shouldRepeat: Boolean) {
     lifecycleScope.launch {
-      setResult(RESULT_OK, openCamera2Async())
+      val result = cameraOpener.openCamera2Async(shouldStream, shouldRepeat)
+      Log.v(TAG, "finishing activity: ${result.getExtras().toString()}")
+      setResult(RESULT_OK, result)
       finish()
     }
   }
 
-  private fun openCameraByProxy(openCameraKey: String) {
+  private fun openCameraNdkAndFinish(shouldStream: Boolean, shouldRepeat: Boolean) {
+    lifecycleScope.launch {
+      val result = cameraOpener.openCameraNdkAsync(shouldStream, shouldRepeat)
+      Log.v(TAG, "finishing activity: ${result.getExtras().toString()}")
+      setResult(RESULT_OK, result)
+      finish()
+    }
+  }
+
+  private fun openCameraByProxy(
+      openCameraKey: String,
+      shouldStream: Boolean,
+      shouldRepeat: Boolean
+  ) {
     startForResult.launch(
         Intent().apply {
           component = ComponentName(CAMERA_PROXY_APP_PACKAGE_NAME, CAMERA_PROXY_ACTIVITY)
           putExtra(openCameraKey, true)
-          putExtra(
-              cameraProxyAppKeys.aidlInterface,
-              Bundle().apply { putBinder(cameraProxyAppKeys.aidlInterface, aidlInterface) })
+          putExtra(cameraProxyAppKeys.shouldStream, shouldStream)
+          putExtra(cameraProxyAppKeys.shouldRepeat, shouldRepeat)
         })
   }
 
-  private fun openCamera1ByProxy() = openCameraByProxy(cameraProxyAppKeys.shouldOpenCamera1)
+  private fun openCamera1ByProxy(shouldStream: Boolean, shouldRepeat: Boolean) =
+      openCameraByProxy(cameraProxyAppKeys.shouldOpenCamera1, shouldStream, shouldRepeat)
 
-  private fun openCamera2ByProxy() = openCameraByProxy(cameraProxyAppKeys.shouldOpenCamera2)
+  private fun openCamera2ByProxy(shouldStream: Boolean, shouldRepeat: Boolean) =
+      openCameraByProxy(cameraProxyAppKeys.shouldOpenCamera2, shouldStream, shouldRepeat)
+
+  private fun openCameraNdkByProxy(shouldStream: Boolean, shouldRepeat: Boolean) =
+      openCameraByProxy(cameraProxyAppKeys.shouldOpenCameraNdk, shouldStream, shouldRepeat)
 
   private companion object {
     val TAG = OpenCameraActivity::class.java.simpleName

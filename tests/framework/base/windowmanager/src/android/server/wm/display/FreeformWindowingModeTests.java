@@ -55,13 +55,12 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     private static final int TEST_TASK_OFFSET = 20;
     private static final int TEST_TASK_OFFSET_2 = 100;
-    private static final int TEST_TASK_SIZE_1 = 900;
-    private static final int TEST_TASK_SIZE_2 = TEST_TASK_SIZE_1 * 2;
+    private static final int TEST_TASK_SIZE = 1000;
     private static final int TEST_TASK_SIZE_DP_1 = 220;
     private static final int TEST_TASK_SIZE_DP_2 = TEST_TASK_SIZE_DP_1 * 2;
 
     // NOTE: Launching the FreeformActivity will automatically launch the TestActivity
-    // with bounds (0, 0, 900, 900)
+    // with bounds (0, 0, 1000, 1000)
 
     @Test
     public void testFreeformWindowManagementSupport() {
@@ -92,8 +91,8 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         mWmState.assertFocusedActivity(
                 TEST_ACTIVITY + " must be focused Activity", TEST_ACTIVITY);
         final Rect testActivitySize = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
-        assertEquals(TEST_TASK_SIZE_1, testActivitySize.width());
-        assertEquals(TEST_TASK_SIZE_1, testActivitySize.height());
+        assertEquals(TEST_TASK_SIZE, testActivitySize.width());
+        assertEquals(TEST_TASK_SIZE, testActivitySize.height());
     }
 
     @Test
@@ -207,23 +206,29 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
                 !supportsFreeform() || !hasDeviceFeature(FEATURE_PC));
         final int displayId = Display.DEFAULT_DISPLAY;
         launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, displayId);
-        mWmState.computeState(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
-        mWmState.assertDoesNotContainStack("Must has no freeform stack.",
-                WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
 
-        mBroadcastActionTrigger.doAction(ACTION_RESTORE_FREEFORM);
-        mWmState.assertDoesNotContainStack("Must has no freeform stack.",
-                WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). Check the following if launched activity's task is in fullscreen windowing mode.
+        final Task task = mWmState.getTaskByActivity(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
+        if (task.getWindowingMode() == WINDOWING_MODE_FULLSCREEN) {
+            mWmState.computeState(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
+            mWmState.assertDoesNotContainStack("Must have no freeform stack.",
+                    WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+
+            mBroadcastActionTrigger.doAction(ACTION_RESTORE_FREEFORM);
+            mWmState.assertDoesNotContainStack("Must have no freeform stack.",
+                    WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
+        }
 
         if (supportsFreeform()) {
             stopTestPackage(Components.getPackageName());
             mWmState.waitAndAssertActivityRemoved(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
             launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, WINDOWING_MODE_FREEFORM,
                     displayId);
-            mWmState.assertContainsStack("Must has a freeform stack.",
+            mWmState.assertContainsStack("Must have a freeform stack.",
                     WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
             mBroadcastActionTrigger.doAction(ACTION_REQUEST_FULLSCREEN);
-            mWmState.assertContainsStack("Must has a freeform stack.",
+            mWmState.assertContainsStack("Must have a freeform stack.",
                     WINDOWING_MODE_FREEFORM, ACTIVITY_TYPE_STANDARD);
         }
     }

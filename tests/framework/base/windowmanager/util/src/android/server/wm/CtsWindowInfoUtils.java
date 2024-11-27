@@ -156,7 +156,6 @@ public class CtsWindowInfoUtils {
      *
      * @param predicate           The predicate tested each time window infos change.
      * @param timeout             The amount of time to wait for the predicate to be satisfied.
-     * @param unit                The units associated with timeout.
      * @param windowTokenSupplier Supplies the window token for the window to
      *                            call the predicate on. The supplier is called each time window
      *                            info change. If the supplier returns null, the predicate is
@@ -358,22 +357,20 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param predicate           Supplies the window token for the window to wait on. The
-     *                            supplier is called each time window infos change. If the
-     *                            supplier returns null, the window is assumed not visible
-     *                            yet.
+     * @param predicate           A predicate identifying the target window we are waiting for,
+     *                            will be tested each time window infos change.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
     public static boolean waitForWindowOnTop(@NonNull Duration timeout,
                                              @NonNull Predicate<WindowInfo> predicate)
             throws InterruptedException {
-        return waitForWindowOnTopWithZ(timeout, predicate, 0);
+        return waitForNthWindowFromTop(timeout, predicate, 0);
     }
 
     /**
-     * Waits until the window specified by the predicate is present, not occluded, and hasn't
-     * had geometry changes for 200ms.
+     * Waits until the window specified by {@code predicate} is present, at the expected level
+     * of the composition hierarchy, and hasn't had geometry changes for 200ms.
      *
      * The window is considered occluded if any part of another window is above it, excluding
      * trusted overlays and bbq.
@@ -383,19 +380,17 @@ public class CtsWindowInfoUtils {
      * android.permission.ACCESS_SURFACE_FLINGER.
      * </p>
      *
-     * @param timeout                  The amount of time to wait for the window to be visible.
-     * @param predicate                Supplies the window token for the window to wait on. The
-     *                                 supplier is called each time window infos change. If the
-     *                                 supplier returns null, the window is assumed not visible
-     *                                 yet.
-     * @param expectedCompositionOrder The expected z order of the surface control we are looking
-     *                                 for.
+     * @param timeout       The amount of time to wait for the window to be visible.
+     * @param predicate     A predicate identifying the target window we are waiting, will be
+     *                      tested each time window infos change.
+     * @param expectedOrder The expected order of the surface control we are looking
+     *                      for.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTopWithZ(@NonNull Duration timeout,
-                                             @NonNull Predicate<WindowInfo> predicate,
-                                             int expectedCompositionOrder)
+    public static boolean waitForNthWindowFromTop(@NonNull Duration timeout,
+                                                  @NonNull Predicate<WindowInfo> predicate,
+                                                  int expectedOrder)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -439,12 +434,12 @@ public class CtsWindowInfoUtils {
                     return;
                 }
 
-                int compositionOrder = 0;
+                int currentOrder = 0;
                 for (var windowInfo : aboveWindowInfos) {
                     if (targetWindowInfo.displayId == windowInfo.displayId
                             && Rect.intersects(targetWindowInfo.bounds, windowInfo.bounds)) {
-                        if (compositionOrder < expectedCompositionOrder) {
-                            compositionOrder++;
+                        if (currentOrder < expectedOrder) {
+                            currentOrder++;
                             continue;
                         }
                         // The window is occluded. If we have an active timer, we need to cancel it
@@ -453,6 +448,10 @@ public class CtsWindowInfoUtils {
                         resetState();
                         return;
                     }
+                }
+                if (currentOrder != expectedOrder) {
+                    resetState();
+                    return;
                 }
 
                 if (targetWindowInfo.bounds.equals(mPreviousBounds)) {
@@ -540,8 +539,8 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Waits until the window specified by windowTokenSupplier is present, not occluded, and hasn't
-     * had geometry changes for 200ms.
+     * Waits until the window specified by {@code predicate} is present, at the expected level
+     * of the composition hierarchy, and hasn't had geometry changes for 200ms.
      *
      * The window is considered occluded if any part of another window is above it, excluding
      * trusted overlays and bbq.
@@ -551,24 +550,24 @@ public class CtsWindowInfoUtils {
      * android.permission.ACCESS_SURFACE_FLINGER.
      * </p>
      *
-     * @param timeout                  The amount of time to wait for the window to be visible.
-     * @param windowTokenSupplier      Supplies the window token for the window to wait on. The
-     *                                 supplier is called each time window infos change. If the
-     *                                 supplier returns null, the window is assumed not visible
-     *                                 yet.
-     * @param expectedCompositionOrder The expected z order of the surface control we are looking
-     *                                  for.
+     * @param timeout             The amount of time to wait for the window to be visible.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The
+     *                            supplier is called each time window infos change. If the
+     *                            supplier returns null, the window is assumed not visible
+     *                            yet.
+     * @param expectedOrder       The expected order of the surface control we are looking
+     *                            for.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTopWithZ(@NonNull Duration timeout,
-                                             @NonNull Supplier<IBinder> windowTokenSupplier,
-                                             int expectedCompositionOrder)
+    public static boolean waitForNthWindowFromTop(@NonNull Duration timeout,
+                                                  @NonNull Supplier<IBinder> windowTokenSupplier,
+                                                  int expectedOrder)
             throws InterruptedException {
-        return waitForWindowOnTopWithZ(timeout, windowInfo -> {
+        return waitForNthWindowFromTop(timeout, windowInfo -> {
             IBinder windowToken = windowTokenSupplier.get();
             return windowToken != null && windowInfo.windowToken == windowToken;
-        }, expectedCompositionOrder);
+        }, expectedOrder);
     }
 
     /**

@@ -34,6 +34,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.LocalSimContactsWriteException;
 import android.provider.ContactsContract.RawContacts.DefaultAccount;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 import android.provider.ContactsContract.SimAccount;
@@ -210,14 +211,14 @@ public class ContactsContract_DefaultAccountTest {
         assertRawContactAccount(rawContactId0, ACCT_1);
 
         // Insert with SIM or local account, should fail.
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.insertRawContactUsingNullAccount(mResolver, null));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.insertRawContactUsingNullAccount(mResolver,
                         getLocalAccount()));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.insertRawContactUsingNullAccount(mResolver, SIM_ACCT));
 
         long rawContactId1 = RawContactUtil.insertRawContactUsingNullAccount(mResolver, ACCT_1);
@@ -231,13 +232,13 @@ public class ContactsContract_DefaultAccountTest {
         assertGroupAccount(groupId0, ACCT_1);
 
         // Insert with SIM or local account, should fail.
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> GroupUtil.insertGroupWithAccount(mResolver, null));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> GroupUtil.insertGroupWithAccount(mResolver, getLocalAccount()));
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> GroupUtil.insertGroupWithAccount(mResolver, SIM_ACCT));
 
         long groupId1 = GroupUtil.insertGroupWithAccount(mResolver, ACCT_1);
@@ -371,16 +372,16 @@ public class ContactsContract_DefaultAccountTest {
         assertRawContactAccount(rawContactId0, ACCT_1);
 
         // Update the contact's account to local or SIM account should fail.
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.updateRawContactAccount(mResolver, rawContactId0, null));
         assertRawContactAccount(rawContactId0, ACCT_1);
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.updateRawContactAccount(mResolver, rawContactId0,
                         getLocalAccount()));
         assertRawContactAccount(rawContactId0, ACCT_1);
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(LocalSimContactsWriteException.class,
                 () -> RawContactUtil.updateRawContactAccount(mResolver, rawContactId0, SIM_ACCT));
         assertRawContactAccount(rawContactId0, ACCT_1);
 

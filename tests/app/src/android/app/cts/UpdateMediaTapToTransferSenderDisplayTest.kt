@@ -27,12 +27,15 @@ import androidx.test.InstrumentationRegistry.getInstrumentation
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -43,8 +46,20 @@ import org.junit.runner.RunWith
  *
  * These tests are for [StatusBarManager.updateMediaTapToTransferSenderDisplay].
  */
+// TODO(b/375675436): Remove this annotation after control of the status bar for visible background
+// users is allowed.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This annotation is added to prevent"
+        + " running as a visible background user, because access to control the status bar from"
+        + " visible background users is currently not allowed. (b/332222893)")
 @RunWith(AndroidJUnit4::class)
 class UpdateMediaTapToTransferSenderDisplayTest {
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
+
     @Rule
     fun permissionsRule() = AdoptShellPermissionsRule(
         getInstrumentation().getUiAutomation(), MEDIA_PERMISSION

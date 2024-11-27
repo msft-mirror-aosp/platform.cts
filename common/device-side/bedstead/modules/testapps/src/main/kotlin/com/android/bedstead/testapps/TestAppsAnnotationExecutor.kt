@@ -46,8 +46,7 @@ class TestAppsAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationEx
             is EnsureTestAppInstalled -> testAppsComponent.ensureTestAppInstalled(
                 key,
                 query,
-                userTypeResolver.toUser(onUser),
-                isPrimary
+                userTypeResolver.toUser(onUser)
             )
 
             is EnsureTestAppHasPermission -> testAppsComponent.ensureTestAppHasPermission(
