@@ -2354,6 +2354,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         .setRankingStrategy(
                                 "this.documentScore() + sum(getScorableProperty(\"Gmail\","
                                     + " \"important\"))")
+                        .addFilterPackageNames(mContext.getPackageName())
                         .build();
         SearchResultsShim searchResults = mGlobalSearchSession.search("", searchSpec);
         List<SearchResult> results = retrieveAllSearchResults(searchResults);
