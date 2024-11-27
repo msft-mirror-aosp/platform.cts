@@ -6658,7 +6658,8 @@ You should be prompted to select credentials; choose the ones you just installed
         the device; as soon as key access is verified this message will be updated. -->
     <string name="unlock_req_unlocked">Verifying the key is accessible after the unlock...</string>
     <string name="unlock_req_credential_lock">Lock the screen, wait 5 seconds, then unlock with
-        credentials.</string>
+        credentials. If there are multiple displays available, turn off all displays before
+        continuing.</string>
     <string name="unlock_req_successful">Test completed successfully.</string>
     <string name="unlock_req_failed_key_available_when_locked">Test failed; the key was available
         when the device was locked.</string>
