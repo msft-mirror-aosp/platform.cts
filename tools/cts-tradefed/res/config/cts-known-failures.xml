@@ -402,7 +402,6 @@
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest" />
 
     <!-- b/367914183 -->
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.AppSearchSessionCtsTest#testEmbeddingSearch_simple" />
@@ -416,5 +415,4 @@
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_embeddingSearch" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testSetFeatureEnabledToFalse_embeddingSearch" />
 
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.FrameRateOverrideTest" />
 </configuration>
