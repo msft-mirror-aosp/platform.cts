@@ -29,18 +29,23 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.RemoteException;
+import android.provider.Settings;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.NonApiTest;
+import com.android.internal.R;
 import com.android.server.cts.device.statsdatom.MinAspectRatioPortraitActivity;
 import com.android.server.cts.device.statsdatom.StatsdCtsMinAspectRatioPortraitActivity;
 
@@ -49,6 +54,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class AppCompatTests {
@@ -56,6 +62,8 @@ public class AppCompatTests {
     private static final long FIND_TIMEOUT = 5000L;
     private static final int BOUNDS_OFFSET = 175;
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
+    private static final String SETTINGS_PACKAGE = "com.android.settings";
+    private static final String TEST_PKG = "android.server.wm.allowuseraspectratiooverrideoptin";
     private final UiDevice mDevice =
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     private final GestureHelper mGestureHelper =
@@ -193,5 +201,52 @@ public class AppCompatTests {
         // Reposition back to center.
         assertTrue(mGestureHelper.click(x, BOUNDS_OFFSET, 2));
         mGestureHelper.waitForAnimation();
+    }
+
+    /**
+     * Helper test to select user aspect ratio options in Settings to log atoms.
+     */
+    @NonApiTest(exemptionReasons = {}, justification = "METRIC")
+    @Test
+    public void testUserAspectRatioOptions() {
+        if (isUserAspectRatioSettingsDisabled()) {
+            return;
+        }
+        final Context context = getApplicationContext();
+        final Intent intent = new Intent(Settings.ACTION_MANAGE_USER_ASPECT_RATIO_SETTINGS);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // Use a different package than the current test package as clicking on the options
+        // will force stop the package.
+        final Uri packageUri = Uri.parse("package:" + TEST_PKG);
+        intent.setData(packageUri);
+        context.startActivity(intent);
+        mDevice.waitForIdle();
+
+        UiObject2 page = findSettingsMainContentView();
+        do {
+            clickAllCheckableButtons();
+            page.scroll(Direction.DOWN, 1.0f);
+        } while (mDevice.wait(Until.gone(By.checked(true)), FIND_TIMEOUT));
+    }
+
+    private void clickAllCheckableButtons() {
+        List<UiObject2> objects = mDevice.wait(Until.findObjects(By.checkable(true)),
+                FIND_TIMEOUT);
+        for (int i = objects.size() - 1; i >= 0; i--) {
+            objects.get(i).click();
+        }
+    }
+
+    private UiObject2 findSettingsMainContentView() {
+        return mDevice.wait(
+                Until.findObject(
+                        By.pkg(SETTINGS_PACKAGE).res(SETTINGS_PACKAGE, "content_parent")),
+                FIND_TIMEOUT);
+    }
+
+    private boolean isUserAspectRatioSettingsDisabled() {
+        final Resources res = getApplicationContext().getResources();
+        return !res.getBoolean(R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled)
+                && !res.getBoolean(R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled);
     }
 }
