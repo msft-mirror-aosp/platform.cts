@@ -44,13 +44,11 @@ import android.telephony.CallState;
 import android.telephony.CellIdentity;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
-import android.telephony.CellularIdentifierDisclosure;
 import android.telephony.LinkCapacityEstimate;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.PhysicalChannelConfig;
 import android.telephony.PreciseCallState;
 import android.telephony.PreciseDataConnectionState;
-import android.telephony.SecurityAlgorithmUpdate;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SmsManager;
@@ -1830,81 +1828,4 @@ public class TelephonyCallbackTest {
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnSignalStrengthCalled,
                 mCarrierRoamingNtnModeListener);
     }
-
-    private SecurityAlgorithmsListener mSecurityAlgorithmsListener;
-
-    private class SecurityAlgorithmsListener extends TelephonyCallback
-            implements TelephonyCallback.SecurityAlgorithmsListener {
-        @Override
-        public void onSecurityAlgorithmsChanged(SecurityAlgorithmUpdate update) {
-            synchronized (mLock) {
-                mOnSecurityAlgorithmsChangedCalled = true;
-                mLock.notify();
-            }
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_ALGORITHMS_UPDATE_INDICATIONS)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
-    public void testOnSecurityAlgorithmsChangedListener() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
-        assertFalse(mOnSecurityAlgorithmsChangedCalled);
-        mSecurityAlgorithmsListener = new SecurityAlgorithmsListener();
-        registerTelephonyCallbackWithPermission(mSecurityAlgorithmsListener);
-
-        synchronized (mLock) {
-            while (!mOnSecurityAlgorithmsChangedCalled) {
-                mLock.wait(WAIT_TIME);
-            }
-        }
-        assertTrue(mOnSecurityAlgorithmsChangedCalled);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnSecurityAlgorithmsChangedCalled,
-                mSecurityAlgorithmsListener);
-    }
-
-    private CellularIdentifierDisclosedListener mCellularIdentifierDisclosedListener;
-
-    private class CellularIdentifierDisclosedListener extends TelephonyCallback
-            implements TelephonyCallback.CellularIdentifierDisclosedListener {
-        @Override
-        public void onCellularIdentifierDisclosedChanged(CellularIdentifierDisclosure disclosure) {
-            synchronized (mLock) {
-                mOnCellularIdentifierDisclosedChangedCalled = true;
-                mLock.notify();
-            }
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CELLULAR_IDENTIFIER_DISCLOSURE_INDICATIONS)
-    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
-    public void testOnCellularIdentifierDisclosedChangedListener() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
-        assertFalse(mOnCellularIdentifierDisclosedChangedCalled);
-        mCellularIdentifierDisclosedListener = new CellularIdentifierDisclosedListener();
-        registerTelephonyCallbackWithPermission(mCellularIdentifierDisclosedListener);
-
-        synchronized (mLock) {
-            while (!mOnCellularIdentifierDisclosedChangedCalled) {
-                mLock.wait(WAIT_TIME);
-            }
-        }
-        assertTrue(mOnCellularIdentifierDisclosedChangedCalled);
-
-        // Test unregister
-        unRegisterTelephonyCallback(mOnCellularIdentifierDisclosedChangedCalled,
-                mCellularIdentifierDisclosedListener);
-    }
-
 }
