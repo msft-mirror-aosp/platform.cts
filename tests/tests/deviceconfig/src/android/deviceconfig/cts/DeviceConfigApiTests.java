@@ -1494,6 +1494,7 @@ public final class DeviceConfigApiTests {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_CONFIG_WRITABLE_NAMESPACES_API)
+    @DisabledOnRavenwood(reason = "DeviceConfig#getAdbWritableNamespaces is not supported")
     public void testGetAdbWritableNamespaces_returnsNamespaces() {
         Set<String> namespaces = DeviceConfig.getAdbWritableNamespaces();
 

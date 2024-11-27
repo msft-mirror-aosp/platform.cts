@@ -53,6 +53,8 @@ import android.app.appsearch.testutil.AppSearchEmail;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -65,7 +67,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -86,6 +88,9 @@ public abstract class GlobalSearchSessionCtsTestBase {
     protected AppSearchSessionShim mDb2;
 
     protected GlobalSearchSessionShim mGlobalSearchSession;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     protected abstract ListenableFuture<AppSearchSessionShim> createSearchSessionAsync(
             @NonNull String dbName) throws Exception;
@@ -2307,7 +2312,6 @@ public abstract class GlobalSearchSessionCtsTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCORABLE_PROPERTY)
-    @Ignore("b/380702417")
     public void testRankWithScorableProperty_searchFromMultipleDbs() throws Exception {
         assumeTrue(
                 mGlobalSearchSession

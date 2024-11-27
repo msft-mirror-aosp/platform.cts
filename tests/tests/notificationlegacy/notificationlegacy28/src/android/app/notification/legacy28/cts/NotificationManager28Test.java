@@ -23,6 +23,8 @@ import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -40,6 +42,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -67,6 +70,11 @@ public class NotificationManager28Test {
         mNotificationManager.createNotificationChannel(new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT));
         mHelper = new NotificationHelper(mContext);
+        UserHelper userHelper = new UserHelper(mContext);
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                userHelper.isVisibleBackgroundUser());
         assertNotNull(mHelper.enableListener(PKG));
     }
 
