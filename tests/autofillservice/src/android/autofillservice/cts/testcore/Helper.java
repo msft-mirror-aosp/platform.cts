@@ -1795,6 +1795,24 @@ public final class Helper {
         setDeviceConfig(deviceConfigStateManager, hints);
     }
 
+    /**
+     * Disable relayout fix
+     */
+    public static void disableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
+     * Enable relayout fix
+     */
+    public static void enableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "true");
+    }
+
     public static void setDeviceConfig(@NonNull DeviceConfigStateManager deviceConfigStateManager,
             @Nullable String value) {
         final String previousValue = deviceConfigStateManager.get();
