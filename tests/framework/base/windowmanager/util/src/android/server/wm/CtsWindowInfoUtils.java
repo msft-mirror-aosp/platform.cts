@@ -533,6 +533,22 @@ public class CtsWindowInfoUtils {
 
     public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
+        return getWindowBoundsInDisplaySpace(windowTokenSupplier, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Get the bounds of a window in display space for a specified display.
+     *
+     * @param windowTokenSupplier A supplier that provides the window token.
+     * @param displayId The ID of the display for which the window bounds are to be retrieved.
+     * @return A {@link Rect} representing the bounds of the window in display space, or null
+     *         if the window information is not available within the timeout period.
+     * @throws InterruptedException If the thread is interrupted while waiting for the
+     *         window information.
+     */
+    public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId)
+            throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
             if (!windowInfo.bounds.isEmpty()) {
@@ -544,7 +560,7 @@ public class CtsWindowInfoUtils {
         };
 
         if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
-                windowTokenSupplier, DEFAULT_DISPLAY)) {
+                windowTokenSupplier, displayId)) {
             return null;
         }
         return bounds;
