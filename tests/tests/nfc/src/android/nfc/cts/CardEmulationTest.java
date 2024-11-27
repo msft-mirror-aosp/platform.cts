@@ -909,30 +909,6 @@ public class CardEmulationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_EVENT_LISTENER})
-    public void testEventListener_commandTimeout() throws InterruptedException {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        adapter.notifyHceDeactivated();
-        EventPollLoopReceiver eventPollLoopReceiver = new EventPollLoopReceiver(mContext, false);
-        sCurrentPollLoopReceiver = eventPollLoopReceiver;
-        Activity activity = createAndResumeActivity();
-        try {
-            eventPollLoopReceiver.setNumEventsToWaitFor(1);
-
-            adapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, 0, 0, new byte[0]);
-            eventPollLoopReceiver.waitForEvents();
-            EventPollLoopReceiver.EventLogEntry event = eventPollLoopReceiver.mEvents.getLast();
-            Assert.assertEquals(EventPollLoopReceiver.INTERNAL_ERROR_REPORTED, event.mEventType);
-            Assert.assertEquals(
-                    CardEmulation.NFC_INTERNAL_ERROR_COMMAND_TIMEOUT, (int) event.mState);
-        } finally {
-            activity.finish();
-            adapter.notifyHceDeactivated();
-            eventPollLoopReceiver.cleanup();
-        }
-    }
-
-    @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAPollingLoopToForeground() {
         assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);

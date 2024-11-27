@@ -8,6 +8,7 @@ import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,6 +74,7 @@ import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +83,7 @@ import java.util.function.Consumer;
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
 
+    private static final long MAX_POLLING_PAUSE_TIMEOUT = 40000;
     @Mock private INfcAdapter mService;
     @Mock private DevicePolicyManager mDevicePolicyManager;
     private INfcAdapter mSavedService;
@@ -704,9 +707,9 @@ public class NfcAdapterTest {
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
-            List<String> nfceeList = nfcOemExtension.getActiveNfceeList();
-            for (String nfcee : nfceeList) {
-                assertThat(nfcee).isNotEmpty();
+            Map<String, Integer> nfceeMap = nfcOemExtension.getActiveNfceeList();
+            for (var nfcee : nfceeMap.entrySet()) {
+                assertThat(nfcee.getKey()).isNotEmpty();
             }
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
@@ -742,6 +745,8 @@ public class NfcAdapterTest {
             assertThat(entries).isNotNull();
             entries.getFirst().getType();
             nfcOemExtension.forceRoutingTableCommit();
+            assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
+                    nfcOemExtension.getMaxPausePollingTimeoutMills());
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
