@@ -744,6 +744,7 @@ public class NfcAdapterTest {
             List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
             assertThat(entries).isNotNull();
             entries.getFirst().getType();
+            entries.getFirst().getRouteType();
             nfcOemExtension.forceRoutingTableCommit();
             assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
                     nfcOemExtension.getMaxPausePollingTimeoutMills());
