@@ -173,7 +173,7 @@ public class AppTaskTests {
             waitAndAssertCondition(() -> targetResumed.value,
                     "Expected activity brought to front and resumed");
         }
-        assertTrue(appTask.getTaskInfo().isVisible());
+        waitAndAssertCondition(() -> appTask.getTaskInfo().isVisible(), "Waiting for task visible");
         assertEquals(appTask.getTaskInfo().topActivity, firstActivity.getComponentName());
         waitAndAssertCondition(() -> firstActivity.isTopResumed,
                 "First activity is top resumed");
