@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Notification;
@@ -108,6 +109,7 @@ import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackground
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
@@ -142,6 +144,9 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+// TODO(b/380297485): This test module has lots of assumption checks because NotificationListeners
+// don't support visible background users. Remove the assumption checks once NotificationListeners
+// support visible background users.
 /* This tests NotificationListenerService together with NotificationManager, as you need to have
  * notifications to manipulate in order to test the listener service. */
 @RunWith(AndroidJUnit4.class)
@@ -239,6 +244,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private INotificationUriAccessService mNotificationUriAccessService;
     private INLSControlService mNLSControlService;
     private FutureServiceConnection mTrampolineConnection;
+    private UserHelper mUserHelper;
 
     @Nullable
     private List<String> mPreviousDefaultBrowser;
@@ -265,6 +271,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // This will leave a set of channels on the device with each test run.
         mId = UUID.randomUUID().toString();
+        mUserHelper = new UserHelper(mContext);
 
         // delay between tests so notifications aren't dropped by the rate limiter
         try {
@@ -1059,6 +1066,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresDevice
     @Test
     public void testRankingUpdateSentWithPressure() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Test should only be run for build in V
         if (!SdkLevel.isAtLeastV()) {
             return;
@@ -1248,6 +1257,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testShowBadging_ranking() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         final int originalBadging = Settings.Secure.getInt(
                 mContext.getContentResolver(), Settings.Secure.NOTIFICATION_BADGING);
 
@@ -1302,6 +1313,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testKeyChannelGroupOverrideImportanceExplanation_ranking() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -1576,6 +1589,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testAutogrouping() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
@@ -1641,6 +1656,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_summaryUpdated()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(2);
     }
 
@@ -1704,6 +1721,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_summaryUpdated()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(2);
     }
 
@@ -1769,6 +1788,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
     public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_summaryUpdated()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // The autogroup summary should update as well => wait for 2 notification updates
         testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(2);
     }
@@ -1858,6 +1879,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testNotificationDelegate_cannotCancelNotificationsPostedByDelegator()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         final Intent intent = new Intent(mContext, GetResultActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         GetResultActivity activity = (GetResultActivity) mInstrumentation.startActivitySync(intent);
@@ -1990,6 +2013,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationIcon() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -2025,6 +2050,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testShouldHideSilentStatusIcons() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         try {
             mNotificationManager.shouldHideSilentStatusBarIcons();
             fail("Non-privileged apps should not get this information");
@@ -2071,6 +2098,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationUriPermissionsGranted() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         Uri background7Uri = Uri.parse(
                 "content://com.android.test.notificationprovider.provider/background7.png");
         Uri background8Uri = Uri.parse(
@@ -2136,6 +2165,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationUriPermissionsGrantedToNewListeners() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         Uri background7Uri = Uri.parse(
                 "content://com.android.test.notificationprovider.provider/background7.png");
 
@@ -2162,6 +2193,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationUriPermissionsRevokedFromRemovedListeners() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         Uri background7Uri = Uri.parse(
                 "content://com.android.test.notificationprovider.provider/background7.png");
 
@@ -2228,6 +2261,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationUriPermissionsRevokedOnlyFromRemovedListeners() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         Uri background7Uri = Uri.parse(
                 "content://com.android.test.notificationprovider.provider/background7.png");
 
@@ -2299,6 +2334,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListenerRequestUnbind() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         final Intent intent = new Intent();
         intent.setComponent(NLS_CONTROL_SERVICE);
         NotificationListenerConnection connection = new NotificationListenerConnection();
@@ -2399,6 +2436,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_setNotificationsShown() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(2);
@@ -2428,6 +2467,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_getNotificationChannels() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -2441,6 +2482,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_getNotificationChannelGroups() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         try {
@@ -2453,6 +2496,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_updateNotificationChannel() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -2470,6 +2515,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_getActiveNotifications() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(2);
@@ -2499,6 +2546,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_getCurrentRanking() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rankingUpdateLatch = mListener.setRankingUpdateCountDown(1);
@@ -2512,6 +2561,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationListener_cancelNotifications() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         final int notificationId = 1006;
@@ -2648,6 +2699,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testConversationRankingFields() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
@@ -2698,6 +2751,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testDeleteConversationChannels() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         setUpNotifListener();
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
 
@@ -2757,6 +2812,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testActivityStartOnBroadcastTrampoline_isBlocked() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setUpNotifListener();
         mListener.addTestPackage(TRAMPOLINE_APP);
@@ -2781,6 +2838,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testActivityStartOnServiceTrampoline_isBlocked() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setUpNotifListener();
         mListener.addTestPackage(TRAMPOLINE_APP);
@@ -2805,6 +2864,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testActivityStartOnBroadcastTrampoline_whenApi30_isAllowed() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setUpNotifListener();
         mListener.addTestPackage(TRAMPOLINE_APP_API_30);
@@ -2829,6 +2890,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testActivityStartOnServiceTrampoline_whenApi30_isAllowed() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setUpNotifListener();
         mListener.addTestPackage(TRAMPOLINE_APP_API_30);
@@ -2854,6 +2917,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testActivityStartOnBroadcastTrampoline_whenDefaultBrowser_isBlocked()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setDefaultBrowser(TRAMPOLINE_APP);
         setUpNotifListener();
@@ -2880,6 +2945,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testActivityStartOnBroadcastTrampoline_whenDefaultBrowserApi32_isAllowed()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setDefaultBrowser(TRAMPOLINE_APP_API_32);
         setUpNotifListener();
@@ -2906,6 +2973,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testActivityStartOnServiceTrampoline_whenDefaultBrowser_isBlocked()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setDefaultBrowser(TRAMPOLINE_APP);
         setUpNotifListener();
@@ -2932,6 +3001,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testActivityStartOnServiceTrampoline_whenDefaultBrowserApi32_isAllowed()
             throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         deactivateGracePeriod();
         setDefaultBrowser(TRAMPOLINE_APP_API_32);
         setUpNotifListener();
@@ -2957,6 +3028,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testGrantRevokeNotificationManagerApis_works() {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         SystemUtil.runWithShellPermissionIdentity(() -> {
             ComponentName componentName =
                     new ComponentName(STUB_PACKAGE_NAME, TestNotificationListener.class.getName());
@@ -3003,6 +3076,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testChannelDeletion_cancelReason() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         setUpNotifListener();
         CountDownLatch notificationPostedLatch = mListener.setPostedCountDown(1);
 
@@ -3200,6 +3275,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testIsAmbient() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(2);
@@ -3241,6 +3318,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testFlagForegroundServiceNeedsRealFgs() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
@@ -3260,6 +3339,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testFlagUserInitiatedJobNeedsRealUij() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
