@@ -42,7 +42,6 @@ import android.platform.test.annotations.Presubmit;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
 
-import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -83,8 +82,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setTitle",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setSubtitle",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setDescription",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setContentView",
             "android.hardware.biometrics."
@@ -334,8 +331,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setSubtitle",
             "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setDescription",
-            "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setContentView",
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setNegativeButton",
@@ -512,24 +507,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         return itemList;
     }
 
-    private UiObject2 scrollBpBodyContentToText(String viewText) {
-        UiObject2 view = findViewByText(viewText);
-        while (view == null) {
-            findView(SCROLL_PARENT_VIEW).scroll(Direction.DOWN, .4f, 1000);
-            view = findViewByText(viewText);
-        }
-        return view;
-    }
-
-    private UiObject2 scrollBpBodyContentToView(String viewId) {
-        UiObject2 view = findView(viewId);
-        while (view == null) {
-            findView(SCROLL_PARENT_VIEW).scroll(Direction.DOWN, .4f, 1000);
-            view = findView(viewId);
-        }
-        return view;
-    }
-
     /**
      * Check logo, title, subtitle, description, negative button.
      */
@@ -539,7 +516,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
         final UiObject2 actualTitle = findView(TITLE_VIEW);
         final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
-        final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
         final UiObject2 actualNegativeButton = findView(BUTTON_ID_NEGATIVE);
 
         if (checkLogo) {
@@ -548,8 +524,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         }
         assertThat(actualTitle.getText()).isEqualTo(expectedTitle);
         assertThat(actualSubtitle.getText()).isEqualTo(expectedSubtitle);
-        assertWithMessage("Description should be overridden by custom content view").that(
-                actualDescription).isNull();
         if (expectedNegativeButtonText != null) {
             assertThat(actualNegativeButton.getText()).isEqualTo(expectedNegativeButtonText);
         }
@@ -561,8 +535,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * @param expectedDescription Expected description shown on custom content view.
      */
     private void checkDescriptionViewInContentView(String expectedDescription) {
-        final UiObject2 actualContentViewDescription = scrollBpBodyContentToText(
-                expectedDescription);
+        final UiObject2 actualContentViewDescription = findViewByText(expectedDescription);
         assertWithMessage("Description on content view should be shown.").that(
                 actualContentViewDescription).isNotNull();
     }
@@ -573,8 +546,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * @param checkClickEvent Whether to check click event.
      */
     private void checkMoreOptionsButton(boolean checkClickEvent) throws Exception {
-        final UiObject2 actualMoreOptionsButton = scrollBpBodyContentToView(
-                MORE_OPTIONS_BUTTON_VIEW);
+        final UiObject2 actualMoreOptionsButton = findView(MORE_OPTIONS_BUTTON_VIEW);
         assertWithMessage("More options button should be clickable.").that(
                 actualMoreOptionsButton.isClickable()).isTrue();
 
@@ -594,7 +566,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     private void checkVerticalListContentViewItems(
             List<String> expectedContentItemTexts) {
         for (String itemText : expectedContentItemTexts) {
-            final UiObject2 actualContentViewItem = scrollBpBodyContentToText(itemText);
+            final UiObject2 actualContentViewItem = findViewByText(itemText);
             assertWithMessage("Item " + itemText + "should be shown").that(
                     actualContentViewItem).isNotNull();
         }

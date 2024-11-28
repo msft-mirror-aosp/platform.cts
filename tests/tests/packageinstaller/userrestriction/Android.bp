@@ -29,8 +29,6 @@ android_test {
         "junit",
         "kotlin-test",
         "truth",
-        "Nene",
-        "Harrier",
         "bedstead-enterprise",
     ],
     platform_apis: true,

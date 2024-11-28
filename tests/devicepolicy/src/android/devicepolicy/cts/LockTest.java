@@ -23,12 +23,17 @@ import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubje
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.flags.Flags;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
@@ -37,9 +42,6 @@ import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.LockNow;
 import com.android.bedstead.harrier.policies.MaximumTimeToLock;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
@@ -71,6 +73,9 @@ public class LockTest {
     @Postsubmit(reason = "New test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_notPermitted_throwsException() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null || Flags.lockNowCoexistence());
+
         assertThrows(SecurityException.class,
                 () -> dpc(sDeviceState).devicePolicyManager().lockNow());
     }
@@ -80,6 +85,9 @@ public class LockTest {
     @EnsurePasswordNotSet
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_logsMetric() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null || Flags.lockNowCoexistence());
+
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
             dpc(sDeviceState).devicePolicyManager().lockNow(/* flags= */ 0);
 
@@ -98,6 +106,9 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_noPasswordSet_turnsScreenOff() throws Exception {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null || Flags.lockNowCoexistence());
+
         Assume.assumeFalse("LockNow on profile won't turn off screen",
                 dpc(sDeviceState).user().isProfile());
         dpc(sDeviceState).devicePolicyManager().lockNow();
@@ -115,6 +126,9 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_automotive_noPasswordSet_doesNotTurnScreenOff() throws Exception {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null || Flags.lockNowCoexistence());
+
         dpc(sDeviceState).devicePolicyManager().lockNow();
 
         assertThat(TestApis.device().isScreenOn()).isTrue();
@@ -127,6 +141,9 @@ public class LockTest {
     @PolicyAppliesTest(policy = LockNow.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#lockNow")
     public void lockNow_passwordSet_locksDevice() throws Exception {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(dpc(sDeviceState).componentName() != null || Flags.lockNowCoexistence());
+
         dpc(sDeviceState).devicePolicyManager().lockNow();
 
         Poll.forValue("isDeviceLocked", sLocalKeyguardManager::isDeviceLocked)
