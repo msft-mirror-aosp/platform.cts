@@ -59,8 +59,9 @@ public class AnnotationTest extends AbstractApiTest {
      * Tests that the parts of the device's API that are annotated (e.g. with
      * android.annotation.SystemApi) match the API definition.
      */
-    // Ignore this test (b/301075649)
-    private void testAnnotation() {
+    public void testAnnotation() {
+       // Ignore this test (b/301075649)
+       /*
         if ("true".equals(PropertyUtil.getProperty("ro.treble.enabled")) &&
                 PropertyUtil.getFirstApiLevel() > Build.VERSION_CODES.O_MR1) {
             runWithTestResultObserver(resultObserver -> {
@@ -76,5 +77,6 @@ public class AnnotationTest extends AbstractApiTest {
                 complianceChecker.checkDeferred();
             });
         }
+        */
     }
 }
