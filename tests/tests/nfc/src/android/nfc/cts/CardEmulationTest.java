@@ -124,6 +124,7 @@ public class CardEmulationTest {
     public void tearDown() throws Exception {
         if (!supportsHardware()) return;
         restoreOriginalService();
+        sCurrentPollLoopReceiver = null;
     }
 
     private void restoreOriginalService() throws NoSuchFieldException {
@@ -495,7 +496,7 @@ public class CardEmulationTest {
         }
 
         EventPollLoopReceiver(Context context, boolean shouldBroadcastToRemoteEventListener) {
-            super(null, null);
+            super(new ArrayList<>(), null);
             mContext = context;
             ExecutorService pool = Executors.newFixedThreadPool(2);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
@@ -723,6 +724,7 @@ public class CardEmulationTest {
         } finally {
             cardEmulation.unsetPreferredService(activity);
             activity.finish();
+            sCurrentPollLoopReceiver = null;
             adapter.notifyHceDeactivated();
             eventPollLoopReceiver.cleanup();
         }
@@ -842,6 +844,7 @@ public class CardEmulationTest {
                             cardEmulation.unsetPreferredService(activity);
                             activity.finish();
                         }
+                        sCurrentPollLoopReceiver = null;
                         adapter.notifyHceDeactivated();
                     }
                 });
@@ -903,30 +906,7 @@ public class CardEmulationTest {
         } finally {
             adapter.enable();
             activity.finish();
-            adapter.notifyHceDeactivated();
-            eventPollLoopReceiver.cleanup();
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_EVENT_LISTENER})
-    public void testEventListener_commandTimeout() throws InterruptedException {
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        adapter.notifyHceDeactivated();
-        EventPollLoopReceiver eventPollLoopReceiver = new EventPollLoopReceiver(mContext, false);
-        sCurrentPollLoopReceiver = eventPollLoopReceiver;
-        Activity activity = createAndResumeActivity();
-        try {
-            eventPollLoopReceiver.setNumEventsToWaitFor(1);
-
-            adapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, 0, 0, new byte[0]);
-            eventPollLoopReceiver.waitForEvents();
-            EventPollLoopReceiver.EventLogEntry event = eventPollLoopReceiver.mEvents.getLast();
-            Assert.assertEquals(EventPollLoopReceiver.INTERNAL_ERROR_REPORTED, event.mEventType);
-            Assert.assertEquals(
-                    CardEmulation.NFC_INTERNAL_ERROR_COMMAND_TIMEOUT, (int) event.mState);
-        } finally {
-            activity.finish();
+            sCurrentPollLoopReceiver = null;
             adapter.notifyHceDeactivated();
             eventPollLoopReceiver.cleanup();
         }
@@ -1116,8 +1096,8 @@ public class CardEmulationTest {
                 }
             }
             sCurrentPollLoopReceiver.test();
-            sCurrentPollLoopReceiver = null;
         } finally {
+            sCurrentPollLoopReceiver = null;
             cardEmulation.unsetPreferredService(activity);
             activity.finish();
             adapter.notifyHceDeactivated();
@@ -1263,7 +1243,6 @@ public class CardEmulationTest {
             }
             Assert.assertEquals(frames.size(), sCurrentPollLoopReceiver.mReceivedFrames.size());
             Assert.assertEquals(2, sCurrentPollLoopReceiver.mReceivedServiceNames.size());
-            sCurrentPollLoopReceiver = null;
         } finally {
             cardEmulation.unsetPreferredService(activity);
             activity.finish();

@@ -34,7 +34,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "EventLib",
         "ActivityContext",
-        "Harrier",
+        "bedstead-enterprise",
         "DeviceAdminApp",
         "TestApp",
         "MetricsRecorder",

@@ -2019,7 +2019,7 @@
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.CharacterName#testGetName_shard5"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.CharacterName#testGetName_shard6"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.Supplementary#main"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Double.ParseDoubleTest#testPowers"/>
+    <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Double.ParseDouble#main"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.StackWalker.VerifyStackTrace#main"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.String.concat.ImplicitStringConcatBoundaries#testImplicitStringConcatBoundaries"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.reflect.records.RecordReflectionTest#testRecordReflection"/>
