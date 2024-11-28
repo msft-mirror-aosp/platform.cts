@@ -36,8 +36,12 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.view.Surface;
+import android.view.SurfaceControl;
+import android.view.cts.surfacevalidator.ASurfaceControlTestActivity;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -49,6 +53,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CountDownLatch;
+
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class PerformanceHintManagerTest {
@@ -56,6 +62,31 @@ public class PerformanceHintManagerTest {
 
     private final long DEFAULT_TARGET_NS = 16666666L;
     private PerformanceHintManager mPerformanceHintManager;
+    private ASurfaceControlTestActivity mActivity;
+    private ActivityScenario<ASurfaceControlTestActivity> mScenario;
+    private SurfaceControl mSurfaceControl;
+
+    private void makeSurfaceControl() {
+        mScenario = ActivityScenario.launch(ASurfaceControlTestActivity.class);
+        final CountDownLatch activityLatch = new CountDownLatch(1);
+
+        mScenario.onActivity(
+                activity -> {
+                    mActivity = activity;
+                    activityLatch.countDown();
+                    mSurfaceControl = new SurfaceControl.Builder()
+                            .setParent(mActivity.getSurfaceControl())
+                            .setName("testsurface")
+                            .setHidden(false)
+                            .build();
+                });
+
+        try {
+            activityLatch.await();
+        } catch (InterruptedException e) {
+            fail("Error while waiting for activity");
+        }
+    }
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -378,6 +409,27 @@ public class PerformanceHintManagerTest {
         }
     }
 
+    @Test
+    public void testNativeSetNativeSurfaces() {
+        makeSurfaceControl();
+
+        Surface surface = new Surface(mSurfaceControl);
+
+        final String resultMessage = nativeTestSetNativeSurfaces(mSurfaceControl, surface);
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
+
+    @Test
+    public void testNativeAutoSessionTiming() {
+        makeSurfaceControl();
+
+        final String resultMessage = nativeTestAutoSessionTiming(mSurfaceControl);
+        if (!Strings.isNullOrEmpty(resultMessage)) {
+            fail(resultMessage);
+        }
+    }
 
     private native String nativeTestCreateGraphicsPipelineSessionOverLimit();
     private native String nativeTestCreateHintSession();
@@ -394,4 +446,7 @@ public class PerformanceHintManagerTest {
     private native String nativeTestReportActualWorkDuration2WithIllegalArgument();
     private native String nativeTestLoadHints();
     private native long nativeBorrowSessionFromJava(Session session);
+    private native String nativeTestSetNativeSurfaces(
+            SurfaceControl surfaceControl, Surface surface);
+    private native String nativeTestAutoSessionTiming(SurfaceControl surfaceControl);
 }

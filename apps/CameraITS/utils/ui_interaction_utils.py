@@ -175,7 +175,7 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch)'
+      r'(switch to|flip camera|switch camera|camera switch|switch)'
     )
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
@@ -192,20 +192,21 @@ def switch_default_camera(dut, facing, log_path):
       logging.debug('Flip camera content-desc: %s', content_desc)
       camera_flip_res = True
       break
-  if facing == 'front' and camera_flip_res:
-    if ('rear' in content_desc or 'rear' in resource_id
-        or 'back' in content_desc or 'back' in resource_id
-        ):
-      logging.debug('Pattern found but camera is already switched.')
+  if content_desc and resource_id:
+    if facing == 'front' and camera_flip_res:
+      if ('rear' in content_desc.lower() or 'rear' in resource_id.lower()
+          or 'back' in content_desc.lower() or 'back' in resource_id.lower()
+          ):
+        logging.debug('Pattern found but camera is already switched.')
+      else:
+        dut.ui(desc=content_desc).click.wait()
+    elif facing == 'rear' and camera_flip_res:
+      if 'front' in content_desc.lower() or 'front' in resource_id.lower():
+        logging.debug('Pattern found but camera is already switched.')
+      else:
+        dut.ui(desc=content_desc).click.wait()
     else:
-      dut.ui(desc=content_desc).click.wait()
-  elif facing == 'rear' and camera_flip_res:
-    if 'front' in content_desc or 'front' in resource_id:
-      logging.debug('Pattern found but camera is already switched.')
-    else:
-      dut.ui(desc=content_desc).click.wait()
-  else:
-    raise ValueError(f'Unknown facing: {facing}')
+      raise ValueError(f'Unknown facing: {facing}')
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
@@ -264,6 +265,7 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=CANCEL_BUTTON_TXT).click.wait()
     switch_default_camera(dut, camera_facing, log_path)
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)

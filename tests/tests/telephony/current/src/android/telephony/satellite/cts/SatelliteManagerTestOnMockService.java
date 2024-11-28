@@ -6725,7 +6725,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                         info.getSubscriberIdType());
             }
 
-            if (provisioned == status.getProvisionStatus()) {
+            if (provisioned == status.isProvisioned()) {
                 list.add(info);
             }
         }
@@ -6744,7 +6744,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         Pair<Boolean, Integer> pairResult = deprovisionSatellite(requestDeprovisionSubscriberId);
         assertTrue(callback.waitUntilResult(1));
         assertTrue(pairResult.first);
-        assertFalse(callback.getResultList().get(0).getProvisionStatus());
+        assertFalse(callback.getResultList().get(0).isProvisioned());
 
         // Request deprovisioning with the same SatelliteSubscriberInfo that was previously
         // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not called.
@@ -6781,7 +6781,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                         notProvisionedSubscriberList);
                 assertTrue(callback.waitUntilResult(1));
                 assertTrue(pairResultForProvisionSatellite.first);
-                assertTrue(callback.getResultList().get(0).getProvisionStatus());
+                assertTrue(callback.getResultList().get(0).isProvisioned());
 
                 // Request provisioning with the same SatelliteSubscriberInfo that was previously
                 // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not
@@ -8136,7 +8136,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                     notProvisionedSubscriberList);
             assertTrue(callback.waitUntilResult(1));
             assertTrue(pairResultForProvisionSatellite.first);
-            assertTrue(callback.getResultList().get(0).getProvisionStatus());
+            assertTrue(callback.getResultList().get(0).isProvisioned());
         } else {
             logd("provisionSatelliteSubscription: no provisioning list");
             return false;

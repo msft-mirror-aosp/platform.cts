@@ -97,7 +97,7 @@ public abstract class BaseAdvancedProtectionTest {
     }
 
     @After
-    public void teardown() {
+    public void teardown() throws InterruptedException {
         if (mManager == null) {
             return;
         }
@@ -106,6 +106,7 @@ public abstract class BaseAdvancedProtectionTest {
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
         mManager.setAdvancedProtectionEnabled(mInitialApmState);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        Thread.sleep(1000);
 
         teardownInitialAllowedNetworks();
         teardownInitialOpRequestInstallPackages();

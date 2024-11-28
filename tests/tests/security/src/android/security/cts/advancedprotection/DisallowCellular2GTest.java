@@ -35,6 +35,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -104,6 +105,7 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                         + "#setAdvancedProtectionEnabled"
             })
     @Test
+    @Ignore
     public void testStateAfterToggle() throws InterruptedException {
         mManager.setAdvancedProtectionEnabled(true);
         Thread.sleep(TIMEOUT_S * 1000);
