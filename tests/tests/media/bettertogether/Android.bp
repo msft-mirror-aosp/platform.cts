@@ -27,7 +27,7 @@ java_defaults {
         "cts-media-common",
         "flag-junit",
         "truth",
-        "bedstead",
+        "bedstead-enterprise",
     ],
     resource_dirs: ["res"],
     aaptflags: [
