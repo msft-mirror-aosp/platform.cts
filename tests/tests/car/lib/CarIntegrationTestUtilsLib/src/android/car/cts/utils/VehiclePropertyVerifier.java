@@ -129,6 +129,11 @@ public class VehiclePropertyVerifier<T> {
     public static final String STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE =
             STEP_VERIFY_READ_APIS_PREFIX + ".getMinMaxSupportedValue";
     /**
+     * A step to verify {@link CarPropertyManager#getSupportedValuesList}.
+     */
+    public static final String STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST =
+            STEP_VERIFY_READ_APIS_PREFIX + ".getSupportedValuesList";
+    /**
      * A step to verify that for ADAS properties, if the feature is disabled, the property must
      * report error state.
      *
@@ -507,6 +512,7 @@ public class VehiclePropertyVerifier<T> {
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC,
                 STEP_VERIFY_READ_APIS_SUBSCRIBE,
                 STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE,
+                STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST,
                 STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC,
@@ -791,6 +797,11 @@ public class VehiclePropertyVerifier<T> {
                 if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
                         && Flags.carPropertySupportedValue()) {
                     verifyGetMinMaxSupportedValue();
+                }
+
+                if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
+                        && Flags.carPropertySupportedValue()) {
+                    verifyGetSupportedValuesList();
                 }
 
                 if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
@@ -3421,21 +3432,25 @@ public class VehiclePropertyVerifier<T> {
             T areaIdMaxValue = minMaxSupportedValue.getMaxValue();
             if (areaIdConfig.hasMinSupportedValue()) {
                 assertWithMessage(
-                        "minSupportedValue must not be null if hasMinSupportedValue is true")
+                        mPropertyName + " - area ID: " + areaId
+                        + " minSupportedValue must not be null if hasMinSupportedValue is true")
                         .that(areaIdMinValue).isNotNull();
             } else {
                 assertWithMessage(
-                        "minSupportedValue must be null if hasMinSupportedValue is false")
+                        mPropertyName + " - area ID: " + areaId
+                        + " minSupportedValue must be null if hasMinSupportedValue is false")
                         .that(areaIdMinValue).isNull();
             }
 
             if (areaIdConfig.hasMaxSupportedValue()) {
                 assertWithMessage(
-                        "maxSupportedValue must not be null if hasMaxSupportedValue is true")
+                        mPropertyName + " - area ID: " + areaId
+                        + " maxSupportedValue must not be null if hasMaxSupportedValue is true")
                         .that(areaIdMaxValue).isNotNull();
             } else {
                 assertWithMessage(
-                        "maxSupportedValue must be null if hasMaxSupportedValue is false")
+                        mPropertyName + " - area ID: " + areaId
+                        + " maxSupportedValue must be null if hasMaxSupportedValue is false")
                         .that(areaIdMaxValue).isNull();
             }
             if (mRequireMinValuesToBeZero) {
@@ -3457,6 +3472,52 @@ public class VehiclePropertyVerifier<T> {
                                 + "'s max value must be >= min value")
                         .that(verifyMaxAndMin(areaIdMinValue, areaIdMaxValue))
                         .isTrue();
+            }
+        }
+    }
+
+    private void verifyGetSupportedValuesList() {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        int[] areaIds = carPropertyConfig.getAreaIds();
+        Class propertyType = carPropertyConfig.getPropertyType();
+        for (int areaId : areaIds) {
+            List<T> supportedValuesList =
+                    mCarPropertyManager.getSupportedValuesList(mPropertyId, areaId);
+            AreaIdConfig areaIdConfig = carPropertyConfig.getAreaIdConfig(areaId);
+            if (areaIdConfig.hasSupportedValuesList()) {
+                assertWithMessage(
+                        mPropertyName + " - area ID: " + areaId
+                        + " supportedValuesList must not be null if hasSupportedValuesList is true")
+                        .that(supportedValuesList).isNotNull();
+            } else {
+                assertWithMessage(
+                        mPropertyName + " - area ID: " + areaId
+                        + " supportedValuesList must be null if hasSupportedValuesList is false")
+                        .that(supportedValuesList).isNull();
+                continue;
+            }
+
+            assertWithMessage(
+                    mPropertyName + " - area ID: " + areaId + " supportedValuesList must not "
+                    + "contain duplicate elements")
+                    .that(supportedValuesList).containsNoDuplicates();
+
+            if (propertyType.equals(Integer.class) || propertyType.equals(Float.class)
+                    || propertyType.equals(Long.class)) {
+                assertWithMessage(
+                        mPropertyName + " - area ID: " + areaId + " supportedValuesList must be "
+                        + "in ascending order")
+                        .that(supportedValuesList).isInOrder();
+            }
+
+            if (!mAllPossibleEnumValues.isEmpty()) {
+                for (int i = 0; i < supportedValuesList.size(); i++) {
+                    T supportedValue = supportedValuesList.get(i);
+                    assertWithMessage(
+                            mPropertyName + " - area ID: " + areaId + " supported value: "
+                            + supportedValue + " is not one of the possible enums")
+                            .that(mAllPossibleEnumValues).contains(supportedValue);
+                }
             }
         }
     }
