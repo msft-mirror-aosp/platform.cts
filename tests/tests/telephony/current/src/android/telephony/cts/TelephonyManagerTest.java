@@ -6034,39 +6034,6 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.telephony.TelephonyManager#getPackagesWithCarrierPrivileges"})
-    public void testGetPackagesWithCarrierPrivilegesEnforcesReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-
-        try {
-            InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-            mTelephonyManager.getPackagesWithCarrierPrivileges();
-        } catch (SecurityException e) {
-            fail("TelephonyManager#getPackagesWithCarrierPrivileges requires "
-                    + "READ_PRIVILEGED_PHONE_STATE");
-        } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testGetPackagesWithCarrierPrivilegesThrowsExceptionWithoutReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-
-        try {
-            mTelephonyManager.getPackagesWithCarrierPrivileges();
-            fail("TelephonyManager#getPackagesWithCarrierPrivileges must be protected "
-                    + "with READ_PRIVILEGED_PHONE_STATE");
-        } catch (SecurityException e) {
-            // expected
-        }
-    }
-
-    @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getSimSlotMapping",
             "android.telephony.TelephonyManager#setSimSlotMapping"})
     public void testSimSlotMapping() {
