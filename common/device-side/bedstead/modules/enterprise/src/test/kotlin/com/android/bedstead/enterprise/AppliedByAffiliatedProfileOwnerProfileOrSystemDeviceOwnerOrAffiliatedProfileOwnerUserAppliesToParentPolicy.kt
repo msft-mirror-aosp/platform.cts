@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier
+package com.android.bedstead.enterprise
 
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE

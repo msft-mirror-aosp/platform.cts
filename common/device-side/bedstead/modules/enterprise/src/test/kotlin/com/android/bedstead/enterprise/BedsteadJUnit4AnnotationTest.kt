@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier
+package com.android.bedstead.enterprise
 
 import com.android.bedstead.enterprise.annotations.canSetPolicyTest
 import com.android.bedstead.enterprise.annotations.cannotSetPolicyTest
@@ -32,6 +32,8 @@ import com.android.bedstead.enterprise.Policy.includeRunOnProfileOwnerProfileWit
 import com.android.bedstead.enterprise.Policy.includeRunOnSingleDeviceOwnerUser
 import com.android.bedstead.enterprise.Policy.includeRunOnSystemDeviceOwnerUser
 import com.android.bedstead.enterprise.Policy.includeRunOnUnaffiliatedProfileOwnerAdditionalUser
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DynamicParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.parameterized.includeNone
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.google.common.truth.Truth.assertThat

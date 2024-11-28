@@ -119,8 +119,6 @@ android_test {
     srcs: [
         "src/test/java/**/*.java",
         "src/test/java/**/*.kt",
-        "src/test/res/**/*.java",
-        "src/test/res/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -128,7 +126,6 @@ android_test {
     static_libs: [
         "Nene",
         "bedstead",
-        "bedstead-enterprise",
         "bedstead-root",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
