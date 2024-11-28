@@ -91,6 +91,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.internal.util.ConcurrentUtils;
 import com.android.internal.util.HexDump;
 
@@ -226,6 +227,7 @@ public class PackageManagerShellCommandInstallTest {
     private boolean mVerifierTimeoutTest = false;
     private String mInstall = "";
     private static long sStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
+    private UserHelper mUserHelper;
 
     private static PackageInstaller getPackageInstaller() {
         return getPackageManager().getPackageInstaller();
@@ -326,6 +328,8 @@ public class PackageManagerShellCommandInstallTest {
         mInstall = mDataLoaderType == DATA_LOADER_TYPE_NONE ? " install " :
                 mDataLoaderType == DATA_LOADER_TYPE_STREAMING ? " install-streaming " :
                         " install-incremental ";
+
+        mUserHelper = new UserHelper(getContext());
 
         uninstallPackageSilently(TEST_APP_PACKAGE);
 
@@ -1991,7 +1995,12 @@ public class PackageManagerShellCommandInstallTest {
             String expectedResultStartsWith, BiConsumer<Context, Intent> onBroadcast)
             throws Exception {
         // Install a package.
-        installPackage(baseName);
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            installPackageAsUser(baseName, mUserHelper.getUserId());
+        } else {
+            installPackage(baseName);
+        }
+
         assertTrue(isAppInstalled(TEST_APP_PACKAGE));
 
         getUiAutomation().adoptShellPermissionIdentity(
@@ -2035,7 +2044,11 @@ public class PackageManagerShellCommandInstallTest {
                 CTS_PACKAGE_NAME + ";" + TEST_VERIFIER_PACKAGE, sysPropertyValue);
 
         // Update the package, should trigger verifier override.
-        installPackage(updatedName, expectedResultStartsWith);
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            installPackageAsUser(updatedName, mUserHelper.getUserId(), expectedResultStartsWith);
+        } else {
+            installPackage(updatedName, expectedResultStartsWith);
+        }
 
         // Wait for broadcast.
         broadcastReceived.get(VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -2795,6 +2808,32 @@ public class PackageManagerShellCommandInstallTest {
         File file = new File(createApkPath(baseName));
         String result = executeShellCommand("pm " + mInstall + " -t -g " + file.getPath());
         assertTrue(result, result.startsWith(expectedResultStartsWith));
+    }
+
+    private void installPackageAsUser(String baseName, int userId) throws IOException {
+        File file = new File(createApkPath(baseName));
+        assertThat(file.exists()).isTrue();
+        assertEquals("Success\n", executeShellCommand(
+                "pm " + mInstall + " -t -g " + " --user " + userId + " " + file.getPath()));
+    }
+
+    private void installPackageAsUser(String baseName, int userId, String expectedResultStartsWith)
+            throws IOException {
+        installPackageAsUser(baseName, userId,
+                /*disableAutoInstallDependencies=*/false, expectedResultStartsWith);
+    }
+
+    private void installPackageAsUser(
+            String baseName, int userId,
+            boolean disableAutoInstallDependencies,
+            String expectedResultStartsWith)
+            throws IOException {
+        File file = new File(createApkPath(baseName));
+        String disableDependencyInstall = "";
+        String result = executeShellCommand(
+                "pm " + mInstall + " -t -g " + " --user " + userId + " "
+                + disableDependencyInstall + file.getPath());
+        assertThat(result).startsWith(expectedResultStartsWith);
     }
 
     private void updatePackage(String packageName, String baseName) throws IOException {
