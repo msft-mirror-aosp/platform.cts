@@ -29,6 +29,8 @@ android_test {
         "general-tests",
         "mts-extservices",
         "mcts-extservices",
+        "mts-crashrecovery",
+        "mcts-crashrecovery",
     ],
     libs: ["android.test.base.stubs.test"],
     static_libs: [

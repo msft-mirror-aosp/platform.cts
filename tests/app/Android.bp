@@ -43,7 +43,7 @@ android_test {
         "com.android.media.flags.bettertogether-aconfig-java",
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",

@@ -32,10 +32,8 @@ android_test {
         "compatibility-device-util-axt",
         "CtsDomainVerificationAndroidConstantsLibrary",
         "CtsDomainVerificationJavaConstantsLibrary",
-        "Harrier",
         "bedstead-enterprise",
         "junit",
-        "Nene",
         "truth",
     ],
     java_resources: [

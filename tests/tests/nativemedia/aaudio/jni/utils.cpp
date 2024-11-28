@@ -240,9 +240,7 @@ void OutputStreamBuilderHelper::initBuilder() {
 AAudioExtensions::AAudioExtensions()
       : mMMapSupported(isPolicyEnabled(getMMapPolicyProperty())),
         mMMapExclusiveSupported(isPolicyEnabled(
-                getIntegerProperty("aaudio.mmap_exclusive_policy", AAUDIO_UNSPECIFIED))) {
-    loadLibrary();
-}
+                getIntegerProperty("aaudio.mmap_exclusive_policy", AAUDIO_UNSPECIFIED))) {}
 
 int AAudioExtensions::getIntegerProperty(const char *name, int defaultValue) {
     int result = defaultValue;
@@ -251,39 +249,6 @@ int AAudioExtensions::getIntegerProperty(const char *name, int defaultValue) {
         result = atoi(valueText);
     }
     return result;
-}
-
-// This should only be called once from the constructor.
-bool AAudioExtensions::loadLibrary() {
-    mLibHandle = dlopen(LIB_AAUDIO_NAME, 0);
-    if (mLibHandle == nullptr) {
-        //LOGI("%s() could not find " LIB_AAUDIO_NAME, __func__);
-        return false;
-    }
-
-    mAAudioStream_isMMap = (bool (*)(AAudioStream *stream))
-            dlsym(mLibHandle, FUNCTION_IS_MMAP);
-    if (mAAudioStream_isMMap == nullptr) {
-        //LOGI("%s() could not find " FUNCTION_IS_MMAP, __func__);
-        return false;
-    }
-
-    mAAudio_setMMapPolicy = (int32_t (*)(aaudio_policy_t policy))
-            dlsym(mLibHandle, FUNCTION_SET_MMAP_POLICY);
-    if (mAAudio_setMMapPolicy == nullptr) {
-        //LOGI("%s() could not find " FUNCTION_SET_MMAP_POLICY, __func__);
-        return false;
-    }
-
-    mAAudio_getMMapPolicy = (aaudio_policy_t (*)())
-            dlsym(mLibHandle, FUNCTION_GET_MMAP_POLICY);
-    if (mAAudio_getMMapPolicy == nullptr) {
-        //LOGI("%s() could not find " FUNCTION_GET_MMAP_POLICY, __func__);
-        return false;
-    }
-
-    mFunctionsLoaded = true;
-    return mFunctionsLoaded;
 }
 
 static std::atomic_int sAudioServerCrashCount = 0;

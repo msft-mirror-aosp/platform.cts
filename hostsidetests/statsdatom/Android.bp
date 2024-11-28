@@ -27,6 +27,7 @@ java_test_host {
         "src/**/appops/*.java",
         "src/**/appexit/*.java",
         "src/**/appstart/*.java",
+        "src/**/backportedfixes/*.java",
         "src/**/batterycycle/*.java",
         "src/**/batterystats/*.java",
         "src/**/binderstats/*.java",
@@ -93,6 +94,8 @@ java_test_host {
         "cts_adpf_atom_common-host",
         "cts_adpf_atom_common-host2",
         "uprobestats-protos",
+        "truth-liteproto-extension",
+        "truth-proto-extension",
     ],
 
     device_common_data: [
