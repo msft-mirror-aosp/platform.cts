@@ -32,7 +32,7 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodConfig;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
@@ -43,7 +43,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.modules.utils.build.SdkLevel;
-import com.android.ravenwood.common.RavenwoodCommonUtils;
 
 import com.google.common.truth.Expect;
 
@@ -153,13 +152,7 @@ public final class DeviceConfigApiTests {
     @Rule public final TestName testName = new TestName();
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @RavenwoodConfig.Config
-    public static final RavenwoodConfig sConfig = new RavenwoodConfig.Builder()
-            .setProvideMainThread(true)
-            .build();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Get necessary permissions to access and modify properties through DeviceConfig API.
@@ -213,7 +206,7 @@ public final class DeviceConfigApiTests {
 
         OnPropertiesChangedListenerForTests.unregisterAfter(DeviceConfigApiTests.class, testName);
 
-        if (!RavenwoodCommonUtils.isOnRavenwood()) {
+        if (!RavenwoodRule.isOnRavenwood()) {
             // Do not need waiting on Ravenwood as everything happens locally in process.
             TimeUnit.MILLISECONDS.sleep(WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS);
         }
@@ -235,7 +228,7 @@ public final class DeviceConfigApiTests {
     @AfterClass
     public static void cleanUpAfterAllTests() {
         // Ravenwood cleans up DeviceConfig automatically
-        if (!isSupported() || RavenwoodCommonUtils.isOnRavenwood()) return;
+        if (!isSupported() || RavenwoodRule.isOnRavenwood()) return;
 
         deletePropertyThrowShell(NAMESPACE1, KEY1);
         deletePropertyThrowShell(NAMESPACE2, KEY1);

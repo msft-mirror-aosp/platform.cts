@@ -84,12 +84,14 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         mManager.setAdvancedProtectionEnabled(true);
         // TODO(b/369361373): Remove temporary sleep in AdvancedProtectionManagerTest to ensure
         //  protections are enabled.
-        Thread.sleep(1000);
+        Thread.sleep(TIMEOUT_S * 1000);
+
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
         mManager.setAdvancedProtectionEnabled(false);
+        Thread.sleep(TIMEOUT_S * 1000);
 
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
@@ -114,6 +116,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         };
 
         mManager.setAdvancedProtectionEnabled(true);
+        Thread.sleep(TIMEOUT_S * 1000);
+
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
@@ -121,6 +125,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         mManager.unregisterAdvancedProtectionCallback(callback);
         Thread.sleep(TIMEOUT_S * 1000);
         mManager.setAdvancedProtectionEnabled(false);
+        Thread.sleep(TIMEOUT_S * 1000);
+
 
         if (onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback called on set after unregister");
