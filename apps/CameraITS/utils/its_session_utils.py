@@ -1617,8 +1617,36 @@ class ItsSession(object):
     dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
     return self.get_and_pull_jca_capture(dut, log_path)
 
+  def do_jca_video_capture(self, dut, log_path, duration):
+    """Take a capture using JCA using the UI.
+
+    Captures JCA video by holding the capture button with requested duration.
+    Reads response from socket containing the capture path, and
+    pulls the image from the DUT.
+
+    This method is included here because an ITS session is needed to retrieve
+    the capture path from the device.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+      duration: int; requested video duration, in ms.
+    Returns:
+      The host-side path of the capture.
+    """
+    # Make sure JCA is started
+    jca_capture_button_visible = dut.ui(
+        res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
+            ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    if not jca_capture_button_visible:
+      raise AssertionError('JCA was not started! Please use'
+                           'open_jca_viewfinder() or do_jca_video_setup()'
+                           'in ui_interaction_utils.py to start JCA.')
+    dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click(duration)
+    return self.get_and_pull_jca_capture(dut, log_path)
+
   def get_and_pull_jca_capture(self, dut, log_path):
-    """Retrieves a capture path from the socket and pulls capture to host.
+    """Retrieve a capture path from the socket and pulls capture to host.
 
     Args:
       dut: An Android controller device object.
