@@ -27,14 +27,14 @@ import org.junit.Before;
 
 /**
  * Tests for the {@link androidx.window.extensions} implementation provided on the device (and only
- * if one is available) for the Activity Embedding functionality. Specifically tests activity
- * launch scenarios on secondary display.
- * <p>
+ * if one is available) for the Activity Embedding functionality on secondary display.
+ * Specifically tests activity split bounds.
+ *
  * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingLaunchTests
+ *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingBoundsTests
  */
 @Presubmit
-public class MultiDisplayActivityEmbeddingLaunchTests extends ActivityEmbeddingLaunchTests {
+public class MultiDisplayActivityEmbeddingBoundsTests extends ActivityEmbeddingBoundsTests {
 
     private final MultiDisplayTestHelper mTestHelper =
             new MultiDisplayTestHelper(new VirtualDisplaySession());
