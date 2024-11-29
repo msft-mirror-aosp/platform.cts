@@ -36,7 +36,6 @@ android_test {
         "cts",
         "general-tests",
         "mts",
-        "mts-neuralnetworks",
     ],
     sdk_version: "test_current",
     // Do not compress model data files.
