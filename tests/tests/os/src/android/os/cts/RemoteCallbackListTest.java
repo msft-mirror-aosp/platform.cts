@@ -17,32 +17,60 @@
 package android.os.cts;
 
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.ConditionVariable;
+import android.os.Flags;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.os.RemoteCallbackList;
-import android.os.RemoteException;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class RemoteCallbackListTest extends AndroidTestCase {
+public class RemoteCallbackListTest {
     private static final String SERVICE_ACTION = "android.app.REMOTESERVICE";
+    private static final int CALLBACK_WAIT_TIMEOUT_SECS = 5;
 
-    private ISecondary mSecondaryService = null;
     // Lock object
-    private Sync mSync = new Sync();
+    private final Sync mSync = new Sync();
+    private ISecondary mSecondaryService = null;
     private Intent mIntent;
     private Context mContext;
     private ServiceConnection mSecondaryConnection;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mContext = getContext();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mSecondaryConnection = new ServiceConnection() {
             public void onServiceConnected(ComponentName className, IBinder service) {
                 mSecondaryService = ISecondary.Stub.asInterface(service);
@@ -68,6 +96,11 @@ public class RemoteCallbackListTest extends AndroidTestCase {
         assertTrue(mContext.bindService(secondaryIntent, mSecondaryConnection,
                 Context.BIND_AUTO_CREATE));
 
+        synchronized (mSync) {
+            if (!mSync.mIsConnected) {
+                mSync.wait();
+            }
+        }
     }
 
     private static class Sync {
@@ -75,9 +108,8 @@ public class RemoteCallbackListTest extends AndroidTestCase {
         public boolean mIsDisConnected;
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         if (mSecondaryConnection != null) {
             mContext.unbindService(mSecondaryConnection);
         }
@@ -86,14 +118,10 @@ public class RemoteCallbackListTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testRemoteCallbackList() throws Exception {
         // Test constructor(default one).
         MockRemoteCallbackList<IInterface> rc = new MockRemoteCallbackList<IInterface>();
-        synchronized (mSync) {
-            if (!mSync.mIsConnected) {
-                mSync.wait();
-            }
-        }
 
         try {
             rc.register(null);
@@ -137,17 +165,9 @@ public class RemoteCallbackListTest extends AndroidTestCase {
         assertTrue(rc.isOnCallbackDiedCalled);
     }
 
+    @Test
     public void testKill() {
         MockRemoteCallbackList<IInterface> rc = new MockRemoteCallbackList<IInterface>();
-        synchronized (mSync) {
-            if (!mSync.mIsConnected) {
-                try {
-                    mSync.wait();
-                } catch (InterruptedException e) {
-                    fail("Throw InterruptedException: " + e.getMessage());
-                }
-            }
-        }
 
         rc.register(mSecondaryService);
         rc.beginBroadcast();
@@ -167,5 +187,149 @@ public class RemoteCallbackListTest extends AndroidTestCase {
             isOnCallbackDiedCalled = true;
             super.onCallbackDied(callback);
         }
+    }
+
+    private <T extends IInterface> void flush(RemoteCallbackList<T> rc) {
+        // Flush pending callbacks by broadcasting a new callback and waiting for it to be invoked.
+        // Since callbacks are invoked in order, any previous pending callbacks would also have been
+        // called when this flush() method returns.
+        ConditionVariable cv = new ConditionVariable();
+        rc.broadcast((service) -> cv.open());
+        assertTrue(cv.block(1000));  // wait for 1 second
+    }
+
+    private <T> void assertEmpty(LinkedBlockingQueue<T> queue) {
+        // Convert to array and compare for a more helpful error message.
+        assertArrayEquals(new Object[0], queue.toArray());
+    }
+
+    private <T extends IInterface, U> void flushAndAssertEmpty(RemoteCallbackList<T> rc,
+                LinkedBlockingQueue<U> queue) {
+        flush(rc);
+        assertEmpty(queue);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testDropCallbacksWhenFrozen() throws Exception {
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_DROP)
+                .setExecutor(Runnable::run).build();
+        rc.register(mSecondaryService);
+        freezeProcess();
+        rc.broadcast((service) -> fail("this should not have been invoked"));
+        unfreezeProcess();
+        flush(rc);
+        rc.unregister(mSecondaryService);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testQueueCallbacksWhenFrozen() throws Exception {
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_ALL)
+                .setExecutor(Runnable::run).build();
+        rc.register(mSecondaryService);
+        LinkedBlockingQueue<IInterface> invokedCallbacks = new LinkedBlockingQueue<>();
+        rc.broadcast((service) -> invokedCallbacks.add(service));
+        assertArrayEquals(new Object[]{ mSecondaryService }, invokedCallbacks.toArray());
+        invokedCallbacks.clear();
+
+        freezeProcess();
+        rc.broadcast((service) -> invokedCallbacks.add(service));
+        assertEmpty(invokedCallbacks);
+
+        unfreezeProcess();
+        assertEquals(mSecondaryService,
+                invokedCallbacks.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+        flushAndAssertEmpty(rc, invokedCallbacks);
+        rc.unregister(mSecondaryService);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testQueueMostRecentCallbackWhenFrozen() throws Exception {
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT)
+                .setExecutor(Runnable::run).build();
+        rc.register(mSecondaryService);
+        freezeProcess();
+        LinkedBlockingQueue<String> invocationRecords = new LinkedBlockingQueue<>();
+        rc.broadcast((service) -> invocationRecords.add("first invocation"));
+        rc.broadcast((service) -> invocationRecords.add("second invocation"));
+        rc.broadcast((service) -> invocationRecords.add("last invocation"));
+        assertEmpty(invocationRecords);
+        unfreezeProcess();
+        assertEquals("last invocation",
+                invocationRecords.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+        flushAndAssertEmpty(rc, invocationRecords);
+        rc.unregister(mSecondaryService);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testRemoveQueuedCallbacksOnUnregistration() throws Exception {
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_ALL).build();
+        rc.register(mSecondaryService);
+        freezeProcess();
+        LinkedBlockingQueue<IInterface> invokedCallbacks = new LinkedBlockingQueue<>();
+        rc.broadcast((service) -> invokedCallbacks.add(service));
+        assertEmpty(invokedCallbacks);
+        rc.unregister(mSecondaryService);
+        unfreezeProcess();
+        assertEmpty(invokedCallbacks);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testDropCallbacksWhenQueueGrowsTooBig() throws Exception {
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_ALL).setMaxQueueSize(3).build();
+        rc.register(mSecondaryService);
+        freezeProcess();
+        LinkedBlockingQueue<String> invocationRecords = new LinkedBlockingQueue<>();
+        rc.broadcast((service) -> fail("this should not have been invoked"));
+        rc.broadcast((service) -> invocationRecords.add("2nd invocation"));
+        rc.broadcast((service) -> invocationRecords.add("3rd invocation"));
+        rc.broadcast((service) -> invocationRecords.add("4th invocation"));
+        unfreezeProcess();
+        assertEquals("2nd invocation",
+                invocationRecords.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+        assertEquals("3rd invocation",
+                invocationRecords.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+        assertEquals("4th invocation",
+                invocationRecords.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+        flushAndAssertEmpty(rc, invocationRecords);
+        rc.unregister(mSecondaryService);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testInvokeInterfaceDiedCallback() throws Exception {
+        LinkedBlockingQueue<IInterface> invocationRecords = new LinkedBlockingQueue<>();
+        RemoteCallbackList<IInterface> rc = new RemoteCallbackList.Builder<IInterface>(
+                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_ALL).setInterfaceDiedCallback(
+                    (rcl, cb, cookie) -> invocationRecords.add(cb)).build();
+
+        ISecondary service = mSecondaryService;
+        assertTrue(rc.register(service));
+        android.os.Process.killProcess(service.getPid());
+        synchronized (mSync) {
+            if (!mSync.mIsDisConnected) {
+                mSync.wait();
+            }
+        }
+        assertEquals(service, invocationRecords.poll(CALLBACK_WAIT_TIMEOUT_SECS, TimeUnit.SECONDS));
+    }
+
+    private void freezeProcess() throws Exception {
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                .executeShellCommand("am freeze android.os.cts:remote");
+    }
+
+    private void unfreezeProcess() throws Exception {
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                .executeShellCommand("am unfreeze android.os.cts:remote");
     }
 }
