@@ -26,7 +26,9 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.view.cts.R;
@@ -37,6 +39,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
 import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.InputJsonParser;
@@ -125,11 +128,19 @@ public class InputDeviceKeyLayoutMapTest {
                 "MUSIC"
                 ));
 
+    // List of key codes that are not supported for visible background users by PhoneWindowManager.
+    private static final Set<String> KEYS_UNSUPPORTED_FOR_VISIBLE_BACKGROUND_USERS =
+            new HashSet<>(Arrays.asList(
+                    "CALL",
+                    "END_CALL"
+    ));
+
     private Map<String, Integer> mKeyLayout;
     private Instrumentation mInstrumentation;
     private UinputDevice mUinputDevice;
     private InputJsonParser mParser;
     private WindowManager mWindowManager;
+    private UserHelper mUserHelper;
     private boolean mIsLeanback;
     private boolean mVolumeKeysHandledInWindowManager;
 
@@ -161,9 +172,15 @@ public class InputDeviceKeyLayoutMapTest {
                 Resources.getSystem().getIdentifier("config_handleVolumeKeysInWindowManager",
                         "bool", "android"));
         mKeyLayout = nativeLoadKeyLayout(mParser.readRegisterCommand(R.raw.Generic));
+        mUserHelper = new UserHelper(context);
+        // For a visible background user, use the assigned main display.
+        // Otherwise, use the default display by passing null.
+        Display display = mUserHelper.isVisibleBackgroundUser()
+                ? context.getSystemService(DisplayManager.class)
+                        .getDisplay(mUserHelper.getMainDisplayId())
+                : null;
         mUinputDevice = new UinputDevice(
-                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand(),
-                null /* display */);
+                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand(), display);
     }
 
     @After
@@ -252,6 +269,11 @@ public class InputDeviceKeyLayoutMapTest {
     public void testLayoutKeyEvents() {
         for (Map.Entry<String, Integer> entry : mKeyLayout.entrySet()) {
             if (EXCLUDED_KEYS.contains(entry.getKey())) {
+                continue;
+            }
+            // Exclude keys that PhoneWindowManager does not support for visible background users.
+            if (mUserHelper.isVisibleBackgroundUser()
+                    && KEYS_UNSUPPORTED_FOR_VISIBLE_BACKGROUND_USERS.contains(entry.getKey())) {
                 continue;
             }
 

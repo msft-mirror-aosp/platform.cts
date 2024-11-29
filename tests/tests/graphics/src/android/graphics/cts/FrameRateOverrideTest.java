@@ -222,8 +222,6 @@ public final class FrameRateOverrideTest {
         Log.i(TAG, "\n");
     }
 
-    // b/350443755 Ignore for flaky test.
-    @Ignore
     @Test
     public void testAppBackpressure()
             throws InterruptedException, IOException {
