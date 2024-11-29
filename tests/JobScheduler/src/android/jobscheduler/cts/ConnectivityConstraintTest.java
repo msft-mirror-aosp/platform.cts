@@ -43,6 +43,7 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.server.net.Flags;
 
 import java.util.Collections;
@@ -67,6 +68,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private NetworkingHelper mNetworkingHelper;
     private WifiManager mWifiManager;
     private ConnectivityManager mCm;
+    private UserHelper mUserHelper;
 
     /** Whether the device running these tests supports WiFi. */
     private boolean mHasWifi;
@@ -89,6 +91,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         setDataSaverEnabled(false);
         mNetworkingHelper.setAllNetworksEnabled(true);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @Override
@@ -708,9 +711,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0, // Regular jobs should not have any privileged network capabilities
-                250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */)
+                .build());
     }
 
     // --------------------------------------------------------------------------------------------
@@ -929,6 +936,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even when Data Saver is on and the device is not connected to WiFi.
      */
     public void testBgUiJobBypassesDataSaver() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;
@@ -970,6 +984,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even if a user-initiated job is running at the same time.
      */
     public void testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;
