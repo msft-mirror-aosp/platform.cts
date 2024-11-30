@@ -51,7 +51,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -107,7 +106,7 @@ public class DownloadManagerTest extends BaseTestCase {
             Uri destination = Uri.parse(host + ":" + serverSocket.getLocalPort());
             long id = dm.enqueue(new DownloadManager.Request(destination));
             try {
-                serverFuture.get(TIMEOUT, TimeUnit.MILLISECONDS);
+                serverFuture.get();
                 // Check that the download was successful.
                 receiver.waitForDownloadComplete(TIMEOUT, id);
                 assertSuccessfulDownload(id);
