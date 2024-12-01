@@ -23,6 +23,8 @@ import static android.autofillservice.cts.testcore.Helper.ID_LOGIN;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.assertTextAndValue;
+import static android.autofillservice.cts.testcore.Helper.disableRelayoutFix;
+import static android.autofillservice.cts.testcore.Helper.enableRelayoutFix;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.UiBot.LANDSCAPE;
@@ -57,6 +59,9 @@ import android.content.IntentSender;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.autofill.AutofillValue;
 
@@ -66,6 +71,7 @@ import com.android.compatibility.common.util.Timeout;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
@@ -88,6 +94,9 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
 
     private static final Timeout SESSION_LIFECYCLE_TIMEOUT = new Timeout(
             "SESSION_LIFECYCLE_TIMEOUT", 5000, 2F, 5000);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Runs an {@code assertion}, retrying until {@code timeout} is reached.
@@ -291,6 +300,7 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
     public void testAuthCanceledWhileAutofilledAppIsLifecycled() throws Exception {
         // Set service.
         enableService();
+        disableRelayoutFix(mContext);
 
         // Start activity that is autofilled in a separate process so it can be killed
         startAndWaitExternalActivity();
@@ -340,6 +350,54 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
 
         // Authentication should still be shown
         mUiBot.assertDatasets("authenticate2");
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled({"android.service.autofill.relayout_fix"})
+    public void testAuthCanceledWhileAutofilledAppIsLifecycled_withRelayout() throws Exception {
+        // Set service.
+        enableService();
+        enableRelayoutFix(mContext);
+
+        // Start activity that is autofilled in a separate process so it can be killed
+        startAndWaitExternalActivity();
+
+        // Create the authentication intent (launching a full screen activity)
+        IntentSender authentication = PendingIntent.getActivity(getContext(), 0,
+                new Intent(getContext(), ManualAuthenticationActivity.class),
+                PendingIntent.FLAG_IMMUTABLE).getIntentSender();
+
+        CannedFillResponse response = new CannedFillResponse.Builder()
+                .setAuthentication(authentication, ID_USERNAME, ID_PASSWORD)
+                .setPresentation(createPresentation("authenticate"))
+                .build();
+        sReplier.addResponse(response);
+
+        // Trigger autofill on username
+        mUiBot.selectByRelativeId(ID_USERNAME);
+
+        // Wait for fill request to be processed
+        sReplier.getNextFillRequest();
+
+        // Wait until authentication is shown
+        mUiBot.assertDatasets("authenticate");
+
+        // Delete stopped marker
+        getStoppedMarker(getContext()).delete();
+
+        // Authenticate
+        mUiBot.selectDataset("authenticate");
+
+        // Kill activity that is in the background
+        killOfProcessLoginActivityProcess();
+
+        // Cancel authentication activity
+        mUiBot.pressBack();
+        mUiBot.waitForIdle();
+
+        // Authentication should still be shown
+        mUiBot.assertDatasets("authenticate");
     }
 
     @Test

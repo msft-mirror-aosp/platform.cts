@@ -178,10 +178,15 @@ public class MemcgV2HostTests extends BaseHostJUnit4Test {
                 "test -f " + mCgroupV2Root + "/memory.reclaim");
         assumeTrue(commandResult.getExitCode() == 0);
 
+        // Use the total device memory as the amount to reclaim
+        commandResult = getDevice().executeShellV2Command("free -b | grep ^Mem | awk '{print $2}'");
+        assertTrue("Could not determine total device memory.", commandResult.getExitCode() == 0);
+        String totalMem = commandResult.getStdout();
+
         getDevice().executeShellV2Command(
-                "echo \"\" > " + mCgroupV2Root + "/memory.reclaim");
+                "echo " + totalMem + " > " + mCgroupV2Root + "/memory.reclaim");
         // This is a test for completion within the timeout. The command is likely to "fail" with
-        // exit code 1 since we are asking to reclaim more memory than probably exists.
+        // exit code 1 since we are asking to reclaim all device memory.
     }
 
 }

@@ -16,8 +16,11 @@
 
 package android.app.appsearch;
 
+import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.SuppressLint;
+
+import com.android.appsearch.flags.Flags;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -107,6 +110,97 @@ public interface AppSearchSessionShim extends Closeable {
     @NonNull
     ListenableFuture<AppSearchBatchResult<String, GenericDocument>> getByDocumentIdAsync(
             @NonNull GetByDocumentIdRequest request);
+
+    /**
+     * Opens a batch of AppSearch Blobs for writing.
+     *
+     * <p>A "blob" is a large binary object, typically represented as a long byte array. It is used
+     * to store a significant amount of data that is not searchable, such as images, videos, audio
+     * files, or other binary data. Unlike other fields in AppSearch, blobs are stored as blob files
+     * on disk rather than in memory, and use {@link android.os.ParcelFileDescriptor} to read and
+     * write. This allows for efficient handling of large, non-searchable content.
+     *
+     * <p>Once done writing, call {@link #commitBlob} to commit blob files.
+     *
+     * <p>This call will create a empty blob file for each given {@link AppSearchBlobHandle}, and a
+     * {@link android.os.ParcelFileDescriptor} of that blob file will be returned in the {@link
+     * OpenBlobForWriteResponse}.
+     *
+     * <p>If the blob file is already stored in AppSearch and committed. A failed {@link
+     * AppSearchResult} with error code {@link AppSearchResult#RESULT_ALREADY_EXISTS} will be
+     * associated with the {@link AppSearchBlobHandle}.
+     *
+     * <p>If the blob file is already stored in AppSearch but not committed. A {@link
+     * android.os.ParcelFileDescriptor} of that blob file will be returned for continue writing.
+     *
+     * <p>For given duplicate {@link AppSearchBlobHandle}, the same {@link
+     * android.os.ParcelFileDescriptor} pointing to the same blob file will be returned.
+     *
+     * <p>Pending blob files won't be lost or auto-commit if {@link AppSearchSessionShim} closed.
+     * Pending blob files will be stored in disk rather than memory. You can re-open {@link
+     * AppSearchSessionShim} and re-write the pending blob files.
+     *
+     * <p>A committed blob file will be considered as an orphan if no {@link GenericDocument}
+     * references it. Uncommitted pending blob files and orphan blobs files will be cleaned up if
+     * they has been created for an extended period (default is 1 week).
+     *
+     * <p class="caution">The returned {@link OpenBlobForWriteResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the writeable file descriptors.
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+
+    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
+    // TODO(b/273591938) improve the java doc when we support abandon pending blobs.
+    @NonNull
+    ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
+            @NonNull Set<AppSearchBlobHandle> handles);
+
+    /**
+     * Commits the blobs to make it retrievable and immutable.
+     *
+     * <p>After this call, the blob is readable via {@link #openBlobForRead}. Any change to the
+     * content or rewrite via {@link #openBlobForWrite} of this blob won't be allowed.
+     *
+     * <p>If the blob is already stored in AppSearch and committed. A failed {@link AppSearchResult}
+     * with error code {@link AppSearchResult#RESULT_ALREADY_EXISTS} will be associated with the
+     * {@link AppSearchBlobHandle}.
+     *
+     * <p>Pending blobs won't be lost or auto-commit if {@link AppSearchSessionShim} closed. Pending
+     * blobs will store in disk rather than memory. You can re-open {@link AppSearchSessionShim} and
+     * re-write the pending blobs.
+     *
+     * <p>The default time to recycle pending and orphan blobs is 1 week. A blob will be considered
+     * as an orphan if no {@link GenericDocument} references it.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the commit results.
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+
+    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
+    @NonNull
+    ListenableFuture<CommitBlobResponse> commitBlobAsync(@NonNull Set<AppSearchBlobHandle> handles);
+
+    /**
+     * Opens a batch of AppSearch Blobs for reading.
+     *
+     * <p>Only blobs committed via {@link #commitBlob} are available for reading.
+     *
+     * <p class="caution">The returned {@link OpenBlobForReadResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the readable file descriptors.
+     */
+    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
+
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles);
 
     /**
      * Retrieves documents from the open {@link AppSearchSessionShim} that match a given query
@@ -218,6 +312,23 @@ public interface AppSearchSessionShim extends Closeable {
      * "foo" in this property but documentB does not, then `hasProperty("sender.name")` will only
      * match documentA. However, `propertyDefined("sender.name")` will match both documentA and
      * documentB, regardless of whether a value is actually set.
+     *
+     * <p>{@link Features#LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION}: This feature covers the
+     * "matchScoreExpression" function in query expressions.
+     *
+     * <p>Usage: matchScoreExpression({score_expression}, {low}, {high})
+     *
+     * <ul>
+     *   <li>matchScoreExpression matches all documents with scores falling within the specified
+     *       range. These scores are calculated using the provided score expression, which adheres
+     *       to the syntax defined in {@link SearchSpec.Builder#setRankingStrategy(String)}.
+     *   <li>"score_expression" is a string value that specifies the score expression.
+     *   <li>"low" and "high" are floating point numbers that specify the score range. The "high"
+     *       parameter is optional; if not provided, it defaults to positive infinity.
+     * </ul>
+     *
+     * <p>Ex. `matchScoreExpression("this.documentScore()", 3, 4)` will return all documents that
+     * have document scores from 3 to 4.
      *
      * <p>{@link Features#SCHEMA_EMBEDDING_PROPERTY_CONFIG}: This feature covers the
      * "semanticSearch" and "getEmbeddingParameter" functions in query expressions, which are used

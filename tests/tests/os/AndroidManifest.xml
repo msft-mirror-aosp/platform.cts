@@ -97,6 +97,16 @@
         <activity android:name="android.os.cts.IntentLaunchActivity"
              android:exported="false" />
 
+        <activity android:name="android.view.cts.surfacevalidator.ASurfaceControlTestActivity"
+            android:screenOrientation="locked"
+            android:exported="false"
+            android:theme="@style/WhiteBackgroundTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
         <service android:name="android.os.cts.ParcelFileDescriptorPeer$Red"
              android:process=":red"
              android:exported="true"/>

@@ -33,7 +33,8 @@ class PackageNameDetectorTest : LintDetectorTest() {
                 xml(
                         "AndroidManifest.xml",
                         """
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="random.android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="random.android">
 </manifest>
 """
                     )
@@ -43,9 +44,9 @@ class PackageNameDetectorTest : LintDetectorTest() {
             .run()
             .expect(
                 """
-AndroidManifest.xml:1: Warning: random.android does not follow the recommendation for package names in CTS. It should match (com.)?android..*.cts. [InvalidPackageName]
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="random.android">
-^
+AndroidManifest.xml:2: Warning: random.android does not follow the recommendation for package names in CTS. It should match (com.)?android..*.cts. [InvalidPackageName]
+        package="random.android">
+                 ~~~~~~~~~~~~~~
 0 errors, 1 warnings
 """
                     .trimIndent()

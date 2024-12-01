@@ -363,6 +363,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testFullscreenAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         separateTestJournal();
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
@@ -779,10 +780,10 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 baseDisplayContext.getResources().getConfiguration().orientation);
         assertNotEquals("Base display context width must be changed",
                 origBaseDisplaySize.getWidth(),
-                baseDisplayContext.getResources().getConfiguration().screenWidthDp);
+                baseDisplayContext.getResources().getConfiguration().windowConfiguration.getBounds().width());
         assertNotEquals("Base display context height must be changed",
                 origBaseDisplaySize.getHeight(),
-                baseDisplayContext.getResources().getConfiguration().screenHeightDp);
+                baseDisplayContext.getResources().getConfiguration().windowConfiguration.getBounds().height());
 
         // Check that the DisplayMetrics-related config of the simulated display context is not
         // changed when base base display context has changed

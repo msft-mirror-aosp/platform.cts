@@ -477,7 +477,7 @@ public class BluetoothVolumeControlTest {
     }
 
     @Test
-    public void audioInputControl() {
+    public void getAudioInputControlServices() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothVolumeControl);
