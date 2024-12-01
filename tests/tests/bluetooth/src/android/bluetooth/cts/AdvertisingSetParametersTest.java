@@ -19,6 +19,7 @@ package android.bluetooth.cts;
 import static android.bluetooth.BluetoothDevice.PHY_LE_1M;
 import static android.bluetooth.BluetoothDevice.PHY_LE_2M;
 import static android.bluetooth.BluetoothDevice.PHY_LE_CODED;
+import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_RANDOM;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_LOW;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MEDIUM;
@@ -27,6 +28,8 @@ import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MEDIUM;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MIN;
 
+import static com.android.bluetooth.flags.Flags.FLAG_DIRECTED_ADVERTISING_API;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +37,9 @@ import static org.junit.Assert.fail;
 
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -42,11 +48,16 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class AdvertisingSetParametersTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -65,6 +76,33 @@ public class AdvertisingSetParametersTest {
             AdvertisingSetParameters paramsFromParcel =
                     AdvertisingSetParameters.CREATOR.createFromParcel(parcel);
             assertParamsEquals(params, paramsFromParcel);
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void createFromParcelForDirectedAdvertising() {
+        final Parcel parcel = Parcel.obtain();
+        try {
+            AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
+                    .setConnectable(true)
+                    .setLegacyMode(true)
+                    .setDirected(true)
+                    .setHighDutyCycle(true)
+                    .setPeerAddress("00:01:02:03:04:05")
+                    .setPeerAddressType(ADDRESS_TYPE_RANDOM)
+                    .build();
+            params.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            AdvertisingSetParameters paramsFromParcel =
+                    AdvertisingSetParameters.CREATOR.createFromParcel(parcel);
+            assertTrue(paramsFromParcel.isDirected());
+            assertTrue(paramsFromParcel.isHighDutyCycle());
+            assertEquals(paramsFromParcel.getPeerAddress(), "00:01:02:03:04:05");
+            assertEquals(paramsFromParcel.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
         } finally {
             parcel.recycle();
         }
@@ -201,6 +239,51 @@ public class AdvertisingSetParametersTest {
                 .setSecondaryPhy(PHY_LE_CODED)
                 .build();
         assertEquals(PHY_LE_CODED, params.getSecondaryPhy());
+    }
+
+    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setDirected() {
+        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
+                .setDirected(true)
+                .setPeerAddress("00:01:02:03:04:05")
+                .build();
+        assertTrue(params.isDirected());
+    }
+
+    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setHighDutyCycle() {
+        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
+                .setConnectable(true)
+                .setLegacyMode(true)
+                .setDirected(true)
+                .setHighDutyCycle(true)
+                .setPeerAddress("00:01:02:03:04:05")
+                .build();
+        assertTrue(params.isDirected());
+    }
+
+    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setPeerAddress() {
+        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
+                .setPeerAddress("00:01:02:03:04:05")
+                .build();
+        assertEquals(params.getPeerAddress(), "00:01:02:03:04:05");
+    }
+
+    @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setPeerAddressType() {
+        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
+                .setPeerAddressType(ADDRESS_TYPE_RANDOM)
+                .build();
+        assertEquals(params.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

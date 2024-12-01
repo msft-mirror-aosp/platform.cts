@@ -34,4 +34,8 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.extservices" />
     </object>
+
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        <option name="mainline-module-package-name" value="com.google.android.crashrecovery" />
+    </object>
 </configuration>

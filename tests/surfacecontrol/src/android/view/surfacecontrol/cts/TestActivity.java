@@ -20,14 +20,20 @@ import static android.view.WindowInsets.Type.displayCutout;
 import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
+
+import java.util.concurrent.CountDownLatch;
 
 public class TestActivity extends Activity {
     private static final int sTypeMask = systemBars() | displayCutout();
@@ -55,5 +61,34 @@ public class TestActivity extends Activity {
 
     public FrameLayout getParentLayout() {
         return mParentLayout;
+    }
+
+    /** Run a short, but janky animation. */
+    public void startJankyAnimation(final CountDownLatch onEnd) {
+        final View view = new View(this);
+        view.setBackgroundColor(Color.BLUE);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(100, 100);
+        getParentLayout().addView(view, layoutParams);
+
+        ValueAnimator anim = ValueAnimator.ofFloat(0, 1);
+        boolean[] causedJank = new boolean[] { false };
+        anim.addUpdateListener($ -> {
+            float progress = anim.getAnimatedFraction();
+            if (progress > 0.5 && !causedJank[0]) {
+                causedJank[0] = true;
+                // Let's miss a deadline!
+                android.os.SystemClock.sleep(50);
+            }
+            view.setTranslationX(progress * 100);
+            view.invalidate();
+        });
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator anim) {
+                getParentLayout().removeView(view);
+                onEnd.countDown();
+            }
+        });
+        anim.start();
     }
 }

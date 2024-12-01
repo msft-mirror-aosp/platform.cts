@@ -61,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayEventTest extends TestBase {
+    private static final float RR_FLOAT_DELTA = 0.01f;
     private static final String TAG = "DisplayEventTest";
 
     private static final int MESSAGE_CALLBACK = 1;
@@ -113,7 +114,6 @@ public class DisplayEventTest extends TestBase {
         mHandlerThread.start();
         mHandler = new TestHandler(mHandlerThread.getLooper());
         mMessenger = new Messenger(mHandler);
-
         mInitialMatchContentFrameRate = toSwitchingType(
                 mDisplayManager.getMatchContentFrameRateUserPreference());
     }
@@ -142,10 +142,9 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
-    public void testDisplayRefreshRateChangedEvent() {
+    public void testDisplayRefreshRateChangedEvent() throws InterruptedException {
         registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_REFRESH_RATE);
 
-        // Change the display state
         switchRefreshRate();
 
         waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
@@ -215,16 +214,20 @@ public class DisplayEventTest extends TestBase {
         mDisplayManager.setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE);
         mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
 
-        int highestRefreshRateModeId = getHighestRefreshRateModeId();
+        int alternateRefreshRateModeId = getAlternateRefreshRateModeId();
         mActivityRule.getScenario().onActivity(activity -> {
-            activity.setModeId(highestRefreshRateModeId);
+            activity.setModeId(alternateRefreshRateModeId);
         });
     }
 
-    private int getHighestRefreshRateModeId() {
+    private int getAlternateRefreshRateModeId() {
         int refreshRateModeId = mDisplay.getMode().getModeId();
-        boolean hasMultipleRefreshRates = false;
+        boolean supportsMultipleRefreshRates = false;
         for (Display.Mode mode : mDisplay.getSupportedModes()) {
+            if (mode.getModeId() == mDisplay.getMode().getModeId()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() != mDisplay.getMode().getPhysicalHeight()) {
                 continue;
             }
@@ -232,15 +235,19 @@ public class DisplayEventTest extends TestBase {
             if (mode.getPhysicalWidth() != mDisplay.getMode().getPhysicalWidth()) {
                 continue;
             }
-            if (mode.getRefreshRate() != mDisplay.getMode().getRefreshRate()) {
+
+            if (!floatEquals(mode.getRefreshRate(), mDisplay.getMode().getRefreshRate(),
+                    RR_FLOAT_DELTA)) {
+                supportsMultipleRefreshRates = true;
                 refreshRateModeId = mode.getModeId();
-                hasMultipleRefreshRates = true;
             }
         }
-
-        // Run the test only if multiple refresh rates are supported
-        assumeTrue(hasMultipleRefreshRates);
+        assumeTrue(supportsMultipleRefreshRates);
         return refreshRateModeId;
+    }
+
+    private boolean floatEquals(float f1, float f2, float delta) {
+        return Math.abs(f1 - f2) <= delta;
     }
 
     private static int toSwitchingType(int matchContentFrameRateUserPreference) {

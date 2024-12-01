@@ -142,6 +142,7 @@ public class MediaProjectionStoppingTest {
             mMediaProjection.stop();
             mMediaProjection = null;
         }
+        mLockScreenSession.close();
     }
 
     @Test

@@ -379,6 +379,10 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.server.wm.insets.DecorInsetTestsBase$TestActivity"
+                  android:label="DecorInsetTestsBase.TestActivity"
+                  android:exported="true"/>
+
         <activity android:name="android.server.wm.other.DragDropTest$SoftwareCanvasDragDropActivity"
             android:screenOrientation="locked"
             android:turnScreenOn="true"

@@ -18,6 +18,7 @@ package android.autofillservice.cts.activities;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 public class DummyActivity extends Activity {
@@ -26,6 +27,9 @@ public class DummyActivity extends Activity {
         super.onCreate(savedInstanceState);
         TextView text = new TextView(this);
         text.setText("foo");
-        setContentView(text);
+        FrameLayout contentView = new FrameLayout(this);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(text);
+        setContentView(contentView);
     }
 }

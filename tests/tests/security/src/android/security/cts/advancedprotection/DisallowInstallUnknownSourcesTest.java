@@ -23,6 +23,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
+import android.app.AppOpsManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
@@ -39,13 +44,20 @@ import org.junit.runner.RunWith;
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSTALL_UNKNOWN_SOURCES)
 public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTest {
     private static final int TIMEOUT_S = 1;
+    private static final String TEST_APP_PACKAGE =
+            "android.security.cts.advancedprotection.testadvancedprotection";
+
+    private Context mContext;
+    private AppOpsManager mAppOpsManager;
     private UserManager mUserManager;
 
     @Override
     @Before
     public void setup() {
         super.setup();
-        mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
+        mContext = mInstrumentation.getContext();
+        mAppOpsManager = mContext.getSystemService(AppOpsManager.class);
+        mUserManager = mContext.getSystemService(UserManager.class);
     }
 
     @ApiTest(apis = {
@@ -87,5 +99,47 @@ public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTes
         Thread.sleep(TIMEOUT_S * 1000);
         assertFalse("The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY));
+    }
+
+    @ApiTest(apis = {
+            "android.security.advancedprotection.AdvancedProtectionManager"
+                    + "#setAdvancedProtectionEnabled"})
+    @Test
+    public void testStateAfterEnableAndDisableProtection_opRequestInstallPackagesIsModeErrored()
+            throws InterruptedException {
+        // 1. Set TestApp's OP_REQUEST_INSTALL_PACKAGES to MODE_ALLOWED.
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MANAGE_APP_OPS_MODES);
+        final int testAppUid;
+        try {
+            testAppUid = mInstrumentation.getContext().getPackageManager()
+                    .getPackageUidAsUser(TEST_APP_PACKAGE, UserHandle.myUserId());
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException("Couldn't retrieve uid for test package: " + e);
+        }
+        mAppOpsManager.setMode(AppOpsManager.OP_REQUEST_INSTALL_PACKAGES, testAppUid,
+                TEST_APP_PACKAGE, AppOpsManager.MODE_ALLOWED);
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+
+        // 2. Assert the mode was set.
+        assertEquals("Test App's OP_REQUEST_INSTALL_PACKAGES is not set to MODE_ALLOWED",
+                AppOpsManager.MODE_ALLOWED, mAppOpsManager.checkOpNoThrow(
+                        AppOpsManager.OP_REQUEST_INSTALL_PACKAGES, testAppUid, TEST_APP_PACKAGE));
+
+        // 3. Enable advanced protection.
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
+        mManager.setAdvancedProtectionEnabled(true);
+        Thread.sleep(TIMEOUT_S * 1000);
+
+        // 4. Disable advanced protection.
+        mManager.setAdvancedProtectionEnabled(false);
+        Thread.sleep(TIMEOUT_S * 1000);
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+
+        // 5. Assert TestApp's mode is MODE_ERRORED.
+        assertEquals("Test App's OP_REQUEST_INSTALL_PACKAGES is not set to MODE_ERRORED",
+                AppOpsManager.MODE_ERRORED, mAppOpsManager.checkOpNoThrow(
+                        AppOpsManager.OP_REQUEST_INSTALL_PACKAGES, testAppUid, TEST_APP_PACKAGE));
     }
 }

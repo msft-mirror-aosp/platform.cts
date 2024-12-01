@@ -18,7 +18,7 @@ package android.security.net.config.cts;
 
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -51,6 +51,6 @@ public abstract class BaseTestCase {
 
     @Before
     public void setUp() throws Exception {
-        assertTrue("CTS requires a working internet connection", isInternetConnected(mContext));
+        assumeTrue("CTS requires a working internet connection", isInternetConnected(mContext));
     }
 }

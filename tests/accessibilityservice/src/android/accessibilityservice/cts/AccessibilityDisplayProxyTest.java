@@ -95,9 +95,6 @@ import android.hardware.display.VirtualDisplay;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
@@ -131,7 +128,6 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
-import com.android.server.accessibility.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -246,10 +242,6 @@ public class AccessibilityDisplayProxyTest {
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             MANAGE_ACCESSIBILITY);
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private ListenerChangeBroadcastReceiver mReceiver =
             new ListenerChangeBroadcastReceiver();
@@ -1268,7 +1260,6 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
             + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
-    @RequiresFlagsEnabled(Flags.FLAG_PROXY_USE_APPS_ON_VIRTUAL_DEVICE_LISTENER)
     public void testOnA11yServicesStateChanged_moveAppToVirtualDisplay_notifiesApp()
             throws TimeoutException, InterruptedException {
         // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.

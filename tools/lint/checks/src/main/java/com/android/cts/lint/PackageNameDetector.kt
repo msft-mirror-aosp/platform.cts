@@ -33,11 +33,13 @@ class PackageNameDetector : Detector(), XmlScanner {
     override fun getApplicableElements() = listOf("manifest")
 
     override fun visitElement(context: XmlContext, element: Element) {
-        val packageName = element.getAttribute("package")
+        val packageNode = element.getAttributeNode("package")
+        val packageName = packageNode.value
         if (!PACKAGE_NAME_REGEX.matches(packageName)) {
+            val location = context.getValueLocation(packageNode)
             val incident =
                 Incident(context, ISSUE)
-                    .at(element)
+                    .location(location)
                     .message(
                         "$packageName does not follow the recommendation for package names " +
                         "in CTS. It should match ${PACKAGE_NAME_REGEX.pattern}."

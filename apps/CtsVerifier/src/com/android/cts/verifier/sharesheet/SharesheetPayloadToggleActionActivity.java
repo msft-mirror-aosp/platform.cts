@@ -27,7 +27,6 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Bundle;
 import android.service.chooser.ChooserAction;
-import android.service.chooser.Flags;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -58,13 +57,6 @@ public class SharesheetPayloadToggleActionActivity extends PassFailButtons.Activ
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if (!Flags.chooserPayloadToggling()) {
-            // If the API isn't enabled, immediately let the test pass.
-            Toast.makeText(this, R.string.sharesheet_skipping_for_flag, Toast.LENGTH_LONG).show();
-            setTestResultAndFinish(true);
-            return;
-        }
 
         setContentView(R.layout.sharesheet_payload_toggle_chooser_action_activity);
         setPassFailButtonClickListeners();

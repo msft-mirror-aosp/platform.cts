@@ -30,23 +30,26 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLI
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_KEYGUARD;
 
-import com.android.bedstead.harrier.PolicyArguments;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+import com.android.bedstead.harrier.PolicyArguments;
 
 import java.util.Set;
 
 /**
- * Policy for keyguard disable features
- *
+ * Policy for keyguard disabled features
+ * <p/>
  * See {@code DevicePolicyManager#setKeyguardDisabledFeatures(ComponentName, int)} for more
  * details.
  */
 @EnterprisePolicy(
         dpc = APPLIED_BY_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER_USER
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-                | APPLIES_TO_OWN_USER | INHERITABLE)
-public final class KeyguardDisableFeatures extends PolicyArguments<Integer> {
+                | APPLIES_TO_OWN_USER | INHERITABLE,
+        permissions = @EnterprisePolicy.Permission(
+                appliedWith = MANAGE_DEVICE_POLICY_KEYGUARD, appliesTo = APPLIES_TO_OWN_USER))
+public final class KeyguardDisabledFeatures extends PolicyArguments<Integer> {
 
     @Override
     public Set<Integer> validArguments() {

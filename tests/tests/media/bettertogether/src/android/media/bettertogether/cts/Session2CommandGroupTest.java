@@ -22,18 +22,19 @@ import android.media.Session2Command;
 import android.media.Session2CommandGroup;
 import android.os.Parcel;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Set;
 
-/**
- * Tests {@link android.media.Session2CommandGroup}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link android.media.Session2CommandGroup}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class Session2CommandGroupTest {
     private static final int TEST_COMMAND_CODE_1 = 10000;
@@ -41,6 +42,7 @@ public class Session2CommandGroupTest {
     private static final int TEST_COMMAND_CODE_3 = 10002;
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testHasCommand() {
         Session2Command testCommand = new Session2Command(TEST_COMMAND_CODE_1);
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
@@ -52,6 +54,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetCommands() {
         Session2Command command1 = new Session2Command(TEST_COMMAND_CODE_1);
         Session2Command command2 = new Session2Command(TEST_COMMAND_CODE_2);
@@ -65,6 +68,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testDescribeContents() {
         final int expected = 0;
         Session2Command command = new Session2Command(TEST_COMMAND_CODE_1);
@@ -75,6 +79,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testWriteToParcel() {
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
                 .addCommand(new Session2Command(TEST_COMMAND_CODE_1))
@@ -90,6 +95,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder() {
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
                 .addCommand(new Session2Command(TEST_COMMAND_CODE_1));
@@ -100,6 +106,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAddAndRemoveCommand() {
         Session2Command testCommand1 = new Session2Command(TEST_COMMAND_CODE_1);
         Session2Command testCommand2 = new Session2Command(TEST_COMMAND_CODE_2);

@@ -39,6 +39,11 @@ public final class MediaRouterTestConstants {
             "android.media.router.cts.provider_self_scan_only";
     public static final String MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK =
             "CtsMediaRouterHostSideTestProviderSelfScanOnlyApp.apk";
+    public static final String MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_PACKAGE =
+            "android.media.router.cts.provider_requires_permissions";
+    public static final String MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_APK =
+            "CtsMediaRouterHostSideTestProviderRequiresPermissionsApp.apk";
+
     public static final String MEDIA_ROUTER_TEST_PACKAGE =
             "android.media.router.cts.bluetoothpermissionsapp";
 
@@ -55,6 +60,15 @@ public final class MediaRouterTestConstants {
     public static final String DEVICE_SIDE_TEST_CLASS_WITH_MODIFY_AUDIO_ROUTING =
             "android.media.router.cts.modifyaudioroutingapp"
                     + ".MediaRouter2DeviceTestWithModifyAudioRouting";
+
+    public static final String DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE =
+            "android.media.router.cts.required_permissions_app";
+    public static final String DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK =
+            "CtsMediaRouterHostSideTestRequiredPermissionsApp.apk";
+    public static final String DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS =
+            DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE
+                    + ".MediaRouter2DeviceTestRequiredPermissions";
+
     public static final String PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE =
             "android.media.router.cts.proxyroutingapp";
 
@@ -95,6 +109,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_APP_3_ROUTE_5 = "route_3-5";
 
     public static final String ROUTE_ID_SELF_SCAN_ONLY = "route_self_scan_only";
+    public static final String ROUTE_ID_REQUIRES_PERMISSIONS = "route_requires_permissions";
 
     public static final String ROUTE_NAME_1 = "route 1";
     public static final String ROUTE_NAME_2 = "route 2";
@@ -102,6 +117,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_NAME_4 = "route 4";
     public static final String ROUTE_NAME_5 = "route 5";
     public static final String ROUTE_NAME_SELF_SCAN_ONLY = "self_scan_only_route";
+    public static final String ROUTE_NAME_REQUIRES_PERMISSIONS = "requires_permissions_route";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
     public static final String ROUTE_DEDUPLICATION_ID_2 = "dedup_id_2";

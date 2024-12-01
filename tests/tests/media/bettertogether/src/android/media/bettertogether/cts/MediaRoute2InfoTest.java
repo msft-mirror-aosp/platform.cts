@@ -26,12 +26,15 @@ import android.media.MediaRoute2Info;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.media.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +63,8 @@ public class MediaRoute2InfoTest {
     public static final int TEST_VOLUME = 65;
     public static final Set<String> TEST_ALLOWED_PACKAGES =
             Set.of("com.android.systemui", "com.android.settings");
+    public static final Set<String> TEST_REQUIRED_PERMISSIONS =
+            Set.of("some.permission.one", "some.permission.two");
 
     public static final String TEST_KEY = "test_key";
     public static final String TEST_VALUE = "test_value";
@@ -355,6 +360,10 @@ public class MediaRoute2InfoTest {
                         .setVolume(TEST_VOLUME)
                         .setDeduplicationIds(TEST_DEDUPLICATION_IDS)
                         .setExtras(extras)
+                        .setPackageName(
+                                ApplicationProvider.getApplicationContext().getPackageName())
+                        .setVisibilityRestricted(TEST_ALLOWED_PACKAGES)
+                        .setRequiredPermissions(TEST_REQUIRED_PERMISSIONS)
                         .build();
 
         Parcel parcel = Parcel.obtain();
@@ -372,10 +381,60 @@ public class MediaRoute2InfoTest {
         assertThat(extrasOut).string(TEST_KEY).isEqualTo(TEST_VALUE);
         parcel.recycle();
 
+        // Check visibility restrictions
+        for (String pkg : TEST_ALLOWED_PACKAGES) {
+            assertThat(routeInfoFromParcel.isVisibleTo(pkg)).isEqualTo(true);
+        }
+        assertThat(routeInfoFromParcel.isVisibleTo("com.android.example.app")).isEqualTo(false);
+        assertThat(routeInfoFromParcel.getRequiredPermissions()).isEqualTo(
+                TEST_REQUIRED_PERMISSIONS);
+
         // In order to mark writeToParcel as tested, we let's just call it directly.
         Parcel dummyParcel = Parcel.obtain();
         routeInfo.writeToParcel(dummyParcel, 0);
         dummyParcel.recycle();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testSetRequiredPermissionsWithOnePermission() {
+        MediaRoute2Info routeInfo =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setRequiredPermissions(Set.of("some.named.permission"))
+                        .build();
+        assertThat(routeInfo.getRequiredPermissions()).hasSize(1);
+        assertThat(routeInfo.getRequiredPermissions()).containsExactly("some.named.permission");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testSetRequiredPermissionsWithMultiplePermissions() {
+        MediaRoute2Info routeInfo =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setRequiredPermissions(TEST_REQUIRED_PERMISSIONS)
+                        .build();
+        assertThat(routeInfo.getRequiredPermissions()).hasSize(TEST_REQUIRED_PERMISSIONS.size());
+        assertThat(routeInfo.getRequiredPermissions()).containsExactlyElementsIn(
+                TEST_REQUIRED_PERMISSIONS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    public void testEqualsAndHashCodeWithSetRequiredPermissions() {
+        MediaRoute2Info routeWithRequiredPermissions =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setRequiredPermissions(TEST_REQUIRED_PERMISSIONS)
+                        .build();
+        MediaRoute2Info routeWithoutRequiredPermissions =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .build();
+        assertThat(routeWithRequiredPermissions).isNotEqualTo(routeWithoutRequiredPermissions);
+        assertThat(routeWithRequiredPermissions.hashCode()).isNotEqualTo(
+                routeWithoutRequiredPermissions.hashCode());
     }
 
     @Test

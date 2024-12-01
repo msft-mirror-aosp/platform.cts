@@ -208,4 +208,7 @@
     <!-- b/372032447 Remove Bionic minimum compiler optimizations CTS Tests -->
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_aarch64_compiler_values" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_x86_compiler_values" />
+
+    <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
+
 </configuration>

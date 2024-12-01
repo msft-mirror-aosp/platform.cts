@@ -381,6 +381,11 @@ public final class AutoFillServiceTestCase {
                             "include_all_autofill_type_not_none_views_in_assist_structure",
                             Boolean.toString(false)))
 
+                //
+                // Relayout fix should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "enable_relayout", Boolean.toString(true)))
+
 
                 //
                 // Max input size to provide autofill suggestion should be 3

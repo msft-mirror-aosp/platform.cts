@@ -24,7 +24,8 @@ import android.media.MediaRoute2ProviderService;
 import android.media.RouteDiscoveryPreference;
 import android.os.Bundle;
 
-import java.util.Arrays;
+import com.android.media.flags.Flags;
+
 import java.util.List;
 import java.util.Set;
 
@@ -36,11 +37,15 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
 
     private final List<MediaRoute2Info> mPassiveScanRoutes;
 
-    /** Creates an instance that provides the given route information. */
     protected BaseFakeRouteProviderService(MediaRoute2Info... routes) {
-        mAllRoutes = List.of(routes);
+        this(List.of(routes));
+    }
+
+    /** Creates an instance that provides the given route information. */
+    protected BaseFakeRouteProviderService(List<MediaRoute2Info> routes) {
+        mAllRoutes = routes;
         mPassiveScanRoutes =
-                Arrays.stream(routes)
+                routes.stream()
                         .filter(r -> !r.getFeatures().contains(FEATURE_ACTIVE_SCAN_ONLY))
                         .toList();
     }
@@ -62,6 +67,19 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
                 .setDeduplicationIds(Set.of(deduplicationIds))
                 .setVisibilityRestricted(allowedPackages)
                 .build();
+    }
+
+    protected static MediaRoute2Info createPermissionsRequiredRoute(String id, String name,
+            Set<String> requiredPermissions, String... deduplicationIds) {
+        if (Flags.enableRouteVisibilityControlApi()) {
+            return new MediaRoute2Info.Builder(id, name)
+                    .addFeature(FEATURE_SAMPLE)
+                    .setDeduplicationIds(Set.of(deduplicationIds))
+                    .setRequiredPermissions(requiredPermissions)
+                    .build();
+        } else {
+            throw new IllegalStateException("Required flag not set");
+        }
     }
 
     protected static MediaRoute2Info createPrivateRoute(

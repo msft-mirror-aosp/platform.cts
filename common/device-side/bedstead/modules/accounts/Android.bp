@@ -11,7 +11,10 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
-        "Harrier",
+        "bedstead",
+        "bedstead-testapps",
+        "bedstead-enterprise",
+        "RemoteAccountAuthenticator",
     ],
     min_sdk_version: "29",
 }
@@ -33,9 +36,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "Nene",
-        "Harrier",
-        "bedstead-testapps",
+        "bedstead-accounts",
         "androidx.test.ext.junit",
         "truth",
     ],

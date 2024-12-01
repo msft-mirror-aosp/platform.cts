@@ -212,10 +212,8 @@ public final class BluetoothGattMultiDevicesClient {
         BroadcastReceiverImpl bondBroadcastReceiver =
                 new BroadcastReceiverImpl(BOND_BONDED, bondingBlocker);
         mContext.registerReceiver(bondBroadcastReceiver, bondIntentFilter);
-        Utils.adoptShellPermission(); // This is needed to use the OOB bonding API
         if (!mServer.createBondOutOfBand(TRANSPORT_LE, oobData, null)) {
             Log.e(TAG, "createBondOob: Failed to trigger bonding");
-            Utils.dropShellPermission();
             return null;
         }
         boolean timeout = false;
@@ -226,7 +224,6 @@ public final class BluetoothGattMultiDevicesClient {
             timeout = true;
         }
         mContext.unregisterReceiver(bondBroadcastReceiver);
-        Utils.dropShellPermission();
         if (timeout) {
             Log.e(TAG, "Did not bond with server");
             return null;
@@ -244,10 +241,8 @@ public final class BluetoothGattMultiDevicesClient {
         BroadcastReceiverImpl bondBroadcastReceiver =
                 new BroadcastReceiverImpl(BOND_NONE, bondingBlocker);
         mContext.registerReceiver(bondBroadcastReceiver, bondIntentFilter);
-        Utils.adoptShellPermission(); // This is needed to reomoving the bond
         if (!mServer.removeBond()) {
             Log.e(TAG, "Failed to remove bond");
-            Utils.dropShellPermission();
             return false;
         }
         boolean timeout = false;
@@ -258,7 +253,6 @@ public final class BluetoothGattMultiDevicesClient {
             timeout = true;
         }
         mContext.unregisterReceiver(bondBroadcastReceiver);
-        Utils.dropShellPermission();
         if (timeout) {
             Log.e(TAG, "Did not remove bond with server");
             return false;

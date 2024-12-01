@@ -143,6 +143,75 @@ public class SensorSupportTest extends SensorTestCase {
         }
     }
 
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testGameRotationVectorInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_GAME_ROTATION_VECTOR)) {
+            assertTrue(mHasAccel);
+            assertTrue(mHasGyro);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testGeomagneticRotationVectorInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)) {
+            assertTrue(mHasAccel);
+            assertTrue(mHasMag);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testGravityInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_GRAVITY)) {
+            assertTrue(mHasAccel);
+            assertTrue(mHasGyro || mHasMag);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testLinearAccelerationInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_LINEAR_ACCELERATION)) {
+            assertTrue(mHasAccel);
+            assertTrue(mHasGyro || mHasMag);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testRotationVectorInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_ROTATION_VECTOR)) {
+            assertTrue(mHasAccel);
+            assertTrue(mHasGyro);
+            assertTrue(mHasMag);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testStepCounterInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_STEP_COUNTER)) {
+            assertTrue(mHasAccel);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testStepDetectorInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_STEP_DETECTOR)) {
+            assertTrue(mHasAccel);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testUncalibratedGyroscopeInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_GYROSCOPE_UNCALIBRATED)) {
+            assertTrue(mHasGyro);
+        }
+    }
+
+    @CddTest(requirement = "7.3/C-2-1")
+    public void testUncalibratedGeomagneticFieldInputSensorSupport() {
+        if (hasSensorType(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED)) {
+            assertTrue(mHasMag);
+        }
+    }
+
     private boolean sensorRequiredForVrHighPerformanceMode(int sensorType) {
         if (sensorType == Sensor.TYPE_ACCELEROMETER ||
             sensorType == Sensor.TYPE_ACCELEROMETER_UNCALIBRATED ||

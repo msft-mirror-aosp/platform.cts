@@ -71,4 +71,13 @@
     <!-- b/361205166 -->
     <option name="compatibility:exclude-filter" value="CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest" />
 
+    <!-- CtsOsTestCases: b/379335773: excluding frozen notification test cases. -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedCalled" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedNotCalledAfterCallbackRemoved" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedUsingExecutor" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testQueueCallbacksWhenFrozen" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testDropCallbacksWhenQueueGrowsTooBig" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testQueueMostRecentCallbackWhenFrozen" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testDropCallbacksWhenFrozen" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.RemoteCallbackListTest#testRemoveQueuedCallbacksOnUnregistration" />
 </configuration>

@@ -55,11 +55,9 @@ import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.security.Flags;
 import android.test.mock.MockContext;
@@ -87,12 +85,7 @@ import java.util.Set;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
     @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Intent mIntent;
     private static final String TEST_ACTION = "android.content.IntentTest_test";
@@ -117,7 +110,7 @@ public class IntentTest {
 
     @Before
     public void setUp() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             // TODO: replace with mockito when better supported
             mContext = new MockContext() {
                 @Override
@@ -371,7 +364,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveType1() {
         final ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveType(mContext));
@@ -385,7 +378,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveType2() {
         final ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveType(contentResolver));
@@ -433,7 +426,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testParseIntent() throws XmlPullParserException, IOException,
         NameNotFoundException {
         mIntent = null;
@@ -504,7 +497,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveTypeIfNeeded() {
         ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveTypeIfNeeded(contentResolver));
@@ -754,7 +747,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityInfo() throws NameNotFoundException {
         ComponentName componentName = new
                 ComponentName(TEST_PACKAGE, TEST_ACTIVITY);
@@ -979,7 +972,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityEmpty() {
         final Intent emptyIntent = new Intent();
 
@@ -989,7 +982,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivitySingleMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
         intent.addCategory("android.content.cts.category.TEST_CATEGORY");
@@ -1001,7 +994,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityShortcutMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
         intent.setComponent(
@@ -1015,7 +1008,7 @@ public class IntentTest {
 
     @AppModeFull
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityMultipleMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
 
@@ -1230,7 +1223,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "feature flag dependent test")
+    @DisabledOnRavenwood(reason = "feature flag dependent test")
     public void testUris() {
         checkIntentUri(
                 "intent:#Intent;action=android.test.FOO;end",
@@ -1570,7 +1563,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PendingIntent.class)
+    @DisabledOnRavenwood(blockedBy = PendingIntent.class)
     public void testCreateChooser() {
         Intent target = Intent.createChooser(mIntent, null);
         assertEquals(Intent.ACTION_CHOOSER, target.getAction());

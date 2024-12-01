@@ -39,8 +39,7 @@ android_test {
         "hamcrest-library",
         "platform-test-annotations",
         "flag-junit",
-        "Harrier",
-        "Nene",
+        "bedstead",
         "TestParameterInjector",
     ],
     libs: [

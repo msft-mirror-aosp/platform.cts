@@ -59,15 +59,15 @@ try:
         poll_and_transact,
         poll_and_observe_frames,
         get_apdus,
+        POLLING_FRAME_ALL_TEST_CASES,
         POLLING_FRAMES_TYPE_A_SPECIAL,
         POLLING_FRAMES_TYPE_B_SPECIAL,
         POLLING_FRAMES_TYPE_F_SPECIAL,
         POLLING_FRAMES_TYPE_A_LONG,
         POLLING_FRAMES_TYPE_B_LONG,
-        POLLING_FRAMES_TYPE_F_LONG,
         POLLING_FRAME_ON,
         POLLING_FRAME_OFF,
-        apply_original_frame_ordering,
+        get_frame_test_stats,
         TimedWrapper,
         ns_to_ms,
         ns_to_us,
@@ -119,6 +119,8 @@ _FAILED_TIMESTAMP_TOLERANCE_EXCEEDED_MSG = "Polling frame timestamp tolerance ex
 _FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE = """
 Polling frame vendor specific gain value dropped on power increase
 """
+_FAILED_FRAME_TYPE_INVALID = "Polling frame type is invalid"
+_FAILED_FRAME_DATA_INVALID = "Polling frame data is invalid"
 
 
 
@@ -1105,8 +1107,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             *POLLING_FRAMES_TYPE_B_LONG,
             *POLLING_FRAMES_TYPE_F_SPECIAL,
             *POLLING_FRAMES_TYPE_F_SPECIAL,
-            *POLLING_FRAMES_TYPE_F_LONG,
-            *POLLING_FRAMES_TYPE_F_LONG,
             POLLING_FRAME_OFF,
         ]
         # 3. Transmit polling frames
@@ -1114,29 +1114,22 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             pn532=timed_pn532,
             emulator=self.emulator.nfc_emulator,
             testcases=testcases,
+            restore_original_frame_ordering=True
         )
         timings = timed_pn532.timings
 
-        # Attempt to revert expedited frame delivery ordering for 'U' and 'F' frames
-        # while keeping timestamp wrapping into account
-        frames = apply_original_frame_ordering(frames)
-
         # Pre-format data for error if one happens
-        frames_sent_received_error_extra = {
-            "frames_sent_count": len(testcases),
-            "frames_received_count": len(frames),
-            "frames_sent": [
-                testcase.format_for_error(timestamp=ns_to_us(timestamp))
-                for (_, timestamp), testcase in zip(timings, testcases)
-            ],
-            "frames_received": [frame.to_dict() for frame in frames],
-        }
+        frame_stats = get_frame_test_stats(
+            frames=frames,
+            testcases=testcases,
+            timestamps=[ns_to_us(timestamp) for (_, timestamp) in timings]
+        )
 
         # Check that there are as many polling loop events as frames sent
         asserts.assert_equal(
             len(testcases), len(frames),
             _FAILED_MISSING_POLLING_FRAMES_MSG,
-            frames_sent_received_error_extra
+            frame_stats
         )
 
         # For each event, calculate the amount of time elapsed since the previous one
@@ -1193,7 +1186,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                     "time_device": us_to_ms(timestamp_device - first_timestamp_device),
                     "time_host": ns_to_ms(timestamp_host - first_timestamp),
                     "total_error": total_error,
-                    **frames_sent_received_error_extra,
                 }
                 num_exceeding_threshold = num_exceeding_threshold + 1
                 _LOG.warning(f"Polling frame timestamp tolerance exceeded: {debug_info}")
@@ -1247,7 +1239,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 pn532=self.pn532,
                 emulator=emulator,
                 # Scale from 0 to 100%
-                power_level = power_level * 20
+                power_level = power_level * 20,
+                ignore_field_off_event_timeout=power_level == 0
             )
 
             frames_for_type = {
@@ -1281,6 +1274,111 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                         "current_gain": current_gain,
                     }
                 )
+
+    def test_polling_frame_type(self):
+        """Tests that PollingFrame object 'type' value is set correctly
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over sent and received frame pairs,
+        verify that polling frame type matches.
+
+        Verifies:
+        1. Verifies that PollingFrame.type value is set correctly
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
+        )
+
+        testcases = POLLING_FRAME_ALL_TEST_CASES
+
+        # 3. Transmit polling frames
+        frames = poll_and_observe_frames(
+            pn532=self.pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+            restore_original_frame_ordering=True,
+        )
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            get_frame_test_stats(frames=frames, testcases=testcases)
+        )
+
+        issues = [
+            {
+                "index": idx,
+                "expected": testcase.success_types,
+                "received": frame.type,
+                "data": frame.data.hex(),
+            } for idx, (testcase, frame) in enumerate(zip(testcases, frames))
+            if frame.type not in testcase.success_types
+        ]
+
+        asserts.assert_equal(len(issues), 0, _FAILED_FRAME_TYPE_INVALID, issues)
+
+    def test_polling_frame_data(self):
+        """Tests that PollingFrame object 'data' value is set correctly
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over sent and received frame pairs,
+        verify that polling frame type matches.
+
+        Verifies:
+        1. Verifies that PollingFrame.data value is set correctly
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
+        )
+
+        testcases = POLLING_FRAME_ALL_TEST_CASES
+
+        # 3. Transmit polling frames
+        frames = poll_and_observe_frames(
+            pn532=self.pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+            restore_original_frame_ordering=True,
+        )
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            get_frame_test_stats(frames=frames, testcases=testcases)
+        )
+
+        issues = [
+            {
+                "index": idx,
+                "expected": testcase.expected_data,
+                "received": frame.data.hex()
+            } for idx, (testcase, frame) in enumerate(zip(testcases, frames))
+            if frame.data.hex() not in testcase.expected_data
+        ]
+
+        for testcase, frame in zip(testcases, frames):
+            if frame.data.hex() not in testcase.warning_data:
+                continue
+            _LOG.warning(
+                f"Polling frame data variation '{frame.data.hex()}'" + \
+                f" is accepted but not correct {testcase.success_data}"
+            )
+
+        asserts.assert_equal(len(issues), 0, _FAILED_FRAME_DATA_INVALID, issues)
 
     def teardown_test(self):
         if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):

@@ -1244,7 +1244,7 @@ public class DisplayTest extends TestBase {
     @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES)
     public void testGetSupportedRefreshRates() {
         final float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
-        final float epsilon = 0.0001F;
+        final float epsilon = 0.001F;
         for (float refreshRateLegacy : mDefaultDisplay.getSupportedRefreshRatesLegacy()) {
             boolean isMatchFound = false;
             for (float refreshRate : refreshRates) {
@@ -1253,7 +1253,8 @@ public class DisplayTest extends TestBase {
                     break;
                 }
             }
-            assertTrue(isMatchFound);
+            assertTrue("Failed to find the refresh rate "
+                    + refreshRateLegacy + " in " + Arrays.toString(refreshRates), isMatchFound);
         }
     }
 
@@ -1269,17 +1270,19 @@ public class DisplayTest extends TestBase {
                 rates.add(mode.getVsyncRate());
             }
         }
-        final float epsilon = 0.0001F;
+        final float epsilon = 0.001F;
         for (float refreshRate : refreshRates) {
             boolean isDivisorRateFound = false;
             for (float vsyncRate : rates) {
-                isDivisorRateFound =  vsyncRate % refreshRate <= epsilon;
+                final double result = vsyncRate / refreshRate;
+                final double resultRounded = Math.round(vsyncRate / refreshRate);
+                isDivisorRateFound = Math.abs(result - resultRounded) <= epsilon;
                 if (isDivisorRateFound) {
                     break;
                 }
             }
-            assertTrue("refreshRate " + refreshRate + " can not be achieved",
-                    isDivisorRateFound);
+            assertTrue("refreshRate " + refreshRate + " can not be achieved with "
+                    + rates, isDivisorRateFound);
         }
     }
 

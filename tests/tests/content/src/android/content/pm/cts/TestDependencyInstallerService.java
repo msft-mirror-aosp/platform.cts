@@ -21,6 +21,10 @@ import static android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTAL
 import static android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES;
 import static android.content.pm.PackageManager.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
+
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -38,9 +42,10 @@ import android.content.pm.Signature;
 import android.content.pm.SigningInfo;
 import android.content.pm.dependencyinstaller.DependencyInstallerCallback;
 import android.content.pm.dependencyinstaller.DependencyInstallerService;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.util.ArraySet;
 import android.util.Log;
 import android.util.PackageUtils;
 
@@ -55,7 +60,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /*
  * A DependencyInstallerService for test.
@@ -72,33 +78,52 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";
     private static final String TEST_SDK1_APK_NAME = "HelloWorldSdk1";
     private static final String TEST_SDK2_APK_NAME = "HelloWorldSdk2";
+    private static final int WAIT_FOR_INSTALL_MS = 60 * 1000;
 
     static final String METHOD_NAME = "method-name";
+    static final String ERROR_MESSAGE = TAG + "error-message";
     static final String METHOD_INSTALL_SYNC = "install-sync";
     static final String METHOD_INSTALL_ASYNC = "install-async";
+    static final String METHOD_INVALID_SESSION_ID = "invalid-session-id";
+    static final String METHOD_ABANDONED_SESSION_ID = "abandoned-session-id";
+    static final String METHOD_ABANDON_SESSION_DURING_INSTALL = "abandon-session-during-install";
 
-    private final Set<Integer> mPendingSessionIds = new ArraySet<>();
     private String mCertDigest;
 
     @Override
     public void onDependenciesRequired(List<SharedLibraryInfo> neededLibraries,
             DependencyInstallerCallback callback) {
-        Log.i(TAG, "onDependenciesRequired call received");
 
         String methodName = getMethodName();
+        Log.d(TAG, "onDependenciesRequired call received: " + methodName);
 
         try {
+            // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
+            // have will be same cert as our current package.
+            mCertDigest = getPackageCertDigest(getContext().getPackageName());
+            validateNeededLibraries(neededLibraries);
+
             if (methodName.equals(METHOD_INSTALL_SYNC)) {
-                installDependencies(neededLibraries, callback, /*sync=*/ true);
+                installDependenciesSync(neededLibraries, callback);
             } else if (methodName.equals(METHOD_INSTALL_ASYNC)) {
-                installDependencies(neededLibraries, callback, /*sync=*/ false);
+                installDependenciesAsync(neededLibraries, callback);
+            } else if (methodName.equals(METHOD_INVALID_SESSION_ID)) {
+                testInvalidSessionId(neededLibraries, callback);
+            } else if (methodName.equals(METHOD_ABANDONED_SESSION_ID)) {
+                testAbandonedSessionId(neededLibraries, callback);
+            } else if (methodName.equals(METHOD_ABANDON_SESSION_DURING_INSTALL)) {
+                testAbandonSessionDuringInstall(neededLibraries, callback);
             } else {
                 throw new IllegalStateException("Unknown method name: " + methodName);
             }
-        } catch (Exception e) {
-            Log.e(TAG, e.getMessage(), e);
-            callback.onFailureToResolveAllDependencies();
-            return;
+        } catch (Throwable e) {
+            Log.w(TAG, e.getMessage(), e);
+            setErrorMessage(e.getMessage());
+            try {
+                callback.onFailureToResolveAllDependencies();
+            } catch (Exception e2) {
+                Log.w(TAG, e2.getMessage());
+            }
         }
     }
 
@@ -118,15 +143,158 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             && info.getCertDigests().get(0).equals(mCertDigest);
     }
 
-    private void installDependencies(List<SharedLibraryInfo> neededLibraries,
-            DependencyInstallerCallback callback, boolean sync) throws Exception {
+    /**
+     * Send a non-existing session-id to system.
+     */
+    private void testInvalidSessionId(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
 
-        mPendingSessionIds.clear();
+        // Pass a session id that doesn't exist
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> {
+                            callback.onAllDependenciesResolved(new int[] {100});
+                        });
 
-        // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
-        // have will be same cert as our current package.
-        mCertDigest = getPackageCertDigest(getContext().getPackageName());
+        assertThat(exception).hasMessageThat().contains("Failed to find session: 100");
 
+        // Fail the resolution to resume the original install flow.
+        callback.onFailureToResolveAllDependencies();
+    }
+
+    /**
+     * Send a session id that has already been abandoned.
+     */
+    private void testAbandonedSessionId(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        SessionParams params = new SessionParams(MODE_FULL_INSTALL);
+        PackageInstaller installer = getPackageManager().getPackageInstaller();
+        int sessionId = installer.createSession(params);
+        // Register a listener for this session id
+        SessionListener sessionListener = new SessionListener(sessionId);
+        try {
+            getContext().getPackageManager().getPackageInstaller().registerSessionCallback(
+                    sessionListener,
+                    new Handler(Looper.getMainLooper()));
+
+            // Abandon the session
+            Session session = installer.openSession(sessionId);
+            session.abandon();
+
+            // Wait for session to finish
+            sessionListener.latch.await(5, TimeUnit.SECONDS);
+        } finally {
+            getContext().getPackageManager().getPackageInstaller().unregisterSessionCallback(
+                    sessionListener);
+        }
+
+        // Pass an abandoned session id
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> {
+                            callback.onAllDependenciesResolved(new int[] {sessionId});
+                        });
+
+        assertThat(exception).hasMessageThat().contains("Session already finished: " + sessionId);
+
+        // Fail the resolution to resume the original install flow.
+        callback.onFailureToResolveAllDependencies();
+    }
+
+    private void testAbandonSessionDuringInstall(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        assertThat(neededLibraries).hasSize(1);
+        SharedLibraryInfo info = neededLibraries.get(0);
+
+        // Create two sessions and have system wait for them
+        List<Integer> sessionIds = createSessionIds(2);
+        callback.onAllDependenciesResolved(toIntArray(sessionIds));
+
+        // Now we commit the first session and then abandon the second. The system should
+        // be able to detect session being abandoned and stop waiting.
+
+        int firstSession = sessionIds.get(0);
+        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(List.of(firstSession));
+        Session session = writeToSession(info, firstSession);
+        session.commit(sender.getIntentSender(this));
+        assertThat(sender.latch.await(WAIT_FOR_INSTALL_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(sender.isFailure).isFalse();
+
+        // Now hat first session has finished, abandon the second session
+        int secondSession = sessionIds.get(1);
+        session = writeToSession(info, secondSession);
+        session.abandon();
+    }
+
+    private void installDependenciesSync(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        int size = neededLibraries.size();
+        List<Integer> sessionIds = createSessionIds(neededLibraries.size());
+
+        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(sessionIds);
+        for (int i = 0; i < size; i++) {
+            int sessionId = sessionIds.get(i);
+            SharedLibraryInfo info = neededLibraries.get(i);
+            Session session = writeToSession(info, sessionId);
+            session.commit(sender.getIntentSender(this));
+        }
+
+        // Wait for all sessions to finish installation
+        assertThat(sender.latch.await(WAIT_FOR_INSTALL_MS, TimeUnit.MILLISECONDS)).isTrue();
+        if (sender.isFailure) {
+            callback.onFailureToResolveAllDependencies();
+        } else {
+            callback.onAllDependenciesResolved(toIntArray(sessionIds));
+        }
+    }
+
+    private void installDependenciesAsync(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        int size = neededLibraries.size();
+        List<Integer> sessionIds = createSessionIds(neededLibraries.size());
+
+        // Return the session ids immediately
+        callback.onAllDependenciesResolved(toIntArray(sessionIds));
+
+        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(sessionIds);
+        for (int i = 0; i < size; i++) {
+            int sessionId = sessionIds.get(i);
+            SharedLibraryInfo info = neededLibraries.get(i);
+            Session session = writeToSession(info, sessionId);
+            session.commit(sender.getIntentSender(this));
+        }
+    }
+
+    private List<Integer> createSessionIds(int size) throws Exception {
+        PackageInstaller installer = getPackageManager().getPackageInstaller();
+        List<Integer> sessionIds = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            SessionParams params = new SessionParams(MODE_FULL_INSTALL);
+            int sessionId = installer.createSession(params);
+            Log.i(TAG, "Session created: " + sessionId);
+            sessionIds.add(sessionId);
+        }
+        return sessionIds;
+    }
+
+    private Session writeToSession(SharedLibraryInfo info, int sessionId) throws Exception {
+        PackageInstaller installer = getPackageManager().getPackageInstaller();
+        Session session = installer.openSession(sessionId);
+        if (isSdk1(info)) {
+            writeApk(session, TEST_SDK1_APK_NAME);
+        } else if (isSdk2(info)) {
+            writeApk(session, TEST_SDK2_APK_NAME);
+        }
+        return session;
+    }
+
+    private void validateNeededLibraries(List<SharedLibraryInfo> neededLibraries) throws Exception {
         for (SharedLibraryInfo info: neededLibraries) {
             if (isSdk1(info)) {
                 Log.i(TAG, "SDK1 missing dependency found");
@@ -141,38 +309,15 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             throw new IllegalStateException("Unsupported SDK found: " + info.getName() + " "
                     + info.getCertDigests().get(0));
         }
-
-        PackageInstaller installer = getPackageManager().getPackageInstaller();
-        int size = neededLibraries.size();
-        List<Integer> sessionIds = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            SessionParams params = new SessionParams(MODE_FULL_INSTALL);
-            int sessionId = installer.createSession(params);
-            Log.i(TAG, "Session created: " + sessionId);
-            sessionIds.add(sessionId);
-        }
-
-        // Return the session ids immediately
-        if (!sync) {
-            callback.onAllDependenciesResolved(toIntArray(sessionIds));
-        }
-
-        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(callback, sessionIds);
-        for (int i = 0; i < size; i++) {
-            int sessionId = sessionIds.get(i);
-            Session session = installer.openSession(sessionId);
-            SharedLibraryInfo info = neededLibraries.get(i);
-            if (isSdk1(info)) {
-                writeApk(session, TEST_SDK1_APK_NAME);
-            } else if (isSdk2(info)) {
-                writeApk(session, TEST_SDK2_APK_NAME);
-            }
-            session.commit(sender.getIntentSender(this));
-        }
     }
+
 
     private String getMethodName() {
         return getDefaultSharedPreferences().getString(METHOD_NAME, "");
+    }
+
+    private void setErrorMessage(String msg) {
+        getDefaultSharedPreferences().edit().putString(ERROR_MESSAGE, msg).commit();
     }
 
     private void writeApk(@NonNull Session session, @NonNull String name) throws IOException {
@@ -196,12 +341,13 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     }
 
     private static class SyncBroadcastReceiver extends BroadcastReceiver {
-        private final DependencyInstallerCallback mCallback;
         private final int[] mSessionIds;
         private int mPendingSessionCount;
 
-        SyncBroadcastReceiver(DependencyInstallerCallback callback, List<Integer> sessionIds) {
-            mCallback = callback;
+        public final CountDownLatch latch = new CountDownLatch(1);
+        public boolean isFailure = false;
+
+        SyncBroadcastReceiver(List<Integer> sessionIds) {
             mSessionIds = toIntArray(sessionIds);
             mPendingSessionCount = sessionIds.size();
         }
@@ -211,15 +357,14 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             Log.i(TAG, "Received intent " + prettyPrint(intent));
             int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                     PackageInstaller.STATUS_FAILURE);
-            if (status == PackageInstaller.STATUS_SUCCESS) {
-                synchronized (this) {
-                    mPendingSessionCount--;
-                    if (mPendingSessionCount == 0) {
-                        mCallback.onAllDependenciesResolved(mSessionIds);
-                    }
+            if (status != PackageInstaller.STATUS_SUCCESS) {
+                isFailure = true;
+            }
+            synchronized (this) {
+                mPendingSessionCount--;
+                if (mPendingSessionCount == 0) {
+                    latch.countDown();
                 }
-            } else {
-                mCallback.onFailureToResolveAllDependencies();
             }
         }
 
@@ -244,6 +389,40 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
                     + "status = %d\n"
                     + "message = %s\n"
                     + "}", intent, sessionId, status, message);
+        }
+    }
+
+    static class SessionListener extends PackageInstaller.SessionCallback {
+
+        public final CountDownLatch latch = new CountDownLatch(1);
+
+        private final int mSessionId;
+
+        SessionListener(int sessionId) {
+            mSessionId = sessionId;
+        }
+
+        @Override
+        public void onCreated(int sessionId) {
+        }
+
+        @Override
+        public void onBadgingChanged(int sessionId) {
+        }
+
+        @Override
+        public void onActiveChanged(int sessionId, boolean active) {
+        }
+
+        @Override
+        public void onProgressChanged(int sessionId, float progress) {
+        }
+
+        @Override
+        public void onFinished(int sessionId, boolean success) {
+            if (sessionId == mSessionId) {
+                latch.countDown();
+            }
         }
     }
 

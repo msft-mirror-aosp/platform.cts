@@ -31,7 +31,7 @@ android_test {
         "androidx.test.ext.junit",
         "art_exported_aconfig_flags_lib",
         "compatibility-device-util-axt",
-        "Harrier",
+        "bedstead",
         "junit",
         "truth",
     ],

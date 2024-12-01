@@ -22,11 +22,13 @@ import android.app.UiModeManager;
 import android.app.job.JobInfo;
 import android.content.pm.PackageManager;
 import android.os.UserHandle;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 /**
  * Make sure the state of {@link android.app.job.JobScheduler} is correct.
@@ -38,6 +40,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
 
     private JobInfo.Builder mBuilder;
     private UiDevice mUiDevice;
+    private UserHelper mUserHelper;
 
     private String mInitialDisplayTimeout;
 
@@ -46,6 +49,7 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
         super.setUp();
         mBuilder = new JobInfo.Builder(STATE_JOB_ID, kJobServiceComponent);
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        mUserHelper = new UserHelper(getContext());
 
         // Make sure the screen doesn't turn off when the test turns it on.
         mInitialDisplayTimeout = mUiDevice.executeShellCommand(
@@ -143,6 +147,15 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
      * Ensure that device can switch state normally.
      */
     public void testDeviceChangeIdleActiveState() throws Exception {
+        // Device that support visible background users may have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        if (mUserHelper.isVisibleBackgroundUserSupported()) {
+            Log.d(TAG, "Skip this test if device supports visible background users.");
+            return;
+        }
+
         toggleScreenOn(true);
         verifyActiveState();
 
@@ -317,6 +330,14 @@ public class IdleConstraintTest extends BaseJobSchedulerTest {
     }
 
     public void testIdleJobStartsOnlyWhenIdle_screenEndsIdle() throws Exception {
+        // Device that support visible background users may have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        if (mUserHelper.isVisibleBackgroundUserSupported()) {
+            Log.d(TAG, "Skip this test if device supports visible background users.");
+            return;
+        }
         runIdleJobStartsOnlyWhenIdle();
 
         toggleScreenOn(true);

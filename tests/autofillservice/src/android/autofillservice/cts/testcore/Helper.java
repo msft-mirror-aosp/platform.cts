@@ -1386,6 +1386,66 @@ public final class Helper {
         assertFillEvent(event, TYPE_CONTEXT_COMMITTED, null, null, null, null);
     }
 
+    public static void assertShownAndSelectedHaveSameFocusedId(
+            @NonNull FillEventHistory.Event shownEvent,
+            @NonNull FillEventHistory.Event selectionEvent) {
+        assertWithMessage("Not a shown event")
+                .that(shownEvent.getType())
+                .isEqualTo(TYPE_DATASETS_SHOWN);
+        assertWithMessage("Not a selection event")
+                .that(selectionEvent.getType())
+                .isEqualTo(TYPE_DATASET_AUTHENTICATION_SELECTED);
+        assertWithMessage("Shown event has no focused id")
+                .that(shownEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Selection event has no focused id")
+                .that(selectionEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Shown and selected Events don't have the same focused id")
+                .that(shownEvent.getFocusedId())
+                .isEqualTo(selectionEvent.getFocusedId());
+    }
+
+    public static void assertShownAndSelectedHaveDifferentFocusedId(
+            @NonNull FillEventHistory.Event shownEvent,
+            @NonNull FillEventHistory.Event selectionEvent) {
+        assertWithMessage("Not a shown event")
+                .that(shownEvent.getType())
+                .isEqualTo(TYPE_DATASETS_SHOWN);
+        assertWithMessage("Not a selection event")
+                .that(selectionEvent.getType())
+                .isEqualTo(TYPE_DATASET_AUTHENTICATION_SELECTED);
+        assertWithMessage("Shown event has no focused id")
+                .that(shownEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Selection event has no focused id")
+                .that(selectionEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Shown and selected Events don't have the same focused id")
+                .that(shownEvent.getFocusedId())
+                .isNotEqualTo(selectionEvent.getFocusedId());
+    }
+
+    public static void assertShownAndViewEnteredHaveSameFocusedId(
+            @NonNull FillEventHistory.Event shownEvent,
+            @NonNull FillEventHistory.Event viewEnteredEvent) {
+        assertWithMessage("Not a shown event")
+                .that(shownEvent.getType())
+                .isEqualTo(TYPE_DATASETS_SHOWN);
+        assertWithMessage("Not a notify view entered event")
+                .that(viewEnteredEvent.getType())
+                .isEqualTo(TYPE_VIEW_REQUESTED_AUTOFILL);
+        assertWithMessage("Shown event has no focused id")
+                .that(shownEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Notify view entered event has no focused id")
+                .that(viewEnteredEvent.getFocusedId())
+                .isNotNull();
+        assertWithMessage("Shown and notify view entered Events don't have the same focused id")
+                .that(shownEvent.getFocusedId())
+                .isEqualTo(viewEnteredEvent.getFocusedId());
+    }
+
     @NonNull
     public static String getActivityName(List<FillContext> contexts) {
         if (contexts == null) return "N/A (null contexts)";
@@ -1793,6 +1853,24 @@ public final class Helper {
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS);
         setDeviceConfig(deviceConfigStateManager, hints);
+    }
+
+    /**
+     * Disable relayout fix
+     */
+    public static void disableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
+     * Enable relayout fix
+     */
+    public static void enableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "true");
     }
 
     public static void setDeviceConfig(@NonNull DeviceConfigStateManager deviceConfigStateManager,

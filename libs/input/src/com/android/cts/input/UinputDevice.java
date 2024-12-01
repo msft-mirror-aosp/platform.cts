@@ -42,9 +42,6 @@ public class UinputDevice extends VirtualInputDevice {
     @GuardedBy("mLock")
     private final List<UinputResultData> mResults = new ArrayList<>();
 
-    @Nullable
-    private InputDeviceAssociationByDescriptor mDisplayAssociation;
-
     @Override
     protected String getShellCommand() {
         return UINPUT_COMMAND;
@@ -76,24 +73,7 @@ public class UinputDevice extends VirtualInputDevice {
 
     public UinputDevice(Instrumentation instrumentation, int sources, UinputRegisterCommand cmd,
             @Nullable Display display) {
-        super(instrumentation, cmd.getId(), cmd.getVid(), cmd.getPid(), sources, cmd);
-        if (display != null) {
-            mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
-                    mInstrumentation).associate(mDeviceId, display);
-        }
-    }
-
-    @Override
-    public void close() {
-        if (mDisplayAssociation != null) {
-            try {
-                mDisplayAssociation.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to close the device/display association: "
-                        + mDisplayAssociation, e);
-            }
-        }
-        super.close();
+        super(instrumentation, cmd.getId(), cmd.getVid(), cmd.getPid(), sources, cmd, display);
     }
 
     /**

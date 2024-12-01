@@ -37,6 +37,7 @@ java_test_host {
 
     test_suites: [
         "cts",
+        "mcts",
         "general-tests",
         "mts-art",
         "mts-conscrypt",

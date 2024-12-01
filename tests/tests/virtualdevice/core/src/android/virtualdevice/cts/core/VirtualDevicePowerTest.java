@@ -90,6 +90,8 @@ public class VirtualDevicePowerTest {
 
     @Mock
     private VirtualDisplay.Callback mVirtualDisplayCallback;
+    @Mock
+    private VirtualDisplayConfig.BrightnessListener mBrightnessListener;
 
     @Before
     public void setUp() throws Exception {
@@ -360,26 +362,29 @@ public class VirtualDevicePowerTest {
             {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
     public void customDefaultBrightness_windowManagerOverrideRequestTriggersCallback() {
         createVirtualDeviceAndDisplay(VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
                 .setDefaultBrightness(DEFAULT_BRIGHTNESS));
 
         Activity activity = mVirtualDeviceRule.startActivityOnDisplaySync(
                 mDisplay.getDisplayId(), Activity.class);
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
 
-        reset(mVirtualDisplayCallback);
+        reset(mBrightnessListener);
         setBrightnessOverride(activity, 0.1f);
-        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
-                .onRequestedBrightnessChanged(0.1f);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(0.1f);
 
-        reset(mVirtualDisplayCallback);
+        reset(mBrightnessListener);
         setBrightnessOverride(activity, 1f);
-        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
-                .onRequestedBrightnessChanged(1f);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(1f);
 
-        reset(mVirtualDisplayCallback);
+        reset(mBrightnessListener);
         setBrightnessOverride(activity, -1f);
-        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1))
-                .onRequestedBrightnessChanged(DEFAULT_BRIGHTNESS);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
     }
 
     private void assumeScreenOffSupported() {

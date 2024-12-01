@@ -33,7 +33,7 @@ android_test {
     ],
     static_libs: [
         "EventLib",
-        "Harrier",
+        "bedstead-enterprise",
         "ActivityContext",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",

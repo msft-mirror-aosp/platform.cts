@@ -72,6 +72,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(JUnit4.class)
 public class CarTaskViewControllerTest {
     private static final long QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE = 1000;  // ms
+    private static final long WAIT_FOR_LAUNCHER_TIME_MS = 2000;
 
     private final Instrumentation mInstrumentation =
             InstrumentationRegistry.getInstrumentation();
@@ -92,7 +93,7 @@ public class CarTaskViewControllerTest {
 
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         Car car = Car.createCar(mContext);
         mUiAutomation.adoptShellPermissionIdentity(
                 // for CAM.getCarTaskViewController
@@ -108,7 +109,7 @@ public class CarTaskViewControllerTest {
         mMyDisplayId = userHelper.getMainDisplayId();
         SystemUtil.runShellCommandOrThrow(
                 String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_HOME));
-
+        Thread.sleep(WAIT_FOR_LAUNCHER_TIME_MS);
         Intent startIntent = Intent.makeMainActivity(mTestActivity)
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mHostActivity = (TestActivity) mInstrumentation.startActivitySync(

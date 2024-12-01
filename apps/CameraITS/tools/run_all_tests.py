@@ -74,8 +74,8 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
-    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
-    'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
+    'scene4', 'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -106,7 +106,7 @@ _ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
 _GROUPED_SCENES = types.MappingProxyType({
         'scene1': ('scene1_1', 'scene1_2'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
-                   'scene2_f')
+                   'scene2_f', 'scene2_g')
 })
 
 # Scene requirements for manual testing.
@@ -122,6 +122,7 @@ _SCENE_REQ = types.MappingProxyType({
     'scene2_d': 'The picture with 3 faces in tests/scene2_d/scene2_d.png',
     'scene2_e': 'The picture with 3 faces in tests/scene2_e/scene2_e.png',
     'scene2_f': 'The picture with 3 faces in tests/scene2_f/scene2_f.png',
+    'scene2_g': 'The picture with 3 profile faces in tests/scene2_g/scene2_g.png',
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',

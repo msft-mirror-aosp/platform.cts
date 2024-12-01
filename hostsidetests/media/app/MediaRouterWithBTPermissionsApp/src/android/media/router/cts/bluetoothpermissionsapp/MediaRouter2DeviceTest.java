@@ -39,6 +39,8 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_5;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_SELF_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
+import static android.media.cts.app.common.MediaRouter2TestUtils.ROUTE_UPDATE_MAX_WAIT_MS;
+import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -50,7 +52,6 @@ import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRoute2ProviderService;
@@ -60,8 +61,8 @@ import android.media.MediaRouter2.ScanToken;
 import android.media.MediaRouter2Manager;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
+import android.media.cts.app.common.MediaRouter2TestUtils;
 import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
-import android.media.cts.app.common.ScreenOnActivity;
 import android.os.ConditionVariable;
 import android.os.PowerManager;
 import android.os.SystemClock;
@@ -85,13 +86,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Device-side tests for regular {@link MediaRouter2} functionality.
@@ -102,11 +100,6 @@ import java.util.stream.Collectors;
  */
 @LargeTest
 public class MediaRouter2DeviceTest {
-    /**
-     * The maximum amount of time to wait for an expected {@link
-     * MediaRouter2.RouteCallback#onRoutesUpdated} call, in milliseconds.
-     */
-    private static final int ROUTE_UPDATE_MAX_WAIT_MS = 10_000;
 
     /** {@link RouteDiscoveryPreference} for system routes only. */
     private static final RouteDiscoveryPreference SYSTEM_ROUTE_DISCOVERY_PREFERENCE =
@@ -140,11 +133,7 @@ public class MediaRouter2DeviceTest {
     }
 
     private void launchScreenOnActivity() {
-        // Launch ScreenOnActivity while tests are running for scanning to work. MediaRouter2 blocks
-        // app scan requests while the screen is off for resource saving.
-        Intent intent = new Intent(/* context= */ mContext, ScreenOnActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mScreenOnActivity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
+        mScreenOnActivity = MediaRouter2TestUtils.launchScreenOnActivity(mContext);
     }
 
     @After
@@ -775,53 +764,6 @@ public class MediaRouter2DeviceTest {
                                 preference,
                                 /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY),
                                 mExecutor));
-    }
-
-    /**
-     * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
-     * that includes all the given {@code expectedRouteIds}.
-     *
-     * <p>Will only wait for up to {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
-     */
-    private static Map<String, MediaRoute2Info> waitForAndGetRoutes(
-            MediaRouter2 router,
-            RouteDiscoveryPreference preference,
-            Set<String> expectedRouteIds,
-            Executor executor)
-            throws TimeoutException {
-        ConditionVariable condition = new ConditionVariable();
-        MediaRouter2.RouteCallback routeCallback =
-                new MediaRouter2.RouteCallback() {
-                    @Override
-                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
-                        Set<String> receivedRouteIds =
-                                routes.stream()
-                                        .map(MediaRoute2Info::getOriginalId)
-                                        .collect(Collectors.toSet());
-                        if (receivedRouteIds.containsAll(expectedRouteIds)) {
-                            condition.open();
-                        }
-                    }
-                };
-
-        router.registerRouteCallback(executor, routeCallback, preference);
-        Set<String> currentRoutes =
-                router.getRoutes().stream()
-                        .map(MediaRoute2Info::getOriginalId)
-                        .collect(Collectors.toSet());
-        try {
-            if (!currentRoutes.containsAll(expectedRouteIds)
-                    && !condition.block(ROUTE_UPDATE_MAX_WAIT_MS)) {
-                throw new TimeoutException(
-                        "Failed to get expected routes after "
-                                + ROUTE_UPDATE_MAX_WAIT_MS
-                                + " milliseconds.");
-            }
-            return router.getRoutes().stream()
-                    .collect(Collectors.toMap(MediaRoute2Info::getOriginalId, Function.identity()));
-        } finally {
-            router.unregisterRouteCallback(routeCallback);
-        }
     }
 
     private class MediaRouter2ManagerCallbackImpl implements MediaRouter2Manager.Callback {

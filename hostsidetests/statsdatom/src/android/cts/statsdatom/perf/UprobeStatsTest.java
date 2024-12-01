@@ -34,7 +34,6 @@ import com.android.internal.os.StatsdConfigProto.ValueMetric;
 import com.android.os.AtomsProto.AppBreadcrumbReported;
 import com.android.os.AtomsProto.Atom;
 import com.android.os.framework.FrameworkExtensionAtoms;
-import com.android.os.framework.FrameworkExtensionAtoms.DeviceIdleTempAllowlistUpdated;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceTestCase;
@@ -45,6 +44,7 @@ import com.google.protobuf.ExtensionRegistry;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import uprobestats.protos.Config.UprobestatsConfig;
 
@@ -69,6 +69,8 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        getDevice().enableAdbRoot();
+        getDevice().executeShellCommand("killall uprobestats");
 
         mRegistry = ExtensionRegistry.newInstance();
         FrameworkExtensionAtoms.registerAllExtensions(mRegistry);
@@ -172,14 +174,18 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
             RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
             getDevice().executeShellCommand("cmd deviceidle tempwhitelist com.google.android.tts");
             RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-            DeviceIdleTempAllowlistUpdated reported =
-                    ReportUtils.getEventMetricDataList(getDevice(), mRegistry).stream()
+            waitForCondition(() -> {
+                try {
+                    return ReportUtils.getEventMetricDataList(getDevice(), mRegistry).stream()
                     .map(a -> a.getAtom().getExtension(
                         FrameworkExtensionAtoms.deviceIdleTempAllowlistUpdated))
                     .filter(a -> a.getChangingUid() > 0)
                     .findFirst()
-                    .orElse(null);
-            assertThat(reported).isNotNull();
+                    .orElse(null) != null;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, 20, TimeUnit.SECONDS);
         }
     }
 
@@ -187,6 +193,20 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
      * Waits for the uprobestats process to start
      */
     public void waitForUprobeStats(long timeout, TimeUnit unit)
+            throws TimeoutException, DeviceNotAvailableException {
+        waitForCondition(() -> {
+            try {
+                return getDevice().executeShellCommand("pidof uprobestats").length() > 0;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, timeout, unit);
+    }
+
+    /**
+     * Waits for a certain condition to become true.
+     */
+    public void waitForCondition(Supplier<Boolean> condition, long timeout, TimeUnit unit)
             throws TimeoutException, DeviceNotAvailableException {
         long startTime = System.currentTimeMillis();
         long timeoutMillis = unit.toMillis(timeout);
@@ -197,10 +217,10 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
             long remainingTime = timeoutMillis - elapsedTime;
 
             if (remainingTime <= 0) {
-                throw new TimeoutException("Timeout reached while waiting for uprobestats");
+                throw new TimeoutException();
             }
 
-            if (getDevice().executeShellCommand("pidof uprobestats").length() > 0) {
+            if (condition.get().booleanValue()) {
                 break;
             }
 

@@ -68,6 +68,8 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.LIST_FILTER_HAS_PROPERTY_FUNCTION:
                 // fall through
+            case Features.LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION:
+                // fall through
             case Features.SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG:
                 // fall through
             case Features.SET_SCHEMA_REQUEST_SET_PUBLICLY_VISIBLE:
@@ -76,9 +78,21 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
                 // fall through
+            case Features.SCHEMA_EMBEDDING_QUANTIZATION:
+                // fall through
             case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
                 // fall through
             case Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS:
+                // fall through
+            case Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS:
+                // fall through
+            case Features.SCHEMA_SCORABLE_PROPERTY_CONFIG:
+                // fall through
+            case Features.SEARCH_RESULT_PARENT_TYPES:
+                // fall through
+            case Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM:
+                // fall through
+            case Features.BLOB_STORAGE:
                 return true;
 
             // Features which are supported on U+ devices only.
@@ -86,10 +100,8 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SCHEMA_ADD_PARENT_TYPE:
                 return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-
-            default:
-                return false;
         }
+        throw new IllegalArgumentException("Unhandled Features string: " + feature);
     }
 
     @Override

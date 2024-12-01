@@ -10,7 +10,7 @@ android_library {
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     static_libs: [
-        "Harrier",
+        "bedstead",
         "device_policy_aconfig_flags_lib",
     ],
 }
@@ -24,7 +24,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "Harrier",
+        "bedstead",
         "truth",
         "bedstead-flags",
     ],

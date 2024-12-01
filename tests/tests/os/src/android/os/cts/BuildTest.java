@@ -27,8 +27,6 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodConfig;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
@@ -59,9 +57,7 @@ public class BuildTest {
     private static final String BACKPORTED_FIXES_ALIAS_PROP_NAME =
             "ro.build.backported_fixes.alias_bitset.long_list";
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
@@ -327,7 +323,7 @@ public class BuildTest {
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
     public void getBackportedFixStatus_1023() {
-        if (RavenwoodConfig.isOnRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             // This tests the private method Build.isBitSet
             Truth.assertThat(Build.getBackportedFixStatus(1023)).isEqualTo(
                     Build.BACKPORTED_FIX_STATUS_FIXED);

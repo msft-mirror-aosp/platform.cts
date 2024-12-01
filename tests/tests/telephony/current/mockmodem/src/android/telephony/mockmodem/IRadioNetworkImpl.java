@@ -23,6 +23,7 @@ import android.hardware.radio.RadioResponseInfo;
 import android.hardware.radio.network.BarringInfo;
 import android.hardware.radio.network.BarringTypeSpecificInfo;
 import android.hardware.radio.network.CellIdentity;
+import android.hardware.radio.network.CellularIdentifierDisclosure;
 import android.hardware.radio.network.Domain;
 import android.hardware.radio.network.EmergencyRegResult;
 import android.hardware.radio.network.IRadioNetwork;
@@ -31,6 +32,7 @@ import android.hardware.radio.network.IRadioNetworkResponse;
 import android.hardware.radio.network.NetworkScanRequest;
 import android.hardware.radio.network.RadioAccessSpecifier;
 import android.hardware.radio.network.RegState;
+import android.hardware.radio.network.SecurityAlgorithmUpdate;
 import android.hardware.radio.network.SignalThresholdInfo;
 import android.hardware.radio.sim.CardStatus;
 import android.os.AsyncResult;
@@ -1178,6 +1180,85 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
             Log.e(TAG, "null mRadioNetworkIndication");
         }
         return false;
+    }
+
+    /** Sends an unsolicited SecurityAlgorithmUpdate to IRadioNetworkIndication */
+    public boolean unsolSecurityAlgorithmsUpdated(android.telephony.SecurityAlgorithmUpdate
+            update) {
+        Log.d(TAG, "unsolSecurityAlgorithmsUpdatedResult");
+
+        if (mRadioState != MockModemConfigInterface.RADIO_STATE_ON) {
+            Log.d(TAG, "MockModem in RADIO_STATE_OFF");
+            return false;
+        }
+
+        if (mRadioNetworkIndication != null) {
+            SecurityAlgorithmUpdate halUpdate = convertSecurityAlgorithmUpdate(update);
+            try {
+                mRadioNetworkIndication.securityAlgorithmsUpdated(RadioIndicationType.UNSOLICITED,
+                        halUpdate);
+                return true;
+            } catch (RemoteException ex) {
+                Log.e(TAG,
+                        "Failed to invoke securityAlgorithmsUpdated change from AIDL."
+                        + "Exception: " + ex);
+            }
+        } else {
+            Log.e(TAG, "null mRadioNetworkIndication");
+        }
+        return false;
+    }
+
+    /** Sends an unsolicited CellularIdentifierDisclosure to IRadioNetworkIndication */
+    public boolean unsolCellularIdentifierDisclosed(android.telephony.CellularIdentifierDisclosure
+            disclosure) {
+        Log.d(TAG, "unsolCellularIdentifierDisclosed");
+
+        if (mRadioState != MockModemConfigInterface.RADIO_STATE_ON) {
+            Log.d(TAG, "MockModem in RADIO_STATE_OFF");
+            return false;
+        }
+
+        if (mRadioNetworkIndication != null) {
+            CellularIdentifierDisclosure halUpdate =
+                    convertCellularIdentifierDisclosure(disclosure);
+            try {
+                mRadioNetworkIndication.cellularIdentifierDisclosed(RadioIndicationType.UNSOLICITED,
+                        halUpdate);
+                return true;
+            } catch (RemoteException ex) {
+                Log.e(TAG,
+                        "Failed to invoke cellularIdentifierDisclosed change from AIDL."
+                        + "Exception: " + ex);
+            }
+        } else {
+            Log.e(TAG, "null mRadioNetworkIndication");
+        }
+        return false;
+    }
+
+    private static SecurityAlgorithmUpdate convertSecurityAlgorithmUpdate(
+            android.telephony.SecurityAlgorithmUpdate update) {
+
+        SecurityAlgorithmUpdate halUpdate = new SecurityAlgorithmUpdate();
+        halUpdate.isUnprotectedEmergency = update.isUnprotectedEmergency();
+        halUpdate.encryption = update.getEncryption();
+        halUpdate.integrity = update.getIntegrity();
+        halUpdate.connectionEvent = update.getConnectionEvent();
+
+        return halUpdate;
+    }
+
+    private static CellularIdentifierDisclosure convertCellularIdentifierDisclosure(
+            android.telephony.CellularIdentifierDisclosure disclosure) {
+
+        CellularIdentifierDisclosure halUpdate = new CellularIdentifierDisclosure();
+        halUpdate.plmn = disclosure.getPlmn();
+        halUpdate.identifier = disclosure.getCellularIdentifier();
+        halUpdate.protocolMessage = disclosure.getNasProtocolMessage();
+        halUpdate.isEmergency = disclosure.isEmergency();
+
+        return halUpdate;
     }
 
     private static EmergencyRegResult convertEmergencyRegResult(MockEmergencyRegResult regResult) {

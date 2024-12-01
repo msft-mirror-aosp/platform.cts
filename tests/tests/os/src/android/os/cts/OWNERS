@@ -1,3 +1,4 @@
 per-file MessageQueueTest.java=mfasheh@google.com, shayba@google.com
+per-file TestLooperManagerTest.java=mfasheh@google.com, shayba@google.com
 per-file IpcDataCache*.java = file:platform/frameworks/base:/PERFORMANCE_OWNERS
 per-file RemoteCallbackListTest.java = shayba@google.com

@@ -402,7 +402,7 @@ public class MediaCasTest {
     }
 
     /**
-     * Test setResourceHolderRetain API when resource challenger is favoured
+     * Test setResourceOwnershipRetention API when resource challenger is favoured
      *
      * When resource challenger and resource holder have the same process and the same priority with
      * limited resources, resource challenger wins the resource.
@@ -445,11 +445,11 @@ public class MediaCasTest {
                 fail("Can't open session for program");
             }
             // Set the policy such that the resource challenger will win the resource.
-            mediaCasB.setResourceHolderRetain(false);
+            mediaCasB.setResourceOwnershipRetention(false);
             resourceChallengerSession = mediaCasB.openSession();
             if (resourceChallengerSession == null) {
                 fail("resourceHolderSession did not release the resource as "
-                        + "setResourceHolderRetain API is enabled");
+                        + "setResourceOwnershipRetention API is enabled");
             }
         } finally {
             if (resourceHolderSession != null) {
@@ -468,7 +468,7 @@ public class MediaCasTest {
     }
 
     /**
-     * Test setResourceHolderRetain API when resource holder is favoured
+     * Test setResourceOwnershipRetention API when resource holder is favoured
      *
      * When resource challenger and resource holder have the same process and the same priority with
      * limited resources, resource holder retains the resource.
@@ -512,7 +512,7 @@ public class MediaCasTest {
             }
             // Set the policy such as resource holder will be retaining the resource
             // in resource challeger situation.
-            mediaCasA.setResourceHolderRetain(true);
+            mediaCasA.setResourceOwnershipRetention(true);
 
             try {
                 resourceChallengerSession = mediaCasA.openSession();

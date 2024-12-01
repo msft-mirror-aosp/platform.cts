@@ -76,7 +76,10 @@ class VariableFamilyTest {
         assertEquals("VariableUprightFont-wght", glyphs.getPSName(0))
         assertFalse(glyphs.getFakeBold(0))
         assertFalse(glyphs.getFakeItalic(0))
-        assertEquals(100f, glyphs.getWeightOverride(0))
+        assertTrue(
+            glyphs.getWeightOverride(0) == 100f ||
+            glyphs.getWeightOverride(0) == PositionedGlyphs.NO_OVERRIDE
+        )
         assertNoItalOverride(glyphs.getItalicOverride(0))
     }
 

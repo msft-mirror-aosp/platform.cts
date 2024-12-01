@@ -145,8 +145,11 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
      */
     public void testOnlyAllowedlistedChangesAreOverridable() throws Exception {
         for (Change c : getOnDeviceCompatConfig()) {
-            // Skip changeIDs with EnabledSince more than platform sdk version
-            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)) {
+            String codename = getDevice().getProperty("ro.build.version.codename");
+            // Skip changeIDs with @EnabledSince more than platform sdk version.
+            // For release builds also skip @Disabled.
+            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)
+                    && !(codename.equals("REL") && c.sinceSdk == -1)) {
                 assertWithMessage("Please contact compat-team@google.com for approval")
                         .that(OVERRIDABLE_CHANGES).contains(c.changeName);
             }

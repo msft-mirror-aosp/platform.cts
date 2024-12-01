@@ -47,7 +47,7 @@ android_test {
     ],
     static_libs: [
         "Nene",
-        "Harrier",
+        "bedstead",
         "Queryable",
         "ActivityContext",
         "androidx.test.ext.junit",

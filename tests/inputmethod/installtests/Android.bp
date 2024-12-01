@@ -30,8 +30,7 @@ android_test {
     static_libs: [
         "CtsInputMethodServiceCommon",
         "CtsMockInputMethodLib",
-        "Harrier",
-        "Nene",
+        "bedstead-enterprise",
         "TestApp",
         "android.view.inputmethod.flags-aconfig-java",
         "androidx.test.ext.junit",

@@ -52,9 +52,11 @@ import android.service.media.MediaBrowserService;
 import android.service.media.MediaBrowserService.BrowserRoot;
 
 import androidx.test.core.app.ApplicationProvider;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.media.flags.Flags;
 
@@ -70,11 +72,9 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Test {@link android.service.media.MediaBrowserService}.
- */
+/** Test {@link android.service.media.MediaBrowserService}. */
 @FrameworkSpecificTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not need MediaBrowser.")
 public class MediaBrowserServiceTest {
 
@@ -176,12 +176,14 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSessionToken() {
         assertThat(mMediaBrowserService.getSessionToken())
                 .isEqualTo(StubMediaBrowserService.sSession.getSessionToken());
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testNotifyChildrenChanged() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.subscribe(StubMediaBrowserService.MEDIA_ID_ROOT, mSubscriptionCallback);
@@ -194,6 +196,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testNotifyChildrenChangedWithNullOptionsThrowsIAE() {
         assertThrows(IllegalArgumentException.class,
                 () -> mMediaBrowserService.notifyChildrenChanged(
@@ -201,6 +204,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testNotifyChildrenChangedWithPagination() {
         final int pageSize = 5;
         final int page = 2;
@@ -240,6 +244,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testDelayedNotifyChildrenChanged() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.subscribe(StubMediaBrowserService.MEDIA_ID_CHILDREN_DELAYED,
@@ -260,6 +265,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testDelayedItem() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.getItem(StubMediaBrowserService.MEDIA_ID_CHILDREN_DELAYED,
@@ -272,6 +278,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetBrowserInfo() throws Exception {
         // StubMediaBrowserService stores the browser info in its onGetRoot().
         assertThat(compareRemoteUserInfo(mBrowserInfo, StubMediaBrowserService.sBrowserInfo))
@@ -295,6 +302,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBrowserRoot() {
         final String id = "test-id";
         final String key = "test-key";
@@ -312,6 +320,7 @@ public class MediaBrowserServiceTest {
      * {@link MediaBrowser} on the remote process due to binder buffer overflow.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSeriesOfNotifyChildrenChanged() throws Exception {
         String parentMediaId = "testSeriesOfNotifyChildrenChanged";
         int numberOfCalls = 100;
@@ -345,6 +354,7 @@ public class MediaBrowserServiceTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NULL_SESSION_IN_MEDIA_BROWSER_SERVICE)
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSetNullSessionToken() {
         MediaBrowserCallbackImpl browserCallback = new MediaBrowserCallbackImpl();
         ComponentName componentName = new ComponentName(mContext, SimpleMediaBrowserService.class);

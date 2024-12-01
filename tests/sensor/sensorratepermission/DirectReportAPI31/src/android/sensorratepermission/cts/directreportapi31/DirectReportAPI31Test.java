@@ -16,6 +16,8 @@
 
 package android.sensorratepermission.cts.directreportapi31;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.content.Context;
 import android.hardware.SensorDirectChannel;
 import android.hardware.SensorPrivacyManager;
@@ -25,6 +27,8 @@ import android.hardware.cts.helpers.SensorRatePermissionEventConnectionTestHelpe
 import android.os.UserHandle;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -65,6 +69,8 @@ public class DirectReportAPI31Test {
     @Before
     public void setUp() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeFalse("Sensor privacy toggle is not available on visible background users",
+                new UserHelper(context).isVisibleBackgroundUser());
         mDirectReportTestHelper = new SensorRatePermissionDirectReportTestHelper(context,
                 sensorType);
         Assume.assumeTrue("Failed to create mDirectReportTestHelper!",

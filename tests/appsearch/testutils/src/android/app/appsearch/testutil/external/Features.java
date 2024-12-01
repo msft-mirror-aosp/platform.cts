@@ -118,6 +118,16 @@ public interface Features {
     String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "matchScoreExpression" function in query expressions.
+     *
+     * <p>For details on the "matchScoreExpression" function in the query language, see {@link
+     * AppSearchSession#search}.
+     */
+    String LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION =
+            FeatureConstants.LIST_FILTER_MATCH_SCORE_EXPRESSION_FUNCTION;
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
      * AppSearch backend can store the descriptions returned by {@link
      * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
@@ -133,6 +143,12 @@ public interface Features {
      * language.
      */
     String SCHEMA_EMBEDDING_PROPERTY_CONFIG = "SCHEMA_EMBEDDING_PROPERTY_CONFIG";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.EmbeddingPropertyConfig.Builder#setQuantizationType(int)}.
+     */
+    String SCHEMA_EMBEDDING_QUANTIZATION = "SCHEMA_EMBEDDING_QUANTIZATION";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
@@ -205,6 +221,15 @@ public interface Features {
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.LongPropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
+     * AppSearchSchema.DoublePropertyConfig.Builder#setScoringEnabled(boolean)}, {@link
+     * AppSearchSchema.BooleanPropertyConfig.Builder#setScoringEnabled(boolean)}. {@link
+     * SearchSpec.Builder#setScorablePropertyRankingEnabled(boolean)}.
+     */
+    String SCHEMA_SCORABLE_PROPERTY_CONFIG = FeatureConstants.SCHEMA_SCORABLE_PROPERTY_CONFIG;
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * SearchSpec.Builder#setSearchSourceLogTag(String)}.
      */
     String SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG = "SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG";
@@ -243,6 +268,21 @@ public interface Features {
     // TODO(b/273591938) unhide the API once it read for API review.
 
     String BLOB_STORAGE = "BLOB_STORAGE";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether to wrap the
+     * parent types of a document in the corresponding {@link android.app.appsearch.SearchResult},
+     * instead of in {@link android.app.appsearch.GenericDocument}.
+     */
+    String SEARCH_RESULT_PARENT_TYPES = "SEARCH_RESULT_PARENT_TYPES";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.StringPropertyConfig#DELETE_PROPAGATION_TYPE_PROPAGATE_FROM} and {@link
+     * AppSearchSchema.StringPropertyConfig.Builder#setDeletePropagationType}.
+     */
+    String SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM =
+            "SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM";
 
     /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in

@@ -189,6 +189,16 @@ public class BluetoothDeviceTest {
     }
 
     @Test
+    public void getIdentityAddressWithType() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
+        assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
+                () -> mFakeDevice.getIdentityAddressWithType());
+    }
+
+    @Test
     public void getConnectionHandle() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);

@@ -110,8 +110,7 @@ android_test {
     defaults: ["cts_package_installer_cuj_defaults"],
 
     static_libs: [
-        "Harrier",
-        "Nene",
+        "bedstead-enterprise",
     ],
 
     data: [
@@ -132,8 +131,7 @@ android_test {
     defaults: ["cts_package_installer_cuj_defaults"],
 
     static_libs: [
-        "Harrier",
-        "Nene",
+        "bedstead-enterprise",
     ],
 
     per_testcase_directory: true,

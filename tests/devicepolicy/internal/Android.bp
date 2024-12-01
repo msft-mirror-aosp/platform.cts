@@ -29,7 +29,7 @@ android_test {
         "testng", // used for assertThrows
         "EventLib",
         "ActivityContext",
-        "Harrier",
+        "bedstead-enterprise",
         "DeviceAdminApp",
         "TestApp",
         "MetricsRecorder",

@@ -30,6 +30,9 @@ _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
 ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
 )
+ACTION_ITS_DO_JCA_VIDEO_CAPTURE = (
+    'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_VIDEO_CAPTURE'
+)
 ACTIVITY_WAIT_TIME_SECONDS = 5
 AGREE_BUTTON = 'Agree'
 AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
@@ -50,6 +53,12 @@ TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
+QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
+RATIO_TO_UI_DESCRIPTION = {
+    '1 to 1 aspect ratio': 'QuickSettingsRatio1:1Button',
+    '3 to 4 aspect ratio': 'QuickSettingsRatio3:4Button',
+    '9 to 16 aspect ratio': 'QuickSettingsRatio9:16Button'
+}
 REMOVE_CAMERA_FILES_CMD = 'rm '
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
@@ -84,12 +93,13 @@ def verify_ui_object_visible(ui_object, call_on_fail=None):
     raise AssertionError('UI object was not visible!')
 
 
-def open_jca_viewfinder(dut, log_path):
+def open_jca_viewfinder(dut, log_path, request_video_capture=False):
   """Sends an intent to JCA and open its viewfinder.
 
   Args:
     dut: An Android controller device object.
-    log_path: str; log path to save screenshots.
+    log_path: str; Log path to save screenshots.
+    request_video_capture: boolean; True if requesting video capture.
   Raises:
     AssertionError: If JCA viewfinder is not visible.
   """
@@ -101,9 +111,16 @@ def open_jca_viewfinder(dut, log_path):
   )
 
   # Send intent to ItsTestActivity, which will start the correct JCA activity.
-  its_device_utils.run(
-      f'adb -s {dut.serial} shell am broadcast -a {ACTION_ITS_DO_JCA_CAPTURE}'
-  )
+  if request_video_capture:
+    its_device_utils.run(
+        f'adb -s {dut.serial} shell am broadcast -a'
+        f'{ACTION_ITS_DO_JCA_VIDEO_CAPTURE}'
+    )
+  else:
+    its_device_utils.run(
+        f'adb -s {dut.serial} shell am broadcast -a'
+        f'{ACTION_ITS_DO_JCA_CAPTURE}'
+    )
   jca_capture_button_visible = dut.ui(
       res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
           UI_OBJECT_WAIT_TIME_SECONDS)
@@ -144,6 +161,53 @@ def switch_jca_camera(dut, log_path, facing):
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
+def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
+  """Interacts with JCA UI to change aspect ratio if necessary.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    aspect_ratio: str; Aspect ratio that JCA supports.
+      Acceptable values: _RATIO_TO_UI_DESCRIPTION
+  Raises:
+    ValueError: If ratio is not supported in JCA.
+    AssertionError: If JCA does not find the requested ratio.
+  """
+  if aspect_ratio not in RATIO_TO_UI_DESCRIPTION:
+    raise ValueError(f'Testing ratio {aspect_ratio} not supported in JCA!')
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  # Change aspect ratio in ratio switching menu if needed
+  if not dut.ui(desc=aspect_ratio).wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.ui(res=QUICK_SET_RATIO_RESOURCE_ID).click()
+    try:
+      dut.ui(res=RATIO_TO_UI_DESCRIPTION[aspect_ratio]).click()
+    except Exception as e:
+      dut.take_screenshot(
+          log_path, prefix=f'failed_to_find{aspect_ratio.replace(" ", "_")}'
+      )
+      raise AssertionError(
+          f'Testing ratio {aspect_ratio} not found in JCA app UI!') from e
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+
+
+def do_jca_video_setup(dut, log_path, facing, aspect_ratio):
+  """Change video capture settings using the UI.
+
+  Selects UI elements to modify settings.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    facing: str; constant describing the direction the camera lens faces.
+      Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
+    aspect_ratio: str; Aspect ratios that JCA supports.
+      Acceptable values: _RATIO_TO_UI_DESCRIPTION
+  """
+  open_jca_viewfinder(dut, log_path, request_video_capture=True)
+  switch_jca_camera(dut, log_path, facing)
+  change_jca_aspect_ratio(dut, log_path, aspect_ratio)
+
+
 def default_camera_app_setup(device_id, pkg_name):
   """Setup Camera app by providing required permissions.
 
@@ -175,7 +239,7 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch)'
+      r'(switch to|flip camera|switch camera|camera switch|switch)'
     )
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
@@ -192,20 +256,21 @@ def switch_default_camera(dut, facing, log_path):
       logging.debug('Flip camera content-desc: %s', content_desc)
       camera_flip_res = True
       break
-  if facing == 'front' and camera_flip_res:
-    if ('rear' in content_desc or 'rear' in resource_id
-        or 'back' in content_desc or 'back' in resource_id
-        ):
-      logging.debug('Pattern found but camera is already switched.')
+  if content_desc and resource_id:
+    if facing == 'front' and camera_flip_res:
+      if ('rear' in content_desc.lower() or 'rear' in resource_id.lower()
+          or 'back' in content_desc.lower() or 'back' in resource_id.lower()
+          ):
+        logging.debug('Pattern found but camera is already switched.')
+      else:
+        dut.ui(desc=content_desc).click.wait()
+    elif facing == 'rear' and camera_flip_res:
+      if 'front' in content_desc.lower() or 'front' in resource_id.lower():
+        logging.debug('Pattern found but camera is already switched.')
+      else:
+        dut.ui(desc=content_desc).click.wait()
     else:
-      dut.ui(desc=content_desc).click.wait()
-  elif facing == 'rear' and camera_flip_res:
-    if 'front' in content_desc or 'front' in resource_id:
-      logging.debug('Pattern found but camera is already switched.')
-    else:
-      dut.ui(desc=content_desc).click.wait()
-  else:
-    raise ValueError(f'Unknown facing: {facing}')
+      raise ValueError(f'Unknown facing: {facing}')
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
@@ -264,6 +329,7 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=CANCEL_BUTTON_TXT).click.wait()
     switch_default_camera(dut, camera_facing, log_path)
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)

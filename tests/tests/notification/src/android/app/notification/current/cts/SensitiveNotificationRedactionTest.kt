@@ -59,6 +59,7 @@ import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UserHelper
 import com.google.common.truth.Truth.assertWithMessage
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -89,6 +90,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @Before
     @Throws(Exception::class)
     fun setUp() {
+        val userHelper = UserHelper(mContext)
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                userHelper.isVisibleBackgroundUser())
         PermissionUtils.grantPermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS)
 
         setUpNotifListener()
