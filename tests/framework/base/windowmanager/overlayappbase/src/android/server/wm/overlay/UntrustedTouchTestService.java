@@ -16,6 +16,7 @@
 
 package android.server.wm.overlay;
 
+import static android.server.wm.overlay.Components.UntrustedTouchTestService.EXTRA_DISPLAY_ID;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import android.app.Service;
@@ -29,7 +30,6 @@ import android.os.Looper;
 import android.os.RemoteException;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
-import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
@@ -60,14 +60,25 @@ public class UntrustedTouchTestService extends Service {
     @Override
     public void onCreate() {
         mMainHandler = new Handler(Looper.getMainLooper());
-        mWindowManager = getSystemService(WindowManager.class);
-        mSawContext = getContextForSaw(this);
-        mSawWindowManager = mSawContext.getSystemService(WindowManager.class);
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        final int displayId = intent.getIntExtra(EXTRA_DISPLAY_ID, DEFAULT_DISPLAY);
+
+        // Note: the display manager and window manager (mWindowManager) are being retrieved from
+        // different contexts because, when running the service for a secondary user on a secondary
+        // display, the window manager must be specific to that display. While the display manager
+        // operates universally, each display requires its own dedicated window manager. This is
+        // why we're only instantiating the mWindowManager field in this method.
+        final var displayManager = getSystemService(DisplayManager.class);
+        final var display = displayManager.getDisplay(displayId);
+        final var displayContext = createDisplayContext(display);
+        mWindowManager = displayContext.getSystemService(WindowManager.class);
+        mSawContext = displayContext.createWindowContext(LayoutParams.TYPE_APPLICATION_OVERLAY,
+                null /* options */);
+        mSawWindowManager = mSawContext.getSystemService(WindowManager.class);
         return mBinder.asBinder();
     }
 
@@ -126,13 +137,6 @@ public class UntrustedTouchTestService extends Service {
                 mToast.cancel();
             }
         });
-    }
-
-    private static Context getContextForSaw(Context context) {
-        DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-        Display display = displayManager.getDisplay(DEFAULT_DISPLAY);
-        Context displayContext = context.createDisplayContext(display);
-        return displayContext.createWindowContext(LayoutParams.TYPE_APPLICATION_OVERLAY, null);
     }
 
     private static View getView(Context context) {

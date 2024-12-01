@@ -23,11 +23,13 @@ android_test {
     static_libs: [
         "androidx.test.espresso.intents",
         "androidx.test.rules",
-        "bluetooth_flags_java_lib",
+        "bluetooth_exported_flags_java_lib",
         "bluetooth-test-util-lib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "flag-junit",
+        "framework",
+        "framework-bluetooth.stubs.system",
         "PlatformProperties",
     ],
     libs: [
@@ -45,4 +47,5 @@ android_test {
         "dts",
     ],
     min_sdk_version: "Tiramisu",
+    sdk_version: "module_current",
 }
