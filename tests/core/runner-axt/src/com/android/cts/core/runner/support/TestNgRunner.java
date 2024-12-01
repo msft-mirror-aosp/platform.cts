@@ -190,7 +190,7 @@ class TestNgRunner extends Runner implements Filterable {
     }
 
     // Add each test method as a child.
-    for (Method m : cls.getDeclaredMethods()) {
+    for (Method m : cls.getMethods()) {
 
       // Filter to only 'public void' signatures.
       if ((m.getModifiers() & Modifier.PUBLIC) == 0) {

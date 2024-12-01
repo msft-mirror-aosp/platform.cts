@@ -20,6 +20,9 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitAB
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
+import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
+import static android.mediav2.common.cts.MuxerUtils.muxOutput;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

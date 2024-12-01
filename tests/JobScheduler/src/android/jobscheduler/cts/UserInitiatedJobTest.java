@@ -54,6 +54,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.CallbackAsserter;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -82,6 +83,7 @@ public class UserInitiatedJobTest {
     private UiDevice mUiDevice;
     private TestAppInterface mTestAppInterface;
     private NetworkingHelper mNetworkingHelper;
+    private UserHelper mUserHelper;
 
     private String mInitialActivityManagerConstants;
     private boolean mInitialLowPowerStandbyEnabled;
@@ -110,6 +112,7 @@ public class UserInitiatedJobTest {
                 Manifest.permission.MANAGE_LOW_POWER_STANDBY)) {
             mPowerManager.setLowPowerStandbyEnabled(false);
         }
+        mUserHelper = new UserHelper(mContext);
     }
 
     @After
@@ -128,6 +131,10 @@ public class UserInitiatedJobTest {
     @Test
     @FlakyTest
     public void testJobUidState() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Go through the notification click/BAL route of scheduling the job so the proc state
         // data comes from being elevated by the running job and not because of the app being
         // in a higher state.
@@ -149,10 +156,13 @@ public class UserInitiatedJobTest {
 
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
-            mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND,
-                    ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
-                    | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK,
-                    201 /* ProcessList.PERCEPTIBLE_APP_ADJ + 1 */);
+            mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                    .setProcState(ActivityManager.PROCESS_STATE_IMPORTANT_FOREGROUND)
+                    .setExpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                            | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                    .setOomScoreAdj(201 /* ProcessList.PERCEPTIBLE_APP_ADJ + 1 */)
+                    .build());
         }
     }
 
@@ -187,6 +197,10 @@ public class UserInitiatedJobTest {
      */
     @Test
     public void testRestrictedBalToTop() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Tests cannot disable ethernet network.
         assumeFalse("ethernet is connected", mNetworkingHelper.hasEthernetConnection());
 
@@ -239,6 +253,10 @@ public class UserInitiatedJobTest {
      */
     @Test
     public void testRestrictedToggling() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TEST_APP_PACKAGE)) {
@@ -307,6 +325,10 @@ public class UserInitiatedJobTest {
     @Test
     @FlakyTest
     public void testRestrictedUidState() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mTestAppInterface.setTestPackageRestricted(true);
         // Go through the notification click/BAL route of scheduling the job so the proc state
         // data comes from being elevated by the running job and not because of the app being
@@ -329,9 +351,15 @@ public class UserInitiatedJobTest {
 
             assertTrue("Job did not start after scheduling",
                     mTestAppInterface.awaitJobStart(2 * DEFAULT_WAIT_TIMEOUT_MS));
-            mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                    ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK,
-                    227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+
+            mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                    .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                    .setExpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK)
+                    .setUnexpectedCapability(
+                            ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                    .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                    .build());
         }
     }
 
@@ -341,6 +369,10 @@ public class UserInitiatedJobTest {
      */
     @Test
     public void testSchedulingBal() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TestAppInterface.TEST_APP_PACKAGE)) {
