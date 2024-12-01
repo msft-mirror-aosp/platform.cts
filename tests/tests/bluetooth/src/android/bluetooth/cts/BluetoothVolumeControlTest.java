@@ -33,6 +33,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothVolumeControl;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -473,6 +474,28 @@ public class BluetoothVolumeControlTest {
         // Verify returns false if bluetooth is not enabled
         assertFalse(mBluetoothVolumeControl.setConnectionPolicy(
                 testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+    }
+
+    @Test
+    public void getAudioInputControlServices() {
+        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothVolumeControl);
+
+        assertThrows(
+                NullPointerException.class,
+                () -> mBluetoothVolumeControl.getAudioInputControlServices(null));
+
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothVolumeControl.getAudioInputControlServices(testDevice),
+                List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mBluetoothVolumeControl.getAudioInputControlServices(testDevice))
+                    .isNotNull();
+        }
     }
 
     private boolean waitForProfileConnect() {
