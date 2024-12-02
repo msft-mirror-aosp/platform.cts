@@ -90,11 +90,18 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.util.PackageUtils;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.internal.util.ConcurrentUtils;
@@ -102,9 +109,8 @@ import com.android.internal.util.HexDump;
 
 import libcore.util.HexEncoding;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -143,6 +149,7 @@ public class PackageManagerShellCommandInstallTest {
     static final String TEST_VERIFIER_PACKAGE = "com.example.helloverifier";
     static final String TEST_SUFFICIENT_VERIFIER_PACKAGE = "com.example.hellosufficient";
 
+    private static final String TAG = PackageManagerShellCommandInstallTest.class.getSimpleName();
     private static final String CTS_PACKAGE_NAME = "android.content.cts";
 
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";
@@ -214,6 +221,10 @@ public class PackageManagerShellCommandInstallTest {
 
     static final long DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS = 3 * 1000;
     static final long VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS = 10 * 1000;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public AbandonAllPackageSessionsRule mAbandonSessionsRule = new AbandonAllPackageSessionsRule();
@@ -1611,6 +1622,64 @@ public class PackageManagerShellCommandInstallTest {
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
+        }
+    }
+
+    @Test
+    @EnsureCanAddUser
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testDependencyInstallerService_multiUser() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        // Verify we bind to current user's DIS and packages get installed on current user.
+        setDependencyInstallerRoleHolder();
+        try {
+            setDependencyInstallerRunMethod(
+                    TestDependencyInstallerService.METHOD_VERIFY_USER_ID);
+            installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId(), "Success");
+            assertThat(isPackageInstalledForUser(
+                        TEST_SDK_USER_PACKAGE, mUserHelper.getUserId())).isTrue();
+            assertThat(isPackageInstalledForUser(
+                        TEST_SDK1_PACKAGE, mUserHelper.getUserId())).isTrue();
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
+
+        // Uninstall package for current user
+        uninstallPackageSilently(TEST_SDK_USER_PACKAGE);
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+        assertThat(isPackageInstalledForUser(
+                    TEST_SDK_USER_PACKAGE, mUserHelper.getUserId())).isFalse();
+        assertThat(isPackageInstalledForUser(
+                    TEST_SDK1_PACKAGE, mUserHelper.getUserId())).isFalse();
+
+        // Now install the package again for another user
+        try (UserReference secondaryUser = TestApis.users().createUser().createAndStart()) {
+            // Install the test app on the new user first, otherwise system won't be able to bind
+            // to DIS for new user.
+            TestApis.packages().instrumented().installExisting(secondaryUser);
+
+            setDependencyInstallerRoleHolder(secondaryUser.id());
+            try {
+                setDependencyInstallerRunMethod(
+                        TestDependencyInstallerService.METHOD_VERIFY_USER_ID);
+                installPackageAsUser(TEST_USING_SDK1, secondaryUser.id(), "Success");
+                // Verify that package is installed on secondary user only
+                assertThat(isPackageInstalledForUser(
+                            TEST_SDK_USER_PACKAGE, secondaryUser.id())).isTrue();
+                assertThat(isPackageInstalledForUser(
+                            TEST_SDK1_PACKAGE, secondaryUser.id())).isTrue();
+                assertThat(isPackageInstalledForUser(
+                            TEST_SDK_USER_PACKAGE, mUserHelper.getUserId())).isFalse();
+                assertThat(isPackageInstalledForUser(
+                            TEST_SDK1_PACKAGE, mUserHelper.getUserId())).isFalse();
+            } finally {
+                removeDependencyInstallerRoleHolder(secondaryUser.id());
+            }
         }
     }
 
@@ -3163,6 +3232,21 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
+    private boolean isPackageInstalledForUser(String packageName, int userId) {
+        Context userContext = getContext().createContextAsUser(UserHandle.of(userId), 0);
+        try {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                userContext.getPackageManager().getPackageInfo(
+                        packageName,
+                        PackageManager.PackageInfoFlags.of(
+                            MATCH_STATIC_SHARED_AND_SDK_LIBRARIES));
+            }, Manifest.permission.INSTALL_PACKAGES);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /**
      * SDK package is signed by build system. In theory we could try to extract the signature,
      * and patch the app manifest. This property allows us to override in runtime, which is much
@@ -3409,40 +3493,59 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     private String getDependencyInstallerRoleHolder() throws Exception {
+        return getDependencyInstallerRoleHolder(mUserHelper.getUserId());
+    }
+
+    private String getDependencyInstallerRoleHolder(int userId) throws Exception {
         return mRoleManager
             .getRoleHoldersAsUser(
-                    ROLE_SYSTEM_DEPENDENCY_INSTALLER, Process.myUserHandle())
+                    ROLE_SYSTEM_DEPENDENCY_INSTALLER, UserHandle.of(userId))
             .stream().findFirst().orElse(null);
     }
 
     private void setDependencyInstallerRoleHolder() throws Exception {
+        setDependencyInstallerRoleHolder(mUserHelper.getUserId());
+    }
+
+    private void setDependencyInstallerRoleHolder(int userId) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
                 Manifest.permission.MANAGE_ROLE_HOLDERS,
                 Manifest.permission.BYPASS_ROLE_QUALIFICATION
         );
         try {
+            assertThat(mPreviousDependencyInstallerRoleHolder).isNull();
             mPreviousDependencyInstallerRoleHolder = getDependencyInstallerRoleHolder();
             mRoleManager.setBypassingRoleQualification(true);
             mRoleManager.addRoleHolderAsUser(
                     ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
-                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, UserHandle.of(userId),
                     getContext().getMainExecutor(),
-                    ignore -> {
-                        latch.countDown();
+                    success -> {
+                        if (success) {
+                            latch.countDown();
+                        }
                     });
 
             assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             assertWithMessage("Failed to set dependency installer role holder")
-                    .that(getDependencyInstallerRoleHolder()).isEqualTo(CTS_PACKAGE_NAME);
+                    .that(getDependencyInstallerRoleHolder(userId)).isEqualTo(CTS_PACKAGE_NAME);
+            Log.d(TAG, "Dependency Installer Role updated to " + CTS_PACKAGE_NAME + " for user: "
+                    + userId);
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
     private void removeDependencyInstallerRoleHolder() throws Exception {
+        removeDependencyInstallerRoleHolder(mUserHelper.getUserId());
+    }
+
+    private void removeDependencyInstallerRoleHolder(int userId) throws Exception {
         getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
                 Manifest.permission.MANAGE_ROLE_HOLDERS,
                 Manifest.permission.BYPASS_ROLE_QUALIFICATION
         );
@@ -3451,9 +3554,11 @@ public class PackageManagerShellCommandInstallTest {
             if (mPreviousDependencyInstallerRoleHolder == null) {
                 mRoleManager.removeRoleHolderAsUser(
                         ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
-                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
-                        getContext().getMainExecutor(), ignored -> {
-                            latch.countDown();
+                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, UserHandle.of(userId),
+                        getContext().getMainExecutor(), success -> {
+                            if (success) {
+                                latch.countDown();
+                            }
                         });
                 assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
             } else {
@@ -3462,14 +3567,19 @@ public class PackageManagerShellCommandInstallTest {
                 mRoleManager.addRoleHolderAsUser(
                         ROLE_SYSTEM_DEPENDENCY_INSTALLER,
                         mPreviousDependencyInstallerRoleHolder,
-                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
-                        getContext().getMainExecutor(), ignored -> {
-                            latch.countDown();
+                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, UserHandle.of(userId),
+                        getContext().getMainExecutor(), success -> {
+                            if (success) {
+                                latch.countDown();
+                            }
                         });
                 assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
                 assertWithMessage("Failed to set dependency installer role holder")
-                        .that(getDependencyInstallerRoleHolder())
+                        .that(getDependencyInstallerRoleHolder(userId))
                         .isEqualTo(mPreviousDependencyInstallerRoleHolder);
+                Log.d(TAG, "Dependency Installer Role updated to "
+                        + mPreviousDependencyInstallerRoleHolder + " for user: " + userId);
+                mPreviousDependencyInstallerRoleHolder = null;
             }
         } finally {
             mRoleManager.setBypassingRoleQualification(false);
