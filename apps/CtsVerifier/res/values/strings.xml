@@ -1551,7 +1551,9 @@
     <string name="snsr_baro_turn_on_wifi"> You will be redirected to the wifi settings screen. Please turn on wifi on this device.</string>
     <string name="snsr_baro_turn_on_bluetooth"> You will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device.</string>
     <string name="snsr_baro_turn_on_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn on airplane mode on this device.</string>
-   <string name="snsr_baro_walking_impact_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, start walking with the device without changing elevation, try to make a few turns during the walk, and when you hear another sound, stop walking.</string>
+    <string name="snsr_baro_walking_impact_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, start walking with the device without changing elevation, try to make a few turns during the walk, and when you hear another sound, stop walking.</string>
+    <string name="snsr_baro_soomth_within_same_activation_instruction">After clicking the Next button, put the device on the ground with the screen facing up. After the first sound plays, raise the device to ~2 meters above the ground within 2 seconds, another sound will play after 2 seconds, and hold it steady for about 5 seconds. A final sound will be played to signal the end of the test. </string>
+
     <!-- String for Barometer reference device -->
     <string name="snsr_baro_ref_device">Barometer Reference Device</string>
     <string name="snsr_baro_ref_device_start_collection_instruction">Now that the two devices are connected, click the Next button on both devices simultaneously to start collecting readings.</string>
