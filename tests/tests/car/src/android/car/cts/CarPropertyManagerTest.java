@@ -828,7 +828,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ABS_ACTIVE,
                             VehiclePropertyIds.TRACTION_CONTROL_ACTIVE,
                             VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_ENABLED,
-                            VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_STATE)
+                            VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_STATE,
+                            VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_CAR_DYNAMICS_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -1881,6 +1882,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getVehiclePassiveSuspensionHeightVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }

@@ -1238,4 +1238,17 @@ public class VehiclePropertyVerifiers {
                         Boolean.class)
                 .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
     }
+
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getVehiclePassiveSuspensionHeightVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Integer.class)
+                .requireMinMaxValues()
+                .requireZeroToBeContainedInMinMaxRanges()
+                .addReadPermission(Car.PERMISSION_CAR_DYNAMICS_STATE);
+    }
 }
