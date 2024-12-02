@@ -49,6 +49,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.autofill.InlinePresentation;
@@ -287,6 +289,10 @@ public final class AutoFillServiceTestCase {
                     cleanAllActivities();
                 });
 
+        @Rule
+        public final CheckFlagsRule mCheckFlagsRule =
+                DeviceFlagsValueProvider.createCheckFlagsRule();
+
         private final AutofillLoggingTestRule mLoggingRule = new AutofillLoggingTestRule(TAG);
 
         protected final SafeCleanerRule mSafeCleanerRule = new SafeCleanerRule()
@@ -328,6 +334,8 @@ public final class AutoFillServiceTestCase {
                 //
                 // mRetryRule should be closest to the main test as possible
                 .around(mRetryRule)
+                // mCheckFlagsRule checks for required flags for a test
+                .around(mCheckFlagsRule)
                 //
                 // Augmented Autofill should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
