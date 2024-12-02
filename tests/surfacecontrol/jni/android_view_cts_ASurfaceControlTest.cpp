@@ -781,9 +781,9 @@ void SurfaceTransaction_setLuts(JNIEnv* env, jclass, jlong surfaceControl, jlong
                 int32_t bufferSizePerLut = (i + 1 == numLuts) ? bufferSize - joffsets[i]
                                                               : joffsets[i + 1] - joffsets[i];
                 ADisplayLutsEntry* entry =
-                        ADisplayLutsEntry_createEntry(jbuffers.get() + joffsets[i],
-                                                      bufferSizePerLut, jdimensions[i],
-                                                      jsamplingKeys[i]);
+                        ADisplayLutsEntry_createEntry(jbuffers.get() + joffsets[i], bufferSizePerLut,
+                                        static_cast<ADisplayLuts_Dimension>(jdimensions[i]),
+                                        static_cast<ADisplayLuts_SamplingKey>(jsamplingKeys[i]));
                 entries.emplace_back(entry);
             }
             ADisplayLuts_setEntries(luts, entries.data(), numLuts);
