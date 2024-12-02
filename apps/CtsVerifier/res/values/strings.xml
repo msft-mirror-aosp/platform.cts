@@ -7468,6 +7468,16 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\n
         2. In the system sharesheet, select all images and tap on the chooser action.
     </string>
+    <string name="sharesheet_payload_text_plus_image_test">Sharesheet Text Plus Image</string>
+    <string name="sharesheet_payload_text_plus_image_test_info">
+        This test verifies that the system sharesheet properly handles the text plus thumbnail sharing.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. Dismiss the system sharesheet.
+        \n\n
+        3. If an image of a black letter \"A\" on a white background was shown in the sharesheet, pass the test, otherwise fail.
+    </string>
     <string name="sharesheet_chooser_action">Test Action</string>
     <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
     <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
