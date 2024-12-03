@@ -200,6 +200,7 @@ public class BluetoothDeviceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_ADDRESS_TYPE_API)
     public void getIdentityAddressWithType() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
