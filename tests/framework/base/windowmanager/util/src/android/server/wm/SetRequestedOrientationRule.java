@@ -27,6 +27,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PackageUtil;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestRule;
@@ -78,14 +79,17 @@ public class SetRequestedOrientationRule implements TestRule {
 
     public static class DisableFixedToUserRotationRule extends ExternalResource {
         private static final String TAG = "DisableFixToUserRotationRule";
-        private static final String COMMAND = "cmd window fixed-to-user-rotation ";
+        private static final String COMMAND = "cmd window fixed-to-user-rotation -d ";
 
         private final boolean mSupportsRotation;
+
+        private final int mDisplayId;
 
         private String mOriginalValue;
 
         public DisableFixedToUserRotationRule() {
             mSupportsRotation = PackageUtil.supportsRotation();
+            mDisplayId = new UserHelper().getMainDisplayId();
         }
 
         @Override
@@ -93,8 +97,8 @@ public class SetRequestedOrientationRule implements TestRule {
             if (!mSupportsRotation) {
                 return;
             }
-            mOriginalValue = SystemUtil.runShellCommand(COMMAND);
-            executeShellCommandAndPrint(COMMAND + "disabled");
+            mOriginalValue = SystemUtil.runShellCommand(COMMAND + mDisplayId);
+            executeShellCommandAndPrint(COMMAND + mDisplayId + " disabled");
         }
 
         @Override
@@ -102,7 +106,7 @@ public class SetRequestedOrientationRule implements TestRule {
             if (!mSupportsRotation) {
                 return;
             }
-            executeShellCommandAndPrint(COMMAND + mOriginalValue);
+            executeShellCommandAndPrint(COMMAND + mDisplayId + " " + mOriginalValue);
         }
 
         private void executeShellCommandAndPrint(String cmd) {
