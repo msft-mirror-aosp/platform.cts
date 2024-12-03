@@ -22,21 +22,20 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.appsearch.PropertyPath;
 import android.app.appsearch.ast.query.HasPropertyNode;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.List;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ABSTRACT_SYNTAX_TREES)
 public class HasPropertyNodeCtsTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     @Test
     public void testEquals_identical() {

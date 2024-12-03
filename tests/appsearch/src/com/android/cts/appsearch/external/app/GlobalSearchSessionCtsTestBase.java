@@ -50,11 +50,10 @@ import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.observer.SchemaChangeInfo;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -69,6 +68,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,8 +89,7 @@ public abstract class GlobalSearchSessionCtsTestBase {
 
     protected GlobalSearchSessionShim mGlobalSearchSession;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     protected abstract ListenableFuture<AppSearchSessionShim> createSearchSessionAsync(
             @NonNull String dbName) throws Exception;
