@@ -21,6 +21,7 @@ import android.provider.Settings;
 import android.net.Uri;
 import android.os.SystemClock;
 
+import com.google.common.math.StatsAccumulator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -325,6 +326,90 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     }
 
     @SuppressWarnings("unused")
+    public String testSmoothingacrossActivations() throws Throwable {
+        List<List<TestSensorEvent>> events = new ArrayList<List<TestSensorEvent>>();
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_prep_instruction);
+        waitForUserToContinue();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 20 seconds on the ground.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_two_meters_above);
+        waitForUserToContinue();
+        // Collect data for 20 seconds at 2 meters above the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger().logInstructions(R.string.snsr_baro_smooth_across_activations_floor);
+        waitForUserToContinue();
+        // Collect data for another 20 seconds on the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_two_floors_below);
+        waitForUserToContinue();
+        // Collect data for 20 seconds at 2 floors below the starting floor, on the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+        boolean passed = true;
+        StringBuilder message = new StringBuilder().append("FAILED - \n");
+        for (int i = 0; i < events.size(); i++) {
+            List<TestSensorEvent> eventList = events.get(i);
+            if (!isPressureStableWithinActivation(eventList)) {
+                passed = false;
+                message.append("Pressure is not stable within activation: #");
+                message.append(i);
+                message.append("\n");
+            }
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(0), events.get(1), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the first and"
+                            + " second activations. ");
+            message.append("\n");
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(1), events.get(2), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the second"
+                            + " and third activations. ");
+            message.append("\n");
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(2), events.get(3), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the third and"
+                            + " fourth activations. ");
+            message.append("\n");
+        }
+        if (!passed) {
+            Assert.fail(message.toString());
+            return "FAILED";
+        }
+        return "PASSED";
+    }
+
+    @SuppressWarnings("unused")
     public String testWalkingImpact() throws Throwable {
         List<TestSensorEvent> events = new ArrayList<>();
         getTestLogger().logInstructions(R.string.snsr_baro_walking_impact_instruction);
@@ -626,5 +711,72 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
             }
         }
         return Pair.create(minEntry, maxEntry);
+    }
+
+    /**
+     * Checks if the pressure readings are stable within the same activation by comparing the first
+     * second and the last ten seconds readings.
+     *
+     * @param events the list of sensor events
+     * @return true if the readings are within 0.06 hPa for the first second and the last ten
+     *     seconds of the activation, false otherwise.
+     */
+    private static boolean isPressureStableWithinActivation(List<TestSensorEvent> events) {
+        long startTimeNanos = events.get(0).timestamp;
+        long endTimeNanos = events.get(events.size() - 1).timestamp;
+        long firstSecondEndTimeNanos = startTimeNanos + 1L * NANOSECONDS_PER_SECOND;
+        long lastTenSecondsStartTimeNanos = endTimeNanos - 10L * NANOSECONDS_PER_SECOND;
+        StatsAccumulator firstSecondReadings = new StatsAccumulator();
+        StatsAccumulator lastTenSecondsReadings = new StatsAccumulator();
+        for (TestSensorEvent event : events) {
+            if (event.timestamp > startTimeNanos && event.timestamp < firstSecondEndTimeNanos) {
+                firstSecondReadings.add(computeAveragePressureHpa(event));
+            } else if (event.timestamp > lastTenSecondsStartTimeNanos
+                    && event.timestamp < endTimeNanos) {
+                lastTenSecondsReadings.add(computeAveragePressureHpa(event));
+            }
+        }
+        return Math.abs(firstSecondReadings.mean() - lastTenSecondsReadings.mean()) < 0.06;
+    }
+
+    /**
+     * Checks if the elevation change is reflected in the pressure reading by comparing the average
+     * pressure reading in the last second before the change and the first second after the change.
+     *
+     * @param priorToChangeEvents the list of events that occurred before the elevation change
+     * @param afterChangeEvents the list of events that occurred after the elevation change
+     * @param thresholdHpa the minimum difference between the average pressure reading before and
+     *     after the change
+     * @return true if the elevation change is reflected in the pressure reading, false otherwise
+     */
+    private static boolean isELevationChangeReflectedInPressure(
+            List<TestSensorEvent> priorToChangeEvents,
+            List<TestSensorEvent> afterChangeEvents,
+            double thresholdHpa) {
+        long priorToChangeEndTimeNanos =
+                priorToChangeEvents.get(priorToChangeEvents.size() - 1).timestamp;
+        long priorToChangeLastSecondStartTimeNanos =
+                priorToChangeEndTimeNanos - 1L * NANOSECONDS_PER_SECOND;
+        long afterChangeStartTimeNanos = afterChangeEvents.get(0).timestamp;
+        long afterChangeFirstSecondEndTimeNanos =
+                afterChangeStartTimeNanos + 1L * NANOSECONDS_PER_SECOND;
+        StatsAccumulator priorToChangeReadings = new StatsAccumulator();
+        for (int i = priorToChangeEvents.size() - 1; i >= 0; i--) {
+            TestSensorEvent event = priorToChangeEvents.get(i);
+            if (event.timestamp > priorToChangeLastSecondStartTimeNanos) {
+                priorToChangeReadings.add(computeAveragePressureHpa(event));
+            } else {
+                break;
+            }
+        }
+        StatsAccumulator afterChangeReadings = new StatsAccumulator();
+        for (TestSensorEvent event : afterChangeEvents) {
+            if (event.timestamp < afterChangeFirstSecondEndTimeNanos) {
+                afterChangeReadings.add(computeAveragePressureHpa(event));
+            } else {
+                break;
+            }
+        }
+        return Math.abs(afterChangeReadings.mean() - priorToChangeReadings.mean()) > thresholdHpa;
     }
 }
