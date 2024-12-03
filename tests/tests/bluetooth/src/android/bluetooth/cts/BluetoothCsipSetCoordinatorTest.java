@@ -24,7 +24,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothCsipSetCoordinator;
@@ -279,22 +278,14 @@ public class BluetoothCsipSetCoordinatorTest {
         // Lock group
         mIsLocked = false;
         mTestOperationStatus = BluetoothStatusCodes.ERROR_CSIP_INVALID_GROUP_ID;
-        try {
-            mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId, mTestExecutor, mTestCallback);
-        } catch (Exception e) {
-            fail("Exception caught from register(): " + e.toString());
-        }
+        mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId, mTestExecutor, mTestCallback);
 
         assertTrue(waitForGroupLockCallback());
 
         long uuidLsb = 0x01;
         long uuidMsb = 0x01;
         UUID uuid = new UUID(uuidMsb, uuidLsb);
-        try {
-            mBluetoothCsipSetCoordinator.unlockGroup(uuid);
-        } catch (Exception e) {
-            fail("Exception caught from register(): " + e.toString());
-        }
+        mBluetoothCsipSetCoordinator.unlockGroup(uuid);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
