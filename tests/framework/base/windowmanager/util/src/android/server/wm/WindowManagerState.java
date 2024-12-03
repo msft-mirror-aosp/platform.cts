@@ -458,6 +458,11 @@ public class WindowManagerState {
         mDisplayFrozen = false;
     }
 
+    /** Returns the focused app on the provided display. */
+    public String getFocusedAppOnDisplay(int displayId) {
+        return getDisplay(displayId).mFocusedApp;
+    }
+
     public String getFocusedApp() {
         return mFocusedApp;
     }
@@ -560,6 +565,10 @@ public class WindowManagerState {
         return null;
     }
 
+    int getFocusedTaskIdOnDisplay(int displayId) {
+        return getDisplay(displayId).mFocusedRootTaskId;
+    }
+
     int getFocusedTaskId() {
         return mTopFocusedTaskId;
     }
@@ -572,6 +581,11 @@ public class WindowManagerState {
     public int getFocusedRootTaskWindowingMode() {
         final Task rootTask = getRootTask(mTopFocusedTaskId);
         return rootTask != null ? rootTask.getWindowingMode() : WINDOWING_MODE_UNDEFINED;
+    }
+
+    /** Returns the focused activity on the specified display. */
+    public String getFocusedActivityOnDisplay(int displayId) {
+        return getDisplay(displayId).mResumedActivity;
     }
 
     public String getFocusedActivity() {
