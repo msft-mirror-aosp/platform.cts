@@ -112,3 +112,27 @@ android_test {
     ],
     platform_apis: true,
 }
+
+test_module_config {
+    name: "CtsWifiTestCases_NoNonMainlineTest",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["com.android.compatibility.common.util.NonMainlineTest"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases_NoVirtualDeviceNotSupported",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.net.wifi.cts.VirtualDeviceNotSupported"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases-wifi-mainline-presubmit",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "com.android.compatibility.common.util.NonMainlineTest",
+        "android.net.wifi.cts.VirtualDeviceNotSupported",
+    ],
+}

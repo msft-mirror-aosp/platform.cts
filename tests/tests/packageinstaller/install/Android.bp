@@ -122,3 +122,10 @@ android_test {
     platform_apis: true,
     test_config: "CtsUpdateOwnershipEnforcementTest.xml",
 }
+
+test_module_config {
+    name: "CtsPackageInstallTestCases_NoAppModeInstant",
+    base: "CtsPackageInstallTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeInstant"],
+}

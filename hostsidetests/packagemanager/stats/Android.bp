@@ -89,5 +89,18 @@ test_module_config_host {
     name: "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest",
     base: "CtsPackageManagerIncrementalStatsHostTestCases",
     test_suites: ["general-tests"],
-    include_annotations: ["androidx.test.filters.LargeTest"],
+    include_annotations: [
+        "androidx.test.filters.LargeTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_NoLargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.LargeTest",
+        "androidx.test.filters.LargeTest",
+    ],
 }

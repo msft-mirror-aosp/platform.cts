@@ -98,3 +98,17 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.provider.cts.media.MediaStore_DownloadsTest"],
 }
+
+test_module_config {
+    name: "CtsProviderTestCases_NoLarge",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_NoSettingsPanel",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.provider.cts.SettingsPanelTest"],
+}

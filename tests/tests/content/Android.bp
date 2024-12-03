@@ -311,6 +311,56 @@ android_test {
     ],
 }
 
+test_module_config {
+    name: "CtsWindowManagerTestCases_wm_cts",
+    base: "CtsWindowManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_om",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.res.loader.cts",
+        "android.content.om.cts",
+    ],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_res_cts",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.res.cts"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_clip",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.cts.ClipDataTest",
+        "android.content.cts.ClipDescriptionTest",
+        "android.content.cts.ClipboardManagerTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_cts_broadcastreceivertest_NoLarge",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.cts.BroadcastReceiverTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_PlatinumTest",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}
+
 android_ravenwood_test {
     name: "CtsContentTestCasesRavenwood",
     defaults: ["cts_defaults"],

@@ -46,3 +46,11 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsFgsTimeoutTestCases_Presubmit",
+    base: "CtsFgsTimeoutTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

@@ -37,3 +37,15 @@ android_test {
     resource_dirs: ["res"],
     platform_apis: true,
 }
+
+test_module_config {
+    name: "CtsNativeMediaAAudioTestCases_TestBasic",
+    base: "CtsNativeMediaAAudioTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_DEFAULT__INPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_LOW_LATENCY__OUTPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_LOW_LATENCY__INPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_DEFAULT__OUTPUT",
+    ],
+}

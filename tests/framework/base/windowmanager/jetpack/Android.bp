@@ -118,3 +118,10 @@ test_module_config {
     test_suites: ["general-tests"],
     include_annotations: ["android.platform.test.annotations.Presubmit"],
 }
+
+test_module_config {
+    name: "CtsWindowManagerJetpackTestCases_PlatinumTest",
+    base: "CtsWindowManagerJetpackTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

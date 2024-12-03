@@ -141,3 +141,11 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.media.misc.cts.MediaMetadataRetrieverTest"],
 }
+
+test_module_config {
+    name: "CtsMediaMiscTestCases_Presubmit_NoDevice",
+    base: "CtsMediaMiscTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}

@@ -64,3 +64,10 @@ test_module_config_host {
     test_suites: ["general-tests"],
     include_filters: ["android.incrementalinstall.cts.IncrementalFeatureTest"],
 }
+
+test_module_config_host {
+    name: "CtsIncrementalInstallHostTestCases_PlatinumTest",
+    base: "CtsIncrementalInstallHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

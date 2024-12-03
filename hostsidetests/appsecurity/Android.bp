@@ -672,3 +672,27 @@ test_module_config_host {
     include_annotations: ["android.platform.test.annotations.Presubmit"],
     exclude_annotations: ["android.platform.test.annotations.Postsubmit"],
 }
+
+test_module_config_host {
+    name: "CtsAppDataIsolationHostTestCases_qualified-tests",
+    base: "CtsAppDataIsolationHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.appsecurity.cts.AppDataIsolationTests#testNormalProcessCannotAccessOtherAppDataDir",
+        "android.appsecurity.cts.AppDataIsolationTests#testAppZygoteIsolatedProcess",
+        "android.appsecurity.cts.AppDataIsolationTests#testSharedAppAbleToAccessOtherAppDataDir",
+        "android.appsecurity.cts.AppDataIsolationTests#testIsolatedProcess",
+        "android.appsecurity.cts.AppDataIsolationTests#testSharedAppAbleToAccessOtherAppExternalDataDir",
+        "android.appsecurity.cts.AppDataIsolationTests#testAppNotAbleToAccessItsDataAfterReinstall",
+        "android.appsecurity.cts.AppDataIsolationTests#testAppUnableToAccessOtherUserAppDataDirApi29",
+        "android.appsecurity.cts.AppDataIsolationTests#testAppAbleToAccessItsDataAfterForceStop",
+        "android.appsecurity.cts.AppDataIsolationTests#testAppUnableToAccessOtherUserAppDataDir",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerHostTestCases_PlatinumTest",
+    base: "CtsPackageManagerHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}
