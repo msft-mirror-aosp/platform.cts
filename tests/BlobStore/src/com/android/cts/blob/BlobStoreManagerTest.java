@@ -40,6 +40,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.LimitExceededException;
@@ -55,6 +56,7 @@ import android.util.Pair;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.cts.blob.ICommandReceiver;
@@ -146,6 +148,9 @@ public class BlobStoreManagerTest {
         mContext.getFilesDir().delete();
         for (String pkg : new String[] {HELPER_PKG, HELPER_PKG2, HELPER_PKG3}) {
             runShellCmd("cmd package clear " + pkg + " -u " + mUserId);
+        }
+        for (String pkg : new String[] {HELPER_PKG, HELPER_PKG2, HELPER_PKG3}) {
+            waitUntilStorageCleared(pkg);
         }
     }
 
@@ -1701,6 +1706,24 @@ public class BlobStoreManagerTest {
             assertThrows(IllegalArgumentException.class,
                     () -> BlobHandle.createWithSha256("digest".getBytes(), "label", 1111L, tag));
         }
+    }
+
+    private void waitUntilStorageCleared(String packageName) {
+        final StorageStatsManager storageStatsManager = mContext.getSystemService(
+                StorageStatsManager.class);
+        PollingCheck.waitFor(() -> {
+            final long dataBytes = SystemUtil.runWithShellPermissionIdentity(() -> {
+                try {
+                    return storageStatsManager.queryStatsForPackage(UUID_DEFAULT, packageName,
+                            mContext.getUser()).getDataBytes();
+                } catch (PackageManager.NameNotFoundException | IOException e) {
+                    Log.d(TAG, "Exception while querying the storage stats for pkg: "
+                            + packageName, e);
+                    return 0L;
+                }
+            });
+            return dataBytes == 0;
+        }, "Timed out waiting for storage to be cleared for pkg: " + packageName);
     }
 
     private static void runWithKeyValues(ThrowingRunnable runnable,
