@@ -156,9 +156,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
      */
     public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId, @Nullable Integer displayId) {
-        return launcherForActivityNewTask(activityClass, activityId, false /* isFullScreen */,
-                displayId)
-                .launch(mInstrumentation);
+        return startActivityNewTaskInternal(activityClass, activityId, false /* isFullscreen */,
+                displayId);
     }
 
     public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass) {
@@ -176,13 +175,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
      */
     public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId, @Nullable Integer displayId) {
-        final T activity = launcherForActivityNewTask(activityClass, activityId,
-                true/* isFullScreen */, displayId).launch(mInstrumentation);
-        if (displayId != null) {
-            waitAndAssertActivityStateOnDisplay(activity.getComponentName(), STATE_RESUMED,
-                    displayId, "Activity must be launched on display#" + displayId);
-        }
-        return activity;
+        return startActivityNewTaskInternal(activityClass, activityId, true /* isFullscreen */,
+                displayId);
     }
 
     public static void waitForOrFail(String message, BooleanSupplier condition) {
@@ -192,13 +186,36 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 .setOnFailure(unusedResult -> fail("FAILED because unsatisfied: " + message)));
     }
 
+    /**
+     * Starts an activity to front and returns the activity instance.
+     *
+     * @param activityClass the activity class to launch
+     * @param activityId the Activity ID to identify the activity
+     * @param isFullScreen {@code true} to launch in fullscreen, or {@code false} to follow the
+     *                      system default windowing mode
+     * @param displayId the display to launch the activity, or {@code null} to follow system default
+     * @return the launch activity instance
+     * @param <T> A activity type
+     */
+    private  <T extends Activity> T startActivityNewTaskInternal(@NonNull Class<T> activityClass,
+            @Nullable String activityId, boolean isFullScreen, @Nullable Integer displayId) {
+        final T activity = launcherForActivityNewTask(activityClass, activityId, isFullScreen,
+                displayId)
+                .launch(mInstrumentation);
+        if (displayId != null) {
+            waitAndAssertActivityStateOnDisplay(activity.getComponentName(), STATE_RESUMED,
+                    displayId, "Activity must be launched on display#" + displayId);
+        }
+        return activity;
+    }
+
     private <T extends Activity> TestActivityLauncher<T> launcherForActivityNewTask(
             @NonNull Class<T> activityClass, @Nullable String activityId, boolean isFullScreen,
             @Nullable Integer launchDisplayId) {
         final int windowingMode = isFullScreen ? WINDOWING_MODE_FULLSCREEN :
                 WINDOWING_MODE_UNDEFINED;
         final TestActivityLauncher<T> launcher =
-                new TestActivityLauncher<T>(mContext, activityClass)
+                new TestActivityLauncher<>(mContext, activityClass)
                         .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
                         .setActivityId(activityId)
                         .setWindowingMode(windowingMode);
