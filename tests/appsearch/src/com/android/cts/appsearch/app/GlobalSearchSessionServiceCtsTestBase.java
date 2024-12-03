@@ -20,12 +20,19 @@ import static android.Manifest.permission.READ_CONTACTS;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.READ_GLOBAL_APP_SEARCH_DATA;
 import static android.Manifest.permission.READ_SMS;
+import static android.app.appsearch.testutil.AppSearchTestUtils.calculateDigest;
 import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResultSuccess;
+import static android.app.appsearch.testutil.AppSearchTestUtils.generateRandomBytes;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
+import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
@@ -35,6 +42,7 @@ import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
 import android.app.appsearch.JoinSpec;
+import android.app.appsearch.OpenBlobForReadResponse;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.ReportSystemUsageRequest;
@@ -46,6 +54,7 @@ import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.PackageUtil;
 import android.app.appsearch.testutil.SystemUtil;
 import android.app.appsearch.testutil.TestObserverCallback;
@@ -56,11 +65,14 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.appsearch.flags.Flags;
 import com.android.cts.appsearch.ICommandReceiver;
 
 import com.google.common.collect.ImmutableList;
@@ -70,10 +82,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,6 +106,8 @@ import java.util.stream.Collectors;
  */
 @RunWith(JUnit4.class)
 public abstract class GlobalSearchSessionServiceCtsTestBase {
+
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     private static final long TIMEOUT_BIND_SERVICE_SEC = 10;
 
@@ -1655,6 +1672,166 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 READ_GLOBAL_APP_SEARCH_DATA);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testGlobalOpenBlobRead_visibleToGlobalReader() throws Exception {
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                digest, PKG_A, DB_NAME, NAMESPACE_NAME);
+
+        try {
+            // Set blob is visible to nothing but global reader.
+            writeGloballySearchableBlobVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, data,
+                    ImmutableSet.of(),
+                    ImmutableSet.of(),
+                    /*publicAclPackage=*/null);
+
+            // READ_GLOBAL_APP_SEARCH_DATA could read
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                        try (OpenBlobForReadResponse readResponse = mGlobalSearchSession
+                                .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
+                                    readResult = readResponse.getResult();
+                            assertTrue(readResult.isSuccess());
+
+                            byte[] readBytes = new byte[10]; // 10 Bytes
+                            ParcelFileDescriptor readPfd = readResult.getSuccesses().get(handle);
+                            try (InputStream inputStream =
+                                         new ParcelFileDescriptor.AutoCloseInputStream(readPfd)) {
+                                inputStream.read(readBytes);
+                            }
+                            assertThat(readBytes).isEqualTo(data);
+                        }
+                    },
+                    READ_GLOBAL_APP_SEARCH_DATA);
+
+            // without READ_GLOBAL_APP_SEARCH_DATA couldn't read
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                        try (OpenBlobForReadResponse readResponse = mGlobalSearchSession
+                                .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
+                                    readResult = readResponse.getResult();
+                            assertFalse(readResult.isSuccess());
+
+                            assertThat(readResult.getFailures().keySet()).containsExactly(handle);
+                            assertThat(readResult.getFailures().get(handle).getResultCode())
+                                    .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
+                            assertThat(readResult.getFailures().get(handle).getErrorMessage())
+                                    .contains("Cannot find the blob for handle");
+                        }
+                    });
+        } finally {
+            removeBlob(PKG_A, DB_NAME, NAMESPACE_NAME, data);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testGlobalOpenBlobRead_notVisibleToGlobalReader() throws Exception {
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                digest, PKG_A, DB_NAME, NAMESPACE_NAME);
+        try {
+            writeGloballyNotSearchableBlob(PKG_A, DB_NAME, NAMESPACE_NAME, data);
+
+            // READ_GLOBAL_APP_SEARCH_DATA couldn't read
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                        try (OpenBlobForReadResponse readResponse = mGlobalSearchSession
+                                .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
+                                    readResult = readResponse.getResult();
+                            assertFalse(readResult.isSuccess());
+
+                            assertThat(readResult.getFailures().keySet()).containsExactly(handle);
+                            assertThat(readResult.getFailures().get(handle).getResultCode())
+                                    .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
+                            assertThat(readResult.getFailures().get(handle).getErrorMessage())
+                                    .contains("Cannot find the blob for handle");
+                        }
+                    });
+        } finally {
+            removeBlob(PKG_A, DB_NAME, NAMESPACE_NAME, data);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testGlobalOpenBlobRead_visibleToConfig() throws Exception {
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                digest, PKG_A, DB_NAME, NAMESPACE_NAME);
+
+        String ctsPackageName = mContext.getPackageName();
+        PackageIdentifier ctsPackage =
+                new PackageIdentifier(
+                        ctsPackageName,
+                        PackageUtil.getSelfPackageSha256Cert(mContext)
+                );
+        try {
+            // set it is visible to the config that the caller must be cts test package AND hold
+            // READ_SMS.
+            writeGloballySearchableBlobVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, data,
+                    ImmutableSet.of(ctsPackage),
+                    ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                    /*publicAclPackage=*/null);
+
+            // cts test package AND READ_SMS could read
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                        try (OpenBlobForReadResponse readResponse = mGlobalSearchSession
+                                .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
+                                    readResult = readResponse.getResult();
+                            assertTrue(readResult.isSuccess());
+
+                            byte[] readBytes = new byte[10]; // 10 Bytes
+                            ParcelFileDescriptor readPfd = readResult.getSuccesses().get(handle);
+                            try (InputStream inputStream =
+                                        new ParcelFileDescriptor.AutoCloseInputStream(readPfd)) {
+                                inputStream.read(readBytes);
+                            }
+                            assertThat(readBytes).isEqualTo(data);
+                        }
+                    },
+                    READ_SMS);
+
+            // cts test package AND READ_CALENDAR couldn't read
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+
+                        try (OpenBlobForReadResponse readResponse = mGlobalSearchSession
+                                .openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                            AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor>
+                                    readResult = readResponse.getResult();
+                            assertFalse(readResult.isSuccess());
+
+                            assertThat(readResult.getFailures().keySet()).containsExactly(handle);
+                            assertThat(readResult.getFailures().get(handle).getResultCode())
+                                    .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
+                            assertThat(readResult.getFailures().get(handle).getErrorMessage())
+                                    .contains("Cannot find the blob for handle");
+                        }
+                    },
+                    READ_CALENDAR);
+        } finally {
+            removeBlob(PKG_A, DB_NAME, NAMESPACE_NAME, data);
+        }
+    }
 
     @Test
     public void testReportSystemUsage() throws Exception {
@@ -1770,8 +1947,6 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             assertThat(page.get(1).getGenericDocument().getId()).isEqualTo("id2");
         }
     }
-
-    //TODO(b/273591938 ) add global read blob test in the following CL.
 
     @Test
     public void testRemoveObserver_otherPackagesNotRemoved() throws Exception {
@@ -1954,6 +2129,73 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
             assertThat(commandReceiver.indexGloballySearchableDocumentVisibleToConfig(databaseName,
                     namespace, id, packagesBundles, permissionBundles, publicAclBundle)).isTrue();
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    private void writeGloballySearchableBlobVisibleToConfig(String pkg, String databaseName,
+            String namespace, byte[] data, Set<PackageIdentifier> visibleToPackages,
+            Set<Set<Integer>> visibleToPermissions, PackageIdentifier publicAclPackage)
+            throws Exception {
+        // PackageIdentifierParcel is hidden, we need to use bundle to pass PackageIdentifier.
+        List<Bundle> packagesBundles = new ArrayList<>(visibleToPackages.size());
+        for (PackageIdentifier visibleToPackage: visibleToPackages) {
+            Bundle packageBundle = new Bundle();
+            packageBundle.putString("packageName", visibleToPackage.getPackageName());
+            packageBundle.putByteArray("sha256Cert", visibleToPackage.getSha256Certificate());
+            packagesBundles.add(packageBundle);
+        }
+
+        // binder won't accept Set or Integer, we need to convert to List<Bundle>.
+        List<Bundle> permissionBundles = new ArrayList<>(visibleToPermissions.size());
+        for (Set<Integer> allRequiredPermissions : visibleToPermissions) {
+            Bundle permissionBundle = new Bundle();
+            permissionBundle.putIntegerArrayList("permission",
+                    new ArrayList<>(allRequiredPermissions));
+            permissionBundles.add(permissionBundle);
+        }
+
+        Bundle publicAclBundle = null;
+        if (publicAclPackage != null) {
+            publicAclBundle = new Bundle();
+            publicAclBundle.putString("packageName", publicAclPackage.getPackageName());
+            publicAclBundle.putByteArray("sha256Cert", publicAclPackage.getSha256Certificate());
+        }
+
+        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            assertThat(commandReceiver.writeGloballySearchableBlobVisibleToConfig(pkg, databaseName,
+                    namespace, data, packagesBundles, permissionBundles, publicAclBundle)).isTrue();
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    private void writeGloballyNotSearchableBlob(String pkg, String databaseName,
+            String namespace, byte[] data)
+            throws Exception {
+
+        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            assertThat(commandReceiver.writeGloballyNotSearchableBlob(pkg, databaseName,
+                    namespace, data)).isTrue();
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    private void removeBlob(String pkg, String databaseName, String namespace, byte[] data)
+            throws Exception {
+        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            assertThat(commandReceiver.removeBlob(pkg, databaseName, namespace, data)).isTrue();
         } finally {
             serviceConnection.unbind();
         }
