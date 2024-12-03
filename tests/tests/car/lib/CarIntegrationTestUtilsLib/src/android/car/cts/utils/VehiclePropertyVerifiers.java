@@ -155,6 +155,56 @@ public class VehiclePropertyVerifiers {
                             WindshieldWipersState.SERVICE)
                     .build();
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#VEHICLE_CURB_WEIGHT}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                                Integer.class)
+                        .setConfigArrayVerifier(
+                                (verifierContext, configArray) -> {
+                                    assertWithMessage(
+                                                    "VEHICLE_CURB_WEIGHT configArray must contain"
+                                                            + " the gross weight in kilograms")
+                                            .that(configArray)
+                                            .hasSize(1);
+                                    assertWithMessage(
+                                                    "VEHICLE_CURB_WEIGHT configArray[0] must"
+                                                        + " contain the gross weight in kilograms"
+                                                        + " and be greater than zero")
+                                            .that(configArray.get(0))
+                                            .isGreaterThan(0);
+                                })
+                        .setCarPropertyValueVerifier(
+                                (verifierContext,
+                                        carPropertyConfig,
+                                        propertyId,
+                                        areaId,
+                                        timestampNanos,
+                                        curbWeightKg) -> {
+                                    Integer grossWeightKg =
+                                            carPropertyConfig.getConfigArray().get(0);
+
+                                    assertWithMessage(
+                                                    "VEHICLE_CURB_WEIGHT must be greater than zero")
+                                            .that(curbWeightKg)
+                                            .isGreaterThan(0);
+                                    assertWithMessage(
+                                                    "VEHICLE_CURB_WEIGHT must be less than the"
+                                                            + " gross weight")
+                                            .that(curbWeightKg)
+                                            .isLessThan(grossWeightKg);
+                                })
+                        .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_INFO)
+                : verifierBuilder;
+    }
+
     /**
      * Gets the verifier builder for {@link
      * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL}.
