@@ -68,6 +68,7 @@ public class VirtualDevicePowerTest {
     private static final int FAST_SCREEN_OFF_TIMEOUT_MS = 500;
     private static final int DISPLAY_TIMEOUT_MS = 2000;
     private static final float DEFAULT_BRIGHTNESS = 0.4f;
+    private static final float DIM_BRIGHTNESS = 0.1f;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -355,6 +356,32 @@ public class VirtualDevicePowerTest {
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
         assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void customBrightness_dimTimeoutTriggersCallback() {
+        createVirtualDeviceAndDisplay(
+                new VirtualDeviceParams.Builder()
+                        // Dim after 2s, sleep after 4s.
+                        .setDimDuration(Duration.ofMillis(DISPLAY_TIMEOUT_MS))
+                        .setScreenOffTimeout(Duration.ofMillis(DISPLAY_TIMEOUT_MS * 2))
+                        .build(),
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                        .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
+                        .setDefaultBrightness(DEFAULT_BRIGHTNESS)
+                        .setDimBrightness(DIM_BRIGHTNESS));
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
+
+        reset(mBrightnessListener);
+        SystemClock.sleep(DISPLAY_TIMEOUT_MS);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DIM_BRIGHTNESS);
     }
 
     @Test

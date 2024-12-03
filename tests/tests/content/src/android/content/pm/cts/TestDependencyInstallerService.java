@@ -45,6 +45,7 @@ import android.content.pm.dependencyinstaller.DependencyInstallerService;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.PackageUtils;
@@ -80,13 +81,15 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     private static final String TEST_SDK2_APK_NAME = "HelloWorldSdk2";
     private static final int WAIT_FOR_INSTALL_MS = 60 * 1000;
 
-    static final String METHOD_NAME = "method-name";
-    static final String ERROR_MESSAGE = TAG + "error-message";
-    static final String METHOD_INSTALL_SYNC = "install-sync";
-    static final String METHOD_INSTALL_ASYNC = "install-async";
-    static final String METHOD_INVALID_SESSION_ID = "invalid-session-id";
-    static final String METHOD_ABANDONED_SESSION_ID = "abandoned-session-id";
-    static final String METHOD_ABANDON_SESSION_DURING_INSTALL = "abandon-session-during-install";
+    static final String METHOD_NAME = TAG + "-method-name";
+    static final String ERROR_MESSAGE = TAG + "-error-message";
+    static final String METHOD_INSTALL_SYNC = TAG + "-install-sync";
+    static final String METHOD_INSTALL_ASYNC = TAG + "-install-async";
+    static final String METHOD_INVALID_SESSION_ID = TAG + "-invalid-session-id";
+    static final String METHOD_ABANDONED_SESSION_ID = TAG + "-abandoned-session-id";
+    static final String METHOD_ABANDON_SESSION_DURING_INSTALL = TAG
+            + "-abandon-session-during-install";
+    static final String METHOD_VERIFY_USER_ID = TAG + "-verify-user-id";
 
     private String mCertDigest;
 
@@ -95,11 +98,23 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             DependencyInstallerCallback callback) {
 
         String methodName = getMethodName();
-        Log.d(TAG, "onDependenciesRequired call received: " + methodName);
+        int userId = UserHandle.myUserId();
+        Log.d(TAG, "onDependenciesRequired call received: " + methodName + " for user: " + userId);
 
         try {
-            // All CTS test artifacts are signed with same cert. So we can assume the SDK apks we
-            // have will be same cert as our current package.
+
+            if (!isInstrumented()) {
+                // Test app is not instrumented when we bind to it on a different user.
+
+                // For multi-user test, methodName is always empty since it's written in
+                // SharedPreferences storage of a different user. So we opt to install synchronously
+                // all the time.
+                installDependenciesSync(neededLibraries, callback);
+                return;
+            }
+
+            // All CTS test artifacts are signed with same cert. So we can assume the SDK apks
+            // we have will be same cert as our current package.
             mCertDigest = getPackageCertDigest(getContext().getPackageName());
             validateNeededLibraries(neededLibraries);
 
@@ -108,11 +123,13 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             } else if (methodName.equals(METHOD_INSTALL_ASYNC)) {
                 installDependenciesAsync(neededLibraries, callback);
             } else if (methodName.equals(METHOD_INVALID_SESSION_ID)) {
-                testInvalidSessionId(neededLibraries, callback);
+                testInvalidSessionId(callback);
             } else if (methodName.equals(METHOD_ABANDONED_SESSION_ID)) {
-                testAbandonedSessionId(neededLibraries, callback);
+                testAbandonedSessionId(callback);
             } else if (methodName.equals(METHOD_ABANDON_SESSION_DURING_INSTALL)) {
                 testAbandonSessionDuringInstall(neededLibraries, callback);
+            } else if (methodName.equals(METHOD_VERIFY_USER_ID)) {
+                installDependenciesSync(neededLibraries, callback);
             } else {
                 throw new IllegalStateException("Unknown method name: " + methodName);
             }
@@ -146,8 +163,7 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     /**
      * Send a non-existing session-id to system.
      */
-    private void testInvalidSessionId(List<SharedLibraryInfo> neededLibraries,
-            DependencyInstallerCallback callback) throws Exception {
+    private void testInvalidSessionId(DependencyInstallerCallback callback) throws Exception {
 
         // Pass a session id that doesn't exist
         IllegalArgumentException exception =
@@ -166,8 +182,7 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     /**
      * Send a session id that has already been abandoned.
      */
-    private void testAbandonedSessionId(List<SharedLibraryInfo> neededLibraries,
-            DependencyInstallerCallback callback) throws Exception {
+    private void testAbandonedSessionId(DependencyInstallerCallback callback) throws Exception {
 
         SessionParams params = new SessionParams(MODE_FULL_INSTALL);
         PackageInstaller installer = getPackageManager().getPackageInstaller();
@@ -286,9 +301,9 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     private Session writeToSession(SharedLibraryInfo info, int sessionId) throws Exception {
         PackageInstaller installer = getPackageManager().getPackageInstaller();
         Session session = installer.openSession(sessionId);
-        if (isSdk1(info)) {
+        if (info.getName().equals(LIB_NAME_SDK_1)) {
             writeApk(session, TEST_SDK1_APK_NAME);
-        } else if (isSdk2(info)) {
+        } else if (info.getName().equals(LIB_NAME_SDK_2)) {
             writeApk(session, TEST_SDK2_APK_NAME);
         }
         return session;
@@ -310,7 +325,6 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
                     + info.getCertDigests().get(0));
         }
     }
-
 
     private String getMethodName() {
         return getDefaultSharedPreferences().getString(METHOD_NAME, "");
@@ -338,6 +352,18 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
             signingInfo != null ? signingInfo.getSigningCertificateHistory() : null;
         byte[] digest = PackageUtils.computeSha256DigestBytes(signatures[0].toByteArray());
         return new String(HexEncoding.encode(digest));
+    }
+
+    private boolean isInstrumented() throws Exception {
+        try {
+            InstrumentationRegistry.getContext();
+            return true;
+        } catch (IllegalStateException e) {
+            if (e.getMessage().contains("No instrumentation registered!")) {
+                return false;
+            }
+            throw e;
+        }
     }
 
     private static class SyncBroadcastReceiver extends BroadcastReceiver {
@@ -435,8 +461,8 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         return PreferenceManager.getDefaultSharedPreferences(appContext);
     }
 
-    private static Context getContext() {
-        return InstrumentationRegistry.getContext();
+    private  Context getContext() {
+        return this;
     }
 
     private static int[] toIntArray(List<Integer> list) {
