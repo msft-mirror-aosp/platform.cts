@@ -145,6 +145,34 @@ public class VehiclePropertyVerifiers {
                             VehicleSeatOccupancyState.OCCUPIED)
                     .build();
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
+    public static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Float> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.PERF_ODOMETER,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                                Float.class)
+                        .setCarPropertyValueVerifier(
+                                (verifierContext,
+                                        carPropertyConfig,
+                                        propertyId,
+                                        areaId,
+                                        timestampNanos,
+                                        perfOdometer) ->
+                                        assertWithMessage(
+                                                        "PERF_ODOMETER Float value must be greater"
+                                                                + " than or equal 0")
+                                                .that(perfOdometer)
+                                                .isAtLeast(0))
+                        .addReadPermission(Car.PERMISSION_MILEAGE);
+
+        return Flags.androidBVehicleProperties()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_MILEAGE_3P)
+                : verifierBuilder;
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#TIRE_PRESSURE}. */
     public static VehiclePropertyVerifier.Builder<Float> getTirePressureVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
@@ -190,7 +218,7 @@ public class VehiclePropertyVerifiers {
                         .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
 
         return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS)
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_MILEAGE_3P)
                 : verifierBuilder;
     }
 

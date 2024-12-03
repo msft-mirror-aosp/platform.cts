@@ -42,6 +42,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureD
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
@@ -768,10 +769,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.INFO_VIN)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_MILEAGE_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.PERF_ODOMETER)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.PERF_ODOMETER).build();
     private static final ImmutableList<Integer> PERMISSION_MILEAGE_3P_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -1411,6 +1409,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             if (!isSystemProperty(propertyId)) {
                 continue;
             }
+            // PERF_ODOMETER existed before Android B properties, but a new permission for 3p access
+            // was added.
+            if (propertyId == VehiclePropertyIds.PERF_ODOMETER) {
+                continue;
+            }
 
             String propertyName = VehiclePropertyIds.toString(propertyId);
             expectWithMessage("Property: " + propertyName + " must not be supported if "
@@ -1420,6 +1423,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
         runWithShellPermissionIdentity(() -> {
             for (int propertyId : bSystemPropertyIds) {
+                // PERF_ODOMETER existed before Android B properties, but a new permission for 3p
+                // access was added.
+                if (propertyId == VehiclePropertyIds.PERF_ODOMETER) {
+                    continue;
+                }
                 String propertyName = VehiclePropertyIds.toString(propertyId);
                 expectWithMessage("getCarPropertyConfig for: " + propertyName
                         + " when FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled must return null")
@@ -4312,24 +4320,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_IMPACT_SENSORS);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.PERF_ODOMETER,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                perfOdometer) ->
-                                assertWithMessage(
-                                        "PERF_ODOMETER Float value must be greater than or"
-                                                + " equal 0")
-                                        .that(perfOdometer)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_MILEAGE);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getTurnSignalStateVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.TURN_SIGNAL_STATE,
@@ -7218,11 +7208,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionMileageGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_MILEAGE_PROPERTIES,
-                Car.PERMISSION_MILEAGE);
+                PERMISSION_MILEAGE_PROPERTIES, Car.PERMISSION_MILEAGE);
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
     public void testPermissionMileage3pGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_MILEAGE_3P_PROPERTIES,
@@ -7243,15 +7233,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionCarEngineDetailedGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES,
-                Car.PERMISSION_CAR_ENGINE_DETAILED);
+                PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES, Car.PERMISSION_CAR_ENGINE_DETAILED);
     }
 
     @Test
     public void testPermissionControlEnergyPortsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES,
-                Car.PERMISSION_CONTROL_ENERGY_PORTS);
+                PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES, Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
     @Test
