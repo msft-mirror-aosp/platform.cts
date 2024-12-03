@@ -37,24 +37,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Test cases for {@link ScanCallback}.
- */
+/** Test cases for {@link ScanCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class ScanCallbackTest {
 
     // Scan types are used to determine which callback method is expected.
-    private final static int SCAN_TYPE_SUCCESS = 0;
-    private final static int SCAN_TYPE_FAIL = 1;
-    private final static int SCAN_TYPE_BATCH = 2;
+    private static final int SCAN_TYPE_SUCCESS = 0;
+    private static final int SCAN_TYPE_FAIL = 1;
+    private static final int SCAN_TYPE_BATCH = 2;
 
     private MockScanner mMockScanner = new MockScanner();
     private BleScanCallback mMockScanCallback = new BleScanCallback();
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -130,6 +129,5 @@ public class ScanCallbackTest {
                 fail("scan should not fail");
             }
         }
-
     }
 }

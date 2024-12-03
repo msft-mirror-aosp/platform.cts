@@ -36,22 +36,21 @@ import org.junit.runner.RunWith;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Test of {@link AdvertiseCallback}.
- */
+/** Test of {@link AdvertiseCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseCallbackTest {
 
-    private final static int ADVERTISE_TYPE_SUCCESS = 0;
-    private final static int ADVERTISE_TYPE_FAIL = 1;
+    private static final int ADVERTISE_TYPE_SUCCESS = 0;
+    private static final int ADVERTISE_TYPE_FAIL = 1;
 
     private final MockAdvertiser mMockAdvertiser = new MockAdvertiser();
     private final BleAdvertiseCallback mAdvertiseCallback = new BleAdvertiseCallback();
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

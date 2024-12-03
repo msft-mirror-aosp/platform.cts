@@ -75,13 +75,15 @@ public class BluetoothGattServerTest {
         assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
         mBluetoothManager = mContext.getSystemService(BluetoothManager.class);
         mLatch = new CountDownLatch(1);
-        mBluetoothGattServer = mBluetoothManager.openGattServer(mContext,
-                new BluetoothGattServerCallback() {
-                    @Override
-                    public void onServiceAdded(int status, BluetoothGattService service) {
-                        mLatch.countDown();
-                    }
-                });
+        mBluetoothGattServer =
+                mBluetoothManager.openGattServer(
+                        mContext,
+                        new BluetoothGattServerCallback() {
+                            @Override
+                            public void onServiceAdded(int status, BluetoothGattService service) {
+                                mLatch.countDown();
+                            }
+                        });
     }
 
     @After
@@ -106,21 +108,24 @@ public class BluetoothGattServerTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectedDevices() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> mBluetoothGattServer.getConnectedDevices());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> mBluetoothGattServer.getConnectionState(null));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> mBluetoothGattServer.getDevicesMatchingConnectionStates(null));
     }
 
@@ -129,10 +134,10 @@ public class BluetoothGattServerTest {
     public void getService() {
         // Service is null after initialization with public constructor
         assertNull(mBluetoothGattServer.getService(TEST_UUID));
-        BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(TEST_UUID,
-                0x0A, 0x11);
-        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        BluetoothGattCharacteristic characteristic =
+                new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
+        BluetoothGattService service =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         service.addCharacteristic(characteristic);
         // If service is added successfully, latch.countDown() happens in the callback
@@ -165,27 +170,34 @@ public class BluetoothGattServerTest {
     public void setPreferredPhy() {
         BluetoothDevice testDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mUIAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mBluetoothGattServer.setPreferredPhy(testDevice,
-                BluetoothDevice.PHY_LE_1M_MASK, BluetoothDevice.PHY_LE_1M_MASK,
-                BluetoothDevice.PHY_OPTION_NO_PREFERRED));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mBluetoothGattServer.setPreferredPhy(
+                                testDevice,
+                                BluetoothDevice.PHY_LE_1M_MASK,
+                                BluetoothDevice.PHY_LE_1M_MASK,
+                                BluetoothDevice.PHY_OPTION_NO_PREFERRED));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void notifyCharacteristicChanged_withValueOverMaxLength() {
         BluetoothDevice testDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(TEST_UUID,
-                0x0A, 0x11);
-        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        BluetoothGattCharacteristic characteristic =
+                new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
+        BluetoothGattService service =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         service.addCharacteristic(characteristic);
 
         // 512 is the max attribute length
         byte[] notification = new byte[513];
         Arrays.fill(notification, (byte) 0x01);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> mBluetoothGattServer.notifyCharacteristicChanged(testDevice, characteristic,
-                        false, notification));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mBluetoothGattServer.notifyCharacteristicChanged(
+                                testDevice, characteristic, false, notification));
     }
 }
