@@ -2002,6 +2002,8 @@ public class CommonPermissions {
     public static final String MANAGE_DEVICE_POLICY_THREAD_NETWORK = "android.permission.MANAGE_DEVICE_POLICY_THREAD_NETWORK";
     /** See {@link Manifest#MANAGE_DEVICE_POLICY_STORAGE_LIMIT} */
     public static final String MANAGE_DEVICE_POLICY_STORAGE_LIMIT = "android.permission.MANAGE_DEVICE_POLICY_STORAGE_LIMIT";
+    /** See {@link Manifest.permission#MANAGE_DEVICE_POLICY_APP_FUNCTIONS} */
+    public static final String MANAGE_DEVICE_POLICY_APP_FUNCTIONS = "android.permission.MANAGE_DEVICE_POLICY_APP_FUNCTIONS";
     /** See {@link Manifest#COPY_ACCOUNTS} */
     public static final String COPY_ACCOUNTS = "android.permission.COPY_ACCOUNTS";
     /** See {@link Manifest#REMOVE_ACCOUNTS} */
