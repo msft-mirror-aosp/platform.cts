@@ -80,13 +80,13 @@ def _take_captures(
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'OFF'
     )
-    cam.do_3a(do_af=False, lock_awb=True)
+    cam.do_3a(do_af=False, lock_awb=True, out_surfaces=out_surfaces)
     cap_req = capture_request_utils.auto_capture_request()
     cap_req[
         'android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
     cap_req['android.control.aeMode'] = 0  # AE_MODE_OFF
     cap_req['android.control.awbLock'] = True
-    cap = cam.do_capture(cap_req, out_surfaces)
+    cap = cam.do_capture(cap_req, out_surfaces, reuse_session=True)
     # turn the lights back on
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'ON'
@@ -95,7 +95,8 @@ def _take_captures(
 
   # Take multiple still captures with torch strength
   else:
-    cam.do_3a(do_af=False, lock_awb=True, flash_mode=_TORCH_MODE)
+    cam.do_3a(do_af=False, lock_awb=True, flash_mode=_TORCH_MODE,
+        out_surfaces=out_surfaces)
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'OFF'
@@ -108,7 +109,7 @@ def _take_captures(
     cap_req['android.flash.mode'] = _TORCH_MODE
     cap_req['android.flash.strengthLevel'] = torch_strength
     reqs = [cap_req] * _BURST_LEN
-    caps = cam.do_capture(reqs, out_surfaces)
+    caps = cam.do_capture(reqs, out_surfaces, reuse_session=True)
     # turn the lights back on
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'ON'
