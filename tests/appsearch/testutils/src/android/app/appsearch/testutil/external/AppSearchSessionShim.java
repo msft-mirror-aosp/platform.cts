@@ -114,11 +114,11 @@ public interface AppSearchSessionShim extends Closeable {
     /**
      * Opens a batch of AppSearch Blobs for writing.
      *
-     * <p>A "blob" is a large binary object, typically represented as a long byte array. It is used
-     * to store a significant amount of data that is not searchable, such as images, videos, audio
-     * files, or other binary data. Unlike other fields in AppSearch, blobs are stored as blob files
-     * on disk rather than in memory, and use {@link android.os.ParcelFileDescriptor} to read and
-     * write. This allows for efficient handling of large, non-searchable content.
+     * <p>A "blob" is a large binary object. It is used to store a significant amount of data that
+     * is not searchable, such as images, videos, audio files, or other binary data. Unlike other
+     * fields in AppSearch, blobs are stored as blob files on disk rather than in memory, and use
+     * {@link android.os.ParcelFileDescriptor} to read and write. This allows for efficient handling
+     * of large, non-searchable content.
      *
      * <p>Once done writing, call {@link #commitBlob} to commit blob files.
      *
@@ -149,10 +149,10 @@ public interface AppSearchSessionShim extends Closeable {
      *
      * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
      * @return a response containing the writeable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
      */
     @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
 
-    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
     // TODO(b/273591938) improve the java doc when we support abandon pending blobs.
     @NonNull
     ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
@@ -168,6 +168,11 @@ public interface AppSearchSessionShim extends Closeable {
      * with error code {@link AppSearchResult#RESULT_ALREADY_EXISTS} will be associated with the
      * {@link AppSearchBlobHandle}.
      *
+     * <p>If the blob content doesn't match the digest in {@link AppSearchBlobHandle}, a failed
+     * {@link AppSearchResult} with error code {@link AppSearchResult#RESULT_INVALID_ARGUMENT} will
+     * be associated with the {@link AppSearchBlobHandle}. The pending Blob file will be removed
+     * from AppSearch.
+     *
      * <p>Pending blobs won't be lost or auto-commit if {@link AppSearchSessionShim} closed. Pending
      * blobs will store in disk rather than memory. You can re-open {@link AppSearchSessionShim} and
      * re-write the pending blobs.
@@ -177,10 +182,9 @@ public interface AppSearchSessionShim extends Closeable {
      *
      * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
      * @return a response containing the commit results.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
      */
     @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
-
-    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
     @NonNull
     ListenableFuture<CommitBlobResponse> commitBlobAsync(@NonNull Set<AppSearchBlobHandle> handles);
 
@@ -194,9 +198,8 @@ public interface AppSearchSessionShim extends Closeable {
      *
      * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
      * @return a response containing the readable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
      */
-    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
-
     @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
     @NonNull
     ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
