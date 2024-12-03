@@ -266,6 +266,8 @@ public class TelephonyManagerTest {
     private static final String DISALLOW_PACKAGE_SUBCOMMAND = "disallow-package ";
     private static final String TELEPHONY_CTS_PACKAGE = "android.telephony.cts";
 
+    private static final String STATUS_CHANNEL_NOT_SUPPORTED = "6881";
+
     private static final String TEST_FORWARD_NUMBER = "54321";
     private static final String TESTING_PLMN = "12345";
 
@@ -3696,6 +3698,7 @@ public class TelephonyManagerTest {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         int slotIndex = getValidSlotIndexAndPort().getKey();
+        // just verify no crash
         String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelBySlot(
                         slotIndex,
@@ -3706,7 +3709,12 @@ public class TelephonyManagerTest {
                         0 /* p2 */,
                         0 /* p3 */,
                         null /* data */));
-        assertTrue(TextUtils.isEmpty(result));
+
+        if (!result.isEmpty()) {  // allow old behavior
+            // Channel 0 is not supported for IccTransmitApduLogicalChannel (note: we might have
+            // tested this with some actually opened channel instead).
+            assertEquals(STATUS_CHANNEL_NOT_SUPPORTED, result);
+        }
     }
 
     @Test
@@ -3721,24 +3729,26 @@ public class TelephonyManagerTest {
 
         int slotIndex = getValidSlotIndexAndPort().getKey();
         int portIndex = getValidSlotIndexAndPort().getValue();
-        try {
-            String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelByPort(
-                            slotIndex,
-                            portIndex /* portIndex */,
-                            0 /* channel */,
-                            0 /* cla */,
-                            0 /* instruction */,
-                            0 /* p1 */,
-                            0 /* p2 */,
-                            0 /* p3 */,
-                            null /* data */));
-            assertTrue(TextUtils.isEmpty(result));
-        } catch (SecurityException e) {
-            // IllegalArgumentException is okay, just not SecurityException
-            fail("iccTransmitApduLogicalChannelByPort: SecurityException not expected");
+        // just verify no crash
+        String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelByPort(
+                        slotIndex,
+                        portIndex /* portIndex */,
+                        0 /* channel */,
+                        0 /* cla */,
+                        0 /* instruction */,
+                        0 /* p1 */,
+                        0 /* p2 */,
+                        0 /* p3 */,
+                        null /* data */));
+
+        if (!result.isEmpty()) {  // allow old behavior
+            // Channel 0 is not supported for IccTransmitApduLogicalChannel (note: we might have
+            // tested this with some actually opened channel instead).
+            assertEquals(STATUS_CHANNEL_NOT_SUPPORTED, result);
         }
     }
+
     @Test
     public void testIccTransmitApduBasicChannelBySlot() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
