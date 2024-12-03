@@ -42,6 +42,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureD
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -778,6 +779,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.PERF_STEERING_ANGLE,
                             VehiclePropertyIds.PERF_REAR_STEERING_ANGLE)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.PERF_STEERING_ANGLE).build();
     private static final ImmutableList<Integer> PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -4113,16 +4116,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.PERF_STEERING_ANGLE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
-    }
-
     private static VehiclePropertyVerifier.Builder<Float>
             getPerfRearSteeringAngleVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -7121,6 +7114,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testPermissionReadSteeringStateGranted() {
+        if (Flags.vehicleProperty25q23pPermissions()) {
+            verifyExpectedPropertiesWhenPermissionsGranted(
+                    PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
+                    Car.PERMISSION_READ_STEERING_STATE_3P);
+        }
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
     }
