@@ -1067,7 +1067,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
     public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
         when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAllowed();
         Assert.assertTrue(result);
     }
@@ -1077,7 +1077,7 @@ public class NfcAdapterTest {
     public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
              RemoteException {
         when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAppPreferenceSupported();
         Assert.assertTrue(result);
     }
@@ -1087,7 +1087,7 @@ public class NfcAdapterTest {
     public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
              RemoteException {
         when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAllowed();
         Assert.assertTrue(result);
     }
