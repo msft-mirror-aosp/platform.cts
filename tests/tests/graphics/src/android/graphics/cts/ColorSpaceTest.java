@@ -28,8 +28,6 @@ import android.hardware.DataSpace;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -53,9 +51,7 @@ import java.util.function.DoubleUnaryOperator;
 public class ColorSpaceTest {
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Column-major RGB->XYZ transform matrix for the sRGB color space
     private static final float[] SRGB_TO_XYZ = {

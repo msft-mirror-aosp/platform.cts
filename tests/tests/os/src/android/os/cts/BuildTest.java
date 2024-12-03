@@ -28,7 +28,6 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
@@ -57,9 +56,7 @@ import java.util.regex.Pattern;
 public class BuildTest {
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
     static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
