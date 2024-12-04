@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -88,8 +89,8 @@ public class AdvertiseSettingsTest {
         assertEquals(
                 AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settingsFromParcel.getTxPowerLevel());
         assertEquals(timeoutMillis, settingsFromParcel.getTimeout());
-        assertFalse(settings.isConnectable());
-        assertFalse(settings.isDiscoverable());
+        assertThat(settings.isConnectable()).isFalse();
+        assertThat(settings.isDiscoverable()).isFalse();
         assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT, settings.getOwnAddressType());
     }
 

@@ -20,8 +20,9 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.TETHER_PRIVILEGED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -117,7 +118,7 @@ public class BluetoothPanTest {
 
         mAdapter.closeProfileProxy(BluetoothProfile.PAN, mBluetoothPan);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
@@ -174,19 +175,22 @@ public class BluetoothPanTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothPan.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothPan.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(
+                        mBluetoothPan.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(
+                        mBluetoothPan.setConnectionPolicy(
+                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothPan.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(
+                        mBluetoothPan.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test
@@ -197,11 +201,11 @@ public class BluetoothPanTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothPan);
 
-        assertFalse(mBluetoothPan.isTetheringOn());
+        assertThat(mBluetoothPan.isTetheringOn()).isFalse();
         mBluetoothPan.setBluetoothTethering(true);
         assertTrue(mBluetoothPan.isTetheringOn());
         mBluetoothPan.setBluetoothTethering(false);
-        assertFalse(mBluetoothPan.isTetheringOn());
+        assertThat(mBluetoothPan.isTetheringOn()).isFalse();
     }
 
     private boolean waitForProfileConnect() {

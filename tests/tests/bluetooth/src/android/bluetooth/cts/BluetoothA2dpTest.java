@@ -21,8 +21,9 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothA2dp.DYNAMIC_BUFFER_SUPPORT_A2DP_SOFTWARE_ENCODING;
 import static android.bluetooth.BluetoothA2dp.DYNAMIC_BUFFER_SUPPORT_NONE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -123,7 +124,7 @@ public class BluetoothA2dpTest {
 
         mAdapter.closeProfileProxy(BluetoothProfile.A2DP, mBluetoothA2dp);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
@@ -142,7 +143,7 @@ public class BluetoothA2dpTest {
 
         adapter.closeProfileProxy(BluetoothProfile.A2DP, mBluetoothA2dp);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
@@ -186,7 +187,7 @@ public class BluetoothA2dpTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertFalse(mBluetoothA2dp.isA2dpPlaying(testDevice));
+        assertThat(mBluetoothA2dp.isA2dpPlaying(testDevice)).isFalse();
     }
 
     @Test
@@ -298,19 +299,22 @@ public class BluetoothA2dpTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothA2dp.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothA2dp.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(
+                        mBluetoothA2dp.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(
+                        mBluetoothA2dp.setConnectionPolicy(
+                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothA2dp.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(
+                        mBluetoothA2dp.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test
@@ -356,7 +360,7 @@ public class BluetoothA2dpTest {
         assertTrue(mBluetoothA2dp.setBufferLengthMillis(sourceCodecTypeAAC, 0));
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
         // Verify returns null if bluetooth is not enabled
-        assertFalse(mBluetoothA2dp.setBufferLengthMillis(sourceCodecTypeAAC, 0));
+        assertThat(mBluetoothA2dp.setBufferLengthMillis(sourceCodecTypeAAC, 0)).isFalse();
     }
 
     @Test

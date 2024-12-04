@@ -19,9 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -150,7 +151,7 @@ public class BluetoothLeBroadcastSettingsTest {
             builder.addSubgroupSettings(setting);
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
-        assertFalse(broadcastSettings.isPublicBroadcast());
+        assertThat(broadcastSettings.isPublicBroadcast()).isFalse();
         assertNull(broadcastSettings.getBroadcastName());
         assertNull(broadcastSettings.getBroadcastCode());
         assertEquals(publicBroadcastMetadata, broadcastSettings.getPublicBroadcastMetadata());
@@ -187,7 +188,7 @@ public class BluetoothLeBroadcastSettingsTest {
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
         BluetoothLeBroadcastSettings broadcastSettingsCopy =
                 new BluetoothLeBroadcastSettings.Builder(broadcastSettings).build();
-        assertFalse(broadcastSettingsCopy.isPublicBroadcast());
+        assertThat(broadcastSettingsCopy.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, broadcastSettingsCopy.getBroadcastName());
         assertNull(broadcastSettingsCopy.getBroadcastCode());
         assertEquals(publicBroadcastMetadata, broadcastSettingsCopy.getPublicBroadcastMetadata());

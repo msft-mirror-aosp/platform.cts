@@ -19,8 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -118,7 +119,7 @@ public class BluetoothPbapTest {
 
         mAdapter.closeProfileProxy(BluetoothProfile.PBAP, mBluetoothPbap);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
@@ -175,19 +176,22 @@ public class BluetoothPbapTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothPbap.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothPbap.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(
+                        mBluetoothPbap.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(
+                        mBluetoothPbap.setConnectionPolicy(
+                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothPbap.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(
+                        mBluetoothPbap.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     private boolean waitForProfileConnect() {

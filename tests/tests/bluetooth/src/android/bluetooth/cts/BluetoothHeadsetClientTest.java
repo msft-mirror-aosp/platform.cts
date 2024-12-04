@@ -19,8 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -122,7 +123,7 @@ public class BluetoothHeadsetClientTest {
 
         mAdapter.closeProfileProxy(BluetoothProfile.HEADSET_CLIENT, mBluetoothHeadsetClient);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
@@ -203,19 +204,22 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothHeadsetClient.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothHeadsetClient.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(
+                        mBluetoothHeadsetClient.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(
+                        mBluetoothHeadsetClient.setConnectionPolicy(
+                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothHeadsetClient.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(
+                        mBluetoothHeadsetClient.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test

@@ -21,8 +21,9 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -217,7 +218,7 @@ public class BluetoothLeBroadcastAssistantTest {
         mAdapter.closeProfileProxy(
                 BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT, mBluetoothLeBroadcastAssistant);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -398,7 +399,7 @@ public class BluetoothLeBroadcastAssistantTest {
         assertNotNull(mBluetoothLeBroadcastAssistant);
 
         // Verify that it returns false when search is not in progress
-        assertFalse(mBluetoothLeBroadcastAssistant.isSearchInProgress());
+        assertThat(mBluetoothLeBroadcastAssistant.isSearchInProgress()).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -572,7 +573,7 @@ public class BluetoothLeBroadcastAssistantTest {
                 .onSearchStarted(BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST);
 
         // Verify search state is right
-        assertFalse(mBluetoothLeBroadcastAssistant.isSearchInProgress());
+        assertThat(mBluetoothLeBroadcastAssistant.isSearchInProgress()).isFalse();
 
         // Do not forget to unregister callbacks
         mBluetoothLeBroadcastAssistant.unregisterCallback(mCallbacks);

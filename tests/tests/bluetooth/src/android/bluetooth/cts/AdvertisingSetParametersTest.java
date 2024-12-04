@@ -33,7 +33,6 @@ import static com.android.bluetooth.flags.Flags.FLAG_DIRECTED_ADVERTISING_API;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -116,12 +115,12 @@ public class AdvertisingSetParametersTest {
     public void defaultParameters() {
         AdvertisingSetParameters params = new AdvertisingSetParameters.Builder().build();
 
-        assertFalse(params.isConnectable());
+        assertThat(params.isConnectable()).isFalse();
         assertTrue(params.isDiscoverable());
-        assertFalse(params.isScannable());
-        assertFalse(params.isLegacy());
-        assertFalse(params.isAnonymous());
-        assertFalse(params.includeTxPower());
+        assertThat(params.isScannable()).isFalse();
+        assertThat(params.isLegacy()).isFalse();
+        assertThat(params.isAnonymous()).isFalse();
+        assertThat(params.includeTxPower()).isFalse();
         assertEquals(PHY_LE_1M, params.getPrimaryPhy());
         assertEquals(PHY_LE_1M, params.getSecondaryPhy());
         assertEquals(INTERVAL_LOW, params.getInterval());
@@ -141,7 +140,7 @@ public class AdvertisingSetParametersTest {
     public void isDiscoverable() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setDiscoverable(false).build();
-        assertFalse(params.isDiscoverable());
+        assertThat(params.isDiscoverable()).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

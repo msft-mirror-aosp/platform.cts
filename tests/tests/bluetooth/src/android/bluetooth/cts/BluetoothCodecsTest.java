@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
 import android.test.AndroidTestCase;
@@ -310,29 +312,29 @@ public class BluetoothCodecsTest extends AndroidTestCase {
     public void test_GetCodecConfig() {
         assertTrue(Objects.equals(bcs_A.getCodecConfig(), config_A));
         assertTrue(Objects.equals(bcs_A.getCodecConfig(), config_B));
-        assertFalse(Objects.equals(bcs_A.getCodecConfig(), config_C));
+        assertThat(bcs_A.getCodecConfig()).isNotEqualTo(config_C);
     }
 
     public void test_CodecsCapabilities() {
         assertTrue(bcs_A.getCodecsLocalCapabilities().equals(LOCAL_CAPABILITY_A));
         assertTrue(bcs_A.getCodecsLocalCapabilities().equals(LOCAL_CAPABILITY_B));
-        assertFalse(bcs_A.getCodecsLocalCapabilities().equals(LOCAL_CAPABILITY_C));
+        assertThat(bcs_A.getCodecsLocalCapabilities()).isNotEqualTo(LOCAL_CAPABILITY_C);
 
         assertTrue(bcs_A.getCodecsSelectableCapabilities().equals(SELECTABLE_CAPABILITY_A));
         assertTrue(bcs_A.getCodecsSelectableCapabilities().equals(SELECTABLE_CAPABILITY_B));
-        assertFalse(bcs_A.getCodecsSelectableCapabilities().equals(SELECTABLE_CAPABILITY_C));
+        assertThat(bcs_A.getCodecsSelectableCapabilities()).isNotEqualTo(SELECTABLE_CAPABILITY_C);
     }
 
     public void test_IsCodecConfigSelectable() {
-        assertFalse(bcs_A.isCodecConfigSelectable(null));
+        assertThat(bcs_A.isCodecConfigSelectable(null)).isFalse();
         assertTrue(bcs_A.isCodecConfigSelectable(selectable_capability1_C));
         assertTrue(bcs_A.isCodecConfigSelectable(selectable_capability2_C));
 
         // Not selectable due to multiple channel modes
-        assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability1_A));
-        assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability1_B));
-        assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability2_A));
-        assertFalse(bcs_A.isCodecConfigSelectable(selectable_capability2_B));
+        assertThat(bcs_A.isCodecConfigSelectable(selectable_capability1_A)).isFalse();
+        assertThat(bcs_A.isCodecConfigSelectable(selectable_capability1_B)).isFalse();
+        assertThat(bcs_A.isCodecConfigSelectable(selectable_capability2_A)).isFalse();
+        assertThat(bcs_A.isCodecConfigSelectable(selectable_capability2_B)).isFalse();
     }
 
     private static BluetoothCodecConfig buildBluetoothCodecConfig(

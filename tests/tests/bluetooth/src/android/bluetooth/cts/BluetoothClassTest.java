@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothClass;
 import android.os.Parcel;
 import android.test.AndroidTestCase;
@@ -54,7 +56,7 @@ public class BluetoothClassTest extends AndroidTestCase {
     @SmallTest
     public void testHasService() {
         assertTrue(mBluetoothClassService.hasService(BluetoothClass.Service.NETWORKING));
-        assertFalse(mBluetoothClassService.hasService(BluetoothClass.Service.TELEPHONY));
+        assertThat(mBluetoothClassService.hasService(BluetoothClass.Service.TELEPHONY)).isFalse();
     }
 
     @SmallTest
@@ -85,13 +87,14 @@ public class BluetoothClassTest extends AndroidTestCase {
     @SmallTest
     public void testDoesClassMatch() {
         assertTrue(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_A2DP));
-        assertFalse(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_HEADSET));
+        assertThat(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_HEADSET))
+                .isFalse();
 
         assertTrue(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_OPP));
-        assertFalse(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_HEADSET));
+        assertThat(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_HEADSET)).isFalse();
 
         assertTrue(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_PANU));
-        assertFalse(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_OPP));
+        assertThat(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_OPP)).isFalse();
     }
 
     @SmallTest

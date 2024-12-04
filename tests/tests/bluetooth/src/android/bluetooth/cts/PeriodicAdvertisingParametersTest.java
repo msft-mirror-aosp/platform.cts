@@ -19,7 +19,6 @@ package android.bluetooth.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -71,7 +70,7 @@ public class PeriodicAdvertisingParametersTest {
     @Test
     public void defaultParameters() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
-        assertFalse(params.getIncludeTxPower());
+        assertThat(params.getIncludeTxPower()).isFalse();
         assertEquals(INTERVAL_MAX, params.getInterval());
     }
 

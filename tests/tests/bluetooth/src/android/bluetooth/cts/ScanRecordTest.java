@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.ScanRecord;
@@ -114,10 +115,10 @@ public class ScanRecordTest {
         ParcelUuid uuid4 = ParcelUuid.fromString("0000110D-0000-1000-8000-00805F9B34FB");
         assertTrue(data.getServiceUuids().contains(uuid1));
         assertTrue(data.getServiceUuids().contains(uuid2));
-        assertFalse(data.getServiceUuids().contains(uuid3));
-        assertFalse(data.getServiceUuids().contains(uuid4));
-        assertFalse(data.getServiceSolicitationUuids().contains(uuid1));
-        assertFalse(data.getServiceSolicitationUuids().contains(uuid2));
+        assertThat(data.getServiceUuids()).doesNotContain(uuid3);
+        assertThat(data.getServiceUuids()).doesNotContain(uuid4);
+        assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid1);
+        assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid2);
         assertTrue(data.getServiceSolicitationUuids().contains(uuid3));
         assertTrue(data.getServiceSolicitationUuids().contains(uuid4));
 

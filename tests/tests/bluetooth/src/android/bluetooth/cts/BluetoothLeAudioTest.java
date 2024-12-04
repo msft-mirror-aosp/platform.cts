@@ -19,8 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
@@ -195,7 +196,7 @@ public class BluetoothLeAudioTest {
 
         mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO, mBluetoothLeAudio);
         assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -301,7 +302,7 @@ public class BluetoothLeAudioTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
-        assertFalse(mBluetoothLeAudio.setConnectionPolicy(null, 0));
+        assertThat(mBluetoothLeAudio.setConnectionPolicy(null, 0)).isFalse();
         assertEquals(
                 BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothLeAudio.getConnectionPolicy(null));

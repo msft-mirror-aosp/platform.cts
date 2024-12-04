@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.AdvertiseData;
@@ -69,8 +70,8 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
-        assertFalse(dataFromParcel.getIncludeDeviceName());
-        assertFalse(dataFromParcel.getIncludeTxPowerLevel());
+        assertThat(dataFromParcel.getIncludeDeviceName()).isFalse();
+        assertThat(dataFromParcel.getIncludeTxPowerLevel()).isFalse();
         assertEquals(0, dataFromParcel.getManufacturerSpecificData().size());
         assertTrue(dataFromParcel.getServiceData().isEmpty());
         assertTrue(dataFromParcel.getServiceUuids().isEmpty());

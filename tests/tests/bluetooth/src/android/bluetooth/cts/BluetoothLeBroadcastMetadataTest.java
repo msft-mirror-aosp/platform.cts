@@ -19,9 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -162,8 +163,8 @@ public class BluetoothLeBroadcastMetadataTest {
             builder.addSubgroup(subgroup);
         }
         BluetoothLeBroadcastMetadata metadata = builder.build();
-        assertFalse(metadata.isEncrypted());
-        assertFalse(metadata.isPublicBroadcast());
+        assertThat(metadata.isEncrypted()).isFalse();
+        assertThat(metadata.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, metadata.getBroadcastName());
         assertEquals(testDevice, metadata.getSourceDevice());
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadata.getSourceAddressType());
@@ -214,8 +215,8 @@ public class BluetoothLeBroadcastMetadataTest {
         BluetoothLeBroadcastMetadata metadata = builder.build();
         BluetoothLeBroadcastMetadata metadataCopy =
                 new BluetoothLeBroadcastMetadata.Builder(metadata).build();
-        assertFalse(metadataCopy.isEncrypted());
-        assertFalse(metadataCopy.isPublicBroadcast());
+        assertThat(metadataCopy.isEncrypted()).isFalse();
+        assertThat(metadataCopy.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, metadataCopy.getBroadcastName());
         assertEquals(testDevice, metadataCopy.getSourceDevice());
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadataCopy.getSourceAddressType());
