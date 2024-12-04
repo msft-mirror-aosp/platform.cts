@@ -27,7 +27,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -224,8 +223,8 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertNull(mBluetoothHeadsetClient.getNetworkServiceState(testDevice));
-        assertNull(mBluetoothHeadsetClient.getNetworkServiceState(null));
+        assertThat(mBluetoothHeadsetClient.getNetworkServiceState(testDevice)).isNull();
+        assertThat(mBluetoothHeadsetClient.getNetworkServiceState(null)).isNull();
     }
 
     @Test

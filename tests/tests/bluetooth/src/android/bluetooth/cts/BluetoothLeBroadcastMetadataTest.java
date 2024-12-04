@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -164,7 +163,7 @@ public class BluetoothLeBroadcastMetadataTest {
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadata.getSourceAddressType());
         assertEquals(TEST_ADVERTISER_SID, metadata.getSourceAdvertisingSid());
         assertEquals(TEST_BROADCAST_ID, metadata.getBroadcastId());
-        assertNull(metadata.getBroadcastCode());
+        assertThat(metadata.getBroadcastCode()).isNull();
         assertEquals(TEST_PA_SYNC_INTERVAL, metadata.getPaSyncInterval());
         assertEquals(TEST_PRESENTATION_DELAY_MS, metadata.getPresentationDelayMicros());
         assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadata.getAudioConfigQuality());
@@ -216,7 +215,7 @@ public class BluetoothLeBroadcastMetadataTest {
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadataCopy.getSourceAddressType());
         assertEquals(TEST_ADVERTISER_SID, metadataCopy.getSourceAdvertisingSid());
         assertEquals(TEST_BROADCAST_ID, metadataCopy.getBroadcastId());
-        assertNull(metadataCopy.getBroadcastCode());
+        assertThat(metadataCopy.getBroadcastCode()).isNull();
         assertEquals(TEST_PA_SYNC_INTERVAL, metadataCopy.getPaSyncInterval());
         assertEquals(TEST_PRESENTATION_DELAY_MS, metadataCopy.getPresentationDelayMicros());
         assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadataCopy.getAudioConfigQuality());

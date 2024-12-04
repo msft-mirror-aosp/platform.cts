@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -129,7 +128,7 @@ public class BluetoothLeBroadcastReceiveStateTest {
         assertEquals(TEST_BROADCAST_ID, state.getBroadcastId());
         assertEquals(TEST_PA_SYNC_STATE, state.getPaSyncState());
         assertEquals(TEST_BIG_ENCRYPTION_STATE, state.getBigEncryptionState());
-        assertNull(state.getBadCode());
+        assertThat(state.getBadCode()).isNull();
         assertEquals(TEST_NUM_SUBGROUPS, state.getNumSubgroups());
         assertArrayEquals(TEST_BIS_SYNC_STATE, state.getBisSyncState().toArray(new Long[0]));
         assertArrayEquals(

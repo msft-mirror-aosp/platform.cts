@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -144,8 +143,8 @@ public class BluetoothLeBroadcastSettingsTest {
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
         assertThat(broadcastSettings.isPublicBroadcast()).isFalse();
-        assertNull(broadcastSettings.getBroadcastName());
-        assertNull(broadcastSettings.getBroadcastCode());
+        assertThat(broadcastSettings.getBroadcastName()).isNull();
+        assertThat(broadcastSettings.getBroadcastCode()).isNull();
         assertEquals(publicBroadcastMetadata, broadcastSettings.getPublicBroadcastMetadata());
         assertArrayEquals(
                 subgroupSettings,
@@ -182,7 +181,7 @@ public class BluetoothLeBroadcastSettingsTest {
                 new BluetoothLeBroadcastSettings.Builder(broadcastSettings).build();
         assertThat(broadcastSettingsCopy.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, broadcastSettingsCopy.getBroadcastName());
-        assertNull(broadcastSettingsCopy.getBroadcastCode());
+        assertThat(broadcastSettingsCopy.getBroadcastCode()).isNull();
         assertEquals(publicBroadcastMetadata, broadcastSettingsCopy.getPublicBroadcastMetadata());
         assertArrayEquals(
                 subgroupSettings,

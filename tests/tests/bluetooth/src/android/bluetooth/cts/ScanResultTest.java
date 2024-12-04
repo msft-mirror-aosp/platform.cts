@@ -19,7 +19,6 @@ package android.bluetooth.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -118,7 +117,7 @@ public class ScanResultTest {
                         null,
                         timestampNanos);
         assertEquals(result.getDevice(), device);
-        assertNull(result.getScanRecord());
+        assertThat(result.getScanRecord()).isNull();
         assertEquals(result.getRssi(), rssi);
         assertEquals(result.getTimestampNanos(), timestampNanos);
         assertEquals(result.getDataStatus(), 0x01);

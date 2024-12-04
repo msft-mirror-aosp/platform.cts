@@ -31,7 +31,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -227,7 +226,7 @@ public class BluetoothA2dpTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertNull(mBluetoothA2dp.getCodecStatus(testDevice));
+        assertThat(mBluetoothA2dp.getCodecStatus(testDevice)).isNull();
         assertThrows(
                 IllegalArgumentException.class,
                 () -> {
@@ -335,7 +334,7 @@ public class BluetoothA2dpTest {
         assertNotNull(mBluetoothA2dp.getBufferConstraints());
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
         // Verify returns null if bluetooth is not enabled
-        assertNull(mBluetoothA2dp.getBufferConstraints());
+        assertThat(mBluetoothA2dp.getBufferConstraints()).isNull();
     }
 
     @Test

@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -82,9 +81,9 @@ public class TransportBlockFilterTest {
         assertEquals(OrganizationId.BLUETOOTH_SIG, filter.getOrgId());
         assertEquals(0, filter.getTdsFlags());
         assertEquals(0, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
+        assertThat(filter.getWifiNanHash()).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -100,7 +99,7 @@ public class TransportBlockFilterTest {
         assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
         assertArrayEquals(TEST_TRANSPORT_DATA, filter.getTransportData());
         assertArrayEquals(TEST_TRANSPORT_DATA_MASK, filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
+        assertThat(filter.getWifiNanHash()).isNull();
         assertNotNull(filter.toString());
     }
 
@@ -116,8 +115,8 @@ public class TransportBlockFilterTest {
         assertEquals(OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING, filter.getOrgId());
         assertEquals(TEST_TDS_FLAG, filter.getTdsFlags());
         assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
         assertArrayEquals(TEST_VALID_WIFI_NAN_HASH, filter.getWifiNanHash());
         assertNotNull(filter.toString());
     }

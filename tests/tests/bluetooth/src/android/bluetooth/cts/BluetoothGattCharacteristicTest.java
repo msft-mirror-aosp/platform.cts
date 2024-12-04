@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -58,7 +59,7 @@ public class BluetoothGattCharacteristicTest {
     @Test
     public void getService() {
         // Service is null after initialization with public constructor
-        assertNull(mBluetoothGattCharacteristic.getService());
+        assertThat(mBluetoothGattCharacteristic.getService()).isNull();
         BluetoothGattService service =
                 new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 

@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -301,7 +300,7 @@ public class BluetoothLeAudioTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothLeAudio);
 
-        assertNull(mBluetoothLeAudio.getCodecStatus(0));
+        assertThat(mBluetoothLeAudio.getCodecStatus(0)).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

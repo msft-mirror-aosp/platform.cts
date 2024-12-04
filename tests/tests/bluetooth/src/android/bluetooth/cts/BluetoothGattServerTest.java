@@ -21,7 +21,6 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.app.UiAutomation;
@@ -133,7 +132,7 @@ public class BluetoothGattServerTest {
     @Test
     public void getService() throws InterruptedException {
         // Service is null after initialization with public constructor
-        assertNull(mBluetoothGattServer.getService(TEST_UUID));
+        assertThat(mBluetoothGattServer.getService(TEST_UUID)).isNull();
         BluetoothGattCharacteristic characteristic =
                 new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
         BluetoothGattService service =
