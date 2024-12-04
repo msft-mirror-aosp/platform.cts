@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -131,7 +130,7 @@ public class BluetoothGattServerTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void getService() {
+    public void getService() throws InterruptedException {
         // Service is null after initialization with public constructor
         assertNull(mBluetoothGattServer.getService(TEST_UUID));
         BluetoothGattCharacteristic characteristic =
@@ -142,11 +141,7 @@ public class BluetoothGattServerTest {
         service.addCharacteristic(characteristic);
         // If service is added successfully, latch.countDown() happens in the callback
         mBluetoothGattServer.addService(service);
-        try {
-            mLatch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            fail("should not throw an InterruptedException");
-        }
+        mLatch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         assertEquals(mBluetoothGattServer.getService(TEST_UUID), service);
     }

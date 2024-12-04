@@ -21,7 +21,7 @@ import static android.bluetooth.cts.TestUtils.assertArrayEquals;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.OobData;
 import android.content.Context;
@@ -102,23 +102,15 @@ public class OobDataTest {
         byte[] address = new byte[] {0x12, 0x34, 0x56, 0x78, (byte) 0x8A, (byte) 0xBC, 0x0};
 
         // Test invalid constructor parameters
-        try {
-            new OobData.ClassicBuilder(null, length, address);
-            fail("Constructor does not throw a NullPointerException with a null confirmationHash");
-        } catch (NullPointerException ex) {
-        }
-        try {
-            new OobData.ClassicBuilder(confirmationHash, null, address);
-            fail("Constructor does not throw a NullPointerException with a null classicLength");
-        } catch (NullPointerException ex) {
-        }
-        try {
-            new OobData.ClassicBuilder(confirmationHash, length, null);
-            fail(
-                    "Constructor does not throw a NullPointerException with a null "
-                            + "deviceAddressWithType");
-        } catch (NullPointerException ex) {
-        }
+        assertThrows(
+                NullPointerException.class,
+                () -> new OobData.ClassicBuilder(null, length, address));
+        assertThrows(
+                NullPointerException.class,
+                () -> new OobData.ClassicBuilder(confirmationHash, null, address));
+        assertThrows(
+                NullPointerException.class,
+                () -> new OobData.ClassicBuilder(confirmationHash, length, null));
 
         // Create a classic OobData with the required fields and verify all values set properly
         OobData.ClassicBuilder classicBuilder =
@@ -226,23 +218,17 @@ public class OobDataTest {
         byte[] address = new byte[] {0x12, 0x34, 0x56, 0x78, (byte) 0x8A, (byte) 0xBC, 0x0};
 
         // Test invalid constructor parameters
-        try {
-            new OobData.LeBuilder(null, address, OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY);
-            fail("Constructor does not throw a NullPointerException with a null confirmationHash");
-        } catch (NullPointerException ex) {
-        }
-        try {
-            new OobData.LeBuilder(confirmationHash, null, OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY);
-            fail(
-                    "Constructor does not throw a NullPointerException with a null "
-                            + "deviceAddressWithType");
-        } catch (NullPointerException ex) {
-        }
-        try {
-            new OobData.LeBuilder(confirmationHash, address, -1);
-            fail("Constructor does not throw an IllegalArgumentException with a null leDeviceRole");
-        } catch (IllegalArgumentException ex) {
-        }
+        assertThrows(
+                NullPointerException.class,
+                () -> new OobData.LeBuilder(null, address, OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY));
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        new OobData.LeBuilder(
+                                confirmationHash, null, OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OobData.LeBuilder(confirmationHash, address, -1));
 
         // Create a classic OobData with the required fields and verify all values set properly
         OobData.LeBuilder leBuilder =
