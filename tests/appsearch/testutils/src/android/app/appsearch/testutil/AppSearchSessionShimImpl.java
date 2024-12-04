@@ -32,6 +32,7 @@ import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.OpenBlobForReadResponse;
 import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PutDocumentsRequest;
+import android.app.appsearch.RemoveBlobResponse;
 import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportUsageRequest;
 import android.app.appsearch.SearchResults;
@@ -39,6 +40,7 @@ import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SearchSuggestionResult;
 import android.app.appsearch.SearchSuggestionSpec;
+import android.app.appsearch.SetBlobVisibilityRequest;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.SetSchemaResponse;
 import android.app.appsearch.StorageInfo;
@@ -162,6 +164,16 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
 
     @Override
     @NonNull
+    public ListenableFuture<RemoveBlobResponse> removeBlobAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        SettableFuture<AppSearchResult<RemoveBlobResponse>> future =
+                SettableFuture.create();
+        mAppSearchSession.removeBlob(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
+    }
+
+    @Override
+    @NonNull
     public ListenableFuture<CommitBlobResponse> commitBlobAsync(
             @NonNull Set<AppSearchBlobHandle> handles) {
         SettableFuture<AppSearchResult<CommitBlobResponse>> future =
@@ -177,6 +189,15 @@ public class AppSearchSessionShimImpl implements AppSearchSessionShim {
         SettableFuture<AppSearchResult<OpenBlobForReadResponse>> future =
                 SettableFuture.create();
         mAppSearchSession.openBlobForRead(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
+    }
+
+    @Override
+    @NonNull
+    public ListenableFuture<Void> setBlobVisibilityAsync(
+            @NonNull SetBlobVisibilityRequest request) {
+        SettableFuture<AppSearchResult<Void>> future = SettableFuture.create();
+        mAppSearchSession.setBlobVisibility(request, mExecutor, future::set);
         return Futures.transformAsync(future, this::transformResult, mExecutor);
     }
 

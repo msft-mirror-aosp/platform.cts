@@ -159,6 +159,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
 
         # determine radius tolerance of capture
         cap_fl = cap['metadata']['android.lens.focalLength']
+        cap_physical_id = (
+            cap['metadata']['android.logicalMultiCamera.activePhysicalId']
+        )
         radius_tol, offset_tol = test_tols[cap_fl]
 
         # Find the center ArUco marker in img and check if it's cropped
@@ -177,7 +180,8 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
                 result_zoom=z_result,
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
-                focal_length=cap_fl
+                focal_length=cap_fl,
+                physical_id=cap_physical_id,
             )
         )
 

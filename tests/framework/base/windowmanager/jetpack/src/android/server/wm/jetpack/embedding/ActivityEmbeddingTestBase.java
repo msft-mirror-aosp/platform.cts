@@ -20,6 +20,7 @@ import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindow
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
@@ -75,5 +76,16 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
             mActivityEmbeddingComponent.clearSplitAttributesCalculator();
             mActivityEmbeddingComponent.clearSplitInfoCallback();
         }
+    }
+
+    /**
+     * Creates a landscape large screen simulated display to verify AE on multi-display environment.
+     */
+    public DisplayContent createLandscapeLargeScreenSimulatedDisplay() {
+        return createManagedVirtualDisplaySession()
+                .setSimulateDisplay(true)
+                .setSimulationDisplaySize(1920, 1080)
+                .setDensityDpi(160)
+                .createDisplay();
     }
 }
