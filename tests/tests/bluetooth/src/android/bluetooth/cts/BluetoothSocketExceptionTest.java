@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothSocketException;
 import android.test.AndroidTestCase;
 
@@ -33,7 +31,8 @@ public final class BluetoothSocketExceptionTest extends AndroidTestCase {
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
 
-        assertEquals(exception.getErrorCode(), BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
+        assertThat(exception.getErrorCode())
+                .isEqualTo(BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
     }
 
     @SmallTest
@@ -42,7 +41,7 @@ public final class BluetoothSocketExceptionTest extends AndroidTestCase {
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.UNSPECIFIED, customErrMsg);
 
-        assertEquals(exception.getMessage(), customErrMsg);
+        assertThat(exception.getMessage()).isEqualTo(customErrMsg);
     }
 
     @SmallTest

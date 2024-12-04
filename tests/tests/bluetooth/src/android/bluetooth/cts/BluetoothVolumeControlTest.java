@@ -25,7 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -271,7 +270,8 @@ public class BluetoothVolumeControlTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns 0 if bluetooth is not enabled
-        assertEquals(0, mBluetoothVolumeControl.getNumberOfVolumeOffsetInstances(mTestDevice));
+        assertThat(mBluetoothVolumeControl.getNumberOfVolumeOffsetInstances(mTestDevice))
+                .isEqualTo(0);
     }
 
     @Test
@@ -283,12 +283,13 @@ public class BluetoothVolumeControlTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothVolumeControl.getConnectionState(null));
+        assertThat(mBluetoothVolumeControl.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothVolumeControl.getConnectionState(testDevice));
+        assertThat(mBluetoothVolumeControl.getConnectionState(testDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -300,17 +301,16 @@ public class BluetoothVolumeControlTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(
-                CONNECTION_POLICY_FORBIDDEN, mBluetoothVolumeControl.getConnectionPolicy(null));
+        assertThat(mBluetoothVolumeControl.getConnectionPolicy(null))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
         enforceConnectAndPrivileged(() -> mBluetoothVolumeControl.getConnectionPolicy(testDevice));
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothVolumeControl.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothVolumeControl.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test

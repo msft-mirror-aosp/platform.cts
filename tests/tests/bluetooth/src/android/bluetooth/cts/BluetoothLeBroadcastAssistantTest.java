@@ -27,7 +27,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -278,9 +277,8 @@ public class BluetoothLeBroadcastAssistantTest {
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
 
         // Verify that it returns unknown for an unknown test device
-        assertEquals(
-                CONNECTION_POLICY_UNKNOWN,
-                mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_UNKNOWN);
 
         // Verify that it returns true even for an unknown test device
         assertThat(
@@ -289,9 +287,8 @@ public class BluetoothLeBroadcastAssistantTest {
                 .isTrue();
 
         // Verify that it returns the same value we set before
-        assertEquals(
-                CONNECTION_POLICY_ALLOWED,
-                mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_ALLOWED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -304,7 +301,8 @@ public class BluetoothLeBroadcastAssistantTest {
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
 
         // Verifies that it returns 0 for an unknown test device
-        assertEquals(mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(testDevice), 0);
+        assertThat(mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(testDevice))
+                .isEqualTo(0);
 
         // Verifies that it throws exception when input is null
         assertThrows(
@@ -586,8 +584,8 @@ public class BluetoothLeBroadcastAssistantTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                STATE_DISCONNECTED, mBluetoothLeBroadcastAssistant.getConnectionState(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionState(testDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     private boolean waitForProfileConnect() {

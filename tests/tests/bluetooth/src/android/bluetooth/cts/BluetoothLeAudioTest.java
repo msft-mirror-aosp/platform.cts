@@ -23,7 +23,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -167,12 +166,12 @@ public class BluetoothLeAudioTest {
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothLeAudio.getConnectionState(null));
+        assertThat(mBluetoothLeAudio.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothLeAudio.getConnectionState(mTestDevice));
+        assertThat(mBluetoothLeAudio.getConnectionState(mTestDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -187,9 +186,8 @@ public class BluetoothLeAudioTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                BluetoothLeAudio.AUDIO_LOCATION_INVALID,
-                mBluetoothLeAudio.getAudioLocation(mTestDevice));
+        assertThat(mBluetoothLeAudio.getAudioLocation(mTestDevice))
+                .isEqualTo(BluetoothLeAudio.AUDIO_LOCATION_INVALID);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -204,9 +202,8 @@ public class BluetoothLeAudioTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                BluetoothLeAudio.AUDIO_LOCATION_UNKNOWN,
-                mBluetoothLeAudio.getAudioLocation(mTestDevice));
+        assertThat(mBluetoothLeAudio.getAudioLocation(mTestDevice))
+                .isEqualTo(BluetoothLeAudio.AUDIO_LOCATION_UNKNOWN);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -220,9 +217,8 @@ public class BluetoothLeAudioTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                false,
-                mBluetoothLeAudio.isInbandRingtoneEnabled(BluetoothLeAudio.GROUP_ID_INVALID));
+        assertThat(mBluetoothLeAudio.isInbandRingtoneEnabled(BluetoothLeAudio.GROUP_ID_INVALID))
+                .isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -232,7 +228,8 @@ public class BluetoothLeAudioTest {
         assertThat(mBluetoothLeAudio).isNotNull();
 
         assertThat(mBluetoothLeAudio.setConnectionPolicy(null, 0)).isFalse();
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothLeAudio.getConnectionPolicy(null));
+        assertThat(mBluetoothLeAudio.getConnectionPolicy(null))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -281,7 +278,7 @@ public class BluetoothLeAudioTest {
         int groupId = 1;
 
         // Verify returns null for unknown group id
-        assertEquals(null, mBluetoothLeAudio.getConnectedGroupLeadDevice(groupId));
+        assertThat(mBluetoothLeAudio.getConnectedGroupLeadDevice(groupId)).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

@@ -23,7 +23,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -163,10 +162,10 @@ public class BluetoothSapTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(mBluetoothSap.getConnectionState(testDevice), STATE_DISCONNECTED);
+        assertThat(mBluetoothSap.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertEquals(mBluetoothSap.getConnectionState(testDevice), STATE_DISCONNECTED);
+        assertThat(mBluetoothSap.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test

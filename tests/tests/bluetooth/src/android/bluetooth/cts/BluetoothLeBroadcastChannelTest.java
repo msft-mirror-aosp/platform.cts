@@ -21,8 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
 import android.bluetooth.BluetoothLeBroadcastChannel;
@@ -107,11 +105,12 @@ public class BluetoothLeBroadcastChannelTest {
                         .setCodecMetadata(codecMetadata)
                         .build();
         assertThat(channel.isSelected()).isTrue();
-        assertEquals(TEST_CHANNEL_INDEX, channel.getChannelIndex());
-        assertEquals(codecMetadata, channel.getCodecMetadata());
-        assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT, channel.getCodecMetadata().getAudioLocation());
+        assertThat(channel.getChannelIndex()).isEqualTo(TEST_CHANNEL_INDEX);
+        assertThat(channel.getCodecMetadata()).isEqualTo(codecMetadata);
+        assertThat(channel.getCodecMetadata().getAudioLocation())
+                .isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
         assertThat(channel.getCodecMetadata()).isNotNull();
-        assertEquals(codecMetadata, channel.getCodecMetadata());
+        assertThat(channel.getCodecMetadata()).isEqualTo(codecMetadata);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -133,11 +132,11 @@ public class BluetoothLeBroadcastChannelTest {
         BluetoothLeBroadcastChannel channelCopy =
                 new BluetoothLeBroadcastChannel.Builder(channel).build();
         assertThat(channelCopy.isSelected()).isTrue();
-        assertEquals(TEST_CHANNEL_INDEX, channelCopy.getChannelIndex());
-        assertEquals(codecMetadata, channelCopy.getCodecMetadata());
-        assertEquals(
-                TEST_AUDIO_LOCATION_FRONT_LEFT, channelCopy.getCodecMetadata().getAudioLocation());
+        assertThat(channelCopy.getChannelIndex()).isEqualTo(TEST_CHANNEL_INDEX);
+        assertThat(channelCopy.getCodecMetadata()).isEqualTo(codecMetadata);
+        assertThat(channelCopy.getCodecMetadata().getAudioLocation())
+                .isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
         assertThat(channelCopy.getCodecMetadata()).isNotNull();
-        assertEquals(channel.getCodecMetadata(), channelCopy.getCodecMetadata());
+        assertThat(channelCopy.getCodecMetadata()).isEqualTo(channel.getCodecMetadata());
     }
 }

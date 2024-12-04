@@ -28,7 +28,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -52,7 +51,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -153,7 +151,7 @@ public class BluetoothA2dpTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothA2dp).isNotNull();
 
-        assertEquals(mBluetoothA2dp.getConnectedDevices(), new ArrayList<BluetoothDevice>());
+        assertThat(mBluetoothA2dp.getConnectedDevices()).isEmpty();
     }
 
     @Test
@@ -162,9 +160,8 @@ public class BluetoothA2dpTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothA2dp).isNotNull();
 
-        assertEquals(
-                mBluetoothA2dp.getDevicesMatchingConnectionStates(new int[] {STATE_CONNECTED}),
-                new ArrayList<BluetoothDevice>());
+        assertThat(mBluetoothA2dp.getDevicesMatchingConnectionStates(new int[] {STATE_CONNECTED}))
+                .isEmpty();
     }
 
     @Test
@@ -175,7 +172,7 @@ public class BluetoothA2dpTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(mBluetoothA2dp.getConnectionState(testDevice), STATE_DISCONNECTED);
+        assertThat(mBluetoothA2dp.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -276,12 +273,13 @@ public class BluetoothA2dpTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothA2dp.getConnectionPolicy(null));
+        assertThat(mBluetoothA2dp.getConnectionPolicy(null)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothA2dp.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothA2dp.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test
@@ -319,7 +317,7 @@ public class BluetoothA2dpTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns DYNAMIC_BUFFER_SUPPORT_NONE if bluetooth is not enabled
-        assertEquals(DYNAMIC_BUFFER_SUPPORT_NONE, mBluetoothA2dp.getDynamicBufferSupport());
+        assertThat(mBluetoothA2dp.getDynamicBufferSupport()).isEqualTo(DYNAMIC_BUFFER_SUPPORT_NONE);
     }
 
     @Test
@@ -359,15 +357,15 @@ public class BluetoothA2dpTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
-        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsSupported(testDevice));
+        assertThat(mBluetoothA2dp.isOptionalCodecsEnabled(testDevice)).isEqualTo(-1);
+        assertThat(mBluetoothA2dp.isOptionalCodecsSupported(testDevice)).isEqualTo(-1);
 
         mBluetoothA2dp.enableOptionalCodecs(testDevice);
         // Device is not in state machine so should not be enabled
-        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
+        assertThat(mBluetoothA2dp.isOptionalCodecsEnabled(testDevice)).isEqualTo(-1);
 
         mBluetoothA2dp.disableOptionalCodecs(testDevice);
-        assertEquals(-1, mBluetoothA2dp.isOptionalCodecsEnabled(testDevice));
+        assertThat(mBluetoothA2dp.isOptionalCodecsEnabled(testDevice)).isEqualTo(-1);
 
         assertThrows(
                 IllegalArgumentException.class,

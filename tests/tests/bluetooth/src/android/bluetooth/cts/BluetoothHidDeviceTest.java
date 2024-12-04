@@ -25,7 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -48,7 +47,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -129,10 +127,10 @@ public class BluetoothHidDeviceTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothHidDevice).isNotNull();
 
-        assertEquals(
-                new ArrayList<BluetoothDevice>(),
-                mBluetoothHidDevice.getDevicesMatchingConnectionStates(
-                        new int[] {STATE_CONNECTED}));
+        assertThat(
+                        mBluetoothHidDevice.getDevicesMatchingConnectionStates(
+                                new int[] {STATE_CONNECTED}))
+                .isEmpty();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -149,12 +147,13 @@ public class BluetoothHidDeviceTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns STATE_DISCONNECTED when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(null));
+        assertThat(mBluetoothHidDevice.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(testDevice));
+        assertThat(mBluetoothHidDevice.getConnectionState(testDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test

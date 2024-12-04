@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
@@ -123,10 +122,10 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
                         .setFrameDuration(TEST_FRAME_DURATION_10000)
                         .setOctetsPerFrame(TEST_OCTETS_PER_FRAME)
                         .build();
-        assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT, codecMetadata.getAudioLocation());
-        assertEquals(TEST_SAMPLE_RATE_44100, codecMetadata.getSampleRate());
-        assertEquals(TEST_FRAME_DURATION_10000, codecMetadata.getFrameDuration());
-        assertEquals(TEST_OCTETS_PER_FRAME, codecMetadata.getOctetsPerFrame());
+        assertThat(codecMetadata.getAudioLocation()).isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
+        assertThat(codecMetadata.getSampleRate()).isEqualTo(TEST_SAMPLE_RATE_44100);
+        assertThat(codecMetadata.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);
+        assertThat(codecMetadata.getOctetsPerFrame()).isEqualTo(TEST_OCTETS_PER_FRAME);
         // TODO: Implement implicit LTV byte conversion in the API class
         // assertArrayEquals(TEST_METADATA_BYTES, codecMetadata.getRawMetadata());
     }
@@ -143,11 +142,11 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
                         .build();
         BluetoothLeAudioCodecConfigMetadata codecMetadataCopy =
                 new BluetoothLeAudioCodecConfigMetadata.Builder(codecMetadata).build();
-        assertEquals(codecMetadata, codecMetadataCopy);
-        assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT, codecMetadataCopy.getAudioLocation());
-        assertEquals(TEST_SAMPLE_RATE_44100, codecMetadataCopy.getSampleRate());
-        assertEquals(TEST_FRAME_DURATION_10000, codecMetadataCopy.getFrameDuration());
-        assertEquals(TEST_OCTETS_PER_FRAME, codecMetadataCopy.getOctetsPerFrame());
+        assertThat(codecMetadataCopy).isEqualTo(codecMetadata);
+        assertThat(codecMetadataCopy.getAudioLocation()).isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
+        assertThat(codecMetadataCopy.getSampleRate()).isEqualTo(TEST_SAMPLE_RATE_44100);
+        assertThat(codecMetadataCopy.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);
+        assertThat(codecMetadataCopy.getOctetsPerFrame()).isEqualTo(TEST_OCTETS_PER_FRAME);
         assertArrayEquals(codecMetadata.getRawMetadata(), codecMetadataCopy.getRawMetadata());
     }
 
@@ -159,9 +158,9 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         byte[] metadataBytes = codecMetadata.getRawMetadata();
         assertThat(metadataBytes).isNotNull();
         assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
-        assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT, codecMetadata.getAudioLocation());
-        assertEquals(TEST_SAMPLE_RATE_44100, codecMetadata.getSampleRate());
-        assertEquals(TEST_FRAME_DURATION_10000, codecMetadata.getFrameDuration());
-        assertEquals(TEST_OCTETS_PER_FRAME, codecMetadata.getOctetsPerFrame());
+        assertThat(codecMetadata.getAudioLocation()).isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
+        assertThat(codecMetadata.getSampleRate()).isEqualTo(TEST_SAMPLE_RATE_44100);
+        assertThat(codecMetadata.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);
+        assertThat(codecMetadata.getOctetsPerFrame()).isEqualTo(TEST_OCTETS_PER_FRAME);
     }
 }

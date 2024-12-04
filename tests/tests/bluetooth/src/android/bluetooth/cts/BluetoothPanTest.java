@@ -26,7 +26,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BluetoothAdapter;
@@ -155,12 +154,12 @@ public class BluetoothPanTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothPan.getConnectionState(null));
+        assertThat(mBluetoothPan.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothPan.getConnectionState(testDevice));
+        assertThat(mBluetoothPan.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test

@@ -16,7 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
@@ -96,13 +96,13 @@ public class BluetoothLeAudioCodecTest {
                     new BluetoothLeAudioCodecConfig.Builder().setCodecType(codecType).build();
 
             if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3) {
-                assertEquals("LC3", leAudioCodecConfig.getCodecName());
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("LC3");
             }
             if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID) {
-                assertEquals("INVALID CODEC", leAudioCodecConfig.getCodecName());
+                assertThat(leAudioCodecConfig.getCodecName()).isEqualTo("INVALID CODEC");
             }
 
-            assertEquals(codecType, leAudioCodecConfig.getCodecType());
+            assertThat(leAudioCodecConfig.getCodecType()).isEqualTo(codecType);
         }
     }
 
@@ -117,7 +117,7 @@ public class BluetoothLeAudioCodecTest {
                             .setCodecPriority(codecPriority)
                             .build();
 
-            assertEquals(codecPriority, leAudioCodecConfig.getCodecPriority());
+            assertThat(leAudioCodecConfig.getCodecPriority()).isEqualTo(codecPriority);
         }
     }
 
@@ -130,7 +130,7 @@ public class BluetoothLeAudioCodecTest {
             BluetoothLeAudioCodecConfig leAudioCodecConfig =
                     new BluetoothLeAudioCodecConfig.Builder().setSampleRate(sampleRate).build();
 
-            assertEquals(sampleRate, leAudioCodecConfig.getSampleRate());
+            assertThat(leAudioCodecConfig.getSampleRate()).isEqualTo(sampleRate);
         }
     }
 
@@ -147,7 +147,7 @@ public class BluetoothLeAudioCodecTest {
                             .setBitsPerSample(bitsPerSampleIdx)
                             .build();
 
-            assertEquals(bitsPerSampleIdx, leAudioCodecConfig.getBitsPerSample());
+            assertThat(leAudioCodecConfig.getBitsPerSample()).isEqualTo(bitsPerSampleIdx);
         }
     }
 
@@ -162,7 +162,7 @@ public class BluetoothLeAudioCodecTest {
             BluetoothLeAudioCodecConfig leAudioCodecConfig =
                     new BluetoothLeAudioCodecConfig.Builder().setChannelCount(channelCount).build();
 
-            assertEquals(channelCount, leAudioCodecConfig.getChannelCount());
+            assertThat(leAudioCodecConfig.getChannelCount()).isEqualTo(channelCount);
         }
     }
 
@@ -179,7 +179,7 @@ public class BluetoothLeAudioCodecTest {
                             .setFrameDuration(frameDurationIdx)
                             .build();
 
-            assertEquals(frameDuration, leAudioCodecConfig.getFrameDuration());
+            assertThat(leAudioCodecConfig.getFrameDuration()).isEqualTo(frameDuration);
         }
     }
 
@@ -190,7 +190,7 @@ public class BluetoothLeAudioCodecTest {
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder().setOctetsPerFrame(octetsPerFrame).build();
 
-        assertEquals(octetsPerFrame, leAudioCodecConfig.getOctetsPerFrame());
+        assertThat(leAudioCodecConfig.getOctetsPerFrame()).isEqualTo(octetsPerFrame);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -202,7 +202,7 @@ public class BluetoothLeAudioCodecTest {
                         .setMinOctetsPerFrame(minOctetsPerFrame)
                         .build();
 
-        assertEquals(minOctetsPerFrame, leAudioCodecConfig.getMinOctetsPerFrame());
+        assertThat(leAudioCodecConfig.getMinOctetsPerFrame()).isEqualTo(minOctetsPerFrame);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -214,7 +214,7 @@ public class BluetoothLeAudioCodecTest {
                         .setMaxOctetsPerFrame(maxOctetsPerFrame)
                         .build();
 
-        assertEquals(maxOctetsPerFrame, leAudioCodecConfig.getMaxOctetsPerFrame());
+        assertThat(leAudioCodecConfig.getMaxOctetsPerFrame()).isEqualTo(maxOctetsPerFrame);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -222,7 +222,7 @@ public class BluetoothLeAudioCodecTest {
     public void describeContents() {
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder().build();
-        assertEquals(0, leAudioCodecConfig.describeContents());
+        assertThat(leAudioCodecConfig.describeContents()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -244,25 +244,19 @@ public class BluetoothLeAudioCodecTest {
         parcel.setDataPosition(0);
         BluetoothLeAudioCodecConfig leAudioCodecConfigFromParcel =
                 BluetoothLeAudioCodecConfig.CREATOR.createFromParcel(parcel);
-        assertEquals(
-                BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3,
-                leAudioCodecConfigFromParcel.getCodecType());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.CODEC_PRIORITY_HIGHEST,
-                leAudioCodecConfigFromParcel.getCodecPriority());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.SAMPLE_RATE_24000,
-                leAudioCodecConfigFromParcel.getSampleRate());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.BITS_PER_SAMPLE_24,
-                leAudioCodecConfigFromParcel.getBitsPerSample());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.CHANNEL_COUNT_2,
-                leAudioCodecConfigFromParcel.getChannelCount());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.FRAME_DURATION_7500,
-                leAudioCodecConfigFromParcel.getFrameDuration());
-        assertEquals(octetsPerFrame, leAudioCodecConfigFromParcel.getOctetsPerFrame());
+        assertThat(leAudioCodecConfigFromParcel.getCodecType())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3);
+        assertThat(leAudioCodecConfigFromParcel.getCodecPriority())
+                .isEqualTo(BluetoothLeAudioCodecConfig.CODEC_PRIORITY_HIGHEST);
+        assertThat(leAudioCodecConfigFromParcel.getSampleRate())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SAMPLE_RATE_24000);
+        assertThat(leAudioCodecConfigFromParcel.getBitsPerSample())
+                .isEqualTo(BluetoothLeAudioCodecConfig.BITS_PER_SAMPLE_24);
+        assertThat(leAudioCodecConfigFromParcel.getChannelCount())
+                .isEqualTo(BluetoothLeAudioCodecConfig.CHANNEL_COUNT_2);
+        assertThat(leAudioCodecConfigFromParcel.getFrameDuration())
+                .isEqualTo(BluetoothLeAudioCodecConfig.FRAME_DURATION_7500);
+        assertThat(leAudioCodecConfigFromParcel.getOctetsPerFrame()).isEqualTo(octetsPerFrame);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -285,26 +279,20 @@ public class BluetoothLeAudioCodecTest {
                         .build();
         BluetoothLeAudioCodecConfig toBuilderCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder(oriLeAudioCodecConfig).build();
-        assertEquals(
-                BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3,
-                toBuilderCodecConfig.getCodecType());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.CODEC_PRIORITY_HIGHEST,
-                toBuilderCodecConfig.getCodecPriority());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.SAMPLE_RATE_24000,
-                toBuilderCodecConfig.getSampleRate());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.BITS_PER_SAMPLE_24,
-                toBuilderCodecConfig.getBitsPerSample());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.CHANNEL_COUNT_2,
-                toBuilderCodecConfig.getChannelCount());
-        assertEquals(
-                BluetoothLeAudioCodecConfig.FRAME_DURATION_7500,
-                toBuilderCodecConfig.getFrameDuration());
-        assertEquals(octetsPerFrame, toBuilderCodecConfig.getOctetsPerFrame());
-        assertEquals(minOctectsPerFrame, toBuilderCodecConfig.getMinOctetsPerFrame());
-        assertEquals(maxOctectsPerFrame, toBuilderCodecConfig.getMaxOctetsPerFrame());
+        assertThat(toBuilderCodecConfig.getCodecType())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3);
+        assertThat(toBuilderCodecConfig.getCodecPriority())
+                .isEqualTo(BluetoothLeAudioCodecConfig.CODEC_PRIORITY_HIGHEST);
+        assertThat(toBuilderCodecConfig.getSampleRate())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SAMPLE_RATE_24000);
+        assertThat(toBuilderCodecConfig.getBitsPerSample())
+                .isEqualTo(BluetoothLeAudioCodecConfig.BITS_PER_SAMPLE_24);
+        assertThat(toBuilderCodecConfig.getChannelCount())
+                .isEqualTo(BluetoothLeAudioCodecConfig.CHANNEL_COUNT_2);
+        assertThat(toBuilderCodecConfig.getFrameDuration())
+                .isEqualTo(BluetoothLeAudioCodecConfig.FRAME_DURATION_7500);
+        assertThat(toBuilderCodecConfig.getOctetsPerFrame()).isEqualTo(octetsPerFrame);
+        assertThat(toBuilderCodecConfig.getMinOctetsPerFrame()).isEqualTo(minOctectsPerFrame);
+        assertThat(toBuilderCodecConfig.getMaxOctetsPerFrame()).isEqualTo(maxOctectsPerFrame);
     }
 }

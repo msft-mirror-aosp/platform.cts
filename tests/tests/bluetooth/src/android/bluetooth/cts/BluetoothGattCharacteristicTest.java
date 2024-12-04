@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 
@@ -52,7 +50,7 @@ public class BluetoothGattCharacteristicTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getInstanceId() {
-        assertEquals(mBluetoothGattCharacteristic.getInstanceId(), 0);
+        assertThat(mBluetoothGattCharacteristic.getInstanceId()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -65,6 +63,6 @@ public class BluetoothGattCharacteristicTest {
 
         service.addCharacteristic(mBluetoothGattCharacteristic);
 
-        assertEquals(mBluetoothGattCharacteristic.getService(), service);
+        assertThat(mBluetoothGattCharacteristic.getService()).isEqualTo(service);
     }
 }

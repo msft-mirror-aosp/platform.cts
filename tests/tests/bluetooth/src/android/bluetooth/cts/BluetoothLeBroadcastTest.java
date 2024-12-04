@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.eq;
@@ -642,7 +641,7 @@ public class BluetoothLeBroadcastTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumNumberOfBroadcasts());
+        assertThat(mBluetoothLeBroadcast.getMaximumNumberOfBroadcasts()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -668,7 +667,7 @@ public class BluetoothLeBroadcastTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumStreamsPerBroadcast());
+        assertThat(mBluetoothLeBroadcast.getMaximumStreamsPerBroadcast()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -694,7 +693,7 @@ public class BluetoothLeBroadcastTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumSubgroupsPerBroadcast());
+        assertThat(mBluetoothLeBroadcast.getMaximumSubgroupsPerBroadcast()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})

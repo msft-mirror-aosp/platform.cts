@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -100,7 +99,7 @@ public class BluetoothCsipSetCoordinatorTest {
         mBluetoothCsipSetCoordinator = null;
 
         Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO));
-        assertEquals(BluetoothStatusCodes.FEATURE_SUPPORTED, mAdapter.isLeAudioSupported());
+        assertThat(mAdapter.isLeAudioSupported()).isEqualTo(BluetoothStatusCodes.FEATURE_SUPPORTED);
 
         Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.CSIP_SET_COORDINATOR));
         assertThat(TestUtils.isProfileEnabled(BluetoothProfile.CSIP_SET_COORDINATOR)).isTrue();
@@ -173,8 +172,8 @@ public class BluetoothCsipSetCoordinatorTest {
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        int state = mBluetoothCsipSetCoordinator.getConnectionState(mTestDevice);
-        assertEquals(STATE_DISCONNECTED, state);
+        assertThat(mBluetoothCsipSetCoordinator.getConnectionState(mTestDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

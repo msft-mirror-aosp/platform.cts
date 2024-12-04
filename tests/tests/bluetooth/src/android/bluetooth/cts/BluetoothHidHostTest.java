@@ -24,7 +24,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -176,7 +175,7 @@ public class BluetoothHidHostTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mHidHost.getConnectionState(testDevice));
+        assertThat(mHidHost.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -192,7 +191,7 @@ public class BluetoothHidHostTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mHidHost.getConnectionPolicy(testDevice));
+        assertThat(mHidHost.getConnectionPolicy(testDevice)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test
@@ -230,7 +229,8 @@ public class BluetoothHidHostTest {
 
         // Verify returns TRANSPORT_AUTO if bluetooth is not enabled
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-        assertEquals(BluetoothDevice.TRANSPORT_AUTO, mHidHost.getPreferredTransport(testDevice));
+        assertThat(mHidHost.getPreferredTransport(testDevice))
+                .isEqualTo(BluetoothDevice.TRANSPORT_AUTO);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP)
