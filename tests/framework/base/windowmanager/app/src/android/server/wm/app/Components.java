@@ -682,6 +682,7 @@ public class Components extends ComponentsBase {
 
     public static class OverlayTestService {
         public static final String EXTRA_LAYOUT_PARAMS = "layout_params";
+        public static final String EXTRA_DISPLAY_ID_PARAM = "display_id";
     }
 
     public static class Notifications {
