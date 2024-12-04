@@ -129,8 +129,7 @@ public final class InputMethodPickerTest extends MultiDisplayTestBase {
     public void testShowImePickerOnExternalDisplay() throws Exception {
         assumeTrue(supportsMultiDisplay());
 
-        try (MultiDisplayTestBase.VirtualDisplaySession session =
-                new MultiDisplayTestBase.VirtualDisplaySession()) {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // Setup a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
             Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)

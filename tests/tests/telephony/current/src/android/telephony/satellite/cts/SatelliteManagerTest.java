@@ -998,6 +998,32 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<String> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<String, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(String result) {
+                        displayNameForSubscription.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSatelliteDisplayName(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testProvisionSatellite() {
         if (!shouldTestSatellite()) return;
 
