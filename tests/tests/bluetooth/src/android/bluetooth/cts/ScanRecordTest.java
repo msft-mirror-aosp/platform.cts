@@ -119,7 +119,7 @@ public class ScanRecordTest {
         assertThat(data.getServiceSolicitationUuids()).contains(uuid3);
         assertThat(data.getServiceSolicitationUuids()).contains(uuid4);
 
-        TestUtils.assertArrayEquals(data.getTransportDiscoveryData().toByteArray(), tdsData);
+        assertThat(data.getTransportDiscoveryData().toByteArray()).isEqualTo(tdsData);
 
         assertThat(data.getDeviceName()).isEqualTo("Ped");
         assertThat(data.getTxPowerLevel()).isEqualTo(-20);
@@ -127,17 +127,16 @@ public class ScanRecordTest {
         assertThat(data.getManufacturerSpecificData().get(0x00E0)).isNotNull();
 
         final byte[] manufacturerData = new byte[] {0x02, 0x15};
-        TestUtils.assertArrayEquals(
-                manufacturerData, data.getManufacturerSpecificData().get(0x00E0));
-        TestUtils.assertArrayEquals(manufacturerData, data.getManufacturerSpecificData(0x00E0));
+        assertThat(data.getManufacturerSpecificData().get(0x00E0)).isEqualTo(manufacturerData);
+        assertThat(data.getManufacturerSpecificData(0x00E0)).isEqualTo(manufacturerData);
 
         assertThat(data.getServiceData()).containsKey(uuid2);
         final byte[] serviceData = new byte[] {0x50, 0x64};
-        TestUtils.assertArrayEquals(serviceData, data.getServiceData().get(uuid2));
-        TestUtils.assertArrayEquals(serviceData, data.getServiceData(uuid2));
+        assertThat(data.getServiceData().get(uuid2)).isEqualTo(serviceData);
+        assertThat(data.getServiceData(uuid2)).isEqualTo(serviceData);
 
         final byte[] adData = new byte[] {0x01, 0x02};
-        TestUtils.assertArrayEquals(adData, data.getAdvertisingDataMap().get(0x50));
+        assertThat(data.getAdvertisingDataMap().get(0x50)).isEqualTo(adData);
     }
 
     /**

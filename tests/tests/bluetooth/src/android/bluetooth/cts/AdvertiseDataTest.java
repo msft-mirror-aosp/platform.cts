@@ -104,8 +104,7 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertThat(dataFromParcel).isEqualTo(data);
-        TestUtils.assertArrayEquals(
-                new byte[0], dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
+        assertThat(dataFromParcel.getManufacturerSpecificData().get(manufacturerId)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -124,7 +123,7 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertThat(dataFromParcel).isEqualTo(data);
-        TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getServiceData().get(uuid));
+        assertThat(dataFromParcel.getServiceData().get(uuid)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -196,8 +195,8 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertThat(dataFromParcel).isEqualTo(data);
-        TestUtils.assertArrayEquals(
-                manufacturerData, dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
+        assertThat(dataFromParcel.getManufacturerSpecificData().get(manufacturerId))
+                .isEqualTo(manufacturerData);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -216,7 +215,7 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertThat(dataFromParcel).isEqualTo(data);
-        TestUtils.assertArrayEquals(serviceData, dataFromParcel.getServiceData().get(uuid));
+        assertThat(dataFromParcel.getServiceData().get(uuid)).isEqualTo(serviceData);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -268,9 +267,7 @@ public class AdvertiseDataTest {
                                 .totalBytes())
                 .isEqualTo(discoveryData.getTransportBlocks().get(0).totalBytes());
 
-        TestUtils.assertArrayEquals(
-                discoveryData.toByteArray(),
-                dataFromParcel.getTransportDiscoveryData().get(0).toByteArray());
+        assertThat(dataFromParcel.getTransportDiscoveryData()).containsExactly(discoveryData);
 
         assertThat(dataFromParcel).isEqualTo(data);
     }
