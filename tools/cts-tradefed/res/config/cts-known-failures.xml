@@ -415,4 +415,6 @@
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_embeddingSearch" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testSetFeatureEnabledToFalse_embeddingSearch" />
 
+    <!-- b/382231688 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
 </configuration>
