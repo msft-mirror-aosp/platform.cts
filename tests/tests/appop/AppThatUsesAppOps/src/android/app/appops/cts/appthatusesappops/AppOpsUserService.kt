@@ -333,16 +333,6 @@ class AppOpsUserService : Service() {
                     }
                 }
             }
-
-            override fun callApiThatNotesAsyncOpMultipleTimes(client: IAppOpsUserClient) {
-                forwardThrowableFrom {
-                    client.noteAsyncOpMultipleTimesWithAttribution(TEST_ATTRIBUTION_TAG)
-
-                    eventually {
-                        assertThat(asyncNoted.size).isEqualTo(5)
-                    }
-                }
-            }
         }
     }
 }
