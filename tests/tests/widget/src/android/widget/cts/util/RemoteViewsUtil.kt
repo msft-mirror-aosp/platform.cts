@@ -27,6 +27,14 @@ import java.util.concurrent.atomic.AtomicReference
 
 object RemoteViewsUtil {
 
+    @JvmStatic
+    fun recreateFromProto(context: Context, views: RemoteViews): RemoteViews {
+        val output = ProtoOutputStream()
+        views.writePreviewToProto(context, output)
+        val input = ProtoInputStream(output.bytes)
+        return RemoteViews.createPreviewFromProto(context, input)
+    }
+
     @JvmOverloads
     @JvmStatic
     @Suppress("deprecation")
@@ -39,10 +47,7 @@ object RemoteViewsUtil {
         colorResources: RemoteViews.ColorResources? = null,
     ): View {
         val viewsToApply = if (isProtoTest) {
-            val out = ProtoOutputStream()
-            remoteViews.writePreviewToProto(context, out)
-            val input = ProtoInputStream(out.bytes)
-            RemoteViews.createPreviewFromProto(context, input)
+            recreateFromProto(context, remoteViews)
         } else {
             remoteViews
         }
@@ -68,10 +73,7 @@ object RemoteViewsUtil {
         async: Boolean = false,
     ) {
         val viewsToApply = if (isProtoTest) {
-            val out = ProtoOutputStream()
-            remoteViews.writePreviewToProto(context, out)
-            val input = ProtoInputStream(out.bytes)
-            RemoteViews.createPreviewFromProto(context, input)
+            recreateFromProto(context, remoteViews)
         } else {
             remoteViews
         }

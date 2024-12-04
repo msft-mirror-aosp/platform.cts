@@ -2468,6 +2468,83 @@ public class RemoteViewsTest {
         assertFalse(mRemoteViews.canRecycleView(new View(mContext)));
     }
 
+    @Test
+    public void testSameBitmapIsCached_landscapePortrait() {
+        Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
+        mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
+
+        // Create a remoteviews with the same bitmap in landscape and portrait, and confirm
+        // that the cache is reconstructed after deserialization.
+        RemoteViews landscape = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);
+        landscape.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        RemoteViews portrait = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);
+        portrait.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        mRemoteViews = new RemoteViews(portrait, landscape);
+        assertEquals(originalMemoryUsage, mRemoteViews.estimateMemoryUsage());
+
+        RemoteViews recreated;
+        if (isProtoTest) {
+            recreated = RemoteViewsUtil.recreateFromProto(mContext, mRemoteViews);
+        } else {
+            recreated = parcelAndUnparcel(mRemoteViews);
+        }
+        assertEquals(originalMemoryUsage, recreated.estimateMemoryUsage());
+    }
+
+    @Test
+    public void testSameBitmapIsCached_sizedViews() {
+        Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
+        mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
+
+        // Create a remoteviews with the same bitmap in different sized views, and confirm
+        // that the cache is reconstructed after deserialization.
+        RemoteViews child = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);
+        child.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        Map<SizeF, RemoteViews> map = new ArrayMap<>();
+        map.put(new SizeF(0, 0), child);
+        map.put(new SizeF(100, 100), child);
+        map.put(new SizeF(200, 200), child);
+        mRemoteViews = new RemoteViews(map);
+        assertEquals(originalMemoryUsage, mRemoteViews.estimateMemoryUsage());
+
+        RemoteViews recreated;
+        if (isProtoTest) {
+            recreated = RemoteViewsUtil.recreateFromProto(mContext, mRemoteViews);
+        } else {
+            recreated = parcelAndUnparcel(mRemoteViews);
+        }
+        assertEquals(originalMemoryUsage, recreated.estimateMemoryUsage());
+    }
+
+    @Test
+    public void testSameBitmapIsCached_nestedViews() {
+        Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
+        mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
+
+        // Create a remoteviews with the same bitmap in nested views, and confirm that the cache is
+        // reconstructed after deserialization.
+        RemoteViews child = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);
+        child.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
+        mRemoteViews.addView(R.id.remoteViews_good, child);
+        mRemoteViews.addView(R.id.remoteViews_good, child);
+        mRemoteViews.addView(R.id.remoteViews_good, child);
+        assertEquals(originalMemoryUsage, mRemoteViews.estimateMemoryUsage());
+
+        RemoteViews recreated;
+        if (isProtoTest) {
+            recreated = RemoteViewsUtil.recreateFromProto(mContext, mRemoteViews);
+        } else {
+            recreated  = parcelAndUnparcel(mRemoteViews);
+        }
+        assertEquals(originalMemoryUsage, recreated.estimateMemoryUsage());
+    }
+
     private void createSampleImage(File imagefile, int resid) throws IOException {
         try (InputStream source = mContext.getResources().openRawResource(resid);
              OutputStream target = new FileOutputStream(imagefile)) {
