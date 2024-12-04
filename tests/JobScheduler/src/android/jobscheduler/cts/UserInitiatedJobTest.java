@@ -393,6 +393,13 @@ public class UserInitiatedJobTest {
     /** Test that UI jobs can't be scheduled directly from the background. */
     @Test
     public void testSchedulingBg() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
         setScreenState(mUiDevice, false);
@@ -406,6 +413,13 @@ public class UserInitiatedJobTest {
     /** Test that UI jobs can't be scheduled directly from EJs. */
     @Test
     public void testSchedulingEj() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Close the activity and turn the screen off so the app isn't considered TOP.
         mTestAppInterface.closeActivity();
         setScreenState(mUiDevice, false);
