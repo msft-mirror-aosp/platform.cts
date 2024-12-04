@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothQualityReport.BqrCommon;
@@ -77,9 +79,8 @@ public final class BluetoothQualityReportTest {
         Assert.assertEquals(bqrp.mPacketType, bqrCommon.getPacketType());
         Assert.assertEquals("TYPE_NULL", BqrCommon.packetTypeToString(bqrCommon.getPacketType()));
         Assert.assertEquals(bqrp.mConnectionHandle, bqrCommon.getConnectionHandle());
-        Assert.assertTrue(
-                bqrp.mConnectionRoleCentral.equals(
-                        BqrCommon.connectionRoleToString(bqrCommon.getConnectionRole())));
+        assertThat(bqrp.mConnectionRoleCentral)
+                .isEqualTo(BqrCommon.connectionRoleToString(bqrCommon.getConnectionRole()));
         Assert.assertEquals(bqrp.mConnectionRole, bqrCommon.getConnectionRole());
         Assert.assertEquals(bqrp.mTxPowerLevel, bqrCommon.getTxPowerLevel());
         Assert.assertEquals(bqrp.mRssi, bqrCommon.getRssi());
@@ -290,11 +291,11 @@ public final class BluetoothQualityReportTest {
 
         Log.i(TAG, bqr.toString());
 
-        Assert.assertTrue(remoteAddr.equals(bqr.getRemoteAddress()));
+        assertThat(remoteAddr).isEqualTo(bqr.getRemoteAddress());
         Assert.assertEquals(lmpVer, bqr.getLmpVersion());
         Assert.assertEquals(lmpSubVer, bqr.getLmpSubVersion());
         Assert.assertEquals(manufacturerId, bqr.getManufacturerId());
-        Assert.assertTrue(remoteName.equals(bqr.getRemoteName()));
+        assertThat(remoteName).isEqualTo(bqr.getRemoteName());
         Assert.assertEquals(bluetoothClass, bqr.getBluetoothClass());
 
         assertBqrCommon(bqrp, bqr);
@@ -499,8 +500,8 @@ public final class BluetoothQualityReportTest {
                         .setBluetoothClass(bluetoothClass)
                         .build();
 
-        Assert.assertTrue(bqr.getRemoteAddress().equals(mDefaultAddress));
-        Assert.assertTrue(bqr.getRemoteName().equals(mDefaultName));
+        assertThat(bqr.getRemoteAddress()).isEqualTo(mDefaultAddress);
+        assertThat(bqr.getRemoteName()).isEqualTo(mDefaultName);
     }
 
     @Test
@@ -748,9 +749,9 @@ public final class BluetoothQualityReportTest {
         Assert.assertEquals(
                 "TYPE_NULL", BqrCommon.packetTypeToString(bqrCommonFromParcel.getPacketType()));
         Assert.assertEquals(bqrp.mConnectionHandle, bqrCommonFromParcel.getConnectionHandle());
-        Assert.assertTrue(
-                bqrp.mConnectionRoleCentral.equals(
-                        BqrCommon.connectionRoleToString(bqrCommonFromParcel.getConnectionRole())));
+        assertThat(bqrp.mConnectionRoleCentral)
+                .isEqualTo(
+                        BqrCommon.connectionRoleToString(bqrCommonFromParcel.getConnectionRole()));
         Assert.assertEquals(bqrp.mTxPowerLevel, bqrCommonFromParcel.getTxPowerLevel());
         Assert.assertEquals(bqrp.mRssi, bqrCommonFromParcel.getRssi());
         Assert.assertEquals(bqrp.mSnr, bqrCommonFromParcel.getSnr());

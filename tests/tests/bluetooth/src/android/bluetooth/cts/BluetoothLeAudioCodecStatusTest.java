@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.bluetooth.BluetoothLeAudioCodecStatus;
@@ -86,61 +87,55 @@ public class BluetoothLeAudioCodecStatusTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getInputCodecConfig() {
-        assertTrue(LE_CODEC_STATUS.getInputCodecConfig().equals(LC3_16KHZ_CONFIG));
+        assertThat(LE_CODEC_STATUS.getInputCodecConfig()).isEqualTo(LC3_16KHZ_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getOutputCodecConfig() {
-        assertTrue(LE_CODEC_STATUS.getOutputCodecConfig().equals(LC3_48KHZ_CONFIG));
+        assertThat(LE_CODEC_STATUS.getOutputCodecConfig()).isEqualTo(LC3_48KHZ_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getInputCodecLocalCapabilities() {
-        assertTrue(
-                LE_CODEC_STATUS.getInputCodecLocalCapabilities().equals(INPUT_CAPABILITIES_CONFIG));
+        assertThat(LE_CODEC_STATUS.getInputCodecLocalCapabilities())
+                .isEqualTo(INPUT_CAPABILITIES_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getOutputCodecLocalCapabilities() {
-        assertTrue(
-                LE_CODEC_STATUS
-                        .getOutputCodecLocalCapabilities()
-                        .equals(OUTPUT_CAPABILITIES_CONFIG));
+        assertThat(LE_CODEC_STATUS.getOutputCodecLocalCapabilities())
+                .isEqualTo(OUTPUT_CAPABILITIES_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getInputCodecSelectableCapabilities() {
-        assertTrue(
-                LE_CODEC_STATUS
-                        .getInputCodecSelectableCapabilities()
-                        .equals(INPUT_SELECTABLE_CONFIG));
+        assertThat(LE_CODEC_STATUS.getInputCodecSelectableCapabilities())
+                .isEqualTo(INPUT_SELECTABLE_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getOutputCodecSelectableCapabilities() {
-        assertTrue(
-                LE_CODEC_STATUS
-                        .getOutputCodecSelectableCapabilities()
-                        .equals(OUTPUT_SELECTABLE_CONFIG));
+        assertThat(LE_CODEC_STATUS.getOutputCodecSelectableCapabilities())
+                .isEqualTo(OUTPUT_SELECTABLE_CONFIG);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isInputCodecConfigSelectable() {
-        assertTrue(LE_CODEC_STATUS.isInputCodecConfigSelectable(LC3_16KHZ_CONFIG));
-        assertTrue(!(LE_CODEC_STATUS.isInputCodecConfigSelectable(LC3_48KHZ_CONFIG)));
+        assertThat(LE_CODEC_STATUS.isInputCodecConfigSelectable(LC3_16KHZ_CONFIG)).isTrue();
+        assertThat(LE_CODEC_STATUS.isInputCodecConfigSelectable(LC3_48KHZ_CONFIG)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isOutputCodecConfigSelectable() {
-        assertTrue(LE_CODEC_STATUS.isOutputCodecConfigSelectable(LC3_16KHZ_CONFIG));
-        assertTrue(LE_CODEC_STATUS.isOutputCodecConfigSelectable(LC3_48KHZ_CONFIG));
+        assertThat(LE_CODEC_STATUS.isOutputCodecConfigSelectable(LC3_16KHZ_CONFIG)).isTrue();
+        assertThat(LE_CODEC_STATUS.isOutputCodecConfigSelectable(LC3_48KHZ_CONFIG)).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -157,23 +152,15 @@ public class BluetoothLeAudioCodecStatusTest {
         parcel.setDataPosition(0);
         BluetoothLeAudioCodecStatus codecStatusFromParcel =
                 BluetoothLeAudioCodecStatus.CREATOR.createFromParcel(parcel);
-        assertTrue(codecStatusFromParcel.getInputCodecConfig().equals(LC3_16KHZ_CONFIG));
-        assertTrue(codecStatusFromParcel.getOutputCodecConfig().equals(LC3_48KHZ_CONFIG));
-        assertTrue(
-                codecStatusFromParcel
-                        .getInputCodecLocalCapabilities()
-                        .equals(INPUT_CAPABILITIES_CONFIG));
-        assertTrue(
-                codecStatusFromParcel
-                        .getOutputCodecLocalCapabilities()
-                        .equals(OUTPUT_CAPABILITIES_CONFIG));
-        assertTrue(
-                codecStatusFromParcel
-                        .getInputCodecSelectableCapabilities()
-                        .equals(INPUT_SELECTABLE_CONFIG));
-        assertTrue(
-                codecStatusFromParcel
-                        .getOutputCodecSelectableCapabilities()
-                        .equals(OUTPUT_SELECTABLE_CONFIG));
+        assertThat(codecStatusFromParcel.getInputCodecConfig()).isEqualTo(LC3_16KHZ_CONFIG);
+        assertThat(codecStatusFromParcel.getOutputCodecConfig()).isEqualTo(LC3_48KHZ_CONFIG);
+        assertThat(codecStatusFromParcel.getInputCodecLocalCapabilities())
+                .isEqualTo(INPUT_CAPABILITIES_CONFIG);
+        assertThat(codecStatusFromParcel.getOutputCodecLocalCapabilities())
+                .isEqualTo(OUTPUT_CAPABILITIES_CONFIG);
+        assertThat(codecStatusFromParcel.getInputCodecSelectableCapabilities())
+                .isEqualTo(INPUT_SELECTABLE_CONFIG);
+        assertThat(codecStatusFromParcel.getOutputCodecSelectableCapabilities())
+                .isEqualTo(OUTPUT_SELECTABLE_CONFIG);
     }
 }

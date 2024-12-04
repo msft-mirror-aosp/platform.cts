@@ -16,9 +16,10 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -140,7 +141,7 @@ public class ScanResultTest {
                         periodicAdvertisingInterval,
                         null,
                         timestampNanos);
-        assertTrue(result2.isLegacy());
-        assertTrue(result2.isConnectable());
+        assertThat(result2.isLegacy()).isTrue();
+        assertThat(result2.isConnectable()).isTrue();
     }
 }

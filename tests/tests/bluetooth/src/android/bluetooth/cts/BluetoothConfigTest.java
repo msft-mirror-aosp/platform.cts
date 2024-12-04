@@ -19,8 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -66,7 +67,7 @@ public class BluetoothConfigTest {
 
         BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
     }
 
     @After
@@ -183,21 +184,13 @@ public class BluetoothConfigTest {
         //      VCP controller,
         //      CCP server,
         if (mAdapter.isLeAudioSupported() == BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertTrue(
-                    "BAP unicast config must be true when LeAudio is supported. [C-7-5]",
-                    BluetoothProperties.isProfileBapUnicastClientEnabled().orElse(false));
-            assertTrue(
-                    "CSIP config must be true when LeAudio is supported. [C-7-5]",
-                    BluetoothProperties.isProfileCsipSetCoordinatorEnabled().orElse(false));
-            assertTrue(
-                    "MCP config must be true when LeAudio is supported. [C-7-5]",
-                    BluetoothProperties.isProfileMcpServerEnabled().orElse(false));
-            assertTrue(
-                    "VCP config must be true when LeAudio is supported. [C-7-5]",
-                    BluetoothProperties.isProfileVcpControllerEnabled().orElse(false));
-            assertTrue(
-                    "CCP config must be true when LeAudio is supported. [C-7-5]",
-                    BluetoothProperties.isProfileCcpServerEnabled().orElse(false));
+            assertThat(BluetoothProperties.isProfileBapUnicastClientEnabled().orElse(false))
+                    .isTrue();
+            assertThat(BluetoothProperties.isProfileCsipSetCoordinatorEnabled().orElse(false))
+                    .isTrue();
+            assertThat(BluetoothProperties.isProfileMcpServerEnabled().orElse(false)).isTrue();
+            assertThat(BluetoothProperties.isProfileVcpControllerEnabled().orElse(false)).isTrue();
+            assertThat(BluetoothProperties.isProfileCcpServerEnabled().orElse(false)).isTrue();
         }
 
         // If device implementations return true for isLeAudioBroadcastSourceSupported():
@@ -206,14 +199,10 @@ public class BluetoothConfigTest {
         //      BAP broadcast assistant
         if (mAdapter.isLeAudioBroadcastSourceSupported()
                 == BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertTrue(
-                    "BAP broadcast source config must be true when adapter support "
-                            + "BroadcastSource. [C-8-2]",
-                    BluetoothProperties.isProfileBapBroadcastSourceEnabled().orElse(false));
-            assertTrue(
-                    "BAP broadcast assistant config must be true when adapter support "
-                            + "BroadcastSource. [C-8-2]",
-                    BluetoothProperties.isProfileBapBroadcastAssistEnabled().orElse(false));
+            assertThat(BluetoothProperties.isProfileBapBroadcastSourceEnabled().orElse(false))
+                    .isTrue();
+            assertThat(BluetoothProperties.isProfileBapBroadcastAssistEnabled().orElse(false))
+                    .isTrue();
         }
     }
 }

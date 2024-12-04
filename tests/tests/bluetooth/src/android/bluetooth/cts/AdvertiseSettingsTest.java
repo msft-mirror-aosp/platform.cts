@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -56,7 +55,7 @@ public class AdvertiseSettingsTest {
         assertEquals(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER, settings.getMode());
         assertEquals(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settings.getTxPowerLevel());
         assertEquals(0, settings.getTimeout());
-        assertTrue(settings.isConnectable());
+        assertThat(settings.isConnectable()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

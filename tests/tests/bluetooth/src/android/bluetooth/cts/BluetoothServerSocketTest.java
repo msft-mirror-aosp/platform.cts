@@ -18,6 +18,8 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
 
 import android.app.UiAutomation;
@@ -48,7 +50,7 @@ public class BluetoothServerSocketTest extends AndroidTestCase {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
         BluetoothManager manager = getContext().getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         mBluetoothServerSocket = mAdapter.listenUsingL2capChannel();
     }
 

@@ -34,7 +34,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.os.Parcel;
@@ -101,8 +100,8 @@ public class AdvertisingSetParametersTest {
             parcel.setDataPosition(0);
             AdvertisingSetParameters paramsFromParcel =
                     AdvertisingSetParameters.CREATOR.createFromParcel(parcel);
-            assertTrue(paramsFromParcel.isDirected());
-            assertTrue(paramsFromParcel.isHighDutyCycle());
+            assertThat(paramsFromParcel.isDirected()).isTrue();
+            assertThat(paramsFromParcel.isHighDutyCycle()).isTrue();
             assertEquals(paramsFromParcel.getPeerAddress(), "00:01:02:03:04:05");
             assertEquals(paramsFromParcel.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
         } finally {
@@ -116,7 +115,7 @@ public class AdvertisingSetParametersTest {
         AdvertisingSetParameters params = new AdvertisingSetParameters.Builder().build();
 
         assertThat(params.isConnectable()).isFalse();
-        assertTrue(params.isDiscoverable());
+        assertThat(params.isDiscoverable()).isTrue();
         assertThat(params.isScannable()).isFalse();
         assertThat(params.isLegacy()).isFalse();
         assertThat(params.isAnonymous()).isFalse();
@@ -132,7 +131,7 @@ public class AdvertisingSetParametersTest {
     public void isConnectable() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setConnectable(true).build();
-        assertTrue(params.isConnectable());
+        assertThat(params.isConnectable()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -148,7 +147,7 @@ public class AdvertisingSetParametersTest {
     public void isScannable() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setScannable(true).build();
-        assertTrue(params.isScannable());
+        assertThat(params.isScannable()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -156,7 +155,7 @@ public class AdvertisingSetParametersTest {
     public void isLegacyMode() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setLegacyMode(true).build();
-        assertTrue(params.isLegacy());
+        assertThat(params.isLegacy()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -164,7 +163,7 @@ public class AdvertisingSetParametersTest {
     public void includeTxPower() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setIncludeTxPower(true).build();
-        assertTrue(params.includeTxPower());
+        assertThat(params.includeTxPower()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -236,7 +235,7 @@ public class AdvertisingSetParametersTest {
                         .setDirected(true)
                         .setPeerAddress("00:01:02:03:04:05")
                         .build();
-        assertTrue(params.isDirected());
+        assertThat(params.isDirected()).isTrue();
     }
 
     @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
@@ -251,7 +250,7 @@ public class AdvertisingSetParametersTest {
                         .setHighDutyCycle(true)
                         .setPeerAddress("00:01:02:03:04:05")
                         .build();
-        assertTrue(params.isDirected());
+        assertThat(params.isDirected()).isTrue();
     }
 
     @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
@@ -317,7 +316,7 @@ public class AdvertisingSetParametersTest {
     public void isAnonymous() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setAnonymous(true).build();
-        assertTrue(params.isAnonymous());
+        assertThat(params.isAnonymous()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

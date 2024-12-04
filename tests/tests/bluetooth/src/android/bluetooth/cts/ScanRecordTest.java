@@ -19,7 +19,6 @@ package android.bluetooth.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.ScanRecord;
 import android.os.ParcelUuid;
@@ -103,9 +102,9 @@ public class ScanRecordTest {
                     0x08,
                     0x09
                 };
-        final byte[] tdsDataLengh = new byte[] {(byte) tdsData.length};
+        final byte[] tdsDataLength = new byte[] {(byte) tdsData.length};
 
-        byte[] scanRecord = concat(partialScanRecord, tdsDataLengh, tdsData);
+        byte[] scanRecord = concat(partialScanRecord, tdsDataLength, tdsData);
 
         ScanRecord data = TestUtils.parseScanRecord(scanRecord);
         assertEquals(0x1a, data.getAdvertiseFlags());
@@ -113,28 +112,28 @@ public class ScanRecordTest {
         ParcelUuid uuid2 = ParcelUuid.fromString("0000110B-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid3 = ParcelUuid.fromString("0000110C-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid4 = ParcelUuid.fromString("0000110D-0000-1000-8000-00805F9B34FB");
-        assertTrue(data.getServiceUuids().contains(uuid1));
-        assertTrue(data.getServiceUuids().contains(uuid2));
+        assertThat(data.getServiceUuids()).contains(uuid1);
+        assertThat(data.getServiceUuids()).contains(uuid2);
         assertThat(data.getServiceUuids()).doesNotContain(uuid3);
         assertThat(data.getServiceUuids()).doesNotContain(uuid4);
         assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid1);
         assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid2);
-        assertTrue(data.getServiceSolicitationUuids().contains(uuid3));
-        assertTrue(data.getServiceSolicitationUuids().contains(uuid4));
+        assertThat(data.getServiceSolicitationUuids()).contains(uuid3);
+        assertThat(data.getServiceSolicitationUuids()).contains(uuid4);
 
         TestUtils.assertArrayEquals(data.getTransportDiscoveryData().toByteArray(), tdsData);
 
         assertEquals("Ped", data.getDeviceName());
         assertEquals(-20, data.getTxPowerLevel());
 
-        assertTrue(data.getManufacturerSpecificData().get(0x00E0) != null);
+        assertThat(data.getManufacturerSpecificData().get(0x00E0)).isNotNull();
 
         final byte[] manufacturerData = new byte[] {0x02, 0x15};
         TestUtils.assertArrayEquals(
                 manufacturerData, data.getManufacturerSpecificData().get(0x00E0));
         TestUtils.assertArrayEquals(manufacturerData, data.getManufacturerSpecificData(0x00E0));
 
-        assertTrue(data.getServiceData().containsKey(uuid2));
+        assertThat(data.getServiceData()).containsKey(uuid2);
         final byte[] serviceData = new byte[] {0x50, 0x64};
         TestUtils.assertArrayEquals(serviceData, data.getServiceData().get(uuid2));
         TestUtils.assertArrayEquals(serviceData, data.getServiceData(uuid2));

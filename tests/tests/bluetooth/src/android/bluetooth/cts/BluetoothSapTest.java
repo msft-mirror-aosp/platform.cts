@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -84,7 +83,7 @@ public class BluetoothSapTest {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
         mAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
@@ -111,12 +110,12 @@ public class BluetoothSapTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsSapSupported);
 
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
-        assertTrue(mIsProfileReady);
+        assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.SAP, mBluetoothSap);
-        assertTrue(waitForProfileDisconnect());
+        assertThat(waitForProfileDisconnect()).isTrue();
         assertThat(mIsProfileReady).isFalse();
     }
 
@@ -125,7 +124,7 @@ public class BluetoothSapTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsSapSupported);
 
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
 
         assertNotNull(mBluetoothSap.getConnectedDevices());
@@ -139,12 +138,12 @@ public class BluetoothSapTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsSapSupported);
 
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
 
         int[] connectionState = new int[] {BluetoothProfile.STATE_CONNECTED};
 
-        assertTrue(mBluetoothSap.getDevicesMatchingConnectionStates(connectionState).isEmpty());
+        assertThat(mBluetoothSap.getDevicesMatchingConnectionStates(connectionState)).isEmpty();
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(
@@ -157,7 +156,7 @@ public class BluetoothSapTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsSapSupported);
 
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
@@ -175,7 +174,7 @@ public class BluetoothSapTest {
     public void setgetConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsSapSupported);
 
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
 
         assertThrows(NullPointerException.class, () -> mBluetoothSap.setConnectionPolicy(null, 0));

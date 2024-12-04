@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHapClient;
-import android.bluetooth.BluetoothHapPresetInfo;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
@@ -53,7 +52,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
@@ -115,8 +113,7 @@ public class BluetoothHapClientTest {
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices = mService.getConnectedDevices();
-        assertThat(connectedDevices.isEmpty()).isTrue();
+        assertThat(mService.getConnectedDevices()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -125,8 +122,7 @@ public class BluetoothHapClientTest {
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices = mService.getDevicesMatchingConnectionStates(null);
-        assertThat(connectedDevices.isEmpty()).isTrue();
+        assertThat(mService.getDevicesMatchingConnectionStates(null)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -238,8 +234,7 @@ public class BluetoothHapClientTest {
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothHapPresetInfo> presets = mService.getAllPresetInfo(sTestDevice);
-        assertThat(presets.isEmpty()).isTrue();
+        assertThat(mService.getAllPresetInfo(sTestDevice)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

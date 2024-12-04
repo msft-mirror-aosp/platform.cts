@@ -19,7 +19,6 @@ package android.bluetooth.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.TransportBlock;
@@ -73,8 +72,8 @@ public class AdvertiseDataTest {
         assertThat(dataFromParcel.getIncludeDeviceName()).isFalse();
         assertThat(dataFromParcel.getIncludeTxPowerLevel()).isFalse();
         assertEquals(0, dataFromParcel.getManufacturerSpecificData().size());
-        assertTrue(dataFromParcel.getServiceData().isEmpty());
-        assertTrue(dataFromParcel.getServiceUuids().isEmpty());
+        assertThat(dataFromParcel.getServiceData()).isEmpty();
+        assertThat(dataFromParcel.getServiceUuids()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -87,8 +86,8 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
-        assertTrue(dataFromParcel.getIncludeDeviceName());
-        assertTrue(dataFromParcel.getServiceUuids().isEmpty());
+        assertThat(dataFromParcel.getIncludeDeviceName()).isTrue();
+        assertThat(dataFromParcel.getServiceUuids()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -148,8 +147,8 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
-        assertTrue(dataFromParcel.getServiceUuids().contains(uuid));
-        assertTrue(dataFromParcel.getServiceUuids().contains(uuid2));
+        assertThat(dataFromParcel.getServiceUuids()).contains(uuid);
+        assertThat(dataFromParcel.getServiceUuids()).contains(uuid2);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -173,8 +172,8 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
-        assertTrue(dataFromParcel.getServiceSolicitationUuids().contains(uuid));
-        assertTrue(dataFromParcel.getServiceSolicitationUuids().contains(uuid2));
+        assertThat(dataFromParcel.getServiceSolicitationUuids()).contains(uuid);
+        assertThat(dataFromParcel.getServiceSolicitationUuids()).contains(uuid2);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
