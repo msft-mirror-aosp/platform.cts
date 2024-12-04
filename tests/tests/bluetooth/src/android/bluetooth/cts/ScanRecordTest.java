@@ -28,7 +28,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.internal.util.ArrayUtils;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -105,7 +104,7 @@ public class ScanRecordTest {
                 };
         final byte[] tdsDataLengh = new byte[] {(byte) tdsData.length};
 
-        byte[] scanRecord = ArrayUtils.concat(partialScanRecord, tdsDataLengh, tdsData);
+        byte[] scanRecord = concat(partialScanRecord, tdsDataLengh, tdsData);
 
         ScanRecord data = TestUtils.parseScanRecord(scanRecord);
         assertEquals(0x1a, data.getAdvertiseFlags());
@@ -141,5 +140,31 @@ public class ScanRecordTest {
 
         final byte[] adData = new byte[] {0x01, 0x02};
         TestUtils.assertArrayEquals(adData, data.getAdvertisingDataMap().get(0x50));
+    }
+
+    /**
+     * Copied from frameworks/base/core/java/com/android/internal/util/ArrayUtils.java
+     *
+     * <p>Returns the concatenation of the given byte arrays. Null arrays are treated as empty.
+     */
+    private static byte[] concat(byte[]... arrays) {
+        if (arrays == null) {
+            return new byte[0];
+        }
+        int totalLength = 0;
+        for (byte[] a : arrays) {
+            if (a != null) {
+                totalLength += a.length;
+            }
+        }
+        final byte[] result = new byte[totalLength];
+        int pos = 0;
+        for (byte[] a : arrays) {
+            if (a != null) {
+                System.arraycopy(a, 0, result, pos, a.length);
+                pos += a.length;
+            }
+        }
+        return result;
     }
 }
