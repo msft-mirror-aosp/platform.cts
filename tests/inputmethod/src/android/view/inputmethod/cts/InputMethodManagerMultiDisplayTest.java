@@ -30,7 +30,7 @@ import static org.junit.Assume.assumeTrue;
 import android.content.ComponentName;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
-import android.server.wm.MultiDisplayTestBase;
+import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 @MediumTest
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
-public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
+public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTestBase {
     private static final String MOCK_IME_PACKAGE_NAME = "com.android.cts.mockimewithsubtypes";
     private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/.MockImeWithSubtypes";
     private static final String MOCK_IME_SUBTYPE_LABEL = "CTS Subtype 1 Test String";
@@ -96,8 +96,7 @@ public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBa
         assumeFalse(isCar());
         assumeTrue(supportsMultiDisplay());
 
-        try (MultiDisplayTestBase.VirtualDisplaySession session =
-                     new MultiDisplayTestBase.VirtualDisplaySession()) {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
 
             // Set up a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();

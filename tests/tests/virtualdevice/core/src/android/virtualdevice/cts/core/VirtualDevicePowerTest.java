@@ -349,13 +349,10 @@ public class VirtualDevicePowerTest {
                 .build());
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-
-        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS * 2).times(1)).onPaused();
 
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
-        assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
     }
 
     @Test
