@@ -19,6 +19,11 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.MODIFY_PHONE_STATE;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -139,8 +144,7 @@ public class BluetoothHeadsetTest {
         assertNotNull(mBluetoothHeadset);
 
         assertEquals(
-                mBluetoothHeadset.getDevicesMatchingConnectionStates(
-                        new int[] {BluetoothProfile.STATE_CONNECTED}),
+                mBluetoothHeadset.getDevicesMatchingConnectionStates(new int[] {STATE_CONNECTED}),
                 new ArrayList<BluetoothDevice>());
     }
 
@@ -152,9 +156,7 @@ public class BluetoothHeadsetTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(
-                mBluetoothHeadset.getConnectionState(testDevice),
-                BluetoothProfile.STATE_DISCONNECTED);
+        assertEquals(mBluetoothHeadset.getConnectionState(testDevice), STATE_DISCONNECTED);
     }
 
     @Test
@@ -271,15 +273,12 @@ public class BluetoothHeadsetTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothHeadset.getConnectionPolicy(null));
+        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothHeadset.getConnectionPolicy(null));
 
         // Verify returns CONNECTION_POLICY_FORBIDDEN if bluetooth is not enabled
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
         assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothHeadset.getConnectionPolicy(testDevice));
+                CONNECTION_POLICY_FORBIDDEN, mBluetoothHeadset.getConnectionPolicy(testDevice));
     }
 
     @Test
@@ -291,20 +290,14 @@ public class BluetoothHeadsetTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertThat(
-                        mBluetoothHeadset.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+        assertThat(mBluetoothHeadset.setConnectionPolicy(testDevice, CONNECTION_POLICY_UNKNOWN))
                 .isFalse();
-        assertThat(
-                        mBluetoothHeadset.setConnectionPolicy(
-                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+        assertThat(mBluetoothHeadset.setConnectionPolicy(null, CONNECTION_POLICY_ALLOWED))
                 .isFalse();
 
         // Verify returns false if bluetooth is not enabled
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-        assertThat(
-                        mBluetoothHeadset.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+        assertThat(mBluetoothHeadset.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN))
                 .isFalse();
     }
 

@@ -18,6 +18,8 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -128,13 +130,11 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertThat(mService.getConnectionState(null))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
-        assertThat(mService.getConnectionState(sTestDevice))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(sTestDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     /** Verify getHapGroup() return -1 if Bluetooth is disabled. */
@@ -257,20 +257,14 @@ public class BluetoothHapClientTest {
     @Test
     public void setGetConnectionPolicy() {
         assertThrows(NullPointerException.class, () -> mService.setConnectionPolicy(null, 0));
-        assertThat(mService.getConnectionPolicy(null))
-                .isEqualTo(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN);
+        assertThat(mService.getConnectionPolicy(null)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
-        assertThat(
-                        mService.setConnectionPolicy(
-                                sTestDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
-                .isTrue();
+        assertThat(mService.setConnectionPolicy(sTestDevice, CONNECTION_POLICY_FORBIDDEN)).isTrue();
 
         TestUtils.dropPermissionAsShellUid();
         assertThrows(
                 SecurityException.class,
-                () ->
-                        mService.setConnectionPolicy(
-                                sTestDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+                () -> mService.setConnectionPolicy(sTestDevice, CONNECTION_POLICY_FORBIDDEN));
         assertThrows(SecurityException.class, () -> mService.getConnectionPolicy(sTestDevice));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);

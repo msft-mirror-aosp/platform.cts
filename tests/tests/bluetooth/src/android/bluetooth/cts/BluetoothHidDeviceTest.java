@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-/* You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -139,7 +133,7 @@ public class BluetoothHidDeviceTest {
         assertEquals(
                 new ArrayList<BluetoothDevice>(),
                 mBluetoothHidDevice.getDevicesMatchingConnectionStates(
-                        new int[] {BluetoothProfile.STATE_CONNECTED}));
+                        new int[] {STATE_CONNECTED}));
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -156,15 +150,12 @@ public class BluetoothHidDeviceTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns STATE_DISCONNECTED when invalid input is given
-        assertEquals(
-                BluetoothProfile.STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(null));
+        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(null));
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(
-                BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothHidDevice.getConnectionState(testDevice));
+        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(testDevice));
     }
 
     @Test
@@ -214,21 +205,15 @@ public class BluetoothHidDeviceTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertThat(
-                        mBluetoothHidDevice.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
+        assertThat(mBluetoothHidDevice.setConnectionPolicy(testDevice, CONNECTION_POLICY_UNKNOWN))
                 .isFalse();
-        assertThat(
-                        mBluetoothHidDevice.setConnectionPolicy(
-                                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+        assertThat(mBluetoothHidDevice.setConnectionPolicy(null, CONNECTION_POLICY_ALLOWED))
                 .isFalse();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(
-                        mBluetoothHidDevice.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
+        assertThat(mBluetoothHidDevice.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN))
                 .isFalse();
     }
 

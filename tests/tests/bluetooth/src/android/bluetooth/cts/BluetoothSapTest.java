@@ -17,6 +17,9 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -141,7 +144,7 @@ public class BluetoothSapTest {
         assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothSap);
 
-        int[] connectionState = new int[] {BluetoothProfile.STATE_CONNECTED};
+        int[] connectionState = new int[] {STATE_CONNECTED};
 
         assertThat(mBluetoothSap.getDevicesMatchingConnectionStates(connectionState)).isEmpty();
 
@@ -161,12 +164,10 @@ public class BluetoothSapTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(
-                mBluetoothSap.getConnectionState(testDevice), BluetoothProfile.STATE_DISCONNECTED);
+        assertEquals(mBluetoothSap.getConnectionState(testDevice), STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertEquals(
-                mBluetoothSap.getConnectionState(testDevice), BluetoothProfile.STATE_DISCONNECTED);
+        assertEquals(mBluetoothSap.getConnectionState(testDevice), STATE_DISCONNECTED);
     }
 
     @Test
@@ -184,9 +185,7 @@ public class BluetoothSapTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertThrows(
                 SecurityException.class,
-                () ->
-                        mBluetoothSap.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+                () -> mBluetoothSap.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN));
         assertThrows(SecurityException.class, () -> mBluetoothSap.getConnectionPolicy(testDevice));
     }
 

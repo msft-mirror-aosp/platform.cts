@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -174,7 +175,7 @@ public class BluetoothCsipSetCoordinatorTest {
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         int state = mBluetoothCsipSetCoordinator.getConnectionState(mTestDevice);
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED, state);
+        assertEquals(STATE_DISCONNECTED, state);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

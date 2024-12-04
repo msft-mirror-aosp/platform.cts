@@ -17,6 +17,7 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -29,7 +30,6 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -150,10 +150,7 @@ public class BluetoothGattServerCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void allMethods() {
-        mCallbacks.onConnectionStateChange(
-                mBluetoothDevice,
-                BluetoothProfile.STATE_CONNECTED,
-                BluetoothProfile.STATE_CONNECTED);
+        mCallbacks.onConnectionStateChange(mBluetoothDevice, STATE_CONNECTED, STATE_CONNECTED);
         mCallbacks.onServiceAdded(BluetoothGatt.GATT_SUCCESS, mBluetoothGattService);
         mCallbacks.onCharacteristicReadRequest(
                 mBluetoothDevice, 0, 0, mBluetoothGattCharacteristic);

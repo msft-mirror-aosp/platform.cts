@@ -18,6 +18,9 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -174,7 +177,7 @@ public class BluetoothHidHostTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED, mHidHost.getConnectionState(testDevice));
+        assertEquals(STATE_DISCONNECTED, mHidHost.getConnectionState(testDevice));
     }
 
     @Test
@@ -190,9 +193,7 @@ public class BluetoothHidHostTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mHidHost.getConnectionPolicy(testDevice));
+        assertEquals(CONNECTION_POLICY_FORBIDDEN, mHidHost.getConnectionPolicy(testDevice));
     }
 
     @Test
@@ -204,24 +205,16 @@ public class BluetoothHidHostTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertThat(
-                        mHidHost.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN))
-                .isFalse();
+        assertThat(mHidHost.setConnectionPolicy(testDevice, CONNECTION_POLICY_UNKNOWN)).isFalse();
         // Verify returns IllegalArgumentException when invalid input is given
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mHidHost.setConnectionPolicy(
-                                null, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+                () -> mHidHost.setConnectionPolicy(null, CONNECTION_POLICY_UNKNOWN));
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(
-                        mHidHost.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
-                .isFalse();
+        assertThat(mHidHost.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN)).isFalse();
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP)

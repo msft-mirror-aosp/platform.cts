@@ -19,6 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -276,18 +280,18 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify that it returns unknown for an unknown test device
         assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_UNKNOWN,
+                CONNECTION_POLICY_UNKNOWN,
                 mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
 
         // Verify that it returns true even for an unknown test device
         assertThat(
                         mBluetoothLeBroadcastAssistant.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_ALLOWED))
+                                testDevice, CONNECTION_POLICY_ALLOWED))
                 .isTrue();
 
         // Verify that it returns the same value we set before
         assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_ALLOWED,
+                CONNECTION_POLICY_ALLOWED,
                 mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
     }
 
@@ -546,7 +550,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        int[] states = {BluetoothProfile.STATE_CONNECTED};
+        int[] states = {STATE_CONNECTED};
 
         assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothLeBroadcastAssistant);
@@ -584,8 +588,7 @@ public class BluetoothLeBroadcastAssistantTest {
 
         // Verify returns false if bluetooth is not enabled
         assertEquals(
-                BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothLeBroadcastAssistant.getConnectionState(testDevice));
+                STATE_DISCONNECTED, mBluetoothLeBroadcastAssistant.getConnectionState(testDevice));
     }
 
     private boolean waitForProfileConnect() {
