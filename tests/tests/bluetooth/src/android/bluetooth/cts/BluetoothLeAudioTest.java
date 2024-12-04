@@ -25,7 +25,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -339,17 +338,8 @@ public class BluetoothLeAudioTest {
         assertThrows(NullPointerException.class, () -> mBluetoothLeAudio.unregisterCallback(null));
 
         // Test success register unregister
-        try {
-            mBluetoothLeAudio.registerCallback(mTestExecutor, mTestCallback);
-        } catch (Exception e) {
-            fail("Exception caught from register(): " + e.toString());
-        }
-
-        try {
-            mBluetoothLeAudio.unregisterCallback(mTestCallback);
-        } catch (Exception e) {
-            fail("Exception caught from unregister(): " + e.toString());
-        }
+        mBluetoothLeAudio.registerCallback(mTestExecutor, mTestCallback);
+        mBluetoothLeAudio.unregisterCallback(mTestCallback);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -372,11 +362,7 @@ public class BluetoothLeAudioTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeAudio);
 
-        try {
-            mBluetoothLeAudio.setVolume(42);
-        } catch (Exception e) {
-            fail("Exception caught from setVolume(): " + e.toString());
-        }
+        mBluetoothLeAudio.setVolume(42);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -406,11 +392,7 @@ public class BluetoothLeAudioTest {
                     mBluetoothLeAudio.setCodecConfigPreference(0, null, null);
                 });
 
-        try {
-            mBluetoothLeAudio.setCodecConfigPreference(0, codecConfig, codecConfig);
-        } catch (Exception e) {
-            fail("Exception caught from setCodecConfigPreference(): " + e.toString());
-        }
+        mBluetoothLeAudio.setCodecConfigPreference(0, codecConfig, codecConfig);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1"})
@@ -424,8 +406,6 @@ public class BluetoothLeAudioTest {
             TestUtils.dropPermissionAsShellUid();
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
             mBluetoothLeAudio.getGroupId(device);
-        } catch (Exception e) {
-            fail("Exception caught from getGroupId(): " + e.toString());
         } finally {
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         }

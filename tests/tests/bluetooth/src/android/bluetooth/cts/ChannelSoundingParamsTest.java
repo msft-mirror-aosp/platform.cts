@@ -26,10 +26,11 @@ import static android.bluetooth.le.ChannelSoundingParams.LOCATION_TYPE_UNKNOWN;
 import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_LINE_OF_SIGHT;
 import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_UNKNOWN;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ChannelSoundingParams;
@@ -137,13 +138,8 @@ public class ChannelSoundingParamsTest {
     }
 
     private void assertParamsEquals(ChannelSoundingParams p, ChannelSoundingParams other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getSightType(), other.getSightType());
         assertEquals(p.getLocationType(), other.getLocationType());

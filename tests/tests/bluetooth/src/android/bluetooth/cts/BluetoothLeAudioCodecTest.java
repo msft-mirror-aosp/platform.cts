@@ -17,7 +17,6 @@
 package android.bluetooth.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
@@ -90,24 +89,20 @@ public class BluetoothLeAudioCodecTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getCodecNameAndType() {
-        try {
-            for (int codecIdx = 0; codecIdx < mCodecTypeArray.length; codecIdx++) {
-                int codecType = mCodecTypeArray[codecIdx];
+        for (int codecIdx = 0; codecIdx < mCodecTypeArray.length; codecIdx++) {
+            int codecType = mCodecTypeArray[codecIdx];
 
-                BluetoothLeAudioCodecConfig leAudioCodecConfig =
-                        new BluetoothLeAudioCodecConfig.Builder().setCodecType(codecType).build();
+            BluetoothLeAudioCodecConfig leAudioCodecConfig =
+                    new BluetoothLeAudioCodecConfig.Builder().setCodecType(codecType).build();
 
-                if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3) {
-                    assertEquals("LC3", leAudioCodecConfig.getCodecName());
-                }
-                if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID) {
-                    assertEquals("INVALID CODEC", leAudioCodecConfig.getCodecName());
-                }
-
-                assertEquals(codecType, leAudioCodecConfig.getCodecType());
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3) {
+                assertEquals("LC3", leAudioCodecConfig.getCodecName());
             }
-        } catch (Exception e) {
-            fail(e.getMessage());
+            if (codecType == BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID) {
+                assertEquals("INVALID CODEC", leAudioCodecConfig.getCodecName());
+            }
+
+            assertEquals(codecType, leAudioCodecConfig.getCodecType());
         }
     }
 

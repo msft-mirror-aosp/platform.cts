@@ -23,10 +23,11 @@ import static android.bluetooth.le.DistanceMeasurementResult.NADM_ATTACK_IS_VERY
 
 import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementResult;
@@ -264,13 +265,8 @@ public class DistanceMeasurementResultTest {
     }
 
     private void assertResultEquals(DistanceMeasurementResult p, DistanceMeasurementResult other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getResultMeters(), other.getResultMeters(), 0.0);
         assertEquals(p.getErrorMeters(), other.getErrorMeters(), 0.0);

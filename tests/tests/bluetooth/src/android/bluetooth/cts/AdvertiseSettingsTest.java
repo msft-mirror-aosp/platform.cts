@@ -18,8 +18,8 @@ package android.bluetooth.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -101,18 +101,9 @@ public class AdvertiseSettingsTest {
         builder.setTimeout(0).build();
         builder.setTimeout(180 * 1000).build();
         // Maximum timeout is 3 minutes.
-        try {
-            builder.setTimeout(180 * 1000 + 1).build();
-            fail("should not allow setting timeout to more than 3 minutes");
-        } catch (IllegalArgumentException e) {
-            // nothing to do.
-        }
+        assertThrows(
+                IllegalArgumentException.class, () -> builder.setTimeout(180 * 1000 + 1).build());
         // Negative time out is not allowed.
-        try {
-            builder.setTimeout(-1).build();
-            fail("should not allow setting timeout to more than 3 minutes");
-        } catch (IllegalArgumentException e) {
-            // nothing to do.
-        }
+        assertThrows(IllegalArgumentException.class, () -> builder.setTimeout(-1).build());
     }
 }
