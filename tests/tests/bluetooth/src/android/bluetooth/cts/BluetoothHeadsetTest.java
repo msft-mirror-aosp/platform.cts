@@ -217,7 +217,7 @@ public class BluetoothHeadsetTest {
             mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, null, null);
             fail(
                     "sendVendorSpecificResultCode did not throw an IllegalArgumentException when"
-                        + " the command was null");
+                            + " the command was null");
         } catch (IllegalArgumentException ignored) {
         }
 

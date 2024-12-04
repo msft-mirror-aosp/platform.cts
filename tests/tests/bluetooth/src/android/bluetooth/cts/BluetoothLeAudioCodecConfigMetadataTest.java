@@ -53,14 +53,26 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
 
     // See Page 5 of Generic Audio assigned number specification
     private static final byte[] TEST_METADATA_BYTES = {
-            // length = 0x05, type = 0x03, value = 0x00000001 (front left)
-            0x05, 0x03, 0x01, 0x00, 0x00, 0x00,
-            // length = 0x02, type = 0x01, value = 0x07 (44100 hz)
-            0x02, 0x01, 0x07,
-            // length = 0x02, type = 0x02, value = 0x01 (10 ms)
-            0x02, 0x02, 0x01,
-            // length = 0x03, type = 0x04, value = 0x64 (100)
-            0x03, 0x04, 0x64, 0x00
+        // length = 0x05, type = 0x03, value = 0x00000001 (front left)
+        0x05,
+        0x03,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        // length = 0x02, type = 0x01, value = 0x07 (44100 hz)
+        0x02,
+        0x01,
+        0x07,
+        // length = 0x02, type = 0x02, value = 0x01 (10 ms)
+        0x02,
+        0x02,
+        0x01,
+        // length = 0x03, type = 0x04, value = 0x64 (100)
+        0x03,
+        0x04,
+        0x64,
+        0x00
     };
 
     private Context mContext;
@@ -84,7 +96,8 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -93,7 +106,8 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
