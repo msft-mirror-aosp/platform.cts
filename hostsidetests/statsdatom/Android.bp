@@ -88,6 +88,7 @@ java_test_host {
         "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
         "stats_flags_lib_host",
+        "uprobestats_mainline_flags_java_lib",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
