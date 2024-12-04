@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -408,12 +407,7 @@ public class BluetoothA2dpTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothA2dp);
 
-        // Only check if no crash occurs
-        try {
-            mBluetoothA2dp.setAvrcpAbsoluteVolume(0);
-        } catch (Exception e) {
-            fail("setAvrcpAbsoluteVolume(0) should not fail. " + e.getMessage());
-        }
+        mBluetoothA2dp.setAvrcpAbsoluteVolume(0); // No crash should occurs
     }
 
     private boolean waitForProfileConnect() {

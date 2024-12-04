@@ -25,7 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.timeout;
@@ -128,37 +127,7 @@ public class BluetoothLeBroadcastTest {
     private CountDownLatch mCallbackCountDownLatch;
     private @Captor ArgumentCaptor<Integer> mBroadcastId;
 
-    @Mock
-    BluetoothLeBroadcast.Callback mCallback =
-            new BluetoothLeBroadcast.Callback() {
-                @Override
-                public void onBroadcastStarted(int reason, int broadcastId) {}
-
-                @Override
-                public void onBroadcastStartFailed(int reason) {}
-
-                @Override
-                public void onBroadcastStopped(int reason, int broadcastId) {}
-
-                @Override
-                public void onBroadcastStopFailed(int reason) {}
-
-                @Override
-                public void onPlaybackStarted(int reason, int broadcastId) {}
-
-                @Override
-                public void onPlaybackStopped(int reason, int broadcastId) {}
-
-                @Override
-                public void onBroadcastUpdated(int reason, int broadcastId) {}
-
-                @Override
-                public void onBroadcastUpdateFailed(int reason, int broadcastId) {}
-
-                @Override
-                public void onBroadcastMetadataChanged(
-                        int broadcastId, BluetoothLeBroadcastMetadata metadata) {}
-            };
+    @Mock BluetoothLeBroadcast.Callback mCallback;
 
     BluetoothLeBroadcastSubgroup createBroadcastSubgroup() {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
@@ -387,7 +356,7 @@ public class BluetoothLeBroadcastTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void callbackCalls() {
+    public void callbackCalls() throws InterruptedException {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothLeBroadcast);
 
@@ -466,32 +435,28 @@ public class BluetoothLeBroadcastTest {
                 };
 
         mCallbackCountDownLatch = new CountDownLatch(9);
-        try {
-            callback.onBroadcastStarted(TEST_REASON, TEST_BROADCAST_ID);
-            callback.onBroadcastStartFailed(TEST_REASON);
-            callback.onBroadcastStopped(TEST_REASON, TEST_BROADCAST_ID);
-            callback.onBroadcastStopFailed(TEST_REASON);
-            callback.onPlaybackStarted(TEST_REASON, TEST_BROADCAST_ID);
-            callback.onPlaybackStopped(TEST_REASON, TEST_BROADCAST_ID);
-            callback.onBroadcastUpdated(TEST_REASON, TEST_BROADCAST_ID);
-            callback.onBroadcastUpdateFailed(TEST_REASON, TEST_BROADCAST_ID);
-            mTestMetadata = createBroadcastMetadata();
-            callback.onBroadcastMetadataChanged(TEST_BROADCAST_ID, mTestMetadata);
+        callback.onBroadcastStarted(TEST_REASON, TEST_BROADCAST_ID);
+        callback.onBroadcastStartFailed(TEST_REASON);
+        callback.onBroadcastStopped(TEST_REASON, TEST_BROADCAST_ID);
+        callback.onBroadcastStopFailed(TEST_REASON);
+        callback.onPlaybackStarted(TEST_REASON, TEST_BROADCAST_ID);
+        callback.onPlaybackStopped(TEST_REASON, TEST_BROADCAST_ID);
+        callback.onBroadcastUpdated(TEST_REASON, TEST_BROADCAST_ID);
+        callback.onBroadcastUpdateFailed(TEST_REASON, TEST_BROADCAST_ID);
+        mTestMetadata = createBroadcastMetadata();
+        callback.onBroadcastMetadataChanged(TEST_BROADCAST_ID, mTestMetadata);
 
-            // Wait for all the callback calls or 5 seconds to verify
-            mCallbackCountDownLatch.await(5, TimeUnit.SECONDS);
-            assertTrue(mOnBroadcastStartedCalled);
-            assertTrue(mOnBroadcastStartFailedCalled);
-            assertTrue(mOnBroadcastStoppedCalled);
-            assertTrue(mOnBroadcastStopFailedCalled);
-            assertTrue(mOnPlaybackStartedCalled);
-            assertTrue(mOnPlaybackStoppedCalled);
-            assertTrue(mOnBroadcastUpdatedCalled);
-            assertTrue(mOnBroadcastUpdateFailedCalled);
-            assertTrue(mOnBroadcastMetadataChangedCalled);
-        } catch (InterruptedException e) {
-            fail("Failed to register callback call: " + e.toString());
-        }
+        // Wait for all the callback calls or 5 seconds to verify
+        mCallbackCountDownLatch.await(5, TimeUnit.SECONDS);
+        assertTrue(mOnBroadcastStartedCalled);
+        assertTrue(mOnBroadcastStartFailedCalled);
+        assertTrue(mOnBroadcastStoppedCalled);
+        assertTrue(mOnBroadcastStopFailedCalled);
+        assertTrue(mOnPlaybackStartedCalled);
+        assertTrue(mOnPlaybackStoppedCalled);
+        assertTrue(mOnBroadcastUpdatedCalled);
+        assertTrue(mOnBroadcastUpdateFailedCalled);
+        assertTrue(mOnBroadcastMetadataChangedCalled);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

@@ -26,9 +26,10 @@ import static android.bluetooth.le.DistanceMeasurementMethod.DISTANCE_MEASUREMEN
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -181,13 +182,8 @@ public class DistanceMeasurementParamsTest {
     }
 
     private void assertParamsEquals(DistanceMeasurementParams p, DistanceMeasurementParams other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getDevice(), other.getDevice());
         assertEquals(p.getDurationSeconds(), other.getDurationSeconds());
