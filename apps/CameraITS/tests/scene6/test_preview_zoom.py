@@ -174,6 +174,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
                 focal_length=cap_fl,
+                physical_id=phy_id
             )
         )
 
