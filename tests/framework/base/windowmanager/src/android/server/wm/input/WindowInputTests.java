@@ -18,12 +18,14 @@ package android.server.wm.input;
 
 import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
+import static android.server.wm.app.Components.OverlayTestService.EXTRA_DISPLAY_ID_PARAM;
 import static android.server.wm.input.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -114,7 +116,7 @@ public class WindowInputTests {
     private final Random mRandom = new Random(1);
 
     private int mClickCount = 0;
-    private final long EVENT_FLAGS_WAIT_TIME = 2;
+    private static final long EVENT_FLAGS_WAIT_TIME = 10L * HW_TIMEOUT_MULTIPLIER;
 
     @Before
     public void setUp() throws InterruptedException {
@@ -180,6 +182,7 @@ public class WindowInputTests {
         final Intent intent = new Intent();
         intent.setComponent(Components.OVERLAY_TEST_SERVICE);
         intent.putExtra(EXTRA_LAYOUT_PARAMS, lp);
+        intent.putExtra(EXTRA_DISPLAY_ID_PARAM, mActivity.getDisplay().getDisplayId());
         mActivity.startForegroundService(intent);
 
         mInstrumentation.waitForIdleSync();
