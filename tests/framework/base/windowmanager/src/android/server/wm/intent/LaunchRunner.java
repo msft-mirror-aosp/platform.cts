@@ -25,6 +25,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.collect.Iterables.getLast;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import android.app.Activity;
@@ -303,8 +304,10 @@ public class LaunchRunner {
         assertNotNull("Intent: " + intent.toString(), activity);
 
         final ComponentName testActivityName = activity.getComponentName();
-        mTestBase.waitAndAssertTopResumedActivity(testActivityName,
-                Display.DEFAULT_DISPLAY, "Activity must be resumed");
+        mTestBase.waitAndAssertResumedActivity(
+                testActivityName, "Activity must be resumed");
+        assertEquals(Display.DEFAULT_DISPLAY,
+                mTestBase.getWmState().getDisplayByActivity(testActivityName));
     }
 
     /**
