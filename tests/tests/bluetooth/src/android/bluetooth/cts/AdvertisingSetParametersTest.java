@@ -16,10 +16,10 @@
 
 package android.bluetooth.cts;
 
+import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_RANDOM;
 import static android.bluetooth.BluetoothDevice.PHY_LE_1M;
 import static android.bluetooth.BluetoothDevice.PHY_LE_2M;
 import static android.bluetooth.BluetoothDevice.PHY_LE_CODED;
-import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_RANDOM;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_LOW;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MEDIUM;
@@ -56,13 +56,13 @@ import org.junit.runner.RunWith;
 public class AdvertisingSetParametersTest {
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -87,14 +87,15 @@ public class AdvertisingSetParametersTest {
     public void createFromParcelForDirectedAdvertising() {
         final Parcel parcel = Parcel.obtain();
         try {
-            AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                    .setConnectable(true)
-                    .setLegacyMode(true)
-                    .setDirected(true)
-                    .setHighDutyCycle(true)
-                    .setPeerAddress("00:01:02:03:04:05")
-                    .setPeerAddressType(ADDRESS_TYPE_RANDOM)
-                    .build();
+            AdvertisingSetParameters params =
+                    new AdvertisingSetParameters.Builder()
+                            .setConnectable(true)
+                            .setLegacyMode(true)
+                            .setDirected(true)
+                            .setHighDutyCycle(true)
+                            .setPeerAddress("00:01:02:03:04:05")
+                            .setPeerAddressType(ADDRESS_TYPE_RANDOM)
+                            .build();
             params.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             AdvertisingSetParameters paramsFromParcel =
@@ -128,46 +129,40 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isConnectable() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setConnectable(true)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setConnectable(true).build();
         assertTrue(params.isConnectable());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isDiscoverable() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setDiscoverable(false)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setDiscoverable(false).build();
         assertFalse(params.isDiscoverable());
     }
-
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isScannable() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setScannable(true)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setScannable(true).build();
         assertTrue(params.isScannable());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isLegacyMode() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setLegacyMode(true)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setLegacyMode(true).build();
         assertTrue(params.isLegacy());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void includeTxPower() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setIncludeTxPower(true)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setIncludeTxPower(true).build();
         assertTrue(params.includeTxPower());
     }
 
@@ -186,18 +181,16 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPrimaryPhyWithLE1M() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setPrimaryPhy(PHY_LE_1M)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setPrimaryPhy(PHY_LE_1M).build();
         assertEquals(PHY_LE_1M, params.getPrimaryPhy());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPrimaryPhyWithLECoded() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setPrimaryPhy(PHY_LE_CODED)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setPrimaryPhy(PHY_LE_CODED).build();
         assertEquals(PHY_LE_CODED, params.getPrimaryPhy());
     }
 
@@ -217,27 +210,24 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setSecondaryPhyWithLE1M() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setSecondaryPhy(PHY_LE_1M)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_1M).build();
         assertEquals(PHY_LE_1M, params.getSecondaryPhy());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setSecondaryPhyWithLE2M() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setSecondaryPhy(PHY_LE_2M)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_2M).build();
         assertEquals(PHY_LE_2M, params.getSecondaryPhy());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setSecondaryPhyWithLECoded() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setSecondaryPhy(PHY_LE_CODED)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_CODED).build();
         assertEquals(PHY_LE_CODED, params.getSecondaryPhy());
     }
 
@@ -245,10 +235,11 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setDirected() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setDirected(true)
-                .setPeerAddress("00:01:02:03:04:05")
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder()
+                        .setDirected(true)
+                        .setPeerAddress("00:01:02:03:04:05")
+                        .build();
         assertTrue(params.isDirected());
     }
 
@@ -256,13 +247,14 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setHighDutyCycle() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setConnectable(true)
-                .setLegacyMode(true)
-                .setDirected(true)
-                .setHighDutyCycle(true)
-                .setPeerAddress("00:01:02:03:04:05")
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder()
+                        .setConnectable(true)
+                        .setLegacyMode(true)
+                        .setDirected(true)
+                        .setHighDutyCycle(true)
+                        .setPeerAddress("00:01:02:03:04:05")
+                        .build();
         assertTrue(params.isDirected());
     }
 
@@ -270,9 +262,8 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPeerAddress() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setPeerAddress("00:01:02:03:04:05")
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setPeerAddress("00:01:02:03:04:05").build();
         assertEquals(params.getPeerAddress(), "00:01:02:03:04:05");
     }
 
@@ -280,9 +271,10 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setPeerAddressType() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setPeerAddressType(ADDRESS_TYPE_RANDOM)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder()
+                        .setPeerAddressType(ADDRESS_TYPE_RANDOM)
+                        .build();
         assertEquals(params.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
     }
 
@@ -304,16 +296,15 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void interval() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setInterval(INTERVAL_MEDIUM)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setInterval(INTERVAL_MEDIUM).build();
         assertEquals(INTERVAL_MEDIUM, params.getInterval());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void txPowerLevelWithInvalidValues() {
-        int[] invalidValues = { TX_POWER_MIN - 1, TX_POWER_MAX + 1 };
+        int[] invalidValues = {TX_POWER_MIN - 1, TX_POWER_MAX + 1};
         for (int i = 0; i < invalidValues.length; i++) {
             try {
                 // Set invalid value
@@ -328,9 +319,8 @@ public class AdvertisingSetParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void txPowerLevel() {
-        AdvertisingSetParameters params = new AdvertisingSetParameters.Builder()
-                .setTxPowerLevel(TX_POWER_MEDIUM)
-                .build();
+        AdvertisingSetParameters params =
+                new AdvertisingSetParameters.Builder().setTxPowerLevel(TX_POWER_MEDIUM).build();
         assertEquals(TX_POWER_MEDIUM, params.getTxPowerLevel());
     }
 

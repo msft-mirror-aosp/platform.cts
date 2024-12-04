@@ -43,8 +43,9 @@ public class PeriodicAdvertisingParametersTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -83,7 +84,7 @@ public class PeriodicAdvertisingParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void intervalWithInvalidValues() {
-        int[] invalidValues = { INTERVAL_MIN - 1, INTERVAL_MAX + 1 };
+        int[] invalidValues = {INTERVAL_MIN - 1, INTERVAL_MAX + 1};
         for (int i = 0; i < invalidValues.length; i++) {
             try {
                 new PeriodicAdvertisingParameters.Builder().setInterval(invalidValues[i]).build();
@@ -109,8 +110,8 @@ public class PeriodicAdvertisingParametersTest {
         assertEquals(0, params.describeContents());
     }
 
-    private void assertParamsEquals(PeriodicAdvertisingParameters p,
-            PeriodicAdvertisingParameters other) {
+    private void assertParamsEquals(
+            PeriodicAdvertisingParameters p, PeriodicAdvertisingParameters other) {
         if (p == null && other == null) {
             return;
         }
