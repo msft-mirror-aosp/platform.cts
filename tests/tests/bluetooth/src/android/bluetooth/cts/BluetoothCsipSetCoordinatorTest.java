@@ -23,7 +23,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -133,7 +132,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void closeProfileProxy() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(
@@ -146,7 +145,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void getConnectedDevices() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -158,7 +157,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void getDevicesMatchingConnectionStates() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -170,7 +169,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void getConnectionState() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -182,7 +181,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void getGroupUuidMapByDevice() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -203,7 +202,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void lockUnlockGroup() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         int groupId = 1;
         // Verify parameter
@@ -240,7 +239,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @Test
     public void getAllGroupIds() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothCsipSetCoordinator);
+        assertThat(mBluetoothCsipSetCoordinator).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         assertThrows(

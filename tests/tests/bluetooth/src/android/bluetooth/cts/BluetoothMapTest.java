@@ -25,7 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -118,7 +117,7 @@ public class BluetoothMapTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.MAP, mBluetoothMap);
@@ -130,7 +129,7 @@ public class BluetoothMapTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -142,7 +141,7 @@ public class BluetoothMapTest {
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -159,7 +158,7 @@ public class BluetoothMapTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -176,7 +175,7 @@ public class BluetoothMapTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -188,7 +187,7 @@ public class BluetoothMapTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 

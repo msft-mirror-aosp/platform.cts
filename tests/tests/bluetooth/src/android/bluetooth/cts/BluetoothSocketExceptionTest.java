@@ -16,8 +16,9 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import android.bluetooth.BluetoothSocketException;
 import android.test.AndroidTestCase;
@@ -49,6 +50,6 @@ public final class BluetoothSocketExceptionTest extends AndroidTestCase {
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.UNSPECIFIED);
 
-        assertNotNull(exception.getMessage());
+        assertThat(exception.getMessage()).isNotNull();
     }
 }

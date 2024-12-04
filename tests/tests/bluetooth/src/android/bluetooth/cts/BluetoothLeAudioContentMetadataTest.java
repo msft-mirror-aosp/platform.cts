@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
@@ -150,7 +149,7 @@ public class BluetoothLeAudioContentMetadataTest {
         BluetoothLeAudioContentMetadata contentMetadata =
                 BluetoothLeAudioContentMetadata.fromRawBytes(TEST_METADATA_BYTES);
         byte[] metadataBytes = contentMetadata.getRawMetadata();
-        assertNotNull(metadataBytes);
+        assertThat(metadataBytes).isNotNull();
         assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
         assertEquals(TEST_PROGRAM_INFO, contentMetadata.getProgramInfo());
         assertEquals(TEST_LANGUAGE, contentMetadata.getLanguage());

@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -100,7 +99,7 @@ public class TransportBlockFilterTest {
         assertArrayEquals(TEST_TRANSPORT_DATA, filter.getTransportData());
         assertArrayEquals(TEST_TRANSPORT_DATA_MASK, filter.getTransportDataMask());
         assertThat(filter.getWifiNanHash()).isNull();
-        assertNotNull(filter.toString());
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -118,7 +117,7 @@ public class TransportBlockFilterTest {
         assertThat(filter.getTransportData()).isNull();
         assertThat(filter.getTransportDataMask()).isNull();
         assertArrayEquals(TEST_VALID_WIFI_NAN_HASH, filter.getWifiNanHash());
-        assertNotNull(filter.toString());
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

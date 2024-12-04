@@ -26,7 +26,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -115,7 +114,7 @@ public class BluetoothA2dpSinkTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.A2DP_SINK, mBluetoothA2dpSink);
@@ -127,7 +126,7 @@ public class BluetoothA2dpSinkTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         assertEquals(mBluetoothA2dpSink.getConnectedDevices(), new ArrayList<BluetoothDevice>());
 
@@ -139,7 +138,7 @@ public class BluetoothA2dpSinkTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         assertEquals(
                 mBluetoothA2dpSink.getDevicesMatchingConnectionStates(new int[] {STATE_CONNECTED}),
@@ -150,7 +149,7 @@ public class BluetoothA2dpSinkTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -165,7 +164,7 @@ public class BluetoothA2dpSinkTest {
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -183,7 +182,7 @@ public class BluetoothA2dpSinkTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -204,7 +203,7 @@ public class BluetoothA2dpSinkTest {
     public void isAudioPlaying() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 

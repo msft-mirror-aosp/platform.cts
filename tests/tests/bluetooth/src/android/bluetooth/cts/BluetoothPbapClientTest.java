@@ -25,7 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -115,7 +114,7 @@ public class BluetoothPbapClientTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.PBAP_CLIENT, mBluetoothPbapClient);
@@ -127,7 +126,7 @@ public class BluetoothPbapClientTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -140,7 +139,7 @@ public class BluetoothPbapClientTest {
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -158,7 +157,7 @@ public class BluetoothPbapClientTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -175,7 +174,7 @@ public class BluetoothPbapClientTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -187,7 +186,7 @@ public class BluetoothPbapClientTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsPbapClientSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbapClient);
+        assertThat(mBluetoothPbapClient).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 

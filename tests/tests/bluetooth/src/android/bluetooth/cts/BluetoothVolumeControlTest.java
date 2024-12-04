@@ -26,7 +26,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -142,7 +141,7 @@ public class BluetoothVolumeControlTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.VOLUME_CONTROL, mBluetoothVolumeControl);
@@ -154,7 +153,7 @@ public class BluetoothVolumeControlTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -167,7 +166,7 @@ public class BluetoothVolumeControlTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -179,7 +178,7 @@ public class BluetoothVolumeControlTest {
     public void registerUnregisterCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         // Verify parameter
         assertThrows(
@@ -208,7 +207,7 @@ public class BluetoothVolumeControlTest {
     public void setVolumeOffset() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -221,7 +220,7 @@ public class BluetoothVolumeControlTest {
     public void setDeviceVolume() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -246,7 +245,7 @@ public class BluetoothVolumeControlTest {
     public void isVolumeOffsetAvailable() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -262,7 +261,7 @@ public class BluetoothVolumeControlTest {
     public void getNumberOfVolumeOffsetInstances() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -279,7 +278,7 @@ public class BluetoothVolumeControlTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -296,7 +295,7 @@ public class BluetoothVolumeControlTest {
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -318,7 +317,7 @@ public class BluetoothVolumeControlTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -347,7 +346,7 @@ public class BluetoothVolumeControlTest {
     public void getAudioInputControlServices() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothVolumeControl);
+        assertThat(mBluetoothVolumeControl).isNotNull();
 
         assertThrows(
                 NullPointerException.class,

@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
@@ -158,7 +157,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
                 BluetoothLeAudioCodecConfigMetadata.fromRawBytes(TEST_METADATA_BYTES);
         byte[] metadataBytes = codecMetadata.getRawMetadata();
-        assertNotNull(metadataBytes);
+        assertThat(metadataBytes).isNotNull();
         assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
         assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT, codecMetadata.getAudioLocation());
         assertEquals(TEST_SAMPLE_RATE_44100, codecMetadata.getSampleRate());

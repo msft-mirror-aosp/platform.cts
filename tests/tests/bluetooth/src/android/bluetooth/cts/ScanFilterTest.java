@@ -24,7 +24,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -407,7 +406,7 @@ public class ScanFilterTest {
         }
 
         final TransportBlockFilter returnedTransportBlockFilter = filter.getTransportBlockFilter();
-        assertNotNull(returnedTransportBlockFilter);
+        assertThat(returnedTransportBlockFilter).isNotNull();
         assertEquals(orgId, returnedTransportBlockFilter.getOrgId());
         assertEquals(tdsFlag, returnedTransportBlockFilter.getTdsFlags());
         assertEquals(tdsFlagMask, returnedTransportBlockFilter.getTdsFlagsMask());
