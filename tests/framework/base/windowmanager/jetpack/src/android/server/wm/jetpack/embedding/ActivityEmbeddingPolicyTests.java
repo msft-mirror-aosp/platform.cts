@@ -17,6 +17,7 @@
 package android.server.wm.jetpack.embedding;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.server.wm.jetpack.embedding.MultiDisplayTestHelper.createLandscapeLargeScreenSimulatedDisplay;
 import static android.server.wm.jetpack.second.Components.PORTRAIT_ACTIVITY;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 import static android.view.Surface.ROTATION_0;
@@ -107,10 +108,8 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
         if (useSimulatedDisplay) {
             // Create a landscape secondary display.
             final WindowManagerState.DisplayContent secondaryDisplay =
-                    createManagedVirtualDisplaySession().setSimulateDisplay(true)
-                            .setSimulationDisplaySize(1920, 1080)
-                            .setDensityDpi(160)
-                            .createDisplay();
+                    createLandscapeLargeScreenSimulatedDisplay(
+                            createManagedVirtualDisplaySession());
 
             displayId = secondaryDisplay.mId;
         } else {
