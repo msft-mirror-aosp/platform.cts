@@ -17,6 +17,7 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -32,6 +33,8 @@ import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -40,22 +43,38 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 
+import com.google.common.truth.Expect;
+
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 /** Test for Bluetooth Socket Settings {@link BluetoothSocketSettings}. */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BluetoothSocketSettingsTest {
+    private static final String TAG = "BluetoothSocketSettingsTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule public final Expect expect = Expect.create();
+
     private static final String TEST_SERVICE_NAME = "Test";
     private static final int TEST_SOCKET_TYPE = BluetoothSocket.TYPE_RFCOMM;
     private static final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
     private static final String FAKE_DEVICE_ADDRESS = "00:11:22:AA:BB:CC";
     private static final int FAKE_PSM = 128;
+    private static final String TEST_SOCKET_NAME = "TestOffloadSocket";
+    private static final long TEST_HUB_ID = 1;
+    private static final long TEST_ENDPOINT_ID = 2;
+    private static final int TEST_MAX_RX_PACKET_SIZE = 2048;
     private BluetoothDevice mFakeDevice;
     private static final BluetoothAdapter sAdapter = BlockingBluetoothAdapter.getAdapter();
 
@@ -83,6 +102,27 @@ public class BluetoothSocketSettingsTest {
         serverSocket.close();
     }
 
+    private void createServerSocketUsingSettings(BluetoothSocketSettings settings,
+            List<String> requiredPermissions)
+            throws IOException {
+        Permissions.enforceEachPermissions(
+                () -> {
+                try {
+                    sAdapter.listenUsingSocketSettings(settings);
+                    return true;
+                } catch (IOException e) {
+                    return false;
+                }
+            },
+                requiredPermissions);
+        final BluetoothServerSocket serverSocket;
+        try (var p = Permissions.withPermissions(requiredPermissions.toArray(new String[0]))) {
+            serverSocket = sAdapter.listenUsingSocketSettings(settings);
+        }
+        assertThat(serverSocket).isNotNull();
+        serverSocket.close();
+    }
+
     private void createClientSocketUsingSettings(BluetoothSocketSettings settings)
             throws IOException {
         final BluetoothSocket socket;
@@ -91,6 +131,44 @@ public class BluetoothSocketSettingsTest {
         }
         assertThat(socket).isNotNull();
         socket.close();
+    }
+
+    private void createClientSocketUsingSettings(BluetoothSocketSettings settings,
+            List<String> requiredPermissions)
+            throws IOException {
+        Permissions.enforceEachPermissions(
+
+                () -> {
+                try {
+                    mFakeDevice.createUsingSocketSettings(settings);
+                    return true;
+                } catch (IOException e) {
+                    return false;
+                }
+            },
+                requiredPermissions);
+        final BluetoothSocket socket;
+        try (var p = Permissions.withPermissions(requiredPermissions.toArray(new String[0]))) {
+            socket = mFakeDevice.createUsingSocketSettings(settings);
+        }
+        assertThat(socket).isNotNull();
+        socket.close();
+    }
+
+    private boolean isLeCocSocketOffloadSupported() {
+        boolean result;
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            result = sAdapter.isLeCocSocketOffloadSupported();
+        }
+        return result;
+    }
+
+    private boolean isRfcommSocketOffloadSupported() {
+        boolean result;
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            result = sAdapter.isRfcommSocketOffloadSupported();
+        }
+        return result;
     }
 
     /* BluetoothSocketSettings interface related tests */
@@ -104,9 +182,35 @@ public class BluetoothSocketSettingsTest {
                         .setRfcommUuid(TEST_UUID);
 
         BluetoothSocketSettings settings = builder.build();
-        assertThat(settings.getSocketType()).isEqualTo(TEST_SOCKET_TYPE);
-        assertThat(settings.getRfcommServiceName()).isEqualTo(TEST_SERVICE_NAME);
-        assertThat(settings.getRfcommUuid()).isEqualTo(TEST_UUID);
+        expect.that(settings.getSocketType()).isEqualTo(TEST_SOCKET_TYPE);
+        expect.that(settings.getRfcommServiceName()).isEqualTo(TEST_SERVICE_NAME);
+        expect.that(settings.getRfcommUuid()).isEqualTo(TEST_UUID);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createBluetoothOffloadSocketSettingsFromBuilder() {
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        expect.that(settings.getSocketType()).isEqualTo(BluetoothSocket.TYPE_LE);
+        expect.that(settings.isEncryptionRequired()).isFalse();
+        expect.that(settings.isAuthenticationRequired()).isFalse();
+        expect.that(settings.getDataPath())
+                .isEqualTo(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD);
+        expect.that(settings.getSocketName()).isEqualTo(TEST_SOCKET_NAME);
+        expect.that(settings.getHubId()).isEqualTo(TEST_HUB_ID);
+        expect.that(settings.getEndpointId()).isEqualTo(TEST_ENDPOINT_ID);
+        expect.that(settings.getRequestedMaximumPacketSize()).isEqualTo(TEST_MAX_RX_PACKET_SIZE);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
@@ -143,7 +247,31 @@ public class BluetoothSocketSettingsTest {
                 IllegalArgumentException.class,
                 () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
                         .setL2capPsm(0).build());
+    }
 
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void illegalArgumentsForOffloadSocketToBuilder() {
+        BluetoothSocketSettings.Builder builder = new BluetoothSocketSettings.Builder();
+        // Building Socket settings of DATA_PATH_HARDWARE_OFFLOAD requires to set hub ID and
+        // endpoint ID
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setHubId(TEST_HUB_ID)
+                        .build());
+
+        // Building Socket settings of DATA_PATH_HARDWARE_OFFLOAD with max packet size not in the
+        // valid range. The valid max packet size should not be smaller than 0.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(-1)
+                        .build());
     }
 
     /* Server socket creation related tests : BluetoothAdapter#listenUsingSocketSettings*/
@@ -190,7 +318,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createListeningInsecureLECOCSocket() throws IOException {
+    public void createListeningInsecureLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -203,7 +331,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createListeningEncryptOnlyLECOCSocket() throws IOException {
+    public void createListeningEncryptOnlyLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -216,7 +344,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createListeningEncryptedAndAuthenticatedLECOCSocket() throws IOException {
+    public void createListeningEncryptedAndAuthenticatedLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -225,6 +353,45 @@ public class BluetoothSocketSettingsTest {
 
         BluetoothSocketSettings settings = builder.build();
         createServerSocketUsingSettings(settings);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createListeningInsecureRfcommOffloadSocket() throws IOException {
+        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_RFCOMM)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setRfcommUuid(TEST_UUID)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createServerSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createListeningInsecureLeCocOffloadSocket() throws IOException {
+        Assume.assumeTrue(isLeCocSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createServerSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 
     /* Client socket creation related tests : BluetoothDevice#createUsingSocketSettings */
@@ -272,7 +439,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createClientInsecureLECOCSocket() throws IOException {
+    public void createClientInsecureLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -286,7 +453,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createClientEncryptOnlyLECOCSocket() throws IOException {
+    public void createClientEncryptOnlyLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -300,7 +467,7 @@ public class BluetoothSocketSettingsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
-    public void createClientEncryptedAndAuthenticatedLECOCSocket() throws IOException {
+    public void createClientEncryptedAndAuthenticatedLeCocSocket() throws IOException {
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -310,5 +477,46 @@ public class BluetoothSocketSettingsTest {
 
         BluetoothSocketSettings settings = builder.build();
         createClientSocketUsingSettings(settings);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createClientInsecureRfcommOffloadSocket() throws IOException {
+        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_RFCOMM)
+                        .setEncryptionRequired(false)
+                        .setAuthenticationRequired(false)
+                        .setRfcommServiceName(TEST_SERVICE_NAME)
+                        .setRfcommUuid(TEST_UUID)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createClientSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createClientInsecureLeCocOffloadSocket() throws IOException {
+        Assume.assumeTrue(isLeCocSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setEncryptionRequired(false)
+                        .setL2capPsm(FAKE_PSM)
+                        .setAuthenticationRequired(false)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        createClientSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 }

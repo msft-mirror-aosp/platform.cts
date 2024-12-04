@@ -43,6 +43,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.graphics.Rect;
+import android.server.wm.WindowManagerState.Activity;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.InputEvent;
@@ -503,6 +504,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
+        waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
@@ -673,6 +675,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
         assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
+    void assertFocusedRootTaskOnDisplay(String msg, int taskId, int displayId) {
+        assertEquals(msg, taskId, getFocusedTaskIdOnDisplay(displayId));
+    }
+
     public void assertFocusedRootTask(String msg, int taskId) {
         assertEquals(msg, taskId, getFocusedTaskId());
     }
@@ -686,6 +692,14 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }
     }
 
+    /** Asserts the message on the focused app and activity on the provided display.  */
+    public void assertFocusedActivityOnDisplay(final String msg, final ComponentName activityName,
+            final int displayId) {
+        final String activityComponentName = getActivityName(activityName);
+        assertEquals(msg, activityComponentName, getFocusedActivityOnDisplay(displayId));
+        assertEquals(msg, activityComponentName, getFocusedAppOnDisplay(displayId));
+    }
+
     public void assertFocusedActivity(final String msg, final ComponentName activityName) {
         final String activityComponentName = getActivityName(activityName);
         assertEquals(msg, activityComponentName, getFocusedActivity());
@@ -696,8 +710,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
         final String activityComponentName = getActivityName(activityName);
         final String message = activityComponentName + " to be focused";
         return Condition.waitFor(new Condition<>(message, () -> {
+            computeState();
             boolean focusedActivityMatching = activityComponentName.equals(getFocusedActivity());
+            if (!focusedActivityMatching) {
+                logAlways("Expecting top resumed activity " + activityComponentName + ", but is "
+                        + getFocusedActivity());
+            }
             boolean focusedAppMatching = activityComponentName.equals(getFocusedApp());
+            if (!focusedAppMatching) {
+                logAlways("Expecting focused app " + activityComponentName + ", but is "
+                        + getFocusedApp());
+            }
             return focusedActivityMatching && focusedAppMatching;
         }).setRetryIntervalMs(200).setRetryLimit(20));
     }
@@ -859,7 +882,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void assertKeyguardGone() {
-        assertFalse("Keyguard is not shown",
+        assertFalse("Keyguard must not be shown",
                 getKeyguardControllerState().keyguardShowing);
         assertFalse("Keyguard must not be going away",
                 getKeyguardControllerState().mKeyguardGoingAway);
