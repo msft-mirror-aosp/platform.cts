@@ -1708,7 +1708,7 @@ public final class DeviceConfigApiTests {
         try (StringWriter sw = new StringWriter()) {
             PrintWriter pw = new PrintWriter(sw);
 
-            DeviceConfig.dump(/* fd= */ null, pw, DUMP_PREFIX, args);
+            DeviceConfig.dump(pw, DUMP_PREFIX, args);
 
             pw.flush();
             String dump = sw.toString();
