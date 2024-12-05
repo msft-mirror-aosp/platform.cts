@@ -34,7 +34,6 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
@@ -110,12 +109,10 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_ADPF_SESSION_TAG)
     public void testCreateHintSessionStatsdApp() throws Exception {
         final int androidSApiLevel = 31; // android.os.Build.VERSION_CODES.S
         final int firstApiLevel = Integer.parseInt(
                 DeviceUtils.getProperty(getDevice(), "ro.product.first_api_level"));
-        final int sessionTagApp = AdpfSessionTag.APP_VALUE;
         final long testTargetDuration = 12345678L;
         final String testMethod = "testCreateHintSession";
         final TestDescription desc = TestDescription.fromString(
@@ -151,57 +148,6 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
                 assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
                 assertThat(a0.getSessionId()).isNotNull();
                 assertThat(a0.getTidCount()).isEqualTo(1);
-                assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagApp);
-            }
-        }
-        if (!found) {
-            fail("Failed to find an event data belonging to the test process in data: " + data);
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ADPF_SESSION_TAG)
-    public void testCreateHintSessionStatsdGame() throws Exception {
-        final int androidSApiLevel = 31; // android.os.Build.VERSION_CODES.S
-        final int firstApiLevel = Integer.parseInt(
-                DeviceUtils.getProperty(getDevice(), "ro.product.first_api_level"));
-        final long testTargetDuration = 12345678L;
-        final int sessionTagGame = AdpfSessionTag.GAME_VALUE;
-        final String testMethod = "testCreateHintSession";
-        final TestDescription desc = TestDescription.fromString(
-                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
-        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AtomsProto.Atom.PERFORMANCE_HINT_SESSION_REPORTED_FIELD_NUMBER);
-        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
-                DEVICE_TEST_CLASS, testMethod);
-
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-
-        TestResult result = testRunResult.getTestResults().get(desc);
-        assertNotNull(result);
-        TestStatus status = result.getStatus();
-        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
-        assertThat(status).isEqualTo(TestStatus.PASSED);
-
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-
-        if (firstApiLevel < androidSApiLevel && data.size() == 0) {
-            // test requirement does not meet, the device does not support
-            // ADPF hint session, skipping the test
-            return;
-        }
-
-        assertThat(data.size()).isAtLeast(1);
-        boolean found = false;
-        for (StatsLog.EventMetricData event : data) {
-            PerformanceHintSessionReported a0 =
-                    event.getAtom().getPerformanceHintSessionReported();
-            if (a0.getTargetDurationNs() == testTargetDuration) {
-                found = true;
-                assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
-                assertThat(a0.getSessionId()).isNotNull();
-                assertThat(a0.getTidCount()).isEqualTo(1);
-                assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagGame);
             }
         }
         if (!found) {
