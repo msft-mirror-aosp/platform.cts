@@ -371,19 +371,18 @@ public class VehiclePropertyVerifiers {
     public static VehiclePropertyVerifier.Builder<Integer>
             getLocationCharacterizationVerifierBuilder() {
         return getLocationCharacterizationVerifierBuilder(
-                /* carPropertyManager= */ null, VehiclePropertyIds.LOCATION_CHARACTERIZATION,
+                /* carPropertyManager= */ null,
+                VehiclePropertyIds.LOCATION_CHARACTERIZATION,
                 ACCESS_FINE_LOCATION);
     }
 
-    /**
-     * Gets the verifier for LOCATION_CHARACTERIZATION.
-     */
+    /** Gets the verifier for LOCATION_CHARACTERIZATION. */
     public static VehiclePropertyVerifier<Integer> getLocationCharacterizationVerifier(
             CarPropertyManager carPropertyManager) {
         return getLocationCharacterizationVerifier(
-            carPropertyManager,
-            VehiclePropertyIds.LOCATION_CHARACTERIZATION,
-            ACCESS_FINE_LOCATION);
+                carPropertyManager,
+                VehiclePropertyIds.LOCATION_CHARACTERIZATION,
+                ACCESS_FINE_LOCATION);
     }
 
     /**
@@ -394,10 +393,10 @@ public class VehiclePropertyVerifiers {
      * @param readPermission the permission for the backported property.
      */
     public static VehiclePropertyVerifier<Integer> getLocationCharacterizationVerifier(
-            CarPropertyManager carPropertyManager,
-            int propertyId, String readPermission) {
-        var builder = getLocationCharacterizationVerifierBuilder(
-                carPropertyManager, propertyId, readPermission);
+            CarPropertyManager carPropertyManager, int propertyId, String readPermission) {
+        var builder =
+                getLocationCharacterizationVerifierBuilder(
+                        carPropertyManager, propertyId, readPermission);
         if (VehiclePropertyVerifier.isAtLeastU()) {
             builder.requireProperty();
         }
