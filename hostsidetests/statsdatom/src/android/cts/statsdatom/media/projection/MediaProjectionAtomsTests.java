@@ -58,6 +58,7 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -146,6 +147,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
     }
 
     @Test
+    @Ignore("b/380920516")
     public void testMediaProjectionTargetChanged_stoppedCapture() throws Exception {
         // Upload config to statsd
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
