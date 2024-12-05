@@ -249,21 +249,23 @@ public class UiAutomatorUtils2 {
 
             List<UiObject2> scrollableViews = getUiDevice().findObjects(
                     By.displayId(displayId).scrollable(true));
-            if (scrollableViews == null || scrollableViews.isEmpty()) {
-                break;
-            }
-
-            for (int i = 0; i < scrollableViews.size(); i++) {
-                UiObject2 scrollableView = scrollableViews.get(i);
-                // Swipe far away from the edges to avoid triggering navigation gestures
-                scrollableView.setGestureMarginPercentage((float) getSwipeDeadZonePct());
-                // Scroll from the top to the bottom until the view object is found.
-                scrollableView.scroll(Direction.UP, 1.0f);
-                scrollableView.scrollUntil(Direction.DOWN, Until.findObject(selector));
-                view = getUiDevice().findObject(selector);
-                if (view != null) {
-                    break;
+            if (scrollableViews != null && !scrollableViews.isEmpty()) {
+                for (int i = 0; i < scrollableViews.size(); i++) {
+                    UiObject2 scrollableView = scrollableViews.get(i);
+                    // Swipe far away from the edges to avoid triggering navigation gestures
+                    scrollableView.setGestureMarginPercentage((float) getSwipeDeadZonePct());
+                    // Scroll from the top to the bottom until the view object is found.
+                    scrollableView.scroll(Direction.UP, 1.0f);
+                    scrollableView.scrollUntil(Direction.DOWN, Until.findObject(selector));
+                    view = getUiDevice().findObject(selector);
+                    if (view != null) {
+                        break;
+                    }
                 }
+            } else {
+                // There might be a collapsing toolbar, but no scrollable view. Try to collapse
+                final double deadZone = getSwipeDeadZonePct();
+                scrollPastCollapsibleToolbar(null, deadZone);
             }
         }
         return view;
