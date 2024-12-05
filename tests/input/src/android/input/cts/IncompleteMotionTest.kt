@@ -146,7 +146,10 @@ class IncompleteMotionTest {
                         // Now send hasFocus=false event to the app by launching a new focusable
                         // window
                         startOverlayActivity()
-                        PollingCheck.waitFor { receiver.overlayActivityIsFocused() }
+                        PollingCheck.waitFor (
+                            ACTIVITY_FOCUS_LOST_TIMEOUT_MILLIS,
+                            { receiver.overlayActivityIsFocused() }
+                        )
                         // We need to ensure that the focus event has been written to the app's
                         // socket before unblocking the UI thread. Having the overlay activity
                         // receive hasFocus=true event is a good proxy for that. However, it does
