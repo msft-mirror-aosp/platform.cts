@@ -16,12 +16,15 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -233,6 +236,12 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_340x280_24fps_512kbps_av1_10bit.mkv",
                             null, -1.0f, 1021109556L, CODEC_ALL},
+            }));
+        }
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_8213kbps_apv_10bit.mp4",
+                            null, -1.0f, 2541827789L, CODEC_ALL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);

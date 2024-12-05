@@ -26,6 +26,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,6 +50,9 @@ public class UserManagerHostTest extends BaseMultiUserTest {
         final int userId2 = getDevice().createUser("test_user_2");
         assertSwitchToUser(userId2);
         assertPreviousUserIs(userId1);
+
+        // Wait to allow user xml to be written.
+        RunUtil.getDefault().sleep(5000);
 
         getDevice().reboot();
         if (getDevice().getCurrentUser() == userId2) {

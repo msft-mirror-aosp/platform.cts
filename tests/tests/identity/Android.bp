@@ -40,7 +40,7 @@ android_test {
         "platformprotosnano",
         "cbor-java",
         "cts-wm-util",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",

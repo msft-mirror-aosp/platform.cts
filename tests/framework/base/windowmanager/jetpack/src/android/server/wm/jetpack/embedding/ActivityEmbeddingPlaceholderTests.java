@@ -257,7 +257,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         // Launch activity and verify that it fills the task and that a placeholder activity is
         // not launched
         Activity primaryActivity = startFullScreenActivityNewTask(TestActivityWithId.class,
-                PRIMARY_ACTIVITY_ID);
+                PRIMARY_ACTIVITY_ID, getLaunchingDisplayId());
         waitAndAssertResumedAndFillsTask(primaryActivity);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
@@ -420,7 +420,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
             @NonNull String primaryActivityId, @NonNull String placeholderActivityId,
             @NonNull SplitPlaceholderRule splitPlaceholderRule) {
         // Launch the primary activity
-        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId);
+        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId,
+                getLaunchingDisplayId());
         // Get primary activity
         waitAndAssertResumed(primaryActivityId);
         Activity primaryActivity = getResumedActivityById(primaryActivityId);
@@ -434,7 +435,8 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
     @NonNull
     private Rect getTaskBounds() {
-        final Activity activity = startFullScreenActivityNewTask(TestActivity.class);
+        final Activity activity = startFullScreenActivityNewTask(TestActivity.class,
+                null /* activityId */, getLaunchingDisplayId());
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         activity.finish();
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());

@@ -35,11 +35,10 @@ import android.os.IBinder;
 import android.os.Process;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
@@ -62,13 +61,9 @@ import org.junit.runner.RunWith;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ProcessTest {
-    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
-
     // Required for RequiresFlagsEnabled and RequiresFlagsDisabled annotations to take effect.
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final int THREAD_PRIORITY_HIGHEST = -20;
     private static final String NONE_EXISITENT_NAME = "abcdefcg";
@@ -93,7 +88,7 @@ public class ProcessTest {
 
     @Before
     public void setUp() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
         mContext = InstrumentationRegistry.getContext();
         mSync = new Object();
         mSecondaryConnection = new ServiceConnection() {
@@ -137,7 +132,7 @@ public class ProcessTest {
 
     @After
     public void tearDown() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
         if (mIntent != null) {
             mContext.stopService(mIntent);
         }
@@ -147,7 +142,7 @@ public class ProcessTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testMiscMethods() {
         /*
          * Test setThreadPriority(int) and setThreadPriority(int, int)
@@ -210,7 +205,7 @@ public class ProcessTest {
      * and any additional processes created by that app be able to kill each other's processes.
      */
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testKillProcess() throws Exception {
         long time = 0;
         int servicePid = 0;
@@ -245,7 +240,7 @@ public class ProcessTest {
      * Send a signal to the given process.
      */
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testSendSignal() throws Exception {
         int servicePid = 0;
         try {
@@ -333,7 +328,7 @@ public class ProcessTest {
      * Tests that the reserved UID is not taken by an actual package.
      */
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testReservedVirtualUid() {
         PackageManager pm = mContext.getPackageManager();
         final String name = pm.getNameForUid(Process.SDK_SANDBOX_VIRTUAL_UID);

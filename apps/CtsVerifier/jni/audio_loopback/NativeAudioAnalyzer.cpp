@@ -16,6 +16,12 @@
 
 #include "NativeAudioAnalyzer.h"
 
+// AAudioStream_isMMapUsed() isn't a public symbol, so use dlsym() to access it.
+#include <dlfcn.h>
+#define LIB_AAUDIO_NAME "libaaudio.so"
+#define FUNCTION_IS_MMAP "AAudioStream_isMMapUsed"
+static bool (*aaudioStream_isMMap)(AAudioStream *stream) = nullptr;
+
 #include "WavFileCapture.h"
 
 extern WavFileCapture sWavFileCapture;
@@ -220,10 +226,6 @@ double NativeAudioAnalyzer::getConfidence() {
     return mWhiteNoiseLatencyAnalyzer.getMeasuredConfidence();
 }
 
-bool NativeAudioAnalyzer::isLowLatencyStream() {
-    return mIsLowLatencyStream;
-}
-
 bool NativeAudioAnalyzer::has24BitHardwareSupport() {
     return mHas24BitHardwareSupport;
 }
@@ -270,15 +272,28 @@ aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDevi
         return result;
     }
 
-    // Did we get a low-latency stream?
-    mIsLowLatencyStream =
-        AAudioStream_getPerformanceMode(mOutputStream) == AAUDIO_PERFORMANCE_MODE_LOW_LATENCY;
-
     mHardwareFormat = AAudioStream_getHardwareFormat(mOutputStream);
     mHas24BitHardwareSupport = has24BitSupport(mHardwareFormat);
 
-    int32_t outputFramesPerBurst = AAudioStream_getFramesPerBurst(mOutputStream);
-    (void) AAudioStream_setBufferSizeInFrames(mOutputStream, outputFramesPerBurst * kDefaultOutputSizeBursts);
+    // Stream Attributes
+    mBurstFrames[STREAM_OUTPUT] = AAudioStream_getFramesPerBurst(mOutputStream);
+    (void) AAudioStream_setBufferSizeInFrames(mOutputStream,
+            mBurstFrames[STREAM_OUTPUT] * kDefaultOutputSizeBursts);
+    mCapacityFrames[STREAM_OUTPUT] = AAudioStream_getBufferCapacityInFrames(mOutputStream);
+    mIsLowLatencyStream[STREAM_OUTPUT] =
+            AAudioStream_getPerformanceMode(mOutputStream) == AAUDIO_PERFORMANCE_MODE_LOW_LATENCY;
+
+    // Late binding for aaudioStream_isMMap()
+    if (aaudioStream_isMMap == nullptr) {
+        void* libHandle = dlopen(LIB_AAUDIO_NAME, RTLD_NOW);
+        aaudioStream_isMMap = (bool (*)(AAudioStream *stream))
+                dlsym(libHandle, FUNCTION_IS_MMAP);
+        if (aaudioStream_isMMap == nullptr) {
+            ALOGE("%s() could not find " FUNCTION_IS_MMAP, __func__);
+        }
+    }
+    mIsMMap[STREAM_OUTPUT] =
+            aaudioStream_isMMap != nullptr ? aaudioStream_isMMap(mOutputStream) : false;
 
     mOutputSampleRate = AAudioStream_getSampleRate(mOutputStream);
     mActualOutputChannelCount = AAudioStream_getChannelCount(mOutputStream);
@@ -299,6 +314,13 @@ aaudio_result_t NativeAudioAnalyzer::openAudio(int inputDeviceId, int outputDevi
         return result;
     }
 
+    // Stream Attributes
+    mIsLowLatencyStream[STREAM_INPUT] =
+            AAudioStream_getPerformanceMode(mInputStream) == AAUDIO_PERFORMANCE_MODE_LOW_LATENCY;
+    mBurstFrames[STREAM_INPUT] = AAudioStream_getFramesPerBurst(mInputStream);
+    mCapacityFrames[STREAM_INPUT] = AAudioStream_getBufferCapacityInFrames(mInputStream);
+    mIsMMap[STREAM_INPUT] =
+            aaudioStream_isMMap != nullptr ? aaudioStream_isMMap(mInputStream) : false;
     int32_t actualCapacity = AAudioStream_getBufferCapacityInFrames(mInputStream);
     (void) AAudioStream_setBufferSizeInFrames(mInputStream, actualCapacity);
 

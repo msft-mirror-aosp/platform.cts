@@ -16,18 +16,23 @@
 
 package android.app.appsearch.cts.app;
 
+import static android.app.appsearch.testutil.AppSearchTestUtils.calculateDigest;
 import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResultSuccess;
 import static android.app.appsearch.testutil.AppSearchTestUtils.convertSearchResultsToDocuments;
+import static android.app.appsearch.testutil.AppSearchTestUtils.generateRandomBytes;
 import static android.app.appsearch.testutil.AppSearchTestUtils.retrieveAllSearchResults;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
@@ -38,6 +43,8 @@ import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
 import android.app.appsearch.Migrator;
+import android.app.appsearch.OpenBlobForReadResponse;
+import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportSystemUsageRequest;
@@ -50,10 +57,15 @@ import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.observer.SchemaChangeInfo;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.content.Context;
+import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.core.app.ApplicationProvider;
+
+import com.android.appsearch.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,8 +74,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -83,6 +99,8 @@ public abstract class GlobalSearchSessionCtsTestBase {
 
     protected GlobalSearchSessionShim mGlobalSearchSession;
 
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
+
     protected abstract ListenableFuture<AppSearchSessionShim> createSearchSessionAsync(
             @NonNull String dbName) throws Exception;
 
@@ -93,7 +111,6 @@ public abstract class GlobalSearchSessionCtsTestBase {
     public void setUp() throws Exception {
         mDb1 = createSearchSessionAsync(DB_NAME_1).get();
         mDb2 = createSearchSessionAsync(DB_NAME_2).get();
-
         // Cleanup whatever documents may still exist in these databases. This is needed in
         // addition to tearDown in case a test exited without completing properly.
         cleanup();
@@ -747,6 +764,88 @@ public abstract class GlobalSearchSessionCtsTestBase {
                         .setSubject("testPut example")
                         .build();
         assertThat(documents).containsExactly(expected1, expected2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SEARCH_SPEC_FILTER_DOCUMENT_IDS)
+    public void testGlobalQuery_documentIdFilter() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS));
+
+        // Schema registration
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+        mDb2.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        // Index 3 documents to db1.
+        AppSearchEmail email1_db1 =
+                new AppSearchEmail.Builder("namespace", "id1")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 1")
+                        .build();
+        AppSearchEmail email2_db1 =
+                new AppSearchEmail.Builder("namespace", "id2")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 1")
+                        .build();
+        AppSearchEmail email3_db1 =
+                new AppSearchEmail.Builder("namespace", "id3")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 1")
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(email1_db1, email2_db1, email3_db1)
+                                .build()));
+
+        // Index the similar 3 documents with the same ids but with different body values to db2.
+        AppSearchEmail email1_db2 =
+                new AppSearchEmail.Builder("namespace", "id1")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 2")
+                        .build();
+        AppSearchEmail email2_db2 =
+                new AppSearchEmail.Builder("namespace", "id2")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 2")
+                        .build();
+        AppSearchEmail email3_db2 =
+                new AppSearchEmail.Builder("namespace", "id3")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("I am from database 2")
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb2.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(email1_db2, email2_db2, email3_db2)
+                                .build()));
+
+        // Query for "id1", which should return the documents with "id1" from both of the databases.
+        List<GenericDocument> documents =
+                snapshotResults(
+                        "example",
+                        new SearchSpec.Builder()
+                                .addFilterDocumentIds(ImmutableSet.of("id1"))
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .build());
+        assertThat(documents).containsExactly(email1_db1, email1_db2);
     }
 
     @Test
@@ -2217,5 +2316,198 @@ public abstract class GlobalSearchSessionCtsTestBase {
         assertThat(resultsWithoutWeights.get(0).getRankingSignal()).isGreaterThan(0);
         assertThat(resultsWithoutWeights.get(0).getRankingSignal())
                 .isEqualTo(resultsWithoutWeights.get(1).getRankingSignal());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCORABLE_PROPERTY)
+    public void testRankWithScorableProperty_searchFromMultipleDbs() throws Exception {
+        assumeTrue(
+                mGlobalSearchSession
+                        .getFeatures()
+                        .isFeatureSupported(Features.SCHEMA_SCORABLE_PROPERTY_CONFIG));
+
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Gmail")
+                        .addProperty(
+                                new AppSearchSchema.BooleanPropertyConfig.Builder("important")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setScoringEnabled(true)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+        mDb2.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        GenericDocument docInDb1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Gmail")
+                        .setPropertyBoolean("important", true)
+                        .setScore(1)
+                        .build();
+        GenericDocument docInDb2 =
+                new GenericDocument.Builder<>("namespace", "id1", "Gmail")
+                        .setPropertyBoolean("important", true)
+                        .setScore(3)
+                        .build();
+        double docInDb1Score = 2;
+        double docInDb2Score = 4;
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(docInDb1).build()));
+        checkIsBatchResultSuccess(
+                mDb2.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(docInDb2).build()));
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setScorablePropertyRankingEnabled(true)
+                        .setRankingStrategy(
+                                "this.documentScore() + sum(getScorableProperty(\"Gmail\","
+                                    + " \"important\"))")
+                        .addFilterPackageNames(mContext.getPackageName())
+                        .build();
+        SearchResultsShim searchResults = mGlobalSearchSession.search("", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(docInDb2);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(docInDb2Score);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(docInDb1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(docInDb1Score);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testWriteAndReadBlob() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        byte[] data1 = generateRandomBytes(10); // 10 Bytes
+        byte[] data2 = generateRandomBytes(20); // 20 Bytes
+        byte[] digest1 = calculateDigest(data1);
+        byte[] digest2 = calculateDigest(data2);
+        AppSearchBlobHandle handle1 =
+                AppSearchBlobHandle.createWithSha256(
+                        digest1, mContext.getPackageName(), DB_NAME_1, "ns");
+        AppSearchBlobHandle handle2 =
+                AppSearchBlobHandle.createWithSha256(
+                        digest2, mContext.getPackageName(), DB_NAME_1, "ns");
+
+        try {
+            try (OpenBlobForWriteResponse writeResponse =
+                    mDb1.openBlobForWriteAsync(ImmutableSet.of(handle1, handle2)).get()) {
+                AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> writeResult =
+                        writeResponse.getResult();
+                assertTrue(writeResult.isSuccess());
+
+                ParcelFileDescriptor writePfd1 = writeResult.getSuccesses().get(handle1);
+                try (OutputStream outputStream =
+                        new ParcelFileDescriptor.AutoCloseOutputStream(writePfd1)) {
+                    outputStream.write(data1);
+                    outputStream.flush();
+                }
+
+                ParcelFileDescriptor writePfd2 = writeResult.getSuccesses().get(handle2);
+                try (OutputStream outputStream =
+                        new ParcelFileDescriptor.AutoCloseOutputStream(writePfd2)) {
+                    outputStream.write(data2);
+                    outputStream.flush();
+                }
+            }
+
+            assertTrue(
+                    mDb1.commitBlobAsync(ImmutableSet.of(handle1, handle2))
+                            .get()
+                            .getResult()
+                            .isSuccess());
+
+            byte[] readBytes1 = new byte[10]; // 10 Bytes
+            byte[] readBytes2 = new byte[20]; // 20 Bytes
+
+            try (OpenBlobForReadResponse readResponse =
+                    mGlobalSearchSession
+                            .openBlobForReadAsync(ImmutableSet.of(handle1, handle2))
+                            .get()) {
+                AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> readResult =
+                        readResponse.getResult();
+                assertTrue(readResult.isSuccess());
+
+                ParcelFileDescriptor readPfd1 = readResult.getSuccesses().get(handle1);
+                try (InputStream inputStream =
+                        new ParcelFileDescriptor.AutoCloseInputStream(readPfd1)) {
+                    inputStream.read(readBytes1);
+                }
+                assertThat(readBytes1).isEqualTo(data1);
+
+                ParcelFileDescriptor readPfd2 = readResult.getSuccesses().get(handle2);
+                try (InputStream inputStream =
+                        new ParcelFileDescriptor.AutoCloseInputStream(readPfd2)) {
+                    inputStream.read(readBytes2);
+                }
+                assertThat(readBytes2).isEqualTo(data2);
+            }
+        } finally {
+            mDb1.removeBlobAsync(ImmutableSet.of(handle1, handle2)).get();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testWriteAndReadBlob_withoutCommit() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle =
+                AppSearchBlobHandle.createWithSha256(
+                        digest, mContext.getPackageName(), DB_NAME_1, "ns");
+
+        try {
+            try (OpenBlobForWriteResponse writeResponse =
+                    mDb1.openBlobForWriteAsync(ImmutableSet.of(handle)).get()) {
+                AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> writeResult =
+                        writeResponse.getResult();
+                assertTrue(writeResult.isSuccess());
+
+                ParcelFileDescriptor writePfd = writeResult.getSuccesses().get(handle);
+                try (OutputStream outputStream =
+                        new ParcelFileDescriptor.AutoCloseOutputStream(writePfd)) {
+                    outputStream.write(data);
+                    outputStream.flush();
+                }
+            }
+
+            // Read blob without commit the blob first.
+            try (OpenBlobForReadResponse readResponse =
+                    mGlobalSearchSession.openBlobForReadAsync(ImmutableSet.of(handle)).get()) {
+                AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> readResult =
+                        readResponse.getResult();
+                assertFalse(readResult.isSuccess());
+
+                assertThat(readResult.getFailures().keySet()).containsExactly(handle);
+                assertThat(readResult.getFailures().get(handle).getResultCode())
+                        .isEqualTo(AppSearchResult.RESULT_NOT_FOUND);
+                assertThat(readResult.getFailures().get(handle).getErrorMessage())
+                        .contains("Cannot find the blob for handle");
+            }
+        } finally {
+            mDb1.removeBlobAsync(ImmutableSet.of(handle)).get();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testReadBlob_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
+        byte[] data = generateRandomBytes(10); // 10 Bytes
+        byte[] digest = calculateDigest(data);
+        AppSearchBlobHandle handle =
+                AppSearchBlobHandle.createWithSha256(
+                        digest, mContext.getPackageName(), DB_NAME_1, "ns");
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mGlobalSearchSession.openBlobForReadAsync(ImmutableSet.of(handle)));
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.BLOB_STORAGE
+                                + " is not available on this AppSearch implementation.");
     }
 }

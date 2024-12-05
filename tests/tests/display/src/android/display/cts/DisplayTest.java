@@ -25,6 +25,7 @@ import static android.view.Display.FRAME_RATE_CATEGORY_NORMAL;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_HAS_ARR_SUPPORT;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -66,12 +67,14 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.WakeUpAndUnlockRule;
 import android.text.TextUtils;
+import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -1084,6 +1087,9 @@ public class DisplayTest extends TestBase {
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888),
                      dest.isCombinationSupported(
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
+        if (android.hardware.flags.Flags.lutsApi()) {
+            assertEquals(overlayProperties.getLutProperties(), dest.getLutProperties());
+        }
         parcel.recycle();
     }
 
@@ -1232,6 +1238,60 @@ public class DisplayTest extends TestBase {
     @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE)
     public void testSuggestedFrameRate_throwsIllegalArgumentException() {
         mDefaultDisplay.getSuggestedFrameRate(2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES)
+    public void testGetSupportedRefreshRates() {
+        final float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+        final float epsilon = 0.001F;
+        for (float refreshRateLegacy : mDefaultDisplay.getSupportedRefreshRatesLegacy()) {
+            boolean isMatchFound = false;
+            for (float refreshRate : refreshRates) {
+                isMatchFound = Math.abs(refreshRateLegacy - refreshRate) <= epsilon;
+                if (isMatchFound) {
+                    break;
+                }
+            }
+            assertTrue("Failed to find the refresh rate "
+                    + refreshRateLegacy + " in " + Arrays.toString(refreshRates), isMatchFound);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES)
+    public void testGetSupportedRefreshRatesIsDivisorRate() {
+        final float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+        ArraySet<Float> rates = new ArraySet<>();
+        Display.Mode defaultMode = mDefaultDisplay.getDefaultMode();
+        for (Display.Mode mode : mDefaultDisplay.getSupportedModes()) {
+            if (mode.getPhysicalWidth() == defaultMode.getPhysicalWidth()
+                    && mode.getPhysicalHeight() == defaultMode.getPhysicalHeight()) {
+                rates.add(mode.getVsyncRate());
+            }
+        }
+        final float epsilon = 0.001F;
+        for (float refreshRate : refreshRates) {
+            boolean isDivisorRateFound = false;
+            for (float vsyncRate : rates) {
+                final double result = vsyncRate / refreshRate;
+                final double resultRounded = Math.round(vsyncRate / refreshRate);
+                isDivisorRateFound = Math.abs(result - resultRounded) <= epsilon;
+                if (isDivisorRateFound) {
+                    break;
+                }
+            }
+            assertTrue("refreshRate " + refreshRate + " can not be achieved with "
+                    + rates, isDivisorRateFound);
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES)
+    public void testGetSupportedRefreshRatesLegacy() {
+        final float[] refreshRates = mDefaultDisplay.getSupportedRefreshRates();
+        final float[] refreshRateLegacy = mDefaultDisplay.getSupportedRefreshRatesLegacy();
+        assertArrayEquals(refreshRates, refreshRateLegacy, 0.0f);
     }
 
     /**

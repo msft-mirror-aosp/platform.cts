@@ -78,7 +78,7 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
 
     MagnitudePhase mMagPhase = new MagnitudePhase();
 
-    InfiniteRecording mInfiniteRecording = new InfiniteRecording(64 * 1024);
+    InfiniteRecording mInfiniteRecording = new InfiniteRecording(10 * 48000);
 
     enum RESULT_CODE {
         RESULT_OK,
@@ -181,6 +181,14 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
         mCosAccumulator = 0.0;
     }
 
+    /**
+     * Get the audio data recorded during the analysis.
+     * @return recorded data
+     */
+    public float[] getRecordedData() {
+        return mInfiniteRecording.readAll();
+    }
+
     class MagnitudePhase {
         public double mMagnitude;
         public double mPhase;
@@ -262,13 +270,13 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
     }
 
     /**
-     * @param frameData contains microphone data with sine signal feedback
-     * @param channelCount
+     * @param audioData contains microphone data with sine signal feedback
+     * @param offset in the audioData to the sample
      */
-    RESULT_CODE processInputFrame(float[] frameData, int offset) {
+    RESULT_CODE processInputFrame(float[] audioData, int offset) {
         RESULT_CODE result = RESULT_CODE.RESULT_OK;
 
-        float sample = frameData[offset];
+        float sample = audioData[offset];
         mInfiniteRecording.write(sample);
 
         if (transformSample(sample, mOutputPhase)) {
@@ -317,6 +325,8 @@ public class BaseSineAnalyzer implements SignalAnalyzer {
         mPhaseErrorCount = 0.0;
 
         updatePhaseIncrement();
+
+        mInfiniteRecording.clear();
     }
 
     @Override

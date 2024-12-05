@@ -23,36 +23,42 @@
             }
         ]
     },
-    "initialState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "RESUMED"
-                    },
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "STOPPED"
-                    }
-                ]
-            }
-        ]
-    },
-    "endState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "RESUMED"
-                    },
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "STOPPED"
-                    }
-                ]
-            }
-        ]
-    }
+    "initialStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "RESUMED"
+                        },
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "STOPPED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ],
+    "endStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "RESUMED"
+                        },
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "STOPPED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ]
 }
