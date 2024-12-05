@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests a small part of the {@link BluetoothGatt} methods without a real Bluetooth device.
- * Other tests that run with real bluetooth connections are located in CtsVerifier.
+ * Tests a small part of the {@link BluetoothGatt} methods without a real Bluetooth device. Other
+ * tests that run with real bluetooth connections are located in CtsVerifier.
  */
 @RunWith(AndroidJUnit4.class)
 public class BasicBluetoothGattTest {
@@ -63,27 +63,29 @@ public class BasicBluetoothGattTest {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         Assume.assumeTrue(TestUtils.isBleSupported(context));
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-            .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
 
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
             assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, context));
         }
         mBluetoothDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mBluetoothGatt = mBluetoothDevice.connectGatt(
-                context, /*autoConnect=*/ true, new BluetoothGattCallback() {});
+        mBluetoothGatt =
+                mBluetoothDevice.connectGatt(
+                        context, /* autoConnect= */ true, new BluetoothGattCallback() {});
         if (mBluetoothGatt == null) {
             try {
                 Thread.sleep(500); // Bt is not binded yet. Wait and retry
             } catch (InterruptedException e) {
                 Log.e(TAG, "delay connectGatt interrupted");
             }
-            mBluetoothGatt = mBluetoothDevice.connectGatt(
-                    context, /*autoConnect=*/ true, new BluetoothGattCallback() {});
+            mBluetoothGatt =
+                    mBluetoothDevice.connectGatt(
+                            context, /* autoConnect= */ true, new BluetoothGattCallback() {});
         }
         assertNotNull(mBluetoothGatt);
-
     }
 
     @After
@@ -91,8 +93,9 @@ public class BasicBluetoothGattTest {
         if (mBluetoothGatt != null) {
             mBluetoothGatt.disconnect();
         }
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-            .dropShellPermissionIdentity();
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -113,45 +116,53 @@ public class BasicBluetoothGattTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void setPreferredPhy() throws Exception {
-        mBluetoothGatt.setPreferredPhy(BluetoothDevice.PHY_LE_1M, BluetoothDevice.PHY_LE_1M,
+        mBluetoothGatt.setPreferredPhy(
+                BluetoothDevice.PHY_LE_1M,
+                BluetoothDevice.PHY_LE_1M,
                 BluetoothDevice.PHY_OPTION_NO_PREFERRED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectedDevices() {
-        assertThrows(UnsupportedOperationException.class,
-                () -> mBluetoothGatt.getConnectedDevices());
+        assertThrows(
+                UnsupportedOperationException.class, () -> mBluetoothGatt.getConnectedDevices());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertThrows(UnsupportedOperationException.class,
-                () -> mBluetoothGatt.getConnectionState(null));
+        assertThrows(
+                UnsupportedOperationException.class, () -> mBluetoothGatt.getConnectionState(null));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> mBluetoothGatt.getDevicesMatchingConnectionStates(null));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void writeCharacteristic_withValueOverMaxLength() {
-        BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(TEST_UUID,
-                0x0A, 0x11);
-        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        BluetoothGattCharacteristic characteristic =
+                new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
+        BluetoothGattService service =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         service.addCharacteristic(characteristic);
 
         // 512 is the max attribute length
         byte[] value = new byte[513];
         Arrays.fill(value, (byte) 0x01);
 
-        assertThrows(IllegalArgumentException.class, () -> mBluetoothGatt.writeCharacteristic(
-                characteristic, value, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mBluetoothGatt.writeCharacteristic(
+                                characteristic,
+                                value,
+                                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT));
     }
 }
