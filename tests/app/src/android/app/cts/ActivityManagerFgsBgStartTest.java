@@ -38,6 +38,8 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.BroadcastOptions;
@@ -2443,6 +2445,10 @@ public class ActivityManagerFgsBgStartTest {
 
     @Test
     public void testStartMediaPlaybackFromBg() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         NotificationHelper notificationHelper = new NotificationHelper(mContext);
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);

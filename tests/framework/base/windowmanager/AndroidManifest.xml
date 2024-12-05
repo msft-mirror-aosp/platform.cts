@@ -159,7 +159,6 @@
                   android:exported="true"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowImeAfterLockscreenActivity"
-                  android:theme="@style/OptOutEdgeToEdge"
                   android:configChanges="keyboard|keyboardHidden|navigation"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedImeActivity"/>
@@ -287,7 +286,6 @@
                   android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.animations.DialogFrameTestActivity" />
         <activity android:name="android.server.wm.insets.DisplayCutoutTests$TestActivity"
-                  android:theme="@style/OptOutEdgeToEdge"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
                   android:screenOrientation="nosensor"
                   android:turnScreenOn="true"
@@ -337,11 +335,12 @@
         <activity android:name="android.server.wm.animations.LayoutTests$TestActivity"
              android:theme="@style/no_animation"/>
         <activity android:name="android.server.wm.animations.LocationOnScreenTests$TestActivity"
+             android:screenOrientation="locked"
              android:theme="@style/no_starting_window"/>
         <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"/>
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
-             android:screenOrientation="locked"
-                  android:theme="@style/OptOutEdgeToEdge.NoStartingWindow"/>
+                  android:screenOrientation="locked"
+                  android:theme="@style/no_action_bar"/>
         <activity android:name="android.server.wm.input.WindowFocusTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.input.WindowFocusTests$SecondaryActivity"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
@@ -369,7 +368,6 @@
         <activity android:name="android.server.wm.insets.WindowInsetsControllerTests$TestShowOnCreateActivity"/>
 
         <activity android:name="android.server.wm.other.DragDropTest$DragDropActivity"
-             android:theme="@style/OptOutEdgeToEdge"
              android:screenOrientation="locked"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
@@ -382,8 +380,11 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.server.wm.insets.DecorInsetTestsBase$TestActivity"
+                  android:label="DecorInsetTestsBase.TestActivity"
+                  android:exported="true"/>
+
         <activity android:name="android.server.wm.other.DragDropTest$SoftwareCanvasDragDropActivity"
-            android:theme="@style/OptOutEdgeToEdge"
             android:screenOrientation="locked"
             android:turnScreenOn="true"
             android:showWhenLocked="true"
@@ -396,23 +397,13 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.server.wm.insets.DecorInsetTestsBase$TestActivity"
-             android:theme="@style/OptOutEdgeToEdge"
-             android:label="DecorInsetTestsBase.TestActivity"
-             android:exported="true"/>
-
         <!-- The test tests insets dispatching. Here disables action bar because it might intercept
              the insets and dispatch modified ones. -->
-        <activity android:name="android.server.wm.window.WindowPolicyTests$TestActivity"
+        <activity android:name="android.server.wm.window.WindowPolicyTestBase$TestActivity"
                   android:theme="@android:style/Theme.Material.NoActionBar"/>
 
-        <!-- INSETS_DECOUPLED_CONFIGURATION_ENFORCED can only be opted out before creating the
-             activity. -->
-        <activity android:name="android.server.wm.window.WindowPolicyTests$OptOutEdgeToEdgeActivity"
-                  android:theme="@style/OptOutEdgeToEdge"/>
-
         <activity android:name="android.server.wm.window.WindowCtsActivity"
-             android:theme="@style/OptOutEdgeToEdge.NoActionBar"
+             android:theme="@android:style/Theme.Material.NoActionBar"
              android:screenOrientation="locked"
              android:turnScreenOn="true"
              android:showWhenLocked="true"
@@ -447,8 +438,8 @@
              android:directBootAware="true"/>
 
         <activity android:name="android.server.wm.WindowInsetsAnimationTestBase$TestActivity"
-            android:screenOrientation="locked"
-            android:theme="@style/OptOutEdgeToEdge.NoActionBar"/>
+                  android:screenOrientation="locked"
+                  android:theme="@android:style/Theme.Material.NoActionBar"/>
         <activity android:name="android.server.wm.insets.WindowInsetsAnimationControllerTests$ControllerTestActivity"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
@@ -587,6 +578,9 @@
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name="android.server.wm.taskfragment.TaskFragmentOrganizerTest$DialogActivity"
+                  android:exported="true"
+                  android:theme="@android:style/Theme.Dialog" />
         <activity android:name="android.server.wm.other.HostActivity"
                   android:exported="true">
                <intent-filter>

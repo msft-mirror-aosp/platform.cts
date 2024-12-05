@@ -106,11 +106,13 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "OVERRIDE_LAYOUT_IN_DISPLAY_CUTOUT_MODE",
             "OVERRIDE_ORIENTATION_ONLY_FOR_CAMERA",
             "OVERRIDE_CAMERA_COMPAT_DISABLE_FORCE_ROTATION",
-            "OVERRIDE_CAMERA_COMPAT_DISABLE_FREEFORM_WINDOWING_TREATMENT",
+            "OVERRIDE_CAMERA_COMPAT_ENABLE_FREEFORM_WINDOWING_TREATMENT",
             "OVERRIDE_CAMERA_COMPAT_DISABLE_REFRESH",
             "OVERRIDE_CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE",
             "OVERRIDE_ENABLE_COMPAT_IGNORE_REQUESTED_ORIENTATION",
             "OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "OVERRIDE_QUOTA_ENFORCEMENT_TO_FGS_JOBS",
+            "OVERRIDE_QUOTA_ENFORCEMENT_TO_TOP_STARTED_JOBS",
             "OVERRIDE_RESPECT_REQUESTED_ORIENTATION",
             "OVERRIDE_SANDBOX_VIEW_BOUNDS_APIS",
             "OVERRIDE_ENABLE_INSETS_DECOUPLED_CONFIGURATION",
@@ -123,7 +125,6 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "SEND_CHOOSER_RESULT",
             "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION",
             "RO_DCL_CHANGE_ID",
-            "ENABLE_PREVENT_INTENT_REDIRECT",
             "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION"
     );
 
@@ -144,8 +145,11 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
      */
     public void testOnlyAllowedlistedChangesAreOverridable() throws Exception {
         for (Change c : getOnDeviceCompatConfig()) {
-            // Skip changeIDs with EnabledSince more than platform sdk version
-            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)) {
+            String codename = getDevice().getProperty("ro.build.version.codename");
+            // Skip changeIDs with @EnabledSince more than platform sdk version.
+            // For release builds also skip @Disabled.
+            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)
+                    && !(codename.equals("REL") && c.sinceSdk == -1)) {
                 assertWithMessage("Please contact compat-team@google.com for approval")
                         .that(OVERRIDABLE_CHANGES).contains(c.changeName);
             }

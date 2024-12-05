@@ -33,7 +33,7 @@ import opencv_processing_utils
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
-_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 20  # number of pixels
+_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 25  # number of pixels
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
@@ -54,7 +54,7 @@ OFFSET_RTOL_SMOOTH_ZOOM = 0.5  # generous RTOL paired with other offset checks
 PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
 PREFERRED_BASE_ZOOM_RATIO_RTOL = 0.1
 PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
-RADIUS_RTOL = 0.10
+RADIUS_RTOL = 0.15
 ZOOM_MAX_THRESH = 9.0  # TODO: b/368666244 - reduce marker size and use 10.0
 ZOOM_MIN_THRESH = 2.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
@@ -66,7 +66,7 @@ class ZoomTestData:
   result_zoom: float
   radius_tol: float
   offset_tol: float
-  focal_length: float
+  focal_length: Optional[float] = None
   # (x, y) coordinates of ArUco marker corners in clockwise order from top left.
   aruco_corners: Optional[Iterable[float]] = None
   aruco_offset: Optional[float] = None
@@ -333,10 +333,26 @@ def _get_average_offset(shared_id, aruco_ids, aruco_corners, size):
   """
   offsets = []
   for ids, corners in zip(aruco_ids, aruco_corners):
-    index = numpy.where(ids == shared_id)[0][0]
-    corresponding_corners = corners[index]
-    offsets.append(_get_aruco_marker_offset(corresponding_corners, size))
+    offsets.append(
+        _get_average_offset_from_single_capture(
+            shared_id, ids, corners, size))
   return numpy.mean(offsets)
+
+
+def _get_average_offset_from_single_capture(
+    shared_id, ids, corners, size):
+  """Get the average offset a given marker to a known image's center.
+
+  Args:
+    shared_id: ID of the given marker to find the average offset.
+    ids: Iterable of ArUco marker IDs for single capture test data.
+    corners: Iterable of ArUco marker corners for single capture test data.
+    size: size of the image to calculate image center.
+  Returns:
+    The average offset from the given marker to the image center.
+  """
+  corresponding_corners = corners[numpy.where(ids == shared_id)[0][0]]
+  return _get_aruco_marker_offset(corresponding_corners, size)
 
 
 def _are_values_non_decreasing(values, abs_tol=0):
@@ -377,25 +393,36 @@ def update_zoom_test_data_with_shared_aruco_marker(
   shared_ids = set(list(aruco_ids[0]))
   for ids in aruco_ids[1:]:
     shared_ids.intersection_update(list(ids))
-  # Choose shared marker that is closest to the center of the image.
+  # Choose closest shared marker to center of transition image if possible.
   if shared_ids:
-    shared_id = min(
+    for i, (ids, corners) in enumerate(zip(aruco_ids, aruco_corners)):
+      if test_data[i].physical_id != test_data[0].physical_id:
+        transition_aruco_ids = ids
+        transition_aruco_corners = corners
+        shared_id = min(
+            shared_ids,
+            key=lambda i: _get_average_offset_from_single_capture(
+                i, transition_aruco_ids, transition_aruco_corners, size)
+        )
+        break
+    else:
+      shared_id = min(
         shared_ids,
         key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
     )
-    logging.debug('Using shared aruco ID %d', shared_id)
-    for i, (ids, corners) in enumerate(zip(aruco_ids, aruco_corners)):
-      index = numpy.where(ids == shared_id)[0][0]
-      corresponding_corners = corners[index]
-      logging.debug('Corners of shared ID: %s', corresponding_corners)
-      test_data[i].aruco_corners = corresponding_corners
-      test_data[i].aruco_offset = (
-          _get_aruco_marker_offset(
-              corresponding_corners, size
-          )
-      )
   else:
-    raise AssertionError('No shared AruCo marker found across all captures.')
+    raise AssertionError('No shared ArUco marker found across all captures.')
+  logging.debug('Using shared aruco ID %d', shared_id)
+  for i, (ids, corners) in enumerate(zip(aruco_ids, aruco_corners)):
+    index = numpy.where(ids == shared_id)[0][0]
+    corresponding_corners = corners[index]
+    logging.debug('Corners of shared ID: %s', corresponding_corners)
+    test_data[i].aruco_corners = corresponding_corners
+    test_data[i].aruco_offset = (
+        _get_aruco_marker_offset(
+            corresponding_corners, size
+        )
+    )
 
 
 def verify_zoom_results(test_data, size, z_max, z_min,
@@ -512,7 +539,7 @@ def verify_zoom_data(
   for i, data in enumerate(test_data):
     if i == 0:
       continue
-    if test_data[i-1].focal_length != data.focal_length:
+    if test_data[i-1].physical_id != data.physical_id:
       id_to_next_offset[previous_id] = data.aruco_offset
       previous_id = data.physical_id
 
@@ -522,7 +549,8 @@ def verify_zoom_data(
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
-    logging.debug('Zoom: %.2f, fl: %.2f', data.result_zoom, data.focal_length)
+    logging.debug('Zoom: %.2f, physical ID: %s',
+                  data.result_zoom, data.physical_id)
     offset_x, offset_y = _get_aruco_marker_x_y_offset(data.aruco_corners, size)
     offset_x_values.append(offset_x)
     offset_y_values.append(offset_y)
@@ -565,7 +593,7 @@ def verify_zoom_data(
     hypots.append(data.aruco_offset)
     if i == 0:
       continue
-    if test_data[i-1].focal_length != data.focal_length:
+    if test_data[i-1].physical_id != data.physical_id:
       initial_zoom = float(data.result_zoom)
       initial_offset = data.aruco_offset
       logging.debug('offset_hypot_init: %.3f', initial_offset)

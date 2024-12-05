@@ -87,15 +87,20 @@ public class Settings_ConfigTest {
     private static final long WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS = 2000; // 2 sec
     private final Object mLock = new Object();
 
-
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
             "android.permission.WRITE_DEVICE_CONFIG";
+
+    private static final String WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG";
 
     private static final String READ_DEVICE_CONFIG_PERMISSION =
             "android.permission.READ_DEVICE_CONFIG";
 
     private static final String MONITOR_DEVICE_CONFIG_ACCESS =
             "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
+
+    private static final String READ_WRITE_SYNC_DISABLED_MODE_CONFIG =
+            "android.permission.READ_WRITE_SYNC_DISABLED_MODE_CONFIG";
 
     private static ContentResolver sContentResolver;
     private static Context sContext;
@@ -108,8 +113,9 @@ public class Settings_ConfigTest {
     @Before
     public void setUpContext() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                WRITE_DEVICE_CONFIG_PERMISSION, READ_DEVICE_CONFIG_PERMISSION,
-                MONITOR_DEVICE_CONFIG_ACCESS);
+                WRITE_DEVICE_CONFIG_PERMISSION, WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
+                READ_DEVICE_CONFIG_PERMISSION, MONITOR_DEVICE_CONFIG_ACCESS,
+                READ_WRITE_SYNC_DISABLED_MODE_CONFIG);
         sContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         sContentResolver = sContext.getContentResolver();
         mInitialSyncDisabledMode = Settings.Config.getSyncDisabledMode();

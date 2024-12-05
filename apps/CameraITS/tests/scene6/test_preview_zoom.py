@@ -174,6 +174,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
                 focal_length=cap_fl,
+                physical_id=phy_id
             )
         )
 
@@ -203,7 +204,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # TODO: b/369852004 - decrease TOL for test_preview_zoom
       if not zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem):
-        raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
+        first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+        failure_msg = f'{_NAME} failed! Check test_log.DEBUG for errors'
+        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+          raise AssertionError(failure_msg)
+        else:
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{failure_msg}')
 
 if __name__ == '__main__':
   test_runner.main()

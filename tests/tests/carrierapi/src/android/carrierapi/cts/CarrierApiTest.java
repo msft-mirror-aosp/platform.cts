@@ -1210,7 +1210,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             verifyValidIccOpenLogicalChannelResponse(channel2rsp);
             channel2 = channel2rsp.getChannel();
 
-            assertThat(channel2).isNotEqualTo(channel1);
+            assertWithMessage("Two concurrently opened channels should be different")
+                    .that(channel2).isNotEqualTo(channel1);
 
             // p1, p2, p3 - see testApduFileRead
             String selResponse = mTelephonyManager.iccTransmitApduLogicalChannel(
@@ -1235,8 +1236,12 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             verifyValidPl(contents1.substring(0, contents1.length() - 4));
             verifyValidIccId(contents2.substring(0, contents2.length() - 4));
         } finally {
-            if (channel1 != INVALID_CHANNEL) mTelephonyManager.iccCloseLogicalChannel(channel1);
-            if (channel2 != INVALID_CHANNEL) mTelephonyManager.iccCloseLogicalChannel(channel2);
+            if (channel1 != INVALID_CHANNEL) {
+                mTelephonyManager.iccCloseLogicalChannel(channel1);
+            }
+            if (channel2 != INVALID_CHANNEL && channel1 != channel2) {
+                mTelephonyManager.iccCloseLogicalChannel(channel2);
+            }
         }
     }
 

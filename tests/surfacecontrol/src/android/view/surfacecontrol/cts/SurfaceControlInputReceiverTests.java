@@ -24,7 +24,7 @@ import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
-import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTopWithZ;
+import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
@@ -161,7 +161,7 @@ public class SurfaceControlInputReceiverTests {
             // by the expected composition order.
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTopWithZ(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                    waitForNthWindowFromTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
                             /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
@@ -293,7 +293,7 @@ public class SurfaceControlInputReceiverTests {
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTopWithZ(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                    waitForNthWindowFromTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
                             /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),

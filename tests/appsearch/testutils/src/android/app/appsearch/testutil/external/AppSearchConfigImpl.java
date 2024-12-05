@@ -129,13 +129,23 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     }
 
     @Override
-    public int getMaxDocumentCount() {
-        return mLimitConfig.getMaxDocumentCount();
+    public int getPerPackageDocumentCountLimit() {
+        return mLimitConfig.getPerPackageDocumentCountLimit();
+    }
+
+    @Override
+    public int getDocumentCountLimitStartThreshold() {
+        return mLimitConfig.getDocumentCountLimitStartThreshold();
     }
 
     @Override
     public int getMaxSuggestionCount() {
         return mLimitConfig.getMaxSuggestionCount();
+    }
+
+    @Override
+    public int getMaxOpenBlobCount() {
+        return mLimitConfig.getMaxOpenBlobCount();
     }
 
     @Override
@@ -146,5 +156,10 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     @Override
     public boolean shouldRetrieveParentInfo() {
         return mShouldRetrieveParentInfo;
+    }
+
+    @Override
+    public long getOrphanBlobTimeToLiveMs() {
+        return mIcingOptionsConfig.getOrphanBlobTimeToLiveMs();
     }
 }

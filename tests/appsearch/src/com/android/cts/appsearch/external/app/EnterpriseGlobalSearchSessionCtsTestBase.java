@@ -25,9 +25,8 @@ import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.EnterpriseGlobalSearchSessionShim;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 
@@ -36,10 +35,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public abstract class EnterpriseGlobalSearchSessionCtsTestBase {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     protected EnterpriseGlobalSearchSessionShim mEnterpriseGlobalSearchSession;
 

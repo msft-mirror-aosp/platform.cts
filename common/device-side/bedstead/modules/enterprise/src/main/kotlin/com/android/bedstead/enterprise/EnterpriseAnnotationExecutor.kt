@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.enterprise
 
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
@@ -25,6 +26,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
@@ -49,64 +51,53 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
     private val deviceAdminComponent: DeviceAdminComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val usersComponent: UsersComponent by locator
+    private val userRestrictions: UserRestrictionsComponent by locator
 
-    override fun applyAnnotation(annotation: Annotation) {
-        when (annotation) {
-            is EnsureHasDelegate -> enterpriseComponent.ensureHasDelegate(annotation)
+    override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
+        when (this) {
+            is EnsureHasDelegate -> enterpriseComponent.ensureHasDelegate(this)
             is EnsureHasDevicePolicyManagerRoleHolder ->
-                enterpriseComponent.ensureHasDevicePolicyManagerRoleHolder(
-                    annotation.onUser,
-                    annotation.isPrimary
-                )
+                enterpriseComponent.ensureHasDevicePolicyManagerRoleHolder(onUser, isPrimary)
 
             is EnsureHasDeviceOwner ->
                 deviceOwnerComponent.ensureHasDeviceOwner(
-                    annotation.failureMode,
-                    annotation.isPrimary,
-                    annotation.headlessDeviceOwnerType,
-                    annotation.affiliationIds.toHashSet(),
-                    annotation.type,
-                    annotation.key,
-                    TestAppProvider().query(annotation.dpc)
+                    failureMode,
+                    isPrimary,
+                    headlessDeviceOwnerType,
+                    affiliationIds.toHashSet(),
+                    type,
+                    key,
+                    TestAppProvider().query(dpc)
                 )
 
-            is EnsureHasNoDelegate -> enterpriseComponent.ensureHasNoDelegate(annotation.admin)
+            is EnsureHasNoDelegate -> enterpriseComponent.ensureHasNoDelegate(admin)
             is EnsureHasNoDeviceOwner -> deviceOwnerComponent.ensureHasNoDeviceOwner()
-
-            is EnsureHasNoProfileOwner ->
-                profileOwnersComponent.ensureHasNoProfileOwner(annotation.onUser)
-
-            is EnsureHasProfileOwner ->
-                profileOwnersComponent.ensureHasProfileOwner(annotation)
-
-            is EnsureHasDeviceAdmin ->
-                deviceAdminComponent.ensureHasDeviceAdmin(
-                        annotation.key,
-                        annotation.onUser,
-                        annotation.isPrimary,
-                        TestAppProvider().query(annotation.dpc)
-                )
-
-            is EnsureHasNoTestDeviceAdmin ->
-                deviceAdminComponent.ensureHasNoTestDeviceAdmin(annotation.onUser)
-
-            is RequireHasPolicyExemptApps -> annotation.logic()
-            is MostImportantCoexistenceTest -> annotation.logic(
-                deviceOwnerComponent,
-                testAppsComponent
+            is EnsureHasNoProfileOwner -> profileOwnersComponent.ensureHasNoProfileOwner(onUser)
+            is EnsureHasProfileOwner -> profileOwnersComponent.ensureHasProfileOwner(this)
+            is EnsureHasDeviceAdmin -> deviceAdminComponent.ensureHasDeviceAdmin(
+                key,
+                onUser,
+                isPrimary,
+                TestAppProvider().query(dpc)
             )
 
-            is MostRestrictiveCoexistenceTest -> annotation.logic(testAppsComponent)
-            is EnsureHasWorkProfile -> enterpriseComponent.ensureHasWorkProfile(annotation)
-            is RequireRunOnWorkProfile -> enterpriseComponent.requireRunOnWorkProfile(annotation)
+            is EnsureHasNoTestDeviceAdmin -> deviceAdminComponent.ensureHasNoTestDeviceAdmin(onUser)
+            is RequireHasPolicyExemptApps -> logic()
+            is MostImportantCoexistenceTest -> logic(deviceOwnerComponent, testAppsComponent)
+            is MostRestrictiveCoexistenceTest -> logic(testAppsComponent)
+            is EnsureHasWorkProfile -> enterpriseComponent.ensureHasWorkProfile(this)
+            is RequireRunOnWorkProfile -> enterpriseComponent.requireRunOnWorkProfile(this)
             is EnsureHasNoWorkProfile -> usersComponent.ensureHasNoProfile(
                 EnsureHasNoWorkProfile.PROFILE_TYPE,
-                annotation.forUser
+                forUser
             )
 
-            is EnsureTestAppInstalledAsPrimaryDPC -> enterpriseComponent.ensureTestAppInstalledAsPrimaryDPC(
-                annotation
-            )
+            is EnsureTestAppInstalledAsPrimaryDPC ->
+                enterpriseComponent.ensureTestAppInstalledAsPrimaryDPC(this)
+
+            is EnsureHasUserRestriction -> userRestrictions.ensureHasUserRestriction(value, onUser)
+            is EnsureDoesNotHaveUserRestriction ->
+                userRestrictions.ensureDoesNotHaveUserRestriction(value, onUser)
         }
     }
 }

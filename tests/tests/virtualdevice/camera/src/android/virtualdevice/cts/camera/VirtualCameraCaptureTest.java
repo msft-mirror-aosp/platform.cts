@@ -36,12 +36,9 @@ import static android.virtualdevice.cts.camera.util.ImageSubject.assertThat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
-import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -58,7 +55,6 @@ import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -82,6 +78,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Surface;
 import android.virtualdevice.cts.camera.util.ImageSubject;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import com.google.common.collect.Range;
@@ -91,8 +88,10 @@ import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -103,10 +102,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
 public class VirtualCameraCaptureTest {
@@ -120,6 +118,9 @@ public class VirtualCameraCaptureTest {
     private static final int IMAGE_READER_MAX_IMAGES = 2;
 
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
+
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -160,9 +161,6 @@ public class VirtualCameraCaptureTest {
 
     @Before
     public void setUp() {
-        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
-                hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(
@@ -326,7 +324,7 @@ public class VirtualCameraCaptureTest {
     }
 
     /**
-     * Test that when the input of virtual camera comes from an ImageReader, the output ouf virtual
+     * Test that when the input of virtual camera comes from an ImageReader, the output of virtual
      * camera is similar to the output of the image reader.
      */
     @Test
@@ -356,8 +354,8 @@ public class VirtualCameraCaptureTest {
     }
 
     /**
-     * Test that when the input of virtual camera comes from an ImageReader, the output ouf virtual
-     * camera is similar a golden file generated on a pixel device.
+     * Test that when the input of virtual camera comes from an ImageReader, the output of virtual
+     * camera is similar to a golden file generated on a pixel device.
      */
     @Test
     public void virtualCamera_renderFromMediaCodec_golden_from_pixel() throws Exception {
@@ -427,10 +425,6 @@ public class VirtualCameraCaptureTest {
         }
     }
 
-    /**
-     * Test that when the input of virtual camera comes from an ImageReader, the output ouf virtual
-     * camera is similar a golden file generated on a pixel device.
-     */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
     public void virtualCamera_captureWithTimestamp_imageWriter() throws Exception {
@@ -461,6 +455,43 @@ public class VirtualCameraCaptureTest {
                 assertThat(imageFromCamera.getTimestamp()).isEqualTo(renderedTimestamp);
                 assertThat(captureTimestamp).isEqualTo(renderedTimestamp);
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
+    public void virtualCamera_captureWithTimestamp_imageWriter_multipleImages() throws Exception {
+        int width = 460;
+        int height = 260;
+        long renderedTimestampNanos = 123456L;
+        int imageCount = 10;
+        long expectedTimeNanos = (long) (Math.pow(10, 9) / CAMERA_MAX_FPS * imageCount
+                + renderedTimestampNanos);
+        int toleranceNanos = 50_000_000; // 50 millis
+
+        VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888);
+        String cameraId = getVirtualCameraId(virtualCamera);
+        try (ImageReader imageReader = ImageReader.newInstance(width, height, YUV_420_888,
+                IMAGE_READER_MAX_IMAGES)) {
+            Image imageFromCamera =
+                    captureImages(
+                            cameraId,
+                            imageReader,
+                            imageCount,
+                            surface -> {
+                                ImageWriter imageWriter = ImageWriter.newInstance(surface, 1,
+                                        YUV_420_888);
+                                Image image = imageWriter.dequeueInputImage();
+                                image.setTimestamp(renderedTimestampNanos);
+                                imageWriter.queueInputImage(image);
+                                imageWriter.close();
+                            });
+
+            Long captureTimestamp = mTotalCaptureResultCaptor.getValue().get(
+                    TotalCaptureResult.SENSOR_TIMESTAMP);
+            assertThat(imageFromCamera.getTimestamp()).isWithin(toleranceNanos).of(
+                    expectedTimeNanos);
+            assertThat(captureTimestamp).isWithin(toleranceNanos).of(expectedTimeNanos);
         }
     }
 
@@ -569,9 +600,8 @@ public class VirtualCameraCaptureTest {
             int imageCount, boolean verifyCaptureComplete,
             Consumer<Surface> inputSurfaceConsumer)
             throws CameraAccessException {
-        openCamera(cameraId);
 
-        try (CameraDevice cameraDevice = mCameraDeviceCaptor.getValue()) {
+        try (CameraDevice cameraDevice = openCamera(cameraId)) {
             cameraDevice.createCaptureSession(createSessionConfig(reader));
 
             try (CameraCaptureSession cameraCaptureSession = getCaptureSession()) {
@@ -584,6 +614,7 @@ public class VirtualCameraCaptureTest {
     private Image captureImages(ImageReader reader, int imageCount, CameraDevice cameraDevice,
             CameraCaptureSession cameraCaptureSession, boolean verifyCaptureComplete,
             Consumer<Surface> inputSurfaceConsumer) {
+        AtomicReference<Image> latestImageRef = new AtomicReference<>(null);
         try {
             Surface inputSurface = getInputSurface();
             assertThat(inputSurface.isValid()).isTrue();
@@ -596,27 +627,39 @@ public class VirtualCameraCaptureTest {
 
             CountDownLatch imageReaderLatch = new CountDownLatch(imageCount);
             reader.setOnImageAvailableListener(
-                    imageReader -> imageReaderLatch.countDown(),
+                    imageReader -> {
+                        Image latestImage = latestImageRef.get();
+                        if (latestImage != null) {
+                            latestImage.close();
+                        }
+                        latestImageRef.set(imageReader.acquireLatestImage());
+                        imageReaderLatch.countDown();
+                    },
                     mImageReaderHandler);
 
             for (int i = 0; i < imageCount; i++) {
                 cameraCaptureSession.captureSingleRequest(request.build(), mExecutor,
                         mCaptureCallback);
             }
+
             if (!verifyCaptureComplete) {
                 return reader.acquireLatestImage();
             }
-
 
             verifyCaptureComplete(imageCount);
             assertWithMessage("Timeout waiting for image reader result")
                     .that(imageReaderLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
                     .isTrue();
-            Image image = reader.acquireLatestImage();
-                assertThat(image).isNotNull();
+            Image image = latestImageRef.getAndSet(null);
+            assertThat(image).isNotNull();
             return image;
         } catch (CameraAccessException | InterruptedException e) {
             throw new RuntimeException(e);
+        } finally {
+            Image image = latestImageRef.getAndSet(null);
+            if (image != null) {
+                image.close();
+            }
         }
     }
 
@@ -645,21 +688,11 @@ public class VirtualCameraCaptureTest {
     }
 
     private static String getVirtualCameraId(VirtualCamera virtualCamera) {
-        if (Flags.cameraDeviceAwareness()) {
-            switch (virtualCamera.getConfig().getLensFacing()) {
-                case LENS_FACING_FRONT -> {
-                    return FRONT_CAMERA_ID;
-                }
-                case LENS_FACING_BACK -> {
-                    return BACK_CAMERA_ID;
-                }
-                default -> {
-                    return virtualCamera.getId();
-                }
-            }
-        }
-
-        return virtualCamera.getId();
+        return switch (virtualCamera.getConfig().getLensFacing()) {
+            case LENS_FACING_FRONT -> FRONT_CAMERA_ID;
+            case LENS_FACING_BACK -> BACK_CAMERA_ID;
+            default -> virtualCamera.getId();
+        };
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests

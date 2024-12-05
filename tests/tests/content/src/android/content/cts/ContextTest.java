@@ -25,8 +25,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.server.am.Flags.FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1910,7 +1908,6 @@ public class ContextTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK)
     public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp()
             throws Exception {
         setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_DEFAULT);
