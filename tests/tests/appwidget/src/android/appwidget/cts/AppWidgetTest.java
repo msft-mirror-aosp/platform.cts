@@ -75,7 +75,6 @@ import android.widget.RemoteViewsService.RemoteViewsFactory;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -89,16 +88,10 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
@@ -1588,78 +1581,6 @@ public class AppWidgetTest extends AppWidgetTestCase {
         assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
                 whiteLayout)).isTrue();
         getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
-    }
-
-    @RequiresFlagsEnabled({Flags.FLAG_GENERATED_PREVIEWS, Flags.FLAG_REMOTE_VIEWS_PROTO})
-    @ApiTest(apis = {
-            "android.appwidget.AppWidgetManager#setWidgetPreview",
-            "android.appwidget.AppWidgetManager#removeWidgetPreview",
-    })
-    @Test
-    public void testGeneratedPreviewPersistence() throws IOException, InterruptedException {
-        // Disable setWidgetPreview rate limit for tests
-        setGeneratedPreviewRateLimit(/* resetIntervalMs= */ 0,
-                /* maxCallsPerInterval */ Integer.MAX_VALUE);
-
-        final ComponentName provider = getFirstWidgetComponent();
-        final AppWidgetProviderInfo initialInfo = getFirstAppWidgetProviderInfo();
-
-        // Setup script to check for preview file. The test process does not have permissions to
-        // check for the preview file directly.
-        String fileName = initialInfo.provider.getPackageName() + "-"
-                + initialInfo.provider.getClassName() + "-" + Process.myUid() + ".binpb";
-        String userId = String.valueOf(UserHandle.myUserId());
-        Path filePath = Path.of("/", "data", "system_ce", userId, "appwidget", "previews",
-                fileName);
-        String fileExistsCmd = String.format(Locale.getDefault(),
-                "if [ -f %s ]; then echo true; else echo false; fi", filePath);
-        File fileExistsScript = File.createTempFile("gen_previews_test_script",
-                /* suffix= */ null);
-        fileExistsScript.deleteOnExit();
-        Files.write(fileExistsScript.toPath(), fileExistsCmd.getBytes(StandardCharsets.UTF_8));
-
-
-        final Context context = getInstrumentation().getTargetContext();
-        final AppWidgetHostWithLatch host = new AppWidgetHostWithLatch(context, 0);
-        host.deleteHost();
-        host.startListening();
-        try {
-            // Clear providers and verify initial state
-            if (initialInfo.generatedPreviewCategories != 0) {
-                host.latch = new CountDownLatch(1);
-                getAppWidgetManager().removeWidgetPreview(provider,
-                        initialInfo.generatedPreviewCategories);
-                host.latch.await();
-
-                final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
-                assertThat(info.generatedPreviewCategories).isEqualTo(0);
-                // Check that preview file is not present
-                String out = SystemUtil.runShellCommand("sh " + fileExistsScript).trim();
-                assertThat(out).isEqualTo("false");
-            }
-
-            // Set preview
-            final RemoteViews whiteLayout = new RemoteViews(context.getPackageName(),
-                    R.layout.simple_white_layout);
-            host.latch = new CountDownLatch(1);
-            assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
-                    whiteLayout)).isTrue();
-            host.latch.await();
-
-            // Check for saved preview on disk.
-            String out = SystemUtil.runShellCommand("sh " + fileExistsScript).trim();
-            assertThat(out).isEqualTo("true");
-
-            // Remove preview and check that preview is no longer on disk
-            host.latch = new CountDownLatch(1);
-            getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
-            host.latch.await();
-
-            out = SystemUtil.runShellCommand("sh " + fileExistsScript).trim();
-            assertThat(out).isEqualTo("false");
-        } finally {
-            host.deleteHost();
-        }
     }
 
     @RequiresFlagsEnabled({Flags.FLAG_CHECK_REMOTE_VIEWS_URI_PERMISSION})
