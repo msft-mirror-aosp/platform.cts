@@ -20,10 +20,10 @@ import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindow
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 
 import android.server.wm.UiDeviceUtils;
-import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
+import androidx.annotation.Nullable;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitInfo;
 
@@ -48,7 +48,9 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
-        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(getMainDisplayId());
+        final int displayId = getLaunchingDisplayId() != null
+                ? getLaunchingDisplayId() : getMainDisplayId();
+        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(displayId);
 
         mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
 
@@ -79,13 +81,11 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     }
 
     /**
-     * Creates a landscape large screen simulated display to verify AE on multi-display environment.
+     * Used to specify the display ID of the launching activity.
+     * {@code null} to use the system default.
      */
-    public DisplayContent createLandscapeLargeScreenSimulatedDisplay() {
-        return createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true)
-                .setSimulationDisplaySize(1920, 1080)
-                .setDensityDpi(160)
-                .createDisplay();
+    @Nullable
+    public Integer getLaunchingDisplayId() {
+        return null;
     }
 }

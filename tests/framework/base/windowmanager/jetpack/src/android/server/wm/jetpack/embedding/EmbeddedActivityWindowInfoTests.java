@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.server.wm.jetpack.embedding.MultiDisplayTestHelper.createLandscapeLargeScreenSimulatedDisplay;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
@@ -132,7 +133,7 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
     @Test
     public void testGetEmbeddedActivityWindowInfo_embeddedActivity_secondaryDisplay() {
         final WindowManagerState.DisplayContent secondaryDisplay =
-                createLandscapeLargeScreenSimulatedDisplay();
+                createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
         final SplitPairRule splitPairRule = createWildcardSplitPairRule();
         mActivityEmbeddingComponent.setEmbeddingRules(Sets.newHashSet(splitPairRule));
 
@@ -249,7 +250,7 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
     @Test
     public void testEmbeddedActivityWindowInfoCallbackOnSecondaryDisplay() {
         final WindowManagerState.DisplayContent secondaryDisplay =
-                createLandscapeLargeScreenSimulatedDisplay();
+                createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
         final TestWindowInfoChangeListener listener = new TestWindowInfoChangeListener();
         mActivityEmbeddingComponent.setEmbeddedActivityWindowInfoCallback(Runnable::run, listener);
         final SplitPairRule splitPairRule = createWildcardSplitPairRule();
