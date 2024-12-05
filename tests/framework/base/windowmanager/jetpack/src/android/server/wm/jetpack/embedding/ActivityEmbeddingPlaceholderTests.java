@@ -42,6 +42,7 @@ import android.util.Size;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
@@ -68,8 +69,8 @@ import java.util.function.Predicate;
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase {
 
-    private static final String PRIMARY_ACTIVITY_ID = "primaryActivity";
-    private static final String PLACEHOLDER_ACTIVITY_ID = "placeholderActivity";
+    static final String PRIMARY_ACTIVITY_ID = "primaryActivity";
+    static final String PLACEHOLDER_ACTIVITY_ID = "placeholderActivity";
 
     /**
      * Tests that an activity with a matching {@link SplitPlaceholderRule} is successfully able to
@@ -346,7 +347,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
     /**
      * Convenience builder for a SplitPlaceholderRule with default values.
      */
-    private class SplitPlaceholderRuleBuilderWithDefaults {
+    class SplitPlaceholderRuleBuilderWithDefaults {
         private final String mPrimaryActivityId;
         private final String mPlaceholderActivityId;
 
@@ -416,7 +417,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      * the side of the activity.
      */
     @NonNull
-    private Pair<Activity, Activity> launchActivityWithPlaceholderAndVerifySplit(
+    protected Pair<Activity, Activity> launchActivityWithPlaceholderAndVerifySplit(
             @NonNull String primaryActivityId, @NonNull String placeholderActivityId,
             @NonNull SplitPlaceholderRule splitPlaceholderRule) {
         // Launch the primary activity
@@ -435,8 +436,13 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
     @NonNull
     private Rect getTaskBounds() {
+        return getTaskBounds(getLaunchingDisplayId());
+    }
+
+    @NonNull
+    protected Rect getTaskBounds(@Nullable Integer displayId) {
         final Activity activity = startFullScreenActivityNewTask(TestActivity.class,
-                null /* activityId */, getLaunchingDisplayId());
+                null /* activityId */, displayId);
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         activity.finish();
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());

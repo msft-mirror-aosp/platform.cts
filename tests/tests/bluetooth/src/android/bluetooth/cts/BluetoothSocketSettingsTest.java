@@ -102,18 +102,17 @@ public class BluetoothSocketSettingsTest {
         serverSocket.close();
     }
 
-    private void createServerSocketUsingSettings(BluetoothSocketSettings settings,
-            List<String> requiredPermissions)
-            throws IOException {
+    private void createServerSocketUsingSettings(
+            BluetoothSocketSettings settings, List<String> requiredPermissions) throws IOException {
         Permissions.enforceEachPermissions(
                 () -> {
-                try {
-                    sAdapter.listenUsingSocketSettings(settings);
-                    return true;
-                } catch (IOException e) {
-                    return false;
-                }
-            },
+                    try {
+                        sAdapter.listenUsingSocketSettings(settings);
+                        return true;
+                    } catch (IOException e) {
+                        return false;
+                    }
+                },
                 requiredPermissions);
         final BluetoothServerSocket serverSocket;
         try (var p = Permissions.withPermissions(requiredPermissions.toArray(new String[0]))) {
@@ -133,19 +132,17 @@ public class BluetoothSocketSettingsTest {
         socket.close();
     }
 
-    private void createClientSocketUsingSettings(BluetoothSocketSettings settings,
-            List<String> requiredPermissions)
-            throws IOException {
+    private void createClientSocketUsingSettings(
+            BluetoothSocketSettings settings, List<String> requiredPermissions) throws IOException {
         Permissions.enforceEachPermissions(
-
                 () -> {
-                try {
-                    mFakeDevice.createUsingSocketSettings(settings);
-                    return true;
-                } catch (IOException e) {
-                    return false;
-                }
-            },
+                    try {
+                        mFakeDevice.createUsingSocketSettings(settings);
+                        return true;
+                    } catch (IOException e) {
+                        return false;
+                    }
+                },
                 requiredPermissions);
         final BluetoothSocket socket;
         try (var p = Permissions.withPermissions(requiredPermissions.toArray(new String[0]))) {
@@ -221,32 +218,39 @@ public class BluetoothSocketSettingsTest {
         // No support for sockets of TYPE_L2CAP
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_L2CAP).setL2capPsm(FAKE_PSM)
-                        .build());
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_L2CAP)
+                                .setL2capPsm(FAKE_PSM)
+                                .build());
 
         // No support for sockets of TYPE_SCO
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_SCO).setL2capPsm(FAKE_PSM)
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_SCO)
+                                .setL2capPsm(FAKE_PSM)
                                 .build());
 
         // Building Socket settings of TYPE_RFCOMM with L2CAP psm is not allowed
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_RFCOMM).setL2capPsm(FAKE_PSM)
-                        .build());
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_RFCOMM)
+                                .setL2capPsm(FAKE_PSM)
+                                .build());
 
         // Building Socket settings of TYPE_LE with Rfcomm UUID is not allowed
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
-                                .setRfcommUuid(TEST_UUID).build());
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_LE)
+                                .setRfcommUuid(TEST_UUID)
+                                .build());
 
         // Building Socket settings of TYPE_LE with L2CAP PSM not in the valid range (128 to 255)
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
-                        .setL2capPsm(0).build());
+                () -> builder.setSocketType(BluetoothSocket.TYPE_LE).setL2capPsm(0).build());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
@@ -257,21 +261,23 @@ public class BluetoothSocketSettingsTest {
         // endpoint ID
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
-                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
-                        .setHubId(TEST_HUB_ID)
-                        .build());
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_LE)
+                                .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                                .setHubId(TEST_HUB_ID)
+                                .build());
 
         // Building Socket settings of DATA_PATH_HARDWARE_OFFLOAD with max packet size not in the
         // valid range. The valid max packet size should not be smaller than 0.
         assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.setSocketType(BluetoothSocket.TYPE_LE)
-                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
-                        .setHubId(TEST_HUB_ID)
-                        .setEndpointId(TEST_ENDPOINT_ID)
-                        .setRequestedMaximumPacketSize(-1)
-                        .build());
+                () ->
+                        builder.setSocketType(BluetoothSocket.TYPE_LE)
+                                .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                                .setHubId(TEST_HUB_ID)
+                                .setEndpointId(TEST_ENDPOINT_ID)
+                                .setRequestedMaximumPacketSize(-1)
+                                .build());
     }
 
     /* Server socket creation related tests : BluetoothAdapter#listenUsingSocketSettings*/

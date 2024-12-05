@@ -6571,7 +6571,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         logd("testRequestSatelliteDisplayName:");
         grantSatellitePermission();
         try {
-            Pair<String, Integer> pairResult = requestSatelliteDisplayName();
+            Pair<CharSequence, Integer> pairResult = requestSatelliteDisplayName();
             if (pairResult == null) {
                 fail("requestSelectedNbIotSatelliteSubscriptionId: null");
             }

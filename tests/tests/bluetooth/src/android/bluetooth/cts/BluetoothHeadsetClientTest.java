@@ -16,8 +16,8 @@
 
 package android.bluetooth.cts;
 
-import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -58,7 +58,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothHeadsetClientTest {
     private static final String TAG = BluetoothHeadsetClientTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -75,8 +75,8 @@ public class BluetoothHeadsetClientTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
 
         mIsHeadsetClientSupported = BluetoothProperties.isProfileHfpHfEnabled().orElse(false);
@@ -94,7 +94,9 @@ public class BluetoothHeadsetClientTest {
         mIsProfileReady = false;
         mBluetoothHeadsetClient = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothHeadsetClientServiceListener(),
+        mAdapter.getProfileProxy(
+                mContext,
+                new BluetoothHeadsetClientServiceListener(),
                 BluetoothProfile.HEADSET_CLIENT);
     }
 
@@ -104,8 +106,7 @@ public class BluetoothHeadsetClientTest {
             return;
         }
         if (mAdapter != null && mBluetoothHeadsetClient != null) {
-            mAdapter.closeProfileProxy(BluetoothProfile.HEADSET_CLIENT,
-                    mBluetoothHeadsetClient);
+            mAdapter.closeProfileProxy(BluetoothProfile.HEADSET_CLIENT, mBluetoothHeadsetClient);
             mBluetoothHeadsetClient = null;
             mIsProfileReady = false;
         }
@@ -147,7 +148,7 @@ public class BluetoothHeadsetClientTest {
 
         // Verify returns empty list if bluetooth is not enabled
         List<BluetoothDevice> connectedDevices =
-                mBluetoothHeadsetClient.getDevicesMatchingConnectionStates(new int[]{});
+                mBluetoothHeadsetClient.getDevicesMatchingConnectionStates(new int[] {});
         assertTrue(connectedDevices.isEmpty());
     }
 
@@ -160,13 +161,15 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothHeadsetClient.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothHeadsetClient.getConnectionState(testDevice));
     }
 
@@ -179,13 +182,15 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothHeadsetClient.getConnectionPolicy(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothHeadsetClient.getConnectionPolicy(testDevice));
     }
 
@@ -198,16 +203,19 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothHeadsetClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothHeadsetClient.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothHeadsetClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothHeadsetClient.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothHeadsetClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothHeadsetClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     @Test
@@ -288,8 +296,8 @@ public class BluetoothHeadsetClientTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothHeadsetClientServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothHeadsetClientServiceListener
+            implements BluetoothProfile.ServiceListener {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {

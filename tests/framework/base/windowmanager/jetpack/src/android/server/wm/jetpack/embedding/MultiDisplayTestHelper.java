@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import android.graphics.Point;
 import android.server.wm.ActivityManagerTestBase.VirtualDisplaySession;
 import android.server.wm.WindowManagerState;
 
@@ -25,6 +26,10 @@ import androidx.annotation.NonNull;
  * A helper class to manage secondary display for testing.
  */
 public class MultiDisplayTestHelper {
+
+    public static final Point SIMULATED_DISPLAY_SIZE = new Point(1920, 1080);
+
+    public static final int SIMULATED_DISPLAY_DENSITY_DP = 160;
 
     private final VirtualDisplaySession mSession;
 
@@ -70,8 +75,8 @@ public class MultiDisplayTestHelper {
             @NonNull VirtualDisplaySession virtualDisplaySession) {
         return virtualDisplaySession
                 .setSimulateDisplay(true)
-                .setSimulationDisplaySize(1920, 1080)
-                .setDensityDpi(160)
+                .setSimulationDisplaySize(SIMULATED_DISPLAY_SIZE.x, SIMULATED_DISPLAY_SIZE.y)
+                .setDensityDpi(SIMULATED_DISPLAY_DENSITY_DP)
                 .createDisplay();
     }
 }
