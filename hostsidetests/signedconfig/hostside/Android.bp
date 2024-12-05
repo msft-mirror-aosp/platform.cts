@@ -29,6 +29,9 @@ java_test_host {
         "guava",
         "truth",
     ],
+    device_common_data: [
+        ":CtsSignedConfigTestAppV2_instant",
+    ],
     static_libs: ["hamcrest-library"],
     test_suites: [
         "cts",
