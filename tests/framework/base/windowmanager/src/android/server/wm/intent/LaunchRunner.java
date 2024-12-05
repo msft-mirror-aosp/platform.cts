@@ -47,6 +47,7 @@ import android.window.DisplayAreaOrganizer;
 
 import com.google.common.collect.Lists;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,8 +103,13 @@ public class LaunchRunner {
         Activity firstActivity = launchFromContext(initialContext, firstIntent.getActualIntent());
         // Launch all tasks in the same task display area. CTS tests using multiple tasks assume
         // they will be started in the same task display area.
+        ComponentName firstActivityName = firstActivity.getComponentName();
         int firstActivityDisplayAreaFeatureId = mTestBase.getWmState()
-                .getTaskDisplayAreaFeatureId(firstActivity.getComponentName());
+                .getTaskDisplayAreaFeatureId(firstActivityName);
+        int launchedWindowingMode =
+                mTestBase.getWmState().getTaskByActivity(firstActivityName).getWindowingMode();
+        Persistence.ReadableWindowingMode readableLaunchedWindowingMode =
+                Persistence.ReadableWindowingMode.covert(launchedWindowingMode);
         activityLog.add(firstActivity);
 
         // launch the rest from the initial intents
@@ -116,9 +122,12 @@ public class LaunchRunner {
         }
 
         // assert that the state after setup is the same this time as the recorded state.
-        StateDump setupStateDump = waitDumpAndTrimForVerification(getLast(activityLog),
-                testCase.getInitialState());
-        assertInitialStateEqual(testCase.getInitialState(), setupStateDump);
+        StateDump expectedInitialStateDump =
+                testCase.getInitialStateWithLaunchedWindowingModeOrDefault(
+                        readableLaunchedWindowingMode.getName());
+        StateDump setupStateDump =
+                waitDumpAndTrimForVerification(getLast(activityLog), expectedInitialStateDump);
+        assertInitialStateEqual(expectedInitialStateDump, setupStateDump);
 
         // apply all the intents in the act stage
         for (int i = 0; i < act.size(); i++) {
@@ -131,9 +140,12 @@ public class LaunchRunner {
         }
 
         // assert that the endStates are the same.
-        StateDump endStateDump = waitDumpAndTrimForVerification(getLast(activityLog),
-                testCase.getEndState());
-        assertEndStatesEqual(testCase.getEndState(), endStateDump);
+        StateDump expectedEndStateDump =
+                testCase.getEndStateWithLaunchedWindowingModeOrDefault(
+                        readableLaunchedWindowingMode.getName());
+        StateDump endStateDump =
+                waitDumpAndTrimForVerification(getLast(activityLog), expectedEndStateDump);
+        assertEndStatesEqual(expectedEndStateDump, endStateDump);
     }
 
     /**
@@ -167,7 +179,10 @@ public class LaunchRunner {
 
         Persistence.Setup setup = new Persistence.Setup(setupIntents, actIntents);
 
-        return new Persistence.TestCase(setup, launchRecord.initialDump, launchRecord.endDump,
+        return new Persistence.TestCase(
+                setup,
+                Collections.singletonList(launchRecord.initialDump),
+                Collections.singletonList(launchRecord.endDump),
                 name);
     }
 
