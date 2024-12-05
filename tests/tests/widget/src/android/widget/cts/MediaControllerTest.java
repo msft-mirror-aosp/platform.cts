@@ -188,7 +188,7 @@ public class MediaControllerTest {
             final AtomicBoolean isShowingRef = new AtomicBoolean();
             mInstrumentation.runOnMainSync(() ->
                     isShowingRef.set(mediaControllerRef.get().isShowing()));
-            return isShowingRef.get() && !mActivity.hasWindowFocus();
+            return isShowingRef.get() && !mActivity.hasWindowFocus() && mediaControllerRef.get().hasWindowFocus();
         });
 
         // Make sure that KEYCODE_BACK can still dismiss the MediaController.
