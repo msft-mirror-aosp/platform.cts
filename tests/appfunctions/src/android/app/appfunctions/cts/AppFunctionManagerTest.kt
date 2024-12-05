@@ -17,6 +17,9 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED
+import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED_CROSS_PROFILE
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
@@ -41,17 +44,28 @@ import androidx.core.os.asOutcomeReceiver
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.dpc
+import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.harrier.policies.AppFunctionsPolicy
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.multiuser.secondaryUser
+import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import kotlin.test.Ignore
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
@@ -131,9 +145,10 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
-        assertThat(response.errorMessage).isEqualTo("Function does not exist")
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
+        assertThat(response.appFunctionException().errorMessage)
+            .isEqualTo("Function does not exist")
         assertServiceDestroyed()
     }
 
@@ -155,13 +170,12 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) { e: ExecuteAppFunctionResponse
-            ->
+        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
+            e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
 
         val response = requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
-        assertThat(response.isSuccess).isTrue()
         assertThat(
                 response.resultDocument.getPropertyLong(
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
@@ -192,9 +206,101 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
-        assertThat(response.resultDocument.getPropertyString("TEST_PROPERTY_CALLING_PACKAGE"))
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+            )
             .isEqualTo(CURRENT_PKG)
         assertServiceDestroyed()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @EnsureHasSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_crossUser_success() = doBlocking {
+        runWithShellPermission(
+            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+            EXECUTE_APP_FUNCTIONS_PERMISSION,
+        ) {
+            val secondaryUser = sDeviceState.secondaryUser()
+            installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
+            retryAssert {
+                assertThat(
+                        getAllStaticMetadataPackages(
+                            context.createContextAsUser(secondaryUser.userHandle(), 0)
+                        )
+                    )
+                    .contains(CURRENT_PKG)
+                assertThat(
+                        getAllRuntimeMetadataPackages(
+                            context.createContextAsUser(secondaryUser.userHandle(), 0)
+                        )
+                    )
+                    .contains(CURRENT_PKG)
+            }
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            mManager =
+                context
+                    .createContextAsUser(secondaryUser.userHandle(), 0)
+                    .getSystemService(AppFunctionManager::class.java)
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
+                .isEqualTo(CURRENT_PKG)
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @EnsureHasSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_crossUser_cannotInteractAcrossUser_fail() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            assertFailsWith<SecurityException>() {
+                val secondaryUser = sDeviceState.secondaryUser()
+                installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
+                retryAssert {
+                    assertThat(
+                            getAllStaticMetadataPackages(
+                                context.createContextAsUser(secondaryUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                    assertThat(
+                            getAllRuntimeMetadataPackages(
+                                context.createContextAsUser(secondaryUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                }
+                mManager =
+                    context
+                        .createContextAsUser(secondaryUser.userHandle(), 0)
+                        .getSystemService(AppFunctionManager::class.java)
+            }
+        }
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -216,9 +322,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
             .isEqualTo(3)
         assertServiceDestroyed()
@@ -237,8 +344,9 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-        assertThat(response.errorMessage)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DENIED)
+        assertThat(response.appFunctionException().errorMessage)
             .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
@@ -255,11 +363,12 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DENIED)
         // The error message from this and executeAppFunction_otherNonExistingOtherPackage must be
         // kept in sync. This verifies that a caller cannot tell whether a package is installed or
         // not by comparing the error messages.
-        assertThat(response.errorMessage)
+        assertThat(response.appFunctionException().errorMessage)
             .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
@@ -276,8 +385,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_APP_UNKNOWN_ERROR)
         assertServiceDestroyed()
     }
 
@@ -293,8 +402,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_APP_UNKNOWN_ERROR)
         // The process that the service was just crashed. Validate the service is not created again.
         TestAppFunctionServiceLifecycleReceiver.reset()
         assertServiceWasNotCreated()
@@ -321,9 +430,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
             .isEqualTo(3)
         assertServiceDestroyed()
@@ -341,8 +451,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
         assertServiceWasNotCreated()
     }
 
@@ -352,14 +462,182 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Postsubmit(reason = "new test")
     @Throws(Exception::class)
-    fun executeAppFunction_runInManagedProfile_fail() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
+    fun executeAppFunction_runInManagedProfileUnrestricted_success() = doBlocking {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
-        assertServiceWasNotCreated()
+        assertThat(response.isSuccess).isTrue()
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
+            .isEqualTo(3)
+        assertServiceDestroyed()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @RequireRunOnWorkProfile
+    @EnsureHasNoDeviceOwner
+    @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
+    @Throws(Exception::class)
+    fun executeAppFunction_runInManagedProfileRestricted_fail() = doBlocking {
+        runWithShellPermission(
+            // Permission required to create context as user.
+            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+        ) {
+            val workProfileUser = sDeviceState.workProfile()
+            val remoteDpm = sDeviceState.dpc().devicePolicyManager()
+            val originalPolicy = remoteDpm.getAppFunctionsPolicy()
+            try {
+                remoteDpm.setAppFunctionsPolicy(APP_FUNCTIONS_DISABLED)
+                assertThat(remoteDpm.getAppFunctionsPolicy()).isEqualTo(APP_FUNCTIONS_DISABLED)
+                installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
+                retryAssert {
+                    assertThat(
+                            getAllStaticMetadataPackages(
+                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                    assertThat(
+                            getAllRuntimeMetadataPackages(
+                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                }
+                mManager =
+                    context
+                        .createContextAsUser(workProfileUser.userHandle(), 0)
+                        .getSystemService(AppFunctionManager::class.java)
+                val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_ENTERPRISE_POLICY_DISALLOWED)
+            } finally {
+                remoteDpm.setAppFunctionsPolicy(originalPolicy)
+            }
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasWorkProfile
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_crossUser_targetWorkProfileUnrestricted_success() = doBlocking {
+        runWithShellPermission(
+            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+            EXECUTE_APP_FUNCTIONS_PERMISSION,
+        ) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val workProfileUser = sDeviceState.workProfile()
+            installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
+            retryAssert {
+                assertThat(
+                        getAllStaticMetadataPackages(
+                            context.createContextAsUser(workProfileUser.userHandle(), 0)
+                        )
+                    )
+                    .contains(CURRENT_PKG)
+                assertThat(
+                        getAllRuntimeMetadataPackages(
+                            context.createContextAsUser(workProfileUser.userHandle(), 0)
+                        )
+                    )
+                    .contains(CURRENT_PKG)
+            }
+            mManager =
+                context
+                    .createContextAsUser(workProfileUser.userHandle(), 0)
+                    .getSystemService(AppFunctionManager::class.java)
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
+                .isEqualTo(3)
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasWorkProfile
+    @EnsureHasNoDeviceOwner
+    @RequireRunOnPrimaryUser
+    @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
+    @Throws(Exception::class)
+    @Ignore("Chatting with the enterprise team for correct setup")
+    fun executeAppFunction_crossUser_targetWorkProfileRestricted_fail() = doBlocking {
+        runWithShellPermission(
+            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+            EXECUTE_APP_FUNCTIONS_PERMISSION,
+        ) {
+            val workProfileUser = sDeviceState.workProfile()
+            val remoteDpm = sDeviceState.dpc().devicePolicyManager()
+            val originalPolicy = remoteDpm.getAppFunctionsPolicy()
+            try {
+                remoteDpm.setAppFunctionsPolicy(APP_FUNCTIONS_DISABLED_CROSS_PROFILE)
+                assertThat(remoteDpm.getAppFunctionsPolicy())
+                    .isEqualTo(APP_FUNCTIONS_DISABLED_CROSS_PROFILE)
+                installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
+                retryAssert {
+                    assertThat(
+                            getAllStaticMetadataPackages(
+                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                    assertThat(
+                            getAllRuntimeMetadataPackages(
+                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                            )
+                        )
+                        .contains(CURRENT_PKG)
+                }
+                mManager =
+                    context
+                        .createContextAsUser(workProfileUser.userHandle(), 0)
+                        .getSystemService(AppFunctionManager::class.java)
+                val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_ENTERPRISE_POLICY_DISALLOWED)
+            } finally {
+                remoteDpm.setAppFunctionsPolicy(originalPolicy)
+            }
+        }
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -375,7 +653,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DISABLED)
         assertServiceWasNotCreated()
     }
 
@@ -392,7 +671,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertThat(response.appFunctionException().errorCode)
+            .isEqualTo(AppFunctionException.ERROR_DISABLED)
         assertServiceWasNotCreated()
     }
 
@@ -417,14 +697,59 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_deviceOwner_fail() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
+    fun executeAppFunction_deviceOwnerUnrestricted_success() = doBlocking {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
-        assertServiceWasNotCreated()
+        assertThat(response.isSuccess).isTrue()
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
+            .isEqualTo(3)
+        assertServiceDestroyed()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @IncludeRunOnPrimaryUser
+    @EnsureHasDeviceOwner
+    @Throws(Exception::class)
+    @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
+    fun executeAppFunction_deviceOwnerRestricted_fail() = doBlocking {
+        val remoteDpm = sDeviceState.dpc().devicePolicyManager()
+        val originalPolicy = remoteDpm.getAppFunctionsPolicy()
+        try {
+            remoteDpm.setAppFunctionsPolicy(APP_FUNCTIONS_DISABLED)
+            assertThat(remoteDpm.getAppFunctionsPolicy()).isEqualTo(APP_FUNCTIONS_DISABLED)
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.isSuccess).isFalse()
+            assertThat(response.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_ENTERPRISE_POLICY_DISALLOWED)
+            assertServiceWasNotCreated()
+        } finally {
+            remoteDpm.setAppFunctionsPolicy(originalPolicy)
+        }
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -449,11 +774,12 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
             )
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
+            .isEqualTo(3)
         assertServiceDestroyed()
     }
 
@@ -480,12 +806,12 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
-                        response.resultDocument.getPropertyLong(
-                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                        )
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                     )
                     .isEqualTo(3)
             }
@@ -505,9 +831,9 @@ class AppFunctionManagerTest {
                 val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.isSuccess).isFalse()
-                assertThat(response.resultCode)
-                    .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
-                assertThat(response.errorMessage)
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                assertThat(response.appFunctionException().errorMessage)
                     .contains(
                         "Document (android\$apps-db/app_functions," +
                             " android.app.appfunctions.cts.helper/random_function) not found"
@@ -538,12 +864,12 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
-                        response.resultDocument.getPropertyLong(
-                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                        )
+                        response
+                            .getOrNull()!!
+                            .resultDocument
+                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                     )
                     .isEqualTo(3)
             }
@@ -572,8 +898,9 @@ class AppFunctionManagerTest {
 
                 val response = executeAppFunctionAndWait(mManager, request)
 
-                assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-                assertThat(response.errorMessage)
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_DENIED)
+                assertThat(response.appFunctionException().errorMessage)
                     .endsWith("does not have permission to execute the appfunction")
                 assertServiceWasNotCreated()
             }
@@ -637,7 +964,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     fun isAppFunctionEnabled_functionDefaultEnabled() = doBlocking {
-        assertThat(isAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+        assertThat(isAppFunctionEnabled("add")).isTrue()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
@@ -646,8 +973,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
-        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "add_disabledByDefault"))
-            .isFalse()
+        assertThat(isAppFunctionEnabled(functionIdentifier = "add_disabledByDefault")).isFalse()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
@@ -655,7 +981,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionNotExist() = doBlocking {
         assertFailsWith<IllegalArgumentException>("function not found") {
-            isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "notExist")
+            isAppFunctionEnabled(functionIdentifier = "notExist")
         }
     }
 
@@ -788,6 +1114,15 @@ class AppFunctionManagerTest {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
+    private suspend fun isAppFunctionEnabled(functionIdentifier: String): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            mManager.isAppFunctionEnabled(
+                functionIdentifier,
+                context.mainExecutor,
+                continuation.asOutcomeReceiver(),
+            )
+        }
+
     private suspend fun isAppFunctionEnabled(
         targetPackage: String,
         functionIdentifier: String,
@@ -812,6 +1147,12 @@ class AppFunctionManagerTest {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
     }
 
+    private fun installExistingPackageAsUser(packageName: String, user: UserReference) {
+        val userId = user.id()
+        assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
+            .isEqualTo("Package $packageName installed for user: $userId\n")
+    }
+
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
@@ -819,11 +1160,17 @@ class AppFunctionManagerTest {
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
-        const val LONG_TIMEOUT_SECOND: Long = 5
+        const val LONG_TIMEOUT_SECOND: Long = 20
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
+        const val INTERACT_ACROSS_USERS_PERMISSION = Manifest.permission.INTERACT_ACROSS_USERS
+        const val INTERACT_ACROSS_USERS_FULL_PERMISSION =
+            Manifest.permission.INTERACT_ACROSS_USERS_FULL
         const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
             Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
     }
 }
 
 private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+
+fun <T> Result<T>.appFunctionException(): AppFunctionException =
+    exceptionOrNull() as AppFunctionException

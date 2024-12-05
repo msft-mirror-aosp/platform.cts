@@ -63,18 +63,18 @@ public class Av1FilmGrainValidationTestBase extends CodecDecoderTestBase {
      * Please refer to the Av1FilmGrainValidationTest.md for details.
      */
     final Map<Integer, FrameMetadata> mRefFrameVarList = Map.ofEntries(
-            Map.entry(3, new FrameMetadata(3, 2385.037126, 2417.27729)),
-            Map.entry(10, new FrameMetadata(10, 2342.782887, 2384.061935)),
-            Map.entry(55, new FrameMetadata(55, 2204.930969, 2240.242686)),
-            Map.entry(70, new FrameMetadata(70, 2286.123113, 2319.397801)),
-            Map.entry(92, new FrameMetadata(92, 2365.240550, 2396.21792)),
-            Map.entry(122, new FrameMetadata(122, 2253.176403, 2287.724775)),
-            Map.entry(131, new FrameMetadata(131, 2144.242954, 2177.774318)),
-            Map.entry(139, new FrameMetadata(139, 2158.459979, 2191.296022)),
-            Map.entry(151, new FrameMetadata(151, 2180.469236, 2214.399074)),
-            Map.entry(169, new FrameMetadata(169, 2356.567787, 2390.686406)),
-            Map.entry(174, new FrameMetadata(174, 2360.921796, 2391.112868)),
-            Map.entry(178, new FrameMetadata(178, 2398.315402, 2432.657012))
+            Map.entry(1, new FrameMetadata(1, 902.981148, 910.197185)),
+            Map.entry(3, new FrameMetadata(3, 865.235099, 869.224709)),
+            Map.entry(5, new FrameMetadata(5, 871.873536, 878.137057)),
+            Map.entry(7, new FrameMetadata(7, 865.805314, 867.937594)),
+            Map.entry(11, new FrameMetadata(11, 861.05864, 865.446286)),
+            Map.entry(12, new FrameMetadata(12, 1739.076607, 1742.521371)),
+            Map.entry(15, new FrameMetadata(15, 863.359298, 867.886144)),
+            Map.entry(19, new FrameMetadata(19, 861.721434, 866.071932)),
+            Map.entry(24, new FrameMetadata(24, 1729.799078, 1732.138971)),
+            Map.entry(25, new FrameMetadata(25, 879.232184, 884.244364)),
+            Map.entry(27, new FrameMetadata(27, 857.220242, 860.515852)),
+            Map.entry(29, new FrameMetadata(29, 883.072407, 886.974015))
     );
     Map<Integer, Double> mTestFrameVarList = new HashMap<>();
 

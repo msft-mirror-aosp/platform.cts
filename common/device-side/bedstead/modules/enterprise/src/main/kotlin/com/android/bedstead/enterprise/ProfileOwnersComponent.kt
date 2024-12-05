@@ -25,7 +25,6 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
-import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions

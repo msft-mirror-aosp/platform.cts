@@ -23,8 +23,8 @@ import static android.Manifest.permission.MODIFY_PHONE_STATE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -213,13 +213,9 @@ public class BluetoothHeadsetTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        try {
-            mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, null, null);
-            fail(
-                    "sendVendorSpecificResultCode did not throw an IllegalArgumentException when"
-                        + " the command was null");
-        } catch (IllegalArgumentException ignored) {
-        }
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, null, null));
 
         assertFalse(mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, "", ""));
         assertFalse(mBluetoothHeadset.sendVendorSpecificResultCode(null, "", ""));
@@ -316,11 +312,7 @@ public class BluetoothHeadsetTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHeadset);
 
-        try {
-            mBluetoothHeadset.getAudioState(null);
-            fail("Calling getAudioState on a null device should throw a NullPointerException");
-        } catch (NullPointerException ignored) {
-        }
+        assertThrows(NullPointerException.class, () -> mBluetoothHeadset.getAudioState(null));
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertEquals(

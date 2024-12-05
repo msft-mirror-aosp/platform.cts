@@ -231,4 +231,8 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
         // we're assuming this for all handheld devices
         return true;
     }
+    @Override
+    String getRouteDescription() {
+        return "mic";
+    }
 }

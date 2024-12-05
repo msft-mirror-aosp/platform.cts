@@ -44,6 +44,10 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
+import com.android.extensions.appfunctions.AppFunctionException as SidecarAppFunctionException
+import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager
+import com.android.extensions.appfunctions.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.android.extensions.appfunctions.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -59,9 +63,6 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
@@ -93,7 +94,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -114,13 +115,14 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = sidecarExecuteFunction(request)
+            val response = sidecarExecuteFunction(context, request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
             assertServiceDestroyed()
@@ -128,7 +130,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -149,17 +151,22 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = sidecarExecuteFunction(request)
+            val response = sidecarExecuteFunction(context, request)
 
             assertThat(response.isSuccess).isTrue()
-            assertThat(response.resultDocument.getPropertyString("TEST_PROPERTY_CALLING_PACKAGE"))
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
                 .isEqualTo(CURRENT_PKG)
             assertServiceDestroyed()
         }
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -198,7 +205,7 @@ class SidecarManagerTest {
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
     )
     @Test
     @EnsureHasNoDeviceOwner
@@ -219,13 +226,14 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = sidecarExecuteFunction(request)
+            val response = sidecarExecuteFunction(context, request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
         }
@@ -255,16 +263,17 @@ class SidecarManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
                 )
                 .isEqualTo(3)
         }
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#isAppFunctionEnabled"]
     )
     @Test
     @IncludeRunOnSecondaryUser
@@ -272,11 +281,11 @@ class SidecarManagerTest {
     fun isAppFunctionEnabled_sidecar() = doBlocking {
         CtsTestUtil.assumeSidecarAvailable()
 
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+        assertThat(sidecarIsAppFunctionEnabled(context, CURRENT_PKG, "add")).isTrue()
     }
 
     @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"]
+        apis = ["com.android.extensions.appfunctions.AppFunctionManager#setAppFUnctionEnabled"]
     )
     @Test
     @IncludeRunOnSecondaryUser
@@ -285,72 +294,14 @@ class SidecarManagerTest {
         CtsTestUtil.assumeSidecarAvailable()
 
         val functionUnderTest = "add"
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        assertThat(sidecarIsAppFunctionEnabled(context, functionUnderTest)).isTrue()
         sidecarSetAppFunctionEnabled(
+            context,
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
         )
 
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
-    }
-
-    private suspend fun sidecarExecuteFunction(
-        request: SidecarExecuteAppFunctionRequest,
-        cancellationSignal: CancellationSignal = CancellationSignal(),
-    ): SidecarExecuteAppFunctionResponse {
-        return suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-            SidecarAppFunctionManager(context)
-                .executeAppFunction(
-                    request,
-                    Runnable::run,
-                    cancellationSignal,
-                    { response: SidecarExecuteAppFunctionResponse -> continuation.resume(response) },
-                )
-        }
-    }
-
-    private fun assertCancelListenerTriggered() {
-        assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
-    }
-
-    private suspend fun sidecarIsAppFunctionEnabled(
-        targetPackage: String,
-        functionIdentifier: String,
-    ): Boolean = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context)
-            .isAppFunctionEnabled(
-                functionIdentifier,
-                targetPackage,
-                Runnable::run,
-                continuation.asOutcomeReceiver(),
-            )
-    }
-
-    private suspend fun sidecarSetAppFunctionEnabled(
-        functionIdentifier: String,
-        @EnabledState state: Int,
-    ): Unit = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context)
-            .setAppFunctionEnabled(
-                functionIdentifier,
-                state,
-                Runnable::run,
-                object : OutcomeReceiver<Void, Exception> {
-                    override fun onResult(result: Void?) {
-                        continuation.resume(Unit)
-                    }
-
-                    override fun onError(error: Exception) {
-                        continuation.resumeWithException(error)
-                    }
-                },
-            )
-    }
-
-    /** Verifies that the service is unbound by asserting the service was destroyed. */
-    @Throws(InterruptedException::class)
-    private fun assertServiceDestroyed() {
-        assertThat(waitForServiceOnDestroy(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+        assertThat(sidecarIsAppFunctionEnabled(context, CURRENT_PKG, functionUnderTest)).isFalse()
     }
 
     private companion object {
@@ -362,6 +313,94 @@ class SidecarManagerTest {
         const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
             Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
         const val LONG_TIMEOUT_SECOND: Long = 5
+
+        suspend fun sidecarExecuteFunction(
+            context: Context,
+            request: SidecarExecuteAppFunctionRequest,
+            cancellationSignal: CancellationSignal = CancellationSignal(),
+        ): Result<SidecarExecuteAppFunctionResponse> {
+            return suspendCancellableCoroutine { continuation
+                ->
+                SidecarAppFunctionManager(context)
+                    .executeAppFunction(
+                        request,
+                        Runnable::run,
+                        cancellationSignal,
+                        object :
+                            OutcomeReceiver<
+                                    SidecarExecuteAppFunctionResponse,
+                                    SidecarAppFunctionException,
+                                    > {
+                            override fun onResult(result: SidecarExecuteAppFunctionResponse) {
+                                continuation.resume(Result.success(result))
+                            }
+
+                            override fun onError(e: SidecarAppFunctionException) {
+                                continuation.resume(Result.failure(e))
+                            }
+                        },
+                    )
+            }
+        }
+
+        fun assertCancelListenerTriggered() {
+            assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+        }
+
+        suspend fun sidecarIsAppFunctionEnabled(
+            context: Context,
+            functionIdentifier: String
+        ): Boolean =
+            suspendCancellableCoroutine { continuation ->
+                SidecarAppFunctionManager(context)
+                    .isAppFunctionEnabled(
+                        functionIdentifier,
+                        Runnable::run,
+                        continuation.asOutcomeReceiver(),
+                    )
+            }
+
+        suspend fun sidecarIsAppFunctionEnabled(
+            context: Context,
+            targetPackage: String,
+            functionIdentifier: String,
+        ): Boolean = suspendCancellableCoroutine { continuation ->
+            SidecarAppFunctionManager(context)
+                .isAppFunctionEnabled(
+                    functionIdentifier,
+                    targetPackage,
+                    Runnable::run,
+                    continuation.asOutcomeReceiver(),
+                )
+        }
+
+        suspend fun sidecarSetAppFunctionEnabled(
+            context: Context,
+            functionIdentifier: String,
+            @EnabledState state: Int,
+        ): Unit = suspendCancellableCoroutine { continuation ->
+            SidecarAppFunctionManager(context)
+                .setAppFunctionEnabled(
+                    functionIdentifier,
+                    state,
+                    Runnable::run,
+                    object : OutcomeReceiver<Void, Exception> {
+                        override fun onResult(result: Void?) {
+                            continuation.resume(Unit)
+                        }
+
+                        override fun onError(error: Exception) {
+                            continuation.resumeWithException(error)
+                        }
+                    },
+                )
+        }
+
+        /** Verifies that the service is unbound by asserting the service was destroyed. */
+        @Throws(InterruptedException::class)
+        fun assertServiceDestroyed() {
+            assertThat(waitForServiceOnDestroy(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+        }
     }
 }
 

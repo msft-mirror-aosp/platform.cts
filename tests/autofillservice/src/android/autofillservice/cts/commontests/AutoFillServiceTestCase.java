@@ -49,6 +49,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.autofill.InlinePresentation;
@@ -68,6 +70,7 @@ import com.android.compatibility.common.util.RetryRule;
 import com.android.compatibility.common.util.SafeCleanerRule;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.TestNameUtils;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSessionRule;
 
@@ -286,6 +289,10 @@ public final class AutoFillServiceTestCase {
                     cleanAllActivities();
                 });
 
+        @Rule
+        public final CheckFlagsRule mCheckFlagsRule =
+                DeviceFlagsValueProvider.createCheckFlagsRule();
+
         private final AutofillLoggingTestRule mLoggingRule = new AutofillLoggingTestRule(TAG);
 
         protected final SafeCleanerRule mSafeCleanerRule = new SafeCleanerRule()
@@ -327,6 +334,8 @@ public final class AutoFillServiceTestCase {
                 //
                 // mRetryRule should be closest to the main test as possible
                 .around(mRetryRule)
+                // mCheckFlagsRule checks for required flags for a test
+                .around(mCheckFlagsRule)
                 //
                 // Augmented Autofill should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
@@ -380,6 +389,11 @@ public final class AutoFillServiceTestCase {
                             "include_all_autofill_type_not_none_views_in_assist_structure",
                             Boolean.toString(false)))
 
+                //
+                // Relayout fix should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "enable_relayout", Boolean.toString(true)))
+
 
                 //
                 // Max input size to provide autofill suggestion should be 3
@@ -416,14 +430,21 @@ public final class AutoFillServiceTestCase {
                 .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
-            mPackageName = mContext.getPackageName();
-            mUiBot = sDefaultUiBot;
+            this(sDefaultUiBot);
         }
 
         private BaseTestCase(@NonNull UiBot uiBot) {
             mPackageName = mContext.getPackageName();
             mUiBot = uiBot;
             mUiBot.reset();
+            // Context#getDisplayId() always returns the default display ID, even if it is called
+            // from an app running as a visible background user (b/356478691).
+            // To work around it, let's set the correct display ID manually.
+            final UserHelper userHelper = new UserHelper(mContext);
+            final int myDisplayId = userHelper.getMainDisplayId();
+            if (mContext.getDisplayId() != myDisplayId) {
+                mContext.updateDisplay(myDisplayId);
+            }
         }
 
         protected int getSmartSuggestionMode() {

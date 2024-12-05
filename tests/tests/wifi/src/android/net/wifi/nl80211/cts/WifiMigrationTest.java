@@ -26,7 +26,6 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.net.wifi.WifiMigration;
 import android.net.wifi.flags.Flags;
-import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
@@ -34,7 +33,6 @@ import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -172,13 +170,9 @@ public class WifiMigrationTest {
     /**
      * Test that {@link WifiMigration#migrateLegacyKeystoreToWifiBlobstore()}
      * can be called successfully.
-     *
-     * TODO: Update @SdkSuppress once a version code >V is available
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION_READ_ONLY)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
     public void testMigrateLegacyKeystoreToWifiBlobstore() throws Exception {
         AtomicInteger statusCode = new AtomicInteger(-1);
         CountDownLatch latch = new CountDownLatch(1);

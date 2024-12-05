@@ -137,7 +137,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setTargetActivity(TEST_ACTIVITY).setNewTask(true)
                 .setMultipleTask(true).setActivityType(activityType)
                 .setDisplayId(newDisplay.mId).execute();
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be focused and on top");
 
         // Check that activity config corresponds to display config.
@@ -157,7 +157,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on primary display explicitly.
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, getMainDisplayId());
 
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user must be focused "
                         + "and on top");
 
@@ -166,7 +166,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setMultipleTask(true).setDisplayId(getMainDisplayId()).execute();
         mWmState.computeState(TEST_ACTIVITY);
 
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user must be focused");
     }
 
@@ -189,18 +189,19 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(BROADCAST_RECEIVER_ACTIVITY).setNewTask(true)
                 .setDisplayId(newDisplayId).execute();
-        waitAndAssertTopResumedActivity(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
                 "Activity should be resumed on secondary display");
 
         mayLaunchHomeActivityForCar();
         mBroadcastActionTrigger.launchActivityNewTask(getActivityName(TEST_ACTIVITY));
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplayId,
                 "Activity should be resumed on secondary display");
 
         getLaunchActivityBuilder().setUseInstrumentation()
                 .setTargetActivity(TEST_ACTIVITY).setNewTask(true)
                 .setDisplayId(getMainDisplayId()).execute();
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity should be the top resumed on main display assigned to the user");
     }
 
@@ -221,7 +222,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);
-        waitAndAssertTopResumedActivity(RESIZEABLE_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user must be resumed");
 
         final PrimaryDisplayStateSession displayStateSession =
@@ -264,7 +265,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(NON_RESIZEABLE_ACTIVITY, WINDOWING_MODE_FULLSCREEN, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
                 "Activity requested to launch on secondary display must be focused");
 
         final Configuration taskConfig = mWmState
@@ -314,7 +315,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                                 .getDisplayByActivity(NON_RESIZEABLE_ACTIVITY),
                         "seeing if activity won't be moved"));
 
-        waitAndAssertTopResumedActivity(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
                 "The moved non-resizeable activity must be focused");
         assertActivityLifecycle(nonResizeableSession, true /* relaunched */);
     }
@@ -332,12 +333,12 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         // Launch activity on new secondary display.
         launchActivityOnDisplay(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId);
-        waitAndAssertTopResumedActivity(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be focused");
 
         // Launch non-resizeable activity from secondary display.
         mBroadcastActionTrigger.launchActivityNewTask(getActivityName(NON_RESIZEABLE_ACTIVITY));
-        waitAndAssertTopResumedActivity(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(NON_RESIZEABLE_ACTIVITY, newDisplay.mId,
                 "Launched activity must be on the secondary display and resumed");
     }
 
@@ -353,7 +354,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         // Launch activity on new secondary display.
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId);
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be focused");
 
         // Launch non-resizeable activity from secondary display in a new task.
@@ -391,14 +392,14 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         // Launch second activity without specifying display.
         launchActivity(LAUNCHING_ACTIVITY);
 
         // Check that activity is launched in focused task on the new display.
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Launched activity must be focused");
         mWmState.assertResumedActivity("LAUNCHING_ACTIVITY must be resumed", LAUNCHING_ACTIVITY);
     }
@@ -417,14 +418,14 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         // Launch second activity without specifying display.
         launchActivity(SECOND_ACTIVITY);
 
         // Check that activity is launched in focused task on primary display.
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId(),
                 "Launched activity must be focused");
         assertBothDisplaysHaveResumedActivities(pair(newDisplay.mId, TEST_ACTIVITY),
                 pair(getMainDisplayId(), SECOND_ACTIVITY));
@@ -444,14 +445,14 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         // Launch second activity from app on secondary display without specifying display id.
         getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY).execute();
 
         // Check that activity is launched in focused task on external display.
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Launched activity must be on top");
     }
 
@@ -468,7 +469,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         // Launch second activity from app on secondary display without specifying display id.
@@ -476,7 +477,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         mWmState.computeState(TEST_ACTIVITY);
 
         // Check that activity is launched in focused task on external display.
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Launched activity must be on top");
     }
 
@@ -493,7 +494,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // Launch activity on new secondary display.
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId);
 
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         // Launch second activity from app on secondary display specifying same display id.
@@ -503,7 +504,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .execute();
 
         // Check that activity is launched in focused task on external display.
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, newDisplay.mId,
                 "Launched activity must be on top");
 
         // Launch other activity with different uid and check if it has launched successfully.
@@ -515,7 +516,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .execute();
 
         // Check that activity is launched in focused task on external display.
-        waitAndAssertTopResumedActivity(THIRD_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(THIRD_ACTIVITY, newDisplay.mId,
                 "Launched activity must be on top");
     }
 
@@ -531,7 +532,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         launchActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId());
 
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId(),
                 "Must launch activity on same display.");
 
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
@@ -539,7 +540,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 extraBool(KEY_LAUNCH_ACTIVITY, true), extraBool(KEY_LAUNCH_IMPLICIT, true),
                 extraString(KEY_ACTION, IMPLICIT_TARGET_SECOND_TEST_ACTION));
 
-        waitAndAssertTopResumedActivity(IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
                 "Must launch activity on same display.");
     }
 
@@ -561,7 +563,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setDisplayId(newDisplay.mId).execute();
 
         // Check that activity is launched on external display.
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be focused");
         assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), LAUNCHING_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
@@ -599,7 +601,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setTargetActivity(THIRD_ACTIVITY)
                 .execute();
         mWmState.waitForValidState(SECOND_ACTIVITY);
-        waitAndAssertTopResumedActivity(THIRD_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(THIRD_ACTIVITY, getMainDisplayId(),
                 "Top activity must be the newly launched one");
         mWmState.assertVisibility(SECOND_ACTIVITY, true);
         assertEquals("Activity launched by app on secondary display must be on that display",
@@ -721,10 +723,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         // despite the affinity match on the secondary display.
         final int displayFrontRootTaskId = mWmState.getFrontRootTaskId(newDisplay.mId);
         final Task displayFrontRootTask = mWmState.getRootTask(displayFrontRootTaskId);
-        waitAndAssertTopResumedActivity(ALT_LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(ALT_LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity launched on same display must be resumed");
         launchActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId);
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Existing task must be brought to front");
 
         // Check that the third intent is redirected to the first task due to the root
@@ -768,7 +770,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 taskId, mWmState.getRootTask(mWmState.getFocusedTaskId()).getTaskId());
 
         mBroadcastActionTrigger.launchActivityNewTask(getActivityName(TEST_ACTIVITY));
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched on main display assigned to the user");
         mWmState.assertFocusedRootTask("Top focus root task must be on the main display "
                 + "assigned to the user", rootTaskId);
@@ -828,21 +830,22 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         launchActivityOnDisplay(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId);
 
         // Check that the first activity is launched onto the secondary display
-        waitAndAssertTopResumedActivity(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be resumed");
 
         executeShellCommand("am start -n " + getActivityName(TEST_ACTIVITY)
                 + " --user " + mContext.getUserId());
 
         // Check that the second activity is launched on the same display
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
                 "Activity launched on main display assigned to the user must be resumed");
 
         mBroadcastActionTrigger.launchActivityNewTask(getActivityName(LAUNCHING_ACTIVITY));
 
         // Check that the third activity ends up in a new task in the same display where the
         // first activity lands
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity must be launched on secondary display");
         assertEquals(
                 "Secondary display must contain 2 root tasks",
@@ -863,14 +866,15 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         launchActivityOnDisplay(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId);
 
         // Check that the first activity is launched onto the secondary display
-        waitAndAssertTopResumedActivity(BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                BROADCAST_RECEIVER_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be resumed");
 
         launchActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId());
 
         // Check that the second activity is launched on the main display assigned to the user
         // because the affinity is different
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user must be resumed");
         assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), SECOND_ACTIVITY),
                 pair(newDisplay.mId, BROADCAST_RECEIVER_ACTIVITY));
@@ -879,7 +883,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         // Check that the third activity ends up in a new task in the same display where the
         // first activity lands
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, newDisplay.mId,
                 "Activity must be launched on secondary display");
         assertEquals(
                 "Secondary display must contain 2 root tasks",
@@ -902,7 +906,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 extraBool(KEY_LAUNCH_ACTIVITY, true), extraBool(KEY_LAUNCH_IMPLICIT, true),
                 extraBool(KEY_NEW_TASK, true), extraBool(KEY_USE_APPLICATION_CONTEXT, true),
                 extraString(KEY_ACTION, IMPLICIT_TARGET_SECOND_TEST_ACTION));
-        waitAndAssertTopResumedActivity(IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
                 "Implicitly launched activity must launch on the same display");
     }
 
@@ -923,7 +928,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 extraBool(KEY_LAUNCH_PENDING, true),
                 extraString(KEY_ACTION, IMPLICIT_TARGET_SECOND_TEST_ACTION));
 
-        waitAndAssertTopResumedActivity(IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                IMPLICIT_TARGET_SECOND_ACTIVITY, newDisplay.mId,
                 "Activity launched from pending intent must launch on the same display");
     }
 
@@ -966,7 +972,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
 
         // Activity should be launched on primary display by default.
         getPendingIntentActivity(TEST_ACTIVITY).send();
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
 
         final int resultCode = 1;
@@ -974,12 +980,12 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         final Context displayContext =
                 mContext.createDisplayContext(mDm.getDisplay(displayContent.mId));
         getPendingIntentActivity(TOP_ACTIVITY).send(displayContext, resultCode, null /* intent */);
-        waitAndAssertTopResumedActivity(TOP_ACTIVITY, displayContent.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TOP_ACTIVITY, displayContent.mId,
                 "Activity launched on secondary display and on top");
 
         // Activity should be brought to front on the same display if it already existed.
         getPendingIntentActivity(TEST_ACTIVITY).send(displayContext, resultCode, null /* intent */);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
 
         mayLaunchHomeActivityForCar();
@@ -989,7 +995,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
         getPendingIntentActivity(TEST_ACTIVITY).send(mContext, resultCode, null /* intent */,
                 null /* onFinished */, null /* handler */, null /* requiredPermission */,
                 options.toBundle());
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, displayContent.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, displayContent.mId,
                 "Activity launched on secondary display and on top");
     }
 
@@ -1011,7 +1017,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     @Test
     public void testLaunchActivitySingleTopOnNewDisplay() {
         launchActivity(SINGLE_TOP_ACTIVITY);
-        waitAndAssertTopResumedActivity(SINGLE_TOP_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SINGLE_TOP_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
         final int taskId = mWmState.getTaskByActivity(SINGLE_TOP_ACTIVITY).getTaskId();
 
@@ -1028,7 +1034,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .allowMultipleInstances(false)
                 .setDisplayId(newDisplay.mId).execute();
 
-        waitAndAssertTopResumedActivity(SINGLE_TOP_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SINGLE_TOP_ACTIVITY, newDisplay.mId,
                 "Activity launched on secondary display must be on top");
 
         final int taskId2 = mWmState.getTaskByActivity(SINGLE_TOP_ACTIVITY).getTaskId();
@@ -1045,7 +1051,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     @Test
     public void testLaunchNoHistoryActivityOnNewDisplay() {
         launchActivity(NO_HISTORY_ACTIVITY);
-        waitAndAssertTopResumedActivity(NO_HISTORY_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(NO_HISTORY_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
 
         final int taskId = mWmState.getTaskByActivity(NO_HISTORY_ACTIVITY).getTaskId();
@@ -1092,7 +1098,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
                 .setIntentFlags(flags)
                 .allowMultipleInstances(false)
                 .setDisplayId(newDisplay.mId).execute();
-        waitAndAssertTopResumedActivity(topActivity, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(topActivity, newDisplay.mId,
                 "Activity launched on secondary display and on top");
     }
 

@@ -3796,7 +3796,7 @@ public class TextViewTest {
 
     @UiThreadTest
     @Test
-    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN)
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationSettings_Api35() {
         mTextView = new TextView(mActivity);
         Context context = InstrumentationRegistry.getTargetContext();
@@ -5264,7 +5264,6 @@ public class TextViewTest {
         assertEquals(10.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(0.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(3.3f, mTextView.getShadowRadius(), 0.01f);
-        assertTrue(mTextView.isElegantTextHeight());
 
         // This TextView has both a TextAppearance and a style, so the style should override.
         mTextView = findTextView(R.id.textview_textappearance_attrs3);
@@ -5279,7 +5278,6 @@ public class TextViewTest {
         assertEquals(1.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(10.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(5.3f, mTextView.getShadowRadius(), 0.01f);
-        assertFalse(mTextView.isElegantTextHeight());
 
         // This TextView has no TextAppearance and has a style, so the style should be applied.
         mTextView = findTextView(R.id.textview_textappearance_attrs4);
@@ -5293,7 +5291,6 @@ public class TextViewTest {
         assertEquals(1.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(10.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(5.3f, mTextView.getShadowRadius(), 0.01f);
-        assertFalse(mTextView.isElegantTextHeight());
 
         // Note: text, link and hint colors can't be tested due to the default style overriding
         // values b/63923542

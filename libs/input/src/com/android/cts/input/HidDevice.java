@@ -19,8 +19,10 @@ package com.android.cts.input;
 
 import android.app.Instrumentation;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.annotation.GuardedBy;
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -74,9 +76,10 @@ public final class HidDevice extends VirtualInputDevice {
     }
 
     public HidDevice(Instrumentation instrumentation, int id,
-            int vendorId, int productId, int sources, String registerCommand) {
+            int vendorId, int productId, int sources, String registerCommand,
+            @Nullable Display display) {
         super(instrumentation, id, vendorId, productId, sources,
-                new UhidRegisterCommand(registerCommand));
+                new UhidRegisterCommand(registerCommand), display);
     }
 
     /**

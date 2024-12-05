@@ -81,6 +81,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.carrier.CarrierIdentifier;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -188,6 +189,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -323,6 +325,7 @@ public class TelephonyManagerTest {
             + "\nx2vNRWONSm2UGwdb00tLsTloxeqCOMpbkBiqi/RhOlIKIOWMPojukA5+xryh2FVs"
             + "\n7bdw"
             + "\n-----END CERTIFICATE-----";
+    private static final Pattern HEXADECIMAL_PATTERN = Pattern.compile("\\p{XDigit}+");
 
     private static final int RADIO_HAL_VERSION_1_5 = makeRadioVersion(1, 5);
     private static final int RADIO_HAL_VERSION_1_6 = makeRadioVersion(1, 6);
@@ -411,7 +414,14 @@ public class TelephonyManagerTest {
         + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
         + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
         + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]}"
+        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
+        + "\"com.tmobile.tmte\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+        + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:0F:68:33:3A:FA:CF:F5:62\"]},"
+        + "\"com.tmobile.tuesdays\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+        + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:0F:68:33:3A:FA:CF:F5:62\","
+        + "\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]},"
+        + "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+        + "[\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]}"
         + "}";
 
     private class CarrierPrivilegeChangeMonitor implements AutoCloseable {
@@ -3888,6 +3898,22 @@ public class TelephonyManagerTest {
                     CarrierConfigManager.IMSI_CARRIER_PUBLIC_KEY_WLAN_STRING,
                     IMSI_CERT_STRING_WLAN);
             overrideCarrierConfig(carrierConfig);
+
+            // Clear downloaded carrier keys just after override above.
+            // Otherwise, downloaded key would be used instead of the override value above.
+            if (Flags.forceImsiCertificateDelete()) {
+                Log.i(TAG, "forceDeleteImsiEncryptionKey");
+                try {
+                    TelephonyUtils.forceDeleteImsiEncryptionKey(
+                            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
+                } catch (Exception exp) {
+                    fail("forceDeleteImsiEncryptionKey thrown the exp = " + exp);
+                }
+            } else {
+                Log.i(TAG,
+                        "forceDeleteImsiEncryptionKey: forceImsiCertificateDelete flag not"
+                                + " enabled");
+            }
         } catch (Exception e) {
             fail("Could not override carrier config. e=" + e.toString());
         }
@@ -7436,5 +7462,61 @@ public class TelephonyManagerTest {
                     .dropShellPermissionIdentity();
         }
         return null;
+    }
+
+    /**
+     * Tests that getCarrierIdFromCarrierIdentifier methods don't crash.
+     */
+    @Test
+    public void testGetCarrierIdFromCarrierIdentifier() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        CarrierIdentifier carrier =
+                new CarrierIdentifier("", "", null, null, null, null);
+
+        // The API requires READ_PRIVILEGED_PHONE_STATE privilege
+        try {
+            mTelephonyManager.getCarrierIdFromCarrierIdentifier(carrier);
+            fail("Telephony#getCarrierIdFromCarrierIdentifie should throw SecurityException without"
+                    + " READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException expected) {
+        }
+
+        // With READ_PRIVILEGED_PHONE_STATE, it should work
+        int carrierId =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getCarrierIdFromCarrierIdentifier(carrier));
+        assertTrue(carrierId == TelephonyManager.UNKNOWN_CARRIER_ID);
+
+    }
+
+    /**
+     * Tests that getGroupIdLevel2 methods return null or hexadecimal
+     */
+    @Test
+    public void testGetGroupIdLevel2() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        // The API requires READ_PRIVILEGED_PHONE_STATE privilege
+        try {
+            mTelephonyManager.getGroupIdLevel2();
+            fail("Telephony#getGroupIdLevel2 should throw SecurityException without"
+                    + " READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException expected) {
+        }
+
+        // With READ_PRIVILEGED_PHONE_STATE, it should work
+        String groupIdLevel2 =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getGroupIdLevel2());
+        assertTrue((groupIdLevel2 == null || isHexadecimal(groupIdLevel2)));
+    }
+
+    private boolean isHexadecimal(String input) {
+        if (input == null) {
+            return false;
+        }
+        final Matcher matcher = HEXADECIMAL_PATTERN.matcher(input);
+        return matcher.matches();
     }
 }

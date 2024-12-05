@@ -18,6 +18,8 @@ package android.net.wifi.p2p.cts;
 
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP;
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
+import static android.net.wifi.p2p.WifiP2pConfig.PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2;
+import static android.net.wifi.p2p.WifiP2pConfig.P2P_VERSION_2;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_PERSISTENT;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_TEMPORARY;
 
@@ -26,6 +28,7 @@ import static org.junit.Assert.assertThrows;
 import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pPairingBootstrappingConfig;
 import android.os.Build;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -34,6 +37,7 @@ import android.test.AndroidTestCase;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
 import java.util.Arrays;
@@ -169,6 +173,69 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 .build();
         config.setVendorData(vendorData);
         assertTrue(vendorData.equals(config.getVendorData()));
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#getPccModeConnectionType"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigBuilderWithPccModeConnectionType() {
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setNetworkName(TEST_NETWORK_NAME)
+                .setPassphrase(TEST_PASSPHRASE)
+                .setGroupOperatingFrequency(TEST_OWNER_FREQ)
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setPccModeConnectionType(PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2)
+                .build();
+        assertEquals(PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2, config.getPccModeConnectionType());
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#getGroupOwnerVersion",
+            "android.net.wifi.p2p.WifiP2pConfig#setGroupOwnerVersion"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigSetGetGroupOwnerVersion() {
+        WifiP2pConfig config = new WifiP2pConfig();
+        config.setGroupOwnerVersion(P2P_VERSION_2);
+        assertEquals(P2P_VERSION_2, config.getGroupOwnerVersion());
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#getPairingBootstrappingConfig",
+            "android.net.wifi.p2p.WifiP2pConfig.Builder#setPairingBootstrappingConfig"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigBuilderWithWifiP2pPairingBootstrappingConfig() {
+        WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
+                new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_DISPLAY_PINCODE, "1234");
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setPairingBootstrappingConfig(pairingBootstrappingConfig)
+                .build();
+        WifiP2pPairingBootstrappingConfig expectedPairingBootstrappingConfig =
+                config.getPairingBootstrappingConfig();
+        assertNotNull(expectedPairingBootstrappingConfig);
+        assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#isAuthorizeConnectionFromPeer",
+            "android.net.wifi.p2p.WifiP2pConfig.Builder#setAuthorizeConnectionFromPeer"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigBuilderWithAuthorizeConnectionFromPeer() throws Exception {
+        WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
+                new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_OUT_OF_BAND, "1234");
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setPairingBootstrappingConfig(pairingBootstrappingConfig)
+                .setGroupOperatingFrequency(2437)
+                .setAuthorizeConnectionFromPeer(true)
+                .build();
+        WifiP2pPairingBootstrappingConfig expectedPairingBootstrappingConfig =
+                config.getPairingBootstrappingConfig();
+        assertNotNull(expectedPairingBootstrappingConfig);
+        assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
+        assertTrue(config.isAuthorizeConnectionFromPeer());
     }
 
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,

@@ -36,8 +36,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.WindowManagerState;
+import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.intent.LaunchSequence.LaunchSequenceExecutionInfo;
 import android.server.wm.intent.Persistence.GenerationIntent;
 import android.server.wm.intent.Persistence.LaunchFromIntent;
@@ -321,7 +321,7 @@ public class LaunchRunner {
         assertNotNull("Intent: " + intent.toString(), activity);
 
         final ComponentName testActivityName = activity.getComponentName();
-        mTestBase.waitAndAssertTopResumedActivity(testActivityName,
+        mTestBase.waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName,
                 launchDisplayId, "Activity must be resumed");
     }
 

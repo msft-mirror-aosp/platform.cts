@@ -18,8 +18,11 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,6 +39,32 @@ public final class CarUserManagerHostTest extends CarHostJUnit4TestCase {
     private static final String STATUS_UX_RESTRICTION_FAILURE = "STATUS_UX_RESTRICTION_FAILURE";
     private static final long TEST_WAIT_MS = 50;
     private static final long TEST_TIMEOUT_MS = 10_000;
+
+    // Tests should leave the user state intact.
+    // To ensure no new users are created by the test and the current user is set back to the
+    // initial user,
+    // 1. Maintain a list of existing users and keep track of the initial user.
+    // 2. At the end of each test run, remove all newly created users, and set the current
+    //    user to the initial user.
+    private int mInitialUserId;
+    private ArrayList<Integer> mExistingUserIds;
+
+    @Before
+    public void setUp() throws Exception {
+        mInitialUserId = getDevice().getCurrentUser();
+        mExistingUserIds = getDevice().listUsers();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        int currentUserId = getDevice().getCurrentUser();
+        if (currentUserId != mInitialUserId) {
+            CLog.w("User changed during test (to %d). Switching back to %d", currentUserId,
+                    mInitialUserId);
+            switchUser(mInitialUserId, STATUS_SUCCESSFUL);
+        }
+        removeTestUsers();
+    }
 
     @Test
     public void testSwitchUserExists() throws Exception {
@@ -99,5 +128,13 @@ public final class CarUserManagerHostTest extends CarHostJUnit4TestCase {
                 .mapToInt((userInfo) -> userInfo.id)
                 .max()
                 .orElse(0) + 1;
+    }
+
+    private void removeTestUsers() throws Exception {
+        for (int userId : getDevice().listUsers()) {
+            if (!mExistingUserIds.contains(userId)) {
+                getDevice().removeUser(userId);
+            }
+        }
     }
 }

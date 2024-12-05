@@ -26,6 +26,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.FAV_API_EXCEPTION;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.IS_CALL_SUCCESSFUL;
+import static src.android.provider.cts.media.modern.MediaStoreTestUtils.markIsFavoriteStatus;
+
 import android.Manifest;
 import android.app.AppOpsManager;
 import android.content.ContentResolver;
@@ -37,6 +41,7 @@ import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
@@ -56,6 +61,7 @@ import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.cts.install.lib.TestApp;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.After;
@@ -82,6 +88,17 @@ public class MediaStoreTest {
     private static final String[] SYSTEM_GALERY_APPOPS = {
             AppOpsManager.OPSTR_WRITE_MEDIA_IMAGES, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO};
 
+    private static final TestApp APP_A_HAS_R_M_I = new TestApp("TestAppA",
+            "tests.mediaprovider.modern.testApp.TestAppA", 1, false,
+            "CtsMediaProviderTestAppA.apk");
+    private static final TestApp APP_B_NO_PERM = new TestApp("TestAppB",
+            "tests.mediaprovider.modern.testApp.TestAppB", 1, false,
+            "CtsMediaProviderTestAppB.apk");
+
+    private static final TestApp APP_C_HAS_M_E_S = new TestApp("TestAppC",
+            "tests.mediaprovider.modern.testApp.TestAppC", 1, false,
+            "CtsMediaProviderTestAppC.apk");
+
     private Context mContext;
     private ContentResolver mContentResolver;
 
@@ -106,6 +123,15 @@ public class MediaStoreTest {
 
         Log.d(TAG, "Using volume " + mVolumeName + " for user " + mContext.getUserId());
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
+
+        setUpApps();
+    }
+
+    private void setUpApps() throws Exception {
+        final int uid =
+                getContext().getPackageManager().getPackageUid(APP_C_HAS_M_E_S.getPackageName(), 0);
+        setAppOpsModeForUid(uid, AppOpsManager.MODE_ALLOWED,
+                AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE);
     }
 
     @After
@@ -425,6 +451,70 @@ public class MediaStoreTest {
         }
         // no access
         assertThat(MediaStore.canManageMedia(getContext())).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
+    public void testMarkMediaAsFavorite_onlyReadPermission_markIsFavoriteStatus()
+            throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
+
+        assertFalse(isImageMarkedFavorite(uri));
+
+        Bundle response = markIsFavoriteStatus(APP_A_HAS_R_M_I, uri, /* areFavorites */ true);
+
+        assertTrue(response.getBoolean(IS_CALL_SUCCESSFUL));
+        assertTrue(isImageMarkedFavorite(uri));
+
+        response = markIsFavoriteStatus(APP_A_HAS_R_M_I, uri, /* areFavorites */ false);
+
+        assertTrue(response.getBoolean(IS_CALL_SUCCESSFUL));
+        assertFalse(isImageMarkedFavorite(uri));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
+    public void testMarkMediaAsFavorite_onlyManageExternalStorage_markIsFavoriteStatus()
+            throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
+
+        assertFalse(isImageMarkedFavorite(uri));
+
+        Bundle response = markIsFavoriteStatus(APP_C_HAS_M_E_S, uri, /* areFavorites */ true);
+
+        assertTrue(response.getBoolean(IS_CALL_SUCCESSFUL));
+        assertTrue(isImageMarkedFavorite(uri));
+
+        response = markIsFavoriteStatus(APP_C_HAS_M_E_S, uri, /* areFavorites */ false);
+
+        assertTrue(response.getBoolean(IS_CALL_SUCCESSFUL));
+        assertFalse(isImageMarkedFavorite(uri));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MARK_IS_FAVORITE_STATUS_API)
+    public void testMarkMediaAsFavorite_noPermission_throwsException() throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages);
+
+        assertFalse(isImageMarkedFavorite(uri));
+
+        Bundle response = markIsFavoriteStatus(APP_B_NO_PERM, uri, /* areFavorites */ true);
+
+        assertFalse(response.getBoolean(IS_CALL_SUCCESSFUL));
+        assertNotNull(response.getParcelable(FAV_API_EXCEPTION,
+                UnsupportedOperationException.class));
+        assertFalse(isImageMarkedFavorite(uri));
+    }
+
+    private boolean isImageMarkedFavorite(Uri uri) {
+        final String[] projection = new String[]{MediaColumns.IS_FAVORITE};
+        try (Cursor c = mContext.getContentResolver().query(uri, projection, null, null)) {
+            assertNotNull(c);
+            assertEquals(1, c.getCount());
+            assertTrue(c.moveToFirst());
+
+            return "1".equals(c.getString(0));
+        }
     }
 
     private void setAppOpsModeForUid(int uid, int mode, @NonNull String... ops) {

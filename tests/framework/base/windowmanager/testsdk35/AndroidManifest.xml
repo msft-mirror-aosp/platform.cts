@@ -23,14 +23,21 @@
     <application android:label="CtsWindowManagerSdk35TestCases">
         <uses-library android:name="android.test.runner" />
 
-        <activity android:name="android.server.wm.input.WindowUntrustedTouchTestBase$TestActivity"
-                  android:exported="true"
-                  android:configChanges="screenSize|screenLayout|orientation"
-                  android:screenOrientation="nosensor" />
+        <activity
+            android:name="android.server.wm.input.WindowUntrustedTouchTestBase$TestActivity"
+            android:exported="true"
+            android:configChanges="screenSize|screenLayout|orientation"
+            android:screenOrientation="nosensor"/>
 
-        <activity android:name="android.server.wm.activity.ActivityRecordInputSinkTestsActivity"
-                  android:theme="@android:style/Theme.Material.NoActionBar"
-                  android:exported="true"/>
+        <activity
+            android:name="android.server.wm.activity.ActivityRecordInputSinkTestsActivity"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:exported="true"/>
+
+        <activity
+            android:name="android.server.wm.window.WindowPolicyTestsSdk35$OptOutEdgeToEdgeActivity"
+            android:theme="@style/OptOutEdgeToEdge"/>
+
     </application>
 
     <instrumentation

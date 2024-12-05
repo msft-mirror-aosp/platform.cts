@@ -72,23 +72,26 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
+import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
-import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
@@ -788,6 +791,9 @@ public final class UserManagerTest {
 
     @Test
     @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasNoAdditionalUser
+    @EnsureCanAddUser
+    @EnsureHasNoAccounts
     public void testSomeUserHasAccount() {
         // TODO: (b/233197356): Replace with bedstead annotation.
         assumeTrue(mUserManager.supportsMultipleUsers());
@@ -804,6 +810,9 @@ public final class UserManagerTest {
 
     @Test
     @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasNoAdditionalUser
+    @EnsureCanAddUser
+    @EnsureHasNoAccounts
     public void testSomeUserHasAccount_shouldIgnoreToBeRemovedUsers() {
         // TODO: (b/233197356): Replace with bedstead annotation.
         assumeTrue(mUserManager.supportsMultipleUsers());
@@ -828,6 +837,9 @@ public final class UserManagerTest {
             "android.os.UserManager#getUserType",
             "android.os.UserManager#isUserOfType"})
     @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasNoAdditionalUser
+    @EnsureCanAddUser
+    @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldCreateUserWithCorrectProperties()
             throws PackageManager.NameNotFoundException {
         // TODO: (b/233197356): Replace with bedstead annotation.
@@ -862,6 +874,9 @@ public final class UserManagerTest {
 
     @Test
     @EnsureHasPermission(CREATE_USERS)
+    @EnsureHasNoAdditionalUser
+    @EnsureCanAddUser
+    @EnsureHasNoAccounts
     public void testCreateUser_withNewUserRequest_shouldNotAllowDuplicateUserAccounts() {
         // TODO: (b/233197356): Replace with bedstead annotation.
         assumeTrue(mUserManager.supportsMultipleUsers());
@@ -1113,6 +1128,7 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser
     @EnsureHasPermission({CREATE_USERS})
     @RequireHeadlessSystemUserMode(reason = "Testing HSUM scenario")
+    @RequireResourcesIntegerValue(configName = "config_hsumBootStrategy", requiredValue = 0)
     public void setBootUser_providedUserIsNotSwitchable_Hsum() {
         UserReference additionalUser = additionalUser(sDeviceState);
         UserReference workProfile = workProfile(sDeviceState);

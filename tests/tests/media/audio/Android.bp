@@ -91,8 +91,7 @@ android_test {
         "mediatestutils",
         "platform-test-annotations",
         "testng",
-        "Nene",
-        "Harrier",
+        "bedstead",
     ],
     jni_libs: [
         "libaudiocts_jni",
