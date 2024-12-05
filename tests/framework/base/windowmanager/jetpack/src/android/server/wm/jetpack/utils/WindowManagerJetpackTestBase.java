@@ -29,6 +29,7 @@ import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
+import static android.view.Display.INVALID_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_90;
@@ -521,10 +522,20 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
 
     @Nullable
     public static TestActivityWithId getResumedActivityById(@NonNull String activityId) {
+        return getResumedActivityById(activityId, INVALID_DISPLAY);
+    }
+
+    /**
+     * Gets the activity with specified {@code activityId} on the display with {@code displayId}.
+     */
+    @Nullable
+    public static TestActivityWithId getResumedActivityById(@NonNull String activityId,
+            int displayId) {
         synchronized (sResumedActivities) {
             for (Activity activity : sResumedActivities) {
                 if (activity instanceof TestActivityWithId
-                        && activityId.equals(((TestActivityWithId) activity).getId())) {
+                        && activityId.equals(((TestActivityWithId) activity).getId())
+                        && (displayId == INVALID_DISPLAY || displayId == activity.getDisplayId())) {
                     return (TestActivityWithId) activity;
                 }
             }
