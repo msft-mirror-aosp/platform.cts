@@ -1771,6 +1771,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         }
     }
 
+    //TODO(b/273591938 ) add global read blob test in the following CL.
+
     @Test
     public void testRemoveObserver_otherPackagesNotRemoved() throws Exception {
         final String fakePackage = "com.android.appsearch.fake.package";

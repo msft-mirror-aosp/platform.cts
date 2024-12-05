@@ -31,6 +31,7 @@ import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.WindowManagerState;
 import android.server.wm.jetpack.utils.TestActivityWithId2;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
 import android.util.ArrayMap;
@@ -104,6 +105,41 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         // Launch two activities into a split
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
+        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
+                TestActivityWithId2.class, splitPairRule,
+                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo primaryInfo = mActivityEmbeddingComponent
+                    .getEmbeddedActivityWindowInfo(primaryActivity);
+            final EmbeddedActivityWindowInfo secondaryInfo = mActivityEmbeddingComponent
+                    .getEmbeddedActivityWindowInfo(secondaryActivity);
+
+            assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(
+                    secondaryInfo, secondaryActivity, true /* isEmbedded */);
+        });
+    }
+
+    /**
+     * Tests the returned value from
+     * {@link ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo} is correct for embedded
+     * activities.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo"
+    })
+    @Test
+    public void testGetEmbeddedActivityWindowInfo_embeddedActivity_secondaryDisplay() {
+        final WindowManagerState.DisplayContent secondaryDisplay =
+                createLandscapeLargeScreenSimulatedDisplay();
+        final SplitPairRule splitPairRule = createWildcardSplitPairRule();
+        mActivityEmbeddingComponent.setEmbeddingRules(Sets.newHashSet(splitPairRule));
+
+        // Launch two activities into a split
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                secondaryDisplay.mId);
         final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
@@ -196,6 +232,56 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         mInstrumentation.runOnMainSync(() -> {
             assertEquals(lastPrimaryInfo, listener.getLastReportedInfo(primaryActivity));
             assertNull(listener.getLastReportedInfo(secondaryActivity2));
+        });
+    }
+
+    /**
+     * Tests that the
+     * {@link ActivityEmbeddingComponent#setEmbeddedActivityWindowInfoCallback} callback will be
+     * triggered whenever the {@link EmbeddedActivityWindowInfo} is changed.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.ActivityEmbeddingComponent"
+                    + "#setEmbeddedActivityWindowInfoCallback",
+            "androidx.window.extensions.ActivityEmbeddingComponent"
+                    + "#clearEmbeddedActivityWindowInfoCallback"
+    })
+    @Test
+    public void testEmbeddedActivityWindowInfoCallbackOnSecondaryDisplay() {
+        final WindowManagerState.DisplayContent secondaryDisplay =
+                createLandscapeLargeScreenSimulatedDisplay();
+        final TestWindowInfoChangeListener listener = new TestWindowInfoChangeListener();
+        mActivityEmbeddingComponent.setEmbeddedActivityWindowInfoCallback(Runnable::run, listener);
+        final SplitPairRule splitPairRule = createWildcardSplitPairRule();
+        mActivityEmbeddingComponent.setEmbeddingRules(Sets.newHashSet(splitPairRule));
+
+        // Report info when activity is launched.
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                secondaryDisplay.mId);
+        waitAndAssertResumed(primaryActivity);
+
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo nonEmbeddedInfo = listener.getLastReportedInfo(
+                    primaryActivity);
+            assertEmbeddedActivityWindowInfo(
+                    nonEmbeddedInfo, primaryActivity, false /* isEmbedded */);
+        });
+
+        // Report info when activity enters split.
+        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
+                TestActivityWithId2.class, splitPairRule,
+                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+
+        mInstrumentation.runOnMainSync(() -> {
+            final EmbeddedActivityWindowInfo primaryInfo = listener
+                    .getLastReportedInfo(primaryActivity);
+            final EmbeddedActivityWindowInfo secondaryInfo = listener
+                    .getLastReportedInfo(secondaryActivity);
+
+            assertEmbeddedActivityWindowInfo(primaryInfo, primaryActivity, true /* isEmbedded */);
+            assertEmbeddedActivityWindowInfo(
+                    secondaryInfo, secondaryActivity, true /* isEmbedded */);
         });
     }
 

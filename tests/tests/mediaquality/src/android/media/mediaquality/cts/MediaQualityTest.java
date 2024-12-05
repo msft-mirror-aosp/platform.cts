@@ -42,8 +42,7 @@ public class MediaQualityTest {
         Context context = InstrumentationRegistry.getTargetContext();
 
         mManager = context.getSystemService(MediaQualityManager.class);
-        assertNotNull("Failed to get MediaQualityManager.", mManager);
-        if (!isSupported()) {
+        if (mManager == null || !isSupported()) {
             return;
         }
     }

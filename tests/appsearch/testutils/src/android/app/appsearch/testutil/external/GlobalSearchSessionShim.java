@@ -16,15 +16,19 @@
 
 package android.app.appsearch;
 
+import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.SuppressLint;
 import android.app.appsearch.exceptions.AppSearchException;
 import android.app.appsearch.observer.ObserverCallback;
 import android.app.appsearch.observer.ObserverSpec;
 
+import com.android.appsearch.flags.Flags;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -54,6 +58,27 @@ public interface GlobalSearchSessionShim extends Closeable {
             @NonNull String packageName,
             @NonNull String databaseName,
             @NonNull GetByDocumentIdRequest request);
+
+    /**
+     * Opens a batch of AppSearch Blobs for reading.
+     *
+     * <p>See {@link AppSearchSessionShim#openBlobForRead} for a general description when a blob is
+     * open for read.
+     *
+     * <p class="caution">The returned {@link OpenBlobForReadResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the readable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
+     */
+    @NonNull
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    default ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
 
     /**
      * Retrieves documents from all AppSearch databases that the querying application has access to.

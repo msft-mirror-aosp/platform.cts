@@ -51,6 +51,7 @@ import android.util.Log;
 import android.util.PackageUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import libcore.util.HexEncoding;
@@ -89,6 +90,8 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
     static final String METHOD_ABANDONED_SESSION_ID = TAG + "-abandoned-session-id";
     static final String METHOD_ABANDON_SESSION_DURING_INSTALL = TAG
             + "-abandon-session-during-install";
+    static final String METHOD_RESUME_ON_FAILURE_FAIL_INSTALL = TAG
+            + "-resume-on-failure-fail-install";
     static final String METHOD_VERIFY_USER_ID = TAG + "-verify-user-id";
 
     private String mCertDigest;
@@ -130,6 +133,8 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
                 testAbandonSessionDuringInstall(neededLibraries, callback);
             } else if (methodName.equals(METHOD_VERIFY_USER_ID)) {
                 installDependenciesSync(neededLibraries, callback);
+            } else if (methodName.equals(METHOD_RESUME_ON_FAILURE_FAIL_INSTALL)) {
+                testResumeOnFailureFailsInstall(neededLibraries, callback);
             } else {
                 throw new IllegalStateException("Unknown method name: " + methodName);
             }
@@ -245,6 +250,20 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         session.abandon();
     }
 
+    private void testResumeOnFailureFailsInstall(List<SharedLibraryInfo> neededLibraries,
+            DependencyInstallerCallback callback) throws Exception {
+
+        // Create a session and have system wait for them
+        List<Integer> sessionIds = createSessionIds(1);
+        callback.onAllDependenciesResolved(toIntArray(sessionIds));
+
+        // Now we commit the session without writing to it. This ensures it will fail installation.
+        int firstSession = sessionIds.get(0);
+        SyncBroadcastReceiver sender = new SyncBroadcastReceiver(List.of(firstSession));
+        Session session = writeToSession(null, firstSession);
+        session.commit(sender.getIntentSender(this));
+    }
+
     private void installDependenciesSync(List<SharedLibraryInfo> neededLibraries,
             DependencyInstallerCallback callback) throws Exception {
 
@@ -298,9 +317,13 @@ public class TestDependencyInstallerService extends DependencyInstallerService {
         return sessionIds;
     }
 
-    private Session writeToSession(SharedLibraryInfo info, int sessionId) throws Exception {
+    private Session writeToSession(@Nullable SharedLibraryInfo info, int sessionId)
+                throws Exception {
         PackageInstaller installer = getPackageManager().getPackageInstaller();
         Session session = installer.openSession(sessionId);
+        if (info == null) {
+            return session;
+        }
         if (info.getName().equals(LIB_NAME_SDK_1)) {
             writeApk(session, TEST_SDK1_APK_NAME);
         } else if (info.getName().equals(LIB_NAME_SDK_2)) {
