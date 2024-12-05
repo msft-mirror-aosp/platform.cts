@@ -66,6 +66,7 @@ import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.property.CarSvcPropsParser;
 import android.car.cts.utils.VehiclePropertyVerifier;
+import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
@@ -1340,6 +1341,50 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     /**
+     * If the feature flag: FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled, the B properties must
+     * not be supported.
+     */
+    @RequiresFlagsDisabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    @Test
+    @ApiTest(
+            apis = {
+                    "android.car.hardware.property.CarPropertyManager#getPropertyList",
+                    "android.car.hardware.property.CarPropertyManager#getCarPropertyConfig",
+            })
+    public void testBPropertiesMustNotBeSupportedIfFlagDisabled() {
+        CarSvcPropsParser parser = new CarSvcPropsParser();
+        List<Integer> bSystemPropertyIds = parser.getSystemPropertyIdsForFlag(
+                "FLAG_ANDROID_B_VEHICLE_PROPERTIES");
+
+        List<CarPropertyConfig> configs = new ArrayList<>();
+        // Use shell permission identity to get as many property configs as possible.
+        runWithShellPermissionIdentity(() -> {
+            configs.addAll(mCarPropertyManager.getPropertyList());
+        });
+
+        for (int i = 0; i < configs.size(); i++) {
+            int propertyId = configs.get(i).getPropertyId();
+            if (!isSystemProperty(propertyId)) {
+                continue;
+            }
+
+            String propertyName = VehiclePropertyIds.toString(propertyId);
+            expectWithMessage("Property: " + propertyName + " must not be supported if "
+                    + "FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled").that(propertyId)
+                    .isNotIn(bSystemPropertyIds);
+        }
+
+        runWithShellPermissionIdentity(() -> {
+            for (int propertyId : bSystemPropertyIds) {
+                String propertyName = VehiclePropertyIds.toString(propertyId);
+                expectWithMessage("getCarPropertyConfig for: " + propertyName
+                        + " when FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled must return null")
+                        .that(mCarPropertyManager.getCarPropertyConfig(propertyId)).isNull();
+            }
+        });
+    }
+
+    /**
      * Test that all supported system property IDs are defined.
      */
     @Test
@@ -1767,6 +1812,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
                 new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
 
@@ -1787,6 +1834,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 case Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS:
                     // Do nothing as property should be supported when this flag is enabled and when
                     // it is disabled.
+                    break;
+                case Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES:
+                    assumeTrue("Flag: " + flag + " is disabled ",
+                            Flags.androidBVehicleProperties());
                     break;
                 default:
                     throw new IllegalStateException("Unknown flag: " + flag);
@@ -7021,7 +7072,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionCarInfoGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_INFO_PROPERTIES,
+                Flags.androidBVehicleProperties() ?
+                        ImmutableList.<Integer>builder().addAll(PERMISSION_CAR_INFO_PROPERTIES).add(
+                                VehiclePropertyIds.INFO_MODEL_TRIM).build()
+                        : PERMISSION_CAR_INFO_PROPERTIES,
                 Car.PERMISSION_CAR_INFO);
     }
 

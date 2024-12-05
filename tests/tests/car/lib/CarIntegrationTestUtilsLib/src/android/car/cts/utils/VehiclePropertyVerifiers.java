@@ -1015,4 +1015,19 @@ public class VehiclePropertyVerifiers {
         }
         return allPossibleFanDirectionsBuilder.build();
     }
+
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}.
+     */
+    public static VehiclePropertyVerifier.Builder<String> getInfoModelTrimVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_MODEL_TRIM,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        String.class)
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
 }
