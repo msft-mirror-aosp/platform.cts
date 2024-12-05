@@ -10,6 +10,7 @@ android_test {
     srcs: [
         "src/**/*.java",
         "app/GalleryTestApp/src/**/*.java",
+        "MediaProviderTestHelper/src/**/*.java",
         ":CtsModernMediaProviderTestUtils",
     ],
     static_libs: [
@@ -20,6 +21,7 @@ android_test {
         "junit",
         "truth",
         "mediaprovider_flags_java_lib",
+        "cts-media-provider-lib",
     ],
     compile_multilib: "both",
     test_suites: [
@@ -38,6 +40,14 @@ android_test {
     ],
     data: [
         ":CtsProviderGalleryTestApp",
+        ":CtsMediaProviderTestAppA",
+        ":CtsMediaProviderTestAppB",
+        ":CtsMediaProviderTestAppC",
+    ],
+    java_resources: [
+        ":CtsMediaProviderTestAppA",
+        ":CtsMediaProviderTestAppB",
+        ":CtsMediaProviderTestAppC",
     ],
 }
 

@@ -30,14 +30,20 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.audiopolicy.AudioProductStrategy;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -70,6 +76,13 @@ public class NonDefaultDeviceForStrategyTest {
     private List<AudioProductStrategy> mStrategies;
     private AudioProductStrategy mStrategyForMedia;
     private AudioProductStrategy mStrategyForPhone;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /** Test setup */
     @Before
@@ -192,6 +205,7 @@ public class NonDefaultDeviceForStrategyTest {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testSetNonDefaultDeviceRouting() throws Exception {
         List<AudioDeviceInfo> availableDevices = mAudioManager.getAvailableCommunicationDevices();
         availableDevices.removeIf(

@@ -21,6 +21,7 @@ android_test {
     team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
+        "am_flags_lib",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",

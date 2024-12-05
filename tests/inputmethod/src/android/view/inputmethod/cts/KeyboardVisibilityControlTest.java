@@ -76,6 +76,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
@@ -140,6 +141,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1891,6 +1893,81 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notificationManager.cancel(notificationId);
         }
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    public void testQuickDoubleSwipeBackHidesImeAndSendsEventToApp_OnBackInvokedCallbackEnabled()
+            throws Exception {
+        testQuickDoubleSwipeBackHidesImeAndSendsEventToApp(true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    public void testQuickDoubleSwipeBackHidesImeAndSendsEventToApp_OnBackInvokedCallbackDisabled()
+            throws Exception {
+        testQuickDoubleSwipeBackHidesImeAndSendsEventToApp(false);
+    }
+
+    /**
+     * A regression test for Bug 375986921.
+     *
+     * This test verifies that invoking a key back event twice quickly after each other will hide
+     * the IME first and then go back to the previous activity.
+     */
+    private void testQuickDoubleSwipeBackHidesImeAndSendsEventToApp(
+            boolean onBackInvokedCallbackEnabled) throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            mInstrumentation.getTargetContext().getApplicationInfo().setEnableOnBackInvokedCallback(
+                    onBackInvokedCallbackEnabled);
+
+            // Launch an editor activity to be on the split primary task.
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            final TestActivity testActivity = TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                final EditText editText = new EditText(activity);
+                editTextRef.set(editText);
+                layout.addView(editText);
+                editText.setHint("focused editText");
+                editText.setPrivateImeOptions(marker);
+                editText.requestFocus();
+                return layout;
+            });
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+
+            // Show IME and make sure it has window focus
+            TestUtils.runOnMainSync(() -> {
+                editTextRef.get().requestFocus();
+                editTextRef.get().getWindowInsetsController().show(WindowInsets.Type.ime());
+            });
+            expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+            assertTrue(testActivity.hasWindowFocus());
+
+            // First back event should hide the IME, the second should be ignored by the IME and
+            // close the activity.
+            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            mInstrumentation.waitForIdleSync();
+
+            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible", View.GONE,
+                    TIMEOUT);
+
+            // Make sure the activity was stopped by the second back key event.
+            try {
+                TestUtils.waitOnMainUntil(testActivity::isStopped, TIMEOUT);
+            } catch (TimeoutException e) {
+                throw new AssertionError("Activity should have been stopped", e);
+            }
+        }
+    }
+
 
     private void setAutoRotateScreen(boolean enable) {
         try {

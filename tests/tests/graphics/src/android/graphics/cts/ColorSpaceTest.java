@@ -28,8 +28,6 @@ import android.hardware.DataSpace;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -44,6 +42,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.function.DoubleUnaryOperator;
 
 @SmallTest
@@ -51,9 +50,7 @@ import java.util.function.DoubleUnaryOperator;
 public class ColorSpaceTest {
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Column-major RGB->XYZ transform matrix for the sRGB color space
     private static final float[] SRGB_TO_XYZ = {
@@ -88,21 +85,39 @@ public class ColorSpaceTest {
 
     private static final DoubleUnaryOperator sIdentity = DoubleUnaryOperator.identity();
 
-    @Test
-    public void testNamedColorSpaces() {
-        ColorSpace.Named[] values = ColorSpace.Named.values();
-        int unflaggedColorSpaces = 2;
+    private static final HashSet<ColorSpace.Named> ALLOWED_NAMED_COLORSPACES =
+            new HashSet<>(Arrays.asList(
+                    ColorSpace.Named.SRGB,
+                    ColorSpace.Named.LINEAR_SRGB,
+                    ColorSpace.Named.EXTENDED_SRGB,
+                    ColorSpace.Named.LINEAR_EXTENDED_SRGB,
+                    ColorSpace.Named.BT709,
+                    ColorSpace.Named.BT2020,
+                    ColorSpace.Named.DCI_P3,
+                    ColorSpace.Named.DISPLAY_P3,
+                    ColorSpace.Named.NTSC_1953,
+                    ColorSpace.Named.SMPTE_C,
+                    ColorSpace.Named.ADOBE_RGB,
+                    ColorSpace.Named.PRO_PHOTO_RGB,
+                    ColorSpace.Named.ACES,
+                    ColorSpace.Named.ACESCG,
+                    ColorSpace.Named.CIE_XYZ,
+                    ColorSpace.Named.CIE_LAB,
+                    ColorSpace.Named.BT2020_HLG,
+                    ColorSpace.Named.BT2020_PQ));
+    static {
         if (Flags.okLabColorspace()) {
-            unflaggedColorSpaces -= 1;
+            ALLOWED_NAMED_COLORSPACES.add(ColorSpace.Named.OK_LAB);
         }
 
         if (Flags.displayBt2020Colorspace()) {
-            unflaggedColorSpaces -= 1;
+            ALLOWED_NAMED_COLORSPACES.add(ColorSpace.Named.DISPLAY_BT2020);
         }
+    }
 
-        int numColorSpaces = values.length - unflaggedColorSpaces;
-        for (int i = 0; i < numColorSpaces; i++) {
-            ColorSpace.Named named = values[i];
+    @Test
+    public void testNamedColorSpaces() {
+        for (ColorSpace.Named named : ALLOWED_NAMED_COLORSPACES) {
             ColorSpace colorSpace = ColorSpace.get(named);
             Log.v("ResolvedColorSpace", "ColorSpace: " + colorSpace);
             assertNotNull(colorSpace.getName());
@@ -374,8 +389,7 @@ public class ColorSpaceTest {
             // a ColorSpace that is flagged, this falls back to return SRGB as a default.
             // The values method of an enum will always return the full set of enum values
             // regardless if they are flagged out or not
-            boolean isSrgbFallback = colorSpace.getId() == 0
-                    && (!Flags.okLabColorspace() || !Flags.displayBt2020Colorspace());
+            boolean isSrgbFallback = !ALLOWED_NAMED_COLORSPACES.contains(e);
             if (e == ColorSpace.Named.SRGB || isSrgbFallback) {
                 assertTrue(colorSpace.isSrgb());
             } else {

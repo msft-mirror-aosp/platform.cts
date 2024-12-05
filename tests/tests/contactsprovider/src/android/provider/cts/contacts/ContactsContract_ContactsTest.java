@@ -28,16 +28,22 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Directory;
+import android.provider.ContactsContract.Groups;
 import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.Settings;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestContact;
+import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestGroup;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
 import android.provider.cts.contacts.account.StaticAccountAuthenticator;
 import android.test.AndroidTestCase;
-
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ContactsContract_ContactsTest extends AndroidTestCase {
 
@@ -123,13 +129,14 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
     }
 
     public void testQueryByAccount() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
-        String accountDataSet = "dataSet1";
+        String accountName = "ContactsTest_testQueryByAccount_accountName";
+        String accountType = "ContactsTest_testQueryByAccount_accountType";
+        String accountDataset = "ContactsTest_testQueryByAccount_dataset";
+
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)
-                .with(RawContacts.DATA_SET, accountDataSet)
+                .with(RawContacts.DATA_SET, accountDataset)
                 .insert().load();
         TestContact contact = rawContact.getContact().load();
         long contactId = contact.getId();
@@ -139,7 +146,7 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
         assertContactFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
 
 
@@ -147,12 +154,12 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, "a")
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, "b")
-                .appendQueryParameter(RawContacts.DATA_SET, accountDataSet)
+                .appendQueryParameter(RawContacts.DATA_SET, accountDataset)
                 .build(), contactId);
         assertContactNotFound(Contacts.CONTENT_URI.buildUpon()
                 .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
@@ -166,8 +173,8 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
     }
 
     public void testQueryByAccountWithNullDataSet() throws Exception {
-        String accountName = "accountName1";
-        String accountType = "accountType1";
+        String accountName = "ContactsTest_testQueryByAccountWithNullDataSet_accountName";
+        String accountType = "ContactsTest_testQueryByAccountWithNullDataSet_accountType";
         TestRawContact rawContact = mBuilder.newRawContact()
                 .with(RawContacts.ACCOUNT_NAME, accountName)
                 .with(RawContacts.ACCOUNT_TYPE, accountType)
@@ -197,6 +204,115 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
                 .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
                 .appendQueryParameter(RawContacts.DATA_SET, "c")
                 .build(), contactId);
+    }
+
+    public void testQueryVisibleContacts() throws Exception {
+        Set<String> visibleContactNames = new HashSet<>();
+        Set<String> notVisibleContactNames = new HashSet<>();
+        String account1Name = "ContactsTest_testQueryVisibleContacts_account1";
+        String account2Name = "ContactsTest_testQueryVisibleContacts_account2";
+        // Set Settings.UNGROUPED_VISIBLE to false for account1
+        ContentValues values = new ContentValues();
+        values.put(Settings.UNGROUPED_VISIBLE, 0);
+        mResolver.update(
+                Settings.CONTENT_URI
+                        .buildUpon()
+                        .appendQueryParameter(Settings.ACCOUNT_NAME, account1Name)
+                        .appendQueryParameter(
+                                Settings.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .build(),
+                values,
+                null,
+                null);
+        // Create an ungrouped raw contact in account1.
+        TestRawContact rawContact1 = createRawContactWithName(account1Name, "Contact1 NotVisible");
+        notVisibleContactNames.add(rawContact1.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+        // Set Settings.UNGROUPED_VISIBLE to true for the account2
+        values.put(Settings.UNGROUPED_VISIBLE, 1);
+        mResolver.update(
+                Settings.CONTENT_URI
+                        .buildUpon()
+                        .appendQueryParameter(Settings.ACCOUNT_NAME, account2Name)
+                        .appendQueryParameter(
+                                Settings.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .build(),
+                values,
+                null,
+                null);
+        // Create an ungrouped raw contact in account2.
+        TestRawContact rawContact2 = createRawContactWithName(account2Name, "Contact2 Visible");
+        visibleContactNames.add(rawContact2.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+        // Create a visible group with one contact in account1
+        TestGroup visibleGroup1 =
+                mBuilder.newGroup()
+                        .with(Groups.ACCOUNT_NAME, account1Name)
+                        .with(Groups.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .with(Groups.TITLE, "group1")
+                        .with(Groups.GROUP_VISIBLE, 1)
+                        .insert();
+        TestRawContact rawContact3 = createRawContactWithName(account1Name, "Contact3 Visible");
+        addToGroup(visibleGroup1, rawContact3);
+        visibleContactNames.add(rawContact3.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+        // Create a visible group with one contact in account2
+        TestGroup visibleGroup2 =
+                mBuilder.newGroup()
+                        .with(Groups.ACCOUNT_NAME, account2Name)
+                        .with(Groups.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .with(Groups.TITLE, "group2")
+                        .with(Groups.GROUP_VISIBLE, 1)
+                        .insert();
+        TestRawContact rawContact4 = createRawContactWithName(account2Name, "Contact4 Visible");
+        addToGroup(visibleGroup2, rawContact4);
+        visibleContactNames.add(rawContact4.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+        // Create a non-visible group with one contact in account1
+        TestGroup notVisibleGroup1 =
+                mBuilder.newGroup()
+                        .with(Groups.ACCOUNT_NAME, account1Name)
+                        .with(Groups.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .with(Groups.TITLE, "hiddenGroup1")
+                        .with(Groups.GROUP_VISIBLE, 0)
+                        .insert();
+        TestRawContact rawContact5 = createRawContactWithName(account1Name, "Contact5 NotVisible");
+        addToGroup(notVisibleGroup1, rawContact5);
+        notVisibleContactNames.add(rawContact5.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+        // Create a non-visible group with one contact in account2
+        TestGroup notVisibleGroup2 =
+                mBuilder.newGroup()
+                        .with(Groups.ACCOUNT_NAME, account2Name)
+                        .with(Groups.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .with(Groups.TITLE, "hiddenGroup2")
+                        .with(Groups.GROUP_VISIBLE, 0)
+                        .insert();
+        TestRawContact rawContact6 = createRawContactWithName(account2Name, "Contact6 NotVisible");
+        addToGroup(notVisibleGroup2, rawContact6);
+        notVisibleContactNames.add(rawContact6.getString(RawContacts.DISPLAY_NAME_PRIMARY));
+
+        Set<String> actualContactNames = new HashSet<>();
+        try (Cursor cursor =
+                mResolver.query(
+                        Contacts.CONTENT_URI,
+                        new String[] {Contacts.DISPLAY_NAME_PRIMARY},
+                        Contacts.IN_VISIBLE_GROUP + "= ?",
+                        new String[] {"1"},
+                        null,
+                        null)) {
+            while (cursor.moveToNext()) {
+                actualContactNames.add(cursor.getString(0));
+            }
+        }
+
+        assertTrue(
+                "Expected to contain all of: "
+                        + visibleContactNames
+                        + " Actual: "
+                        + actualContactNames,
+                actualContactNames.containsAll(visibleContactNames));
+        assertTrue(
+                "Expected to contain none of: "
+                        + notVisibleContactNames
+                        + " Actual: "
+                        + actualContactNames,
+                Collections.disjoint(actualContactNames, notVisibleContactNames));
     }
 
     public void testInsert_isUnsupported() {
@@ -541,5 +657,23 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
                 null)) {
             assertEquals(0, c.getCount());
         }
+    }
+
+    private TestRawContact createRawContactWithName(String accountName, String contactName) throws Exception {
+        TestRawContact rawContact =
+                mBuilder.newRawContact()
+                        .with(RawContacts.ACCOUNT_NAME, accountName)
+                        .with(RawContacts.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
+                        .insert();
+      rawContact.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
+                .with(StructuredName.DISPLAY_NAME, contactName)
+                .insert();
+      return rawContact.load();
+    }
+
+    private void addToGroup(TestGroup group, TestRawContact rawContact) throws Exception {
+      rawContact.newDataRow(GroupMembership.CONTENT_ITEM_TYPE)
+          .with(GroupMembership.GROUP_ROW_ID, group.getId())
+                .insert();
     }
 }

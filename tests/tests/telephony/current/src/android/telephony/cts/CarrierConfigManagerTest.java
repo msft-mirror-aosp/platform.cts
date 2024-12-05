@@ -31,12 +31,14 @@ import static android.telephony.CarrierConfigManager.KEY_FORCE_HOME_NETWORK_BOOL
 import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_SOS_MAX_DATAGRAM_SIZE_BYTES_INT;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -232,17 +234,15 @@ public class CarrierConfigManagerTest {
                     config.getBoolean(
                       CarrierConfigManager.KEY_ENABLE_CROSS_SIM_CALLING_ON_OPPORTUNISTIC_DATA_BOOL),
                       false);
-            assertEquals(
-                    "KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE"
-                            + " doesn't match static default.",
-                    config.getPersistableBundle(CarrierConfigManager
-                            .KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE),
-                    PersistableBundle.EMPTY);
+            PersistableBundle bundle = config.getPersistableBundle(CarrierConfigManager
+                    .KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE);
+            assertTrue("KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE"
+                    + " doesn't match static default.",bundle.isEmpty());
             assertEquals("KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(
                             KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT),
-                    300);
+                    180);
             assertTrue("KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL));
@@ -282,6 +282,20 @@ public class CarrierConfigManagerTest {
             assertEquals("KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT), 600);
+            assertEquals("KEY_SATELLITE_SOS_MAX_DATAGRAM_SIZE_BYTES_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_SOS_MAX_DATAGRAM_SIZE_BYTES_INT), 255);
+            assertEquals("KEY_SATELLITE_DISPLAY_NAME_STRING doesn't match static default.",
+                    config.getString(KEY_SATELLITE_DISPLAY_NAME_STRING), "");
+            PersistableBundle earfcnBundle = config.getPersistableBundle(
+                    CarrierConfigManager.KEY_REGIONAL_SATELLITE_EARFCN_BUNDLE);
+            assertTrue("KEY_REGIONAL_SATELLITE_EARFCN_BUNDLE "
+                    + "doesn't match static default.", bundle.isEmpty());
+            assertArrayEquals("KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY "
+                            + "doesn't match static default.", config.getStringArray(
+                                    CarrierConfigManager
+                                            .KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY),
+                    new String[]{"com.google.android.apps.messaging"});
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",

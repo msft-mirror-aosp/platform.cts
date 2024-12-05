@@ -25,6 +25,10 @@ import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_START_INDEX;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -33,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyFloat;
@@ -50,6 +55,7 @@ import android.accessibilityservice.AccessibilityService.MagnificationController
 import android.accessibilityservice.AccessibilityService.MagnificationController.OnMagnificationChangedListener;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.MagnificationConfig;
+import android.accessibilityservice.cts.activities.AccessibilityTextTraversalActivity;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -59,11 +65,13 @@ import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Region;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -76,6 +84,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -85,7 +94,6 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -98,6 +106,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -582,27 +591,6 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
-    public void testSetWindowModeConfig_hasMagnificationOverlay() throws TimeoutException {
-        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
-
-        final MagnificationController controller = mService.getMagnificationController();
-        final MagnificationConfig config = new MagnificationConfig.Builder()
-                .setMode(MAGNIFICATION_MODE_WINDOW)
-                .setScale(2.0f)
-                .build();
-
-        try {
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> controller.setMagnificationConfig(config, false),
-                    event -> isMagnificationOverlayExisting(), 5000);
-        } finally {
-            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testSetWindowModeConfig_hasAccessibilityOverlay() throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
 
@@ -622,32 +610,6 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
-    public void testServiceConnectionDisconnected_hasNoMagnificationOverlay()
-            throws TimeoutException {
-        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
-
-        final MagnificationController controller = mService.getMagnificationController();
-        final MagnificationConfig config = new MagnificationConfig.Builder()
-                .setMode(MAGNIFICATION_MODE_WINDOW)
-                .setScale(2.0f)
-                .build();
-
-        try {
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> controller.setMagnificationConfig(config, false),
-                    event -> isMagnificationOverlayExisting(), 5000);
-
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> mService.runOnServiceSync(() -> mService.disableSelfAndRemove()),
-                    event -> !isMagnificationOverlayExisting(), 5000);
-        } finally {
-            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testServiceConnectionDisconnected_hasNoAccessibilityOverlay()
             throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
@@ -1272,7 +1234,7 @@ public class AccessibilityMagnificationTest {
     @Test
     @FlakyTest
     public void testA11yNodeInfoVisibility_whenOutOfMagnifiedArea_shouldVisible()
-            throws Exception{
+            throws Exception {
         Activity activity = launchActivityAndWaitForItToBeOnscreen(
                 mInstrumentation, sUiAutomation, mActivityRule);
         final MagnificationController controller = mService.getMagnificationController();
@@ -1439,6 +1401,155 @@ public class AccessibilityMagnificationTest {
             final Rect boundsAfterMagnify = new Rect();
             buttonNode.getBoundsInWindow(boundsAfterMagnify);
             assertThat(boundsBeforeMagnify).isEqualTo(boundsAfterMagnify);
+        } finally {
+            mService.runOnServiceSync(() -> controller.reset(false));
+        }
+    }
+
+    @Test
+    public void testTextLocations_changeWhenMagnified() throws Exception {
+        ActivityTestRule<AccessibilityTextTraversalActivity> textActivityRule =
+                new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
+        Activity activity = launchActivityAndWaitForItToBeOnscreen(
+                mInstrumentation, sUiAutomation, textActivityRule);
+        final TextView textView = activity.findViewById(R.id.text);
+        assertThat(textView).isNotNull();
+
+        mInstrumentation.runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                textView.setVisibility(View.VISIBLE);
+                textView.setText(activity.getString(R.string.a_b));
+            }
+        });
+
+        final AccessibilityNodeInfo text = sUiAutomation
+                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
+                        activity.getString(R.string.a_b)).get(0);
+
+        assertWithMessage("Can't find text on the screen").that(text).isNotNull();
+
+        Bundle extras = waitForExtraTextData(text, EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+        final Parcelable[] initialParcelables = extras.getParcelableArray(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+        assertNotNull(initialParcelables);
+        final RectF[] initialLocations = Arrays.copyOf(initialParcelables,
+                initialParcelables.length, RectF[].class);
+        assertThat(text.getText().length()).isEqualTo(initialLocations.length);
+
+        final MagnificationController controller = mService.getMagnificationController();
+        // Pick some scale and center. The actual values are not important, but we do this
+        // based on the magnifiable region size so that the values are valid.
+        final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
+        final float scale = 8.0f;
+        final float centerX = magnifyBounds.left + (((float) magnifyBounds.width() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+        final float centerY = magnifyBounds.top + (((float) magnifyBounds.height() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+
+        try {
+            waitOnMagnificationChanged(controller, scale, centerX, centerY);
+            TestUtils.waitUntil("Failed to update character coordinates after window magnification",
+                    TIMEOUT_CONFIG_SECONDS, () -> {
+
+                    Bundle finalExtras = waitForExtraTextData(text,
+                            EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+                    final Parcelable[] finalParcelables = finalExtras.getParcelableArray(
+                            EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+                    assertNotNull(finalParcelables);
+                    final RectF[] finalLocations = Arrays.copyOf(finalParcelables,
+                            finalParcelables.length, RectF[].class);
+                    assertThat(text.getText().length()).isEqualTo(finalLocations.length);
+
+                    float tolerance = 0.01f;
+                    for (int i = 0; i < initialLocations.length; i++) {
+                        // If any loctions match, we haven't updated the character
+                        // locations due to a viewport change. Fail the test.
+                        if (Math.abs(initialLocations[i].top - finalLocations[i].top) < tolerance
+                                || Math.abs(initialLocations[i].bottom - finalLocations[i].bottom)
+                                < tolerance || Math.abs(initialLocations[i].left
+                                - finalLocations[i].left) < tolerance
+                                || Math.abs(initialLocations[i].right - finalLocations[i].right)
+                                < tolerance
+                        ) {
+                            return false;
+                        }
+                    }
+                    // Success.
+                    return true;
+                });
+        } finally {
+            mService.runOnServiceSync(() -> controller.reset(false));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
+    public void testTextLocationsInWindow_noChangeWhenMagnified() throws Exception {
+        ActivityTestRule<AccessibilityTextTraversalActivity> textActivityRule =
+                new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
+        Activity activity = launchActivityAndWaitForItToBeOnscreen(
+                mInstrumentation, sUiAutomation, textActivityRule);
+        final TextView textView = activity.findViewById(R.id.text);
+        assertThat(textView).isNotNull();
+
+        mInstrumentation.runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                textView.setVisibility(View.VISIBLE);
+                textView.setText(activity.getString(R.string.a_b));
+            }
+        });
+
+        final AccessibilityNodeInfo text = sUiAutomation
+                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
+                        activity.getString(R.string.a_b)).get(0);
+
+        assertWithMessage("Can't find text on the screen").that(text).isNotNull();
+
+        Bundle extras = waitForExtraTextData(text,
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+        final Parcelable[] initialParcelables = extras.getParcelableArray(
+                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY, RectF.class);
+        assertNotNull(initialParcelables);
+        final RectF[] initialLocations = Arrays.copyOf(initialParcelables,
+                initialParcelables.length, RectF[].class);
+        assertThat(text.getText().length()).isEqualTo(initialLocations.length);
+
+        final MagnificationController controller = mService.getMagnificationController();
+        // Pick some scale and center. The actual values are not important, but we do this
+        // based on the magnifiable region size so that the values are valid.
+        final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
+        final float scale = 8.0f;
+        final float centerX = magnifyBounds.left + (((float) magnifyBounds.width() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+        final float centerY = magnifyBounds.top + (((float) magnifyBounds.height() / (2.0f * scale))
+                * ((2.0f * scale) - 1.0f));
+
+        try {
+            waitOnMagnificationChanged(controller, scale, centerX, centerY);
+
+            // Wait long enough for magnification to impact character bounds.
+            // It shouldn't impact bounds in window.
+            SystemClock.sleep(1000);
+
+            extras = waitForExtraTextData(text, EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+            final Parcelable[] finalParcelables = extras.getParcelableArray(
+                    EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY, RectF.class);
+            assertNotNull(finalParcelables);
+            final RectF[] finalLocations = Arrays.copyOf(finalParcelables, finalParcelables.length,
+                    RectF[].class);
+            assertThat(text.getText().length()).isEqualTo(finalLocations.length);
+
+            float tolerance = 0.01f;
+            for (int i = 0; i < initialLocations.length; i++) {
+                assertThat(initialLocations[i].top).isWithin(tolerance).of(finalLocations[i].top);
+                assertThat(initialLocations[i].bottom).isWithin(tolerance).of(
+                        finalLocations[i].bottom);
+                assertThat(initialLocations[i].left).isWithin(tolerance).of(finalLocations[i].left);
+                assertThat(initialLocations[i].right).isWithin(tolerance).of(
+                        finalLocations[i].right);
+            }
         } finally {
             mService.runOnServiceSync(() -> controller.reset(false));
         }
@@ -1671,14 +1782,27 @@ public class AccessibilityMagnificationTest {
     }
 
     private String getSetterErrorMessage(String rawMessage) {
-        if (Flags.alwaysDrawMagnificationFullscreenBorder()) {
-            String postfix = ". The failure may be because the service connection does not exist"
-                    + ", the given setter info does not make the magnification spec changed"
-                    + ", or the SystemUI connection does not exist."
-                    + " Please ensure your SystemUI implements the IMagnificationConnection AIDL.";
-            return rawMessage + postfix;
-        } else {
-            return rawMessage;
+        String postfix = ". The failure may be because the service connection does not exist"
+                + ", the given setter info does not make the magnification spec changed"
+                + ", or the SystemUI connection does not exist."
+                + " Please ensure your SystemUI implements the IMagnificationConnection AIDL.";
+        return rawMessage + postfix;
+    }
+
+    private Bundle waitForExtraTextData(AccessibilityNodeInfo info, String key) {
+        final Bundle getTextArgs = new Bundle();
+        getTextArgs.putInt(EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_START_INDEX, 0);
+        getTextArgs.putInt(EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH, info.getText().length());
+        // Node refresh must succeed and the resulting extras must contain the requested key.
+        try {
+            TestUtils.waitUntil("Timed out waiting for extra data", () -> {
+                info.refreshWithExtraData(key, getTextArgs);
+                return info.getExtras().containsKey(key);
+            });
+        } catch (Exception e) {
+            fail(e.getMessage());
         }
+
+        return info.getExtras();
     }
 }

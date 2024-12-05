@@ -11,8 +11,8 @@ android_library {
     ],
     manifest: "src/main/AndroidManifest.xml",
     static_libs: [
-        "Harrier",
-        "bedstead-multiuser",
+        "bedstead",
+        "bedstead-enterprise",
     ],
     min_sdk_version: "29",
 }

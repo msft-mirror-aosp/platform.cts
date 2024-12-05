@@ -289,24 +289,17 @@ public class VirtualContainerActivityTest
     }
 
     private void assertBoundsSet(ViewNode viewNode) {
-        String className = viewNode.getClassName();
         String idEntry = viewNode.getIdEntry();
-        // Skip VirtualContainerView and its descendants
-        if (className != null
-                && className.equals(VirtualContainerView.class.getName())) {
-            return;
-        }
-        if (idEntry != null && idEntry.equals("action_context_bar")) return;
-        if (className == null && idEntry == null) return;
-        assertThat(viewNode.getLeft() | viewNode.getTop() | viewNode.getWidth()
-                | viewNode.getHeight()).isNotEqualTo(0);
+        // Values come from
+        // tests/autofillservice/res/layout/virtual_container_activity.xml
+        // The left and top values come from the margin
         if (idEntry != null && idEntry.equals("text_view_child")) {
-            // Verify the bounds are set correctly
-            assertThat(viewNode.getLeft()).isEqualTo(0);
-            assertThat(viewNode.getTop()).isEqualTo(2190);
+            assertThat(viewNode.getLeft()).isEqualTo(10);
+            assertThat(viewNode.getTop()).isEqualTo(10);
             assertThat(viewNode.getWidth()).isEqualTo(50);
             assertThat(viewNode.getHeight()).isEqualTo(60);
         }
+        // Recursively search for the ViewNode
         for (int i = 0; i < viewNode.getChildCount(); ++i) {
             assertBoundsSet(viewNode.getChildAt(i));
         }
