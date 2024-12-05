@@ -40,4 +40,7 @@
     <!-- Exclude CtsJvmtiRunTest911HostTestCases as it depends on line numbers which were changed
          due to openjdk 17 upgrade. b/338607812 -->
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest911HostTestCases" />
+    <!-- Exclude CtsJvmtiRunTest1911HostTestCases as it depends on how arguments with generic
+         signature are handled. aosp/2769459 changed this behaviour in ART. b/379795866 -->
+    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest1911HostTestCases" />
 </configuration>
