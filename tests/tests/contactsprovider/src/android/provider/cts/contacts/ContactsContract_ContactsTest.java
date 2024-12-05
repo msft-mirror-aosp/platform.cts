@@ -214,31 +214,27 @@ public class ContactsContract_ContactsTest extends AndroidTestCase {
         // Set Settings.UNGROUPED_VISIBLE to false for account1
         ContentValues values = new ContentValues();
         values.put(Settings.UNGROUPED_VISIBLE, 0);
-        mResolver.update(
+        mResolver.insert(
                 Settings.CONTENT_URI
                         .buildUpon()
                         .appendQueryParameter(Settings.ACCOUNT_NAME, account1Name)
                         .appendQueryParameter(
                                 Settings.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
                         .build(),
-                values,
-                null,
-                null);
+                values);
         // Create an ungrouped raw contact in account1.
         TestRawContact rawContact1 = createRawContactWithName(account1Name, "Contact1 NotVisible");
         notVisibleContactNames.add(rawContact1.getString(RawContacts.DISPLAY_NAME_PRIMARY));
         // Set Settings.UNGROUPED_VISIBLE to true for the account2
         values.put(Settings.UNGROUPED_VISIBLE, 1);
-        mResolver.update(
+        mResolver.insert(
                 Settings.CONTENT_URI
                         .buildUpon()
                         .appendQueryParameter(Settings.ACCOUNT_NAME, account2Name)
                         .appendQueryParameter(
                                 Settings.ACCOUNT_TYPE, StaticAccountAuthenticator.TYPE)
                         .build(),
-                values,
-                null,
-                null);
+                values);
         // Create an ungrouped raw contact in account2.
         TestRawContact rawContact2 = createRawContactWithName(account2Name, "Contact2 Visible");
         visibleContactNames.add(rawContact2.getString(RawContacts.DISPLAY_NAME_PRIMARY));
