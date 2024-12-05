@@ -16,8 +16,16 @@
 
 package android.media.router.cts;
 
-import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_PERMISSIONS;
-import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_PERMISSIONS;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_1_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_2;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_2;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
 
 import android.media.MediaRoute2Info;
 
@@ -25,7 +33,6 @@ import com.android.media.flags.Flags;
 
 import java.util.List;
 import java.util.Set;
-
 
 public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderService {
 
@@ -35,9 +42,20 @@ public class PermissionsRequiredRouteProvider extends BaseFakeRouteProviderServi
 
     static List<MediaRoute2Info> createRoutes() {
         if (Flags.enableRouteVisibilityControlApi()) {
-            return List.of(createPermissionsRequiredRoute(ROUTE_ID_REQUIRES_PERMISSIONS,
-                    ROUTE_NAME_REQUIRES_PERMISSIONS,
-                    Set.of("android.permission.POST_NOTIFICATIONS")));
+            return List.of(
+                    createPermissionsRequiredRoute(ROUTE_ID_REQUIRES_ONE_PERMISSION,
+                            ROUTE_NAME_REQUIRES_ONE_PERMISSION,
+                            List.of(Set.of("android.permission.POST_NOTIFICATIONS"))),
+                    createPermissionsRequiredRoute(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET,
+                            ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET,
+                            List.of(Set.of(REQUIRED_PERMISSIONS_SET_1_1),
+                                    Set.of(
+                                            REQUIRED_PERMISSIONS_SET_2_1,
+                                            REQUIRED_PERMISSIONS_SET_2_2),
+                                    Set.of(
+                                            REQUIRED_PERMISSIONS_SET_3_1,
+                                            REQUIRED_PERMISSIONS_SET_3_2,
+                                            REQUIRED_PERMISSIONS_SET_3_3))));
         } else {
             return List.of();
         }

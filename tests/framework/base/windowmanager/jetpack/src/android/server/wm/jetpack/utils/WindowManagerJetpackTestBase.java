@@ -141,10 +141,23 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 false /* isFullScreen */, launchDisplayId);
     }
 
+    /**
+     * Starts an {@link Activity} with {@code activityId}, of which the windowing mode and launched
+     * display follows system default.
+     */
     public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId) {
+        return startActivityNewTask(activityClass, activityId, null /* displayId */);
+    }
+
+    /**
+     * Starts an {@link Activity} on given {@code displayId}, of which the windowing mode follows
+     * system default.
+     */
+    public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
+            @Nullable String activityId, @Nullable Integer displayId) {
         return launcherForActivityNewTask(activityClass, activityId, false /* isFullScreen */,
-                null /* launchDisplayId */)
+                displayId)
                 .launch(mInstrumentation);
     }
 
@@ -155,7 +168,7 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
     public <T extends  Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId) {
         return startFullScreenActivityNewTask(activityClass, activityId,
-                null /* launchDisplayId */);
+                null /* displayId */);
     }
 
     /**

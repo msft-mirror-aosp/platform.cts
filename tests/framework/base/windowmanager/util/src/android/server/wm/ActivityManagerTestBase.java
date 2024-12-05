@@ -602,7 +602,7 @@ public abstract class ActivityManagerTestBase {
                                         className, intent, displayId, windowingMode);
                         // Check activity is launched and resumed.
                         final ComponentName testActivityName = mTestActivity.getComponentName();
-                        waitAndAssertTopResumedActivity(
+                        waitAndAssertResumedAndFocusedActivityOnDisplay(
                                 testActivityName, displayId, "Activity must be resumed");
                     });
         }
@@ -1265,9 +1265,12 @@ public abstract class ActivityManagerTestBase {
                 /* actual = */ mWmState.getDisplayByActivity(activityName));
     }
 
-    public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
-            String message) {
-
+    /**
+     * Waits and asserts that the activity represented by the given activity name, display id
+     * is focused.
+     */
+    public void waitAndAssertResumedAndFocusedActivityOnDisplay(ComponentName activityName,
+            int displayId, String message) {
         final String activityClassName = getActivityName(activityName);
         mWmState.waitForWithAmState(state ->
                 activityClassName.equals(state.getFocusedActivityOnDisplay(displayId)),

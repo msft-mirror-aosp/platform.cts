@@ -19,25 +19,31 @@ package android.server.wm.jetpack.embedding;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.ActivityManagerTestBase;
 
 import androidx.annotation.Nullable;
+import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.SplitPlaceholderRule;
 
 import org.junit.After;
 import org.junit.Before;
 
 /**
  * Tests for the {@link androidx.window.extensions} implementation provided on the device (and only
- * if one is available) for the Activity Embedding functionality. Specifically tests activity
- * launch scenarios on secondary display.
- * <p>
+ * if one is available) for the placeholders functionality within Activity Embedding on secondary
+ * display. An activity can provide a {@link SplitPlaceholderRule} to the
+ * {@link ActivityEmbeddingComponent} which will enable the activity to launch directly into a split
+ * with the placeholder activity it is configured to launch with.
+ *
  * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingLaunchTests
+ *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingPlaceholderTests
  */
 @Presubmit
-public class MultiDisplayActivityEmbeddingLaunchTests extends ActivityEmbeddingLaunchTests {
+public class MultiDisplayActivityEmbeddingPlaceholderTests
+        extends ActivityEmbeddingPlaceholderTests {
 
     private final MultiDisplayTestHelper mTestHelper =
-            new MultiDisplayTestHelper(new VirtualDisplaySession());
+            new MultiDisplayTestHelper(new ActivityManagerTestBase.VirtualDisplaySession());
 
     @Before
     @Override
