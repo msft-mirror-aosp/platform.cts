@@ -1529,7 +1529,7 @@
     <!-- String for DynamicSensorDiscoveryTest -->
     <string name="snsr_dynamic_sensor_discovery_test">Dynamic Sensor Discovery Test</string>
 
-<!-- String for Barometer sensor tests -->
+    <!-- String for Barometer sensor tests -->
     <string name="snsr_baro_m_test">Barometer Measurement Test</string>
     <string name="snsr_baro_not_implemented">This device does not have a high quality barometer, skipping tests.</string>
     <string name="snsr_baro_flashlight_test_prep_instruction">Put the device under test on a flat surface in a dark room, and have a ~100 lumens flashlight ready. Do not turn on the flashlight yet.</string>
@@ -1537,7 +1537,29 @@
     <string name="snsr_baro_wait">Please wait while the device collects readings.</string>
     <string name="snsr_baro_restore_to_default">Collection has completed, please turn off the flashlight, and return device back to flat surface.</string>
     <string name="snsr_baro_proceed">The test has finished running, please press next to proceed to the results.</string>
-
+    <string name="snsr_baro_turn_location_on"> After clicking the Next button, you will be redirected to the location settings screen. Please turn on location services on this device, and then go to the location settings screen and turn on location for the reference device.</string>
+    <string name="snsr_baro_turn_bluetooth_on"> After clicking the Next button, you will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device, and then go to the bluetooth settings screen and turn on bluetooth for the reference device. If the two devices are paired already, forget them before proceeding.</string>
+    <string name="snsr_baro_fridge_instruction"> After clicking the Next button, put the device in the fridge with a temperature of 6 degrees Celsius or lower on a flat surface for 20 minutes with the screen off.</string>
+    <string name="snsr_baro_fridge_wait">Please wait while the device gets to expected starting temperature, this will take 20 minutes.</string>
+    <string name="snsr_baro_date_time_instruction">Take the device out of the fridge and put it on a flat surface with the screen side up next to the reference device. After clicking the "Next" button, you will be redirected to the date and time settings screen. Open the date and time settings screen on the reference device, and set the date and time on this device and the reference device to an hour from now in your local timezone, and click save/done/OK simultaneously on both devices.\nAfter that has been done, use the back button on the test device to return back to the CTS Verifier app.</string>
+    <string name="snsr_baro_bluetooth_instruction">Please open the CTS Verifier app on the reference device, and click the "Barometer reference" menu item, you should see a list of bluetooth devices near you. Read these instructions carefully before continuing:\nAfter clicking the Next button here, you will be redirected to the Bluetooth pairing screen. Find this device on the reference device\'s list - if not found, click the "scan for devices" button on the reference device - and click it, wait up to 10 seconds for the pairing prompt to appear on the reference device, and click "Pair" on both devices. Return to the CTS Verifier app on this device after connection is established.</string>
+    <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. Please wait while the device collects readings.</string>
+    <string name="snsr_baro_squeeze_test_prep_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, squezze the device quickly and release as you would to crumple a soda can. The sound will be played twice.</string>
+    <string name="snsr_baro_test_in_progress">Test in progress. </string>
+    <string name="snsr_baro_turn_off_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn off airplane mode on this device.</string>
+    <string name="snsr_baro_turn_on_cellular_data"> You will be redirected to the cellular data settings screen. Please turn on cellular data on this device.</string>
+    <string name="snsr_baro_turn_on_wifi"> You will be redirected to the wifi settings screen. Please turn on wifi on this device.</string>
+    <string name="snsr_baro_turn_on_bluetooth"> You will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device.</string>
+    <string name="snsr_baro_turn_on_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn on airplane mode on this device.</string>
+    <string name="snsr_baro_walking_impact_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, start walking with the device without changing elevation, try to make a few turns during the walk, and when you hear another sound, stop walking.</string>
+    <string name="snsr_baro_soomth_within_same_activation_instruction">After clicking the Next button, put the device on the ground with the screen facing up. After the first sound plays, raise the device to ~2 meters above the ground within 2 seconds, another sound will play after 2 seconds, and hold it steady for about 5 seconds. A final sound will be played to signal the end of the test. </string>
+    <string name="snsr_baro_smooth_across_activations_prep_instruction">Make sure you are on a floor with at least two more accessible floors below you. Then put the device on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound.</string>
+    <string name="snsr_baro_smooth_across_activations_two_meters_above">Hold the device steady or put it on a flat surface that is 2 meters above the ground. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <string name="snsr_baro_smooth_across_activations_floor">Put the device back on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <string name="snsr_baro_smooth_across_activations_two_floors_below">Now walk down two floors with the device. Put the device on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <!-- String for Barometer reference device -->
+    <string name="snsr_baro_ref_device">Barometer Reference Device</string>
+    <string name="snsr_baro_ref_device_start_collection_instruction">Now that the two devices are connected, click the Next button on both devices simultaneously to start collecting readings.</string>
 
     <!-- Strings for Sample Test Activities -->
     <string name="share_button_text">Share</string>
@@ -2458,6 +2480,69 @@
     <string name="fsi_sticky_hun_60s">There should be a Heads Up Notification on the screen.\n
         It would show for 60s.\n
         Fail the test if it doesn\'t show or disappears within 60s.</string>
+    <string name="progress_style_test">ProgressStyle Notification Test</string>
+    <string name="progress_style_info">This test checks that ProgressStyle Notifications are rendered as expected.</string>
+    <string name="progress_style_indeterminate" formatted="false">A progress style notification with an indeterminate progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The progress bar is animated.
+         \n\u2022 The progress bar color is orange.
+         \n\u2022 The progress bar is obviously indeterminate, and would not be confused for 0% or 100% progress.
+    </string>
+    <string name="progress_style_progress" formatted="false">A progress style notification with 40% progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 40% of the progress bar looks filled.
+         \n\u2022 The rest of the progress bar looks unfilled.
+         \n\u2022 The progress bar color is orange.
+    </string>
+    <string name="progress_style_multiple_segments" formatted="false">A progress style notification with multiple progress segments was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \nFrom left to right:
+         \n\u2022 Segment 1 is 20% of the bar and is filled and its color is orange.
+         \n\u2022 Segment 2 is 30% of the bar and is filled and its color is yellow.
+         \n\u2022 Segment 3 is 10% of the bar and is filled and its color is red.
+         \n\u2022 Segment 4 is 40% of the bar and is unfilled and segment’s appearance should indicate that it is not completed yet.
+    </string>
+    <string name="progress_style_multiple_points" formatted="false">A progress style notification with multiple progress points was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 Point 1 should be positioned at 20% of the progress bar\'s length and its color should be orange.
+         \n\u2022 Point 2 should be positioned at the middle of the bar and its color should be yellow.
+         \n\u2022 Point 3 should be positioned at 80% of the progress bar\'s length and its color should be blue. The progress bar\’s appearance should indicate that it is not completed yet.
+    </string>
+    <string name="progress_style_start_and_end_icons" formatted="false">A progress style notification with start and end progress icons was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The start icon should have S.
+         \n\u2022 The start icon should be displayed at the beginning of the progress bar, with a margin between the icon and the progress bar itself.
+         \n\u2022 The start icon should have E.
+         \n\u2022 The end icon should be displayed at the end of the progress bar, with a margin between the icon and the progress bar.
+    </string>
+    <string name="progress_style_progress_tracker_icon" formatted="false">A progress style notification with progress tracker icon was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The progress bar color should be orange.
+         \n\u2022 The progress tracker icon should be displayed.
+         \n\u2022 The progress tracker position should be at 60% of the bar length.
+         \n\u2022 The progress bar should be filled from the start of the bar to the progress tracker icon.
+         \n\u2022 The progress bar should be unfilled from the progress tracker icon to the end of the bar.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+    </string>
+    <string name="progress_style_large_icon" formatted="false">A progress style notification with large icon was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The progress bar color should be orange.
+         \n\u2022 The large icon should be displayed in both expanded and collapsed states.
+    </string>
+    <string name="progress_style_not_styled_by_progress" formatted="false">A progress style notification which is not styled by its progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+         \n\u2022 Segments 1, 2 and 3 should look filled with orange, yellow and red respectively.
+         \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, yellow, orange and red, respectively.
+    </string>
+    <string name="progress_style_rtl_enabled" formatted="false">A progress style notification was posted.  Change device layout direction to RTL (Developer options > Drawing > Force RTL layout direction). Expand the notification (if it’s not already expanded), and verify that:
+         \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+         \n\u2022 Segments from left to right should look filled with red, yellow and orange colors respectively.
+         \n\u2022 Points from left to right  should look filled with  red, orange, yellow and orange colors respectively.
+         \n\u2022 The arrow on the bar should point away from the S and toward the E.
+         \n\u2022 S icon should appear on the right and it is not mirrored.
+         \n\u2022 E icon should appear on the left and it is not mirrored.
+    </string>
+
     <string name="notification_style_test">Notification Styles Test</string>
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
     <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:
@@ -5769,13 +5854,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
     <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
         use in this test.</string>
-    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+    <string name="usbwarning_paragraph_1">The test may pass using this USB peripheral.
         However, some adapters have been seen to implement noise
-        suppression and/or echo cancellation, or introduce significant latency that
-        may cause the test to fail. If the test does not pass with this adapter,
-        you should obtain the</string>
-    <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
-    <string name="usbwarning_paragraph_1_2">for use in this test.</string>
+        suppression and/or echo cancellation which may block some signals used by the test,
+        or may introduce significant latency (from 40 to 60 ms) that also
+        may cause the test to fail.</string>
+    <string name="usbwarning_paragraph_2">If the test does not pass with this adapter,
+        you should obtain a Google-supplied USB-C to 3.5mm Adapter and Loopback Adapter.</string>
 
     <!-- Immersive Audio Test -->
     <string name="immersive_audio_test">Immersive Audio Test</string>
@@ -6214,19 +6299,40 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
     <string name="audio_disconnect_info">
         Tests that audio streams generate the correct stream disconnection events. Note that this
-        test is only required for devices that support wired headset.
+        test is only required for devices that support a wired headset.
         \n\nTest Requirements
         \nA wired (analog or USB) headset peripheral, or analog loopback adapter.
         \n\nTest Process:
-        \n1. Press the \"Start\" button.
-        \n2. For each tested audio route:
+        \n1. If a headset is currently connected, disconnect it before starting the test.
+        \n2. Press the \"Start\" button.
+        \n3. For each tested audio route:
         \n a. Connect the headset peripheral when instructed.
         \n b. Disconnect the headset peripheral when instructed.
         \n\nTest Criteria:
         \nThe test passes if all routes demonstrate the correct stream disconnection behavior.
     </string>
+    <string name="audio_disconnect_removebeforestart">If a headset is currently connected,
+        unplug it before beginning the test.
+    </string>
     <string name="audio_disconnect_wired_prompt">Does this device support an analog or USB audio peripheral?</string>
     <string name="audio_disconnect_port_detected">"Wired device support detected"</string>
+
+    <string name="audio_disconnect_insert_fail_prose">Timeout waiting for headset insert.
+        Either the INSERT event was never received or the test operator waited too long to plug in the headset.</string>
+    <string name="audio_stream_disconnect_insert_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_stream_disconnect_code_insert_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_disconnect_remove_fail_prose">Timeout waiting for headset removal.
+        Either the REMOVE event was never received or the test operator waited too long to unplug the headset.</string>
+    <string name="audio_stream_disconnect_remove_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after REMOVE event received.
+    </string>
+    <string name="audio_stream_disconnect_code_remove_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after REMOVAL event received.
+    </string>
 
     <!--Audio Frequency Global strings -->
     <string name="af_button_play">Play</string>
@@ -6725,7 +6831,8 @@ You should be prompted to select credentials; choose the ones you just installed
         the device; as soon as key access is verified this message will be updated. -->
     <string name="unlock_req_unlocked">Verifying the key is accessible after the unlock...</string>
     <string name="unlock_req_credential_lock">Lock the screen, wait 5 seconds, then unlock with
-        credentials.</string>
+        credentials. If there are multiple displays available, turn off all displays before
+        continuing.</string>
     <string name="unlock_req_successful">Test completed successfully.</string>
     <string name="unlock_req_failed_key_available_when_locked">Test failed; the key was available
         when the device was locked.</string>

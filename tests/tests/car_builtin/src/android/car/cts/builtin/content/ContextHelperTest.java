@@ -16,8 +16,6 @@
 
 package android.car.cts.builtin.content;
 
-import static android.car.cts.builtin.app.DisplayUtils.VirtualDisplaySession;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -28,6 +26,7 @@ import android.app.Instrumentation;
 import android.car.builtin.content.ContextHelper;
 import android.car.cts.builtin.activity.SingleUseActivity;
 import android.car.cts.builtin.activity.VirtualDisplayIdTestActivity;
+import android.car.cts.builtin.app.DisplayUtils;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -62,7 +61,8 @@ public final class ContextHelperTest extends ActivityManagerTestBase {
         String requiredFeature = PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
         assumeTrue(mContext.getPackageManager().hasSystemFeature(requiredFeature));
 
-        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
+        try (DisplayUtils.VirtualDisplaySession session =
+                     new DisplayUtils.VirtualDisplaySession()) {
             // setup: create a virtual display
             int createdVirtualDisplayId = session
                     .createDisplayWithDefaultDisplayMetricsAndWait(mContext, true).getDisplayId();
@@ -91,8 +91,8 @@ public final class ContextHelperTest extends ActivityManagerTestBase {
             // execute
             ContextHelper.startActivityAsUser(mContext, startIntent,
                     /* options= */ null, UserHandle.CURRENT);
-            waitAndAssertTopResumedActivity(testActivityName, Display.DEFAULT_DISPLAY,
-                    "Activity must be resumed");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName,
+                    Display.DEFAULT_DISPLAY, "Activity must be resumed");
 
             // assert
             theInstance = SingleUseActivity.getInstance();

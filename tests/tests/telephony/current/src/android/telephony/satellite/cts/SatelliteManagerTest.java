@@ -47,6 +47,7 @@ import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
+import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -686,6 +687,62 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    public void testRequestSelectedNbIotSatelliteSubscriptionId() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Integer> selectedSubscriptionId = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        selectedSubscriptionId.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    public void testUnregisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                        callback));
+    }
+
+    @Test
     public void testRequestSatelliteAttachEnabledForCarrier() throws Exception {
         if (!shouldTestSatellite()) return;
 
@@ -936,6 +993,32 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.requestSatelliteSubscriberProvisionStatus(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<String> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<String, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(String result) {
+                        displayNameForSubscription.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSatelliteDisplayName(
                         getContext().getMainExecutor(), receiver));
     }
 

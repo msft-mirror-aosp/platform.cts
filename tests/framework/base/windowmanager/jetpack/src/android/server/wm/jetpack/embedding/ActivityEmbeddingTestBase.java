@@ -23,6 +23,7 @@ import android.server.wm.UiDeviceUtils;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
+import androidx.annotation.Nullable;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitInfo;
 
@@ -47,7 +48,9 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
-        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(getMainDisplayId());
+        final int displayId = getLaunchingDisplayId() != null
+                ? getLaunchingDisplayId() : getMainDisplayId();
+        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(displayId);
 
         mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
 
@@ -75,5 +78,14 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
             mActivityEmbeddingComponent.clearSplitAttributesCalculator();
             mActivityEmbeddingComponent.clearSplitInfoCallback();
         }
+    }
+
+    /**
+     * Used to specify the display ID of the launching activity.
+     * {@code null} to use the system default.
+     */
+    @Nullable
+    public Integer getLaunchingDisplayId() {
+        return null;
     }
 }

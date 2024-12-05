@@ -19,7 +19,10 @@ package {
 
 android_test {
     name: "CtsVcnTestCases",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "framework-connectivity-test-defaults",
+    ],
 
     // Include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -40,13 +43,17 @@ android_test {
         "ike-tun-utils",
         "net-tests-utils",
         "telephony-cts-utils",
-        "android.net.vcn.flags-aconfig-java",
+        "android.net.vcn.flags-aconfig-java-export",
         "flag-junit",
     ],
 
     platform_apis: true,
 
     // Tag this module as a cts test artifact
+    // TODO: b/375213246 Add "mcts-tethering" when VCN libs are
+    // built into Tethering module
+    // TODO: b/379938062 Move CtsVcnTestCases to the Tethering
+    // module folder (packages/modules/Connectivity)
     test_suites: [
         "cts",
         "general-tests",

@@ -92,7 +92,7 @@ public final class VirtualCameraUtils {
     static final String BACK_CAMERA_ID = "0";
     static final String FRONT_CAMERA_ID = "1";
     static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
-            new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
+            new CameraCharacteristics.Key<>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final int TEST_VIDEO_SEEK_TIME_MS = 2000;
     private static final String TAG = "VirtualCameraUtils";

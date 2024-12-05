@@ -627,7 +627,6 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                 params.mUseDataSpace = true;
                 params.mDataSpace = DataSpace.DATASPACE_HEIF_ULTRAHDR;
                 params.mHardwareBufferFormat = HardwareBuffer.BLOB;
-                params.mValidateImageData = false;
                 bufferFormatTestByCamera(params);
             } finally {
                 closeDevice(id);
@@ -2246,5 +2245,5 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      * Returns false if the dynamic depth has validation errors. Validation warnings/errors
      * will be printed to logcat.
      */
-    private static native boolean validateDynamicDepthNative(byte[] dynamicDepthBuffer);
+    public static native boolean validateDynamicDepthNative(byte[] dynamicDepthBuffer);
 }

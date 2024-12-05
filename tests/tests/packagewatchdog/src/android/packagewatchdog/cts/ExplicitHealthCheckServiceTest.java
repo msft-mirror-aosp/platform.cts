@@ -24,6 +24,7 @@ import android.service.watchdog.ExplicitHealthCheckService;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 @RunWith(AndroidJUnit4.class)
+@Ignore("b/361126781") // TODO: b/361126781 Re-enable after creating the API
 public final class ExplicitHealthCheckServiceTest {
 
     private ExplicitHealthCheckService mExplicitHealthCheckService;
@@ -54,9 +56,10 @@ public final class ExplicitHealthCheckServiceTest {
             assertThat(result.get(EXTRA_HEALTH_CHECK_PASSED_PACKAGE)).isEqualTo(PACKAGE_NAME);
             countDownLatch.countDown();
         });
-        mExplicitHealthCheckService.setCallback(callback);
-        mExplicitHealthCheckService.notifyHealthCheckPassed(PACKAGE_NAME);
-        countDownLatch.await();
+        // TODO: b/361126781 Uncomment after creating the API
+        // mExplicitHealthCheckService.setCallback(callback);
+        // mExplicitHealthCheckService.notifyHealthCheckPassed(PACKAGE_NAME);
+        // countDownLatch.await();
     }
 
     private static class FakeExplicitHealthCheckService extends ExplicitHealthCheckService {

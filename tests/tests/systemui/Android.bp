@@ -43,7 +43,7 @@ android_test {
         "cts-wm-util",
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",
-        "settingslib_flags_lib",
+        "aconfig_settingslib_flags_java_lib",
     ],
     srcs: [
         "src/**/*.java",

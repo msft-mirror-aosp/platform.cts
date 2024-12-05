@@ -21,9 +21,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.IntDef;
-import android.content.pm.PackageManager;
 import android.util.ArraySet;
-import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -42,8 +40,6 @@ import java.util.Set;
  * executing {@link ThrowingRunnable}, it will pass it through to the test infrastructure.
  */
 public final class ShellPermissionUtils {
-
-    private static final String TAG = ShellPermissionUtils.class.getSimpleName();
 
     private ShellPermissionUtils() {
     }
@@ -80,20 +76,8 @@ public final class ShellPermissionUtils {
      */
     public static void runWithShellPermissionIdentity(ThrowingRunnable throwingRunnable) {
         Set<String> adoptablePermissions = TestApis.permissions().adoptablePermissions();
-        Set<String> adoptableExistingPermissions = new ArraySet<>();
-        for (String permission : adoptablePermissions) {
-            try {
-                TestApis.context().instrumentedContext().getPackageManager()
-                        .getPermissionInfo(permission, /* flags= */ 0);
-                adoptableExistingPermissions.add(permission);
-            } catch (PackageManager.NameNotFoundException e) {
-                // The permission is not defined at this version yet.
-                Log.w(TAG, "The permission: " + permission
-                        + " is not defined at this platform, skip adopting it");
-            }
-        }
         runWithShellPermissionIdentity(throwingRunnable, CHECK_MODE_NONE,
-                adoptableExistingPermissions.toArray(new String[0]));
+                adoptablePermissions.toArray(new String[0]));
     }
 
     /**

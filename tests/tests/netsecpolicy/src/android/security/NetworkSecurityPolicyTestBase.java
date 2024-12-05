@@ -1,5 +1,13 @@
 package android.security;
 
+import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -8,60 +16,90 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.database.Cursor;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.net.http.AndroidHttpClient;
-import android.test.AndroidTestCase;
 import android.webkit.cts.CtsTestServer;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.UnknownServiceException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+abstract class NetworkSecurityPolicyTestBase {
     private CtsTestServer mHttpOnlyWebServer;
 
     private final boolean mCleartextTrafficExpectedToBePermitted;
+
+    private Context mContext;
 
     NetworkSecurityPolicyTestBase(boolean cleartextTrafficExpectedToBePermitted) {
         mCleartextTrafficExpectedToBePermitted = cleartextTrafficExpectedToBePermitted;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    private static boolean isInternetConnected(Context context) {
+        ConnectivityManager connectivityManager =
+                context.getSystemService(ConnectivityManager.class);
+
+        Network activeNetwork = connectivityManager.getActiveNetwork();
+        if (activeNetwork == null) {
+            return false;
+        }
+
+        NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(activeNetwork);
+        return caps != null && caps.hasCapability(NET_CAPABILITY_INTERNET);
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        assumeTrue("CTS requires a working internet connection", isInternetConnected(mContext));
         mHttpOnlyWebServer = new CtsTestServer(mContext, false);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        try {
+    @After
+    public void tearDown() throws Exception {
+        if (mHttpOnlyWebServer != null) {
             mHttpOnlyWebServer.shutdown();
-        } finally {
-            super.tearDown();
         }
     }
 
+    @Test
     public void testNetworkSecurityPolicy() {
-        assertEquals(mCleartextTrafficExpectedToBePermitted,
+        assertEquals(
+                mCleartextTrafficExpectedToBePermitted,
                 NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted());
     }
 
+    @Test
     public void testApplicationInfoFlag() {
-        ApplicationInfo appInfo = getContext().getApplicationInfo();
-        int expectedValue = (mCleartextTrafficExpectedToBePermitted)
-                ? ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC : 0;
+        ApplicationInfo appInfo = mContext.getApplicationInfo();
+        int expectedValue =
+                (mCleartextTrafficExpectedToBePermitted)
+                        ? ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC
+                        : 0;
         assertEquals(expectedValue, appInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC);
     }
 
+    @Test
     public void testDefaultHttpURLConnection() throws Exception {
         if (mCleartextTrafficExpectedToBePermitted) {
             assertCleartextHttpURLConnectionSucceeds();
@@ -111,6 +149,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
         assertFalse(mHttpOnlyWebServer.wasResourceRequested(uri.toString()));
     }
 
+    @Test
     public void testAndroidHttpClient() throws Exception {
         if (mCleartextTrafficExpectedToBePermitted) {
             assertAndroidHttpClientCleartextRequestSucceeds();
@@ -149,6 +188,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
         assertFalse(mHttpOnlyWebServer.wasResourceRequested(uri.toString()));
     }
 
+    @Test
     public void testMediaPlayer() throws Exception {
         if (mCleartextTrafficExpectedToBePermitted) {
             assertMediaPlayerCleartextRequestSucceeds();
@@ -160,7 +200,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
     private void assertMediaPlayerCleartextRequestSucceeds() throws Exception {
         MediaPlayer mediaPlayer = new MediaPlayer();
         Uri uri = Uri.parse(mHttpOnlyWebServer.getUserAgentUrl());
-        mediaPlayer.setDataSource(getContext(), uri);
+        mediaPlayer.setDataSource(mContext, uri);
 
         try {
             mediaPlayer.prepare();
@@ -178,7 +218,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
     private void assertMediaPlayerCleartextRequestBlocked() throws Exception {
         MediaPlayer mediaPlayer = new MediaPlayer();
         Uri uri = Uri.parse(mHttpOnlyWebServer.getUserAgentUrl());
-        mediaPlayer.setDataSource(getContext(), uri);
+        mediaPlayer.setDataSource(mContext, uri);
 
         try {
             mediaPlayer.prepare();
@@ -193,6 +233,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
         assertFalse(mHttpOnlyWebServer.wasResourceRequested(uri.toString()));
     }
 
+    @Test
     public void testDownloadManager() throws Exception {
         Uri uri = Uri.parse(mHttpOnlyWebServer.getTestDownloadUrl("netsecpolicy", 0));
         int[] result = downloadUsingDownloadManager(uri);
@@ -209,21 +250,21 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
         }
     }
 
-
     private int[] downloadUsingDownloadManager(Uri uri) throws Exception {
-        DownloadManager downloadManager =
-                (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager downloadManager = mContext.getSystemService(DownloadManager.class);
         removeAllDownloads(downloadManager);
         BroadcastReceiver downloadCompleteReceiver = null;
         try {
-            final SettableFuture<Intent> downloadCompleteIntentFuture = new SettableFuture<Intent>();
-            downloadCompleteReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    downloadCompleteIntentFuture.set(intent);
-                }
-            };
-            getContext().registerReceiver(
+            final SettableFuture<Intent> downloadCompleteIntentFuture =
+                    new SettableFuture<Intent>();
+            downloadCompleteReceiver =
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            downloadCompleteIntentFuture.set(intent);
+                        }
+                    };
+            mContext.registerReceiver(
                     downloadCompleteReceiver,
                     new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                     Context.RECEIVER_EXPORTED);
@@ -231,12 +272,12 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
             Intent downloadCompleteIntent;
 
             long downloadId = downloadManager.enqueue(new DownloadManager.Request(uri));
-            downloadCompleteIntent = downloadCompleteIntentFuture.get(5, TimeUnit.SECONDS);
+            downloadCompleteIntent = downloadCompleteIntentFuture.get();
 
-            assertEquals(downloadId,
+            assertEquals(
+                    downloadId,
                     downloadCompleteIntent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1));
-            Cursor c = downloadManager.query(
-                    new DownloadManager.Query().setFilterById(downloadId));
+            Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(downloadId));
             try {
                 if (!c.moveToNext()) {
                     fail("Download not found");
@@ -250,7 +291,7 @@ abstract class NetworkSecurityPolicyTestBase extends AndroidTestCase {
             }
         } finally {
             if (downloadCompleteReceiver != null) {
-                getContext().unregisterReceiver(downloadCompleteReceiver);
+                mContext.unregisterReceiver(downloadCompleteReceiver);
             }
             removeAllDownloads(downloadManager);
         }

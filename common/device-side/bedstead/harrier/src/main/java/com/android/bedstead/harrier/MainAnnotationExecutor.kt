@@ -36,6 +36,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -44,6 +45,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
@@ -82,6 +84,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
             is RequireLowRamDevice -> logic()
+            is RequireMinimumAdvertisedRamDevice -> logic()
             is RequireNotLowRamDevice -> logic()
             is EnsureScreenIsOn -> logic()
             is EnsureUnlocked -> logic()
@@ -91,6 +94,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is RequireStorageEncryptionUnsupported -> logic()
             is RequireFactoryResetProtectionPolicySupported -> logic()
             is RequireResourcesBooleanValue -> logic()
+            is RequireResourcesIntegerValue -> logic()
             is RequireUsbDataSignalingCanBeDisabled -> logic()
             is RequireInstantApp -> logic()
             is RequireNotInstantApp -> logic()

@@ -195,7 +195,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
 
         // assert
         ComponentName activityName = task1TopActivity.getComponentName();
-        waitAndAssertTopResumedActivity(activityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityName, DEFAULT_DISPLAY,
                 "Activity must be resumed");
         waitAndAssertFocusStatusChanged(task1TopActivity, true);
         assertWithMessage("task1 top activity is visible")
@@ -366,7 +366,8 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
                 .setComponent(simpleActivity)
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent, /* options = */ null);
-        waitAndAssertTopResumedActivity(simpleActivity, DEFAULT_DISPLAY, "Activity isn't resumed");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(simpleActivity, DEFAULT_DISPLAY,
+                "Activity isn't resumed");
     }
 
     // launchSimpleActivity in the current user space via the car shell instead of the calling user.
@@ -411,7 +412,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
                 .startActivitySync(startIntent, /* options = */ null);
 
         ComponentName testActivityName = testActivity.getComponentName();
-        waitAndAssertTopResumedActivity(testActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName, DEFAULT_DISPLAY,
                 "Activity must be resumed");
 
         return type.cast(testActivity);

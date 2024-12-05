@@ -53,6 +53,7 @@ public class VirtualDisplayConfigTest {
     private static final int DENSITY = DisplayMetrics.DENSITY_MEDIUM;
     private static final float REQUESTED_REFRESH_RATE = 30.0f;
     private static final float DEFAULT_BRIGHTNESS = 0.03f;
+    private static final float DIM_BRIGHTNESS = 0.02f;
     private static final int FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
             | DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE;
 
@@ -61,7 +62,6 @@ public class VirtualDisplayConfigTest {
 
     @Test
     public void parcelAndUnparcel_matches() {
-        final boolean customHomeEnabled = android.companion.virtual.flags.Flags.vdmCustomHome();
         final boolean cutoutEnabled =
                 android.companion.virtualdevice.flags.Flags.virtualDisplayInsets();
         final boolean forceAppUniversalResizableEnabled =
@@ -82,10 +82,8 @@ public class VirtualDisplayConfigTest {
                         .setSurface(surface)
                         .setDisplayCategories(Set.of("C1", "C2"))
                         .addDisplayCategory("C3")
-                        .setRequestedRefreshRate(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            builder.setHomeSupported(true);
-        }
+                        .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
+                        .setHomeSupported(true);
         if (cutoutEnabled) {
             builder.setDisplayCutout(displayCutout);
         }
@@ -94,6 +92,7 @@ public class VirtualDisplayConfigTest {
         }
         if (isDeviceAwareDisplayPowerEnabled) {
             builder.setDefaultBrightness(DEFAULT_BRIGHTNESS);
+            builder.setDimBrightness(DIM_BRIGHTNESS);
         }
         final VirtualDisplayConfig originalConfig = builder.build();
 
@@ -105,9 +104,7 @@ public class VirtualDisplayConfigTest {
         assertThat(originalConfig.getSurface()).isEqualTo(surface);
         assertThat(originalConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(originalConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
-        }
+        assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
         if (cutoutEnabled) {
             assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
         }
@@ -116,6 +113,7 @@ public class VirtualDisplayConfigTest {
         }
         if (isDeviceAwareDisplayPowerEnabled) {
             assertThat(originalConfig.getDefaultBrightness()).isEqualTo(DEFAULT_BRIGHTNESS);
+            assertThat(originalConfig.getDimBrightness()).isEqualTo(DIM_BRIGHTNESS);
         }
 
         final Parcel parcel = Parcel.obtain();
@@ -132,9 +130,7 @@ public class VirtualDisplayConfigTest {
         assertThat(recreatedConfig.getSurface()).isNotNull();
         assertThat(recreatedConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(recreatedConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
-        if (customHomeEnabled) {
-            assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
-        }
+        assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
         if (cutoutEnabled) {
             assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
         }
@@ -145,7 +141,6 @@ public class VirtualDisplayConfigTest {
 
     @Test
     public void virtualDisplayConfig_onlyRequiredFields() {
-        final boolean customHomeEnabled = android.companion.virtual.flags.Flags.vdmCustomHome();
         final VirtualDisplayConfig config =
                 new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY).build();
 
@@ -153,9 +148,7 @@ public class VirtualDisplayConfigTest {
         assertThat(config.getSurface()).isNull();
         assertThat(config.getDisplayCategories()).isEmpty();
         assertThat(config.getRequestedRefreshRate()).isEqualTo(0.0f);
-        if (customHomeEnabled) {
-            assertThat(config.isHomeSupported()).isFalse();
-        }
+        assertThat(config.isHomeSupported()).isFalse();
         if (android.companion.virtualdevice.flags.Flags.virtualDisplayInsets()) {
             assertThat(config.getDisplayCutout()).isNull();
         }
@@ -230,6 +223,37 @@ public class VirtualDisplayConfigTest {
         assertThrows(IllegalArgumentException.class, () -> {
             new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
                     .setDefaultBrightness(1.1f);
+        });
+    }
+
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void virtualDisplayConfig_invalidDimBrightness_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(-0.1f);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(1.1f);
+        });
+    }
+
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void virtualDisplayConfig_dimBrightnessGreaterThanDefault_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(0.1f)
+                    .build();
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(0.5f)
+                    .setDefaultBrightness(0.3f)
+                    .build();
         });
     }
 }

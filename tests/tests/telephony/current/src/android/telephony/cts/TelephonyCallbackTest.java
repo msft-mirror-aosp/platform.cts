@@ -61,6 +61,7 @@ import android.telephony.TelephonyManager.EmergencyCallbackModeType;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
+import android.telephony.satellite.NtnSignalStrength;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -120,6 +121,9 @@ public class TelephonyCallbackTest {
     private boolean mOnCarrierRoamingNtnModeChangedCalled;
     private boolean mOnCarrierRoamingNtnEligibleCalled;
     private boolean mOnCarrierRoamingNtnAvailableServiceCalled;
+    private boolean mOnCarrierRoamingNtnSignalStrengthCalled;
+    private boolean mOnSecurityAlgorithmsChangedCalled;
+    private boolean mOnCellularIdentifierDisclosedChangedCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1732,9 +1736,18 @@ public class TelephonyCallbackTest {
 
         @Override
         public void onCarrierRoamingNtnAvailableServicesChanged(
-                @NetworkRegistrationInfo.ServiceType List<Integer> availableServices) {
+                @NetworkRegistrationInfo.ServiceType int[] availableServices) {
             synchronized (mLock) {
                 mOnCarrierRoamingNtnAvailableServiceCalled = true;
+                mLock.notify();
+            }
+        }
+
+        @Override
+        public void onCarrierRoamingNtnSignalStrengthChanged(
+                @NonNull NtnSignalStrength ntnSignalStrength) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnSignalStrengthCalled = true;
                 mLock.notify();
             }
         }
@@ -1794,6 +1807,25 @@ public class TelephonyCallbackTest {
         assertTrue(mOnCarrierRoamingNtnAvailableServiceCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnAvailableServiceCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnCarrierRoamingNtnSignalStrengthChanged() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnSignalStrengthCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnSignalStrengthCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnSignalStrengthCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnSignalStrengthCalled,
                 mCarrierRoamingNtnModeListener);
     }
 }

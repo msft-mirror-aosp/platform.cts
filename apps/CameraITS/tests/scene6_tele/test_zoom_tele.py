@@ -35,9 +35,9 @@ _NUM_STEPS_PER_SECTION = 10
 # YUV only to improve marker detection, JPEG is tested in test_zoom
 _TEST_FORMATS = ('yuv',)
 # Empirically found zoom ratio for main cameras without custom offset behavior
-_WIDE_ZOOM_RATIO_MIN = 2.0
+_WIDE_ZOOM_RATIO_MIN = 2.2
 # Empirically found zoom ratio for TELE cameras
-_TELE_TRANSITION_ZOOM_RATIO = 10.0
+_TELE_TRANSITION_ZOOM_RATIO = 5.0
 _ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 

@@ -40,11 +40,14 @@ import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,11 +61,18 @@ import java.time.Duration;
 /**
  * Contains the tests to prove compliance with android automotive specific projection requirements.
  */
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "No Bluetooth support on visible"
+            + " background users currently, so skipping tests for"
+            + " secondary_user_on_secondary_display.")
 @SmallTest
 @RequiresDevice
 @RunWith(MockitoJUnitRunner.class)
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
 public final class CarProjectionManagerTest extends AbstractCarTestCase {
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule public MockitoRule rule = MockitoJUnit.rule();
 
     @Mock BluetoothProfile.ServiceListener mServiceListener;

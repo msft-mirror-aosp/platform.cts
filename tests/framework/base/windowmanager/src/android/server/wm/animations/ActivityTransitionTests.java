@@ -181,8 +181,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 new Handler(Looper.getMainLooper()), startedListener, finishedListener);
         launcherActivity.startActivity(options, TransitionActivity.class);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(new ComponentName(mContext, TransitionActivity.class),
-                getMainDisplayId(), "Activity must be launched");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                new ComponentName(mContext, TransitionActivity.class), getMainDisplayId(),
+                "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
@@ -213,7 +214,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent, bundle);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
@@ -248,8 +249,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent, bundle);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(customWindowAnimationActivity, getMainDisplayId(),
-                "Activity must be launched");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(customWindowAnimationActivity,
+                getMainDisplayId(), "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
@@ -489,6 +490,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         launcherActivity.startActivity(null, EdgeExtensionActivity.class, extras);
 
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
+
+        // Extending default transition animation duration, to ensure here can be more reliably to
+        // capture the transition state.
+        mObjectTracker.manage(new SettingsSession<>(
+                Settings.Global.getUriFor(Settings.Global.TRANSITION_ANIMATION_SCALE),
+                Settings.Global::getFloat, Settings.Global::putFloat)).set(10f);
+
         final Intent update = new Intent(ACTION_UPDATE);
         update.putExtra(TEST_METHOD_KEY, TEST_METHOD_CLEAR_OVERRIDE_ACTIVITY_TRANSITION);
         update.putExtra(TRANSITION_TYPE_KEY, TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE);
@@ -599,7 +607,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         int sleepDurationMilliseconds = 1;
         Bitmap screenshot = null;
         for (int i = 0; i < 13; i++) {
-            mWmState.computeState();
             final boolean isTransitionRunning = WindowManagerState.APP_STATE_RUNNING.equals(
                     mWmState.getDisplay(getMainDisplayId()).getAppTransitionState());
 
@@ -617,6 +624,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             }
             failedResults.add(result);
             SystemClock.sleep(sleepDurationMilliseconds);
+            mWmState.computeState();
             sleepDurationMilliseconds *= 2;
         }
         dumpOnFailure.dumpOnFailure("last_screenshot",  screenshot);

@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,6 +66,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -358,6 +360,11 @@ public class StorageManagerTest {
     @AppModeFull(reason = "Instant apps cannot access external storage")
     public void testGetStorageVolumeSDCard() throws Exception {
         assumeTrue(StorageManagerHelper.isAdoptableStorageSupported(mContext));
+        UserHelper userHelper = new UserHelper(mContext);
+        // Skipping for visible background users since mounting a disk only supports the current
+        // user.
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
 
         String volumeName = StorageManagerHelper.createSDCardVirtualDisk();
         Log.d(TAG, "testGetStorageVolumeSDCard#volumeName: " + volumeName);

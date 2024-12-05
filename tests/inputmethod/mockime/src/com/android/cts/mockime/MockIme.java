@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.inputmethodservice.ExtractEditText;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
@@ -59,6 +60,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.HandwritingGesture;
 import android.view.inputmethod.InlineSuggestion;
 import android.view.inputmethod.InlineSuggestionsRequest;
@@ -638,6 +640,12 @@ public final class MockIme extends InputMethodService {
                     case "getStylusHandwritingEvents": {
                         return mEvents;
                     }
+                    case "setStylusHandwritingRegion": {
+                        Region handwritingRegion = command.getExtras().getParcelable(
+                                "handwritingRegion", Region.class);
+                        setStylusHandwritingRegion(handwritingRegion);
+                        return true;
+                    }
                     case "finishStylusHandwriting": {
                         finishStylusHandwriting();
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
@@ -1121,7 +1129,6 @@ public final class MockIme extends InputMethodService {
                 () -> super.onStartInputView(editorInfo, restarting));
     }
 
-
     @Override
     public void onPrepareStylusHandwriting() {
         getTracer().onPrepareStylusHandwriting(() -> super.onPrepareStylusHandwriting());
@@ -1180,6 +1187,11 @@ public final class MockIme extends InputMethodService {
     @Override
     public void onFinishInput() {
         getTracer().onFinishInput(() -> super.onFinishInput());
+    }
+
+    @Override
+    public boolean onShouldVerifyKeyEvent(@NonNull KeyEvent keyEvent) {
+        return getTracer().onShouldVerifyKeyEvent(keyEvent, () -> Flags.verifyKeyEvent());
     }
 
     @Override
@@ -1600,6 +1612,14 @@ public final class MockIme extends InputMethodService {
             final Bundle arguments = new Bundle();
             arguments.putInt("toolType", toolType);
             recordEventInternal("onUpdateEditorToolType", runnable, arguments);
+        }
+
+        boolean onShouldVerifyKeyEvent(
+                @NonNull KeyEvent keyEvent, @NonNull BooleanSupplier supplier) {
+            final Bundle arguments = new Bundle();
+            arguments.putParcelable("keyEvent", keyEvent);
+            return recordEventInternal("onShouldVerifyKeyEvent",
+                    supplier::getAsBoolean, arguments);
         }
 
         boolean onKeyDown(int keyCode, KeyEvent event, @NonNull BooleanSupplier supplier) {

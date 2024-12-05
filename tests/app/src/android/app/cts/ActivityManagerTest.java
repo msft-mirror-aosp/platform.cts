@@ -132,7 +132,6 @@ import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -466,8 +465,20 @@ public final class ActivityManagerTest {
         assertTrue(indexRecentOne != -1 && indexRecentTwo != -1);
         assertTrue(indexRecentTwo < indexRecentOne);
 
-        // assert only recent2_activity is visible.
-        assertFalse(runningTaskList.get(indexRecentOne).isVisible());
+        boolean isRecentTwoActivityInMultiWindowMode = false;
+        for (int i = mStartedActivityList.size() - 1; i >= 0; i--) {
+            final Activity activity = mStartedActivityList.get(i);
+            if (activity.getClass() == ActivityManagerRecentTwoActivity.class) {
+                isRecentTwoActivityInMultiWindowMode = activity.isInMultiWindowMode();
+                break;
+            }
+        }
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If recent2_activity is in multi-windowing mode, it may not fully obscure
+        // recent1_activity.
+        if (!isRecentTwoActivityInMultiWindowMode) {
+            assertFalse(runningTaskList.get(indexRecentOne).isVisible());
+        }
         assertTrue(runningTaskList.get(indexRecentTwo).isVisible());
     }
 
@@ -1993,8 +2004,8 @@ public final class ActivityManagerTest {
         final ParcelFileDescriptor[] pfds = InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().executeShellCommandRw("am observe-foreground-process");
         final ParcelFileDescriptor stdOut = pfds[0];
-        try (InputStream in = new ParcelFileDescriptor.AutoCloseInputStream(stdOut)) {
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new ParcelFileDescriptor.AutoCloseInputStream(stdOut)))) {
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -2093,6 +2104,8 @@ public final class ActivityManagerTest {
     @Test
     public void testSwitchToHeadlessSystemUser_whenCanSwitchToHeadlessSystemUserEnabled() {
         assumeHeadlessSystemUserMode();
+        assumeFalse(isAutomotive());
+
         assumeTrue("Switch to Non-full headless SYSTEM user is only allowed when "
                         + "config_canSwitchToHeadlessSystemUser is enabled.",
                 canSwitchToHeadlessSystemUser());
@@ -2577,6 +2590,11 @@ public final class ActivityManagerTest {
     private void assumeNonHeadlessSystemUserMode() {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
+    }
+
+    private boolean isAutomotive() {
+        PackageManager pm = mTargetContext.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private static class BlockingResultReceiver {

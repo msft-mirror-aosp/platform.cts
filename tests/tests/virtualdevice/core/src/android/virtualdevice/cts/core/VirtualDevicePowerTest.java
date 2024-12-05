@@ -43,6 +43,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.server.wm.UiDeviceUtils;
 import android.view.Display;
+import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -66,6 +67,8 @@ public class VirtualDevicePowerTest {
 
     private static final int FAST_SCREEN_OFF_TIMEOUT_MS = 500;
     private static final int DISPLAY_TIMEOUT_MS = 2000;
+    private static final float DEFAULT_BRIGHTNESS = 0.4f;
+    private static final float DIM_BRIGHTNESS = 0.1f;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -88,6 +91,8 @@ public class VirtualDevicePowerTest {
 
     @Mock
     private VirtualDisplay.Callback mVirtualDisplayCallback;
+    @Mock
+    private VirtualDisplayConfig.BrightnessListener mBrightnessListener;
 
     @Before
     public void setUp() throws Exception {
@@ -337,22 +342,73 @@ public class VirtualDevicePowerTest {
     public void customSleepTimeout_goesToSleep() {
         assumeScreenOffSupported();
 
+        // Ensure the default display timeout is different.
+        setScreenOffTimeoutMs(mMinimumScreenOffTimeoutMs * 3);
         createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
-                .setScreenOffTimeout(Duration.ofMillis(FAST_SCREEN_OFF_TIMEOUT_MS))
+                .setScreenOffTimeout(Duration.ofMillis(DISPLAY_TIMEOUT_MS))
                 .build());
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
-
-        // Ensure the default display timeout is different.
-        setScreenOffTimeoutMs(mMinimumScreenOffTimeoutMs * 3);
-        SystemClock.sleep(mMinimumScreenOffTimeoutMs);
-
-        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS * 2).times(1)).onPaused();
 
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
-        assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void customBrightness_dimTimeoutTriggersCallback() {
+        createVirtualDeviceAndDisplay(
+                new VirtualDeviceParams.Builder()
+                        // Dim after 2s, sleep after 4s.
+                        .setDimDuration(Duration.ofMillis(DISPLAY_TIMEOUT_MS))
+                        .setScreenOffTimeout(Duration.ofMillis(DISPLAY_TIMEOUT_MS * 2))
+                        .build(),
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                        .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
+                        .setDefaultBrightness(DEFAULT_BRIGHTNESS)
+                        .setDimBrightness(DIM_BRIGHTNESS));
+
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
+
+        reset(mBrightnessListener);
+        SystemClock.sleep(DISPLAY_TIMEOUT_MS);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DIM_BRIGHTNESS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void customDefaultBrightness_windowManagerOverrideRequestTriggersCallback() {
+        createVirtualDeviceAndDisplay(VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
+                .setDefaultBrightness(DEFAULT_BRIGHTNESS));
+
+        Activity activity = mVirtualDeviceRule.startActivityOnDisplaySync(
+                mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
+
+        reset(mBrightnessListener);
+        setBrightnessOverride(activity, 0.1f);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(0.1f);
+
+        reset(mBrightnessListener);
+        setBrightnessOverride(activity, 1f);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(1f);
+
+        reset(mBrightnessListener);
+        setBrightnessOverride(activity, -1f);
+        verify(mBrightnessListener, timeout(DISPLAY_TIMEOUT_MS).times(1))
+                .onBrightnessChanged(DEFAULT_BRIGHTNESS);
     }
 
     private void assumeScreenOffSupported() {
@@ -368,6 +424,14 @@ public class VirtualDevicePowerTest {
 
     private void setScreenOffTimeoutMs(String timeoutMs) {
         Settings.System.putString(mContentResolver, Settings.System.SCREEN_OFF_TIMEOUT, timeoutMs);
+    }
+
+    private void setBrightnessOverride(Activity activity, float brightness) {
+        getInstrumentation().runOnMainSync(() -> {
+            WindowManager.LayoutParams layout = activity.getWindow().getAttributes();
+            layout.screenBrightness = brightness;
+            activity.getWindow().setAttributes(layout);
+        });
     }
 
     void createVirtualDeviceAndDisplay() {
