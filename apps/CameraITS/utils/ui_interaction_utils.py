@@ -278,9 +278,11 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
         break
     find_file_path = (
         f'find {photo_storage_path} ! -empty -a ! -name \'.pending*\''
-        ' -a -type f -name "*.jpg" -o -name "*.jpeg"'
+        ' -a -type f -iname "*.jpg" -o -iname "*.jpeg"'
     )
-    img_path_on_dut = dut.adb.shell(find_file_path).decode('utf-8').strip()
+    img_path_on_dut = (
+        dut.adb.shell(find_file_path).decode('utf-8').strip().lower()
+    )
     logging.debug('Image path on DUT: %s', img_path_on_dut)
     if JPG_FORMAT_STR not in img_path_on_dut:
       raise AssertionError('Failed to find jpg files!')
