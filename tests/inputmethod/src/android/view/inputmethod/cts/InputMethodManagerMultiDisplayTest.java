@@ -115,7 +115,7 @@ public final class InputMethodManagerMultiDisplayTest extends ActivityManagerTes
             // Focus on virtual display, otherwise UI automator cannot detect objects
             tapOnDisplayCenter(dc.mId);
 
-            waitAndAssertTopResumedActivity(testActivity.getComponentName(),
+            waitAndAssertResumedAndFocusedActivityOnDisplay(testActivity.getComponentName(),
                     dc.mId, "Test Activity launched on external display must be on top");
 
             // Open settings screen for subtypes from the non-default / currently active screen

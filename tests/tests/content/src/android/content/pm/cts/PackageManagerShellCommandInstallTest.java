@@ -1606,7 +1606,7 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
-    public void testDependencyInstallerService_abandonSession() throws Exception {
+    public void testDependencyInstallerService_abandonSession_resumeOnFailure() throws Exception {
         onBeforeSdkTests();
 
         installPackage(TEST_SDK1);
@@ -1617,8 +1617,28 @@ public class PackageManagerShellCommandInstallTest {
         try {
             setDependencyInstallerRunMethod(
                     TestDependencyInstallerService.METHOD_ABANDON_SESSION_DURING_INSTALL);
+            installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId(), "Success");
+            assertNoErrorInDependencyInstallerService();
+        } finally {
+            removeDependencyInstallerRoleHolder();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
+    public void testDependencyInstallerService_resumeOnFailure_failsInstall() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        overrideUsesSdkLibraryCertificateDigest(getPackageCertDigest(TEST_SDK1_PACKAGE));
+        uninstallPackageSilently(TEST_SDK1_PACKAGE);
+
+        setDependencyInstallerRoleHolder();
+        try {
+            setDependencyInstallerRunMethod(
+                    TestDependencyInstallerService.METHOD_RESUME_ON_FAILURE_FAIL_INSTALL);
             String errorMsg = installPackageAsUser(TEST_USING_SDK1, mUserHelper.getUserId());
-            assertThat(errorMsg).contains("Failed to install all dependencies");
+            assertThat(errorMsg).contains("Reconcile failed");
             assertNoErrorInDependencyInstallerService();
         } finally {
             removeDependencyInstallerRoleHolder();
