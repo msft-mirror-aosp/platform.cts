@@ -17,28 +17,34 @@
             }
         ]
     },
-    "initialState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "RESUMED"
-                    }
-                ]
-            }
-        ]
-    },
-    "endState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "RESUMED"
-                    }
-                ]
-            }
-        ]
-    }
+    "initialStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "RESUMED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ],
+    "endStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "RESUMED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ]
 }
