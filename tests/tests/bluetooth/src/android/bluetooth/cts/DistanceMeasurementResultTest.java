@@ -23,10 +23,11 @@ import static android.bluetooth.le.DistanceMeasurementResult.NADM_ATTACK_IS_VERY
 
 import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementResult;
@@ -57,8 +58,7 @@ public class DistanceMeasurementResultTest {
     private BluetoothAdapter mAdapter;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -83,10 +83,13 @@ public class DistanceMeasurementResultTest {
     public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
-            DistanceMeasurementResult result = new DistanceMeasurementResult
-                    .Builder(121.0, 120.0)
-                    .setAzimuthAngle(90).setErrorAzimuthAngle(45)
-                    .setAltitudeAngle(60).setErrorAltitudeAngle(30).build();
+            DistanceMeasurementResult result =
+                    new DistanceMeasurementResult.Builder(121.0, 120.0)
+                            .setAzimuthAngle(90)
+                            .setErrorAzimuthAngle(45)
+                            .setAltitudeAngle(60)
+                            .setErrorAltitudeAngle(30)
+                            .build();
             result.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             DistanceMeasurementResult resultFromParcel =
@@ -100,48 +103,52 @@ public class DistanceMeasurementResultTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetResultMeters() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0).build();
         assertEquals(121.0, result.getResultMeters(), 0.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetErrorMeters() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0).build();
         assertEquals(120.0, result.getErrorMeters(), 0.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetAzimuthAngle() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setAzimuthAngle(60).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0).setAzimuthAngle(60).build();
         assertEquals(60.0, result.getAzimuthAngle(), 0.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetErrorAzimuthAngle() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setErrorAzimuthAngle(60).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0)
+                        .setErrorAzimuthAngle(60)
+                        .build();
         assertEquals(60.0, result.getErrorAzimuthAngle(), 0.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetAltitudeAngle() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setAltitudeAngle(60).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0).setAltitudeAngle(60).build();
         assertEquals(60.0, result.getAltitudeAngle(), 0.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetErrorAltitudeAngle() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setErrorAltitudeAngle(60).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0)
+                        .setErrorAltitudeAngle(60)
+                        .build();
         assertEquals(60.0, result.getErrorAltitudeAngle(), 0.0);
     }
 
@@ -179,8 +186,10 @@ public class DistanceMeasurementResultTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetVelocityMetersPerSecond() {
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setVelocityMetersPerSecond(60).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0)
+                        .setVelocityMetersPerSecond(60)
+                        .build();
         assertEquals(60.0, result.getVelocityMetersPerSecond(), 0.0);
     }
 
@@ -189,8 +198,10 @@ public class DistanceMeasurementResultTest {
     @Test
     public void setGetMeasurementTimestampNanos() {
         long timestamp = SystemClock.elapsedRealtimeNanos();
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
-                .setMeasurementTimestampNanos(timestamp).build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0)
+                        .setMeasurementTimestampNanos(timestamp)
+                        .build();
         assertEquals(timestamp, result.getMeasurementTimestampNanos());
     }
 
@@ -198,12 +209,13 @@ public class DistanceMeasurementResultTest {
     @Test
     public void readWriteParcelForCs() {
         Parcel parcel = Parcel.obtain();
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(10.0, 5.0)
-                .setDelaySpreadMeters(20)
-                .setConfidenceLevel(0.5)
-                .setDetectedAttackLevel(NADM_ATTACK_IS_VERY_UNLIKELY)
-                .setVelocityMetersPerSecond(30)
-                .build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(10.0, 5.0)
+                        .setDelaySpreadMeters(20)
+                        .setConfidenceLevel(0.5)
+                        .setDetectedAttackLevel(NADM_ATTACK_IS_VERY_UNLIKELY)
+                        .setVelocityMetersPerSecond(30)
+                        .build();
         result.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         DistanceMeasurementResult resultFromParcel =
@@ -211,8 +223,10 @@ public class DistanceMeasurementResultTest {
         assertEquals(result.getDelaySpreadMeters(), resultFromParcel.getDelaySpreadMeters(), 0.0);
         assertEquals(result.getConfidenceLevel(), resultFromParcel.getConfidenceLevel(), 0.0);
         assertEquals(result.getDetectedAttackLevel(), resultFromParcel.getDetectedAttackLevel());
-        assertEquals(result.getVelocityMetersPerSecond(),
-                resultFromParcel.getVelocityMetersPerSecond(), 0.0);
+        assertEquals(
+                result.getVelocityMetersPerSecond(),
+                resultFromParcel.getVelocityMetersPerSecond(),
+                0.0);
     }
 
     @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
@@ -221,24 +235,27 @@ public class DistanceMeasurementResultTest {
     public void readWriteParcelForCsMeasurementTimestamp() {
         Parcel parcel = Parcel.obtain();
         long timestamp = SystemClock.elapsedRealtimeNanos();
-        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(10.0, 5.0)
-                .setMeasurementTimestampNanos(timestamp)
-                .build();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(10.0, 5.0)
+                        .setMeasurementTimestampNanos(timestamp)
+                        .build();
         result.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         DistanceMeasurementResult resultFromParcel =
                 DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
-        assertEquals(result.getMeasurementTimestampNanos(),
+        assertEquals(
+                result.getMeasurementTimestampNanos(),
                 resultFromParcel.getMeasurementTimestampNanos());
     }
-
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void illegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new DistanceMeasurementResult.Builder(-1.0, 0.0));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new DistanceMeasurementResult.Builder(10.0, -1.0));
         DistanceMeasurementResult.Builder result = new DistanceMeasurementResult.Builder(10.0, 5.0);
         assertThrows(IllegalArgumentException.class, () -> result.setAzimuthAngle(380));
@@ -248,13 +265,8 @@ public class DistanceMeasurementResultTest {
     }
 
     private void assertResultEquals(DistanceMeasurementResult p, DistanceMeasurementResult other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getResultMeters(), other.getResultMeters(), 0.0);
         assertEquals(p.getErrorMeters(), other.getErrorMeters(), 0.0);

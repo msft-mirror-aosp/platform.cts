@@ -34,23 +34,28 @@ public class BluetoothFrameworkInitializerTest extends AndroidTestCase {
      * any other time should throw an exception.
      */
     public void test_RegisterServiceWrappers_failsWhenCalledOutsideOfSystemServiceRegistry() {
-        assertThrows(IllegalStateException.class,
+        assertThrows(
+                IllegalStateException.class,
                 () -> BluetoothFrameworkInitializer.registerServiceWrappers());
     }
 
     public void test_SetBluetoothServiceManager() {
-        assertThrows(IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.setBluetoothServiceManager(
-                    mock(BluetoothServiceManager.class)));
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        BluetoothFrameworkInitializer.setBluetoothServiceManager(
+                                mock(BluetoothServiceManager.class)));
     }
 
     public void test_SetBinderCallsStatsInitializer() {
-        assertThrows(IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.setBinderCallsStatsInitializer(new Consumer() {
-                        @Override
-                        public void accept(Object o) {
-                        }
-                }));
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        BluetoothFrameworkInitializer.setBinderCallsStatsInitializer(
+                                new Consumer() {
+                                    @Override
+                                    public void accept(Object o) {}
+                                }));
     }
 
     // org.junit.Assume.assertThrows is not available until JUnit 4.13
