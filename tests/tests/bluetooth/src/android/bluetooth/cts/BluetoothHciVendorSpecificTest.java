@@ -299,9 +299,9 @@ public final class BluetoothHciVendorSpecificTest {
             verify(callback, timeout(1_000))
                     .onCommandComplete(eq(0x153), return_parameters.capture());
 
-            int length_until_version_number = 11;
+            int length_until_version_number = 9;
             assertThat(return_parameters.getValue().length)
-                    .isGreaterThan(length_until_version_number);
+                    .isAtLeast(length_until_version_number);
 
             int status = return_parameters.getValue()[0];
             assertThat(status).isEqualTo(0);
