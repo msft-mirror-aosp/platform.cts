@@ -53,11 +53,13 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.policies.AppFunctionsPolicy
+import com.android.bedstead.multiuser.additionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.multiuser.secondaryUser
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
@@ -65,12 +67,12 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import kotlin.test.Ignore
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
@@ -590,42 +592,40 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
-    @EnsureHasWorkProfile
-    @EnsureHasNoDeviceOwner
-    @RequireRunOnPrimaryUser
+    @EnsureHasAdditionalUser
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
     @Throws(Exception::class)
-    @Ignore("Chatting with the enterprise team for correct setup")
     fun executeAppFunction_crossUser_targetWorkProfileRestricted_fail() = doBlocking {
+        assumeFalse(TestApis.users().instrumented() == sDeviceState.additionalUser())
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
             EXECUTE_APP_FUNCTIONS_PERMISSION,
         ) {
-            val workProfileUser = sDeviceState.workProfile()
+            val additionalUser = sDeviceState.additionalUser()
             val remoteDpm = sDeviceState.dpc().devicePolicyManager()
             val originalPolicy = remoteDpm.getAppFunctionsPolicy()
             try {
                 remoteDpm.setAppFunctionsPolicy(APP_FUNCTIONS_DISABLED_CROSS_PROFILE)
                 assertThat(remoteDpm.getAppFunctionsPolicy())
                     .isEqualTo(APP_FUNCTIONS_DISABLED_CROSS_PROFILE)
-                installExistingPackageAsUser(CURRENT_PKG, workProfileUser)
+                installExistingPackageAsUser(CURRENT_PKG, additionalUser)
                 retryAssert {
                     assertThat(
                             getAllStaticMetadataPackages(
-                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                                context.createContextAsUser(additionalUser.userHandle(), 0)
                             )
                         )
                         .contains(CURRENT_PKG)
                     assertThat(
                             getAllRuntimeMetadataPackages(
-                                context.createContextAsUser(workProfileUser.userHandle(), 0)
+                                context.createContextAsUser(additionalUser.userHandle(), 0)
                             )
                         )
                         .contains(CURRENT_PKG)
                 }
                 mManager =
                     context
-                        .createContextAsUser(workProfileUser.userHandle(), 0)
+                        .createContextAsUser(additionalUser.userHandle(), 0)
                         .getSystemService(AppFunctionManager::class.java)
                 val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
 
@@ -721,7 +721,6 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
-    @IncludeRunOnPrimaryUser
     @EnsureHasDeviceOwner
     @Throws(Exception::class)
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])

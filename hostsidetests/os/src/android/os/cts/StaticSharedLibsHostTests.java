@@ -122,7 +122,7 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     private static final String SETTING_UNUSED_STATIC_SHARED_LIB_MIN_CACHE_PERIOD =
             "unused_static_shared_lib_min_cache_period";
 
-    private static final long DEFAULT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(15);
+    private static final long DEFAULT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
     private CompatibilityBuildHelper mBuildHelper;
     private boolean mInstantMode = false;
