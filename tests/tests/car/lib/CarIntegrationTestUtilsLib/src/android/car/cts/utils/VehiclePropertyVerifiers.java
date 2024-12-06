@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.car.Car;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
+import android.car.VehicleSeatOccupancyState;
 import android.car.VehicleUnit;
 import android.car.feature.Flags;
 import android.car.hardware.CarHvacFanDirection;
@@ -136,7 +137,32 @@ public class VehiclePropertyVerifiers {
                             VehicleAutonomousState.LEVEL_5)
                     .build();
 
-    /** Gets the verifier builder for PERF_STEERING_ANGLE. */
+    private static final ImmutableSet<Integer> VEHICLE_SEAT_OCCUPANCY_STATES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            VehicleSeatOccupancyState.UNKNOWN,
+                            VehicleSeatOccupancyState.VACANT,
+                            VehicleSeatOccupancyState.OCCUPIED)
+                    .build();
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#SEAT_OCCUPANCY}. */
+    public static VehiclePropertyVerifier.Builder<Integer> getSeatOccupancyVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.SEAT_OCCUPANCY,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                                Integer.class)
+                        .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
+                        .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS)
+                : verifierBuilder;
+    }
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_STEERING_ANGLE}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
                 VehiclePropertyVerifier.newBuilder(

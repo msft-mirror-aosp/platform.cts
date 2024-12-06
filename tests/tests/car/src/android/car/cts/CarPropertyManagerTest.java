@@ -43,6 +43,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureS
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -510,9 +511,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             LowSpeedAutomaticEmergencyBrakingState.ACTIVATED,
                             LowSpeedAutomaticEmergencyBrakingState.USER_OVERRIDE)
                     .build();
-    private static final ImmutableSet<Integer> VEHICLE_SEAT_OCCUPANCY_STATES = ImmutableSet.of(
-            /*VehicleSeatOccupancyState.UNKNOWN=*/0, /*VehicleSeatOccupancyState.VACANT=*/1,
-            /*VehicleSeatOccupancyState.OCCUPIED=*/2);
     private static final ImmutableSet<Integer> CRUISE_CONTROL_TYPE_UNWRITABLE_STATES =
             ImmutableSet.<Integer>builder()
                     .addAll(ERROR_STATES)
@@ -700,6 +698,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.IMPACT_DETECTED)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_CAR_SEATS_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.SEAT_OCCUPANCY).build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_CAR_SEATS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -5332,17 +5332,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addWritePermission(Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer> getSeatOccupancyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.SEAT_OCCUPANCY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                Integer.class)
-                .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
-    }
-
 
     private static VehiclePropertyVerifier.Builder<Boolean>
             getHvacElectricDefrosterOnVerifierBuilder() {
@@ -7231,6 +7220,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_CAR_SEATS_PROPERTIES,
                 Car.PERMISSION_CONTROL_CAR_SEATS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadCarSeatsGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_CAR_SEATS_PROPERTIES, Car.PERMISSION_READ_CAR_SEATS);
     }
 
     @Test
