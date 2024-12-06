@@ -1814,6 +1814,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
 
@@ -7074,7 +7076,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 Flags.androidBVehicleProperties() ?
                         ImmutableList.<Integer>builder().addAll(PERMISSION_CAR_INFO_PROPERTIES).add(
-                                VehiclePropertyIds.INFO_MODEL_TRIM).build()
+                                VehiclePropertyIds.INFO_MODEL_TRIM).add(
+                                VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS).build()
                         : PERMISSION_CAR_INFO_PROPERTIES,
                 Car.PERMISSION_CAR_INFO);
     }
