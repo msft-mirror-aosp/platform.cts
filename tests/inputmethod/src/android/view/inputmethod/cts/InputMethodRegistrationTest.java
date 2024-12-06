@@ -27,7 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.os.Process;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.view.inputmethod.InputMethod;
@@ -245,18 +245,18 @@ public class InputMethodRegistrationTest {
     }
 
     private static void installLargeResourceIme() {
-        runShellCommandOrThrow("pm install -r --user " + Process.myUserHandle().getIdentifier()
+        runShellCommandOrThrow("pm install -r --user " + UserHandle.myUserId()
                 + " " + InputMethodRegistrationTest.LARGE_RESOURCE_IME_APK_PATH);
     }
 
     private static void uninstallLargeResourceIme() {
-        runShellCommandOrThrow("pm uninstall --user " + Process.myUserHandle().getIdentifier() + " "
+        runShellCommandOrThrow("pm uninstall --user " + UserHandle.myUserId() + " "
                 + InputMethodRegistrationTest.LARGE_RESOURCE_IME_PACKAGE);
     }
 
     private void enableImes(String... ids) {
         for (String id : ids) {
-            runShellCommandOrThrow("ime enable " + id);
+            runShellCommandOrThrow("ime enable --user " + UserHandle.myUserId() + " " + id);
         }
     }
 }
