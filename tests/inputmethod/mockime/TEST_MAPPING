@@ -1,15 +1,7 @@
 {
   "presubmit": [
     {
-      "name": "CtsWindowManagerDeviceInsets",
-      "options": [
-        {
-          "include-filter": "android.server.wm.insets.WindowInsetsAnimationControllerTests"
-        },
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsWindowManagerDeviceInsets_insets_windowinsetsanimationcontrollertests"
     }
   ]
 }

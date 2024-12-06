@@ -40,23 +40,20 @@ import android.view.inputmethod.InputContentInfo;
 import android.view.inputmethod.SurroundingText;
 import android.view.inputmethod.cts.util.InputConnectionTestUtils;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.function.IntConsumer;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputConnectionDefaultMethodTest {
+public final class InputConnectionDefaultMethodTest {
     @Mock private InputConnection mMockInputConnection;
     @Mock private IntConsumer mMockIntConsumer;
     @Mock private HandwritingGesture mMockHandwritingGesture;

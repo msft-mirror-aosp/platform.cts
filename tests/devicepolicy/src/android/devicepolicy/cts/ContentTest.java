@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static android.Manifest.permission.MANAGE_CONTENT_SUGGESTIONS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONTENT_CAPTURE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONTENT_SUGGESTIONS;
 
@@ -29,20 +30,20 @@ import android.app.contentsuggestions.ContentSuggestionsManager;
 import android.content.Context;
 import android.view.contentcapture.ContentCaptureManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
+import com.android.bedstead.contentsuggestions.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.policies.DisallowContentCapture;
 import com.android.bedstead.harrier.policies.DisallowContentSuggestions;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
@@ -67,8 +68,8 @@ public final class ContentTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONTENT_CAPTURE")
     public void setUserRestriction_disallowContentCapture_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONTENT_CAPTURE));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONTENT_CAPTURE));
     }
 
     @PolicyAppliesTest(policy = DisallowContentCapture.class)
@@ -77,14 +78,14 @@ public final class ContentTest {
     @Test
     public void setUserRestriction_disallowContentCapture_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_CAPTURE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_CAPTURE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONTENT_CAPTURE))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_CAPTURE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_CAPTURE);
         }
     }
 
@@ -93,15 +94,15 @@ public final class ContentTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONTENT_CAPTURE")
     public void setUserRestriction_disallowContentCapture_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_CAPTURE);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_CAPTURE);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONTENT_CAPTURE))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_CAPTURE);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_CAPTURE);
         }
     }
 
@@ -130,8 +131,8 @@ public final class ContentTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONTNET_SUGGESTIONS")
     public void setUserRestriction_disallowContentSuggestions_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONTENT_SUGGESTIONS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONTENT_SUGGESTIONS));
     }
 
     @PolicyAppliesTest(policy = DisallowContentSuggestions.class)
@@ -139,14 +140,14 @@ public final class ContentTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONTENT_SUGGESTIONS")
     public void setUserRestriction_disallowContentSuggestions_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_SUGGESTIONS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_SUGGESTIONS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONTENT_SUGGESTIONS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_SUGGESTIONS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_SUGGESTIONS);
         }
     }
 
@@ -155,14 +156,14 @@ public final class ContentTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONTENT_SUGGESTIONS")
     public void setUserRestriction_disallowContentSuggestions_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_SUGGESTIONS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_SUGGESTIONS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONTENT_SUGGESTIONS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONTENT_SUGGESTIONS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONTENT_SUGGESTIONS);
         }
     }
 

@@ -24,6 +24,8 @@ import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import android.app.admin.RemoteDevicePolicyManager
 import android.content.ComponentName
+import com.android.bedstead.enterprise.profileOwner
+import com.android.bedstead.enterprise.workProfile
 
 internal fun RemoteDevicePolicyManager.getAppLinkPolicy(admin: ComponentName) =
     getUserRestrictions(admin)?.getBoolean(

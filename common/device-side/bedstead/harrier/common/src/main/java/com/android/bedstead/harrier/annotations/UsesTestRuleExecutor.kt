@@ -28,21 +28,3 @@ annotation class UsesTestRuleExecutor(val value: String) {
         const val ONBOARDING = "com.android.bedstead.onboarding.OnboardingTestRuleExecutor"
     }
 }
-
-/**
- * Create class from the fully qualified name in [UsesTestRuleExecutor.value] parameter
- */
-fun UsesTestRuleExecutor.getTestRuleExecutorClass(): Class<out TestRuleExecutor?> {
-    if (value.isEmpty()) {
-        throw IllegalStateException("@UsesTestRuleExecutor value is empty")
-    } else {
-        try {
-            @Suppress("UNCHECKED_CAST")
-            return Class.forName(value) as Class<out TestRuleExecutor?>
-        } catch (ignored: ClassNotFoundException) {
-            throw IllegalStateException(
-                    "Could not find annotation executor $value. Probably a dependency issue."
-            )
-        }
-    }
-}

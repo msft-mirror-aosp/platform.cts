@@ -76,7 +76,7 @@ genrule {
 }
 
 // Generates a zip file containing the current public and system API files for shared libraries.
-genrule {
+java_genrule {
     name: "CtsSharedLibsApiSignatureTestCases_cts-shared-libs-all-current.api",
     srcs: [
         ":android.net.ipsec.ike{.public.api.txt}",

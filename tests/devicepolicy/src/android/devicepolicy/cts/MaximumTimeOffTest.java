@@ -19,7 +19,10 @@ package android.devicepolicy.cts;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.nene.notifications.NotificationListenerQuerySubject.assertThat;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -27,32 +30,24 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
 
 import android.content.Intent;
-import android.util.Log;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.harrier.policies.MaximumTimeOff;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
-import com.android.bedstead.nene.notifications.NotificationListenerQuerySubject;
-import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
-import com.android.eventlib.EventLogs;
-
-import com.google.common.truth.Truth;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
-
-import java.time.Duration;
 
 @RunWith(BedsteadJUnit4.class)
 public final class MaximumTimeOffTest {
@@ -61,7 +56,7 @@ public final class MaximumTimeOffTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().exported().isTrue()
             ).get();
@@ -71,16 +66,16 @@ public final class MaximumTimeOffTest {
     public void setManagedProfileMaximumTimeOff_timesOut_personalAppsAreSuspended()
             throws Exception {
         long originalMaximumTimeOff =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getManagedProfileMaximumTimeOff(
-                                sDeviceState.dpc().componentName());
+                                dpc(sDeviceState).componentName());
         try (TestAppInstance personalInstance = sTestApp.install()) {
             TestAppActivityReference activity = personalInstance.activities().any();
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ 1);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
 
             try (NotificationListener notifications = TestApis.notifications().createListener()) {
-                sDeviceState.workProfile().setQuietMode(true);
+                workProfile(sDeviceState).setQuietMode(true);
 
                 // Wait for us to be notified that personal apps are disabled
                 assertThat(notifications.query()
@@ -93,9 +88,9 @@ public final class MaximumTimeOffTest {
 
             assertBlockedByAdminDialogAppears();
         } finally {
-            sDeviceState.workProfile().setQuietMode(false);
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            workProfile(sDeviceState).setQuietMode(false);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
         }
     }
 
@@ -111,14 +106,14 @@ public final class MaximumTimeOffTest {
     @NotificationsTest
     public void setManagedProfileMaximumTimeOff_timesOut_notificationIsShown() {
         long originalMaximumTimeOff =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getManagedProfileMaximumTimeOff(
-                                sDeviceState.dpc().componentName());
+                                dpc(sDeviceState).componentName());
         try (NotificationListener notifications = TestApis.notifications().createListener()) {
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ 1);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
 
-            sDeviceState.workProfile().setQuietMode(true);
+            workProfile(sDeviceState).setQuietMode(true);
 
             assertThat(
                     notifications.query()
@@ -126,35 +121,35 @@ public final class MaximumTimeOffTest {
                             .whereNotification().channelId().isEqualTo("DEVICE_ADMIN_ALERTS")
             ).wasPosted();
         } finally {
-            sDeviceState.workProfile().setQuietMode(false);
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            workProfile(sDeviceState).setQuietMode(false);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
         }
     }
 
     @CannotSetPolicyTest(policy = MaximumTimeOff.class, includeNonDeviceAdminStates = false)
     public void setManagedProfileMaximumTimeOff_notAllowed_throwsException() {
         assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ 1);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
         });
     }
 
     @CanSetPolicyTest(policy = MaximumTimeOff.class)
     public void getManagedProfileMaximumTimeOff_returnsSetValue() {
         long originalMaximumTimeOff =
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .getManagedProfileMaximumTimeOff(
-                                sDeviceState.dpc().componentName());
+                                dpc(sDeviceState).componentName());
         try {
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ 12345);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ 12345);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName())).isEqualTo(12345);
+            assertThat(dpc(sDeviceState).devicePolicyManager().getManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName())).isEqualTo(12345);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
-                    sDeviceState.dpc().componentName(), /* timeoutMs= */ originalMaximumTimeOff);
+            dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
+                    dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
         }
     }
 

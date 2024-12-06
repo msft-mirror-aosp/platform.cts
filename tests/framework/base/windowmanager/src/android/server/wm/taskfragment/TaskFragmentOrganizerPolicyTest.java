@@ -39,8 +39,10 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Rect;
 import android.os.Binder;
 import android.os.IBinder;
@@ -67,9 +69,13 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
@@ -88,6 +94,9 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
     private TaskOrganizer mTaskOrganizer;
     private BasicTaskFragmentOrganizer mTaskFragmentOrganizer;
     private final ArrayList<BasicTaskFragmentOrganizer> mOrganizers = new ArrayList<>();
+
+    @Rule
+    public TestRule compatChangeRule = new PlatformCompatChangeRule();
 
     @Before
     @Override
@@ -942,6 +951,7 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
      * IllegalArgumentException} returned by {@link
      * TaskFragmentOrganizer#onTaskFragmentError(IBinder, Throwable)}.
      */
+    @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
     @Test
     public void testCreateTaskFragmentWithNonResizeableActivity_ThrowException() {
         // Pass non-resizeable Activity's token to TaskFragmentCreationParams and tries to

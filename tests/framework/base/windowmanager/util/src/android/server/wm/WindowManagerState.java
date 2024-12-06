@@ -44,44 +44,51 @@ import android.content.ComponentName;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.nano.RectProto;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.SparseArray;
 import android.view.WindowInsets;
-import android.view.nano.DisplayInfoProto;
-import android.view.nano.InsetsSourceProto;
-import android.view.nano.ViewProtoEnums;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.server.wm.nano.ActivityRecordProto;
-import com.android.server.wm.nano.AppTransitionProto;
-import com.android.server.wm.nano.BackNavigationProto;
-import com.android.server.wm.nano.ConfigurationContainerProto;
-import com.android.server.wm.nano.DisplayAreaProto;
-import com.android.server.wm.nano.DisplayContentProto;
-import com.android.server.wm.nano.DisplayFramesProto;
-import com.android.server.wm.nano.DisplayRotationProto;
-import com.android.server.wm.nano.IdentifierProto;
-import com.android.server.wm.nano.InsetsSourceProviderProto;
-import com.android.server.wm.nano.KeyguardControllerProto;
-import com.android.server.wm.nano.KeyguardServiceDelegateProto;
-import com.android.server.wm.nano.PinnedTaskControllerProto;
-import com.android.server.wm.nano.RootWindowContainerProto;
-import com.android.server.wm.nano.TaskFragmentProto;
-import com.android.server.wm.nano.TaskProto;
-import com.android.server.wm.nano.WindowContainerChildProto;
-import com.android.server.wm.nano.WindowContainerProto;
-import com.android.server.wm.nano.WindowFramesProto;
-import com.android.server.wm.nano.WindowManagerServiceDumpProto;
-import com.android.server.wm.nano.WindowStateAnimatorProto;
-import com.android.server.wm.nano.WindowStateProto;
-import com.android.server.wm.nano.WindowSurfaceControllerProto;
-import com.android.server.wm.nano.WindowTokenProto;
-
+import com.google.protobuf.ExtensionRegistryLite;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
+
+import perfetto.protos.Displayinfo.DisplayInfoProto;
+import perfetto.protos.Enums.TransitionTypeEnum;
+import perfetto.protos.Insetssource.InsetsSourceProto;
+import perfetto.protos.Rect.RectProto;
+import perfetto.protos.TraceOuterClass.Trace;
+import perfetto.protos.TracePacketOuterClass.TracePacket;
+import perfetto.protos.Windowmanager.WindowManagerTraceEntry;
+import perfetto.protos.Windowmanagerservice.ActivityRecordProto;
+import perfetto.protos.Windowmanagerservice.AppTransitionProto;
+import perfetto.protos.Windowmanagerservice.BackNavigationProto;
+import perfetto.protos.Windowmanagerservice.ConfigurationContainerProto;
+import perfetto.protos.Windowmanagerservice.DisplayAreaProto;
+import perfetto.protos.Windowmanagerservice.DisplayContentProto;
+import perfetto.protos.Windowmanagerservice.DisplayFramesProto;
+import perfetto.protos.Windowmanagerservice.DisplayRotationProto;
+import perfetto.protos.Windowmanagerservice.IdentifierProto;
+import perfetto.protos.Windowmanagerservice.InsetsSourceProviderProto;
+import perfetto.protos.Windowmanagerservice.KeyguardControllerProto;
+import perfetto.protos.Windowmanagerservice.KeyguardServiceDelegateProto;
+import perfetto.protos.Windowmanagerservice.PinnedTaskControllerProto;
+import perfetto.protos.Windowmanagerservice.RootWindowContainerProto;
+import perfetto.protos.Windowmanagerservice.TaskFragmentProto;
+import perfetto.protos.Windowmanagerservice.TaskProto;
+import perfetto.protos.Windowmanagerservice.WindowContainerChildProto;
+import perfetto.protos.Windowmanagerservice.WindowContainerProto;
+import perfetto.protos.Windowmanagerservice.WindowFramesProto;
+import perfetto.protos.Windowmanagerservice.WindowManagerServiceDumpProto;
+import perfetto.protos.Windowmanagerservice.WindowStateAnimatorProto;
+import perfetto.protos.Windowmanagerservice.WindowStateProto;
+import perfetto.protos.Windowmanagerservice.WindowSurfaceControllerProto;
+import perfetto.protos.Windowmanagerservice.WindowTokenProto;
+import perfetto.protos.WinscopeExtensionsImplOuterClass.WinscopeExtensionsImpl;
+import perfetto.protos.WinscopeExtensionsOuterClass.WinscopeExtensions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -101,7 +108,9 @@ public class WindowManagerState {
     public static final String STATE_INITIALIZING = "INITIALIZING";
     public static final String STATE_STARTED = "STARTED";
     public static final String STATE_RESUMED = "RESUMED";
+    public static final String STATE_PAUSING = "PAUSING";
     public static final String STATE_PAUSED = "PAUSED";
+    public static final String STATE_STOPPING = "STOPPING";
     public static final String STATE_STOPPED = "STOPPED";
     public static final String STATE_DESTROYED = "DESTROYED";
     public static final String TRANSIT_ACTIVITY_OPEN = "TRANSIT_ACTIVITY_OPEN";
@@ -156,7 +165,7 @@ public class WindowManagerState {
     private String mFocusedApp = null;
     private Boolean mIsHomeRecentsComponent;
     private String mTopResumedActivityRecord = null;
-    final List<String> mResumedActivitiesInRootTasks = new ArrayList<>();
+    final SparseArray<ArrayList<String>> mResumedActivitiesInRootTasks = new SparseArray<>();
     final List<String> mResumedActivitiesInDisplays = new ArrayList<>();
     private Rect mDefaultPinnedStackBounds = new Rect();
     private Rect mPinnedStackMovementBounds = new Rect();
@@ -168,13 +177,13 @@ public class WindowManagerState {
 
     static String appStateToString(int appState) {
         switch (appState) {
-            case AppTransitionProto.APP_STATE_IDLE:
+            case AppTransitionProto.AppState.APP_STATE_IDLE_VALUE:
                 return "APP_STATE_IDLE";
-            case AppTransitionProto.APP_STATE_READY:
+            case AppTransitionProto.AppState.APP_STATE_READY_VALUE:
                 return "APP_STATE_READY";
-            case AppTransitionProto.APP_STATE_RUNNING:
+            case AppTransitionProto.AppState.APP_STATE_RUNNING_VALUE:
                 return "APP_STATE_RUNNING";
-            case AppTransitionProto.APP_STATE_TIMEOUT:
+            case AppTransitionProto.AppState.APP_STATE_TIMEOUT_VALUE:
                 return "APP_STATE_TIMEOUT";
             default:
                 fail("Invalid AppTransitionState");
@@ -184,70 +193,70 @@ public class WindowManagerState {
 
     static String appTransitionToString(int transition) {
         switch (transition) {
-            case ViewProtoEnums.TRANSIT_UNSET: {
+            case TransitionTypeEnum.TRANSIT_UNSET_VALUE: {
                 return "TRANSIT_UNSET";
             }
-            case ViewProtoEnums.TRANSIT_NONE: {
+            case TransitionTypeEnum.TRANSIT_NONE_VALUE: {
                 return "TRANSIT_NONE";
             }
-            case ViewProtoEnums.TRANSIT_ACTIVITY_OPEN: {
+            case TransitionTypeEnum.TRANSIT_ACTIVITY_OPEN_VALUE: {
                 return TRANSIT_ACTIVITY_OPEN;
             }
-            case ViewProtoEnums.TRANSIT_ACTIVITY_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_ACTIVITY_CLOSE_VALUE: {
                 return TRANSIT_ACTIVITY_CLOSE;
             }
-            case ViewProtoEnums.TRANSIT_TASK_OPEN: {
+            case TransitionTypeEnum.TRANSIT_TASK_OPEN_VALUE: {
                 return TRANSIT_TASK_OPEN;
             }
-            case ViewProtoEnums.TRANSIT_TASK_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_TASK_CLOSE_VALUE: {
                 return TRANSIT_TASK_CLOSE;
             }
-            case ViewProtoEnums.TRANSIT_TASK_TO_FRONT: {
+            case TransitionTypeEnum.TRANSIT_TASK_TO_FRONT_VALUE: {
                 return "TRANSIT_TASK_TO_FRONT";
             }
-            case ViewProtoEnums.TRANSIT_TASK_TO_BACK: {
+            case TransitionTypeEnum.TRANSIT_TASK_TO_BACK_VALUE: {
                 return "TRANSIT_TASK_TO_BACK";
             }
-            case ViewProtoEnums.TRANSIT_WALLPAPER_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_WALLPAPER_CLOSE_VALUE: {
                 return TRANSIT_WALLPAPER_CLOSE;
             }
-            case ViewProtoEnums.TRANSIT_WALLPAPER_OPEN: {
+            case TransitionTypeEnum.TRANSIT_WALLPAPER_OPEN_VALUE: {
                 return TRANSIT_WALLPAPER_OPEN;
             }
-            case ViewProtoEnums.TRANSIT_WALLPAPER_INTRA_OPEN: {
+            case TransitionTypeEnum.TRANSIT_WALLPAPER_INTRA_OPEN_VALUE: {
                 return TRANSIT_WALLPAPER_INTRA_OPEN;
             }
-            case ViewProtoEnums.TRANSIT_WALLPAPER_INTRA_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_WALLPAPER_INTRA_CLOSE_VALUE: {
                 return TRANSIT_WALLPAPER_INTRA_CLOSE;
             }
-            case ViewProtoEnums.TRANSIT_TASK_OPEN_BEHIND: {
+            case TransitionTypeEnum.TRANSIT_TASK_OPEN_BEHIND_VALUE: {
                 return "TRANSIT_TASK_OPEN_BEHIND";
             }
-            case ViewProtoEnums.TRANSIT_ACTIVITY_RELAUNCH: {
+            case TransitionTypeEnum.TRANSIT_ACTIVITY_RELAUNCH_VALUE: {
                 return "TRANSIT_ACTIVITY_RELAUNCH";
             }
-            case ViewProtoEnums.TRANSIT_DOCK_TASK_FROM_RECENTS: {
+            case TransitionTypeEnum.TRANSIT_DOCK_TASK_FROM_RECENTS_VALUE: {
                 return "TRANSIT_DOCK_TASK_FROM_RECENTS";
             }
-            case ViewProtoEnums.TRANSIT_KEYGUARD_GOING_AWAY: {
+            case TransitionTypeEnum.TRANSIT_KEYGUARD_GOING_AWAY_VALUE: {
                 return TRANSIT_KEYGUARD_GOING_AWAY;
             }
-            case ViewProtoEnums.TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER: {
+            case TransitionTypeEnum.TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER_VALUE: {
                 return TRANSIT_KEYGUARD_GOING_AWAY_ON_WALLPAPER;
             }
-            case ViewProtoEnums.TRANSIT_KEYGUARD_OCCLUDE: {
+            case TransitionTypeEnum.TRANSIT_KEYGUARD_OCCLUDE_VALUE: {
                 return TRANSIT_KEYGUARD_OCCLUDE;
             }
-            case ViewProtoEnums.TRANSIT_KEYGUARD_UNOCCLUDE: {
+            case TransitionTypeEnum.TRANSIT_KEYGUARD_UNOCCLUDE_VALUE: {
                 return TRANSIT_KEYGUARD_UNOCCLUDE;
             }
-            case ViewProtoEnums.TRANSIT_TRANSLUCENT_ACTIVITY_OPEN: {
+            case TransitionTypeEnum.TRANSIT_TRANSLUCENT_ACTIVITY_OPEN_VALUE: {
                 return TRANSIT_TRANSLUCENT_ACTIVITY_OPEN;
             }
-            case ViewProtoEnums.TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE_VALUE: {
                 return TRANSIT_TRANSLUCENT_ACTIVITY_CLOSE;
             }
-            case ViewProtoEnums.TRANSIT_CRASHING_ACTIVITY_CLOSE: {
+            case TransitionTypeEnum.TRANSIT_CRASHING_ACTIVITY_CLOSE_VALUE: {
                 return "TRANSIT_CRASHING_ACTIVITY_CLOSE";
             }
             default: {
@@ -321,10 +330,20 @@ public class WindowManagerState {
                 SystemClock.sleep(500);
             }
 
-            dump = executeShellCommand(DUMPSYS_WINDOW);
+            if (android.tracing.Flags.perfettoWmDumpCts()) {
+                dump = new WindowManagerTraceMonitor().captureDump();
+            } else {
+                dump = executeShellCommand(DUMPSYS_WINDOW);
+            }
+
             try {
-                parseSysDumpProto(dump);
-            } catch (InvalidProtocolBufferNanoException ex) {
+                reset();
+                if (android.tracing.Flags.perfettoWmDumpCts()) {
+                    parseDump(dump);
+                } else {
+                    parseDumpLegacy(dump);
+                }
+            } catch (IOException ex) {
                 final String dumpString = new String(dump, StandardCharsets.UTF_8);
                 if (dumpString.contains("SERVICE \'window\' DUMP TIMEOUT")) {
                     // retry and log when dump timeout
@@ -339,7 +358,7 @@ public class WindowManagerState {
                     || mFocusedApp == null || (mSanityCheckFocusedWindow && mFocusedWindow == null)
                     || !mWindowFramesValid
                     || (mTopResumedActivityRecord == null
-                    || mResumedActivitiesInRootTasks.isEmpty())
+                    || mResumedActivitiesInRootTasks.size() == 0)
                     && !mKeyguardControllerState.keyguardShowing;
         } while (retry && retriesLeft-- > 0);
 
@@ -352,7 +371,7 @@ public class WindowManagerState {
         if (mTopResumedActivityRecord == null) {
             logE("No focused activity found...");
         }
-        if (mResumedActivitiesInRootTasks.isEmpty()) {
+        if (mResumedActivitiesInRootTasks.size() == 0) {
             logE("No resumed activities found...");
         }
         if (mWindowStates.isEmpty()) {
@@ -373,12 +392,12 @@ public class WindowManagerState {
         mSuppressAccessibilityServices = suppressAccessibilityServices;
     }
 
-    private byte[] executeShellCommand(String cmd) {
+    private byte[] executeShellCommand(String command) {
         try {
             ParcelFileDescriptor pfd = getInstrumentation().getUiAutomation(
-                    mSuppressAccessibilityServices ? 0
-                            : UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
-                    .executeShellCommand(cmd);
+                            mSuppressAccessibilityServices ? 0
+                                    : UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+                    .executeShellCommand(command);
             byte[] buf = new byte[512];
             int bytesRead;
             FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
@@ -418,15 +437,85 @@ public class WindowManagerState {
                 addResumedActivity(task.mTasks.get(i));
             }
         } else if (task.mResumedActivity != null) {
-            mResumedActivitiesInRootTasks.add(task.mResumedActivity);
+            final ArrayList<String> resumedActivities =
+                    mResumedActivitiesInRootTasks.get(task.mDisplayId, new ArrayList<>());
+            resumedActivities.add(task.mResumedActivity);
+            mResumedActivitiesInRootTasks.put(task.mDisplayId, resumedActivities);
         }
     }
 
-    private void parseSysDumpProto(byte[] sysDump) throws InvalidProtocolBufferNanoException {
+    private void parseDump(byte[] dump) throws InvalidProtocolBufferException {
         reset();
 
-        WindowManagerServiceDumpProto state = WindowManagerServiceDumpProto.parseFrom(sysDump);
-        final RootWindowContainerProto root = state.rootWindowContainer;
+        Trace trace = Trace.parseFrom(dump);
+
+        for (int i = 0; i < trace.getPacketCount(); ++i) {
+            TracePacket packet = trace.getPacket(i);
+
+            if (packet.hasWinscopeExtensions()) {
+                ExtensionRegistryLite registry = ExtensionRegistryLite.newInstance();
+                registry.add(WinscopeExtensionsImpl.windowmanager);
+                WinscopeExtensions extensions = WinscopeExtensions.parseFrom(
+                        packet.getWinscopeExtensions().toByteArray(), registry);
+                if (extensions.hasExtension(WinscopeExtensionsImpl.windowmanager)) {
+                    WindowManagerTraceEntry entry =
+                            extensions.getExtension(WinscopeExtensionsImpl.windowmanager);
+                    parseWindowManagerServiceDumpProto(entry.getWindowManagerService());
+                    return;
+                }
+            }
+        }
+
+        throw new RuntimeException("Perfetto trace doesn't contain WM packets");
+    }
+
+    private void parseWindowManagerServiceDumpProto(WindowManagerServiceDumpProto state) {
+        final RootWindowContainerProto root = state.getRootWindowContainer();
+        if (state.hasFocusedWindow()) {
+            mFocusedWindow = state.getFocusedWindow().getTitle();
+        }
+        mRoot = new RootWindowContainer(root);
+        collectDescendantsOfType(DisplayContent.class, mRoot, mDisplays);
+        for (int i = 0; i < mDisplays.size(); i++) {
+            DisplayContent display = mDisplays.get(i);
+            updateForDisplayContent(display);
+        }
+        mKeyguardControllerState = new KeyguardControllerState(
+                root.hasKeyguardController() ? root.getKeyguardController() : null);
+        mKeyguardServiceDelegateState = new KeyguardServiceDelegateState(
+                state.getPolicy().hasKeyguardDelegate()
+                        ? state.getPolicy().getKeyguardDelegate()
+                        : null);
+        mFocusedApp = state.getFocusedApp();
+        mFocusedDisplayId = state.getFocusedDisplayId();
+        final DisplayContent focusedDisplay = getDisplay(mFocusedDisplayId);
+        if (focusedDisplay != null) {
+            mTopFocusedTaskId = focusedDisplay.mFocusedRootTaskId;
+            mTopResumedActivityRecord = focusedDisplay.mResumedActivity;
+        }
+        mIsHomeRecentsComponent = new Boolean(root.getIsHomeRecentsComponent());
+
+        for (int i = 0; i < root.getPendingActivitiesCount(); i++) {
+            mPendingActivities.add(root.getPendingActivities(i).getTitle());
+        }
+
+        collectDescendantsOfType(WindowState.class, mRoot, mWindowStates);
+
+        if (state.hasInputMethodWindow()) {
+            mInputMethodWindowAppToken =
+                    Integer.toHexString(state.getInputMethodWindow().getHashCode());
+        }
+        mDisplayFrozen = state.getDisplayFrozen();
+        mWindowFramesValid = state.getWindowFramesValid();
+
+        mBackNavigationState = new BackNavigationState(state.hasBackNavigation()
+                ? state.getBackNavigation() : null);
+    }
+
+    private void parseDumpLegacy(byte[] sysDump) throws InvalidProtocolBufferNanoException {
+        com.android.server.wm.nano.WindowManagerServiceDumpProto state =
+                com.android.server.wm.nano.WindowManagerServiceDumpProto.parseFrom(sysDump);
+        final com.android.server.wm.nano.RootWindowContainerProto root = state.rootWindowContainer;
         if (state.focusedWindow != null) {
             mFocusedWindow = state.focusedWindow.title;
         }
@@ -484,6 +573,11 @@ public class WindowManagerState {
         mInputMethodWindowAppToken = null;
         mDisplayFrozen = false;
         mWindowFramesValid = false;
+    }
+
+    /** Returns the focused app on the provided display. */
+    public String getFocusedAppOnDisplay(int displayId) {
+        return getDisplay(displayId).mFocusedApp;
     }
 
     public String getFocusedApp() {
@@ -596,6 +690,10 @@ public class WindowManagerState {
         return null;
     }
 
+    int getFocusedTaskIdOnDisplay(int displayId) {
+        return getDisplay(displayId).mFocusedRootTaskId;
+    }
+
     public int getFocusedTaskId() {
         return mTopFocusedTaskId;
     }
@@ -610,12 +708,28 @@ public class WindowManagerState {
         return rootTask != null ? rootTask.getWindowingMode() : WINDOWING_MODE_UNDEFINED;
     }
 
+    /** Returns the focused activity on the specified display. */
+    public String getFocusedActivityOnDisplay(int displayId) {
+        return getDisplay(displayId).mResumedActivity;
+    }
+
     public String getFocusedActivity() {
         return mTopResumedActivityRecord;
     }
 
     public int getResumedActivitiesCount() {
-        return mResumedActivitiesInRootTasks.size();
+        int count = 0;
+        for (int i = 0; i < mResumedActivitiesInRootTasks.size(); i++) {
+            final ArrayList<String> resumedActivities = mResumedActivitiesInRootTasks.valueAt(i);
+            count += resumedActivities.size();
+        }
+        return count;
+    }
+
+    public int getResumedActivitiesCountOnDisplay(int displayId) {
+        final ArrayList<String> resumedActivitiesOnDisplay =
+                mResumedActivitiesInRootTasks.get(displayId, new ArrayList<>());
+        return resumedActivitiesOnDisplay.size();
     }
 
     public int getResumedActivitiesCountInPackage(String packageName) {
@@ -821,15 +935,6 @@ public class WindowManagerState {
 
     public boolean isTaskDisplayAreaIgnoringOrientationRequest(ComponentName activityName) {
         return getTaskDisplayArea(activityName).isIgnoringOrientationRequest();
-    }
-
-    public boolean containsStartedActivities() {
-        for (Task rootTask : mRootTasks) {
-            final Activity activity = rootTask.getActivity(
-                    (a) -> !a.state.equals(STATE_STOPPED) && !a.state.equals(STATE_DESTROYED));
-            if (activity != null) return true;
-        }
-        return false;
     }
 
     public boolean hasActivityState(ComponentName activityName, String activityState) {
@@ -1242,6 +1347,65 @@ public class WindowManagerState {
         private List<InsetsSourceProvider> mProviders;
 
         DisplayContent(DisplayContentProto proto) {
+            super(proto.getRootDisplayArea());
+            mId = proto.getId();
+            mFocusedRootTaskId = proto.getFocusedRootTaskId();
+            mSingleTaskInstance = proto.getSingleTaskInstance();
+            if (proto.hasResumedActivity()) {
+                mResumedActivity = proto.getResumedActivity().getTitle();
+            }
+            addRootTasks();
+
+            mDpi = proto.getDpi();
+            if (proto.hasDisplayInfo()) {
+                DisplayInfoProto infoProto = proto.getDisplayInfo();
+                mDisplayRect.set(0, 0, infoProto.getLogicalWidth(), infoProto.getLogicalHeight());
+                mAppRect.set(0, 0, infoProto.getAppWidth(), infoProto.getAppHeight());
+                mName = infoProto.getName();
+                mFlags = infoProto.getFlags();
+            }
+            final DisplayFramesProto displayFramesProto = proto.getDisplayFrames();
+            mSurfaceSize = proto.getSurfaceSize();
+            mFocusedApp = proto.getFocusedApp();
+            mMinSizeOfResizeableTaskDp = proto.getMinSizeOfResizeableTaskDp();
+            int appState = 0;
+            int lastTransition = 0;
+            if (proto.hasAppTransition()) {
+                final AppTransitionProto appTransitionProto = proto.getAppTransition();
+                appState = appTransitionProto.getAppTransitionState().getNumber();
+                lastTransition = appTransitionProto.getLastUsedAppTransition().getNumber();
+            }
+            mAppTransitionState = appStateToString(appState);
+            mLastTransition = appTransitionToString(lastTransition);
+
+            if (proto.hasPinnedTaskController()) {
+                PinnedTaskControllerProto pinnedTaskProto = proto.getPinnedTaskController();
+                mDefaultPinnedStackBounds = extract(pinnedTaskProto.getDefaultBounds());
+                mPinnedStackMovementBounds = extract(pinnedTaskProto.getMovementBounds());
+            }
+
+            if (proto.hasDisplayRotation()) {
+                final DisplayRotationProto rotationProto = proto.getDisplayRotation();
+                mRotation = rotationProto.getRotation();
+                mFrozenToUserRotation = rotationProto.getFrozenToUserRotation();
+                mUserRotation = rotationProto.getUserRotation();
+                mFixedToUserRotationMode = rotationProto.getFixedToUserRotationMode();
+                mLastOrientation = rotationProto.getLastOrientation();
+                mIsFixedToUserRotation = rotationProto.getIsFixedToUserRotation();
+            }
+            mKeepClearRects = new ArrayList();
+            for (int i = 0; i < proto.getKeepClearAreasCount(); ++i) {
+                RectProto r = proto.getKeepClearAreas(i);
+                mKeepClearRects.add(new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom()));
+            }
+            mProviders = new ArrayList<>();
+            for (int i = 0; i < proto.getInsetsSourceProvidersCount(); ++i) {
+                InsetsSourceProviderProto provider = proto.getInsetsSourceProviders(i);
+                mProviders.add(new InsetsSourceProvider(provider));
+            }
+        }
+
+        DisplayContent(com.android.server.wm.nano.DisplayContentProto proto) {
             super(proto.rootDisplayArea);
             mId = proto.id;
             mFocusedRootTaskId = proto.focusedRootTaskId;
@@ -1252,19 +1416,21 @@ public class WindowManagerState {
             addRootTasks();
 
             mDpi = proto.dpi;
-            DisplayInfoProto infoProto = proto.displayInfo;
+            android.view.nano.DisplayInfoProto infoProto = proto.displayInfo;
             if (infoProto != null) {
                 mDisplayRect.set(0, 0, infoProto.logicalWidth, infoProto.logicalHeight);
                 mAppRect.set(0, 0, infoProto.appWidth, infoProto.appHeight);
                 mName = infoProto.name;
                 mFlags = infoProto.flags;
             }
-            final DisplayFramesProto displayFramesProto = proto.displayFrames;
+            final com.android.server.wm.nano.DisplayFramesProto displayFramesProto =
+                    proto.displayFrames;
             mSurfaceSize = proto.surfaceSize;
             mFocusedApp = proto.focusedApp;
             mMinSizeOfResizeableTaskDp = proto.minSizeOfResizeableTaskDp;
 
-            final AppTransitionProto appTransitionProto = proto.appTransition;
+            final com.android.server.wm.nano.AppTransitionProto appTransitionProto =
+                    proto.appTransition;
             int appState = 0;
             int lastTransition = 0;
             if (appTransitionProto != null) {
@@ -1274,13 +1440,15 @@ public class WindowManagerState {
             mAppTransitionState = appStateToString(appState);
             mLastTransition = appTransitionToString(lastTransition);
 
-            PinnedTaskControllerProto pinnedTaskProto = proto.pinnedTaskController;
+            com.android.server.wm.nano.PinnedTaskControllerProto pinnedTaskProto =
+                    proto.pinnedTaskController;
             if (pinnedTaskProto != null) {
                 mDefaultPinnedStackBounds = extract(pinnedTaskProto.defaultBounds);
                 mPinnedStackMovementBounds = extract(pinnedTaskProto.movementBounds);
             }
 
-            final DisplayRotationProto rotationProto = proto.displayRotation;
+            final com.android.server.wm.nano.DisplayRotationProto rotationProto =
+                    proto.displayRotation;
             if (rotationProto != null) {
                 mRotation = rotationProto.rotation;
                 mFrozenToUserRotation = rotationProto.frozenToUserRotation;
@@ -1290,11 +1458,12 @@ public class WindowManagerState {
                 mIsFixedToUserRotation = rotationProto.isFixedToUserRotation;
             }
             mKeepClearRects = new ArrayList();
-            for (RectProto r : proto.keepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mProviders = new ArrayList<>();
-            for (InsetsSourceProviderProto provider: proto.insetsSourceProviders) {
+            for (com.android.server.wm.nano.InsetsSourceProviderProto provider :
+                    proto.insetsSourceProviders) {
                 mProviders.add(new InsetsSourceProvider(provider));
             }
         }
@@ -1523,6 +1692,37 @@ public class WindowManagerState {
         WindowContainer mParent;
 
         Task(TaskProto proto, WindowContainer parent) {
+            super(proto.getTaskFragment().getWindowContainer());
+            mTaskId = proto.getId();
+            mRootTaskId = proto.getRootTaskId();
+            mParent = parent;
+            mDisplayId = proto.getTaskFragment().getDisplayId();
+            mLastNonFullscreenBounds = extract(proto.getLastNonFullscreenBounds());
+            mRealActivity = proto.getRealActivity();
+            mOrigActivity = proto.getOrigActivity();
+            mTaskType = proto.getTaskFragment().getActivityType();
+            mResizeMode = proto.getResizeMode();
+            mFullscreen = proto.getFillsParent();
+            mBounds = extract(proto.getBounds());
+            mMinWidth = proto.getTaskFragment().getMinWidth();
+            mMinHeight = proto.getTaskFragment().getMinHeight();
+            mAnimatingBounds = proto.getAnimatingBounds();
+            mSurfaceWidth = proto.getSurfaceWidth();
+            mSurfaceHeight = proto.getSurfaceHeight();
+            mCreatedByOrganizer = proto.getCreatedByOrganizer();
+            mAffinity = proto.getAffinity();
+            mHasChildPipActivity = proto.getHasChildPipActivity();
+
+            if (proto.hasResumedActivity()) {
+                mResumedActivity = proto.getResumedActivity().getTitle();
+            }
+
+            collectChildrenOfType(Task.class, this, mTasks);
+            collectChildrenOfType(TaskFragment.class, this, mTaskFragments);
+            collectChildrenOfType(Activity.class, this, mActivities);
+        }
+
+        Task(com.android.server.wm.nano.TaskProto proto, WindowContainer parent) {
             super(proto.taskFragment.windowContainer);
             mTaskId = proto.id;
             mRootTaskId = proto.rootTaskId;
@@ -1721,6 +1921,17 @@ public class WindowManagerState {
         int mTaskFragmentType;
 
         TaskFragment(TaskFragmentProto proto, WindowContainer parent) {
+            super(proto.getWindowContainer());
+            mParentTask = (Task) parent;
+            mDisplayId = proto.getDisplayId();
+            mTaskFragmentType = proto.getActivityType();
+            mMinWidth = proto.getMinWidth();
+            mMinHeight = proto.getMinHeight();
+
+            collectChildrenOfType(Activity.class, this, mActivities);
+        }
+
+        TaskFragment(com.android.server.wm.nano.TaskFragmentProto proto, WindowContainer parent) {
             super(proto.windowContainer);
             mParentTask = (Task) parent;
             mDisplayId = proto.displayId;
@@ -1781,6 +1992,36 @@ public class WindowManagerState {
         private boolean mIsUserFullscreenOverrideEnabled;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
+            super(proto.getWindowToken().getWindowContainer());
+            name = proto.getName();
+            state = proto.getState();
+            visible = proto.getVisible();
+            frontOfTask = proto.getFrontOfTask();
+            inSizeCompatMode = proto.getInSizeCompatMode();
+            minAspectRatio = proto.getMinAspectRatio();
+            providesMaxBounds = proto.getProvidesMaxBounds();
+            if (proto.hasProcId()) {
+                procId = proto.getProcId();
+            }
+            isAnimating = proto.getIsAnimating();
+            translucent = proto.getTranslucent();
+            mEnableRecentsScreenshot = proto.getEnableRecentsScreenshot();
+            mLastDropInputMode = proto.getLastDropInputMode();
+            mShouldSendCompatFakeFocus = proto.getShouldSendCompatFakeFocus();
+            mOverrideOrientation = proto.getOverrideOrientation();
+            mParent = parent;
+            mShouldForceRotateForCameraCompat = proto.getShouldForceRotateForCameraCompat();
+            mShouldRefreshActivityForCameraCompat = proto.getShouldRefreshActivityForCameraCompat();
+            mShouldRefreshActivityViaPauseForCameraCompat =
+                    proto.getShouldRefreshActivityViaPauseForCameraCompat();
+            mShouldOverrideMinAspectRatio = proto.getShouldOverrideMinAspectRatio();
+            mShouldIgnoreOrientationRequestLoop = proto.getShouldIgnoreOrientationRequestLoop();
+            mShouldOverrideForceResizeApp = proto.getShouldOverrideForceResizeApp();
+            mShouldEnableUserAspectRatioSettings = proto.getShouldEnableUserAspectRatioSettings();
+            mIsUserFullscreenOverrideEnabled = proto.getIsUserFullscreenOverrideEnabled();
+        }
+
+        Activity(com.android.server.wm.nano.ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
             name = proto.name;
             state = proto.state;
@@ -1935,6 +2176,10 @@ public class WindowManagerState {
             super(proto);
         }
 
+        ActivityContainer(com.android.server.wm.nano.WindowContainerProto proto) {
+            super(proto);
+        }
+
         public Rect getBounds() {
             return mBounds;
         }
@@ -1977,6 +2222,18 @@ public class WindowManagerState {
 
         KeyguardControllerState(KeyguardControllerProto proto) {
             if (proto != null) {
+                aodShowing = proto.getAodShowing();
+                keyguardShowing = proto.getKeyguardShowing();
+                mKeyguardGoingAway = proto.getKeyguardGoingAway();
+                for (int i = 0;  i < proto.getKeyguardPerDisplayCount(); i++) {
+                    mKeyguardOccludedStates.append(proto.getKeyguardPerDisplay(i).getDisplayId(),
+                            proto.getKeyguardPerDisplay(i).getKeyguardOccluded());
+                }
+            }
+        }
+
+        KeyguardControllerState(com.android.server.wm.nano.KeyguardControllerProto proto) {
+            if (proto != null) {
                 aodShowing = proto.aodShowing;
                 keyguardShowing = proto.keyguardShowing;
                 mKeyguardGoingAway = proto.keyguardGoingAway;
@@ -2007,6 +2264,13 @@ public class WindowManagerState {
 
         KeyguardServiceDelegateState(KeyguardServiceDelegateProto proto) {
             if (proto != null) {
+                mInteractiveState = proto.getInteractiveState().getNumber();
+            }
+        }
+
+        KeyguardServiceDelegateState(
+                com.android.server.wm.nano.KeyguardServiceDelegateProto proto) {
+            if (proto != null) {
                 mInteractiveState = proto.interactiveState;
             }
         }
@@ -2022,6 +2286,15 @@ public class WindowManagerState {
         final Configuration mMergedOverrideConfiguration = new Configuration();
 
         ConfigurationContainer(ConfigurationContainerProto proto) {
+            if (proto == null) {
+                return;
+            }
+            mOverrideConfiguration.setTo(extract(proto.getOverrideConfiguration()));
+            mFullConfiguration.setTo(extract(proto.getFullConfiguration()));
+            mMergedOverrideConfiguration.setTo(extract(proto.getMergedOverrideConfiguration()));
+        }
+
+        ConfigurationContainer(com.android.server.wm.nano.ConfigurationContainerProto proto) {
             if (proto == null) {
                 return;
             }
@@ -2066,6 +2339,10 @@ public class WindowManagerState {
 
     public static class RootWindowContainer extends WindowContainer {
         RootWindowContainer(RootWindowContainerProto proto) {
+            super(proto.getWindowContainer());
+        }
+
+        RootWindowContainer(com.android.server.wm.nano.RootWindowContainerProto proto) {
             super(proto.windowContainer);
         }
     }
@@ -2079,6 +2356,20 @@ public class WindowManagerState {
         private final ArrayList<WindowState> mWindows = new ArrayList<>();
 
         DisplayArea(DisplayAreaProto proto) {
+            super(proto.getWindowContainer());
+            mIsTaskDisplayArea = proto.getIsTaskDisplayArea();
+            mIsRootDisplayArea = proto.getIsRootDisplayArea();
+            mFeatureId = proto.getFeatureId();
+            mIsOrganized = proto.getIsOrganized();
+            mIsIgnoringOrientationRequest = proto.getIsIgnoringOrientationRequest();
+            if (mIsTaskDisplayArea) {
+                mActivities = new ArrayList<>();
+                collectDescendantsOfType(Activity.class, this, mActivities);
+            }
+            collectDescendantsOfType(WindowState.class, this, mWindows);
+        }
+
+        DisplayArea(com.android.server.wm.nano.DisplayAreaProto proto) {
             super(proto.windowContainer);
             mIsTaskDisplayArea = proto.isTaskDisplayArea;
             mIsRootDisplayArea = proto.isRootDisplayArea;
@@ -2149,6 +2440,10 @@ public class WindowManagerState {
     }
     public static class WindowToken extends WindowContainer {
         WindowToken(WindowTokenProto proto) {
+            super(proto.getWindowContainer());
+        }
+
+        WindowToken(com.android.server.wm.nano.WindowTokenProto proto) {
             super(proto.windowContainer);
         }
     }
@@ -2162,9 +2457,50 @@ public class WindowManagerState {
         GenericWindowContainer(WindowContainerProto proto) {
             super(proto);
         }
+
+        GenericWindowContainer(com.android.server.wm.nano.WindowContainerProto proto) {
+            super(proto);
+        }
     }
 
     static WindowContainer getWindowContainer(WindowContainerChildProto proto,
+            WindowContainer parent) {
+        if (proto.hasDisplayContent()) {
+            return new DisplayContent(proto.getDisplayContent());
+        }
+
+        if (proto.hasDisplayArea()) {
+            return new DisplayArea(proto.getDisplayArea());
+        }
+
+        if (proto.hasTask()) {
+            return new Task(proto.getTask(), parent);
+        }
+
+        if (proto.hasTaskFragment()) {
+            return new TaskFragment(proto.getTaskFragment(), parent);
+        }
+
+        if (proto.hasActivity()) {
+            return new Activity(proto.getActivity(), parent);
+        }
+
+        if (proto.hasWindowToken()) {
+            return new WindowToken(proto.getWindowToken());
+        }
+
+        if (proto.hasWindow()) {
+            return new WindowState(proto.getWindow());
+        }
+
+        if (proto.hasWindowContainer()) {
+            return new GenericWindowContainer(proto.getWindowContainer());
+        }
+        return null;
+    }
+
+    static WindowContainer getWindowContainer(
+            com.android.server.wm.nano.WindowContainerChildProto proto,
             WindowContainer parent) {
         if (proto.displayContent != null) {
             return new DisplayContent(proto.displayContent);
@@ -2212,8 +2548,23 @@ public class WindowManagerState {
         protected List<WindowContainer> mChildren = new ArrayList<>();
 
         WindowContainer(WindowContainerProto proto) {
+            super(proto.hasConfigurationContainer() ? proto.getConfigurationContainer() : null);
+            IdentifierProto identifierProto = proto.getIdentifier();
+            mName = identifierProto.getTitle();
+            mAppToken = Integer.toHexString(identifierProto.getHashCode());
+            mOrientation = proto.getOrientation();
+            for (int i = 0; i < proto.getChildrenCount(); i++) {
+                final WindowContainer child = getWindowContainer(proto.getChildren(i), this);
+                if (child != null) {
+                    mChildren.add(child);
+                }
+            }
+            mVisible = proto.getVisible();
+        }
+
+        WindowContainer(com.android.server.wm.nano.WindowContainerProto proto) {
             super(proto.configurationContainer);
-            IdentifierProto identifierProto = proto.identifier;
+            com.android.server.wm.nano.IdentifierProto identifierProto = proto.identifier;
             mName = identifierProto.title;
             mAppToken = Integer.toHexString(identifierProto.hashCode);
             mOrientation = proto.orientation;
@@ -2289,8 +2640,71 @@ public class WindowManagerState {
         private List<Rect> mUnrestrictedKeepClearRects;
         private List<InsetsSource> mMergedLocalInsetsSources;
         private int mFlags;
+        private Rect mDimBounds;
 
         WindowState(WindowStateProto proto) {
+            super(proto.getWindowContainer());
+            mDisplayId = proto.getDisplayId();
+            mStackId = proto.getStackId();
+            if (proto.hasAttributes()) {
+                mType = proto.getAttributes().getType();
+                mFlags = proto.getAttributes().getFlags();
+            }
+            if (proto.hasAnimator()) {
+                WindowStateAnimatorProto animatorProto = proto.getAnimator();
+                if (animatorProto.hasSurface()) {
+                    WindowSurfaceControllerProto surfaceProto = animatorProto.getSurface();
+                    mShown = surfaceProto.getShown();
+                    mLayer = surfaceProto.getLayer();
+                }
+                mCrop = extract(animatorProto.getLastClipRect());
+            }
+            mGivenContentInsets = extract(proto.getGivenContentInsets());
+            if (proto.hasWindowFrames()) {
+                WindowFramesProto windowFramesProto = proto.getWindowFrames();
+                mFrame = extract(windowFramesProto.getFrame());
+                mParentFrame = extract(windowFramesProto.getParentFrame());
+                mCompatFrame = extract(windowFramesProto.getCompatFrame());
+            }
+            mSurfaceInsets = extract(proto.getSurfaceInsets());
+            if (mName.startsWith(STARTING_WINDOW_PREFIX)) {
+                mWindowType = WINDOW_TYPE_STARTING;
+                // Existing code depends on the prefix being removed
+                mName = mName.substring(STARTING_WINDOW_PREFIX.length());
+            } else if (proto.getAnimatingExit()) {
+                mWindowType = WINDOW_TYPE_EXITING;
+            } else if (mName.startsWith(DEBUGGER_WINDOW_PREFIX)) {
+                mWindowType = WINDOW_TYPE_DEBUGGER;
+                mName = mName.substring(DEBUGGER_WINDOW_PREFIX.length());
+            } else {
+                mWindowType = 0;
+            }
+            collectDescendantsOfType(WindowState.class, this, mSubWindows);
+            mHasCompatScale = proto.getHasCompatScale();
+            mGlobalScale = proto.getGlobalScale();
+            mRequestedWidth = proto.getRequestedWidth();
+            mRequestedHeight = proto.getRequestedHeight();
+            mKeepClearRects = new ArrayList();
+            for (int i = 0; i < proto.getKeepClearAreasCount(); ++i) {
+                RectProto r = proto.getKeepClearAreas(i);
+                mKeepClearRects.add(new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom()));
+            }
+            mUnrestrictedKeepClearRects = new ArrayList();
+            for (int i = 0; i < proto.getUnrestrictedKeepClearAreasCount(); ++i) {
+                RectProto r = proto.getUnrestrictedKeepClearAreas(i);
+                mUnrestrictedKeepClearRects.add(
+                        new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom()));
+            }
+            mMergedLocalInsetsSources = new ArrayList();
+            for (int i = 0; i < proto.getMergedLocalInsetsSourcesCount(); ++i) {
+                InsetsSourceProto insets = proto.getMergedLocalInsetsSources(i);
+                mMergedLocalInsetsSources.add(new InsetsSource(insets));
+            }
+            final RectProto r = proto.getDimBounds();
+            mDimBounds = new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom());
+        }
+
+        WindowState(com.android.server.wm.nano.WindowStateProto proto) {
             super(proto.windowContainer);
             mDisplayId = proto.displayId;
             mStackId = proto.stackId;
@@ -2298,17 +2712,18 @@ public class WindowManagerState {
                 mType = proto.attributes.type;
                 mFlags = proto.attributes.flags;
             }
-            WindowStateAnimatorProto animatorProto = proto.animator;
+            com.android.server.wm.nano.WindowStateAnimatorProto animatorProto = proto.animator;
             if (animatorProto != null) {
                 if (animatorProto.surface != null) {
-                    WindowSurfaceControllerProto surfaceProto = animatorProto.surface;
+                    com.android.server.wm.nano.WindowSurfaceControllerProto surfaceProto =
+                            animatorProto.surface;
                     mShown = surfaceProto.shown;
                     mLayer = surfaceProto.layer;
                 }
                 mCrop = extract(animatorProto.lastClipRect);
             }
             mGivenContentInsets = extract(proto.givenContentInsets);
-            WindowFramesProto windowFramesProto = proto.windowFrames;
+            com.android.server.wm.nano.WindowFramesProto windowFramesProto = proto.windowFrames;
             if (windowFramesProto != null) {
                 mFrame = extract(windowFramesProto.frame);
                 mParentFrame = extract(windowFramesProto.parentFrame);
@@ -2333,17 +2748,18 @@ public class WindowManagerState {
             mRequestedWidth = proto.requestedWidth;
             mRequestedHeight = proto.requestedHeight;
             mKeepClearRects = new ArrayList();
-            for (RectProto r : proto.keepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mUnrestrictedKeepClearRects = new ArrayList();
-            for (RectProto r : proto.unrestrictedKeepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.unrestrictedKeepClearAreas) {
                 mUnrestrictedKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mMergedLocalInsetsSources = new ArrayList();
-            for (InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
+            for (android.view.nano.InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
                 mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
+            mDimBounds = extract(proto.dimBounds);
         }
 
         boolean isStartingWindow() {
@@ -2430,6 +2846,11 @@ public class WindowManagerState {
             return mFlags;
         }
 
+        @Nullable
+        public Rect getDimBounds() {
+            return mDimBounds;
+        }
+
         private String getWindowTypeSuffix(int windowType) {
             switch (windowType) {
                 case WINDOW_TYPE_STARTING:
@@ -2463,6 +2884,14 @@ public class WindowManagerState {
         private boolean mShowWallpaper;
 
         BackNavigationState(BackNavigationProto proto) {
+            if (proto != null) {
+                mAnimationInProgress = proto.getAnimationInProgress();
+                mLastBackType = proto.getLastBackType();
+                mShowWallpaper = proto.getShowWallpaper();
+            }
+        }
+
+        BackNavigationState(com.android.server.wm.nano.BackNavigationProto proto) {
             if (proto != null) {
                 mAnimationInProgress = proto.animationInProgress;
                 mLastBackType = proto.lastBackType;
@@ -2504,6 +2933,21 @@ public class WindowManagerState {
         private boolean mVisible;
 
         InsetsSource(InsetsSourceProto proto) {
+            mType = proto.getTypeNumber();
+            if (proto.hasFrame()) {
+                mFrame = new Rect(
+                        proto.getFrame().getLeft(), proto.getFrame().getTop(),
+                        proto.getFrame().getRight(), proto.getFrame().getBottom());
+            }
+            if (proto.hasVisibleFrame()) {
+                mVisibleFrame = new Rect(
+                        proto.getVisibleFrame().getLeft(), proto.getVisibleFrame().getTop(),
+                        proto.getVisibleFrame().getRight(), proto.getVisibleFrame().getBottom());
+            }
+            mVisible = proto.getVisible();
+        }
+
+        InsetsSource(android.view.nano.InsetsSourceProto proto) {
             mType = proto.typeNumber;
             if (proto.frame != null) {
                 mFrame = new Rect(
@@ -2579,6 +3023,15 @@ public class WindowManagerState {
         private WindowState mWindowState;
 
         InsetsSourceProvider(InsetsSourceProviderProto proto) {
+            if (proto.hasSource()) {
+                mSource = new InsetsSource(proto.getSource());
+            }
+            if (proto.hasSourceWindowState()) {
+                mWindowState = new WindowState(proto.getSourceWindowState());
+            }
+        }
+
+        InsetsSourceProvider(com.android.server.wm.nano.InsetsSourceProviderProto proto) {
             if (proto.source != null) {
                 mSource = new InsetsSource(proto.source);
             }

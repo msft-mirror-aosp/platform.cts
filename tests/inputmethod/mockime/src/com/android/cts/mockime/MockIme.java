@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.inputmethodservice.ExtractEditText;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
@@ -59,6 +60,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.HandwritingGesture;
 import android.view.inputmethod.InlineSuggestion;
 import android.view.inputmethod.InlineSuggestionsRequest;
@@ -638,6 +640,12 @@ public final class MockIme extends InputMethodService {
                     case "getStylusHandwritingEvents": {
                         return mEvents;
                     }
+                    case "setStylusHandwritingRegion": {
+                        Region handwritingRegion = command.getExtras().getParcelable(
+                                "handwritingRegion", Region.class);
+                        setStylusHandwritingRegion(handwritingRegion);
+                        return true;
+                    }
                     case "finishStylusHandwriting": {
                         finishStylusHandwriting();
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
@@ -1035,20 +1043,9 @@ public final class MockIme extends InputMethodService {
         public WindowInsets onApplyWindowInsets(WindowInsets insets) {
             if (insets.isConsumed()
                     || mDrawsBehindNavBar
-                    || (getSystemUiVisibility() & SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) == 0) {
+                    || (getSystemUiVisibility() & SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) != 0) {
                 // In this case we are not interested in consuming NavBar region.
                 // Make sure that the bottom padding is empty.
-                updateBottomPaddingIfNecessary(0);
-                return insets;
-            }
-
-            // In some cases the bottom system window inset is not a navigation bar. Wear devices
-            // that have bottom chin are examples.  For now, assume that it's a navigation bar if it
-            // has the same height as the root window's stable bottom inset.
-            final WindowInsets rootWindowInsets = getRootWindowInsets();
-            if (rootWindowInsets != null && (rootWindowInsets.getStableInsetBottom()
-                    != insets.getSystemWindowInsetBottom())) {
-                // This is probably not a NavBar.
                 updateBottomPaddingIfNecessary(0);
                 return insets;
             }
@@ -1121,7 +1118,6 @@ public final class MockIme extends InputMethodService {
                 () -> super.onStartInputView(editorInfo, restarting));
     }
 
-
     @Override
     public void onPrepareStylusHandwriting() {
         getTracer().onPrepareStylusHandwriting(() -> super.onPrepareStylusHandwriting());
@@ -1180,6 +1176,11 @@ public final class MockIme extends InputMethodService {
     @Override
     public void onFinishInput() {
         getTracer().onFinishInput(() -> super.onFinishInput());
+    }
+
+    @Override
+    public boolean onShouldVerifyKeyEvent(@NonNull KeyEvent keyEvent) {
+        return getTracer().onShouldVerifyKeyEvent(keyEvent, () -> Flags.verifyKeyEvent());
     }
 
     @Override
@@ -1415,6 +1416,12 @@ public final class MockIme extends InputMethodService {
         }
     }
 
+    @Override
+    public void onCustomImeSwitcherButtonRequestedVisible(boolean visible) {
+        getTracer().onCustomImeSwitcherButtonRequestedVisible(visible,
+                () -> super.onCustomImeSwitcherButtonRequestedVisible(visible));
+    }
+
     /**
      * Event tracing helper class for {@link MockIme}.
      */
@@ -1596,6 +1603,14 @@ public final class MockIme extends InputMethodService {
             recordEventInternal("onUpdateEditorToolType", runnable, arguments);
         }
 
+        boolean onShouldVerifyKeyEvent(
+                @NonNull KeyEvent keyEvent, @NonNull BooleanSupplier supplier) {
+            final Bundle arguments = new Bundle();
+            arguments.putParcelable("keyEvent", keyEvent);
+            return recordEventInternal("onShouldVerifyKeyEvent",
+                    supplier::getAsBoolean, arguments);
+        }
+
         boolean onKeyDown(int keyCode, KeyEvent event, @NonNull BooleanSupplier supplier) {
             final Bundle arguments = new Bundle();
             arguments.putInt("keyCode", keyCode);
@@ -1752,6 +1767,13 @@ public final class MockIme extends InputMethodService {
                     new ImeEventStreamTestUtils.WindowLayoutInfoParcelable(windowLayoutInfo);
             arguments.putParcelable("WindowLayoutInfo", parcel);
             recordEventInternal("getWindowLayoutInfo", runnable, arguments);
+        }
+
+        void onCustomImeSwitcherButtonRequestedVisible(boolean visible,
+                @NonNull Runnable runnable) {
+            final Bundle arguments = new Bundle();
+            arguments.putBoolean("visible", visible);
+            recordEventInternal("onCustomImeSwitcherButtonRequestedVisible", runnable, arguments);
         }
     }
 }

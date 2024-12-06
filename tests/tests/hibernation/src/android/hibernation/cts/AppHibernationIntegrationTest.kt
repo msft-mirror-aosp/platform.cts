@@ -36,14 +36,20 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_APP_HIBERNATION
 import android.provider.Settings
+import android.view.Display
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Condition
+import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DisableAnimationRule
@@ -56,6 +62,7 @@ import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
+import com.android.compatibility.common.util.UserHelper
 import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -100,6 +107,7 @@ class AppHibernationIntegrationTest {
     }
     private val context: Context = InstrumentationRegistry.getTargetContext()
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val device: UiDevice = UiAutomatorUtils2.getUiDevice()
 
     private lateinit var packageManager: PackageManager
     private lateinit var permissionControllerManager: PermissionControllerManager
@@ -142,7 +150,7 @@ class AppHibernationIntegrationTest {
 
     @After
     fun cleanUp() {
-        goHome()
+        goBack()
         runWithShellPermissionIdentity {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
@@ -358,20 +366,26 @@ class AppHibernationIntegrationTest {
             var toggleFound = UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
 
             if (!toggleFound) {
-                // Settings can have multiple scrollable containers so all of them should be
-                // searched.
-                var i = 0
-                var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
-                // Assert that at least one scrollable exists on screen
-                var scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
-                wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
-                    assertTrue("No scrollable exists on screen", scrollableExists)
-                }
-                while (!toggleFound && scrollableExists) {
-                    toggleFound = scrollableObject.scrollTextIntoView(title) ||
-                        UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
-                    scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
-                    scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                // On visible background user, the toggle is in a RecyclerView that is not
+                // scrollable. So we need to scroll to the toggle.
+                if (UserHelper(context).isVisibleBackgroundUser()) {
+                    toggleFound = (scrollToTextForVisibleBackgroundUser(title) != null)
+                } else {
+                    // Settings can have multiple scrollable containers so all of them should be
+                    // searched.
+                    var i = 0
+                    var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
+                    // Assert that at least one scrollable exists on screen
+                    var scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                    wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
+                        assertTrue("No scrollable exists on screen", scrollableExists)
+                    }
+                    while (!toggleFound && scrollableExists) {
+                        toggleFound = scrollableObject.scrollTextIntoView(title) ||
+                            UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
+                        scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
+                        scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                    }
                 }
             }
 
@@ -388,7 +402,7 @@ class AppHibernationIntegrationTest {
 
     private fun leaveApp(packageName: String) {
         eventually {
-            goHome()
+            goBack()
             SystemUtil.runWithShellPermissionIdentity {
                 val packageImportance = context
                     .getSystemService(ActivityManager::class.java)!!
@@ -412,5 +426,33 @@ class AppHibernationIntegrationTest {
 
     private fun waitFindObject(selector: BySelector): UiObject2 {
         return waitFindObject(instrumentation.uiAutomation, selector)
+    }
+
+    private fun scrollToTextForVisibleBackgroundUser(text: String): UiObject2? {
+        var foundObject: UiObject2? = null
+        val displayId :Int = UserHelper(context).getMainDisplayId()
+        val searchCondition = object : Condition<UiDevice, Boolean> {
+            override fun apply(device: UiDevice): Boolean {
+                return device.findObjects(
+                    By.clazz(RecyclerView::class.java).displayId(displayId)
+                ).size > 0
+            }
+        }
+        // RecyclerViews take longer to load and aren't found even after waiting for idle
+        device.wait(searchCondition, TIMEOUT_TIME_MS)
+        val recyclerViews =
+                device.findObjects(By.clazz(RecyclerView::class.java).displayId(displayId))
+        for (recyclerView in recyclerViews) {
+            // Make sure recyclerView starts at the top
+            recyclerView.scroll(Direction.UP, 1.0f)
+            recyclerView.scrollUntil(Direction.DOWN, Until.findObject(By.textContains(text)))
+            foundObject = device.findObject(By.text(text).displayId(displayId))
+            if (foundObject != null) {
+                // No need to look at other recyclerViews.
+                break
+            }
+        }
+        device.waitForIdle()
+        return foundObject
     }
 }

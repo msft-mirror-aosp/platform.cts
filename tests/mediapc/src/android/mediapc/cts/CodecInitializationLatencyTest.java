@@ -22,6 +22,7 @@ import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
@@ -109,6 +110,8 @@ public class CodecInitializationLatencyTest {
         // Video media types
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_1920x1080_6mbps_30fps_avc.mp4");
+        mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION,
+                "video_dovi_1920x1080_30fps_dvhe_04.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_H263, "bbb_cif_768kbps_30fps_h263.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_1920x1080_4mbps_30fps_hevc.mp4");
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_MPEG2, "bbb_1920x1080_12mbps_30fps_mpeg2.mp4");
@@ -298,10 +301,8 @@ public class CodecInitializationLatencyTest {
         "2.2.7.1/5.1/H-1-12",
         "2.2.7.1/5.1/H-1-13",})
     public void testInitializationLatency() throws Exception {
-        MediaCodec codec = MediaCodec.createByCodecName(mCodecName);
-        boolean isEncoder = codec.getCodecInfo().isEncoder();
+        boolean isEncoder = getCodecInfo(mCodecName).isEncoder();
         boolean isAudio = mMediaType.startsWith("audio/");
-        codec.release();
         final int NUM_MEASUREMENTS = 5;
         // Test gathers initialization latency for a number of iterations and
         // percentile is a variable used to control how many of these iterations
@@ -377,8 +378,13 @@ public class CodecInitializationLatencyTest {
                 Requirements.addR5_1__H_1_13().to(pce).setCodecInitializationLatencyMs(
                         initializationLatency);
             } else {
-                Requirements.addR5_1__H_1_12().to(pce)
-                        .setCodecInitializationLatencyMs(initializationLatency);
+                if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) {
+                    Requirements.addR5_1__H_1_12().withVariantDolby().to(pce)
+                            .setCodecInitializationLatencyMs(initializationLatency);
+                } else {
+                    Requirements.addR5_1__H_1_12().to(pce)
+                            .setCodecInitializationLatencyMs(initializationLatency);
+                }
             }
         }
         pce.submitAndCheck();

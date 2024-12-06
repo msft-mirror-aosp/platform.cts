@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -142,137 +143,137 @@ public final class CaCertManagementTest {
 
     @CanSetPolicyTest(policy = CaCertManagement.class)
     public void getInstalledCaCerts_doesNotReturnNull() throws Exception {
-        assertThat(sDeviceState.dpc().devicePolicyManager().getInstalledCaCerts(
-                sDeviceState.dpc().componentName())).isNotNull();
+        assertThat(dpc(sDeviceState).devicePolicyManager().getInstalledCaCerts(
+                dpc(sDeviceState).componentName())).isNotNull();
     }
 
     @CannotSetPolicyTest(policy = CaCertManagement.class)
     public void getInstalledCaCerts_invalidAdmin_throwsException() throws Exception {
         assertThrows(SecurityException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().getInstalledCaCerts(
-                        sDeviceState.dpc().componentName()));
+                dpc(sDeviceState).devicePolicyManager().getInstalledCaCerts(
+                        dpc(sDeviceState).componentName()));
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void installCaCert_caCertIsInstalled() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
 
             boolean result = remoteDpm.installCaCert(
-                    sDeviceState.dpc().componentName(), CA_CERT_1);
+                    dpc(sDeviceState).componentName(), CA_CERT_1);
 
             assertThat(result).isTrue();
             assertCaCertInstalledForTheDpcAndLocally(CA_CERT_1);
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
     @CannotSetPolicyTest(policy = CaCertManagement.class)
     public void installCaCert_invalidAdmin_throwsException() throws Exception {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().installCaCert(
-                        sDeviceState.dpc().componentName(), CA_CERT_1));
+                () -> dpc(sDeviceState).devicePolicyManager().installCaCert(
+                        dpc(sDeviceState).componentName(), CA_CERT_1));
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void installCaCert_logsEvent() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
 
             try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-                remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
+                remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
 
                 assertThat(metrics.query()
                         .whereType().isEqualTo(EventId.INSTALL_CA_CERT_VALUE)
-                        .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
-                        .whereBoolean().isEqualTo(sDeviceState.dpc().isDelegate())
+                        .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
+                        .whereBoolean().isEqualTo(dpc(sDeviceState).isDelegate())
                 ).wasLogged();
             }
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void uninstallCaCert_caCertIsNotInstalled() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
-            remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
+            remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
 
-            remoteDpm.uninstallCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
+            remoteDpm.uninstallCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
 
             assertCaCertNotInstalledForTheDpcOrLocally(CA_CERT_1);
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void uninstallCaCert_otherCaCertsAreNotUninstalled() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
-            remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
-            remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_2);
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
+            remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
+            remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_2);
 
-            remoteDpm.uninstallCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
+            remoteDpm.uninstallCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
 
             assertCaCertInstalledForTheDpcAndLocally(CA_CERT_2);
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
     @CannotSetPolicyTest(policy = CaCertManagement.class)
     public void uninstallCaCert_invalidAdmin_throwsException() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
 
         assertThrows(SecurityException.class,
-                () -> remoteDpm.uninstallCaCert(sDeviceState.dpc().componentName(), CA_CERT_1));
+                () -> remoteDpm.uninstallCaCert(dpc(sDeviceState).componentName(), CA_CERT_1));
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void uninstallCaCert_logsEvent() throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
             try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
                 remoteDpm.installCaCert(
-                        sDeviceState.dpc().componentName(), CA_CERT_1);
+                        dpc(sDeviceState).componentName(), CA_CERT_1);
 
                 remoteDpm.uninstallCaCert(
-                        sDeviceState.dpc().componentName(), CA_CERT_1);
+                        dpc(sDeviceState).componentName(), CA_CERT_1);
 
                 assertThat(metrics.query()
                         .whereType().isEqualTo(EventId.UNINSTALL_CA_CERTS_VALUE)
-                        .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
-                        .whereBoolean().isEqualTo(sDeviceState.dpc().isDelegate())
+                        .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
+                        .whereBoolean().isEqualTo(dpc(sDeviceState).isDelegate())
                 ).wasLogged();
             }
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
     public void uninstallAllUserCaCerts_uninstallsAllCaCerts()
             throws Exception {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         try {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
-            remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_1);
-            remoteDpm.installCaCert(sDeviceState.dpc().componentName(), CA_CERT_2);
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
+            remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_1);
+            remoteDpm.installCaCert(dpc(sDeviceState).componentName(), CA_CERT_2);
 
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
 
             assertCaCertNotInstalledForTheDpcOrLocally(CA_CERT_1);
             assertCaCertNotInstalledForTheDpcOrLocally(CA_CERT_2);
         } finally {
-            remoteDpm.uninstallAllUserCaCerts(sDeviceState.dpc().componentName());
+            remoteDpm.uninstallAllUserCaCerts(dpc(sDeviceState).componentName());
         }
     }
 
@@ -286,13 +287,13 @@ public final class CaCertManagementTest {
                         Base64.DEFAULT));
 
         try {
-            boolean result = sDeviceState.dpc().devicePolicyManager()
+            boolean result = dpc(sDeviceState).devicePolicyManager()
                     .installKeyPair(
-                            sDeviceState.dpc().componentName(), privateKey, certificate, ALIAS);
+                            dpc(sDeviceState).componentName(), privateKey, certificate, ALIAS);
             assertThat(result).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), ALIAS);
         }
     }
 
@@ -305,9 +306,9 @@ public final class CaCertManagementTest {
                 new Base64InputStream(new ByteArrayInputStream(TEST_CERT.getBytes()),
                         Base64.DEFAULT));
 
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
                 .installKeyPair(
-                        sDeviceState.dpc().componentName(), privateKey, certificate, ALIAS));
+                        dpc(sDeviceState).componentName(), privateKey, certificate, ALIAS));
     }
 
     @PolicyAppliesTest(policy = CaCertManagement.class)
@@ -319,20 +320,20 @@ public final class CaCertManagementTest {
                 new Base64InputStream(new ByteArrayInputStream(TEST_CERT.getBytes()),
                         Base64.DEFAULT));
 
-        sDeviceState.dpc().devicePolicyManager()
+        dpc(sDeviceState).devicePolicyManager()
                 .installKeyPair(
-                        sDeviceState.dpc().componentName(), privateKey, certificate, ALIAS);
+                        dpc(sDeviceState).componentName(), privateKey, certificate, ALIAS);
 
-        boolean result = sDeviceState.dpc().devicePolicyManager()
-                .removeKeyPair(sDeviceState.dpc().componentName(), ALIAS);
+        boolean result = dpc(sDeviceState).devicePolicyManager()
+                .removeKeyPair(dpc(sDeviceState).componentName(), ALIAS);
         assertThat(result).isTrue();
     }
 
     @CannotSetPolicyTest(policy = CaCertManagement.class)
     public void removeKeyPair_invalidAdmin_throwsException() throws Exception {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .removeKeyPair(sDeviceState.dpc().componentName(), ALIAS));
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .removeKeyPair(dpc(sDeviceState).componentName(), ALIAS));
     }
 
     @ApiTest(apis = {
@@ -344,15 +345,15 @@ public final class CaCertManagementTest {
     public void getOwnerInstalledCaCerts_returnsCertInstalledByAdmin()
             throws Exception {
         try {
-            sDeviceState.dpc().devicePolicyManager().installCaCert(
-                    sDeviceState.dpc().componentName(), TEST_CERT_BYTES);
+            dpc(sDeviceState).devicePolicyManager().installCaCert(
+                    dpc(sDeviceState).componentName(), TEST_CERT_BYTES);
             String alias = sKeyStore.getCertificateAlias(sCertificate);
 
             assertThat(TestApis.devicePolicy().getOwnerInstalledCaCerts(
-                    sDeviceState.dpc().user())).contains(alias);
+                    dpc(sDeviceState).user())).contains(alias);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().uninstallCaCert(
-                    sDeviceState.dpc().componentName(), TEST_CERT_BYTES);
+            dpc(sDeviceState).devicePolicyManager().uninstallCaCert(
+                    dpc(sDeviceState).componentName(), TEST_CERT_BYTES);
         }
     }
 
@@ -381,12 +382,12 @@ public final class CaCertManagementTest {
      */
     private void assertCaCertInstalledAndTrusted(byte[] caBytes, boolean installed)
             throws GeneralSecurityException {
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         Certificate caCert = readCertificate(caBytes);
         // All three responses should match - if an installed certificate isn't trusted or (worse)
         // a trusted certificate isn't even installed we should fail now, loudly.
         boolean isInstalled = remoteDpm.hasCaCertInstalled(
-                sDeviceState.dpc().componentName(), caCert.getEncoded());
+                dpc(sDeviceState).componentName(), caCert.getEncoded());
         assertThat(isInstalled).isEqualTo(installed);
 
         assertThat(isCaCertListed(caCert)).isEqualTo(installed);
@@ -410,9 +411,9 @@ public final class CaCertManagementTest {
 
     private boolean isCaCertListed(Certificate caCert) throws CertificateException {
         boolean listed = false;
-        RemoteDevicePolicyManager remoteDpm = sDeviceState.dpc().devicePolicyManager();
+        RemoteDevicePolicyManager remoteDpm = dpc(sDeviceState).devicePolicyManager();
         for (byte[] certBuffer :
-                remoteDpm.getInstalledCaCerts(sDeviceState.dpc().componentName())) {
+                remoteDpm.getInstalledCaCerts(dpc(sDeviceState).componentName())) {
             if (caCert.equals(readCertificate(certBuffer))) {
                 listed = true;
             }

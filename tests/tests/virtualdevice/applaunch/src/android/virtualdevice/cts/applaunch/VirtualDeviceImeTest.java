@@ -36,16 +36,15 @@ import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.view.WindowManager;
@@ -78,10 +77,9 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
 public class VirtualDeviceImeTest {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
@@ -97,6 +95,8 @@ public class VirtualDeviceImeTest {
     private String mVirtualDeviceImeId;
     private int mVirtualDisplayId = Display.INVALID_DISPLAY;
 
+    private int mUserId;
+
     private interface ImeListener {
         void onShow(int displayId);
     }
@@ -110,6 +110,8 @@ public class VirtualDeviceImeTest {
     public void setUp() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS));
 
+        mUserId = android.os.Process.myUserHandle().getIdentifier();
+
         DefaultDeviceTestIme.sImeListener = mDefaultDeviceImeListener;
         VirtualDeviceTestIme.sImeListener = mVirtualDeviceImeListener;
 
@@ -122,7 +124,7 @@ public class VirtualDeviceImeTest {
     public void tearDown() throws Exception {
         DefaultDeviceTestIme.sImeListener = null;
         VirtualDeviceTestIme.sImeListener = null;
-        SystemUtil.runShellCommandOrThrow("ime reset");
+        SystemUtil.runShellCommandOrThrow("ime reset --user " + mUserId);
     }
 
     /** The virtualDeviceOnly attribute is propagated to InputMethodInfo. */
@@ -188,6 +190,21 @@ public class VirtualDeviceImeTest {
         verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
+    @Test
+    public void untrustedDisplay_customImeComponentIgnored() {
+        createVirtualDeviceAndDisplayWithFlags(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, VirtualDeviceTestIme.class.getName())),
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        mRule.runWithTemporaryPermission(() -> {
+            mRule.sendIntentToDisplay(
+                    new Intent(mContext, ImeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    mVirtualDisplayId);
+            return true;
+        }, android.Manifest.permission.INTERNAL_SYSTEM_WINDOW);
+        verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+    }
+
     /**
      * The virtual device custom IME is used on its virtual displays but the default IME is still
      * used on the displays not owned by that virtual device.
@@ -221,7 +238,8 @@ public class VirtualDeviceImeTest {
     public void customImeComponent_changeDefaultDeviceIme() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
-        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isNotEqualTo(mDefaultDeviceDefaultImeId);
 
@@ -229,8 +247,10 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime enable " + mDefaultDeviceDefaultImeId);
-        SystemUtil.runShellCommandOrThrow("ime set " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -254,7 +274,8 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -460,14 +481,20 @@ public class VirtualDeviceImeTest {
     }
 
     private VirtualDevice createVirtualDeviceAndDisplay(Optional<ComponentName> imeComponent) {
+        return createVirtualDeviceAndDisplayWithFlags(imeComponent,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+    }
+
+    private VirtualDevice createVirtualDeviceAndDisplayWithFlags(
+            Optional<ComponentName> imeComponent, int flags) {
         VirtualDeviceParams.Builder builder = new VirtualDeviceParams.Builder();
         imeComponent.ifPresent(componentName -> builder.setInputMethodComponent(componentName));
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(builder.build());
 
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+                flags);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
         return virtualDevice;
     }
@@ -476,11 +503,16 @@ public class VirtualDeviceImeTest {
             Class<T> imeClass, boolean makeDefault) {
         final String imeId =
                 new ComponentName(mContext, imeClass.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable " + imeId);
+        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " " + imeId);
         if (makeDefault) {
-            SystemUtil.runShellCommandOrThrow("ime set " + imeId);
-            assertThat(Condition.waitFor("current InputMethodInfo",
-                    () -> mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)))
+            // The "ime set" command can be flaky, try a few times until it takes effect.
+            for (int i = 0; i < 5; ++i) {
+                SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " " + imeId);
+                if (mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)) {
+                    return imeId;
+                }
+            }
+            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId))
                     .isTrue();
         }
         return imeId;

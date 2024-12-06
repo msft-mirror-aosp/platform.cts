@@ -283,6 +283,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
             r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig1080P().to(pce);
             r5_1__H_1_5.setConcurrentSessions(maxInstances);
             r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_6.setFrameDropsPerSec(frameDropsPerSec);
         } else {
 
             if (isMPCCodec(mDecoderPair.first, mEncoderPair.first)) {
@@ -302,6 +303,7 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
                 }
                 r5_1__H_1_5.setConcurrentSessions(maxInstances);
                 r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_6.setFrameDropsPerSec(frameDropsPerSec);
             }
         }
 

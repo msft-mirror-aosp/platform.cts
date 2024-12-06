@@ -32,6 +32,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
@@ -161,7 +162,9 @@ public class HDRDecoderTest extends HDRDecoderTestBase {
                 Arrays.equals(loadByteArrayFromString(pattern), hdr10PlusInfoBuffer.array()));
     }
 
-    @CddTest(requirements = {"5.3.5/C-3-1", "5.3.7/C-4-1", "5.3.9"})
+    @CddTest(requirements = {"5.3.5/C-3-1", "5.3.7/C-4-1", "5.3.9/C-3-1"})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_HDR_STATIC_INFO",
+            "android.media.MediaFormat#KEY_HDR10_PLUS_INFO"})
     @Test
     public void testHdrMetadata() throws Exception {
         AssetFileDescriptor infd = null;

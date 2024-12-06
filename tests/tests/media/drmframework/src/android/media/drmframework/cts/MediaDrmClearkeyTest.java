@@ -44,12 +44,13 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.ModuleSpecificTest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -492,6 +493,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * Tests KEY_TYPE_RELEASE for offline license.
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testReleaseOfflineLicense() throws Exception {
         if (isWatchDevice()) {
             return;
@@ -583,6 +585,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testQueryKeyStatus() throws Exception {
         if (isWatchDevice()) {
             // skip this test on watch because it calls
@@ -633,6 +636,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testOfflineKeyManagement() throws Exception {
         if (isWatchDevice()) {
             // skip this test on watch because it calls
@@ -734,6 +738,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
         return codecFeatures;
     }
 
+    @FrameworkSpecificTest
     public void testClearKeyPlaybackCenc() throws Exception {
         String[] codecFeatures = determineCodecFeatures(MIME_VIDEO_AVC,
             VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC);
@@ -749,6 +754,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testClearKeyPlaybackCenc2() throws Exception {
         String[] codecFeatures = determineCodecFeatures(MIME_VIDEO_AVC,
             VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC);
@@ -764,6 +770,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testClearKeyPlaybackOfflineCenc() throws Exception {
         String[] codecFeatures = determineCodecFeatures(MIME_VIDEO_AVC,
             VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC);
@@ -778,6 +785,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 MediaDrm.KEY_TYPE_OFFLINE);
     }
 
+    @FrameworkSpecificTest
     public void testClearKeyPlaybackWebm() throws Exception {
         testClearKeyPlayback(
                 CLEARKEY_SCHEME_UUID,
@@ -789,6 +797,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 MediaDrm.KEY_TYPE_STREAMING);
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @ModuleSpecificTest
     public void testClearKeyPlaybackMpeg2ts() throws Exception {
         testClearKeyPlayback(
             CLEARKEY_SCHEME_UUID,
@@ -800,6 +810,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             MediaDrm.KEY_TYPE_STREAMING);
     }
 
+    @ModuleSpecificTest
     public void testPlaybackMpeg2ts() throws Exception {
         testClearKeyPlayback(
                 CLEARKEY_SCHEME_UUID,
@@ -860,6 +871,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testGetProperties() throws Exception {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -906,6 +918,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testSetProperties() throws Exception {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -991,6 +1004,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     private final static int CLEARKEY_MAX_SESSIONS = 10;
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testGetNumberOfSessions() {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -1028,6 +1042,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testHdcpLevels() {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -1059,6 +1074,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testSecurityLevels() {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -1114,6 +1130,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testSecureStop() {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -1240,6 +1257,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * errorCode ERROR_RESOURCE_CONTENTION
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testResourceContentionError() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1298,6 +1316,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * at the onExpirationUpdateListener with the expiry time
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testOnExpirationUpdateListener() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1363,6 +1382,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * clearOnExpirationUpdateListener is called.
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testClearOnExpirationUpdateListener() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1435,6 +1455,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * is called, the event listener is not called.
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testClearOnEventListener() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1532,6 +1553,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * the sessionId
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testSessionLostStateError() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1584,6 +1606,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
      * the sessionId
      */
     @Presubmit
+    @FrameworkSpecificTest
     public void testClearOnSessionLostStateListener() {
 
         if (watchHasNoClearkeySupport()) {
@@ -1631,6 +1654,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     }
 
     @Presubmit
+    @FrameworkSpecificTest
     public void testIsCryptoSchemeSupportedWithSecurityLevel() {
         if (watchHasNoClearkeySupport()) {
             return;
@@ -1648,6 +1672,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
 
     @Presubmit
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @FrameworkSpecificTest
     public void testMediaDrmStateExceptionErrorCode()
             throws ResourceBusyException, UnsupportedSchemeException, NotProvisionedException {
         if (watchHasNoClearkeySupport()) {
@@ -1687,6 +1712,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     @Presubmit
     @ApiTest(apis = {"android.media.MediaDrm.KeyRequest#getDefaultUrl"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @FrameworkSpecificTest
     public void testGetKeyRequestDefaultUrl()
             throws UnsupportedSchemeException, NotProvisionedException {
         if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U || !VNDK_IS_AT_LEAST_U) {

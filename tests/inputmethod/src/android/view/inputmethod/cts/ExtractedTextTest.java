@@ -31,16 +31,13 @@ import android.view.inputmethod.ExtractedText;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ExtractedTextTest {
+public final class ExtractedTextTest {
 
     private static final int EXPECTED_FLAGS = ExtractedText.FLAG_SINGLE_LINE;
     private static final int EXPECTED_SELECTION_START = 2;
@@ -62,7 +59,6 @@ public class ExtractedTextTest {
 
     private static SpannableStringBuilder getExpectedHint() {
         final SpannableStringBuilder text = new SpannableStringBuilder("hint");
-        final Annotation span = new Annotation("testHintKey", "testHintValue");
         text.setSpan(EXPECTED_HINT_ANNOTATION, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return text;
     }

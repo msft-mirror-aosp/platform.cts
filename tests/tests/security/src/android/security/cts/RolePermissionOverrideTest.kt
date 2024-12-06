@@ -67,11 +67,7 @@ class RolePermissionOverrideTest : StsExtraBusinessLogicTestCase {
         )
         assumeTrue(roleManager.isRoleAvailable(ROLE_SYSTEM_SPEECH_RECOGNIZER))
         val systemSpeechRecognizerPackageName = getRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER)
-        if (systemSpeechRecognizerPackageName != null) {
-            assertPermissionState(
-                systemSpeechRecognizerPackageName, android.Manifest.permission.RECORD_AUDIO, true
-            )
-        }
+        assertThat(TEST_APP_PACKAGE_NAME).isNotEqualTo(systemSpeechRecognizerPackageName)
         assertPermissionState(
             TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
         )
@@ -91,16 +87,59 @@ class RolePermissionOverrideTest : StsExtraBusinessLogicTestCase {
                 TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
             )
         } finally {
+            if (systemSpeechRecognizerPackageName != null) {
+                addRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER, systemSpeechRecognizerPackageName)
+            }
+            setBypassingRoleQualification(false)
+        }
+    }
+
+    @AsbSecurityTest(cveBugId = [355411348])
+    @Test
+    fun systemRoleDoesNotOverrideAskEveryTimePermission() {
+        assumeFalse(
+            ModuleDetector.moduleIsPlayManaged(
+                packageManager, MainlineModule.PERMISSION_CONTROLLER_APEX
+            )
+        )
+        assumeTrue(roleManager.isRoleAvailable(ROLE_SYSTEM_SPEECH_RECOGNIZER))
+        val systemSpeechRecognizerPackageName = getRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER)
+        assertThat(TEST_APP_PACKAGE_NAME).isNotEqualTo(systemSpeechRecognizerPackageName)
+        assertPermissionState(
+            TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
+        )
+
+        runWithShellPermissionIdentity {
+            packageManager.updatePermissionFlags(
+                android.Manifest.permission.RECORD_AUDIO, TEST_APP_PACKAGE_NAME,
+                PackageManager.FLAG_PERMISSION_ONE_TIME or PackageManager.FLAG_PERMISSION_USER_SET,
+                PackageManager.FLAG_PERMISSION_ONE_TIME,
+                user
+            )
+        }
+        setBypassingRoleQualification(true)
+        try {
+            // overrideUserWhenGranting is set as false for this role, so it can
+            // be used to mimic role reconciliation where user set flags are not
+            // overridden.
+            addRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER, TEST_APP_PACKAGE_NAME)
+            assertPermissionState(
+                    TEST_APP_PACKAGE_NAME, android.Manifest.permission.RECORD_AUDIO, false
+            )
+        } finally {
+            if (systemSpeechRecognizerPackageName != null) {
+                addRoleHolder(ROLE_SYSTEM_SPEECH_RECOGNIZER, systemSpeechRecognizerPackageName)
+            }
             setBypassingRoleQualification(false)
         }
     }
 
     private fun installPackage(apkPath: String) {
-        runShellCommand("pm install -r --user ${user.identifier} $apkPath")
+        runShellCommand("pm install --user ${user.identifier} $apkPath")
     }
 
     private fun uninstallPackage(packageName: String) {
-        runShellCommand("pm uninstall -r --user ${user.identifier} $packageName")
+        runShellCommand("pm uninstall --user ${user.identifier} $packageName")
     }
 
     private fun getRoleHolders(roleName: String): List<String> =

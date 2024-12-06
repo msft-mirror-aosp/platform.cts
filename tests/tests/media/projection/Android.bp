@@ -27,9 +27,11 @@ java_defaults {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
+        "com.android.media.flags.projection-aconfig-java",
         "ctstestrunner-axt",
         "cts-media-common",
         "cts-wm-util",
+        "flag-junit",
         "junit",
         "junit-params",
         "platform-compat-test-rules",
@@ -43,7 +45,6 @@ java_defaults {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
 }

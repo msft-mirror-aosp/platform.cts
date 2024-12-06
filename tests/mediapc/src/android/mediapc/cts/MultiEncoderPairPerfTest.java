@@ -215,10 +215,12 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
                     .withVariantByteBufferMode().to(pce);
             r5_1__H_1_3.setConcurrentSessions(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4.setFrameDropsPerSec(frameDropsPerSec);
         } else {
             r5_1__H_1_4 = Requirements.addR5_1__H_1_4().withConfig720P()
                     .withVariantByteBufferMode().to(pce);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4.setFrameDropsPerSec(frameDropsPerSec);
 
             if (isMPCCodec(mMediaType)) {
                 if (isRCodec(mMediaType)) {

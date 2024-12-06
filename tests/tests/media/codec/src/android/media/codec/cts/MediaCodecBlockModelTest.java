@@ -34,7 +34,6 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -45,7 +44,6 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Test;
@@ -65,7 +63,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class MediaCodecBlockModelTest {
@@ -95,7 +92,6 @@ public class MediaCodecBlockModelTest {
      */
     @Presubmit
     @SmallTest
-    @RequiresDevice
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testDecodeShortVideo() throws InterruptedException {
@@ -116,7 +112,6 @@ public class MediaCodecBlockModelTest {
      */
     @Presubmit
     @SmallTest
-    @RequiresDevice
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testDecodeShortAudio() throws InterruptedException {
@@ -137,7 +132,6 @@ public class MediaCodecBlockModelTest {
      */
     @Presubmit
     @SmallTest
-    @RequiresDevice
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testEncodeShortAudio() throws InterruptedException {
@@ -151,7 +145,6 @@ public class MediaCodecBlockModelTest {
      */
     @Presubmit
     @SmallTest
-    @RequiresDevice
     @ApiTest(apis = "MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL")
     @Test
     public void testEncodeShortVideo() throws InterruptedException {

@@ -16,7 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -37,18 +39,18 @@ import android.provider.Settings;
 import android.provider.Telephony;
 import android.telephony.TelephonyManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DefaultSmsApplication;
 import com.android.bedstead.harrier.policies.DefaultSmsApplicationSystemOnly;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -69,7 +71,7 @@ public final class DefaultSmsApplicationTest {
     public static DeviceState sDeviceState = new DeviceState();
 
     private static final Context sContext = TestApis.context().instrumentedContext();
-    private static final TestApp sSmsApp = sDeviceState.testApps()
+    private static final TestApp sSmsApp = testApps(sDeviceState)
             .query()
             .whereActivities().contains(
                     activity().where().intentFilters().contains(
@@ -84,7 +86,7 @@ public final class DefaultSmsApplicationTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDpm = dpc.devicePolicyManager();
         mTelephonyManager = sContext.getSystemService(TelephonyManager.class);
@@ -135,7 +137,7 @@ public final class DefaultSmsApplicationTest {
         }
         String previousSmsAppInTest = getDefaultSmsPackage();
         String previousSmsAppInDpc = getDefaultSmsPackageInDpc();
-        try (TestAppInstance smsApp = sSmsApp.install(sDeviceState.dpc().user())) {
+        try (TestAppInstance smsApp = sSmsApp.install(dpc(sDeviceState).user())) {
             mDpm.setDefaultSmsApplication(mAdmin, smsApp.packageName());
 
             assertThat(Telephony.Sms.getDefaultSmsPackage(sContext))
@@ -245,9 +247,9 @@ public final class DefaultSmsApplicationTest {
         try {
             return Telephony.Sms.getDefaultSmsPackage(
                     sContext.createPackageContextAsUser(
-                            sDeviceState.dpc().packageName(),
+                            dpc(sDeviceState).packageName(),
                             /* flags= */ 0,
-                            sDeviceState.dpc().user().userHandle()));
+                            dpc(sDeviceState).user().userHandle()));
         } catch (PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }

@@ -27,11 +27,11 @@ import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputEvent
 import android.view.MotionEvent
+import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DefaultPointerSpeedRule
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -207,58 +207,12 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    fun sendButtonEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendButtonEvent(
-                    VirtualMouseButtonEvent.Builder()
-                        .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
-                        .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun sendRelativeEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val relativeChangeX = 25f
-        val relativeChangeY = 35f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendRelativeEvent(
-                    VirtualMouseRelativeEvent.Builder()
-                        .setRelativeY(relativeChangeY)
-                        .setRelativeX(relativeChangeX)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun sendScrollEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val moveX = 0f
-        val moveY = 1f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendScrollEvent(
-                    VirtualMouseScrollEvent.Builder()
-                        .setYAxisMovement(moveY)
-                        .setXAxisMovement(moveX)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
     fun testStartingCursorPosition() {
         // The virtual display is 100x100px, running from [0,99]. Half of this is 49.5, and
         // we assume the pointer for a new display begins at the center.
         val displayWidth = mVirtualDisplay.display.mode.physicalWidth
         val displayHeight = mVirtualDisplay.display.mode.physicalHeight
-        val startPosition = PointF((displayWidth - 1) / 2f, (displayHeight - 1) / 2f)
+        val startPosition = PointF((displayWidth) / 2f, (displayHeight) / 2f)
         // Trigger a position update without moving the cursor off the starting position.
         mVirtualMouse.sendButtonEvent(
             VirtualMouseButtonEvent.Builder()

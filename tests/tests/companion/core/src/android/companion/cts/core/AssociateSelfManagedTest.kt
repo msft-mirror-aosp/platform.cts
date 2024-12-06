@@ -20,18 +20,24 @@ import android.Manifest.permission.REQUEST_COMPANION_PROFILE_WATCH
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
+import android.companion.Flags
 import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationCreated
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.assertEmpty
+import android.graphics.drawable.Icon
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -45,6 +51,8 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class AssociateSelfManagedTest : CoreTestBase() {
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun test_associate_selfManaged_requiresPermission() {
@@ -64,6 +72,100 @@ class AssociateSelfManagedTest : CoreTestBase() {
         // Same call with the MANAGE_COMPANION_DEVICES permissions should succeed.
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
             cdm.associate(request, SIMPLE_EXECUTOR, callback)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_DEVICE_ICON)
+    fun test_associate_setDeviceIcon_requiresSelfManagedAssociation() {
+        val icon = Icon.createWithResource(context, R.drawable.ic_cts_device_icon)
+        val requestA: AssociationRequest = AssociationRequest.Builder()
+            .setDisplayName(DEVICE_DISPLAY_NAME)
+            .setDeviceIcon(icon)
+            .build()
+        val callbackA = RecordingCallback()
+
+        // Attempts to create a normal association with setDeviceIcon
+        assertFailsWith(SecurityException::class) {
+            cdm.associate(requestA, SIMPLE_EXECUTOR, callbackA)
+        }
+        assertEmpty(callbackA.invocations)
+
+        val requestB: AssociationRequest = AssociationRequest.Builder()
+            .setDisplayName(DEVICE_DISPLAY_NAME)
+            .setDeviceIcon(icon)
+            .setSelfManaged(true)
+            .build()
+
+        callbackA.clearRecordedInvocations()
+        val callbackB = RecordingCallback()
+
+        // Same call with the MANAGE_COMPANION_DEVICES permission +
+        // selfManaged association request should succeed.
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.associate(requestB, SIMPLE_EXECUTOR, callbackB)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_DEVICE_ICON)
+    fun test_associate_setDeviceIcon_invalid_icon() {
+        val request: AssociationRequest = AssociationRequest.Builder()
+            .setDisplayName(DEVICE_DISPLAY_NAME)
+            .setSelfManaged(true)
+            .setDeviceIcon(
+                Icon.createWithResource(context, R.drawable.ic_cts_device_icon_invalid)
+            ).build()
+        val callbackA = RecordingCallback()
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            // Attempts to create a normal association with setDeviceIcon
+            assertFailsWith(IllegalArgumentException::class) {
+                cdm.associate(request, SIMPLE_EXECUTOR, callbackA)
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_DEVICE_ICON)
+    fun get_deviceIcon_after_refresh_cache() {
+        val iconA = Icon.createWithResource(context, R.drawable.ic_cts_device_icon)
+        val request: AssociationRequest = AssociationRequest.Builder()
+            .setDisplayName(DEVICE_DISPLAY_NAME)
+            .setSelfManaged(true)
+            .setDeviceIcon(iconA).build()
+        val callbackA = RecordingCallback()
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.associate(request, SIMPLE_EXECUTOR, callbackA)
+        }
+        val iconB = cdm.myAssociations[0].deviceIcon
+        assertNotNull(iconB, "The device icon should not be null.")
+        assertEquals(actual = iconB.resId, expected = iconA.resId)
+        assertEquals(actual = iconB.type, expected = iconA.type)
+        // Reload associationInfo from the disk, the deviceIcon should be remain.
+        runShellCommand("cmd companiondevice refresh-cache")
+        val iconC = cdm.myAssociations[0].deviceIcon
+        assertNotNull(iconC, "The device icon should not be null.")
+        assertEquals(actual = iconC.resId, expected = iconA.resId)
+        assertEquals(actual = iconC.type, expected = iconA.type)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ASSOCIATION_DEVICE_ICON)
+    fun get_deviceIcon_URI_is_not_allowed() {
+        val iconA = Icon.createWithContentUri("abc")
+        val request: AssociationRequest = AssociationRequest.Builder()
+            .setDisplayName(DEVICE_DISPLAY_NAME)
+            .setSelfManaged(true)
+            .setDeviceIcon(iconA).build()
+        val callbackA = RecordingCallback()
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            // Attempts to create a normal association with setDeviceIcon
+            assertFailsWith(IllegalArgumentException::class) {
+                cdm.associate(request, SIMPLE_EXECUTOR, callbackA)
+            }
         }
     }
 

@@ -104,8 +104,8 @@ public class DecoderTest extends MediaTestBase {
     private static final String TAG = "DecoderTest";
     private static final String REPORT_LOG_NAME = "CtsMediaDecoderTestCases";
 
-    public static final boolean WAS_LAUNCHED_ON_S_OR_LATER =
-            SystemProperties.getInt("ro.product.first_api_level",
+    public static final boolean IS_VENDOR_AT_LEAST_S =
+            SystemProperties.getInt("ro.vendor.api_level",
                                     Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.S;
 
@@ -193,7 +193,7 @@ public class DecoderTest extends MediaTestBase {
         return isDefault;
     }
 
-    // TODO: add similar tests for other audio and video formats
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
     @Test
     public void testBug11696552() throws Exception {
         MediaCodec mMediaCodec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_AAC);
@@ -209,93 +209,139 @@ public class DecoderTest extends MediaTestBase {
         mMediaCodec.dequeueOutputBuffer(info, 250000);
     }
 
+    // methods decode(), testTimeStampOrdering(), monoTest(), ... internally call decodeToMemory
+    // (). This method for a given media type and component, decodes the resource file. Majority
+    // of the mediacodec api will get involved in this process. The ones that are involved are
+    // listed below. The @ApiTest(...) annotation is only added for one test, but it applies at
+    // all other places unless indicated otherwise. This is done to avoid redundancy.
+    @ApiTest(apis = {"android.media.MediaExtractor#setDataSource",
+            "android.media.MediaExtractor#getTrackCount",
+            "android.media.MediaExtractor#getTrackFormat",
+            "android.media.MediaExtractor#selectTrack",
+            "android.media.MediaExtractor#getSampleTrackIndex",
+            "android.media.MediaExtractor#readSampleData",
+            "android.media.MediaExtractor#getSampleTime",
+            "android.media.MediaExtractor#advance",
+            "android.media.MediaExtractor#release",
+            "android.media.MediaCodec#createByCodecName",
+            "android.media.MediaCodec#configure",
+            "android.media.MediaCodec#start",
+            "android.media.MediaCodec#getInputBuffers",
+            "android.media.MediaCodec#getOutputBuffers",
+            "android.media.MediaCodec#dequeueInputBuffer",
+            "android.media.MediaCodec#queueInputBuffer",
+            "android.media.MediaCodec#dequeueOutputBuffer",
+            "android.media.MediaCodec#releaseOutputBuffer",
+            "android.media.MediaCodec#getOutputFormat",
+            "android.media.MediaCodec#flush",
+            "android.media.MediaCodec#stop",
+            "android.media.MediaCodec#release",
+            "android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM",
+            "android.media.MediaCodec#BUFFER_FLAG_CODEC_CONFIG"})
     // The allowed errors in the following tests are the actual maximum measured
     // errors with the standard decoders, plus 10%.
     // This should allow for some variation in decoders, while still detecting
     // phase and delay errors, channel swap, etc.
+    @CddTest(requirements = {"5.1.2/C-1-6"})
     @Test
     public void testDecodeMp3Lame() throws Exception {
         decode("sinesweepmp3lame.mp3", 804.f);
         testTimeStampOrdering("sinesweepmp3lame.mp3");
     }
+    @CddTest(requirements = {"5.1.2/C-1-6"})
     @Test
     public void testDecodeMp3Smpb() throws Exception {
         decode("sinesweepmp3smpb.mp3", 413.f);
         testTimeStampOrdering("sinesweepmp3smpb.mp3");
     }
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeM4a() throws Exception {
         decode("sinesweepm4a.m4a", 124.f);
         testTimeStampOrdering("sinesweepm4a.m4a");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeOgg() throws Exception {
         decode("sinesweepogg.ogg", 168.f);
         testTimeStampOrdering("sinesweepogg.ogg");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeOggMkv() throws Exception {
         decode("sinesweepoggmkv.mkv", 168.f);
         testTimeStampOrdering("sinesweepoggmkv.mkv");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeOggMp4() throws Exception {
         decode("sinesweepoggmp4.mp4", 168.f);
         testTimeStampOrdering("sinesweepoggmp4.mp4");
     }
+    @CddTest(requirements = {"5.1.2/C-1-9"})
     @Test
     public void testDecodeWav() throws Exception {
         decode("sinesweepwav.wav", 0.0f);
         testTimeStampOrdering("sinesweepwav.wav");
     }
+    @CddTest(requirements = {"5.1.2/C-1-9"})
     @Test
     public void testDecodeWav24() throws Exception {
         decode("sinesweepwav24.wav", 0.0f);
         testTimeStampOrdering("sinesweepwav24.wav");
     }
+    @CddTest(requirements = {"5.1.2/C-1-5"})
     @Test
     public void testDecodeFlacMkv() throws Exception {
         decode("sinesweepflacmkv.mkv", 0.0f);
         testTimeStampOrdering("sinesweepflacmkv.mkv");
     }
+    @CddTest(requirements = {"5.1.2/C-1-5"})
     @Test
     public void testDecodeFlac() throws Exception {
         decode("sinesweepflac.flac", 0.0f);
         testTimeStampOrdering("sinesweepflac.flac");
     }
+    @CddTest(requirements = {"5.1.2/C-1-5"})
     @Test
     public void testDecodeFlac24() throws Exception {
         decode("sinesweepflac24.flac", 0.0f);
         testTimeStampOrdering("sinesweepflac24.flac");
     }
+    @CddTest(requirements = {"5.1.2/C-1-5"})
     @Test
     public void testDecodeFlacMp4() throws Exception {
         decode("sinesweepflacmp4.mp4", 0.0f);
         testTimeStampOrdering("sinesweepflacmp4.mp4");
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-6"})
     @Test
     public void testDecodeMonoMp3() throws Exception {
         monoTest("monotestmp3.mp3", 44100);
         testTimeStampOrdering("monotestmp3.mp3");
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeMonoM4a() throws Exception {
         monoTest("monotestm4a.m4a", 44100);
         testTimeStampOrdering("monotestm4a.m4a");
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeMonoOgg() throws Exception {
         monoTest("monotestogg.ogg", 44100);
         testTimeStampOrdering("monotestogg.ogg");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeMonoOggMkv() throws Exception {
         monoTest("monotestoggmkv.mkv", 44100);
         testTimeStampOrdering("monotestoggmkv.mkv");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeMonoOggMp4() throws Exception {
         monoTest("monotestoggmp4.mp4", 44100);
@@ -314,30 +360,35 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeAacTs() throws Exception {
         testTimeStampOrdering("sinesweeptsaac.m4a");
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeVorbis() throws Exception {
         testTimeStampOrdering("sinesweepvorbis.mkv");
     }
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeVorbisMp4() throws Exception {
         testTimeStampOrdering("sinesweepvorbismp4.mp4");
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-10"})
     @Test
     public void testDecodeOpus() throws Exception {
         testTimeStampOrdering("sinesweepopus.mkv");
     }
+    @CddTest(requirements = {"5.1.2/C-1-10"})
     @Test
     public void testDecodeOpusMp4() throws Exception {
         testTimeStampOrdering("sinesweepopusmp4.mp4");
     }
 
-    @CddTest(requirement="5.1.3")
+    @CddTest(requirements = {"5.1.3"})
     @Test
     public void testDecodeG711ChannelsAndRates() throws Exception {
         String[] mimetypes = { MediaFormat.MIMETYPE_AUDIO_G711_ALAW,
@@ -350,7 +401,7 @@ public class DecoderTest extends MediaTestBase {
         verifyChannelsAndRates(mimetypes, sampleRates, channelMasks);
     }
 
-    @CddTest(requirement="5.1.3")
+    @CddTest(requirements = {"5.1.3"})
     @Test
     public void testDecodeOpusChannelsAndRates() throws Exception {
         String[] mimetypes = { MediaFormat.MIMETYPE_AUDIO_OPUS };
@@ -442,6 +493,7 @@ public class DecoderTest extends MediaTestBase {
         return false;
     }
 
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecode51M4a() throws Exception {
         for (String codecName : codecsFor("sinesweep51m4a.m4a")) {
@@ -464,6 +516,14 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    // Annotation applicable to other testTrackSelection*() as well
+    @ApiTest(apis = {"android.media.MediaExtractor#setDataSource",
+        "android.media.MediaExtractor#selectTrack",
+        "android.media.MediaExtractor#readSampleData",
+        "android.media.MediaExtractor#getSampleTrackIndex",
+        "android.media.MediaExtractor#seekTo",
+        "android.media.MediaExtractor#advance",
+        "android.media.MediaExtractor#release"})
     @Test
     public void testTrackSelection() throws Exception {
         testTrackSelection("video_480x360_mp4_h264_1350kbps_30fps_aac_stereo_128kbps_44100hz.mp4");
@@ -568,6 +628,9 @@ public class DecoderTest extends MediaTestBase {
      *  color_176x144_bt601_525_lr_sdr_h264 |  6  5  4  0  |  2  6  6  0
      *  color_176x144_srgb_lr_sdr_h264      |  2  0  2  1  |  1  13 1  0
      */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
+            "android.media.MediaFormat#KEY_COLOR_STANDARD",
+            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @Test
     public void testH264ColorAspects() throws Exception {
         testColorAspects(
@@ -604,6 +667,9 @@ public class DecoderTest extends MediaTestBase {
      *  color_176x144_bt601_525_lr_sdr_h265 |  6  5  4  0  |  2  6  6  0
      *  color_176x144_srgb_lr_sdr_h265      |  2  0  2  1  |  1  13 1  0
      */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
+            "android.media.MediaFormat#KEY_COLOR_STANDARD",
+            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @Test
     public void testH265ColorAspects() throws Exception {
         testColorAspects(
@@ -652,6 +718,9 @@ public class DecoderTest extends MediaTestBase {
      *  color_176x144_bt601_525_lr_sdr_mpeg2 |  6  5  4  0  |  2  6  6  0
      *  color_176x144_srgb_lr_sdr_mpeg2      |  2  0  2  0  |  1  13 1  0
      */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
+            "android.media.MediaFormat#KEY_COLOR_STANDARD",
+            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @Test
     public void testMPEG2ColorAspectsTV() throws Exception {
         testColorAspects(
@@ -961,6 +1030,11 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaExtractor#setDataSource",
+        "android.media.MediaExtractor#selectTrack",
+        "android.media.MediaExtractor#readSampleData",
+        "android.media.MediaExtractor#seekTo",
+        "android.media.MediaExtractor#advance"})
     @Test
     public void testDecodeFragmented() throws Exception {
         testDecodeFragmented("video_480x360_mp4_h264_1350kbps_30fps_aac_stereo_128kbps_44100hz.mp4",
@@ -1027,6 +1101,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 AAC-LC mono and stereo streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeAacLcM4a() throws Exception {
         // mono
@@ -1054,6 +1129,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 AAC-LC 5.0 and 5.1 channel streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeAacLcMcM4a() throws Exception {
         for (String codecName : codecsFor("noise_6ch_48khz_aot2_mp4.m4a")) {
@@ -1074,6 +1150,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 HE-AAC mono and stereo streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-2"})
     @Test
     public void testDecodeHeAacM4a() throws Exception {
         Object [][] samples = {
@@ -1104,6 +1181,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 HE-AAC 5.0 and 5.1 channel streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-2"})
     @Test
     public void testDecodeHeAacMcM4a() throws Exception {
         Object [][] samples = {
@@ -1126,6 +1204,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 HE-AAC v2 stereo streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-3"})
     @Test
     public void testDecodeHeAacV2M4a() throws Exception {
         String [] samples = {
@@ -1146,6 +1225,7 @@ public class DecoderTest extends MediaTestBase {
     /**
      * Verify correct decoding of MPEG-4 AAC-ELD mono and stereo streams
      */
+    @CddTest(requirements = {"5.1.2/C-1-4"})
     @Test
     public void testDecodeAacEldM4a() throws Exception {
         // mono
@@ -1906,28 +1986,38 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-1"})
     @Test
     public void testDecodeM4aWithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepm4a.m4a");
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-6"})
     @Test
     public void testDecodeMp3WithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepmp3lame.mp3");
         testDecodeWithEOSOnLastBuffer("sinesweepmp3smpb.mp3");
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-10"})
     @Test
     public void testDecodeOpusWithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepopus.mkv");
         testDecodeWithEOSOnLastBuffer("sinesweepopusmp4.mp4");
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-9"})
     @Test
     public void testDecodeWavWithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepwav.wav");
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-5"})
     @Test
     public void testDecodeFlacWithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepflacmkv.mkv");
@@ -1935,6 +2025,8 @@ public class DecoderTest extends MediaTestBase {
         testDecodeWithEOSOnLastBuffer("sinesweepflacmp4.mp4");
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#BUFFER_FLAG_END_OF_STREAM"})
+    @CddTest(requirements = {"5.1.2/C-1-8"})
     @Test
     public void testDecodeOggWithEOSOnLastBuffer() throws Exception {
         testDecodeWithEOSOnLastBuffer("sinesweepogg.ogg");
@@ -2070,6 +2162,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("bbb_s1_720x480_mp4_h264_mp3_2mbps_30fps_aac_lc_5ch_320kbps_48000hz.mp4", 300);
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-1"})
     @Test
     public void testH264Decode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2079,6 +2172,8 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
+    @CddTest(requirements = {"5.3.4/C-2-1"})
     @Test
     public void testH264SecureDecode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2093,6 +2188,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("bbb_s4_1280x720_mp4_h264_mp31_8mbps_30fps_aac_he_mono_40kbps_44100hz.mp4", 300);
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-1"})
     @Test
     public void testH264Decode60fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2105,6 +2201,8 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
+    @CddTest(requirements = {"5.3.4/C-2-1"})
     @Test
     public void testH264SecureDecode60fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2120,6 +2218,7 @@ public class DecoderTest extends MediaTestBase {
                 600);
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-2"})
     @Test
     public void testH264Decode30fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2132,6 +2231,8 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
+    @CddTest(requirements = {"5.3.4/C-2-2"})
     @Test
     public void testH264SecureDecode30fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2147,6 +2248,7 @@ public class DecoderTest extends MediaTestBase {
                 150);
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-2"})
     @Test
     public void testH264Decode60fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2158,6 +2260,8 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
+    @CddTest(requirements = {"5.3.4/C-2-2"})
     @Test
     public void testH264SecureDecode60fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2190,6 +2294,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("bbb_s1_640x360_webm_vp8_2mbps_30fps_vorbis_5ch_320kbps_48000hz.webm", 300);
     }
 
+    @CddTest(requirements = {"5.3.6/C-2-1"})
     @Test
     public void testVP8Decode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2202,6 +2307,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("bbb_s4_1280x720_webm_vp8_8mbps_30fps_opus_mono_64kbps_48000hz.webm", 300);
     }
 
+    @CddTest(requirements = {"5.3.6/C-2-1"})
     @Test
     public void testVP8Decode60fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2214,6 +2320,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("bbb_s3_1280x720_webm_vp8_8mbps_60fps_opus_6ch_384kbps_48000hz.webm", 600);
     }
 
+    @CddTest(requirements = {"5.3.6/C-2-2"})
     @Test
     public void testVP8Decode30fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2227,6 +2334,7 @@ public class DecoderTest extends MediaTestBase {
                 150);
     }
 
+    @CddTest(requirements = {"5.3.6/C-2-2"})
     @Test
     public void testVP8Decode60fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2251,6 +2359,7 @@ public class DecoderTest extends MediaTestBase {
                 300);
     }
 
+    @CddTest(requirements = {"5.3.7/C-2-1"})
     @Test
     public void testVP9Decode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2328,6 +2437,7 @@ public class DecoderTest extends MediaTestBase {
                 300);
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-2"})
     @Test
     public void testHEVCDecode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2343,6 +2453,7 @@ public class DecoderTest extends MediaTestBase {
                 300);
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-2"})
     @Test
     public void testHEVCDecode30fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2380,6 +2491,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("video_720x480_mp4_mpeg2_2000kbps_30fps_aac_stereo_128kbps_48000hz.mp4", 300);
     }
 
+    @CddTest(requirements = {"5.3.1/T-1-1"})
     @Test
     public void testMpeg2Decode30fps1280x720Tv() throws Exception {
         if (checkTv()) {
@@ -2392,6 +2504,7 @@ public class DecoderTest extends MediaTestBase {
         testDecode("video_1280x720_mp4_mpeg2_6000kbps_30fps_aac_stereo_128kbps_48000hz.mp4", 150);
     }
 
+    @CddTest(requirements = {"5.3.1/T-1-1"})
     @Test
     public void testMpeg2Decode30fps1920x1080Tv() throws Exception {
         if (checkTv()) {
@@ -2986,6 +3099,7 @@ public class DecoderTest extends MediaTestBase {
         testEOSBehavior("video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4",
                 new int[]{1, 44, 45, 55});
     }
+
     @Test
     public void testEOSBehaviorHEVC() throws Exception {
         testEOSBehavior("video_480x360_mp4_hevc_650kbps_30fps_aac_stereo_128kbps_48000hz.mp4",
@@ -3194,6 +3308,7 @@ public class DecoderTest extends MediaTestBase {
         return crc.getValue();
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#flush"})
     @Test
     public void testFlush() throws Exception {
         testFlush("loudsoftwav.wav");
@@ -3526,8 +3641,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnHevc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3540,8 +3655,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnAvc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3554,8 +3669,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnVp9() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
@@ -3627,8 +3742,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffHevc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3641,8 +3756,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffAvc() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3655,8 +3770,8 @@ public class DecoderTest extends MediaTestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffVp9() throws Exception {
         // Requires vendor support of the TUNNEL_PEEK feature
-        Assume.assumeTrue("First API level is not Android 12 or later.",
-                WAS_LAUNCHED_ON_S_OR_LATER);
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
@@ -4067,6 +4182,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushHevc() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -4078,6 +4196,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushAvc() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -4089,6 +4210,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushVp9() throws Exception {
+        // Requires vendor changes to support this.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
@@ -4463,6 +4587,7 @@ public class DecoderTest extends MediaTestBase {
         return false;
     }
 
+    @CddTest(requirements = {"7.9.2/C-1-11"})
     @Test
     public void testVrHighPerformanceH264() throws Exception {
         if (!supportsVrHighPerformance()) {
@@ -4474,6 +4599,7 @@ public class DecoderTest extends MediaTestBase {
         assertTrue("Did not find a VR ready H.264 decoder", h264IsReady);
     }
 
+    @CddTest(requirements = {"7.9.2/C-1-12"})
     @Test
     public void testVrHighPerformanceHEVC() throws Exception {
         if (!supportsVrHighPerformance()) {
@@ -4491,6 +4617,7 @@ public class DecoderTest extends MediaTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.9.2/C-1-12"})
     @Test
     public void testVrHighPerformanceVP9() throws Exception {
         if (!supportsVrHighPerformance()) {

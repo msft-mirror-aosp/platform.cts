@@ -39,7 +39,6 @@ import android.opengl.GLES20;
 import android.os.Build;
 import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -77,7 +76,6 @@ import javax.microedition.khronos.opengles.GL10;
  */
 @Presubmit
 @SmallTest
-@RequiresDevice
 @PlatinumTest(focusArea = "media")
 @RunWith(Parameterized.class)
 public class EncodeDecodeTest {

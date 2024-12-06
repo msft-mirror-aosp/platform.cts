@@ -21,9 +21,11 @@ import static android.app.admin.DevicePolicyManager.ACTION_DEVICE_FINANCING_STAT
 import static android.app.role.RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP;
 import static android.app.role.RoleManager.ROLE_FINANCED_DEVICE_KIOSK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.TestApis.context;
 import static com.android.bedstead.nene.TestApis.permissions;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -34,15 +36,15 @@ import android.app.admin.DevicePolicyManager;
 import android.app.role.RoleManager;
 import android.content.Context;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.policies.CheckFinance;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContextImpl;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContextImpl;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.SystemUtil;
@@ -69,7 +71,7 @@ public class CheckFinancedTest {
     private static final DevicePolicyManager sDevicePolicyManager =
             sContext.getSystemService(DevicePolicyManager.class);
 
-    private static final TestApp sTestApp = sDeviceState.testApps().any();
+    private static final TestApp sTestApp = testApps(sDeviceState).any();
 
     private String mOriginalRoleHolderPackage;
 
@@ -78,7 +80,7 @@ public class CheckFinancedTest {
             throws ExecutionException, InterruptedException {
         try (TestAppInstance testApp = sTestApp.install()) {
             clearFinancedDeviceKioskRole();
-            assertThat(sDeviceState.dpc().devicePolicyManager().isDeviceFinanced()).isFalse();
+            assertThat(dpc(sDeviceState).devicePolicyManager().isDeviceFinanced()).isFalse();
         } finally {
             resetFinancedDevicesKioskRole();
         }
@@ -91,7 +93,7 @@ public class CheckFinancedTest {
             setUpFinancedDeviceKioskRole(testApp.packageName());
 
             Poll.forValue("isDeviceFinanced",
-                            () -> sDeviceState.dpc().devicePolicyManager().isDeviceFinanced())
+                            () -> dpc(sDeviceState).devicePolicyManager().isDeviceFinanced())
                     .errorOnFail()
                     .await();
         } finally {
@@ -103,7 +105,7 @@ public class CheckFinancedTest {
     public void isDeviceFinanced_callerNotPermitted_throwsSecurityException()
             throws ExecutionException, InterruptedException {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().isDeviceFinanced());
+                () -> dpc(sDeviceState).devicePolicyManager().isDeviceFinanced());
     }
 
     //TODO(b/273706582): Investigate why this annotation doesn't seem to be working.
@@ -153,7 +155,7 @@ public class CheckFinancedTest {
         try (TestAppInstance testApp = sTestApp.install()) {
             setUpFinancedDeviceKioskRole(testApp.packageName());
 
-            assertThat(sDeviceState.dpc().events().broadcastReceived()
+            assertThat(dpc(sDeviceState).events().broadcastReceived()
                     .whereIntent().action()
                     .isEqualTo(ACTION_DEVICE_FINANCING_STATE_CHANGED))
                     .eventOccurred();

@@ -18,8 +18,8 @@ package {
 
 java_test_host {
     name: "CtsUsesLibraryHostTestCases",
-    defaults: [ "cts_defaults" ],
-    srcs: [ "src/**/*.java" ],
+    defaults: ["cts_defaults"],
+    srcs: ["src/**/*.java"],
     libs: [
         "compatibility-host-util",
         "cts-tradefed",
@@ -29,6 +29,6 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    required: [ "CtsUsesLibraryApp" ],
-    data: [ ":CtsUsesLibraryApp" ],
+    required: ["CtsUsesLibraryApp"],
+    device_common_data: [":CtsUsesLibraryApp"],
 }

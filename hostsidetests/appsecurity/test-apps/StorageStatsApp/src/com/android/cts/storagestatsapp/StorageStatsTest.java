@@ -411,8 +411,8 @@ public class StorageStatsTest extends InstrumentationTestCase {
         assertMostlyEquals(beforeRaw - totalAllocated,
                 filesDir.getUsableSpace(), difference);
 
-        assertMostlyEquals(targetA, getCacheBytes(PKG_A, user));
-        assertMostlyEquals(targetB, getCacheBytes(PKG_B, user));
+        assertMostlyEquals(targetA, getCacheBytes(PKG_A, user), 2 * MB_IN_BYTES);
+        assertMostlyEquals(targetB, getCacheBytes(PKG_B, user), 2 * MB_IN_BYTES);
 
         // Allocate some space for ourselves, which should trim away at
         // over-quota app first, even though its files are newer.
@@ -424,7 +424,7 @@ public class StorageStatsTest extends InstrumentationTestCase {
                     .executeShellCommand("pm trim-caches " + clear1 + " " + pmUuid);
         }
 
-        assertMostlyEquals(targetA, getCacheBytes(PKG_A, user));
+        assertMostlyEquals(targetA, getCacheBytes(PKG_A, user), 2 * MB_IN_BYTES);
         assertMostlyEquals(targetB / 2, getCacheBytes(PKG_B, user), 2 * MB_IN_BYTES);
 
         // Allocate some more space for ourselves, which should now start

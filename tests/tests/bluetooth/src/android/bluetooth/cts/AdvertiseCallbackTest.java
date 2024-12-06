@@ -16,11 +16,12 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.bluetooth.le.AdvertiseCallback;
-import android.bluetooth.le.AdvertiseSettings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -32,46 +33,47 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Test of {@link AdvertiseCallback}.
- */
+/** Test of {@link AdvertiseCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseCallbackTest {
-
-    private final static int ADVERTISE_TYPE_SUCCESS = 0;
-    private final static int ADVERTISE_TYPE_FAIL = 1;
-
     private final MockAdvertiser mMockAdvertiser = new MockAdvertiser();
-    private final BleAdvertiseCallback mAdvertiseCallback = new BleAdvertiseCallback();
+    @Mock AdvertiseCallback mAdvertiseCallback;
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        MockitoAnnotations.initMocks(this);
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void advertiseSuccess() {
-        mAdvertiseCallback.mAdvertiseType = ADVERTISE_TYPE_SUCCESS;
         mMockAdvertiser.startAdvertise(mAdvertiseCallback);
+        verify(mAdvertiseCallback).onStartSuccess(any());
+        verifyNoMoreInteractions(mAdvertiseCallback);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void advertiseFailure() {
-        mAdvertiseCallback.mAdvertiseType = ADVERTISE_TYPE_SUCCESS;
         mMockAdvertiser.startAdvertise(mAdvertiseCallback);
+        verify(mAdvertiseCallback).onStartSuccess(any());
+        verifyNoMoreInteractions(mAdvertiseCallback);
 
         // Second advertise with the same callback should fail.
-        mAdvertiseCallback.mAdvertiseType = ADVERTISE_TYPE_FAIL;
         mMockAdvertiser.startAdvertise(mAdvertiseCallback);
+        verify(mAdvertiseCallback).onStartFailure(anyInt());
+        verifyNoMoreInteractions(mAdvertiseCallback);
     }
 
     // A mock advertiser which emulate BluetoothLeAdvertiser behavior.
@@ -86,24 +88,6 @@ public class AdvertiseCallbackTest {
                     callback.onStartSuccess(null);
                     mCallbacks.add(callback);
                 }
-            }
-        }
-    }
-
-    private static class BleAdvertiseCallback extends AdvertiseCallback {
-        int mAdvertiseType = ADVERTISE_TYPE_SUCCESS;
-
-        @Override
-        public void onStartSuccess(AdvertiseSettings settings) {
-            if (mAdvertiseType == ADVERTISE_TYPE_FAIL) {
-                fail("advertise should fail");
-            }
-        }
-
-        @Override
-        public void onStartFailure(int error) {
-            if (mAdvertiseType == ADVERTISE_TYPE_SUCCESS) {
-                assertEquals(AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED, error);
             }
         }
     }

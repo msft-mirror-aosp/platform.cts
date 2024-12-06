@@ -85,10 +85,14 @@ public class BluetoothConfigTest {
         if (!isEnabled || isSupported) {
             return 0;
         }
-        Log.e(TAG, "Profile config does not match for profile: "
-                + BluetoothProfile.getProfileName(profile)
-                + ". Config currently return: " + isEnabled
-                + ". Is profile in the list: " + isSupported);
+        Log.e(
+                TAG,
+                "Profile config does not match for profile: "
+                        + BluetoothProfile.getProfileName(profile)
+                        + ". Config currently return: "
+                        + isEnabled
+                        + ". Is profile in the list: "
+                        + isSupported);
         return 1;
     }
 
@@ -98,31 +102,35 @@ public class BluetoothConfigTest {
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         final List<Integer> pList = mAdapter.getSupportedProfiles();
-        int wrong_config_in_list = checkIsProfileEnabledInList(BluetoothProfile.A2DP, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.A2DP_SINK, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.AVRCP_CONTROLLER, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.CSIP_SET_COORDINATOR, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.GATT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HAP_CLIENT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HEADSET, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HEADSET_CLIENT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HEARING_AID, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HID_DEVICE, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.HID_HOST, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.LE_AUDIO, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.LE_AUDIO_BROADCAST, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.MAP, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.MAP_CLIENT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.OPP, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.PAN, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.PBAP, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.PBAP_CLIENT, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.SAP, pList)
-            + checkIsProfileEnabledInList(BluetoothProfile.VOLUME_CONTROL, pList);
+        int wrong_config_in_list =
+                checkIsProfileEnabledInList(BluetoothProfile.A2DP, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.A2DP_SINK, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.AVRCP_CONTROLLER, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.CSIP_SET_COORDINATOR, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.GATT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HAP_CLIENT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HEADSET, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HEADSET_CLIENT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HEARING_AID, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HID_DEVICE, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.HID_HOST, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.LE_AUDIO, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.LE_AUDIO_BROADCAST, pList)
+                        + checkIsProfileEnabledInList(
+                                BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.MAP, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.MAP_CLIENT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.OPP, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.PAN, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.PBAP, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.PBAP_CLIENT, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.SAP, pList)
+                        + checkIsProfileEnabledInList(BluetoothProfile.VOLUME_CONTROL, pList);
 
-        assertEquals("Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
-                0, wrong_config_in_list);
+        assertEquals(
+                "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
+                0,
+                wrong_config_in_list);
     }
 
     private int checkIsProfileEnabled(int profile, int adapterSupport) {
@@ -133,10 +141,14 @@ public class BluetoothConfigTest {
         if (!isEnabled || isSupported) {
             return 0;
         }
-        Log.e(TAG, "Profile config does not match for profile: "
-                + BluetoothProfile.getProfileName(profile)
-                + ". Config currently return: " + TestUtils.isProfileEnabled(profile)
-                + ". Adapter support return: " + adapterSupport);
+        Log.e(
+                TAG,
+                "Profile config does not match for profile: "
+                        + BluetoothProfile.getProfileName(profile)
+                        + ". Config currently return: "
+                        + TestUtils.isProfileEnabled(profile)
+                        + ". Adapter support return: "
+                        + adapterSupport);
         return 1;
     }
 
@@ -145,15 +157,18 @@ public class BluetoothConfigTest {
         assumeTrue(mHasBluetooth);
 
         int wrong_config =
-            checkIsProfileEnabled(BluetoothProfile.LE_AUDIO,
-                    mAdapter.isLeAudioSupported())
-            + checkIsProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST,
-                    mAdapter.isLeAudioBroadcastSourceSupported())
-            + checkIsProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT,
-                    mAdapter.isLeAudioBroadcastAssistantSupported());
+                checkIsProfileEnabled(BluetoothProfile.LE_AUDIO, mAdapter.isLeAudioSupported())
+                        + checkIsProfileEnabled(
+                                BluetoothProfile.LE_AUDIO_BROADCAST,
+                                mAdapter.isLeAudioBroadcastSourceSupported())
+                        + checkIsProfileEnabled(
+                                BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT,
+                                mAdapter.isLeAudioBroadcastAssistantSupported());
 
-        assertEquals("Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
-                0, wrong_config);
+        assertEquals(
+                "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
+                0,
+                wrong_config);
     }
 
     @Test
@@ -167,17 +182,21 @@ public class BluetoothConfigTest {
         //      MCP server,
         //      VCP controller,
         //      CCP server,
-        if (mAdapter.isLeAudioSupported()
-                == BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertTrue("BAP unicast config must be true when LeAudio is supported. [C-7-5]",
+        if (mAdapter.isLeAudioSupported() == BluetoothStatusCodes.FEATURE_SUPPORTED) {
+            assertTrue(
+                    "BAP unicast config must be true when LeAudio is supported. [C-7-5]",
                     BluetoothProperties.isProfileBapUnicastClientEnabled().orElse(false));
-            assertTrue("CSIP config must be true when LeAudio is supported. [C-7-5]",
+            assertTrue(
+                    "CSIP config must be true when LeAudio is supported. [C-7-5]",
                     BluetoothProperties.isProfileCsipSetCoordinatorEnabled().orElse(false));
-            assertTrue("MCP config must be true when LeAudio is supported. [C-7-5]",
+            assertTrue(
+                    "MCP config must be true when LeAudio is supported. [C-7-5]",
                     BluetoothProperties.isProfileMcpServerEnabled().orElse(false));
-            assertTrue("VCP config must be true when LeAudio is supported. [C-7-5]",
+            assertTrue(
+                    "VCP config must be true when LeAudio is supported. [C-7-5]",
                     BluetoothProperties.isProfileVcpControllerEnabled().orElse(false));
-            assertTrue("CCP config must be true when LeAudio is supported. [C-7-5]",
+            assertTrue(
+                    "CCP config must be true when LeAudio is supported. [C-7-5]",
                     BluetoothProperties.isProfileCcpServerEnabled().orElse(false));
         }
 
@@ -187,11 +206,13 @@ public class BluetoothConfigTest {
         //      BAP broadcast assistant
         if (mAdapter.isLeAudioBroadcastSourceSupported()
                 == BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertTrue("BAP broadcast source config must be true when adapter support "
-                    + "BroadcastSource. [C-8-2]",
+            assertTrue(
+                    "BAP broadcast source config must be true when adapter support "
+                            + "BroadcastSource. [C-8-2]",
                     BluetoothProperties.isProfileBapBroadcastSourceEnabled().orElse(false));
-            assertTrue("BAP broadcast assistant config must be true when adapter support "
-                    + "BroadcastSource. [C-8-2]",
+            assertTrue(
+                    "BAP broadcast assistant config must be true when adapter support "
+                            + "BroadcastSource. [C-8-2]",
                     BluetoothProperties.isProfileBapBroadcastAssistEnabled().orElse(false));
         }
     }

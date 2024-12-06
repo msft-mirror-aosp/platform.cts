@@ -17,22 +17,27 @@
 package android.app.appfunctions.testutils;
 
 import android.app.appfunctions.AppFunctionService;
+import android.app.appfunctions.AppFunctionException;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
+import android.os.CancellationSignal;
+import android.os.OutcomeReceiver;
 
 import androidx.annotation.NonNull;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.concurrent.Future;
 
 /**
  * An implementation of {@link android.app.appfunctions.AppFunctionService} that provides some
  * simple functions for testing purposes.
  */
 public class TestAppFunctionService extends AppFunctionService {
-    private final Executor mExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+
+    private Future<Void> mCancellableFuture = null;
 
     @Override
     public void onCreate() {
@@ -43,57 +48,101 @@ public class TestAppFunctionService extends AppFunctionService {
     @Override
     public void onExecuteFunction(
             @NonNull ExecuteAppFunctionRequest request,
-            @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
+            @NonNull String callingPackage,
+            @NonNull CancellationSignal cancellationSignal,
+            @NonNull
+                    OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException>
+                            callback) {
+
+        cancellationSignal.setOnCancelListener(
+                () -> {
+                    TestAppFunctionServiceLifecycleReceiver.notifyOnOperationCancelled(this);
+                    cancelOperation();
+                });
         switch (request.getFunctionIdentifier()) {
-            case "add": {
-                ExecuteAppFunctionResponse result = add(request);
-                callback.accept(result);
-                break;
-            }
-            case "add_invokeCallbackTwice": {
-                ExecuteAppFunctionResponse result = add(request);
-                callback.accept(result);
-                callback.accept(result);
-                break;
-            }
-            case "throwException": {
-                throw new RuntimeException();
-            }
-            case "kill": {
-                System.exit(0);
-                break;
-            }
-            case "notInvokeCallback": {
-                break;
-            }
-            case "addAsync": {
-                mExecutor.execute(
-                        () -> {
-                            ExecuteAppFunctionResponse result = add(request);
-                            callback.accept(result);
-                        });
-                break;
-            }
-            case "noOp": {
-                callback.accept(
-                        ExecuteAppFunctionResponse.newSuccess(
-                                buildEmptyGenericDocument(), /* extras= */ null));
-                break;
-            }
-            case "noSuchMethod": {
-                callback.accept(
-                        ExecuteAppFunctionResponse.newFailure(
-                                ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
-                                "Function does not exist",
-                                /* extras= */ null));
-                break;
-            }
+            case "addWithRestrictCallersWithExecuteAppFunctionsTrue":
+            case "addWithRestrictCallersWithExecuteAppFunctionsFalse":
+            case "add", "add_disabledByDefault":
+                {
+                    ExecuteAppFunctionResponse result = add(request, callingPackage);
+                    callback.onResult(result);
+                    break;
+                }
+            case "add_invokeCallbackTwice":
+                {
+                    ExecuteAppFunctionResponse result = add(request, callingPackage);
+                    callback.onResult(result);
+                    callback.onResult(result);
+                    break;
+                }
+            case "throwException":
+                {
+                    throw new RuntimeException();
+                }
+            case "kill":
+                {
+                    System.exit(0);
+                    break;
+                }
+            case "notInvokeCallback":
+                {
+                    break;
+                }
+            case "addAsync":
+                {
+                    mExecutor.execute(
+                            () -> {
+                                ExecuteAppFunctionResponse result = add(request, callingPackage);
+                                callback.onResult(result);
+                            });
+                    break;
+                }
+            case "noOp":
+                {
+                    callback.onResult(new ExecuteAppFunctionResponse(buildEmptyGenericDocument()));
+                    break;
+                }
+            case "noSuchMethod":
+                {
+                    callback.onError(
+                            new AppFunctionException(
+                                    AppFunctionException.ERROR_INVALID_ARGUMENT,
+                                    "Function does not exist"));
+                    break;
+                }
+            case "longRunningFunction":
+                {
+                    mCancellableFuture =
+                            mExecutor.submit(
+                                    () -> {
+                                        try {
+                                            Thread.sleep(2000);
+                                        } catch (InterruptedException e) {
+                                            callback.onError(
+                                                    new AppFunctionException(
+                                                            AppFunctionException
+                                                                    .ERROR_CANCELLED,
+                                                            "Operation Interrupted"));
+                                            return null;
+                                        }
+                                        callback.onResult(
+                                                new ExecuteAppFunctionResponse(
+                                                        buildEmptyGenericDocument()));
+                                        return null;
+                                    });
+                    break;
+                }
             default:
-                callback.accept(
-                        ExecuteAppFunctionResponse.newFailure(
-                                ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
-                                /* errorMessage= */ null,
-                                /* extras= */ null));
+                callback.onError(
+                        new AppFunctionException(
+                                AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
+                                /* errorMessage= */ null));
+        }
+    }
+
+    private void cancelOperation() {
+        if (mCancellableFuture != null) {
+            mCancellableFuture.cancel(true);
         }
     }
 
@@ -101,14 +150,16 @@ public class TestAppFunctionService extends AppFunctionService {
         return new GenericDocument.Builder<>("", "", "").build();
     }
 
-    private ExecuteAppFunctionResponse add(ExecuteAppFunctionRequest request) {
+    private ExecuteAppFunctionResponse add(
+            ExecuteAppFunctionRequest request, String callingPackage) {
         long a = request.getParameters().getPropertyLong("a");
         long b = request.getParameters().getPropertyLong("b");
         GenericDocument result =
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
+                        .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
                         .build();
-        return ExecuteAppFunctionResponse.newSuccess(result, /* extras= */ null);
+        return new ExecuteAppFunctionResponse(result);
     }
 
     @Override

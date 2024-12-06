@@ -27,6 +27,7 @@ import static android.scopedstorage.cts.lib.TestUtils.DELETE_FILE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_MEDIA_BY_URI_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_RECURSIVE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.FILE_EXISTS_QUERY;
+import static android.scopedstorage.cts.lib.TestUtils.GET_TYPE_URI;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXCEPTION;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_ARGS;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_CALLING_PKG;
@@ -36,6 +37,7 @@ import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_URI;
 import static android.scopedstorage.cts.lib.TestUtils.IS_URI_REDACTED_VIA_FILEPATH;
 import static android.scopedstorage.cts.lib.TestUtils.IS_URI_REDACTED_VIA_FILE_DESCRIPTOR_FOR_READ;
 import static android.scopedstorage.cts.lib.TestUtils.IS_URI_REDACTED_VIA_FILE_DESCRIPTOR_FOR_WRITE;
+import static android.scopedstorage.cts.lib.TestUtils.MEDIASTORE_VERSION_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.OPEN_FILE_FOR_READ_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.OPEN_FILE_FOR_WRITE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.QUERY_MAX_ROW_ID;
@@ -158,6 +160,9 @@ public class ScopedStorageTestHelper extends Activity {
                 case IS_URI_REDACTED_VIA_FILEPATH:
                     returnIntent = isFilePathForUriRedacted(queryType);
                     break;
+                case MEDIASTORE_VERSION_QUERY:
+                    returnIntent = getMediaStoreVersion(queryType);
+                    break;
                 case QUERY_URI:
                     returnIntent = queryForUri(queryType);
                     break;
@@ -170,6 +175,9 @@ public class ScopedStorageTestHelper extends Activity {
                     break;
                 case QUERY_WITH_ARGS:
                     returnIntent = queryWithArgs(queryType);
+                    break;
+                case GET_TYPE_URI:
+                    returnIntent = getTypeForUri(queryType);
                     break;
                 case "null":
                 default:
@@ -310,6 +318,19 @@ public class ScopedStorageTestHelper extends Activity {
             final Cursor c = getContentResolver().query(uri,
                     new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, args, null);
             intent.putExtra(queryType, c.getCount());
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent getTypeForUri(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+
+        try {
+            intent.putExtra(queryType, getContentResolver().getType(uri));
         } catch (Exception e) {
             intent.putExtra(INTENT_EXCEPTION, e);
         }
@@ -549,6 +570,12 @@ public class ScopedStorageTestHelper extends Activity {
             throw new IllegalStateException(
                     queryType + ": File path not set from launcher app");
         }
+    }
+
+    private Intent getMediaStoreVersion(String queryType) {
+        final Intent intent = new Intent(queryType);
+        intent.putExtra(queryType, MediaStore.getVersion(getApplicationContext()));
+        return intent;
     }
 
     private void maybeCreateParentDirInAndroid(File file) {

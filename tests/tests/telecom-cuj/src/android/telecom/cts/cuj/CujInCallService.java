@@ -22,14 +22,14 @@ import android.telecom.Call;
 import android.telecom.InCallService;
 import android.util.Log;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CujInCallService extends InCallService {
     private static final String TAG = CujInCallService.class.getSimpleName();
     public static boolean sIsServiceBound = false;
-    public static final Map<String, Call> sCallIdToCall = new HashMap();
+    public static final Map<String, Call> sCallIdToCall = new ConcurrentHashMap();
     public static Call sLastCall = null;
 
     @Override

@@ -28,6 +28,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Flags;
@@ -40,7 +41,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.webkit.WebViewUpdateService;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -69,8 +69,6 @@ public class SecurityStateManagerTest {
 
     @Before
     public void setUp() {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.INTERACT_ACROSS_USERS_FULL);
         mContext = getApplicationContext();
         mResources = mContext.getResources();
         mPackageManager = mContext.getPackageManager();
@@ -79,6 +77,15 @@ public class SecurityStateManagerTest {
 
     @Test
     public void testGetGlobalSecurityState() throws Exception {
+        final long token = Binder.clearCallingIdentity();
+        try {
+            testGetGlobalSecurityStateInternal();
+        } finally {
+            Binder.restoreCallingIdentity(token);
+        }
+    }
+
+    private void testGetGlobalSecurityStateInternal() {
         Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
         Matcher matcher = pattern.matcher(VintfRuntimeInfo.getKernelVersion());
         String kernelVersion = "";

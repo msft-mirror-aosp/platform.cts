@@ -19,106 +19,48 @@ package android.app.appfunctions.cts
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
-import android.os.Bundle
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.appsearch.flags.Flags.FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC
+import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert.assertThrows
 
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC, FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class ExecuteAppFunctionResponseTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionResponse#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultCode",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultDocument",
+            ]
+    )
     @Test
     fun build_nonEmptySuccessResponse_noExtras() {
         val resultGd: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
                 .build()
-        val response = ExecuteAppFunctionResponse.newSuccess(resultGd, null)
+        val response = ExecuteAppFunctionResponse(resultGd)
 
         val restoredResponse = parcelAndUnparcel(response)
 
-        assertThat(restoredResponse.isSuccess).isTrue()
         assertThat(
                 restoredResponse.resultDocument.getProperty(
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
                 )
             )
             .isEqualTo(booleanArrayOf(true))
-        assertThat(restoredResponse.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_OK)
-        assertThat(restoredResponse.errorMessage).isNull()
-    }
-
-    @Test
-    fun build_incorrectErrorResponse() {
-        assertThrows(IllegalArgumentException::class.java) {
-            ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_OK,
-                "test error message",
-                null
-            )
-        }
-    }
-
-    @Test
-    fun build_errorResponse() {
-        val emptyGd = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
-        val response =
-            ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
-                null,
-                null
-            )
-
-        val restoredResponse = parcelAndUnparcel(response)
-
-        assertThat(restoredResponse.isSuccess).isFalse()
-        assertThat(restoredResponse.resultDocument.namespace).isEqualTo(emptyGd.namespace)
-        assertThat(restoredResponse.resultDocument.id).isEqualTo(emptyGd.id)
-        assertThat(restoredResponse.resultDocument.schemaType).isEqualTo(emptyGd.schemaType)
-        assertThat(restoredResponse.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
-        assertThat(restoredResponse.errorMessage).isNull()
-    }
-
-    @Test
-    fun build_errorResponse_withExtras() {
-        val emptyGd = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
-        val extras = Bundle()
-        extras.putString("testKey", "testValue")
-        val response =
-            ExecuteAppFunctionResponse.newFailure(
-                ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
-                "test error message",
-                extras
-            )
-
-        val restoredResponse = parcelAndUnparcel(response)
-
-        assertThat(restoredResponse.isSuccess).isFalse()
-        assertThat(restoredResponse.resultDocument.namespace).isEqualTo(emptyGd.namespace)
-        assertThat(restoredResponse.resultDocument.id).isEqualTo(emptyGd.id)
-        assertThat(restoredResponse.resultDocument.schemaType).isEqualTo(emptyGd.schemaType)
-        assertThat(
-                restoredResponse.resultDocument.getProperty(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                )
-            )
-            .isNull()
-        assertThat(restoredResponse.extras.getString("testKey")).isEqualTo("testValue")
-        assertThat(restoredResponse.resultCode)
-            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
-        assertThat(restoredResponse.errorMessage).isNotNull()
-        assertThat(restoredResponse.errorMessage).isEqualTo("test error message")
     }
 
     private fun parcelAndUnparcel(

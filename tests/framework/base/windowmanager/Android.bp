@@ -32,6 +32,24 @@ filegroup {
     srcs: ["src/android/server/wm/insets/ForceRelayoutTestBase.java"],
 }
 
+filegroup {
+    name: "cts-wm-untrusted-touch-test-base",
+    srcs: ["src/android/server/wm/input/WindowUntrustedTouchTestBase.java"],
+}
+
+filegroup {
+    name: "cts-wm-activity-record-input-sink-test-base",
+    srcs: [
+        "src/android/server/wm/activity/ActivityRecordInputSinkTestsBase.java",
+        "src/android/server/wm/activity/ActivityRecordInputSinkTestsActivity.java",
+    ],
+}
+
+filegroup {
+    name: "cts-wm-window-policy-test-base",
+    srcs: ["src/android/server/wm/window/WindowPolicyTestBase.java"],
+}
+
 java_defaults {
     name: "CtsWindowManagerDeviceDefault",
 
@@ -56,18 +74,21 @@ java_defaults {
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
         "CtsAccessibilityCommon",
+        "CtsVirtualDeviceCommonLib",
         "metrics-helper-lib",
         "truth",
         "cts-wm-overlayapp-base",
         "cts-wm-shared",
         "platform-compat-test-rules",
         "cts_window_jetpack_utils",
+        "com.android.hardware.input-aconfig-java",
         "com.android.window.flags.window-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.app.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
         "flag-junit",
+        "com_android_wm_shell_flags_lib",
     ],
 
     test_suites: [
@@ -108,6 +129,7 @@ java_defaults {
         ":CtsDeviceServicesTestApp",
         ":CtsDeviceServicesTestApp27",
         ":CtsDeviceServicesTestApp30",
+        ":CtsDeviceServicesTestAppTv",
         ":CtsDeviceServicesTestSecondApp",
         ":CtsDeviceServicesTestThirdApp",
         ":CtsDeviceDeprecatedAbiApp",
@@ -116,8 +138,6 @@ java_defaults {
         ":CtsDeviceDisplaySizeApp",
         ":CtsDevicePrereleaseSdkApp",
         ":CtsDeviceProfileableApp",
-        ":CtsDeviceTranslucentTestApp",
-        ":CtsDeviceTranslucentTestApp26",
         ":CtsMockInputMethod",
         ":CtsDeviceServicesTestShareUidAppA",
         ":CtsDeviceServicesTestShareUidAppB",

@@ -1529,6 +1529,38 @@
     <!-- String for DynamicSensorDiscoveryTest -->
     <string name="snsr_dynamic_sensor_discovery_test">Dynamic Sensor Discovery Test</string>
 
+    <!-- String for Barometer sensor tests -->
+    <string name="snsr_baro_m_test">Barometer Measurement Test</string>
+    <string name="snsr_baro_not_implemented">This device does not have a high quality barometer, skipping tests.</string>
+    <string name="snsr_baro_flashlight_test_prep_instruction">Put the device under test on a flat surface in a dark room, and have a ~100 lumens flashlight ready. Do not turn on the flashlight yet.</string>
+    <string name="snsr_baro_flashlight_instruction">After clicking the Next button, pick up the device and turn on the flashlight, and shine it on the device for ~10 seconds each side, you will get 90 seconds for this step. Do not exert any extra force on the device or block any openings on the device; if you need to rotate it, do so slowly and steadily.</string>
+    <string name="snsr_baro_wait">Please wait while the device collects readings.</string>
+    <string name="snsr_baro_restore_to_default">Collection has completed, please turn off the flashlight, and return device back to flat surface.</string>
+    <string name="snsr_baro_proceed">The test has finished running, please press next to proceed to the results.</string>
+    <string name="snsr_baro_turn_location_on"> After clicking the Next button, you will be redirected to the location settings screen. Please turn on location services on this device, and then go to the location settings screen and turn on location for the reference device.</string>
+    <string name="snsr_baro_turn_bluetooth_on"> After clicking the Next button, you will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device, and then go to the bluetooth settings screen and turn on bluetooth for the reference device. If the two devices are paired already, forget them before proceeding.</string>
+    <string name="snsr_baro_fridge_instruction"> After clicking the Next button, put the device in the fridge with a temperature of 6 degrees Celsius or lower on a flat surface for 20 minutes with the screen off.</string>
+    <string name="snsr_baro_fridge_wait">Please wait while the device gets to expected starting temperature, this will take 20 minutes.</string>
+    <string name="snsr_baro_date_time_instruction">Take the device out of the fridge and put it on a flat surface with the screen side up next to the reference device. After clicking the "Next" button, you will be redirected to the date and time settings screen. Open the date and time settings screen on the reference device, and set the date and time on this device and the reference device to an hour from now in your local timezone, and click save/done/OK simultaneously on both devices.\nAfter that has been done, use the back button on the test device to return back to the CTS Verifier app.</string>
+    <string name="snsr_baro_bluetooth_instruction">Please open the CTS Verifier app on the reference device, and click the "Barometer reference" menu item, you should see a list of bluetooth devices near you. Read these instructions carefully before continuing:\nAfter clicking the Next button here, you will be redirected to the Bluetooth pairing screen. Find this device on the reference device\'s list - if not found, click the "scan for devices" button on the reference device - and click it, wait up to 10 seconds for the pairing prompt to appear on the reference device, and click "Pair" on both devices. Return to the CTS Verifier app on this device after connection is established.</string>
+    <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. Please wait while the device collects readings.</string>
+    <string name="snsr_baro_squeeze_test_prep_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, squezze the device quickly and release as you would to crumple a soda can. The sound will be played twice.</string>
+    <string name="snsr_baro_test_in_progress">Test in progress. </string>
+    <string name="snsr_baro_turn_off_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn off airplane mode on this device.</string>
+    <string name="snsr_baro_turn_on_cellular_data"> You will be redirected to the cellular data settings screen. Please turn on cellular data on this device.</string>
+    <string name="snsr_baro_turn_on_wifi"> You will be redirected to the wifi settings screen. Please turn on wifi on this device.</string>
+    <string name="snsr_baro_turn_on_bluetooth"> You will be redirected to the bluetooth settings screen. Please turn on bluetooth on this device.</string>
+    <string name="snsr_baro_turn_on_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn on airplane mode on this device.</string>
+    <string name="snsr_baro_walking_impact_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, start walking with the device without changing elevation, try to make a few turns during the walk, and when you hear another sound, stop walking.</string>
+    <string name="snsr_baro_soomth_within_same_activation_instruction">After clicking the Next button, put the device on the ground with the screen facing up. After the first sound plays, raise the device to ~2 meters above the ground within 2 seconds, another sound will play after 2 seconds, and hold it steady for about 5 seconds. A final sound will be played to signal the end of the test. </string>
+    <string name="snsr_baro_smooth_across_activations_prep_instruction">Make sure you are on a floor with at least two more accessible floors below you. Then put the device on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound.</string>
+    <string name="snsr_baro_smooth_across_activations_two_meters_above">Hold the device steady or put it on a flat surface that is 2 meters above the ground. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <string name="snsr_baro_smooth_across_activations_floor">Put the device back on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <string name="snsr_baro_smooth_across_activations_two_floors_below">Now walk down two floors with the device. Put the device on the ground with the screen facing up. After pressing the Next button, the device will start collect readings for 20s. You can pick up the device once you hear a sound. </string>
+    <!-- String for Barometer reference device -->
+    <string name="snsr_baro_ref_device">Barometer Reference Device</string>
+    <string name="snsr_baro_ref_device_start_collection_instruction">Now that the two devices are connected, click the Next button on both devices simultaneously to start collecting readings.</string>
+
     <!-- Strings for Sample Test Activities -->
     <string name="share_button_text">Share</string>
     <string name="sample_framework_test">Sample Framework Test</string>
@@ -1890,6 +1922,7 @@
 
     <string name="wifi_ssid_label">SSID for network</string>
     <string name="wifi_psk_label">Passphrase for network (leave empty for open network)</string>
+    <string name="wifi_psk_label_required">Passphrase for network (required)</string>
     <string name="wifi_start_test_label">Start test</string>
 
     <string name="wifi_status_need_psk">Need a psk network for this test.</string>
@@ -2329,6 +2362,7 @@
     <string name="attention_filter_priority_mimic_alarms_only">Please enable Priority-Only \"Do not disturb\"
         by tapping the Quick Settings tile.  Then, long press the same tile and customize the setting to allow sounds
         from Alarms and Media (if applicable) only.</string>
+    <string name="attention_ringer_mode_not_silent">Please set the ringer mode to normal or vibrate by pressing a volume key and then selecting a mode icon above the volume slider.</string>
     <string name="attention_create_contacts">Create contacts for notification annotations.</string>
     <string name="attention_delete_contacts">Delete test contacts.</string>
     <string name="attention_default_order">Check that ranker defaults to time order.</string>
@@ -2407,9 +2441,9 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait for a notification to appear on the screen with a pill button.\n
-        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
-        Fail the test if the notification does not appear as described.
+        Wait about 5 seconds to observe the behavior, then unlock screen to return to this page.\n
+        Pass the test if a notification appears on the screen with a pill button, or if a notification icon appears.\n
+        Fail the test if a page automatically launched with the message \"This page is a full screen intent.\".\n
     </string>
     <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
@@ -2446,22 +2480,85 @@
     <string name="fsi_sticky_hun_60s">There should be a Heads Up Notification on the screen.\n
         It would show for 60s.\n
         Fail the test if it doesn\'t show or disappears within 60s.</string>
+    <string name="progress_style_test">ProgressStyle Notification Test</string>
+    <string name="progress_style_info">This test checks that ProgressStyle Notifications are rendered as expected.</string>
+    <string name="progress_style_indeterminate" formatted="false">A progress style notification with an indeterminate progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The progress bar is animated.
+         \n\u2022 The progress bar color is orange.
+         \n\u2022 The progress bar is obviously indeterminate, and would not be confused for 0% or 100% progress.
+    </string>
+    <string name="progress_style_progress" formatted="false">A progress style notification with 40% progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 40% of the progress bar looks filled.
+         \n\u2022 The rest of the progress bar looks unfilled.
+         \n\u2022 The progress bar color is orange.
+    </string>
+    <string name="progress_style_multiple_segments" formatted="false">A progress style notification with multiple progress segments was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \nFrom left to right:
+         \n\u2022 Segment 1 is 20% of the bar and is filled and its color is orange.
+         \n\u2022 Segment 2 is 30% of the bar and is filled and its color is yellow.
+         \n\u2022 Segment 3 is 10% of the bar and is filled and its color is red.
+         \n\u2022 Segment 4 is 40% of the bar and is unfilled and segment’s appearance should indicate that it is not completed yet.
+    </string>
+    <string name="progress_style_multiple_points" formatted="false">A progress style notification with multiple progress points was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 Point 1 should be positioned at 20% of the progress bar\'s length and its color should be orange.
+         \n\u2022 Point 2 should be positioned at the middle of the bar and its color should be yellow.
+         \n\u2022 Point 3 should be positioned at 80% of the progress bar\'s length and its color should be blue. The progress bar\’s appearance should indicate that it is not completed yet.
+    </string>
+    <string name="progress_style_start_and_end_icons" formatted="false">A progress style notification with start and end progress icons was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The start icon should have S.
+         \n\u2022 The start icon should be displayed at the beginning of the progress bar, with a margin between the icon and the progress bar itself.
+         \n\u2022 The start icon should have E.
+         \n\u2022 The end icon should be displayed at the end of the progress bar, with a margin between the icon and the progress bar.
+    </string>
+    <string name="progress_style_progress_tracker_icon" formatted="false">A progress style notification with progress tracker icon was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The progress bar color should be orange.
+         \n\u2022 The progress tracker icon should be displayed.
+         \n\u2022 The progress tracker position should be at 60% of the bar length.
+         \n\u2022 The progress bar should be filled from the start of the bar to the progress tracker icon.
+         \n\u2022 The progress bar should be unfilled from the progress tracker icon to the end of the bar.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+    </string>
+    <string name="progress_style_large_icon" formatted="false">A progress style notification with large icon was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The left 60% of the progress bar should be filled and the rest is unfilled.
+         \n\u2022 The progress bar color should be orange.
+         \n\u2022 The large icon should be displayed in both expanded and collapsed states.
+    </string>
+    <string name="progress_style_not_styled_by_progress" formatted="false">A progress style notification which is not styled by its progress was posted. Expand it (if it\'s not already expanded), and verify that:
+         \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+         \n\u2022 Segments 1, 2 and 3 should look filled with orange, yellow and red respectively.
+         \n\u2022 Points 1, 2, 3, and 4 should look filled with  orange, yellow, orange and red, respectively.
+    </string>
+    <string name="progress_style_rtl_enabled" formatted="false">A progress style notification was posted.  Change device layout direction to RTL (Developer options > Drawing > Force RTL layout direction). Expand the notification (if it’s not already expanded), and verify that:
+         \n\u2022 The progress tracker icon should be displayed, and its position should be at 60% of the progress bar\'s length.
+         \n\u2022 The progress tracker icon should be a white arrow in a blue filled circle.
+         \n\u2022 Segments from left to right should look filled with red, yellow and orange colors respectively.
+         \n\u2022 Points from left to right  should look filled with  red, orange, yellow and orange colors respectively.
+         \n\u2022 The arrow on the bar should point away from the S and toward the E.
+         \n\u2022 S icon should appear on the right and it is not mirrored.
+         \n\u2022 E icon should appear on the left and it is not mirrored.
+    </string>
+
     <string name="notification_style_test">Notification Styles Test</string>
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
     <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (A) is clearly visible outside the blue region.
+        \n\u2022 The small icon (A) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="ns_custom_big_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, expand the notification (if it\'s collapsed), and verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (B) is clearly visible outside the blue region.
+        \n\u2022 The small icon (B) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 The App Name (\"CTS Verifier\") is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="ns_custom_heads_up_content_instructions">A notification with custom (app-provided) content was shown in heads-up. While in this state, verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (C) is clearly visible outside the blue region.
+        \n\u2022 The small icon (C) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="notification_custom_layout_text">Custom content here!</string>
@@ -2512,7 +2609,7 @@
         not group them together, press Pass.</string>
     <string name="hun_display">If this device supports heads-up notifications,
         verify that a notification just peeked on screen, displaying all of the following: small
-        icon, large icon, notification title, notification text, and two action buttons.
+        icon (or the app\'s icon), large icon, notification title, notification text, and two action buttons.
         If this device does not support heads-up notifications, press Pass.</string>
     <string name="action">Action %1$d</string>
     <string name="no_test_items">No tests available for this device.</string>
@@ -5628,6 +5725,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_record_colon"> record:</string>
 
     <string name="audio_general_results">Results</string>
+    <string name="audio_general_test">Test</string>
 
     <string name="audio_general_supporteddevices">Supported Devices</string>
     <string name="audio_general_availabledevices">Available Devices</string>
@@ -5645,11 +5743,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
 
     <!-- Audio Data Paths Test-->
-    <string name="audio_datapaths_clearresults">Clear Results</string>
-    <string name="audio_datapaths_legacy">Legacy</string>
-    <string name="audio_datapaths_mmap_shared">MMAP Shared</string>
-    <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
-    <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
+    <string name="audio_datapaths_clearresults">Clr</string>
+    <string name="audio_datapaths_showresults">Show</string>
+    <string name="audio_datapaths_shareresults">Share</string>
 
     <string name="perf_mode_none_abreviation">None</string>
     <string name="perf_mode_lowlatency_abreviation">LowLat</string>
@@ -5758,13 +5854,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
     <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
         use in this test.</string>
-    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+    <string name="usbwarning_paragraph_1">The test may pass using this USB peripheral.
         However, some adapters have been seen to implement noise
-        suppression and/or echo cancellation, or introduce significant latency that
-        may cause the test to fail. If the test does not pass with this adapter,
-        you should obtain the</string>
-    <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
-    <string name="usbwarning_paragraph_1_2">for use in this test.</string>
+        suppression and/or echo cancellation which may block some signals used by the test,
+        or may introduce significant latency (from 40 to 60 ms) that also
+        may cause the test to fail.</string>
+    <string name="usbwarning_paragraph_2">If the test does not pass with this adapter,
+        you should obtain a Google-supplied USB-C to 3.5mm Adapter and Loopback Adapter.</string>
 
     <!-- Immersive Audio Test -->
     <string name="immersive_audio_test">Immersive Audio Test</string>
@@ -5786,22 +5882,26 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_info">This test verifies that the DUT can achieve the required or
         recommended loopback latency as defined by CDD § 5.6 (Audio Latency) and
         § 5.10 (Professional Audio).
-        \nTo pass the test, the DUT needs to meet the latency requirement on ALL 3 of the
+        \n\nTo pass the test, the DUT needs to meet the latency requirement on ALL 3 of the
         following audio paths (if present):
-          \n- the internal speaker and microphone.
-          \n- a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a 3.5mm headset jack.
-          \n- a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a USB audio adapter.
+          \n• the internal speaker and microphone.
+          \n• a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a 3.5mm headset jack.
+          \n• a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a USB audio adapter.
           (or alternatively USB interface with patch cords connecting the input and output jacks).
-          \nPlease connect these Loopback mechanisms (the same Loopback Plug can be used at different times
+          \n\nPlease connect these Loopback mechanisms (the same Loopback Plug can be used at different times
           for the headset jack and USB audio adapter) and proceed with the instructions
           on the screen. The volume may need to be adjusted for each audio path.
-          \nNote that for the Speaker/Microphone path, it may be necessary to remove any phone case on the device.
-          \nThe system will measure the input-output audio latency by injecting an audio signal into
+          \n\nNote that for the Speaker/Microphone path, it may be necessary to remove any phone case on the device.
+          \n\nThe system will measure the input-output audio latency by injecting an audio signal into
           the output and compute the time between generating the signal and recording it back.
           You can vary the Audio Level slider to ensure the pulse will feed back at adequate levels.
           Repeat until a sufficient confidence is achieved. When each route test is completed, the
           measured and required latencies will be displayed.
-          \nWhen all test routes have passed, the test as a whole can be passed.
+          \n\nWhen all test routes have passed, the test as a whole can be passed.
+          \n\nIf a route fails, the captured audio can be copied to a host computer with the "adb pull command"
+          using the \"WAV Capture Folder\" and \"Capture File\" displayed in the Results Panel.
+          \nFor example, on a typical device \"adb pull /data/user/0/com.android.cts.verifier/WavFiles/AudioLoopbackLatency_0.wav\"
+          will copy the audio from the Speaker/Mic path to the host computer.
     </string>
     <string name="audio_loopback_instructions">
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
@@ -5810,6 +5910,10 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
     <string name="audio_loopback_devsupport_button">Audio Devices</string>
+
+    <string name="audio_loopback_speakermic">Speaker/Mic</string>
+    <string name="audio_loopback_headset">Analog Headset</string>
+    <string name="audio_loopback_usb">USB Audio</string>
 
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
@@ -5829,33 +5933,59 @@ You should be prompted to select credentials; choose the ones you just installed
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
-    <string name="audio_loopback_automobile">Automobile:</string>
+    <string name="audio_loopback_automobile">Auto:</string>
     <string name="audio_loopback_handheld">Handheld:</string>
+    <string name="audio_loopback_emulator">Emulator:</string>
     <string name="audio_loopback_tv">TV:</string>
     <string name="audio_loopback_watch">Watch:</string>
     <string name="audio_loopback_mmapexclusive">MMAP Exclusive:</string>
     <string name="audio_loopback_mmap">MMAP:</string>
     <string name="audio_loopback_mcp">MPC:</string>
     <string name="audio_loopback_lowlatency">Low Latency:</string>
-    <string name="audio_loopback_proaudio">Pro Audio:</string>
-    <string name="audio_loopback_speakermic">Speaker/Mic</string>
-    <string name="audio_loopback_headsetjack">Headset Jack</string>
-    <string name="audio_loopback_usb">USB</string>
+    <string name="audio_loopback_basiclatency">Basic Latency:</string>
+    <string name="audio_loopback_mpclatency">MPC Latency</string>
+    <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
+    <string name="audio_loopback_wavcapturefolder">WAV Capture Folder:</string>
+    <string name="audio_loopback_wavcapturefile">Capture File:</string>
+    <string name="audio_loopback_nocapture">No Capture</string>
+    <string name="audio_general_proaudio">Pro Audio</string>
+    <string name="audio_general_mpc">MCP</string>
+    <string name="audio_general_basicaudio">Basic Audio</string>
 
-    <!-- result codes -->
-    <string name="audio_loopback_resultcode_none">Result: None.</string>
-    <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
-    <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
-    <string name="audio_loopback_notmet">not met.</string>
-    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency</string>
-    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency</string>
-    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path</string>
-    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency</string>
-    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency</string>
-    <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
-    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency. At least one wired path must be tested.</string>
-    <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
-    <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
+    <string name="ctsv_general_pass">PASS</string>
+    <string name="ctsv_general_fail">FAIL</string>
+    <string name="ctsv_general_cantwritereportlog">Warning - Can\'t write ReportLog File.</string>
+    <string name="ctsv_general_failsuffix"> - FAIL</string>
+    <string name="ctsv_general_specification">Specification</string>
+    <string name="ctsv_general_mssuffix"> ms.</string>
+
+    <string name="ctsv_loopback_features">Features</string>
+    <string name="ctsv_loopback_platform">Platform</string>
+
+    <string name="ctsv_loopback_meetsproaudio">Meets Pro Audio Specification</string>
+    <string name="ctsv_loopback_meetsmpclevel">Meets MPC Level</string>
+    <string name="ctsv_loopback_meetsbasicaudio">Meets Basic Audio Specification</string>
+
+    <string name="ctsv_loopback_testspeakermic">"Not Tested. Please test the Speaker/Mic route."</string>
+
+    <string name="ctsv_loopback_testanalogjack">Not Tested. Please test the Analog Headset Jack.</string>
+    <string name="ctsv_loopback_noanalogjacksupport">The DUT does not support an Analog Headset Jack.</string>
+    <string name="ctsv_loopback_unknownanalogsupport">Support for an Analog Headset Jack could not be determined. Please test if present.</string>
+
+    <string name="ctsv_loopback_testusb">Not Tested. Please test USB Audio.</string>
+    <string name="ctsv_loopback_nousbsupport">The DUT does not support USB Audio</string>
+    <string name="ctsv_loopback_unknownusbsupport">Support for USB Audio could not be determined. Please test if present.</string>
+
+    <string name="ctsv_loopback_testallroutes">Please test all supported routes.</string>
+
+    <string name="ctsv_loopback_criteria">Criteria: </string>
+    <string name="ctsv_loopback_forbasiclatency">For Basic Latency</string>
+    <string name="ctsv_loopback_formpclevel">For MPC Level</string>
+    <string name="ctsv_loopback_forproaudio">For Pro Audio</string>
+
+    <string name="ctsv_loopback_atleastoneroute" formatted="false">  - At least one route must be &lt;= </string>
+    <string name="ctsv_loopback_analogheadsetspec">  - Analog Headset Latency &lt;= </string>
+    <string name="ctsv_loopback_usbspec">  - USB Audio Latency &lt;= </string>
 
     <!-- Status Strings -->
     <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
@@ -5865,6 +5995,17 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
         port to an appropriate USB audio test peripheral with loopback set up. Press the Start
         button and allow the test to proceed.</string>
+
+    <string name="audio_loopback_routenotavailable">Route Not Available</string>
+    <string name="audio_loopback_testnotrun">Test Not Run</string>
+    <string name="audio_loopback_insufficientconfidence" formatted="false">Test Finished\nConfidence too low (%.2f &lt; %.2f). No Results.</string>
+    <string name="audio_loopback_latencytoolow" formatted="false">Test Finished\nLatency unrealistically low (%.2f &lt; %.2f). No Results.</string>
+    <string name="audio_loopback_testphaseresult" formatted="false">Test %d Finished\\nLatency: %.2f ms\\nConfidence: %.2f\\nTimestampLatency: %.2f\\n</string>
+    <string name="audio_loopback_phaserunning" formatted="false">[phase: %d] - Test Running &#8230;</string>
+    <string name="audio_loopback_phaseanalyzing" formatted="false">[phase: %d] - Analyzing &#8230;"</string>
+    <string name="audio_loopback_erroropeningstream">Test Error opening streams.</string>
+    <string name="audio_loopback_errorwhilerecording">Test Error while recording.</string>
+    <string name="audio_loopback_failedduetoerrors">Test FAILED due to errors.</string>
 
     <!-- Multichannel Mixdown Test -->
     <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
@@ -5897,7 +6038,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
     <string name="audio_mixdown_analogheadset">Analog Headset Jack + Loopback</string>
     <string name="audio_mixdown_usbdevice">USB Interface + Loopback</string>
-    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Looback</string>
+    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Loopback</string>
 
     <!-- Mixdown status strings -->
     <string name="audio_mixdown_invalidinput">Invalid Input.</string>
@@ -5951,12 +6092,18 @@ You should be prompted to select credentials; choose the ones you just installed
         \"start\" times. Open time is the time taken to allocate and prepare the player for the
         specified stream attributes. Start time is the time taken to start playing audio on an
         open stream.
+        \n\nTest Process:
+        \nPress the \"Start\" button. The test will measure the cold start output latency
+        and stop automatically.
+        \n\nTest Criteria:
+        \nA latency of 500ms or less is REQUIRED.
+        \nA latency of 100ms or less is STRONGLY RECOMMENDED.
+        \n(See <a href="https://source.android.com/compatibility/android-cdd#5_6_audio_latency">Android CDD § 5.6. Audio Latency</a>)
     </string>
-    <string name="audio_coldstart_input_info">
-        This test measures the time required to record audio from a suspended \"cold\" audio system.
-        This time is defined as the \"cold start latency\". To pass this test, a maximum
-        cold start latency time of 500ms or less is REQUIRED, while a time of 100ms or less
-        is STRONGLY RECOMMENDED. (See <a href="https://source.android.com/compatibility/android-cdd#5_6_audio_latency">Android CDD § 5.6. Audio Latency</a>)
+    <string name="audio_coldstart_input_info">Measures the time required to begin recording
+        from a suspended audio system. (\"cold start latency\").
+        \n\nTest Setup:
+        \n\"Microphone\" permission is required.
         \n\nThe \"Java API\" and \"Native API\" allow for capturing performance data from the
         two streaming APIs. The cold start latency measurement need only pass for one API.
         The Native API generally gives the best performance.
@@ -5964,6 +6111,13 @@ You should be prompted to select credentials; choose the ones you just installed
         \"start\" times. Open time is the time taken to allocate and prepare the recorder for the
         specified stream attributes. Start time is the time taken to start recording audio on an
         open stream.
+        \n\nTest Process:
+        \nPress the \"Start\" button. The test will measure the cold start input latency
+        and stop automatically.
+        \n\nTest Criteria:
+        \nA latency of 500ms or less is REQUIRED.
+        \nA latency of 100ms or less is STRONGLY RECOMMENDED.
+        \n(See <a href="https://source.android.com/compatibility/android-cdd#5_6_audio_latency">Android CDD § 5.6. Audio Latency</a>)
     </string>
     <string name="audio_coldstart_outputlbl">Output Cold Start Latency</string>
     <string name="audio_coldstart_inputlbl">Input Cold Start Latency</string>
@@ -6091,47 +6245,42 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Analog Headset Test -->
     <string name="audio_headset_audio_test">Analog Headset Audio Test</string>
-    <string name="analog_headset_query">Does this Android device have an analog headset jack?</string>
-    <string name="analog_headset_play">Play</string>
-    <string name="analog_headset_stop">Stop</string>
-    <string name="analog_headset_playback_prompt">Play a test tone and verify correct playback</string>
-    <string name="analog_headset_playback_query">Was the audio correctly played through the headset?</string>
     <string name="analog_headset_keycodes_label">Headset key codes</string>
     <string name="analog_headset_headsethook">HEADSETHOOK</string>
     <string name="analog_headset_volup">VOLUME_UP</string>
     <string name="analog_headset_voldown">VOLUME_DOWN</string>
     <string name="analog_headset_test">Analog Headset Test</string>
-    <string name="analog_headset_pass_noheadset">"PASS - No headset port available"</string>
-    <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
     <string name="analog_headset_port_detected">"Headset port detected"</string>
     <string name="analog_headset_port_notsupported">"Headset not support on this device."</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Analog headset connected</string>
-    <string name="analog_headset_no_headset">No Analog Headset - Connect headset to 3.5mm jack</string>
+    <string name="analog_headset_no_headset">Connect headset to 3.5mm jack</string>
     <string name="analog_headset_action_received">ACTION_HEADSET_PLUG received - </string>
     <string name="analog_headset_unplugged">Unplugged</string>
     <string name="analog_headset_plugged">Plugged</string>
-    <string name="analog_headset_mic"> [mic]</string>
     <string name="analog_headset_reportnojack">No analog Jack. PASS</string>
-    <string name="analog_headset_no_jack">No analog jack detected. Please connect a headset, or PASS</string>
     <string name="analog_headset_connect_headset">Please connect an analog headset</string>
-    <string name="analog_headset_play_audio">Please test audio through the analog headset</string>
     <string name="analog_headset_test_buttons">Please test transport buttons</string>
+    <string name="analog_headset_playback_moved">Testing of audio signal integrity has moved to the Audio Datapaths Analog Jack Test</string>
+    <string name="analog_headset_supportundertermined">Supoort for an Analog Headset could not be determing. Please run test if applicable."</string>
+    <string name="analog_headset_heasdsetunknown">Headset Unknown</string>
+    <string name="analog_headset_nosupportpass">No headset support or headsetup support undetermined. PASS</string>
+    <string name="analog_headset_dutdoesntsupportheadset">"The DUT does not support an Analog Headset. PASS"</string>
+    <string name="analog_headset_supportsheadset">The DUT supports an Analog Headset. Please run test.</string>
 
     <string name="analog_headset_test_info">This test tests the following functionality with respect to wired analog headsets.\n
-        1. Correct audio playback.\n
         2. Plug intents.\n
         3. Headset keycodes.\n
         \nTo execute test:\n
         1. Plug in an Android-compatible, analog headset. Verify connection/recognition.\n
-        2. Play test tone and verify correct behavior.\n
-        3. Press headset buttons until all are recognized on the test screen.\n
+        2. Press headset buttons until all are recognized on the test screen.\n
         \nTo run this test it is necessary to have an Android device with a 3.5mm analog headset jack and a compatible analog headset with Hook, Volume Up and Volume Down buttons.\n
         \n(see <a href="https://source.android.com/devices/accessories/headset/plug-headset-spec">3.5 mm Headset: Accessory Specification</a> and
         <a href="https://source.android.com/compatibility/android-cdd#7_8_2_1_analog_audio_ports">Android CDD § 7.8.2.1. Analog Audio Ports</a>)
     </string>
+
     <!-- Audio AEC Test -->
     <string name="audio_aec_test">Audio Acoustic Echo Cancellation (AEC) Test</string>
     <string name="audio_aec_info">
@@ -6150,19 +6299,40 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
     <string name="audio_disconnect_info">
         Tests that audio streams generate the correct stream disconnection events. Note that this
-        test is only required for devices that support wired headset.
+        test is only required for devices that support a wired headset.
         \n\nTest Requirements
         \nA wired (analog or USB) headset peripheral, or analog loopback adapter.
         \n\nTest Process:
-        \n1. Press the \"Start\" button.
-        \n2. For each tested audio route:
+        \n1. If a headset is currently connected, disconnect it before starting the test.
+        \n2. Press the \"Start\" button.
+        \n3. For each tested audio route:
         \n a. Connect the headset peripheral when instructed.
         \n b. Disconnect the headset peripheral when instructed.
         \n\nTest Criteria:
         \nThe test passes if all routes demonstrate the correct stream disconnection behavior.
     </string>
+    <string name="audio_disconnect_removebeforestart">If a headset is currently connected,
+        unplug it before beginning the test.
+    </string>
     <string name="audio_disconnect_wired_prompt">Does this device support an analog or USB audio peripheral?</string>
     <string name="audio_disconnect_port_detected">"Wired device support detected"</string>
+
+    <string name="audio_disconnect_insert_fail_prose">Timeout waiting for headset insert.
+        Either the INSERT event was never received or the test operator waited too long to plug in the headset.</string>
+    <string name="audio_stream_disconnect_insert_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_stream_disconnect_code_insert_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after INSERT event received.
+    </string>
+    <string name="audio_disconnect_remove_fail_prose">Timeout waiting for headset removal.
+        Either the REMOVE event was never received or the test operator waited too long to unplug the headset.</string>
+    <string name="audio_stream_disconnect_remove_fail_prose">Timeout waiting for STREAM
+        DISCONNECT after REMOVE event received.
+    </string>
+    <string name="audio_stream_disconnect_code_remove_fail_prose">Bad RESULT CODE for STREAM
+        DISCONNECT after REMOVAL event received.
+    </string>
 
     <!--Audio Frequency Global strings -->
     <string name="af_button_play">Play</string>
@@ -6200,6 +6370,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_tap2tone_buffer_frames">Buffer Frames: </string>
     <string name="audio_tap2tone_bad_streams">Can\'t open streams.</string>
     <string name="audio_tap2tone_noio">No mic and/or speaker. PASS</string>
+    <string name="audio_tap2tone_isemulator">DUT is an emulator. PASS</string>
 
     <!-- Strings for 6DoF test -->
     <string name="six_dof_test">6DoF Test</string>
@@ -6660,7 +6831,8 @@ You should be prompted to select credentials; choose the ones you just installed
         the device; as soon as key access is verified this message will be updated. -->
     <string name="unlock_req_unlocked">Verifying the key is accessible after the unlock...</string>
     <string name="unlock_req_credential_lock">Lock the screen, wait 5 seconds, then unlock with
-        credentials.</string>
+        credentials. If there are multiple displays available, turn off all displays before
+        continuing.</string>
     <string name="unlock_req_successful">Test completed successfully.</string>
     <string name="unlock_req_failed_key_available_when_locked">Test failed; the key was available
         when the device was locked.</string>
@@ -7492,13 +7664,13 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
         \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
         \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
-        \n\n* Screenshots can be used for notification validation steps 3 and 4
+        \n\n* \"Save screen capture\" action below can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n3. Press \"Send notification\".
-        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n4. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
@@ -7530,8 +7702,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_app_local_screen_recorder_test_instructions">
         1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
-        \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n3. End local recording and verify the recording output does not redact any content".
+        \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">
         1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
@@ -7553,13 +7725,15 @@ You should be prompted to select credentials; choose the ones you just installed
         \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n5. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n5. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify there is content in screenshot".
         \n6. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
         \n7. Remember to disable the "Disable screen share protections" developer options.
     </string>
     <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
     <string name="notif_hiding_start_screen_recording">Start screen recording</string>
     <string name="notif_hiding_send_notification">Send notification</string>
+    <string name="notif_hiding_save_screen_capture">Save screen capture</string>
+    <string name="notif_hiding_save_screen_capture_path">Screen capture saved to %1$s</string>
     <string name="notif_hiding_success">No failures found, please press the green check mark</string>
     <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 </resources>

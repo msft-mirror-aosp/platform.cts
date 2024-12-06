@@ -38,6 +38,8 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.BroadcastOptions;
@@ -81,6 +83,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.server.am.Flags;
 
 import org.junit.After;
@@ -137,9 +140,12 @@ public class ActivityManagerFgsBgStartTest {
             PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, PACKAGE_NAME_APP3
     };
 
+    private final UserHelper mUserHelper = new UserHelper();
+
     private Context mContext;
     private Instrumentation mInstrumentation;
     private Context mTargetContext;
+    private int mTestRunningUserId;
 
     private int mOrigDeviceDemoMode = 0;
     private boolean mOrigFgsTypeStartPermissionEnforcement;
@@ -152,6 +158,7 @@ public class ActivityManagerFgsBgStartTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mTargetContext = mInstrumentation.getTargetContext();
+        mTestRunningUserId = mTargetContext.getUserId();
         for (int i = 0; i < PACKAGE_NAMES.length; ++i) {
             CtsAppTestUtils.makeUidIdle(mInstrumentation, PACKAGE_NAMES[i]);
             // The manifest file gives test app SYSTEM_ALERT_WINDOW permissions, which also exempt
@@ -1488,7 +1495,8 @@ public class ActivityManagerFgsBgStartTest {
         SystemClock.sleep(2000);
 
         // Now inject key event.
-        CtsAppTestUtils.executeShellCmd(mInstrumentation, "input keyevent " + keyCode);
+        CtsAppTestUtils.executeShellCmd(mInstrumentation, "input -d "
+                + mUserHelper.getMainDisplayId() + " keyevent " + keyCode);
 
         // It should go to the cached state.
         uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
@@ -1740,7 +1748,7 @@ public class ActivityManagerFgsBgStartTest {
         } finally {
             uid1Watcher.finish();
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "appops reset " + PACKAGE_NAME_APP1);
+                    "appops reset --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP1);
         }
     }
 
@@ -1960,7 +1968,7 @@ public class ActivityManagerFgsBgStartTest {
         } finally {
             uid1Watcher.finish();
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "appops reset " + PACKAGE_NAME_APP1);
+                    "appops reset --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP1);
             // Sleep to let the temp allowlist expire so it won't affect next test case.
             SystemClock.sleep(TEMP_ALLOWLIST_DURATION_MS);
         }
@@ -2048,7 +2056,7 @@ public class ActivityManagerFgsBgStartTest {
         } finally {
             uid1Watcher.finish();
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "appops reset " + PACKAGE_NAME_APP1);
+                    "appops reset --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP1);
             // Sleep to let the temp allowlist expire so it won't affect next test case.
             SystemClock.sleep(TEMP_ALLOWLIST_DURATION_MS);
         }
@@ -2066,7 +2074,7 @@ public class ActivityManagerFgsBgStartTest {
         WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
                 WAITFOR_MSEC);
         final String defaultInputMethod = CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "settings get --user current secure default_input_method");
+                "settings get --user " + mTestRunningUserId + " secure default_input_method");
         try {
             // Enable the FGS background startForeground() restriction.
             enableFgsRestriction(true, true, null);
@@ -2086,7 +2094,7 @@ public class ActivityManagerFgsBgStartTest {
             // Change default_input_method to PACKAGE_NAME_APP1.
             final ComponentName cn = new ComponentName(PACKAGE_NAME_APP1, "xxx");
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "settings put --user current secure default_input_method "
+                    "settings put --user " + mTestRunningUserId + " secure default_input_method "
                             + cn.flattenToShortString());
 
             waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
@@ -2105,7 +2113,7 @@ public class ActivityManagerFgsBgStartTest {
         } finally {
             uid1Watcher.finish();
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "settings put --user current secure default_input_method "
+                    "settings put --user " + mTestRunningUserId + " secure default_input_method "
                             + defaultInputMethod);
         }
     }
@@ -2220,9 +2228,9 @@ public class ActivityManagerFgsBgStartTest {
             uid1Watcher.finish();
             uid2Watcher.finish();
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "appops reset " + PACKAGE_NAME_APP1);
+                    "appops reset --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP1);
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "appops reset " + PACKAGE_NAME_APP2);
+                    "appops reset --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP2);
         }
     }
 
@@ -2437,6 +2445,10 @@ public class ActivityManagerFgsBgStartTest {
 
     @Test
     public void testStartMediaPlaybackFromBg() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         NotificationHelper notificationHelper = new NotificationHelper(mContext);
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
@@ -2556,7 +2568,7 @@ public class ActivityManagerFgsBgStartTest {
 
     private void setAppOp(String packageName, String opStr, boolean allow) throws Exception {
         CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "appops set " + packageName + " " + opStr + " "
+                "appops set --user " + mTestRunningUserId + " " + packageName + " " + opStr + " "
                         + (allow ? "allow" : "deny"));
     }
 

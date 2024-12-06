@@ -16,14 +16,18 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.pm.PackageManager;
+
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireHandheldDevice;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.roles.RoleContext;
@@ -45,7 +49,7 @@ public final class DeviceIdentifiersTest {
 
     private static final String SMS_ROLE = "android.app.role.SMS";
     private static final TestApp sSmsTestApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains("android.intent.action.SEND")
                     )).get();
@@ -53,6 +57,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getDeviceId")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getDeviceId_smsAppReturnsSameValue() {
         String deviceId = TestApis.telephony().getDeviceId();
@@ -67,6 +72,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getImei")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getImei_withReadPrivilegedPhoneStatePermission_withReadPhoneStatePermission_returnsSameValue() {
         String deviceId = TestApis.telephony().getImei();
@@ -81,6 +87,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getMeid")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getMeid_withReadPrivilegedPhoneStatePermission_withReadPhoneStatePermission_returnsSameValue() {
         String deviceId = TestApis.telephony().getMeid();
@@ -95,6 +102,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getSubscriberId")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getSubscriberId_withReadPrivilegedPhoneStatePermission_withReadPhoneStatePermission_returnsSameValue() {
         String subscriberId = TestApis.telephony().getSubscriberId();
@@ -109,6 +117,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getSimSerialNumber")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getSimSerialNumber_withReadPrivilegedPhoneStatePermission_withReadPhoneStatePermission_returnsSameValue() {
         String simSerialNumber = TestApis.telephony().getSimSerialNumber();
@@ -123,6 +132,7 @@ public final class DeviceIdentifiersTest {
     @ApiTest(apis = "android.telephony.TelephonyManager#getNai")
     @Postsubmit(reason = "new test")
     @RequireHandheldDevice
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @Test
     public void getNai_withReadPrivilegedPhoneStatePermission_withReadPhoneStatePermission_returnsSameValue() {
         String nai = TestApis.telephony().getNai();

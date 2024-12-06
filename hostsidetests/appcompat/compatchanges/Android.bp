@@ -34,7 +34,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    java_resources: [":cts-global-compat-config"],
+    device_common_java_resources: [":cts-global-compat-config"],
 }
 
 global_compat_config {

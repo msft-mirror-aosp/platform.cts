@@ -39,8 +39,8 @@ cc_test_library {
     sdk_version: "29",
 }
 
-android_test {
-    name: "CtsMediaMuxerTestCases",
+java_defaults {
+    name: "MediaMuxerTestCases_defaults",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -48,6 +48,8 @@ android_test {
         "cts-media-common",
         "ctstestrunner-axt",
         "exoplayer-mediamuxer_tests",
+        "com.android.media.flags.editing-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctsmediamuxertest_jni",
@@ -57,41 +59,26 @@ android_test {
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
 
 android_test {
-    name: "MctsMediaMuxerTestCases",
-    defaults: ["cts_defaults"],
-    // include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "cts-media-common",
-        "ctstestrunner-axt",
-        "exoplayer-mediamuxer_tests",
-    ],
-    jni_libs: [
-        "libctsmediamuxertest_jni",
-    ],
-    srcs: [
-        "src/**/*.java",
-    ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    test_config: "AndroidTest-mcts.xml",
+    name: "CtsMediaMuxerTestCases",
+    defaults: ["MediaMuxerTestCases_defaults"],
+    test_config: "AndroidTest.xml",
     test_suites: [
         "cts",
         "general-tests",
-        "mcts-media",
-        "mts-media",
     ],
-    host_required: ["cts-dynamic-config"],
-    min_sdk_version: "29",
-    target_sdk_version: "31",
+}
+
+android_test {
+    name: "MctsMediaMuxerTestCases",
+    defaults: ["MediaMuxerTestCases_defaults"],
+    test_config: "AndroidTest-mcts.xml",
+    test_suites: [
+        "general-tests",
+    ],
 }

@@ -33,6 +33,7 @@ import com.android.xts.root.annotations.RequireRootInstrumentation
 /**
  * [AnnotationExecutor] used for parsing [RequireAdbRoot].
  */
+@Suppress("unused")
 class RootAnnotationExecutor : AnnotationExecutor {
 
     companion object {

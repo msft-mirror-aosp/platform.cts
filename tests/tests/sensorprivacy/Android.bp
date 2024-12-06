@@ -36,6 +36,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "camera_platform_flags_java_lib",
         "flag-junit",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",

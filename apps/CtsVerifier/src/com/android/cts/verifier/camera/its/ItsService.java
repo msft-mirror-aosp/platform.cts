@@ -160,6 +160,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ItsService extends Service implements SensorEventListener {
     public static final String TAG = ItsService.class.getSimpleName();
@@ -1024,7 +1025,8 @@ public class ItsService extends Service implements SensorEventListener {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
-                    doGetSupportedPreviewSizes();
+                    boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
+                    doGetSupportedPreviewSizes(filterRecordable);
                 } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
                     doGetQueryableStreamCombinations();
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
@@ -1051,9 +1053,10 @@ public class ItsService extends Service implements SensorEventListener {
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
                     int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+                    int faceDetectMode = cmdObj.optInt("faceDetectMode");
                     doBasicRecording(cameraId, profileId, quality, recordingDuration,
                             videoStabilizationMode, hlg10Enabled, zoomRatio,
-                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
+                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode, faceDetectMode);
                 } else if ("doStaticPreviewRecording".equals(cmdObj.getString("cmdName"))) {
                     doStaticPreviewRecording(cmdObj);
                 } else if ("doDynamicZoomPreviewRecording".equals(
@@ -2714,7 +2717,8 @@ public class ItsService extends Service implements SensorEventListener {
         return arrList.contains(mode);
     }
 
-    private void doGetSupportedPreviewSizes() throws ItsException {
+    private void doGetSupportedPreviewSizes(boolean filterRecordable)
+            throws ItsException {
         StreamConfigurationMap configMap = mCameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         if (!StreamConfigurationMap.isOutputSupportedFor(SurfaceHolder.class)) {
@@ -2728,13 +2732,45 @@ public class ItsService extends Service implements SensorEventListener {
             return;
         }
 
-        String response = Arrays.stream(outputSizes)
-                .distinct()
+        Stream<Size> previewSizesStream = Arrays.stream(outputSizes).distinct();
+        if (filterRecordable) {
+            Logt.i(TAG, "Filter preview sizes if supported by MediaRecorder");
+            previewSizesStream = previewSizesStream.filter(
+                    size -> isSizeSupportedByMediaRecorder(size));
+        }
+        String response = previewSizesStream
                 .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
                 .map(Size::toString)
                 .collect(Collectors.joining(";"));
 
         mSocketRunnableObj.sendResponse("supportedPreviewSizes", response);
+    }
+
+    private boolean isSizeSupportedByMediaRecorder(Size previewSize) {
+        Surface recordSurface = MediaCodec.createPersistentInputSurface();
+
+        MediaRecorder mediaRecorder = new MediaRecorder(this);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+
+        mediaRecorder.setVideoSize(previewSize.getWidth(), previewSize.getHeight());
+        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mediaRecorder.setInputSurface(recordSurface);
+        mediaRecorder.setVideoFrameRate(30);
+        String outputFile = getExternalCacheDir().getAbsolutePath() + "/its_test.mp4";
+        mediaRecorder.setOutputFile(outputFile);
+
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.release();
+            recordSurface.release();
+            return true;
+        } catch (IOException e) {
+            Logt.i(TAG, "Error preparing MediaRecorder with " + previewSize + ". error = " + e);
+        }
+        return false;
     }
 
     private void doGetQueryableStreamCombinations() throws ItsException {
@@ -2816,13 +2852,13 @@ public class ItsService extends Service implements SensorEventListener {
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
             boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
-            int aeAntibandingMode) throws ItsException {
+            int aeAntibandingMode, int faceDetectMode) throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
 
         if (!hlg10Enabled) {
             doBasicRecording(
                     cameraId, profileId, quality, recordingDuration, videoStabilizationMode,
-                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
+                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode, faceDetectMode);
             return;
         }
 
@@ -2892,7 +2928,8 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.HLG10,
                     mockCallback, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
+                    faceDetectMode);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2937,7 +2974,8 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode, double zoomRatio,
-            int aeTargetFpsMin, int aeTargetFpsMax, int aeAntibandingMode) throws ItsException {
+            int aeTargetFpsMin, int aeTargetFpsMax, int aeAntibandingMode, int faceDetectMode)
+            throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         int cameraDeviceId = Integer.parseInt(cameraId);
         mMediaRecorder = new MediaRecorder();
@@ -2971,7 +3009,8 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
                     /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
+                    faceDetectMode);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -3123,6 +3162,7 @@ public class ItsService extends Service implements SensorEventListener {
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+        int faceDetectMode = cmdObj.optInt("faceDetectMode");
         // Record surface size and HDRness.
         JSONArray outputSpecs = ItsUtils.getOutputSpecs(cmdObj);
         if (outputSpecs == null || outputSpecs.length() == 0) {
@@ -3183,7 +3223,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, extraConfigs, aeAntibandingMode);
+                    recordingResultListener, extraConfigs, aeAntibandingMode, faceDetectMode);
             if (paddedFrames) {
                 Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
                 try {
@@ -3624,7 +3664,7 @@ public class ItsService extends Service implements SensorEventListener {
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
             CameraCaptureSession.CaptureCallback captureCallback,
             List<OutputConfiguration> extraConfigs,
-            int aeAntibandingMode) throws CameraAccessException {
+            int aeAntibandingMode, int faceDetectMode) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -3643,6 +3683,11 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.i(TAG, "AE Antibanding Mode: " + aeAntibandingMode);
             mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE,
                     aeAntibandingMode);
+        }
+        if (faceDetectMode > 0) {
+            Logt.i(TAG, "Face Detection Mode: " + faceDetectMode);
+            mCaptureRequestBuilder.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
+                    faceDetectMode);
         }
 
         switch (videoStabilizationMode) {

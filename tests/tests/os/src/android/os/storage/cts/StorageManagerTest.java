@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,6 +66,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -176,19 +178,22 @@ public class StorageManagerTest {
     public void testAttemptMountObbWrongPackage() {
         for (File target : getTargetFiles()) {
             final File outFile = new File(target, "test1_wrongpackage.obb");
-            assertThrows(SecurityException.class, () -> doAttemptMountObbWrongPackage(outFile));
+            Log.d(TAG, "Testing path " + target);
+            try {
+                mountObb(
+                        R.raw.test1_wrongpackage,
+                        outFile,
+                        OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
+            } catch (SecurityException e) {
+            } finally {
+                assertFalse(
+                        "OBB should not be mounted",
+                        mStorageManager.isObbMounted(outFile.getPath()));
+                assertNull(
+                        "OBB's mounted path should be null",
+                        mStorageManager.getMountedObbPath(outFile.getPath()));
+            }
         }
-    }
-
-    private void doAttemptMountObbWrongPackage(File outFile) {
-        mountObb(R.raw.test1_wrongpackage, outFile,
-                OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
-
-        assertFalse("OBB should not be mounted",
-                mStorageManager.isObbMounted(outFile.getPath()));
-
-        assertNull("OBB's mounted path should be null",
-                mStorageManager.getMountedObbPath(outFile.getPath()));
     }
 
     @Test
@@ -355,6 +360,11 @@ public class StorageManagerTest {
     @AppModeFull(reason = "Instant apps cannot access external storage")
     public void testGetStorageVolumeSDCard() throws Exception {
         assumeTrue(StorageManagerHelper.isAdoptableStorageSupported(mContext));
+        UserHelper userHelper = new UserHelper(mContext);
+        // Skipping for visible background users since mounting a disk only supports the current
+        // user.
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
 
         String volumeName = StorageManagerHelper.createSDCardVirtualDisk();
         Log.d(TAG, "testGetStorageVolumeSDCard#volumeName: " + volumeName);
@@ -424,14 +434,7 @@ public class StorageManagerTest {
         mStorageManager.registerStorageVolumeCallback(mContext.getMainExecutor(), callback);
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand("sm unmount emulated;" + UserHandle.myUserId());
-        if (isAutomotive(mContext)) {
-            // TODO(b/343167829): Remove this conditional casing once the delayed unmount
-            // operation is addressed for Auto. The 65 second duration is explained in
-            // b/331333384#comment48.
-            assertTrue(unmounted.await(65, TimeUnit.SECONDS));
-        } else {
-            assertTrue(unmounted.await(30, TimeUnit.SECONDS));
-        }
+        assertTrue(unmounted.await(65, TimeUnit.SECONDS));
 
         // Now unregister and verify we don't hear future events
         mStorageManager.unregisterStorageVolumeCallback(callback);

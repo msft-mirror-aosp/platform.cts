@@ -44,6 +44,7 @@ android_test {
         "src/android/net/wifi/p2p/cts/*.java",
         "src/android/net/wifi/passpoint/cts/*.java",
         "src/android/net/wifi/rtt/cts/*.java",
+        "src/android/net/wifi/usd/cts/*.java",
     ],
     jarjar_rules: "jarjar-rules.txt",
     static_libs: [
@@ -63,11 +64,10 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-tethering",
         "mts-wifi",
-        "mcts-tethering",
         "mcts-wifi",
         "sts",
+        "dts",
     ],
 
     data: [

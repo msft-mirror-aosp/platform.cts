@@ -33,8 +33,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -44,6 +42,9 @@ import com.android.cts.verifier.audio.wavelib.DspFftServer;
 import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Tests Audio built in Microphone response using external speakers and USB reference microphone.
@@ -311,13 +312,13 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
         String name = "undefined";
         switch(testId) {
             case TEST_NOISE:
-                name = "BuiltIn_noise";
+                name = "built_in_noise";
                 break;
             case TEST_USB_BACKGROUND:
-                name = "USB_background";
+                name = "usb_background";
                 break;
             case TEST_USB_NOISE:
-                name = "USB_noise";
+                name = "usb_noise";
                 break;
         }
         return name;
@@ -479,14 +480,16 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
     };
 
     private class Results {
+        private int mTestId;
         private String mLabel;
         public double[] mValuesLog;
         int[] mPointsPerBand = new int[mBands];
         double[] mAverageEnergyPerBand = new double[mBands];
         int[] mInBoundPointsPerBand = new int[mBands];
         public boolean mIsBaseMeasurement = false;
-        public Results(String label) {
+        Results(String label, int testId) {
             mLabel = label;
+            mTestId = testId;
         }
 
         //append results
@@ -567,14 +570,14 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
 
         sb.append("\n");
 
-        Results resultsBuiltIn = new Results(getTestString(TEST_NOISE));
+        Results resultsBuiltIn = new Results(getTestString(TEST_NOISE), TEST_NOISE);
         if (computeResultsForVector(mFreqAverageNoise, resultsBuiltIn, false, bandSpecsArray)) {
             sb.append(resultsBuiltIn.toString());
             sb.append("\n");
             storeTestResults(resultsBuiltIn);
         }
 
-        Results resultsBase = new Results(getTestString(TEST_USB_BACKGROUND));
+        Results resultsBase = new Results(getTestString(TEST_USB_BACKGROUND), TEST_USB_BACKGROUND);
         if (computeResultsForVector(mFreqAverageUsbBackground, resultsBase, true,
                 baseBandSpecsArray)) {
             sb.append(resultsBase.toString());
@@ -582,7 +585,7 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
             storeTestResults(resultsBase);
         }
 
-        Results resultsUsbNoise = new Results(getTestString(TEST_USB_NOISE));
+        Results resultsUsbNoise = new Results(getTestString(TEST_USB_NOISE), TEST_USB_NOISE);
         if (computeResultsForVector(mFreqAverageUsbNoise, resultsUsbNoise, false,
                 bandSpecsArray)) {
             sb.append(resultsUsbNoise.toString());
@@ -688,49 +691,31 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
     }
 
     private void storeTestResults(Results results) {
-        String channelLabel = "channel_" + results.mLabel;
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        for (int b = 0; b < mBands; b++) {
-            String bandLabel = String.format(channelLabel + "_%d", b);
-            reportLog.addValue(
-                    bandLabel + "_Level",
-                    results.mAverageEnergyPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    bandLabel + "_pointsinbound",
-                    results.mInBoundPointsPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.COUNT);
-
-            reportLog.addValue(
-                    bandLabel + "_pointstotal",
-                    results.mPointsPerBand[b],
-                    ResultType.NEUTRAL,
-                    ResultUnit.COUNT);
+        try {
+            CtsVerifierReportLog reportLog = getReportLog();
+            JSONArray bandsArray = new JSONArray();
+            JSONObject resultsObject = new JSONObject();
+            for (int b = 0; b < mBands; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_LEVEL, results.mAverageEnergyPerBand[b]);
+                bandObject.put(KEY_POINTS_IN_BOUND, results.mInBoundPointsPerBand[b]);
+                bandObject.put(KEY_POINTS_TOTAL, results.mPointsPerBand[b]);
+                bandsArray.put(bandObject);
+            }
+            resultsObject.put(KEY_BANDS, bandsArray);
+            resultsObject.put(KEY_MAGNITUDE_SPECTRUM_LOG, new JSONArray(results.mValuesLog));
+            reportLog.addValue(results.mLabel, resultsObject);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+            appendResultsToScreen(results.mTestId, LOG_ERROR_STR);
         }
 
-        reportLog.addValues(channelLabel + "_magnitudeSpectrumLog",
-                results.mValuesLog,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        Log.v(TAG, "Results Stored");
+        Log.v(TAG, "Results Recorded");
     }
 
     @Override // PassFailButtons
     public void recordTestResults() {
         getReportLog().submit();
-    }
-
-    private void recordHeasetPortFound(boolean found) {
-        getReportLog().addValue(
-                "User Reported Headset Port",
-                found ? 1.0 : 0,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
     }
 
     private void startRecording() {

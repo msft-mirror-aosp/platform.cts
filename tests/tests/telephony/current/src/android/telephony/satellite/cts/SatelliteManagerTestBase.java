@@ -16,6 +16,9 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -46,22 +49,29 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.SatelliteAccessConfiguration;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
+import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
+import android.telephony.satellite.SatelliteInfo;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
+import android.telephony.satellite.SatellitePosition;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
+import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
+import android.telephony.satellite.SystemSelectionSpecifier;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -72,13 +82,17 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SatelliteManagerTestBase {
     protected static String TAG = "SatelliteManagerTestBase";
@@ -132,6 +146,13 @@ public class SatelliteManagerTestBase {
             logd("Skipping tests because FEATURE_TELEPHONY is not available");
             return false;
         }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            // Satellite test against mock service should pass on satellite-less devices, but it's
+            // still too flaky.
+            logd("Skipping tests because FEATURE_TELEPHONY_SATELLITE is not available");
+            return false;
+        }
         try {
             getContext().getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
@@ -154,6 +175,12 @@ public class SatelliteManagerTestBase {
     protected static void revokeSatellitePermission() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    protected static void grantSatelliteAndReadBasicPhoneStatePermissions() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.READ_BASIC_PHONE_STATE);
     }
 
     protected static class SatelliteTransmissionUpdateCallbackTest implements
@@ -195,6 +222,10 @@ public class SatelliteManagerTestBase {
         private List<DatagramStateChangeArgument> mReceiveDatagramStateChanges = new ArrayList<>();
         private final Object mReceiveDatagramStateChangesLock = new Object();
         private final Semaphore mReceiveSemaphore = new Semaphore(0);
+        private final Object mSendDatagramRequestedLock = new Object();
+        private final Semaphore mSendDatagramRequestedSemaphore = new Semaphore(0);
+        @SatelliteManager.DatagramType
+        private List<Integer> mSendDatagramRequestedList = new ArrayList<>();
 
         @Override
         public void onSatellitePositionChanged(PointingInfo pointingInfo) {
@@ -248,6 +279,20 @@ public class SatelliteManagerTestBase {
             }
         }
 
+        @Override
+        public void onSendDatagramRequested(int datagramType) {
+            logd("onSendDatagramRequested: datagramType=" + datagramType);
+            synchronized (mSendDatagramRequestedLock) {
+                mSendDatagramRequestedList.add(datagramType);
+            }
+
+            try {
+                mSendDatagramRequestedSemaphore.release();
+            } catch (Exception e) {
+                loge("onSendDatagramRequested: Got exception, ex=" + e);
+            }
+        }
+
         public boolean waitUntilOnSatellitePositionChanged(int expectedNumberOfEvents) {
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
@@ -297,6 +342,25 @@ public class SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilOnSendDatagramRequested(int expectedNumberOfEvents) {
+            logd("waitUntilOnSendDatagramRequested expectedNumberOfEvents:"
+                    + expectedNumberOfEvents);
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSendDatagramRequestedSemaphore.tryAcquire(
+                            TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSendDatagramRequested() callback");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("SatelliteTransmissionUpdateCallback "
+                            + "waitUntilOnSendDatagramRequested: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void clearPointingInfo() {
             mPointingInfo = null;
             mPositionChangeSemaphore.drainPermits();
@@ -315,6 +379,14 @@ public class SatelliteManagerTestBase {
                 logd("clearReceiveDatagramStateChanges");
                 mReceiveDatagramStateChanges.clear();
                 mReceiveSemaphore.drainPermits();
+            }
+        }
+
+        public void clearSendDatagramRequested() {
+            synchronized (mSendDatagramRequestedLock) {
+                logd("clearSendDatagramRequested");
+                mSendDatagramRequestedList.clear();
+                mSendDatagramRequestedSemaphore.drainPermits();
             }
         }
 
@@ -356,6 +428,26 @@ public class SatelliteManagerTestBase {
         public int getNumOfReceiveDatagramStateChanges() {
             synchronized (mReceiveDatagramStateChangesLock) {
                 return mReceiveDatagramStateChanges.size();
+            }
+        }
+
+        @SatelliteManager.DatagramType
+        public int getSendDatagramRequestedType(int index) {
+            synchronized (mSendDatagramRequestedLock) {
+                if (index < mSendDatagramRequestedList.size()) {
+                    return mSendDatagramRequestedList.get(index);
+                } else {
+                    Log.e(TAG, "getSendDatagramRequestedType: invalid index= " + index
+                            + " mSendDatagramRequestedList.size= "
+                            + mSendDatagramRequestedList.size());
+                    return DATAGRAM_TYPE_UNKNOWN;
+                }
+            }
+        }
+
+        public int getNumOfSendDatagramRequestedChanges() {
+            synchronized (mSendDatagramRequestedLock) {
+                return mSendDatagramRequestedList.size();
             }
         }
     }
@@ -687,6 +779,39 @@ public class SatelliteManagerTestBase {
         }
     }
 
+    protected static class SelectedNbIotSatelliteSubscriptionCallbackTest implements
+            SelectedNbIotSatelliteSubscriptionCallback {
+        public int mSelectedSubId;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSelectedNbIotSatelliteSubscriptionChanged(int selectedSubId) {
+            logd("onSelectedNbIotSatelliteSubscriptionChanged: selectedSubId=" + selectedSubId);
+            mSelectedSubId = selectedSubId;
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSelectedNbIotSatelliteSubscriptionChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSelectedNbIotSatelliteSubscriptionChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSelectedNbIotSatelliteSubscriptionChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
     protected static class SatelliteSupportedStateCallbackTest implements
             SatelliteSupportedStateCallback {
         public boolean isSupported = false;
@@ -750,7 +875,10 @@ public class SatelliteManagerTestBase {
     protected static class SatelliteCommunicationAllowedStateCallbackTest implements
             SatelliteCommunicationAllowedStateCallback {
         public boolean isAllowed = false;
+        @Nullable
+        private SatelliteAccessConfiguration mSatelliteAccessConfiguration;
         private final Semaphore mSemaphore = new Semaphore(0);
+        private final Semaphore mSatelliteAccessConfigurationChangedSemaphore = new Semaphore(0);
 
         @Override
         public void onSatelliteCommunicationAllowedStateChanged(boolean allowed) {
@@ -761,6 +889,20 @@ public class SatelliteManagerTestBase {
                 mSemaphore.release();
             } catch (Exception e) {
                 loge("onSatelliteCommunicationAllowedStateChanged: Got exception, ex=" + e);
+            }
+        }
+
+        @Override
+        public void onSatelliteAccessConfigurationChanged(
+                @Nullable SatelliteAccessConfiguration satelliteAccessConfiguration) {
+            logd("onSatelliteAccessConfigurationChanged: satelliteAccessConfiguration="
+                    + satelliteAccessConfiguration);
+            mSatelliteAccessConfiguration = satelliteAccessConfiguration;
+
+            try {
+                mSatelliteAccessConfigurationChangedSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteAccessConfigurationChanged: Got exception, ex=" + e);
             }
         }
 
@@ -777,6 +919,76 @@ public class SatelliteManagerTestBase {
                 }
             }
             return true;
+        }
+
+        public boolean waitUntilSatelliteAccessConfigurationChangedEvent(
+                int expectedNumberOfEvents, long timeOutMilliSec) {
+            logd("waitUntilSatelliteAccessConfigurationChangedEvent");
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(timeOutMilliSec,
+                            TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive "
+                                + "waitUntilSatelliteAccessConfigurationChangedEvent");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("waitUntilSatelliteAccessConfigurationChangedEvent: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+            mSatelliteAccessConfigurationChangedSemaphore.drainPermits();
+        }
+
+        @Nullable
+        public SatelliteAccessConfiguration getSatelliteAccessConfiguration() {
+            return mSatelliteAccessConfiguration;
+        }
+    }
+
+    protected static class SatelliteDisallowedReasonsCallbackTest
+            implements SatelliteDisallowedReasonsCallback {
+        private int[] mSatelliteDisabledReasons;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteDisallowedReasonsChanged(@NonNull int[] disallowedReasons) {
+            logd("onSatelliteDisallowedReasonsChanged: disallowedReasons="
+                     + Arrays.toString(disallowedReasons));
+            mSatelliteDisabledReasons = disallowedReasons;
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteDisallowedReasonsChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteDisallowedReasonsChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSatelliteDisallowedReasonsChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
+
+        public boolean hasSatelliteDisabledReason(int reason) {
+            return Arrays.stream(mSatelliteDisabledReasons).anyMatch(i -> i == reason);
         }
     }
 
@@ -917,12 +1129,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
+                        logd("isSatelliteProvisioned: result=" + result);
                         provisioned.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("isSatelliteProvisioned: onError, exception=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -940,6 +1154,7 @@ public class SatelliteManagerTestBase {
         Integer error = errorCode.get();
         Boolean isProvisioned = provisioned.get();
         if (error == null) {
+            logd("isSatelliteProvisioned isProvisioned=" + isProvisioned);
             assertNotNull(isProvisioned);
             return isProvisioned;
         } else {
@@ -1033,6 +1248,25 @@ public class SatelliteManagerTestBase {
     protected static void requestSatelliteEnabled(boolean enabled) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
         sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
+                getContext().getMainExecutor(), error::offer);
+        Integer errorCode;
+        try {
+            errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+            return;
+        }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
+        assertNotNull(errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
+    }
+
+    protected static void requestSatelliteEnabled(boolean enabled, boolean emergency) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled)
+                        .setEmergencyMode(emergency)
+                        .build(),
                 getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
@@ -1537,7 +1771,7 @@ public class SatelliteManagerTestBase {
     }
 
     // Get default active subscription ID.
-    protected int getActiveSubIDForCarrierSatelliteTest() {
+    protected static int getActiveSubIDForCarrierSatelliteTest() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
@@ -1563,6 +1797,24 @@ public class SatelliteManagerTestBase {
         loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    protected static int getNtnOnlySubscriptionId() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+
+        int subId = infoList.stream()
+                .filter(info -> info.isOnlyNonTerrestrialNetwork())
+                .mapToInt(SubscriptionInfo::getSubscriptionId)
+                .findFirst()
+                .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID && !infoList.isEmpty()) {
+            subId = infoList.get(0).getSubscriptionId();
+        }
+        logd("getNtnOnlySubscriptionId: subId=" + subId);
+        return subId;
     }
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
@@ -1611,6 +1863,73 @@ public class SatelliteManagerTestBase {
         }
     }
 
+    protected static Pair<Integer, Integer> requestSelectedNbIotSatelliteSubscriptionId() {
+        final AtomicReference<Integer> selectedSatelliteSubscriptionId =
+                new AtomicReference<>();
+        final AtomicReference<Integer> callback = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        logd("requestSelectedNbIotSatelliteSubscriptionId.onResult: result=" +
+                                result);
+                        selectedSatelliteSubscriptionId.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("requestSelectedNbIotSatelliteSubscriptionId.onError: onError="
+                                + exception.getErrorCode());
+                        callback.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
+    }
+
+    protected static Pair<CharSequence, Integer> requestSatelliteDisplayName() {
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(CharSequence result) {
+                        logd("requestSatelliteDisplayName.onResult: result=" +
+                                result);
+                        displayNameForSubscription.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("requestSatelliteDisplayName.onError: onError="
+                                + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSatelliteDisplayName(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(displayNameForSubscription.get(), errorCode.get());
+    }
+
     protected static Pair<Boolean, Integer> provisionSatellite(List<SatelliteSubscriberInfo> list) {
         final AtomicReference<Boolean> requestResult = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
@@ -1619,14 +1938,14 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
-                        logd("onResult: result=" + result);
+                        logd("provisionSatellite: onResult: result=" + result);
                         requestResult.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
-                        logd("onError: onError=" + exception);
+                        logd("provisionSatellite: onError: onError=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
@@ -1641,8 +1960,39 @@ public class SatelliteManagerTestBase {
         return new Pair<>(requestResult.get(), errorCode.get());
     }
 
+    protected static Pair<Boolean, Integer> deprovisionSatellite(
+            List<SatelliteSubscriberInfo> list) {
+        final AtomicReference<Boolean> requestResult = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        logd("deprovisionSatellite: onResult: result=" + result);
+                        requestResult.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("deprovisionSatellite: onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.deprovisionSatellite(list, getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(requestResult.get(), errorCode.get());
+    }
+
     @NonNull
-    protected PersistableBundle getConfigForSubId(Context context, int subId, String key) {
+    protected static PersistableBundle getConfigForSubId(Context context, int subId, String key) {
         PersistableBundle config = null;
         CarrierConfigManager carrierConfigManager = context.getSystemService(
                 CarrierConfigManager.class);
@@ -1692,5 +2042,108 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+    }
+
+    protected List<SatelliteAccessConfiguration> getExpectedSatelliteConfiguration() {
+        UUID uuid1 = UUID.fromString("0db0312f-d73f-444d-b99b-a893dfb42edf");
+        SatellitePosition satellitePosition1 = new SatellitePosition(-150.3, 35786000);
+        List<Integer> bandList1 = new ArrayList<>(List.of(259, 260));
+        EarfcnRange earfcnRange1 = new EarfcnRange(3000, 4300);
+        List<Integer> tagIdList1 = new ArrayList<>(List.of(6, 7, 8));
+
+        SatelliteInfo satelliteInfo1 = new SatelliteInfo(uuid1, satellitePosition1, bandList1,
+                new ArrayList<>(List.of(earfcnRange1)));
+
+        SatelliteAccessConfiguration configuration1 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo1)), tagIdList1);
+
+        UUID uuid2 = UUID.fromString("1dec24f8-9223-4196-ad7a-a03002db7af7");
+        SatellitePosition satellitePosition2 = new SatellitePosition(15.5, 35786000);
+        List<Integer> bandList2 = new ArrayList<>(List.of(257, 258));
+        EarfcnRange earfcnRange2 = new EarfcnRange(3200, 3200);
+        List<Integer> tagIdList2 = new ArrayList<>(List.of(9, 10, 11));
+
+        SatelliteInfo satelliteInfo2 = new SatelliteInfo(uuid2, satellitePosition2, bandList2,
+                new ArrayList<>(List.of(earfcnRange2)));
+
+        SatelliteAccessConfiguration configuration2 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
+
+        UUID uuid3 = UUID.fromString("f60cb479-d85b-4f4e-b050-cc428f5eb4a4");
+        SatellitePosition satellitePosition3 = new SatellitePosition(-150, 35786000);
+        List<Integer> bandList3 = new ArrayList<>(List.of(259, 260));
+        EarfcnRange earfcnRange3 = new EarfcnRange(3300, 3400);
+        List<Integer> tagIdList3 = new ArrayList<>(List.of(12, 13, 14));
+
+        SatelliteInfo satelliteInfo3 = new SatelliteInfo(uuid3, satellitePosition3, bandList3,
+                new ArrayList<>(List.of(earfcnRange3)));
+
+        SatelliteAccessConfiguration configuration3 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo3)), tagIdList3);
+
+        UUID uuid4 = UUID.fromString("c5837d96-9585-46aa-8dd0-a974583737fb");
+        SatellitePosition satellitePosition4 = new SatellitePosition(-155, 35786000);
+        List<Integer> bandList4 = new ArrayList<>(List.of(261, 262));
+        EarfcnRange earfcnRange4 = new EarfcnRange(3500, 3600);
+        List<Integer> tagIdList4 = new ArrayList<>(List.of(15, 16, 17));
+
+        SatelliteInfo satelliteInfo4 = new SatelliteInfo(uuid4, satellitePosition4, bandList4,
+                new ArrayList<>(List.of(earfcnRange4)));
+
+        SatelliteAccessConfiguration configuration4 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo4)), tagIdList4);
+
+        UUID uuid5 = UUID.fromString("6ef2a128-0477-4271-895f-dc4a221d2b23");
+        SatellitePosition satellitePosition5 = new SatellitePosition(-66, 35786000);
+        List<Integer> bandList5 = new ArrayList<>(List.of(263, 264));
+        EarfcnRange earfcnRange5 = new EarfcnRange(3700, 3800);
+        List<Integer> tagIdList5 = new ArrayList<>(List.of(18, 19, 20));
+
+        SatelliteInfo satelliteInfo5 = new SatelliteInfo(uuid5, satellitePosition5, bandList5,
+                new ArrayList<>(List.of(earfcnRange5)));
+
+        SatelliteAccessConfiguration configuration5 = new SatelliteAccessConfiguration(
+                new ArrayList<>(List.of(satelliteInfo5)), tagIdList5);
+
+        return new ArrayList<>(
+                List.of(configuration1, configuration2, configuration3, configuration4,
+                        configuration5));
+    }
+
+    protected void verifySatelliteAccessConfiguration(
+            @NonNull SatelliteAccessConfiguration expectedConfiguration,
+            @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier) {
+
+        List<SatelliteInfo> expectedSatelliteInfos =
+                expectedConfiguration.getSatelliteInfos();
+        List<Integer> expectedBandList = new ArrayList<>();
+        List<Integer> expectedEarfcnList = new ArrayList<>();
+        for (SatelliteInfo expectedSatelliteInfo : expectedSatelliteInfos) {
+            expectedBandList.addAll(expectedSatelliteInfo.getBands());
+            List<EarfcnRange> earfcnRangeList = expectedSatelliteInfo.getEarfcnRanges();
+            earfcnRangeList.stream().flatMapToInt(
+                    earfcnRange -> IntStream.of(earfcnRange.getStartEarfcn(),
+                            earfcnRange.getEndEarfcn())).boxed().forEach(expectedEarfcnList::add);
+        }
+
+        List<Integer> actualBandList = Arrays.stream(actualSystemSelectionSpecifier.getBands())
+                .boxed().collect(Collectors.toList());
+
+        List<Integer> actualEarfcnList = Arrays.stream(actualSystemSelectionSpecifier.getEarfcns())
+                .boxed().collect(Collectors.toList());
+
+        SatelliteInfo[] expectedSatelliteInfoArray =
+                expectedConfiguration.getSatelliteInfos().toArray(new SatelliteInfo[0]);
+        SatelliteInfo[] actualSatelliteInfoArray =
+                actualSystemSelectionSpecifier.getSatelliteInfos().toArray(new SatelliteInfo[0]);
+
+        List<Integer> expectedTagIdList = expectedConfiguration.getTagIds();
+        List<Integer> actualTagIdList = Arrays.stream(actualSystemSelectionSpecifier.getTagIds())
+                .boxed().collect(Collectors.toList());
+
+        assertEquals(expectedBandList, actualBandList);
+        assertEquals(expectedEarfcnList, actualEarfcnList);
+        assertArrayEquals(expectedSatelliteInfoArray, actualSatelliteInfoArray);
+        assertEquals(expectedTagIdList, actualTagIdList);
     }
 }

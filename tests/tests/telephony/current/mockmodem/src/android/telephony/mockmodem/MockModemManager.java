@@ -30,6 +30,8 @@ import android.os.Looper;
 import android.os.SystemProperties;
 import android.telephony.Annotation;
 import android.telephony.BarringInfo;
+import android.telephony.CellularIdentifierDisclosure;
+import android.telephony.SecurityAlgorithmUpdate;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
@@ -737,6 +739,32 @@ public class MockModemManager {
     }
 
     /**
+     * Notifies of the SecurityAlgorithmUpdate change.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param update the security algorithm update information.
+     */
+    public boolean unsolSecurityAlgorithmsUpdated(int slotId,
+            SecurityAlgorithmUpdate update) {
+        Log.d(TAG, "unsolSecurityAlgorithmsUpdated[" + slotId + "]");
+        return mMockModemService.getIRadioNetwork((byte) slotId)
+                .unsolSecurityAlgorithmsUpdated(update);
+    }
+
+    /**
+     * Notifies of the CellularIdentifierDisclosure change.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param disclosure the cellular identifier disclosure information.
+     */
+    public boolean unsolCellularIdentifierDisclosed(int slotId,
+            CellularIdentifierDisclosure disclosure) {
+        Log.d(TAG, "unsolCellularIdentifierDisclosed[" + slotId + "]");
+        return mMockModemService.getIRadioNetwork((byte) slotId)
+                .unsolCellularIdentifierDisclosed(disclosure);
+    }
+
+    /**
      * Resets the current emergency mode.
      *
      * @param slotId the Id of logical sim slot.
@@ -1110,6 +1138,11 @@ public class MockModemManager {
         int modemCount = mMockModemService.getActiveMockModemCount();
         if (modemCount == 1) {
             return false;
+        }
+        // In case there are more than 2 modems, it is enough to shuffle the primary IMEI with
+        // another one slot, so enough to run the loop for 2 times.
+        if (modemCount > 2) {
+            modemCount = 2;
         }
         for (int slotId = 0; slotId < modemCount; slotId++) {
             mMockModemService.getIRadioModem((byte) slotId).resetAllLatchCountdown();

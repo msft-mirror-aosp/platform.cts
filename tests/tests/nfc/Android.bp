@@ -23,8 +23,8 @@ android_test {
     platform_apis: true,
     static_libs: [
         "android.nfc.flags-aconfig-java",
-        "nfc_aconfig_flags_lib",
         "android.permission.flags-aconfig-java",
+        "com.android.nfc.flags-aconfig-java",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "flag-junit",
@@ -57,7 +57,10 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mts-nfc",
+        "mcts-nfc",
     ],
+    min_sdk_version: "current",
 }
 
 android_test {

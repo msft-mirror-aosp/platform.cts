@@ -19,17 +19,18 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -42,12 +43,12 @@ import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
+import com.android.cts.verifier.audio.audiolib.WaveFileWriter;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
 import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
-// MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.Globals;
 import org.hyphonate.megaaudio.common.StreamBase;
@@ -57,7 +58,12 @@ import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -77,12 +83,13 @@ public abstract class AudioDataPathsBaseActivity
     protected boolean mHasSpeaker;
 
     // UI
-    protected View mStartBtn;
+    protected View mStartButton;
     protected View mCancelButton;
-    protected View mClearResultsBtn;
+    protected View mClearResultsButton;
+    protected View mShowResultsButton;
+    protected View mShareResultsButton;
 
-    private Button mCalibrateButton;
-    private Button mDevicesButton;
+    protected AudioLoopbackUtilitiesHandler mUtiltitiesHandler;
 
     private TextView mRoutesTx;
     private View mResultsView;
@@ -112,6 +119,7 @@ public abstract class AudioDataPathsBaseActivity
     private DuplexAudioManager mDuplexAudioManager;
 
     protected AppCallback mAnalysisCallbackHandler;
+    private File mRecordingDir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,20 +152,20 @@ public abstract class AudioDataPathsBaseActivity
         ((TextView) findViewById(R.id.audio_datapaths_MMAP_exclusive))
                 .setText(mSupportsMMAPExclusive ? yesString : noString);
 
-        mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
-        mCalibrateButton.setOnClickListener(this);
+        // Utilities
+        mUtiltitiesHandler = new AudioLoopbackUtilitiesHandler(this);
 
-        mDevicesButton = findViewById(R.id.audio_datapaths_devices_button);
-        mDevicesButton.setOnClickListener(this);
-
-        mStartBtn = findViewById(R.id.audio_datapaths_start);
-        mStartBtn.setOnClickListener(this);
+        mStartButton = findViewById(R.id.audio_datapaths_start);
+        mStartButton.setOnClickListener(this);
         mCancelButton = findViewById(R.id.audio_datapaths_cancel);
         mCancelButton.setOnClickListener(this);
         mCancelButton.setEnabled(false);
-        mClearResultsBtn = findViewById(R.id.audio_datapaths_clearresults);
-        mClearResultsBtn.setOnClickListener(this);
-
+        (mClearResultsButton =
+                findViewById(R.id.audio_datapaths_clearresults)).setOnClickListener(this);
+        (mShowResultsButton =
+                findViewById(R.id.audio_datapaths_showresults)).setOnClickListener(this);
+        (mShareResultsButton =
+                findViewById(R.id.audio_datapaths_shareresults)).setOnClickListener(this);
         mRoutesTx = (TextView) findViewById(R.id.audio_datapaths_routes);
 
         LinearLayout resultsLayout = findViewById(R.id.audio_datapaths_results);
@@ -202,6 +210,13 @@ public abstract class AudioDataPathsBaseActivity
         if (!mIsHandheld) {
             displayNonHandheldMessage();
         }
+
+        // Write to a directory that can be read on production builds using 'adb pull'.
+        // This works because we have WRITE_EXTERNAL_STORAGE permission.
+        mRecordingDir = new File(Environment.getExternalStorageDirectory(), "verifierWaves");
+        if (!mRecordingDir.exists()) {
+            mRecordingDir.mkdir();
+        }
     }
 
     @Override
@@ -220,9 +235,19 @@ public abstract class AudioDataPathsBaseActivity
     //
     // UI Helpers
     //
+    protected abstract String getTestCategory();
+
     protected void enableTestButtons(boolean enabled) {
-        mStartBtn.setEnabled(enabled);
-        mClearResultsBtn.setEnabled(enabled);
+        mStartButton.setEnabled(enabled);
+        mClearResultsButton.setEnabled(enabled);
+        mShareResultsButton.setEnabled(enabled);
+    }
+
+    void enableTestButtons(boolean startEnabled, boolean stopEnabled) {
+        mStartButton.setEnabled(startEnabled);
+        mClearResultsButton.setEnabled(startEnabled);
+        mShareResultsButton.setEnabled(startEnabled);
+        mCancelButton.setEnabled(stopEnabled);
     }
 
     private void showDeviceView() {
@@ -238,12 +263,6 @@ public abstract class AudioDataPathsBaseActivity
 
         mResultsView.setVisibility(View.VISIBLE);
         mResultsView.invalidate();
-    }
-
-    void enableTestButtons(boolean startEnabled, boolean stopEnabled) {
-        mStartBtn.setEnabled(startEnabled);
-        mClearResultsBtn.setEnabled(startEnabled);
-        mCancelButton.setEnabled(stopEnabled);
     }
 
     class TestModule implements Cloneable {
@@ -287,6 +306,8 @@ public abstract class AudioDataPathsBaseActivity
 
         private String mSectionTitle = null;
         private String mDescription = "";
+
+        private String mSavedFileMessage; // OK if null
 
         private static final String PLAYER_FAILED_TO_GET_STRING = "Player failed to get ";
         private static final String RECORDER_FAILED_TO_GET_STRING = "Recorder failed to get ";
@@ -431,6 +452,19 @@ public abstract class AudioDataPathsBaseActivity
 
         public void setModuleIndex(int index) {
             this.mModuleIndex = index;
+        }
+
+        public void setSavedFileMessage(String s) {
+            mSavedFileMessage = s;
+        }
+
+        /**
+         * A message generated when saving a WAV file.
+         *
+         * @return message or null
+         */
+        public String getSavedFileMessage() {
+            return mSavedFileMessage;
         }
 
         public void setAnalysisType(int type) {
@@ -649,7 +683,9 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         private void logEnding(int api) {
-            Log.d(TAG, "END_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+            Log.d(TAG, "END_SUB_TEST: " + getDescription()
+                    + ", " + audioApiToString(api)
+                    + "," + getTestStateString(api)); // has leading space!
         }
 
         //
@@ -789,103 +825,103 @@ public abstract class AudioDataPathsBaseActivity
             // Description
             textFormatter.openParagraph()
                     .appendText(getDescription());
-            if (hasPassed(api)) {
+
+            // Result
+            int state = getTestState(api);
+            if (state != TESTSTATUS_NOT_RUN) {
                 textFormatter.appendBreak()
                         .openBold()
                         .appendText(getTestStateString(api))
                         .closeBold();
-
-                TestStateData stateData = mTestStateData[api];
-                if (stateData != null) {
-                    textFormatter.appendBreak()
-                            .openTextColor("blue")
-                            .appendText(stateData.buildErrorString(this))
-                            .closeTextColor();
-                }
-            } else {
-                if (hasError(api)) {
-                    textFormatter.appendBreak();
-                    switch (mTestStateCode[api]) {
-                        case TESTSTATUS_BAD_START:
-                            textFormatter.openTextColor("red");
-                            textFormatter.appendText("Error : Couldn't Start Stream");
-                            textFormatter.closeTextColor();
-                            break;
-                        case TESTSTATUS_BAD_BUILD:
-                            textFormatter.openTextColor("red");
-                            textFormatter.appendText("Error : Couldn't Open Stream");
-                            textFormatter.closeTextColor();
-                            break;
-                        case TESTSTATUS_BAD_ROUTING:
-                            textFormatter.openTextColor("red");
-                            textFormatter.appendText("Error : Invalid Route");
-                            textFormatter.closeTextColor();
-                            break;
-                        case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
-                            textFormatter.openTextColor("red");
-                            textFormatter.appendText("Error : Invalid Analysis Channel");
-                            textFormatter.closeTextColor();
-                            break;
-                        case TESTSTATUS_CANT_SET_MMAP:
-                            textFormatter.openTextColor("red");
-                            textFormatter.appendText("Error : Did not set MMAP mode - "
-                                    + transferTypeToSharingString(mTransferType));
-                            textFormatter.closeTextColor();
-                            break;
-                        case TESTSTATUS_MISMATCH_MMAP: {
-                            textFormatter.openTextColor("blue");
-                            textFormatter.appendText("Note : ");
-                            BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
-                            String transferTypeString = transferTypeToSharingString(mTransferType);
-                            if (errorData.mPlayerFailed) {
-                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
-                                        + transferTypeString);
-                                textFormatter.appendBreak();
-                                textFormatter.appendText(formatOutputAttributes());
-                            }
-                            if (errorData.mRecorderFailed) {
-                                if (errorData.mPlayerFailed) {
-                                    textFormatter.appendBreak();
-                                }
-                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
-                                        + transferTypeString);
-                                textFormatter.appendBreak();
-                                textFormatter.appendText(formatInputAttributes());
-                            }
-                            textFormatter.closeTextColor();
-                        }
-                            break;
-                        case TESTSTATUS_BAD_SHARINGMODE:
-                            textFormatter.openTextColor("blue");
-                            textFormatter.appendText("Note : ");
-                            BadSharingTestState errorData =
-                                    (BadSharingTestState) mTestStateData[api];
-                            String transferTypeString = transferTypeToSharingString(mTransferType);
-                            if (errorData.mPlayerFailed) {
-                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
-                                        + transferTypeString);
-                            }
-                            if (errorData.mRecorderFailed) {
-                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
-                                        + transferTypeString);
-                            }
-                            textFormatter.appendBreak();
-                            textFormatter.appendText(formatOutputAttributes());
-                            textFormatter.closeTextColor();
-                            break;
-                    }
-                    textFormatter.closeTextColor();
-                }
             }
 
+            // Any Data?
             TestResults results = mTestResults[api];    // need this (potentially) below.
-            if (!hasRun(api)) {
-                // We didn't run the test for this module
+            TestStateData stateData = mTestStateData[api];
+            if (results != null && stateData != null) {
                 textFormatter.appendBreak()
-                        .openBold()
-                        .appendText(getTestStateString(mTestStateCode[api]))
-                        .closeBold();
-            } else if (results != null) {
+                        .openTextColor("blue")
+                        .appendText(stateData.buildErrorString(this))
+                        .closeTextColor();
+            }
+
+            // Report Error
+            if (hasRun(api) && hasError(api)) {
+                textFormatter.appendBreak();
+                switch (mTestStateCode[api]) {
+                    case TESTSTATUS_BAD_START:
+                        textFormatter.openTextColor("red");
+                        textFormatter.appendText("Error : Couldn't Start Stream");
+                        textFormatter.closeTextColor();
+                        break;
+                    case TESTSTATUS_BAD_BUILD:
+                        textFormatter.openTextColor("red");
+                        textFormatter.appendText("Error : Couldn't Open Stream");
+                        textFormatter.closeTextColor();
+                        break;
+                    case TESTSTATUS_BAD_ROUTING:
+                        textFormatter.openTextColor("red");
+                        textFormatter.appendText("Error : Invalid Route");
+                        textFormatter.closeTextColor();
+                        break;
+                    case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
+                        textFormatter.openTextColor("red");
+                        textFormatter.appendText("Error : Invalid Analysis Channel");
+                        textFormatter.closeTextColor();
+                        break;
+                    case TESTSTATUS_CANT_SET_MMAP:
+                        textFormatter.openTextColor("red");
+                        textFormatter.appendText("Error : Did not set MMAP mode - "
+                                + transferTypeToSharingString(mTransferType));
+                        textFormatter.closeTextColor();
+                        break;
+                    case TESTSTATUS_MISMATCH_MMAP: {
+                        textFormatter.openTextColor("blue");
+                        textFormatter.appendText("Note : ");
+                        BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
+                        String transferTypeString = transferTypeToSharingString(mTransferType);
+                        if (errorData.mPlayerFailed) {
+                            textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                    + transferTypeString);
+                            textFormatter.appendBreak();
+                            textFormatter.appendText(formatOutputAttributes());
+                        }
+                        if (errorData.mRecorderFailed) {
+                            if (errorData.mPlayerFailed) {
+                                textFormatter.appendBreak();
+                            }
+                            textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                    + transferTypeString);
+                            textFormatter.appendBreak();
+                            textFormatter.appendText(formatInputAttributes());
+                        }
+                        textFormatter.closeTextColor();
+                    }
+                        break;
+                    case TESTSTATUS_BAD_SHARINGMODE:
+                        textFormatter.openTextColor("blue");
+                        textFormatter.appendText("Note : ");
+                        BadSharingTestState errorData =
+                                (BadSharingTestState) mTestStateData[api];
+                        String transferTypeString = transferTypeToSharingString(mTransferType);
+                        if (errorData.mPlayerFailed) {
+                            textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                    + transferTypeString);
+                        }
+                        if (errorData.mRecorderFailed) {
+                            textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                    + transferTypeString);
+                        }
+                        textFormatter.appendBreak();
+                        textFormatter.appendText(formatOutputAttributes());
+                        textFormatter.closeTextColor();
+                        break;
+                }
+                textFormatter.closeTextColor();
+            }
+
+            // Results Data
+            if (results != null) {
                 // We (attempted to) run this module. Let's see how it turned out.
                 // we can get null here if the test was cancelled
                 Locale locale = Locale.getDefault();
@@ -938,26 +974,27 @@ public abstract class AudioDataPathsBaseActivity
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     if (results.mMaxMagnitude == 0.0) {
                         textFormatter.appendText("Dead Channel?");
-                        textFormatter.appendBreak();
                     } else if (results.mMaxMagnitude > 0.0
                             && results.mMaxMagnitude < MIN_SIGNAL_PASS_MAGNITUDE) {
                         textFormatter.appendText("Low Gain or Volume.");
-                        textFormatter.appendBreak();
                     } else if (results.mPhaseJitter > MAX_SIGNAL_PASS_JITTER) {
                         // if the signal is absent or really low, the jitter will be high, so
                         // only call out a high jitter if there seems to be a reasonable signal.
                         textFormatter.appendText("Noisy or Corrupt Signal.");
-                        textFormatter.appendBreak();
                     }
                 } else {
                     // TYPE_SIGNAL_ABSENCE
                     if (results.mMaxMagnitude > MAX_XTALK_PASS_MAGNITUDE) {
                         textFormatter.appendText("Cross Talk Failed. "
                                 + "Crossed patch cables on interface?");
-                        textFormatter.appendBreak();
                     }
                 }
                 textFormatter.closeItalic();
+
+                String savedFileMessage = getSavedFileMessage();
+                if (savedFileMessage != null) {
+                    textFormatter.appendBreak().appendText(savedFileMessage);
+                }
             } else {
                 // results == null
                 textFormatter.appendBreak()
@@ -1335,6 +1372,11 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 sb.append(testModule.getTestStateString(mApi));
+
+                String savedFileMessage = testModule.getSavedFileMessage();
+                if (savedFileMessage != null) {
+                    sb.append("\n").append(savedFileMessage);
+                }
                 testStep++;
             }
             mRoutesTx.setText(sb.toString());
@@ -1384,8 +1426,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestStep = TESTSTEP_NONE;
             mTestCanceledByUser = false;
 
-            mCalibrateButton.setEnabled(false);
-            mDevicesButton.setEnabled(false);
+            mUtiltitiesHandler.setEnabled(false);
 
             (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -1414,6 +1455,74 @@ public abstract class AudioDataPathsBaseActivity
             return mTestHasBeenRun && !mTestCanceledByUser && numFailures == 0 && numUntested <= 0;
         }
 
+        public void generateResultsText(TextFormatter formatter) {
+            formatter.clear();
+            formatter.openDocument();
+
+            formatter.openHeading(3)
+                    .appendText(getTestCategory())
+                    .closeHeading(3);
+
+            mTestManager.generateReport(formatter);
+
+            formatter.openParagraph();
+            formatter.appendText("Audio Test Version: " + Common.VERSION_CODE);
+            formatter.appendBreak();
+            formatter.appendText("Android SDK Version: " + Build.VERSION.SDK_INT);
+            formatter.appendBreak();
+            formatter.appendText("- " + Build.MANUFACTURER + " - " + Build.MODEL);
+            formatter.appendBreak().appendBreak();
+
+            int numFailures = countFailures(mApi);
+            int numUntested = getNumTestModules() - countTestedTestModules();
+            formatter.appendText("Failure Count: " + numFailures);
+            formatter.appendBreak();
+            formatter.appendText("Untested Paths: " + numUntested);
+
+            if (numFailures == 0 && numUntested == 0) {
+                formatter.appendBreak();
+                formatter.appendText("All tests passed.");
+            }
+            formatter.closeParagraph();
+
+            formatter.openParagraph();
+            formatter.appendText("Test Canceled: " + mTestCanceledByUser);
+
+            if (mTestCanceledByUser) {
+                formatter.openBold()
+                        .appendText("Please run the test sequence to completion.")
+                        .closeBold()
+                        .appendBreak()
+                        .appendBreak();
+            }
+
+            // ALWAYS PASS (for now)
+            mTestHasBeenRun = !mTestCanceledByUser;
+            boolean passEnabled = passBtnEnabled();
+            getPassButton().setEnabled(passEnabled);
+
+            if (passEnabled) {
+                formatter.appendText("Although not all test modules passed, "
+                        + "for this OS version you may press the ");
+                formatter.openBold();
+                formatter.appendText("PASS");
+                formatter.closeBold();
+                formatter.appendText(" button.");
+                formatter.appendBreak();
+                formatter.appendText("Note: In future versions, "
+                        + "ALL test modules will be required to pass.");
+                formatter.appendBreak();
+                formatter.appendText("Note: Press the ");
+                formatter.openBold();
+                formatter.appendText("PASS");
+                formatter.closeBold();
+                formatter.appendText(" button below to complete the test.");
+            }
+            formatter.closeParagraph();
+
+            formatter.closeDocument();
+        }
+
         public void completeTest() {
             runOnUiThread(new Runnable() {
                 @Override
@@ -1423,68 +1532,12 @@ public abstract class AudioDataPathsBaseActivity
                     mRoutesTx.setVisibility(View.GONE);
                     mWaveView.setVisibility(View.GONE);
 
-                    mTextFormatter.clear();
-                    mTextFormatter.openDocument();
-                    mTestManager.generateReport(mTextFormatter);
-
-                    mTextFormatter.openParagraph();
-                    mTextFormatter.appendText("Audio Test Version: " + Common.VERSION_CODE);
-                    mTextFormatter.appendBreak();
-                    mTextFormatter.appendText("Android SDK Version " + Build.VERSION.SDK_INT);
-                    mTextFormatter.appendBreak().appendBreak();
-
-                    int numFailures = countFailures(mApi);
-                    int numUntested = getNumTestModules() - countTestedTestModules();
-                    mTextFormatter.appendText("There were " + numFailures + " failures.");
-                    mTextFormatter.appendBreak();
-                    mTextFormatter.appendText(
-                            "There were " + numUntested + " untested paths.");
-
-                    if (numFailures == 0 && numUntested == 0) {
-                        mTextFormatter.appendBreak();
-                        mTextFormatter.appendText("All tests passed.");
-                    }
-                    mTextFormatter.closeParagraph();
-                    mTextFormatter.openParagraph();
-
-                    if (mTestCanceledByUser) {
-                        mTextFormatter.openBold();
-                        mTextFormatter.appendText("Test Canceled. "
-                                + "Please run the test sequence to completion.");
-                        mTextFormatter.closeBold();
-                        mTextFormatter.appendBreak().appendBreak();
-                    }
-
-                    // ALWAYS PASS (for now)
-                    mTestHasBeenRun = !mTestCanceledByUser;
-                    boolean passEnabled = passBtnEnabled();
-                    getPassButton().setEnabled(passEnabled);
-
-                    if (passEnabled) {
-                        mTextFormatter.appendText("Although not all test modules passed, "
-                                + "for this OS version you may press the ");
-                        mTextFormatter.openBold();
-                        mTextFormatter.appendText("PASS");
-                        mTextFormatter.closeBold();
-                        mTextFormatter.appendText(" button.");
-                        mTextFormatter.appendBreak();
-                        mTextFormatter.appendText("In future versions, "
-                                + "ALL test modules will be required to pass.");
-                        mTextFormatter.appendBreak();
-                        mTextFormatter.appendText("Press the ");
-                        mTextFormatter.openBold();
-                        mTextFormatter.appendText("PASS");
-                        mTextFormatter.closeBold();
-                        mTextFormatter.appendText(" button below to complete the test.");
-                    }
-                    mTextFormatter.closeParagraph();
-
-                    mTextFormatter.closeDocument();
+                    generateResultsText(mTextFormatter);
                     mTextFormatter.put(mResultsView);
+
                     showResultsView();
 
-                    mCalibrateButton.setEnabled(true);
-                    mDevicesButton.setEnabled(true);
+                    mUtiltitiesHandler.setEnabled(true);
                 }
             });
         }
@@ -1505,6 +1558,12 @@ public abstract class AudioDataPathsBaseActivity
                 if (testModule != null) {
                     if (testModule.canRun()) {
                         testModule.setTestResults(mApi, mAnalyzer);
+                        if (!testModule.hasPassed(mApi)) {
+                            String message = saveWaveFile(mAnalyzer, testModule.getModuleIndex());
+                            testModule.setSavedFileMessage(message);
+                        } else {
+                            testModule.setSavedFileMessage(null); // erase any old messages
+                        }
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -1519,6 +1578,7 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public void advanceTestModule() {
+            Log.i(TAG, "advanceTestModule() user cancel:" + mTestCanceledByUser);
             if (mTestCanceledByUser) {
                 // test shutting down. Bail.
                 return;
@@ -1535,10 +1595,14 @@ public abstract class AudioDataPathsBaseActivity
 
                 // Scan until we find a TestModule that starts playing/recording
                 TestModule testModule = mTestModules.get(mTestStep);
+                Log.i(TAG, " - testModule: " + testModule.getModuleIndex());
+
                 // Don't run if it has already been run. This to preserve (possible) error
                 // codes from previous runs
+                Log.i(TAG, " - hasRun:" + testModule.hasRun(mApi));
                 if (!testModule.hasRun(mApi)) {
                     int status = startTest(testModule);
+                    Log.i(TAG, " - status: " + status);
                     if (status == TestModule.TESTSTATUS_RUN) {
                         // Allow this test to run to completion.
                         Log.d(TAG, "Run Test Module:" + testModule.getDescription());
@@ -1583,6 +1647,54 @@ public abstract class AudioDataPathsBaseActivity
         }
     }
 
+    /**
+     * @return short name of the physical route
+     */
+    abstract String getRouteDescription();
+
+    /**
+     * Delete all the previously saved WAV files so the user does not
+     * debug obsolete data.
+     */
+    public void deleteOldWaveFiles() {
+        if (mRecordingDir.exists()) {
+            File[] files = mRecordingDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        if (!file.delete()) {
+                            Log.e(TAG, "Failed to delete file: " + file.getAbsolutePath());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String saveWaveFile(BaseSineAnalyzer mAnalyzer, int index) {
+        File waveFile = new File(mRecordingDir,
+                String.format(Locale.US, "paths_%s_%03d.wav",
+                        getRouteDescription(), index));
+
+        float[] data = mAnalyzer.getRecordedData();
+        int numSamples = data.length;
+        if (numSamples > 0) {
+            try {
+                WaveFileWriter writer = new WaveFileWriter(waveFile);
+                writer.setFrameRate(mAnalyzer.getSampleRate());
+                writer.setBitsPerSample(24);
+                writer.write(data);
+                writer.close();
+                return "Wrote " + numSamples + " samples to " + waveFile.getAbsolutePath();
+            } catch (IOException e) {
+                return "FAILED to save " + waveFile.getAbsolutePath()
+                        + ", " + e.getMessage();
+            }
+        } else {
+            return "No recorded data!";
+        }
+    }
+
     //
     // Process Handling
     //
@@ -1593,6 +1705,7 @@ public abstract class AudioDataPathsBaseActivity
 
         enableTestButtons(false, true);
         getPassButton().setEnabled(false);
+        deleteOldWaveFiles();
 
         mTestManager.startTest(api);
     }
@@ -1654,6 +1767,32 @@ public abstract class AudioDataPathsBaseActivity
 //        mTestManager.generateReportLog();
     }
 
+    private static String getTimestampString() {
+        DateFormat df = DateFormat.getDateTimeInstance();
+        Date now = Calendar.getInstance().getTime();
+        return "[" + df.format(now) + "]";
+    }
+
+    private void shareResults() {
+        if (mTextFormatter != null) {
+            Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+            sharingIntent.setType("text/text");
+
+            String subjectText = "CTS Verifier - Results " + getTestCategory()
+                    + " " + getTimestampString();
+
+            sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, subjectText);
+
+            // Regenerate the results in text-only format
+            PlainTextFormatter formatter = new PlainTextFormatter();
+            mTestManager.generateResultsText(formatter);
+            sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, formatter.toString());
+
+            // Put up the chooser
+            startActivity(Intent.createChooser(sharingIntent, "Share using:"));
+        }
+    }
+
     //
     // AudioMultiApiActivity Overrides
     //
@@ -1685,6 +1824,10 @@ public abstract class AudioDataPathsBaseActivity
         } else if (id == R.id.audio_datapaths_clearresults) {
             mTestManager.clearTestState();
             mTestManager.displayTestDevices();
+        } else if (id == R.id.audio_datapaths_shareresults) {
+            shareResults();
+        } else if (id == R.id.audio_datapaths_showresults) {
+            showResultsView();
         } else if (id == R.id.audioJavaApiBtn || id == R.id.audioNativeApiBtn) {
             super.onClick(view);
             mTestCanceledByUser = true;
@@ -1692,10 +1835,6 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.clearTestState();
             showDeviceView();
             mTestManager.displayTestDevices();
-        } else if (id == R.id.audio_datapaths_calibrate_button) {
-            (new AudioLoopbackCalibrationDialog(this)).show();
-        } else if (id == R.id.audio_datapaths_devices_button) {
-            (new AudioDevicesDialog(this)).show();
         }
     }
 

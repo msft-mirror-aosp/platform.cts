@@ -37,8 +37,7 @@ java_test_host {
         "compatibility-host-util",
         "tradefed",
     ],
-    data: [
+    device_common_data: [
         ":StagedInstallTestApexV2_AddApkToApex",
     ],
-
 }

@@ -27,6 +27,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 import preview_processing_utils
 
 _ACCURACY = 0.001
@@ -51,6 +52,67 @@ _WIDE_ZOOM = 1
 _ZOOM_STEP = 0.5
 _ZOOM_STEP_REDUCTION = 0.1
 _ZOOM_TOL = 0.1
+
+# Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
+#       Use for tests not sensitive to variations of 1080p or 480p.
+# TODO: b/370841141 - Remove usage of VIDEO_PREVIEW_QUALITY_SIZE.
+#                     Create and use get_supported_video_sizes instead of
+#                     get_supported_video_qualities.
+VIDEO_PREVIEW_QUALITY_SIZE = {
+    # 'HIGH' and 'LOW' not included as they are DUT-dependent
+    '4KDC': '4096x2160',
+    '2160P': '3840x2160',
+    'QHD': '2560x1440',
+    '2k': '2048x1080',
+    '1080P': '1920x1080',
+    '720P': '1280x720',
+    '480P': '720x480',
+    'VGA': '640x480',
+    'CIF': '352x288',
+    'QVGA': '320x240',
+    'QCIF': '176x144',
+}
+
+
+def get_largest_video_size(cam, camera_id):
+  """Returns the largest supported video size and its area.
+
+  Determine largest supported video size and its area from
+  get_supported_video_qualities.
+
+  Args:
+    cam: camera object.
+    camera_id: str; camera ID.
+
+  Returns:
+    max_size: str; largest supported video size in the format 'widthxheight'.
+    max_area: int; area of the largest supported video size.
+  """
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s',
+                supported_video_qualities)
+
+  quality_keys = [
+      quality.split(':')[0]
+      for quality in supported_video_qualities
+  ]
+  logging.debug('Quality keys: %s', quality_keys)
+
+  supported_video_sizes = [
+      VIDEO_PREVIEW_QUALITY_SIZE[key]
+      for key in quality_keys
+      if key in VIDEO_PREVIEW_QUALITY_SIZE
+  ]
+  logging.debug('Supported video sizes: %s', supported_video_sizes)
+
+  if not supported_video_sizes:
+    raise AssertionError('No supported video sizes found!')
+
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  max_size = max(supported_video_sizes, key=size_to_area)
+
+  logging.debug('Largest video size: %s', max_size)
+  return (max_size, size_to_area(max_size))
 
 
 def get_chart_coverage(image, corners):
@@ -250,8 +312,9 @@ def get_aruco_corners(image):
                   None if expected ArUco corners are not found.
   """
   # Detect ArUco markers
-  aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-  corners, ids, _ = aruco.detectMarkers(image, aruco_dict)
+  corners, ids, _ = opencv_processing_utils.version_agnostic_detect_markers(
+      image
+  )
 
   logging.debug('corners: %s', corners)
   logging.debug('ids: %s', ids)
@@ -469,10 +532,21 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the {_VALID_CONTROLLERS} controller for {_NAME}.')
 
+      _, largest_area = (get_largest_video_size(cam, self.camera_id))
+
       # Determine preview size
-      preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id, _ASPECT_RATIO_4_3)
-      logging.debug('preview_size: %s', preview_size)
+      try:
+        preview_size = preview_processing_utils.get_max_preview_test_size(
+            cam, self.camera_id,
+            aspect_ratio=_ASPECT_RATIO_4_3,
+            max_tested_area=largest_area)
+        logging.debug('preview_size: %s', preview_size)
+      except Exception as e:
+        logging.error('Unable to find supported 4/3 preview size.'
+                      'Exception: %s', e)
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                             '\n\nUnable to find supported 4/3 preview '
+                             'size') from e
 
       # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
@@ -488,9 +562,15 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
         z_levels.append(_WIDE_ZOOM)
 
       for z in z_levels:
-        img_name, capture_result = get_preview_frame(
-            self.dut, cam, preview_size, z, z_range, log_path
-        )
+        try:
+          img_name, capture_result = get_preview_frame(
+              self.dut, cam, preview_size, z, z_range, log_path
+          )
+        except Exception as e:
+          logging.error('Failed to capture preview frames'
+                        'Exception: %s', e)
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               '\n\nFailed to capture preview frames') from e
         if img_name:
           frame_data = PreviewFrameData(img_name, capture_result, z)
           preview_frames.append(frame_data)

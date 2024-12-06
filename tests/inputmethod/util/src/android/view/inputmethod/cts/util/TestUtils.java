@@ -20,6 +20,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.MotionEvent.ACTION_DOWN;
 import static android.view.MotionEvent.ACTION_UP;
 import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
+import static android.view.WindowInsets.Type.systemGestures;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
@@ -33,7 +35,6 @@ import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
@@ -50,11 +51,14 @@ import android.view.WindowMetrics;
 import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -243,6 +247,22 @@ public final class TestUtils {
     }
 
     /**
+     * Simulates a {@link KeyEvent} event to app.
+     * @param keyCode for the {@link KeyEvent} to inject.
+     * @param instrumentation test {@link Instrumentation} used for injection.
+     */
+    public static void injectKeyEvent(int keyCode, Instrumentation instrumentation)
+            throws Exception {
+        final long timestamp = SystemClock.uptimeMillis();
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_DOWN, keyCode, 0)
+                        , true /* sync */);
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_UP, keyCode, 0)
+                        , true /* sync */);
+    }
+
+    /**
      * Returns given display's rotation.
      */
     public static String getRotation(int displayId) {
@@ -333,33 +353,54 @@ public final class TestUtils {
     /**
      * Inject a stylus ACTION_DOWN event in a multi-touch environment to the screen using given
      * view's coordinates.
+     *
      * @param device {@link UinputTouchDevice}  stylus device.
-     * @param view  view whose coordinates are used to compute the event location.
-     * @param x the x coordinates of the stylus event in the view's location coordinates.
-     * @param y the y coordinates of the stylus event in the view's location coordinates.
+     * @param view   view whose coordinates are used to compute the event location.
+     * @param x      the x coordinates of the stylus event in the view's location coordinates.
+     * @param y      the y coordinates of the stylus event in the view's location coordinates.
+     * @return The object associated with the down pointer, which will later be used to
+     * trigger move or lift.
      */
-    public static void injectStylusDownEvent(
+    public static UinputTouchDevice.Pointer injectStylusDownEvent(
             @NonNull UinputTouchDevice device, @NonNull View view, int x, int y) {
-        int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
-        x += xy[0];
-        y += xy[1];
+        return injectStylusDownEventInternal(device, view, x, y);
+    }
 
-        device.sendBtnTouch(true /* isDown */);
-        device.sendPressure(255);
-        device.sendDown(0 /* pointerId */, new Point(x, y), UinputTouchDevice.MT_TOOL_PEN);
-        device.sync();
+    /**
+     * Inject a stylus ACTION_DOWN event in a multi-touch environment to the screen using given
+     * view's coordinates.
+     *
+     * @param device {@link UinputTouchDevice}  stylus device.
+     * @param x      the x coordinates of the stylus event in display's coordinates.
+     * @param y      the y coordinates of the stylus event in display's coordinates.
+     * @return The object associated with the down pointer, which will later be used to
+     * trigger move or lift.
+     */
+    public static UinputTouchDevice.Pointer injectStylusDownEvent(
+            @NonNull UinputTouchDevice device, int x, int y) {
+        return injectStylusDownEventInternal(device, null /* view */, x, y);
+    }
+
+    private static UinputTouchDevice.Pointer injectStylusDownEventInternal(
+            @NonNull UinputTouchDevice device, @Nullable View view, int x, int y) {
+        int[] xy = new int[2];
+        if (view != null) {
+            view.getLocationOnScreen(xy);
+            x += xy[0];
+            y += xy[1];
+        }
+
+        return device.touchDown(x, y, 255 /* pressure */);
     }
 
     /**
      * Inject a stylus ACTION_UP event in a multi-touch environment to the screen.
-     * @param device {@link UinputTouchDevice}  stylus device.
+     *
+     * @param pointer {@link #injectStylusDownEvent(UinputTouchDevice, View, int, int)}
+     * returned Pointer.
      */
-    public static void injectStylusUpEvent(@NonNull UinputTouchDevice device) {
-        device.sendBtnTouch(false /* isDown */);
-        device.sendPressure(0);
-        device.sendUp(0 /* pointerId */);
-        device.sync();
+    public static void injectStylusUpEvent(@NonNull UinputTouchDevice.Pointer pointer) {
+        pointer.lift();
     }
 
     /**
@@ -395,54 +436,20 @@ public final class TestUtils {
     }
 
     /**
-     * Inject a finger touch action event to the screen using given view's coordinates.
-     * @param view  view whose coordinates are used to compute the event location.
-     * @return the injected MotionEvent.
-     */
-    public static MotionEvent injectFingerEventOnViewCenter(@NonNull View view, int action) {
-        final int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
-
-        // Inject finger touch event
-        int x = xy[0] + view.getWidth() / 2;
-        int y = xy[1] + view.getHeight() / 2;
-        final long downTime = SystemClock.uptimeMillis();
-
-        MotionEvent event = getMotionEvent(
-                downTime, downTime, action, x, y, MotionEvent.TOOL_TYPE_FINGER);
-        injectMotionEvent(event, true /* sync */);
-
-        return event;
-    }
-
-    /**
-     * Inject a finger touch action event in a multi-touch environment to the screen using given
-     * view's coordinates.
+     * Inject a finger tap event in a multi-touch environment to the screen using given
+     * view's center coordinates.
      * @param device {@link UinputTouchDevice} touch device.
      * @param view  view whose coordinates are used to compute the event location.
-     * @param action {@link MotionEvent#getAction()} for the event.
      */
-    public static void injectFingerEventOnViewCenter(
-            UinputTouchDevice device, @NonNull View view, int action) {
+    public static void injectFingerClickOnViewCenter(UinputTouchDevice device, @NonNull View view) {
         final int[] xy = new int[2];
         view.getLocationOnScreen(xy);
 
         // Inject finger touch event.
-        int x = xy[0] + view.getWidth() / 2;
-        int y = xy[1] + view.getHeight() / 2;
-        switch (action) {
-            case ACTION_DOWN:
-                device.sendBtnTouch(true /* isDown */);
-                device.sendDown(
-                        0 /* pointerId */, new Point(x, y), UinputTouchDevice.MT_TOOL_FINGER);
-                device.sync();
-                break;
-            case ACTION_UP:
-                device.sendBtnTouch(false /* isDown */);
-                device.sendUp(0 /* pointerId */);
-                device.sync();
-                break;
-        }
+        final int x = xy[0] + view.getWidth() / 2;
+        final int y = xy[1] + view.getHeight() / 2;
+
+        device.touchDown(x, y).lift();
     }
 
     /**
@@ -483,7 +490,8 @@ public final class TestUtils {
      * Inject Stylus ACTION_MOVE events in a multi-device environment tp the screen using the given
      * view's coordinates.
      *
-     * @param stylus {@link UinputTouchDevice} stylus device.
+     * @param pointer {@link #injectStylusDownEvent(UinputTouchDevice, View, int, int)} returned
+     * Pointer.
      * @param view  view whose coordinates are used to compute the event location.
      * @param startX the start x coordinates of the stylus event in the view's local coordinates.
      * @param startY the start y coordinates of the stylus event in the view's local coordinates.
@@ -492,10 +500,38 @@ public final class TestUtils {
      * @param number the number of the motion events injected to the view.
      */
     public static void injectStylusMoveEvents(
-            @NonNull UinputTouchDevice stylus, @NonNull View view, int startX, int startY, int endX,
-            int endY, int number) {
+            @NonNull UinputTouchDevice.Pointer pointer, @NonNull View view, int startX, int startY,
+            int endX, int endY, int number) {
+        injectStylusMoveEventsInternal(
+                pointer, view, startX, startY, endX, endY, number);
+    }
+
+    /**
+     * Inject Stylus ACTION_MOVE events in a multi-device environment tp the screen using the given
+     * view's coordinates.
+     *
+     * @param pointer {@link #injectStylusDownEvent(UinputTouchDevice, View, int, int)} returned
+     * Pointer.
+     * @param startX the start x coordinates of the stylus event in the display's coordinates.
+     * @param startY the start y coordinates of the stylus event in the display's coordinates.
+     * @param endX the end x coordinates of the stylus event in the display's coordinates.
+     * @param endY the end y coordinates of the stylus event in the display's coordinates.
+     * @param number the number of the motion events injected to the view.
+     */
+    public static void injectStylusMoveEvents(
+            @NonNull UinputTouchDevice.Pointer pointer, int startX, int startY, int endX, int endY,
+            int number) {
+        injectStylusMoveEventsInternal(
+                pointer, null /* view */, startX, startY, endX, endY, number);
+    }
+
+    private static void injectStylusMoveEventsInternal(
+            @NonNull UinputTouchDevice.Pointer pointer, @Nullable View view, int startX, int startY,
+            int endX, int endY, int number) {
         int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
+        if (view != null) {
+            view.getLocationOnScreen(xy);
+        }
 
         final float incrementX = ((float) (endX - startX)) / (number - 1);
         final float incrementY = ((float) (endY - startY)) / (number - 1);
@@ -504,8 +540,7 @@ public final class TestUtils {
         for (int i = 0; i < number; i++) {
             int x = (int) (startX + incrementX * i + xy[0]);
             int y = (int) (startY + incrementY * i + xy[1]);
-            stylus.sendMove(0 /* pointerId */, new Point(x, y));
-            stylus.sync();
+            pointer.moveTo(x, y);
         }
     }
 
@@ -630,7 +665,7 @@ public final class TestUtils {
 
     /**
      * Inject Motion Events for swipe up on navbar with stylus.
-     * @param activity
+     * @param activity current test activity.
      * @param toolType of input {@link MotionEvent#getToolType(int)}.
      */
     public static void injectNavBarToHomeGestureEvents(
@@ -638,40 +673,21 @@ public final class TestUtils {
         WindowMetrics metrics = activity.getWindowManager().getCurrentWindowMetrics();
 
         var bounds = new Rect(metrics.getBounds());
-        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(displayCutout()));
-
+        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(
+                displayCutout() | systemBars() | systemGestures()));
         int startY = bounds.bottom;
         int startX = bounds.centerX();
         int endY = bounds.bottom - bounds.height() / 3; // move a third of the screen up
         int endX = startX;
         int steps = 10;
 
-        final float incrementX = ((float) (endX - startX)) / (steps - 1);
-        final float incrementY = ((float) (endY - startY)) / (steps - 1);
-
-        // Inject stylus ACTION_MOVE & finally ACTION_UP.
-        for (int i = 0; i < steps; i++) {
-            long time = SystemClock.uptimeMillis();
-            float x = startX + incrementX * i;
-            float y = startY + incrementY * i;
-            if (i == 0) {
-                // ACTION_DOWN
-                injectMotionEvent(getMotionEvent(
-                        time, time, ACTION_DOWN, x, y, toolType),
-                        true /* sync */);
-            }
-
-            // ACTION_MOVE
-            injectMotionEvent(getMotionEvent(
-                    time, time, MotionEvent.ACTION_MOVE, x, y, toolType),
-                    true /* sync */);
-
-            if (i == steps - 1) {
-                // ACTION_UP
-                injectMotionEvent(getMotionEvent(
-                        time, time, ACTION_UP, x, y, toolType),
-                        true /* sync */);
-            }
-        }
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        UinputTouchDevice device = (toolType == MotionEvent.TOOL_TYPE_STYLUS)
+                ? new UinputStylus(instrumentation, activity.getDisplay())
+                : new UinputTouchScreen(instrumentation, activity.getDisplay());
+        UinputTouchDevice.Pointer pointer;
+        pointer = TestUtils.injectStylusDownEvent(device, startX, startY);
+        TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, steps);
+        TestUtils.injectStylusUpEvent(pointer);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,19 @@
 package android.cts.statsdatom.powermanager;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.os.Flags;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+import android.os.WakeLockLevelEnum;
 
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.os.AtomsProto;
-import com.android.os.StatsLog;
+import com.android.os.AtomsProto.WakelockStateChanged;
+import com.android.os.AttributionNode;
 import com.android.os.adpf.AdpfExtensionAtoms;
-import com.android.os.adpf.ThermalApiStatus;
-import com.android.os.adpf.ThermalHeadroomCalled;
-import com.android.os.adpf.ThermalHeadroomThresholds;
-import com.android.os.adpf.ThermalHeadroomThresholdsCalled;
-import com.android.os.adpf.ThermalStatusCalled;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestRunResult;
@@ -48,10 +42,11 @@ import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -69,10 +64,6 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
 
     private IBuildInfo mCtsBuild;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
-
     @Before
     public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
@@ -88,6 +79,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
+        DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP_APK);
     }
 
     @Override
@@ -95,13 +87,23 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         mCtsBuild = buildInfo;
     }
 
+    private static <T> List<T> listOf(T... values) {
+        return Collections.unmodifiableList(Arrays.asList(values));
+    }
+
+    private WakelockStateChanged buildForUid(WakelockStateChanged.Builder builder, int uid) {
+        return builder.clone().addAttributionNode(AttributionNode.newBuilder().setUid(uid)).build();
+    }
+
     @Test
-    public void testThermalHeadroomCalledIsPushed() throws Exception {
-        final String testMethod = "testGetThermalHeadroom";
-        final TestDescription desc = TestDescription.fromString(
+    public void testAcquireModifyAndReleasedWakelockIsPushed() throws Exception {
+        int atomId = AtomsProto.Atom.WAKELOCK_STATE_CHANGED_FIELD_NUMBER;
+
+        String testMethod = "testAcquireModifyAndReleasedWakelock";
+        TestDescription desc = TestDescription.fromString(
                 DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AdpfExtensionAtoms.THERMAL_HEADROOM_CALLED_FIELD_NUMBER);
+                atomId);
         TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
                 DEVICE_TEST_CLASS, testMethod);
 
@@ -111,85 +113,46 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         assertThat(status).isEqualTo(TestStatus.PASSED);
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         AdpfExtensionAtoms.registerAllExtensions(registry);
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
-                registry);
-        assertThat(data.size()).isAtLeast(1);
+        List<WakelockStateChanged> wList =
+                ReportUtils.getEventMetricDataList(getDevice(), registry)
+                        .stream()
+                        .map(eventMetricData -> eventMetricData.getAtom().getWakelockStateChanged())
+                        .filter(wakelockStateChanged
+                                -> wakelockStateChanged.getTag().equals("TestWakelockForCts"))
+                        .toList();
+        assertThat(wList.size()).isEqualTo(8);
 
-        ThermalHeadroomCalled a0 =
-                data.get(0).getAtom().getExtension(AdpfExtensionAtoms.thermalHeadroomCalled);
-        assertThat(a0.getApiStatus()).isNotEqualTo(
-                ThermalApiStatus.UNSPECIFIED_THERMAL_API_FAILURE);
-        if (a0.getApiStatus().equals(ThermalApiStatus.SUCCESS)) {
-            assertThat(a0.getHeadroom()).isNotNaN();
-        }
-    }
+        // The UID of the process acquiring the wakelock varies so read it here.
+        int testProcessUid = wList.get(0).getAttributionNode(0).getUid();
 
-    @Test
-    public void testThermalStatusCalledIsPushed() throws Exception {
-        final String testMethod = "testGetCurrentThermalStatus";
-        final TestDescription desc = TestDescription.fromString(
-                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
-        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AdpfExtensionAtoms.THERMAL_STATUS_CALLED_FIELD_NUMBER);
-        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
-                DEVICE_TEST_CLASS, testMethod);
+        WakelockStateChanged.Builder baseBuilder = WakelockStateChanged.newBuilder()
+                                                   .setTag("TestWakelockForCts")
+                                                   .setType(WakeLockLevelEnum.PARTIAL_WAKE_LOCK);
+        WakelockStateChanged.Builder acquireBuilder = baseBuilder.clone()
+                                                      .setState(WakelockStateChanged.State.ACQUIRE);
+        WakelockStateChanged.Builder releaseBuilder = baseBuilder.clone()
+                                                      .setState(WakelockStateChanged.State.RELEASE);
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        assertThat(wList.get(0))
+                .comparingExpectedFieldsOnly()
+                .isEqualTo(buildForUid(acquireBuilder, testProcessUid));
 
-        TestStatus status = testRunResult.getTestResults().get(desc).getStatus();
-        assertThat(status).isEqualTo(TestStatus.PASSED);
-        ExtensionRegistry registry = ExtensionRegistry.newInstance();
-        AdpfExtensionAtoms.registerAllExtensions(registry);
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
-                registry);
-        assertThat(data.size()).isAtLeast(1);
-        ThermalStatusCalled a0 =
-                data.get(0).getAtom().getExtension(AdpfExtensionAtoms.thermalStatusCalled);
-        assertThat(a0.getApiStatus()).isNotEqualTo(
-                ThermalApiStatus.UNSPECIFIED_THERMAL_API_FAILURE);
-    }
+        assertThat(wList.subList(1, 4))
+                .comparingExpectedFieldsOnly()
+                .containsExactlyElementsIn(listOf(
+                        buildForUid(releaseBuilder, testProcessUid),
+                        buildForUid(acquireBuilder, 1010),
+                        buildForUid(acquireBuilder, 2010)));
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_THERMAL_HEADROOM_THRESHOLDS)
-    public void testThermalHeadroomThresholdsCalledIsPushed() throws Exception {
-        final String testMethod = "testGetThermalHeadroomThresholds";
-        final TestDescription desc = TestDescription.fromString(
-                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
-        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AdpfExtensionAtoms.THERMAL_HEADROOM_THRESHOLDS_CALLED_FIELD_NUMBER);
-        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
-                DEVICE_TEST_CLASS, testMethod);
+        assertThat(wList.subList(4, 7))
+                .comparingExpectedFieldsOnly()
+                .containsExactlyElementsIn(listOf(
+                        buildForUid(releaseBuilder, 1010),
+                        buildForUid(releaseBuilder, 2010),
+                        buildForUid(acquireBuilder, 3010)));
 
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-
-        TestStatus status = testRunResult.getTestResults().get(desc).getStatus();
-        assertThat(status).isEqualTo(TestStatus.PASSED);
-        ExtensionRegistry registry = ExtensionRegistry.newInstance();
-        AdpfExtensionAtoms.registerAllExtensions(registry);
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
-                registry);
-        assertThat(data.size()).isAtLeast(1);
-        ThermalHeadroomThresholdsCalled a0 =
-                data.get(0).getAtom().getExtension(
-                        AdpfExtensionAtoms.thermalHeadroomThresholdsCalled);
-        assertThat(a0.getApiStatus()).isNotEqualTo(
-                ThermalApiStatus.UNSPECIFIED_THERMAL_API_FAILURE);
-    }
-
-    @Test
-    public void testThermalHeadroomThresholdsIsPulled() throws Exception {
-        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AdpfExtensionAtoms.THERMAL_HEADROOM_THRESHOLDS_FIELD_NUMBER);
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
-        RunUtil.getDefault().sleep(5 * AtomTestUtils.WAIT_TIME_LONG);
-
-        ExtensionRegistry registry = ExtensionRegistry.newInstance();
-        AdpfExtensionAtoms.registerAllExtensions(registry);
-        List<AtomsProto.Atom> data = ReportUtils.getGaugeMetricAtoms(getDevice(), registry, false);
-        assertThat(data.size()).isAtLeast(1);
-        assertThat(data.get(0).hasExtension(AdpfExtensionAtoms.thermalHeadroomThresholds)).isTrue();
-        ThermalHeadroomThresholds a0 = data.get(0).getExtension(
-                AdpfExtensionAtoms.thermalHeadroomThresholds);
-        assertThat(a0.getHeadroomCount()).isGreaterThan(0);
+        assertThat(wList.get(7))
+                .comparingExpectedFieldsOnly()
+                .isEqualTo(buildForUid(releaseBuilder, 3010));
     }
 }

@@ -16,16 +16,9 @@
 
 package android.virtualdevice.cts.common;
 
-import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
-import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
-import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
-import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
 import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
-import static android.graphics.ImageFormat.YUV_420_888;
-import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 
-import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -39,12 +32,10 @@ import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.UiAutomation;
 import android.companion.AssociationInfo;
+import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.VirtualCamera;
-import android.companion.virtual.camera.VirtualCameraCallback;
-import android.companion.virtual.camera.VirtualCameraConfig;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -72,27 +63,17 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * A test rule that allows for testing VDM and virtual device features.
  */
 @TargetApi(34)
 public class VirtualDeviceRule implements TestRule {
-
-    /** General permissions needed for created virtual devices and displays. */
-    private static final String[] REQUIRED_PERMISSIONS = new String[] {
-            CREATE_VIRTUAL_DEVICE,
-            ADD_TRUSTED_DISPLAY
-    };
 
     public static final VirtualDeviceParams DEFAULT_VIRTUAL_DEVICE_PARAMS =
             new VirtualDeviceParams.Builder().build();
@@ -106,7 +87,7 @@ public class VirtualDeviceRule implements TestRule {
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
     private RuleChain mRuleChain;
-    private final FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
+    private final FakeAssociationRule mFakeAssociationRule;
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
     private final Context mContext = getInstrumentation().getTargetContext();
@@ -114,19 +95,27 @@ public class VirtualDeviceRule implements TestRule {
             mContext.getSystemService(VirtualDeviceManager.class);
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
+    /** A default virtual device for tests that only use the rule to access VDM functionality. */
+    private VirtualDevice mDefaultVirtualDevice = null;
+
     /** Creates a rule with the required permissions for creating virtual devices and displays. */
     public static VirtualDeviceRule createDefault() {
-        return new VirtualDeviceRule(REQUIRED_PERMISSIONS);
+        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING);
+    }
+
+    /** Creates a rule with an explicit device profile. */
+    public static VirtualDeviceRule withDeviceProfile(String deviceProfile) {
+        return new VirtualDeviceRule(deviceProfile);
     }
 
     /** Creates a rule with any additional permission needed for the specific test. */
     public static VirtualDeviceRule withAdditionalPermissions(String... additionalPermissions) {
-        return new VirtualDeviceRule(Stream.concat(
-                Arrays.stream(REQUIRED_PERMISSIONS), Arrays.stream(additionalPermissions))
-                .toArray(String[]::new));
+        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
+                additionalPermissions);
     }
 
-    private VirtualDeviceRule(String... permissions) {
+    private VirtualDeviceRule(String deviceProfile, String... permissions) {
+        mFakeAssociationRule = new FakeAssociationRule(deviceProfile);
         mRuleChain = RuleChain
                 .outerRule(mFakeAssociationRule)
                 .around(DeviceFlagsValueProvider.createCheckFlagsRule())
@@ -145,6 +134,16 @@ public class VirtualDeviceRule implements TestRule {
     public Statement apply(final Statement base, final Description description) {
         assumeNotNull(mVirtualDeviceManager);
         return mRuleChain.apply(base, description);
+    }
+
+    /**
+     * Returns a default virtual device.
+     */
+    public VirtualDevice getDefaultVirtualDevice() {
+        if (mDefaultVirtualDevice == null) {
+            mDefaultVirtualDevice = createManagedVirtualDevice();
+        }
+        return mDefaultVirtualDevice;
     }
 
     /**
@@ -208,10 +207,21 @@ public class VirtualDeviceRule implements TestRule {
     @Nullable
     public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice,
             @NonNull VirtualDisplayConfig.Builder builder) {
+        return createManagedVirtualDisplay(virtualDevice, builder, /* callback= */ null);
+    }
+
+    /**
+     * Creates a virtual display associated with the given device and config that will be
+     * automatically released when the test is torn down.
+     */
+    @Nullable
+    public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice,
+            @NonNull VirtualDisplayConfig.Builder builder,
+            @Nullable VirtualDisplay.Callback callback) {
         VirtualDisplayConfig config = builder.build();
         final Surface surface = prepareSurface(config.getWidth(), config.getHeight());
         final VirtualDisplay virtualDisplay = virtualDevice.createVirtualDisplay(
-                builder.setSurface(surface).build(), /* executor= */ null, /* callback= */ null);
+                builder.setSurface(surface).build(), Runnable::run, callback);
         if (virtualDisplay != null) {
             assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
             // There's no need to track managed virtual displays to have them released on tear-down
@@ -519,53 +529,4 @@ public class VirtualDeviceRule implements TestRule {
         }
     }
 
-    /**
-     * Internal rule that checks whether virtual camera is supported by the device, before executing
-     * any test.
-     */
-    private static final class VirtualCameraSupportRule extends ExternalResource {
-        private static final int VIRTUAL_CAMERA_SUPPORT_UNKNOWN = 0;
-        private static final int VIRTUAL_CAMERA_SUPPORT_AVAILABLE = 1;
-        private static final int VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE = 2;
-
-        @Mock
-        private VirtualCameraCallback mVirtualCameraCallback;
-
-        private final VirtualDeviceRule mVirtualDeviceRule;
-        private int mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_UNKNOWN;
-
-        private VirtualCameraSupportRule(VirtualDeviceRule virtualDeviceRule) {
-            mVirtualDeviceRule = virtualDeviceRule;
-        }
-
-        @Override
-        protected void before() {
-            MockitoAnnotations.initMocks(this);
-            assumeTrue("Virtual camera not available on this device",
-                    getVirtualCameraSupport() == VIRTUAL_CAMERA_SUPPORT_AVAILABLE);
-        }
-
-        private int getVirtualCameraSupport() {
-            if (mVirtualCameraSupport != VIRTUAL_CAMERA_SUPPORT_UNKNOWN) {
-                return mVirtualCameraSupport;
-            }
-
-            try (VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(
-                    new VirtualDeviceParams.Builder().setDevicePolicy(POLICY_TYPE_CAMERA,
-                            DEVICE_POLICY_CUSTOM).build())) {
-                VirtualCameraConfig config = new VirtualCameraConfig.Builder("dummycam")
-                        .setVirtualCameraCallback(getApplicationContext().getMainExecutor(),
-                                mVirtualCameraCallback)
-                        .addStreamConfig(640, 480, YUV_420_888, 30)
-                        .setLensFacing(LENS_FACING_BACK)
-                        .build();
-                try (VirtualCamera ignored = virtualDevice.createVirtualCamera(config)) {
-                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_AVAILABLE;
-                } catch (UnsupportedOperationException e) {
-                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE;
-                }
-            }
-            return mVirtualCameraSupport;
-        }
-    }
 }

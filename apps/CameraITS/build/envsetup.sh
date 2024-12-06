@@ -56,17 +56,6 @@ except:
 echo "$CV2_VER" | grep -q -e "^3.*" -e "^4.*" || \
     echo ">> Require python opencv version greater than 3 or 4. Got $CV2_VER" >&2
 
-COLOUR_VER=$(python -c "
-try:
-    import colour
-    print(colour.__version__)
-except:
-    print(\"N/A\")
-")
-
-echo "$COLOUR_VER" | grep -q -e "^0.4.*$" || \
-    echo ">> Require python colour-science version 0.4.*, Got $COLOUR_VER" >&2
-
 export PYTHONPATH="$PWD/utils:$PYTHONPATH"
 export PYTHONPATH="$PWD/tests:$PYTHONPATH"
 
@@ -75,6 +64,10 @@ do
     python "utils/${M}_tests.py" 2>&1 | grep -q "OK" || \
         echo ">> Unit test for $M failed" >&2
 done
+
+export PYTHONPATH="$PWD/feature_verification_utils:$PYTHONPATH"
+python -c "import feature_combination_info_pb2" >/dev/null 2>&1 || \
+  echo ">> Require Python feature_combination_info_pb2 module. ('source feature_verification_utils/update.sh')" >&2
 
 for M in run_all_unit_tests
 do

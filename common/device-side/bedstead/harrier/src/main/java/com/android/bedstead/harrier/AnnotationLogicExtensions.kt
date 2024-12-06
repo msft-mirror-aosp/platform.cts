@@ -23,12 +23,13 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.FailureMode
@@ -38,6 +39,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireMinimumAdvertisedRamDevice
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
@@ -46,6 +48,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
+import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
@@ -53,8 +56,7 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.components.TestAppsComponent
-import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
@@ -64,9 +66,6 @@ import com.android.bedstead.nene.TestApis.roles
 import com.android.bedstead.nene.TestApis.services
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Tags
-import com.android.bedstead.testapp.NotFoundException
-import com.android.queryable.queries.ActivityQuery
-import com.android.queryable.queries.IntentFilterQuery
 import org.hamcrest.CoreMatchers
 import org.junit.Assume
 import org.junit.Assume.assumeTrue
@@ -75,6 +74,14 @@ fun RequireResourcesBooleanValue.logic() {
     Assume.assumeThat(
         "resource with configName: $configName",
         TestApis.resources().system().getBoolean(configName),
+        CoreMatchers.`is`(requiredValue)
+    )
+}
+
+fun RequireResourcesIntegerValue.logic() {
+    Assume.assumeThat(
+        "resource with configName: $configName",
+        TestApis.resources().system().getInteger(configName),
         CoreMatchers.`is`(requiredValue)
     )
 }
@@ -129,6 +136,20 @@ fun RequireLowRamDevice.logic() {
             .isLowRamDevice,
         failureMode
     )
+}
+
+fun RequireMinimumAdvertisedRamDevice.logic() {
+    if (SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        val memoryInfo = ActivityManager.MemoryInfo()
+        context().instrumentedContext()
+                .getSystemService(ActivityManager::class.java)!!
+                .getMemoryInfo(memoryInfo)
+        checkFailOrSkip(
+            reason,
+            memoryInfo.advertisedMem >= ramDeviceSize,
+            failureMode
+        )
+    }
 }
 
 fun RequireNotLowRamDevice.logic() {
@@ -262,46 +283,12 @@ fun RequireTelephonySupport.logic() {
     )
 }
 
-fun EnsurePackageRespondsToIntent.logic(
-    testAppsComponent: TestAppsComponent,
-    userTypeResolver: UserTypeResolver
-) {
-    val userReference = userTypeResolver.toUser(user)
-    val packageResponded = packages().queryIntentActivities(
-        userReference,
-        Intent(intent.action),
-        /* flags= */ 0
-    ).size > 0
-
-    if (!packageResponded) {
-        try {
-            testAppsComponent.ensureTestAppInstalled(
-                testApp = testAppsComponent.testAppProvider.query().whereActivities().contains(
-                    ActivityQuery.activity().where().intentFilters().contains(
-                        IntentFilterQuery
-                            .intentFilter()
-                            .where()
-                            .actions()
-                            .contains(intent.action)
-                    )
-                ).get(),
-                user = userReference
-            )
-        } catch (ignored: NotFoundException) {
-            failOrSkip(
-                "Could not found the testApp which contains an activity matching the " +
-                        "intent action '${intent.action}'.",
-                failureMode
-            )
-        }
-    }
-}
-
 fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).forEach { resolveInfoWrapper ->
         val packageName = resolveInfoWrapper.activityInfo().packageName
         EnsurePackageNotInstalled(
@@ -316,7 +303,8 @@ fun RequirePackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val packageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).size > 0
 
     if (packageResponded) {
@@ -337,7 +325,8 @@ fun RequireNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val noPackageResponded = packages().queryIntentActivities(
         userTypeResolver.toUser(user),
         Intent(intent.action),
-        /* flags= */ 0
+        /* flags= */
+        0
     ).isEmpty()
 
     if (noPackageResponded) {

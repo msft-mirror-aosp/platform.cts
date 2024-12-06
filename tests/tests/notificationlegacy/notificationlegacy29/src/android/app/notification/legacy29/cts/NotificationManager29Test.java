@@ -27,6 +27,8 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -45,12 +47,17 @@ import android.service.notification.StatusBarNotification;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,13 +70,17 @@ import java.io.InputStream;
  */
 @RunWith(AndroidJUnit4.class)
 public class NotificationManager29Test {
-    final String TAG = "LegacyNoManTest29";
     private static final String PKG = "android.app.notification.legacy29.cts";
+    private static final String NOTIFICATION_CHANNEL_ID = "LegacyNoManTest29";
 
-    final String NOTIFICATION_CHANNEL_ID = "LegacyNoManTest29";
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private NotificationManager mNotificationManager;
     private Context mContext;
     NotificationHelper mHelper;
+    UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -80,6 +91,7 @@ public class NotificationManager29Test {
         mNotificationManager.createNotificationChannel(new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", NotificationManager.IMPORTANCE_DEFAULT));
         mHelper = new NotificationHelper(mContext);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @After
@@ -137,6 +149,10 @@ public class NotificationManager29Test {
 
     @Test
     public void testPostFullScreenIntent_noPermission() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         assertNotNull(mHelper.enableListener(PKG));
         // no permission? no full screen intent
         int id = 6000;
@@ -157,6 +173,9 @@ public class NotificationManager29Test {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testApi29CannotToggleConversationsTest() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -181,6 +200,9 @@ public class NotificationManager29Test {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+            + " background users.")
     public void testApi29CannotToggleConversationsOffTest() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);

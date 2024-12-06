@@ -16,7 +16,6 @@
 
 package android.server.wm.animations;
 
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.RoundedCorner.POSITION_BOTTOM_LEFT;
 import static android.view.RoundedCorner.POSITION_TOP_LEFT;
 
@@ -32,7 +31,6 @@ import android.graphics.RectF;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
@@ -53,11 +51,13 @@ import org.junit.Test;
 @android.server.wm.annotation.Group3
 public class DisplayShapeTests extends WindowManagerTestBase {
 
+    private int mLaunchDisplayId;
     private Display mDisplay;
 
     @Before
     public void setUp() throws Exception {
-        mDisplay = mDm.getDisplay(DEFAULT_DISPLAY);
+        mLaunchDisplayId = getMainDisplayId();
+        mDisplay = mDm.getDisplay(mLaunchDisplayId);
         assumeNotNull(mDisplay);
     }
 
@@ -100,7 +100,7 @@ public class DisplayShapeTests extends WindowManagerTestBase {
     @Test
     public void testDisplayShapeFromWindowInsets() {
         DisplayShapeTests.TestActivity activity =
-                startActivity(DisplayShapeTests.TestActivity.class, DEFAULT_DISPLAY);
+                startActivity(DisplayShapeTests.TestActivity.class, mLaunchDisplayId);
 
         final DisplayShape fromDisplay = mDisplay.getShape();
         final View decorView = activity.getWindow().getDecorView();
@@ -116,8 +116,7 @@ public class DisplayShapeTests extends WindowManagerTestBase {
 
     @Test
     public void testDisplayShapeOnVirtualDisplay() {
-        try (MultiDisplayTestBase.VirtualDisplaySession session =
-                     new MultiDisplayTestBase.VirtualDisplaySession()) {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // Setup a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
             Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)

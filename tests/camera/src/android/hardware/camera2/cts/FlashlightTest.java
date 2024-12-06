@@ -154,16 +154,16 @@ public class FlashlightTest extends Camera2AndroidTestCase {
                 // verify corrected numbers of callbacks
                 verify(torchListener, timeout(TORCH_TIMEOUT_MS).
                         times(1)).onTorchModeChanged(id, true);
-
-                verify(torchListener,timeout(TORCH_TIMEOUT_MS).
-                        times(1)).onTorchStrengthLevelChanged(id, maxLevel);
                 verify(torchListener,timeout(TORCH_TIMEOUT_MS).
                         times(1)).onTorchStrengthLevelChanged(id, minLevel);
-                verify(torchListener,timeout(TORCH_TIMEOUT_MS).
-                        times(1)).onTorchStrengthLevelChanged(id, defaultLevel);
-
                 verify(torchListener, timeout(TORCH_TIMEOUT_MS).
                         times(2)).onTorchModeChanged(id, false);
+                if (maxLevel != defaultLevel) {
+                    verify(torchListener,timeout(TORCH_TIMEOUT_MS).
+                            times(1)).onTorchStrengthLevelChanged(id, maxLevel);
+                    verify(torchListener,timeout(TORCH_TIMEOUT_MS).
+                            times(1)).onTorchStrengthLevelChanged(id, defaultLevel);
+                }
 
                 mCameraManager.unregisterTorchCallback(torchListener);
             } else {

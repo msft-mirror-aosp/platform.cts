@@ -35,10 +35,6 @@ public class MyActivity extends Activity {
         Log.i(TAG, "method1");
     }
 
-    private void method2() {
-        Log.i(TAG, "method2");
-    }
-
     /**
      * A method to be used by another app.
      */

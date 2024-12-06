@@ -90,6 +90,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -2479,6 +2480,7 @@ public class WebViewTest extends SharedWebViewTest {
      * this test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/368230178 - re-enable when WebView M131 is available in Android main branch")
     public void testSetSafeBrowsingAllowlistWithValidList() throws Exception {
         List allowlist = new ArrayList<String>();
         allowlist.add("safe-browsing");

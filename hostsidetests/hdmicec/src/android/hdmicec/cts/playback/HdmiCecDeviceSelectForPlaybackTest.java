@@ -110,13 +110,13 @@ public class HdmiCecDeviceSelectForPlaybackTest extends BaseHdmiCecCtsTest {
         try {
             int dumpsysPhysicalAddress = getDumpsysPhysicalAddress();
             // Add a second playback device in the network.
-            int playback2PhysicalAddress = getUnusedPhysicalAddress(0x2200, dumpsysPhysicalAddress);
+            int playback2PhysicalAddress = getUnusedPhysicalAddress(0x1200, dumpsysPhysicalAddress);
             reportPhysicalAddress(
                     mSecondPlayback,
                     playback2PhysicalAddress,
                     HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE);
             // Make a third playback device the active source.
-            int playback3PhysicalAddress = getUnusedPhysicalAddress(0x2300, dumpsysPhysicalAddress);
+            int playback3PhysicalAddress = getUnusedPhysicalAddress(0x1300, dumpsysPhysicalAddress);
             reportPhysicalAddress(
                     mThirdPlayback,
                     playback3PhysicalAddress,

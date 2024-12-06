@@ -46,6 +46,7 @@ per-file AccessSerialNumberTest.java = mpgroover@google.com
 per-file AppSecurityTests.java = mpgroover@google.com
 per-file DeviceIdentifierTest.java = mpgroover@google.com
 per-file KeySetHostTest.java = mpgroover@google.com
+per-file KeyStoreManagerTest.java = mpgroover@google.com
 per-file ListeningPortsTest.java = mpgroover@google.com
 per-file PkgInstallSignatureVerificationTest.java = mpgroover@google.com
 per-file StatsdAppSecurityAtomTest.java = yaochen@google.com

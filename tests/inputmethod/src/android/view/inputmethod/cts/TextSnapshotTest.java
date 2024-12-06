@@ -26,14 +26,11 @@ import android.view.inputmethod.TextSnapshot;
 import android.view.inputmethod.cts.util.InputConnectionTestUtils;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class TextSnapshotTest {
 

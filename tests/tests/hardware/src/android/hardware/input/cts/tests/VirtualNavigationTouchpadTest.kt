@@ -15,20 +15,17 @@
  */
 package android.hardware.input.cts.tests
 
-import android.companion.virtual.flags.Flags
 import android.hardware.input.VirtualNavigationTouchpad
 import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.os.SystemClock
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.FlakyTest
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -81,17 +78,6 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
                 )
             )
         )
-    }
-
-    @Test
-    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val x = 30f
-        val y = 30f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN)
-            }
-        }
     }
 
     @Test
@@ -220,7 +206,6 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
     // when using LSQ2 velocity strategy. Verify that we get the correct behaviour for touch
     // navigation (as it internally uses impulse velocity strategy).
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMPULSE_VELOCITY_STRATEGY_FOR_TOUCH_NAVIGATION)
     fun sendFlingDown_withSpecialCoordinates_motionEventNotConsumed_getsConvertedToDpadDown() {
         setConsumeGenericMotionEvents(false)
 

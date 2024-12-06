@@ -23,6 +23,7 @@ import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 
 _MAX_IMG_SIZE = (1920, 1080)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -110,13 +111,16 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
       logical_fov = float(cam.calc_camera_fov(props))
       minimum_zoom_ratio = float(props['android.control.zoomRatioRange'][0])
       props = cam.override_with_hidden_physical_camera_props(props)
+      physical_fov = float(cam.calc_camera_fov(props))
+      is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
       log_path = os.path.join(self.log_path, _NAME)
 
       # check SKIP conditions
       camera_properties_utils.skip_unless(
           camera_properties_utils.raw_output(props) and
           camera_properties_utils.linear_tonemap(props) and
-          not camera_properties_utils.mono_camera(props))
+          not camera_properties_utils.mono_camera(props) and
+          not is_tele)
 
       # Load chart for scene
       its_session_utils.load_scene(
@@ -155,7 +159,6 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
         req['android.statistics.lensShadingMapMode'] = (
             image_processing_utils.LENS_SHADING_MAP_ON)
         # Override zoom ratio to min for UW camera to avoid cropping
-        physical_fov = float(cam.calc_camera_fov(props))
         logging.debug('Logical FOV: %.2f, Physical FOV: %.2f',
                       logical_fov, physical_fov)
         if logical_fov < physical_fov:

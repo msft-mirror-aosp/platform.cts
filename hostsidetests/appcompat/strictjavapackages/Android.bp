@@ -37,7 +37,7 @@ java_test_host {
         "general-tests",
         "mts-mainline-infra",
     ],
-    data: [
+    device_common_data: [
         ":SharedLibraryInfoTestApp",
         ":StrictJavaPackagesTestApp",
     ],

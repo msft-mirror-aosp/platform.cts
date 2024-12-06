@@ -30,6 +30,16 @@ public class ASurfaceControlTestUtils {
 
     public interface TransactionCompleteListener {
         void onTransactionComplete(long latchTime, long presentTime);
+        default long shouldQueryTransactionStats() {
+                return 0;
+        }
+        default void onTransactionStatsRead(boolean surfaceControlFound,
+                boolean releaseFenceQueried, boolean acquireTimeQueried) {
+        }
+    }
+
+    public interface BufferReleaseCallback {
+        void onBufferRelease();
     }
 
     public static long createSurfaceTransaction() {
@@ -149,6 +159,15 @@ public class ASurfaceControlTestUtils {
             SurfaceControl surfaceControl);
     public static native long nSurfaceTransaction_setSolidBuffer(
             long surfaceControl, long surfaceTransaction, int width, int height, int color);
+
+  public static native long nSurfaceTransaction_setSolidBufferWithRelease(
+      long surfaceControl,
+      long surfaceTransaction,
+      int width,
+      int height,
+      int color,
+      BufferReleaseCallback callback);
+
     public static native void nSurfaceTransaction_setBuffer(long surfaceControl,
             long surfaceTransaction, long buffer);
     public static native long nSurfaceTransaction_setQuadrantBuffer(long surfaceControl,
@@ -182,8 +201,9 @@ public class ASurfaceControlTestUtils {
             long newParentSurfaceControl, long surfaceTransaction);
     public static native void nSurfaceTransaction_setColor(long surfaceControl,
             long surfaceTransaction, float r, float g, float b, float alpha);
-    public static native void nSurfaceTransaction_setEnableBackPressure(long surfaceControl,
-            long surfaceTransaction, boolean enableBackPressure);
+    public static native void nSurfaceTransaction_setEnableBackPressure(
+            SurfaceControl.Transaction transaction,
+            SurfaceControl surfaceControl, boolean enableBackPressure);
     public static native void nSurfaceTransaction_setOnCompleteCallback(long surfaceTransaction,
             boolean waitForFence, TransactionCompleteListener listener);
     public static native void nSurfaceTransaction_setOnCommitCallback(long surfaceTransaction,
@@ -201,6 +221,9 @@ public class ASurfaceControlTestUtils {
             long surfaceControl, long surfaceTransaction, float desiredRatio);
     public static native void nSurfaceTransaction_setDataSpace(
             long surfaceControl, long surfaceTransaction, int dataspace);
+    public static native void nSurfaceTransaction_setLuts(
+            long surfaceControl, long surfaceTransaction, float[] buffers, int[] offsets,
+            int[] dimensions, int[] sizes, int[] samplingKeys);
 
     public static native HardwareBuffer getSolidBuffer(int width, int height, int color);
     public static native HardwareBuffer getQuadrantBuffer(int width, int height,

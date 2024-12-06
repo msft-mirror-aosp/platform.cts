@@ -22,28 +22,7 @@
         android:orientation="vertical">
 
         <include layout="@layout/audio_java_native_api_buttons" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            style="?android:attr/buttonBarStyle"
-            android:id="@+id/audio_loopback_utilities_layout">
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                style="?android:attr/buttonBarButtonStyle"
-                android:text="@string/audio_datapaths_calibrate"
-                android:id="@+id/audio_datapaths_calibrate_button"/>
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                style="?android:attr/buttonBarButtonStyle"
-                android:text="@string/audio_datapaths_devices"
-                android:id="@+id/audio_datapaths_devices_button"/>
-        </LinearLayout>
+        <include layout="@layout/audio_loopback_utilities" />
 
         <!-- Player Controls -->
         <LinearLayout
@@ -52,24 +31,69 @@
             android:orientation="horizontal"
             android:layout_marginStart="10dp"
             style="?android:attr/buttonBarStyle">
-            <Button
-                android:text="@string/audio_general_start"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:id="@+id/audio_datapaths_start"
-                style="?android:attr/buttonBarButtonStyle"/>
-            <Button
-                android:text="@string/audio_general_cancel"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:id="@+id/audio_datapaths_cancel"
-                style="?android:attr/buttonBarButtonStyle"/>
-            <Button
-                android:text="@string/audio_datapaths_clearresults"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:id="@+id/audio_datapaths_clearresults"
-                style="?android:attr/buttonBarButtonStyle"/>
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/audio_general_test"/>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button
+                        android:text="@string/audio_general_cancel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:id="@+id/audio_datapaths_cancel"
+                        style="?android:attr/buttonBarButtonStyle"/>
+                    <Button
+                        android:text="@string/audio_general_start"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:id="@+id/audio_datapaths_start"
+                        style="?android:attr/buttonBarButtonStyle"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/audio_general_results"/>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <Button
+                        android:text="@string/audio_datapaths_clearresults"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:id="@+id/audio_datapaths_clearresults"
+                        style="?android:attr/buttonBarButtonStyle"/>
+                    <Button
+                        android:text="@string/audio_datapaths_showresults"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:id="@+id/audio_datapaths_showresults"
+                        style="?android:attr/buttonBarButtonStyle"/>
+                    <Button
+                        android:text="@string/audio_datapaths_shareresults"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:id="@+id/audio_datapaths_shareresults"
+                        style="?android:attr/buttonBarButtonStyle"/>
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <com.android.cts.verifier.audio.audiolib.WaveScopeView

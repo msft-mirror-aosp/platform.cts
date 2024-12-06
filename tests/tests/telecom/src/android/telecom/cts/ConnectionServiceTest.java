@@ -68,6 +68,10 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void tearDown() throws Exception {
+        if (mShouldTestTelecom) {
+            mTelecomManager.unregisterPhoneAccount(
+                    TestUtils.TEST_SELF_MANAGED_PHONE_ACCOUNT_1.getAccountHandle());
+        }
         super.tearDown();
     }
 

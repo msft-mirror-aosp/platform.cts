@@ -18,8 +18,8 @@ package android.media.projection.cts;
 
 import static android.media.cts.MediaProjectionActivity.CANCEL_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
+import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
-import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
 import static android.media.projection.MediaProjectionConfig.createConfigForUserChoice;
@@ -44,7 +44,7 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
@@ -57,13 +57,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.Optional;
+
 /**
  * Test {@link MediaProjection} compat change dependent logic
  *
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionCompatChangeTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionCompatChangeTest {
     private static final String LOG_COMPAT_CHANGE = "android.permission.LOG_COMPAT_CHANGE";
     private static final String READ_COMPAT_CHANGE_CONFIG =
@@ -71,7 +73,7 @@ public class MediaProjectionCompatChangeTest {
 
     private static UiDevice sDevice;
     private static boolean sIsWatch;
-    private static boolean sSupportsPartialScreenshare;
+    private static Optional<Boolean> sSupportsPartialScreenshare = Optional.empty();
     private static String sEntireScreenString;
     private static String sSingleAppString;
 
@@ -93,12 +95,12 @@ public class MediaProjectionCompatChangeTest {
         sEntireScreenString = getResourceString(context, ENTIRE_SCREEN_STRING_RES_NAME);
         sSingleAppString = getResourceString(context, SINGLE_APP_STRING_RES_NAME);
         sIsWatch = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
-        sSupportsPartialScreenshare = testMediaProjectionPermissionDialog(null, sSingleAppString);
     }
 
     @Before
     public void setUpTest() {
         assumeFalse(sIsWatch);
+        initializePartialScreenshareSupport();
     }
 
     @After
@@ -124,7 +126,7 @@ public class MediaProjectionCompatChangeTest {
     @Test
     @EnableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
     public void testMediaProjectionPermissionDialog_overrideUserChoiceConfig() {
-        assumeTrue(sSupportsPartialScreenshare);
+        assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
@@ -146,7 +148,7 @@ public class MediaProjectionCompatChangeTest {
     @Test
     @DisableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
     public void testMediaProjectionPermissionDialog_userChoiceConfig() {
-        assumeTrue(sSupportsPartialScreenshare);
+        assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
@@ -163,15 +165,21 @@ public class MediaProjectionCompatChangeTest {
 
         // check if we can find a view which has the expected default option
         boolean foundOptionString = sDevice.hasObject(
-                By.res(SCREEN_SHARE_OPTIONS_RESOURCE_ID)
+                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
                         .hasDescendant(
                                 By.text(expectedSpinnerString)));
-
 
         // close the dialog so it doesn't linger for subsequent tests
         UiObject2 cancelButton = sDevice.findObject(By.res(CANCEL_RESOURCE_ID));
         cancelButton.click();
 
         return foundOptionString;
+    }
+
+    private static void initializePartialScreenshareSupport() {
+        if (sSupportsPartialScreenshare.isEmpty()) {
+            sSupportsPartialScreenshare =
+                    Optional.of(testMediaProjectionPermissionDialog(null, sSingleAppString));
+        }
     }
 }

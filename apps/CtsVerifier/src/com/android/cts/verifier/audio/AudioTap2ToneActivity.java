@@ -356,7 +356,13 @@ public class AudioTap2ToneActivity
     }
 
     private void calculateTestPass() {
-        if (!mHasMic || !mHasSpeaker) {
+        // Special handling for emulators
+        if (Build.IS_EMULATOR) {
+            mSpecView.setText("");
+            mResultsView.setText(getResources().getString(R.string.audio_tap2tone_isemulator));
+            enableAudioButtons(false, false);
+            getPassButton().setEnabled(true);
+        } else if (!mHasMic || !mHasSpeaker) {
             mSpecView.setText("");
             mResultsView.setText(getResources().getString(R.string.audio_tap2tone_noio));
             enableAudioButtons(false, false);

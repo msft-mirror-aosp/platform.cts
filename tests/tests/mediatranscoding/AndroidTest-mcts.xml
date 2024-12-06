@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk30ModuleController" />
@@ -35,7 +36,6 @@
         <option name="runtime-hint" value="15m" />
         <!-- MctsXXX  skips the framework and non-mainline tests ... -->
         <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="mcts" />
     </test>
 </configuration>

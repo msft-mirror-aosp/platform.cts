@@ -33,13 +33,10 @@ import android.app.AppOpsManager.OPSTR_RECORD_AUDIO
 import android.app.AppOpsManager.OPSTR_SEND_SMS
 import android.app.AppOpsManager.OPSTR_WRITE_CONTACTS
 import android.app.AppOpsManager.OnOpNotedCallback
-import android.app.AppOpsManager.strOpToOp
 import android.app.AsyncNotedAppOp
 import android.app.PendingIntent
 import android.app.SyncNotedAppOp
 import android.bluetooth.BluetoothManager
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 import android.bluetooth.le.ScanCallback
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -76,7 +73,10 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.ContactsContract
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
@@ -85,7 +85,7 @@ import android.util.Size
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
@@ -101,6 +101,8 @@ import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
+import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -151,12 +153,12 @@ class AppOpsLoggingTest {
     private val asyncNoted = mutableListOf<AsyncNotedAppOp>()
 
     @Before
-    fun setLocationEnabled() {
-        val locationManager = context.getSystemService(LocationManager::class.java)!!
-        runWithShellPermissionIdentity {
-            wasLocationEnabled = locationManager.isLocationEnabled
-            locationManager.setLocationEnabledForUser(true, myUserHandle)
-        }
+    fun setUp() {
+        loadNativeCode()
+        setLocationEnabled()
+        connectToService()
+        setNotedAppOpsCollector()
+        clearCollectedNotedOps()
     }
 
     @After
@@ -167,18 +169,20 @@ class AppOpsLoggingTest {
         }
     }
 
-    @Before
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
+    fun setLocationEnabled() {
+        val locationManager = context.getSystemService(LocationManager::class.java)!!
+        runWithShellPermissionIdentity {
+            wasLocationEnabled = locationManager.isLocationEnabled
+            locationManager.setLocationEnabledForUser(true, myUserHandle)
+        }
+    }
+
     fun loadNativeCode() {
         System.loadLibrary("NDKCtsAppOpsTestCases_jni")
     }
 
-    @Before
-    fun setNotedAppOpsCollectorAndClearCollectedNoteOps() {
-        setNotedAppOpsCollector()
-        clearCollectedNotedOps()
-    }
-
-    @Before
     fun connectToService() {
         val serviceIntent = Intent()
         serviceIntent.component = ComponentName(TEST_SERVICE_PKG,
@@ -373,6 +377,14 @@ class AppOpsLoggingTest {
     fun noteAsyncOpAndCheckCustomMessage() {
         rethrowThrowableFrom {
             testService.callApiThatNotesAsyncOpAndCheckCustomMessage(AppOpsUserClient(context))
+        }
+    }
+
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @Test
+    fun noteAsyncOpsMultipleTimes() {
+        rethrowThrowableFrom {
+            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context))
         }
     }
 
@@ -756,18 +768,26 @@ class AppOpsLoggingTest {
                                 session.capture(captureRequest, null, handler)
                             }
 
-                            override fun onConfigureFailed(session: CameraCaptureSession) {}
+                            override fun onConfigureFailed(session: CameraCaptureSession) {
+                                Log.i("AppOpsLoggingTest", "CameraCaptureSession configure failed")
+                            }
                         })
 
                 imageReader.setOnImageAvailableListener({
+                    Log.i("AppOpsLoggingTest", "Image available")
                     cameraDevice.close()
                     openedCamera.complete(cameraDevice)
                 }, handler)
                 cameraDevice.createCaptureSession(sessionConfiguration)
             }
 
-            override fun onDisconnected(ameraDevice: CameraDevice) {}
-            override fun onError(cameraDevice: CameraDevice, i: Int) {}
+            override fun onDisconnected(cameraDevice: CameraDevice) {
+                Log.i("AppOpsLoggingTest", "CameraDevice disconnected")
+            }
+
+            override fun onError(cameraDevice: CameraDevice, i: Int) {
+                Log.i("AppOpsLoggingTest", "CameraDevice error: $i")
+            }
         }
 
         cameraManager!!.openCamera(cameraId, context.mainExecutor, cameraDeviceCallback)
@@ -913,6 +933,37 @@ class AppOpsLoggingTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_SYNC_ON_OP_NOTED_API)
+    fun ignoreAsyncOpNoted() {
+        removeNotedAppOpsCollector()
+        appOpsManager.setOnOpNotedCallback(
+            Executor { it.run() },
+                object : OnOpNotedCallback() {
+                    override fun onNoted(op: SyncNotedAppOp) {
+                        noted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onSelfNoted(op: SyncNotedAppOp) {
+                        selfNoted.add(op to Throwable().stackTrace)
+                    }
+
+                    override fun onAsyncNoted(asyncOp: AsyncNotedAppOp) {
+                        asyncNoted.add(asyncOp)
+                    }
+                },
+            AppOpsManager.OP_NOTED_CALLBACK_FLAG_IGNORE_ASYNC
+        )
+
+        context.createAttributionContext(TEST_ATTRIBUTION_TAG)
+                .sendBroadcast(Intent(PROTECTED_ACTION).setPackage(myPackage))
+        waitForBroadcasts()
+
+        eventually {
+            assertThat(asyncNoted).isEmpty()
+        }
+    }
+
+    @Test
     fun checkAttributionsAreUserVisible() {
         val pi = context.packageManager.getPackageInfo(
                 TEST_SERVICE_PKG, PackageManager.PackageInfoFlags.of(GET_ATTRIBUTIONS_LONG))
@@ -1028,6 +1079,19 @@ class AppOpsLoggingTest {
                 runWithShellPermissionIdentity {
                     appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
                             null, "custom msg")
+                }
+            }
+        }
+
+        override fun noteAsyncOpMultipleTimesWithAttribution(attributionTag: String) {
+            val callingUid = getCallingUid()
+            handler.post {
+                runWithShellPermissionIdentity {
+                    repeat(5) {
+                        appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
+                            attributionTag, "custom msg")
+                    }
+                    SystemClock.sleep(3000)
                 }
             }
         }

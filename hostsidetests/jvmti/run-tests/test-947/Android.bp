@@ -21,5 +21,5 @@ java_test_host {
     defaults: ["cts-run-jvmti-test-defaults"],
     static_libs: ["CtsJvmtiHostTestBase"],
     jarjar_rules: "jarjar-rules.txt",
-    data: [":CtsJvmtiRunTest947DeviceApp"],
+    device_common_data: [":CtsJvmtiRunTest947DeviceApp"],
 }

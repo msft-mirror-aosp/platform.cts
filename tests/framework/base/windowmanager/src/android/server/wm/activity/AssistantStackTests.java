@@ -18,12 +18,12 @@ package android.server.wm.activity;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.ComponentNameUtils.getActivityName;
-import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.app.Components.ANIMATION_TEST_ACTIVITY;
 import static android.server.wm.app.Components.ASSISTANT_ACTIVITY;
@@ -56,6 +56,7 @@ import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 
 import org.junit.Ignore;
@@ -67,7 +68,7 @@ import org.junit.Test;
  */
 @Presubmit
 public class AssistantStackTests extends ActivityManagerTestBase {
-
+    private static final String TEST_APP_PACKAGE = Components.getPackageName();
     private int mAssistantDisplayId = DEFAULT_DISPLAY;
 
     public void setUp() throws Exception {
@@ -201,7 +202,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
         // started in setUp() will not allow any other activities to start. Therefore we should
         // remove it before launching a fullscreen activity.
         if (isAssistantOnTopOfDream()) {
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+            removeRootTasksWithAssistantTypeActivity();
         }
 
         // Launch an assistant activity on top of an existing activity, and ensure that the activity
@@ -216,7 +217,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                     getActivityName(ASSISTANT_ACTIVITY) + " finished");
         }
         waitForValidStateWithActivityType(TEST_ACTIVITY, ACTIVITY_TYPE_STANDARD);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, mAssistantDisplayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, mAssistantDisplayId,
                 "TestActivity should be resumed");
         mWmState.assertFocusedActivity("TestActivity should be focused", TEST_ACTIVITY);
 
@@ -245,8 +246,8 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             assistantSession.setVoiceInteractionService(ASSISTANT_VOICE_INTERACTION_SERVICE);
 
             // Go home, launch the assistant and check to see that home is visible
-            removeRootTasksInWindowingModes(WINDOWING_MODE_FULLSCREEN);
-            pressHomeButton();
+            stopTestPackage(TEST_APP_PACKAGE);
+            launchHomeActivityNoWait();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"));
@@ -260,7 +261,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
             // Launch a fullscreen app and then launch the assistant and check to see that it is
             // also visible
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+            removeRootTasksWithAssistantTypeActivity();
             launchActivityOnDisplay(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN, mAssistantDisplayId);
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"));
@@ -271,8 +272,8 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
             // Go home, launch assistant, launch app into fullscreen with activity present, and go
             // back.Ensure home is visible.
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
-            pressHomeButton();
+            removeRootTasksWithAssistantTypeActivity();
+            launchHomeActivityNoWait();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"),
@@ -318,7 +319,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             // that it
             // is also visible
             if (supportsSplitScreenMultiWindow() &&  assistantRunsOnPrimaryDisplay()) {
-                removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+                removeRootTasksWithAssistantTypeActivity();
                 launchActivitiesInSplitScreen(
                         getLaunchActivityBuilder().setTargetActivity(DOCKED_ACTIVITY),
                         getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY));
@@ -368,7 +369,14 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                             == mWmState.getTaskDisplayArea(ANIMATION_TEST_ACTIVITY)
             );
 
+            final int testActivityWindowingMode =
+                    mWmState.getTaskByActivity(ANIMATION_TEST_ACTIVITY).getWindowingMode();
             if (isAssistantOnTopOfDream()) {
+                mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
+            } else if (testActivityWindowingMode == WINDOWING_MODE_FREEFORM) {
+                mWmState.waitAndAssertActivityState(ANIMATION_TEST_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ANIMATION_TEST_ACTIVITY, true);
                 mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
                 mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
             } else {
@@ -480,5 +488,12 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             return true;
         }
         return false;
+    }
+
+    private void removeRootTasksWithAssistantTypeActivity() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(new int[]{ACTIVITY_TYPE_ASSISTANT});
+        });
+        waitForIdle();
     }
 }

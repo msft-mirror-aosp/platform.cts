@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeNotNull;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -47,7 +48,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -797,108 +798,6 @@ public class AtomTests {
         Log.i(TAG, "The answer is " + timestamp);
     }
 
-    @Test
-    public void testWriteRawTestAtom() throws Exception {
-        Context context = InstrumentationRegistry.getTargetContext();
-        ApplicationInfo appInfo = context.getPackageManager()
-                .getApplicationInfo(context.getPackageName(), 0);
-        int[] uids = {1234, appInfo.uid};
-        String[] tags = {"tag1", "tag2"};
-        byte[] experimentIds = {8, 1, 8, 2, 8, 3}; // Corresponds to 1, 2, 3.
-
-        int[] int32Array = {3, 6};
-        long[] int64Array = {1000L, 1002L};
-        float[] floatArray = {0.3f, 0.09f};
-        String[] stringArray = {"str1", "str2"};
-        boolean[] boolArray = {true, false};
-        int[] enumArray = {StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__OFF,
-                StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__ON};
-
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_ATOM_REPORTED, uids, tags, 42,
-                Long.MAX_VALUE, 3.14f, "This is a basic test!", false,
-                StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__ON, experimentIds, int32Array,
-                int64Array, floatArray, stringArray, boolArray, enumArray);
-
-        // All nulls. Should get dropped since cts app is not in the attribution chain.
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_ATOM_REPORTED, null, null, 0, 0, 0f, null,
-                false, StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__ON, null, null, null, null,
-                null, null, null);
-
-        // Null tag in attribution chain.
-        int[] uids2 = {9999, appInfo.uid};
-        String[] tags2 = {"tag9999", null};
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_ATOM_REPORTED, uids2, tags2, 100,
-                Long.MIN_VALUE, -2.5f, "Test null uid", true,
-                StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__UNKNOWN, experimentIds, int32Array,
-                int64Array, floatArray, stringArray, boolArray, enumArray);
-
-        // Non chained non-null
-        StatsLogStatsdCts.write_non_chained(StatsLogStatsdCts.TEST_ATOM_REPORTED, appInfo.uid,
-                "tag1", -256, -1234567890L, 42.01f, "Test non chained", true,
-                StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__OFF, experimentIds, new int[0],
-                new long[0], new float[0], new String[0], new boolean[0], new int[0]);
-
-        // Non chained all null
-        StatsLogStatsdCts.write_non_chained(StatsLogStatsdCts.TEST_ATOM_REPORTED, appInfo.uid, null,
-                0, 0, 0f, null, true, StatsLogStatsdCts.TEST_ATOM_REPORTED__STATE__OFF, null, null,
-                null, null, null, null, null);
-    }
-
-    @Test
-    public void testWriteExtensionTestAtom() throws Exception {
-        Context context = InstrumentationRegistry.getTargetContext();
-        ApplicationInfo appInfo = context.getPackageManager()
-                .getApplicationInfo(context.getPackageName(), 0);
-        int[] uids = {1234, appInfo.uid};
-        String[] tags = {"tag1", "tag2"};
-        byte[] testAtomNestedMsg = {8, 1, 8, 2, 8, 3}; // Corresponds to 1, 2, 3.
-
-        int[] int32Array = {3, 6};
-        long[] int64Array = {1000L, 1002L};
-        float[] floatArray = {0.3f, 0.09f};
-        String[] stringArray = {"str1", "str2"};
-        boolean[] boolArray = {true, false};
-        int[] enumArray = {StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__OFF,
-                StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__ON};
-
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED, uids, tags, 42,
-                Long.MAX_VALUE, 3.14f, "This is a basic test!", false,
-                StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__ON, testAtomNestedMsg,
-                int32Array,
-                int64Array, floatArray, stringArray, boolArray, enumArray);
-
-        // All nulls. Should get dropped since cts app is not in the attribution chain.
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED, null, null, 0, 0,
-                0f, null,
-                false, StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__ON, null, null, null,
-                null,
-                null, null, null);
-
-        // Null tag in attribution chain.
-        int[] uids2 = {9999, appInfo.uid};
-        String[] tags2 = {"tag9999", null};
-        StatsLogStatsdCts.write(StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED, uids2, tags2, 100,
-                Long.MIN_VALUE, -2.5f, "Test null uid", true,
-                StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__UNKNOWN, testAtomNestedMsg,
-                int32Array,
-                int64Array, floatArray, stringArray, boolArray, enumArray);
-
-        // Non chained non-null
-        StatsLogStatsdCts.write_non_chained(StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED,
-                appInfo.uid,
-                "tag1", -256, -1234567890L, 42.01f, "Test non chained", true,
-                StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__OFF, testAtomNestedMsg,
-                new int[0],
-                new long[0], new float[0], new String[0], new boolean[0], new int[0]);
-
-        // Non chained all null
-        StatsLogStatsdCts.write_non_chained(StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED,
-                appInfo.uid, null,
-                0, 0, 0f, null, true, StatsLogStatsdCts.TEST_EXTENSION_ATOM_REPORTED__STATE__OFF,
-                null, null,
-                null, null, null, null, null);
-    }
-
     /**
      * Bring up and generate some traffic on cellular data connection.
      */
@@ -1087,6 +986,9 @@ public class AtomTests {
     public void testGameState() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        }
         gameManager.setGameState(new GameState(true, GameState.MODE_CONTENT, 1, 2));
     }
 
@@ -1094,7 +996,11 @@ public class AtomTests {
     public void testSetGameMode() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
-        assertNotNull(gameManager);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        } else {
+            assertNotNull(gameManager);
+        }
         assertNotNull(context.getPackageName());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
                 (gm) -> gm.setGameMode(context.getPackageName(),
@@ -1108,7 +1014,11 @@ public class AtomTests {
     public void testUpdateCustomGameModeConfiguration() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
-        assertNotNull(gameManager);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        } else {
+            assertNotNull(gameManager);
+        }
         assertNotNull(context.getPackageName());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
                 (gm) -> gm.updateCustomGameModeConfiguration(context.getPackageName(),

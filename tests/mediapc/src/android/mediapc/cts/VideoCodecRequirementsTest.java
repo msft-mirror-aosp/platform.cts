@@ -25,6 +25,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain8;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AV1;
 import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
+import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
@@ -33,6 +34,7 @@ import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static java.lang.Math.max;
@@ -44,7 +46,6 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
@@ -83,8 +84,6 @@ import java.util.stream.IntStream;
 
 public class VideoCodecRequirementsTest {
     private static final String LOG_TAG = VideoCodecRequirementsTest.class.getSimpleName();
-    private static final String FILE_AV1_REQ_SUPPORT =
-            "dpov_1920x1080_60fps_av1_10bit_film_grain.mp4";
     private static final String INPUT_FILE = "bbb_3840x2160_AVIF.avif";
 
     @Rule
@@ -109,9 +108,9 @@ public class VideoCodecRequirementsTest {
             ArrayList<String> hwVideoCodecs =
                     selectHardwareCodecs(codecMediaType, null, null, isEncoder);
             for (String hwVideoCodec : hwVideoCodecs) {
-                MediaCodec codec = MediaCodec.createByCodecName(hwVideoCodec);
-                CodecCapabilities capabilities =
-                        codec.getCodecInfo().getCapabilitiesForType(codecMediaType);
+                CodecCapabilities capabilities = getCodecCapabilities(hwVideoCodec, codecMediaType);
+                assertNotNull("did not receive capabilities for codec: " + hwVideoCodec
+                        + ", media type: " + codecMediaType + "\n", capabilities);
                 List<PerformancePoint> pps =
                         capabilities.getVideoCapabilities().getSupportedPerformancePoints();
                 assertTrue(hwVideoCodec + " doesn't advertise performance points", pps.size() > 0);
@@ -123,7 +122,6 @@ public class VideoCodecRequirementsTest {
                         break;
                     }
                 }
-                codec.release();
             }
         }
         return codecSet;
@@ -151,41 +149,11 @@ public class VideoCodecRequirementsTest {
     }
 
     /**
-     * Validates AV1 hardware decoder is present and supports: Main 10, Level 4.1, Film Grain
-     */
-    @LargeTest
-    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
-    public void testAV1HwDecoderRequirements() throws Exception {
-        MediaFormat format = MediaFormat.createVideoFormat(MIMETYPE_VIDEO_AV1, 1920, 1080);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        formats.add(format);
-        ArrayList<String> av1HwDecoders =
-                selectHardwareCodecs(MIMETYPE_VIDEO_AV1, formats, null, false);
-        boolean oneCodecDecoding = false;
-        for (String codec : av1HwDecoders) {
-            Decode decode = new Decode(MIMETYPE_VIDEO_AV1, FILE_AV1_REQ_SUPPORT, codec, true);
-            double achievedRate = decode.doDecode().fps();
-            if (achievedRate > 0) {
-                oneCodecDecoding = true;
-            }
-        }
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
-                Requirements.addR5_1__H_1_14().to(pce);
-        rAV1DecoderReq.setAv1DecoderRequirementBoolean(oneCodecDecoding);
-
-        pce.submitAndCheck();
-    }
-
-    /**
      * Validates if a hardware decoder that supports 4k60 is present
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-15")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-15"})
     public void test4k60Decoder() throws IOException {
         Set<String> decoderSet = get4k60HwCodecSet(false);
 
@@ -202,7 +170,7 @@ public class VideoCodecRequirementsTest {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-16")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-16"})
     public void test4k60Encoder() throws IOException {
         Set<String> encoderSet = get4k60HwCodecSet(true);
 
@@ -219,7 +187,7 @@ public class VideoCodecRequirementsTest {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-17")
+    @CddTest(requirements = {"5.1/H-1-17"})
     public void testAVIFHwDecoderRequirements() throws Exception {
         int[] profiles = {AV1ProfileMain8, AV1ProfileMain10};
         ArrayList<MediaFormat> formats = new ArrayList<>();
@@ -250,7 +218,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-18")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-18"})
     public void testAV1EncoderRequirements() throws Exception {
         int width = 720;
         int height = 480;
@@ -309,7 +277,7 @@ public class VideoCodecRequirementsTest {
     @SmallTest
     @RequiresFlagsEnabled(Flags.FLAG_HLG_EDITING)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-20")
+    @CddTest(requirements = {"5.1/H-1-20"})
     public void testHlgEditingSupport() throws CameraAccessException, IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MIMETYPE_VIDEO_AV1};
@@ -358,7 +326,7 @@ public class VideoCodecRequirementsTest {
     @SmallTest
     @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_COLOR_ASPECTS)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-21")
+    @CddTest(requirements = {"5.1/H-1-21"})
     public void testDynamicColorAspectFeature() {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -392,7 +360,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-22")
+    @CddTest(requirements = {"5.1/H-1-22"})
     public void testPortraitResolutionSupport() throws CameraAccessException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -440,7 +408,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.12/H-1-2")
+    @CddTest(requirements = {"5.12/H-1-2"})
     public void testColorFormatSupport() throws IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};

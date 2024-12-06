@@ -18,10 +18,12 @@ package android.net.wifi.cts;
 
 import static android.content.Context.RECEIVER_NOT_EXPORTED;
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
+import static android.net.wifi.p2p.WifiP2pGroup.SECURITY_TYPE_WPA2_PSK;
 import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -50,6 +52,7 @@ import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
+import android.net.wifi.p2p.WifiP2pDirInfo;
 import android.net.wifi.p2p.WifiP2pDiscoveryConfig;
 import android.net.wifi.p2p.WifiP2pExtListenParams;
 import android.net.wifi.p2p.WifiP2pGroup;
@@ -57,13 +60,19 @@ import android.net.wifi.p2p.WifiP2pGroupList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.ExternalApproverRequestListener;
+import android.net.wifi.p2p.WifiP2pUsdBasedLocalServiceAdvertisementConfig;
+import android.net.wifi.p2p.WifiP2pUsdBasedServiceDiscoveryConfig;
 import android.net.wifi.p2p.WifiP2pWfdInfo;
 import android.net.wifi.p2p.nsd.WifiP2pServiceInfo;
+import android.net.wifi.p2p.nsd.WifiP2pServiceRequest;
 import android.net.wifi.p2p.nsd.WifiP2pUpnpServiceInfo;
+import android.net.wifi.p2p.nsd.WifiP2pUsdBasedServiceConfig;
+import android.net.wifi.p2p.nsd.WifiP2pUsdBasedServiceResponse;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.WorkSource;
 import android.platform.test.annotations.AppModeFull;
@@ -171,6 +180,14 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     private static final int WAIT_MS = 100;
     private static final int DURATION = 5000;
     private static final int TEST_OUI = 0x00C82ADD; // Google OUI
+    private static final String TEST_USD_SERVICE_NAME = "test_service_name";
+    private static final int TEST_USD_PROTOCOL_TYPE = 4;
+    private static final byte[] TEST_USD_SERVICE_SPECIFIC_INFO = {10, 20, 30, 40, 50, 60};
+    private static final int TEST_USD_DISCOVERY_CHANNEL_FREQUENCY_MHZ = 2437;
+    private static final int[] TEST_USD_DISCOVERY_CHANNEL_FREQUENCIES_MHZ = {2412, 2437, 2462};
+    private static final String TEST_MAC_ADDRESS_STRING = "00:11:22:33:44:55";
+    private static final byte[] TEST_NONCE = {10, 20, 30, 40, 50, 60, 70, 80};
+    private static final byte[] TEST_DIR_TAG = {11, 22, 33, 44, 55, 66, 77, 88};
     private static final BroadcastReceiver RECEIVER = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -1790,5 +1807,263 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             }
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#isPccModeSupported"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIsPccModeSupported() throws Exception {
+        sWifiP2pManager.isPccModeSupported();
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#isWiFiDirectR2Supported"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testIsWiFiDirectR2Supported() throws Exception {
+        sWifiP2pManager.isWiFiDirectR2Supported();
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pGroup#getSecurityType"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testWifiP2pGroupGetSecurityType() {
+        WifiP2pGroup group = new WifiP2pGroup();
+        assertEquals(SECURITY_TYPE_WPA2_PSK, group.getSecurityType());
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pGroup#getGroupOwnerBssid"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testWifiP2pGroupGetGroupOwnerBssid() {
+        WifiP2pGroup group = new WifiP2pGroup();
+        assertNull(group.getGroupOwnerBssid());
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#startUsdBasedLocalServiceAdvertisement",
+            "android.net.wifi.p2p.WifiP2pManager#clearLocalServices",
+            "android.net.wifi.p2p.WifiP2pManager#removeLocalService",
+            "android.net.wifi.p2p.nsd.WifiP2pServiceInfo#getWifiP2pUsdBasedServiceConfig"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testUsdBasedLocalServiceAdvertisement() {
+        if (!sWifiP2pManager.isWiFiDirectR2Supported()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 is not supported by the chip");
+            return;
+        }
+
+        if (!Flags.wifiDirectR2()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 feature is not enabled");
+            return;
+        }
+
+        /* 1. Create a service information with USD based service configuration */
+        WifiP2pUsdBasedServiceConfig expectedUsdConfig = new WifiP2pUsdBasedServiceConfig.Builder(
+                TEST_USD_SERVICE_NAME)
+                .setServiceProtocolType(TEST_USD_PROTOCOL_TYPE)
+                .setServiceSpecificInfo(TEST_USD_SERVICE_SPECIFIC_INFO).build();
+        WifiP2pServiceInfo serviceInfo = new WifiP2pServiceInfo(expectedUsdConfig);
+        assertNotNull(serviceInfo);
+        WifiP2pUsdBasedServiceConfig usdConfig =
+                serviceInfo.getWifiP2pUsdBasedServiceConfig();
+        assertNotNull(usdConfig);
+        assertEquals(TEST_USD_SERVICE_NAME, usdConfig.getServiceName());
+        assertEquals(TEST_USD_PROTOCOL_TYPE, usdConfig.getServiceProtocolType());
+        assertArrayEquals(TEST_USD_SERVICE_SPECIFIC_INFO, usdConfig.getServiceSpecificInfo());
+
+        WifiP2pUsdBasedLocalServiceAdvertisementConfig localServiceAdvertisementConfig =
+                new WifiP2pUsdBasedLocalServiceAdvertisementConfig.Builder()
+                                .setFrequencyMhz(TEST_USD_DISCOVERY_CHANNEL_FREQUENCY_MHZ).build();
+        assertNotNull(localServiceAdvertisementConfig);
+        assertEquals(TEST_USD_DISCOVERY_CHANNEL_FREQUENCY_MHZ,
+                localServiceAdvertisementConfig.getFrequencyMhz());
+
+        /* 2. Start USD based service advertisement */
+        sWifiP2pManager.startUsdBasedLocalServiceAdvertisement(sWifiP2pChannel,
+                serviceInfo,
+                localServiceAdvertisementConfig,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        /* 4. Remove/Clear the service advertisement */
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.removeLocalService(sWifiP2pChannel,
+                serviceInfo,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.clearLocalServices(sWifiP2pChannel,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.nsd"
+            + ".WifiP2pServiceRequest#getWifiP2pUsdBasedServiceConfig",
+            "android.net.wifi.p2p.WifiP2pManager#addServiceRequest",
+            "android.net.wifi.p2p.WifiP2pManager#discoverUsdBasedServices",
+            "android.net.wifi.p2p.WifiP2pManager#clearServiceRequests",
+            "android.net.wifi.p2p.WifiP2pManager#removeServiceRequest"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testDiscoverUsdBasedServices() {
+        if (!sWifiP2pManager.isWiFiDirectR2Supported()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 is not supported by the chip");
+            return;
+        }
+
+        if (!Flags.wifiDirectR2()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 feature is not enabled");
+            return;
+        }
+
+        // This only store the listener to the WifiP2pManager internal variable, nothing to fail.
+        sWifiP2pManager.setServiceResponseListener(sWifiP2pChannel,
+                new WifiP2pManager.ServiceResponseListener() {
+                    @Override
+                    public void onServiceAvailable(
+                            int protocolType, byte[] responseData, WifiP2pDevice srcDevice) {
+                    }
+
+                    @Override
+                    public void onUsdBasedServiceAvailable(@NonNull WifiP2pDevice srcDevice,
+                            @NonNull WifiP2pUsdBasedServiceResponse usdResponseData) {
+                    }
+                });
+
+        /* 1. Create a service discovery request with USD based service configuration */
+        WifiP2pUsdBasedServiceConfig expectedUsdConfig = new WifiP2pUsdBasedServiceConfig.Builder(
+                TEST_USD_SERVICE_NAME)
+                .setServiceProtocolType(TEST_USD_PROTOCOL_TYPE)
+                .setServiceSpecificInfo(TEST_USD_SERVICE_SPECIFIC_INFO).build();
+        WifiP2pServiceRequest serviceRequest = new WifiP2pServiceRequest(expectedUsdConfig);
+        assertNotNull(serviceRequest);
+        WifiP2pUsdBasedServiceConfig usdConfig =
+                serviceRequest.getWifiP2pUsdBasedServiceConfig();
+        assertNotNull(usdConfig);
+        assertEquals(TEST_USD_SERVICE_NAME, usdConfig.getServiceName());
+        assertEquals(TEST_USD_PROTOCOL_TYPE, usdConfig.getServiceProtocolType());
+        assertArrayEquals(TEST_USD_SERVICE_SPECIFIC_INFO, usdConfig.getServiceSpecificInfo());
+
+        /* 2. Add the service discovery request in the Wi-Fi Framework */
+        sWifiP2pManager.addServiceRequest(sWifiP2pChannel,
+                serviceRequest,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        /* 3. Create a service discovery config with channels and discover the service */
+        WifiP2pUsdBasedServiceDiscoveryConfig serviceDiscoveryConfig =
+                new WifiP2pUsdBasedServiceDiscoveryConfig.Builder()
+                        .setFrequenciesMhz(TEST_USD_DISCOVERY_CHANNEL_FREQUENCIES_MHZ).build();
+        assertNotNull(serviceDiscoveryConfig);
+        assertArrayEquals(TEST_USD_DISCOVERY_CHANNEL_FREQUENCIES_MHZ,
+                serviceDiscoveryConfig.getFrequenciesMhz());
+        assertEquals(ScanResult.UNSPECIFIED, serviceDiscoveryConfig.getBand());
+
+        sWifiP2pManager.discoverUsdBasedServices(sWifiP2pChannel,
+                serviceDiscoveryConfig,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        /* 4. Remove/Clear the service discovery request */
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.removeServiceRequest(sWifiP2pChannel,
+                serviceRequest,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.clearServiceRequests(sWifiP2pChannel,
+                sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#getDirInfo"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testGetDirInfo() {
+        if (!sWifiP2pManager.isWiFiDirectR2Supported()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 is not supported by the chip");
+            return;
+        }
+
+        if (!Flags.wifiDirectR2()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 feature is not enabled");
+            return;
+        }
+
+        OutcomeReceiver<WifiP2pDirInfo, Exception> testDirInfoListener = new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(WifiP2pDirInfo value) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+        };
+
+        sWifiP2pManager.requestDirInfo(sWifiP2pChannel, mExecutor, testDirInfoListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#validateP2pDirInfo"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testValidateDirInfo() {
+        if (!sWifiP2pManager.isWiFiDirectR2Supported()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 is not supported by the chip");
+            return;
+        }
+
+        if (!Flags.wifiDirectR2()) {
+            Log.d(TAG, "Skipping the test as Wi-Fi Direct R2 feature is not enabled");
+            return;
+        }
+
+        OutcomeReceiver<Boolean, Exception> testDirInfoValidationListener =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean value) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+                };
+
+        WifiP2pDirInfo dirInfo = new WifiP2pDirInfo(
+                MacAddress.fromString(TEST_MAC_ADDRESS_STRING), TEST_NONCE, TEST_DIR_TAG);
+        assertNotNull(dirInfo);
+        sWifiP2pManager.validateDirInfo(sWifiP2pChannel, dirInfo, mExecutor,
+                testDirInfoValidationListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
     }
 }

@@ -19,10 +19,6 @@ package android.server.wm;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.app.Instrumentation.ActivityMonitor;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -60,7 +56,6 @@ import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
-import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -93,17 +88,34 @@ import static android.server.wm.app.Components.PipActivity.EXTRA_SET_ASPECT_RATI
 import static android.server.wm.app.Components.PipActivity.EXTRA_SET_PIP_CALLBACK;
 import static android.server.wm.app.Components.PipActivity.EXTRA_SET_PIP_STASHED;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
+import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.COMMAND_CREATE_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.COMMAND_DESTROY_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.COMMAND_RESIZE_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_CAN_SHOW_WITH_INSECURE_KEYGUARD;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_COMMAND;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_COUNT;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_DENSITY_DPI;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_PRESENTATION_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_PUBLIC_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_RESIZE_DISPLAY;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SHOW_SYSTEM_DECORATIONS;
+import static android.server.wm.app.Components.VirtualDisplayActivity.KEY_SUPPORTS_TOUCH;
+import static android.server.wm.app.Components.VirtualDisplayActivity.VIRTUAL_DISPLAY_PREFIX;
 import static android.server.wm.second.Components.SECOND_ACTIVITY;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
+import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
 import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -127,6 +139,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -146,6 +159,7 @@ import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.CommandSession.ConfigInfo;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
+import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.WindowManagerState.WindowState;
 import android.server.wm.settings.SettingsSession;
@@ -170,6 +184,7 @@ import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
@@ -181,6 +196,7 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -203,11 +219,6 @@ public abstract class ActivityManagerTestBase {
     // Use one of the test tags as a separator
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
 
-    protected static final int[] ALL_ACTIVITY_TYPE_BUT_HOME = {
-            ACTIVITY_TYPE_STANDARD, ACTIVITY_TYPE_ASSISTANT, ACTIVITY_TYPE_RECENTS,
-            ACTIVITY_TYPE_UNDEFINED
-    };
-
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
     private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
@@ -229,6 +240,12 @@ public abstract class ActivityManagerTestBase {
 
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
+
+    private static final String ASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service assign-extra-display ";
+
+    private static final String UNASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service unassign-extra-display ";
 
     protected static final String LOCK_CREDENTIAL = "1234";
 
@@ -255,6 +272,7 @@ public abstract class ActivityManagerTestBase {
     protected final DisplayManager mDm = mContext.getSystemService(DisplayManager.class);
     protected final WindowManager mWm = mContext.getSystemService(WindowManager.class);
     protected final KeyguardManager mKm = mContext.getSystemService(KeyguardManager.class);
+    private final UserHelper mUserHelper = new UserHelper(mContext);
 
     /** The tracker to manage objects (especially {@link AutoCloseable}) in a test method. */
     protected final ObjectTracker mObjectTracker = new ObjectTracker();
@@ -275,7 +293,6 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
-    private UserHelper mUserHelper;
     protected int mUserId;
 
     @NonNull
@@ -585,7 +602,7 @@ public abstract class ActivityManagerTestBase {
                                         className, intent, displayId, windowingMode);
                         // Check activity is launched and resumed.
                         final ComponentName testActivityName = mTestActivity.getComponentName();
-                        waitAndAssertTopResumedActivity(
+                        waitAndAssertResumedAndFocusedActivityOnDisplay(
                                 testActivityName, displayId, "Activity must be resumed");
                     });
         }
@@ -689,14 +706,9 @@ public abstract class ActivityManagerTestBase {
 
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            // Remove all tasks and then wait for allActivitiesResumed.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        } else {
-            // Stop any residual tasks from the test package.
-            forceStopAllTestPackages();
-        }
+        finishAndRemoveCurrentTestActivityTasks();
+        // Stop any residual tasks from the test package.
+        forceStopAllTestPackages();
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -707,17 +719,6 @@ public abstract class ActivityManagerTestBase {
         });
         mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
 
-        // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
-        // the systemUI might have a few tasks that need to be displayed all the time.
-        // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
-        // restarts can interfere with the test state. To avoid that, its better to wait for all
-        // the activities to come in the resumed state.
-        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
-                    "Root Tasks should be either empty or resumed");
-        }
-        mUserHelper = new UserHelper(mContext);
         mUserId = mContext.getUserId();
     }
 
@@ -728,17 +729,15 @@ public abstract class ActivityManagerTestBase {
         if (mTaskOrganizer != null) {
             mTaskOrganizer.unregisterOrganizerIfNeeded();
         }
-        // Synchronous execution of removeRootTasksWithActivityTypes() ensures that all
-        // activities but home are cleaned up from the root task at the end of each test. Am force
-        // stop shell commands might be asynchronous and could interrupt the task cleanup
-        // process if executed first.
+
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        }
+        // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that activity
+        // tasks associated with this test package are cleaned up at the end of each test. Am force
+        // stop shell commands might be asynchronous and could interrupt the task cleanup process
+        // if executed first.
+        finishAndRemoveCurrentTestActivityTasks();
         forceStopAllTestPackages();
 
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
@@ -816,17 +815,17 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected Intent createHomeIntent(String category) {
-        int resId = Resources.getSystem().getIdentifier(
-                "config_secondaryHomePackage", "string", "android");
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(category);
-        intent.setPackage(mContext.getResources().getString(resId));
         return intent;
     }
 
     protected ComponentName getDefaultSecondaryHomeComponent() {
         assumeTrue(supportsMultiDisplay());
         final Intent intent = createHomeIntent(Intent.CATEGORY_SECONDARY_HOME);
+        int resId = Resources.getSystem().getIdentifier(
+                "config_secondaryHomePackage", "string", "android");
+        intent.setPackage(mContext.getResources().getString(resId));
         final ResolveInfo resolveInfo =
                 mContext.getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull("Should have default secondary home activity", resolveInfo);
@@ -874,13 +873,20 @@ public abstract class ActivityManagerTestBase {
         TouchHelper.injectKey(keyCode, longPress, sync);
     }
 
-    protected void removeRootTasksWithActivityTypes(int... activityTypes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksWithActivityTypes(activityTypes));
-        waitForIdle();
-    }
-
-    protected void removeRootTasksInWindowingModes(int... windowingModes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksInWindowingModes(windowingModes));
+    /**
+     * Finishes and removes the activity tasks associated with this test package.
+     * <p>
+     * This method is intended for self-instrumenting tests bundled with activities.
+     * It finishes all activities in each task and removes them from the recent tasks list,
+     * ensuring a clean state for test execution.
+     * <p>
+     * For test app packages, consider using {@link #stopTestPackage} instead.
+     *
+     * @see ActivityManager#getAppTasks()
+     * @see ActivityManager.AppTask#finishAndRemoveTask()
+     */
+    protected void finishAndRemoveCurrentTestActivityTasks() {
+        mAm.getAppTasks().forEach(ActivityManager.AppTask::finishAndRemoveTask);
         waitForIdle();
     }
 
@@ -911,6 +917,14 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityNoWait(final ComponentName activityName,
             final CliIntentExtra... extras) {
         executeShellCommand(getAmStartCmd(activityName, extras));
+    }
+
+    protected void assignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(ASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
+    }
+
+    protected void unassignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(UNASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
     }
 
     protected void launchActivityInNewTask(final ComponentName activityName) {
@@ -1251,13 +1265,18 @@ public abstract class ActivityManagerTestBase {
                 /* actual = */ mWmState.getDisplayByActivity(activityName));
     }
 
-    public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
-            String message) {
+    /**
+     * Waits and asserts that the activity represented by the given activity name, display id
+     * is focused.
+     */
+    public void waitAndAssertResumedAndFocusedActivityOnDisplay(ComponentName activityName,
+            int displayId, String message) {
         final String activityClassName = getActivityName(activityName);
-        mWmState.waitForWithAmState(state -> activityClassName.equals(state.getFocusedActivity()),
+        mWmState.waitForWithAmState(state ->
+                activityClassName.equals(state.getFocusedActivityOnDisplay(displayId)),
                 "activity to be on top");
         waitAndAssertResumedActivity(activityName, "Activity must be resumed");
-        mWmState.assertFocusedActivity(message, activityName);
+        mWmState.assertFocusedActivityOnDisplay(message, activityName, displayId);
 
         final int frontRootTaskId = mWmState.getFrontRootTaskId(displayId);
         Task frontRootTaskOnDisplay = mWmState.getRootTask(frontRootTaskId);
@@ -1266,8 +1285,8 @@ public abstract class ActivityManagerTestBase {
                 activityClassName,
                 frontRootTaskOnDisplay.isLeafTask() ? frontRootTaskOnDisplay.mResumedActivity
                         : frontRootTaskOnDisplay.getTopTask().mResumedActivity);
-        mWmState.assertFocusedRootTask("Top activity's rootTask must also be on top",
-                frontRootTaskId);
+        mWmState.assertFocusedRootTaskOnDisplay("Top activity's rootTask must also be on top",
+                frontRootTaskId, displayId);
     }
 
     /**
@@ -1513,7 +1532,7 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new LockScreenSession(mInstrumentation, mWmState) {
             @Override
             public void close() {
-                removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+                finishAndRemoveCurrentTestActivityTasks();
                 super.close();
             }
         });
@@ -1555,6 +1574,11 @@ public abstract class ActivityManagerTestBase {
     /** @see ObjectTracker#manage(AutoCloseable) */
     protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
         return mObjectTracker.manage(new DisplayMetricsSession(displayId));
+    }
+
+    /** @see ObjectTracker#manage(AutoCloseable) */
+    protected VirtualDisplaySession createManagedVirtualDisplaySession() {
+        return mObjectTracker.manage(new VirtualDisplaySession());
     }
 
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
@@ -2996,11 +3020,618 @@ public abstract class ActivityManagerTestBase {
     }
 
     /**
+     * Checks whether the device supports the visible background user.
+     *
+     * <p>The visible background user feature allows full users to be started in background
+     * visible on their assigned displays.
+     *
+     * <p>Note that this feature is typically only supported on automotive system with passenger
+     * displays. For most devices, this method returns {@code false}.
+     */
+    protected boolean isVisibleBackgroundUserSupported() {
+        return mUserHelper.isVisibleBackgroundUserSupported();
+    }
+
+    /**
      * Returns the main display assigned to the user.
      * Note that this returns the DEFAULT_DISPLAY for the current user, and returns the display
      * assigned to the user if it is a visible background user.
      */
     protected int getMainDisplayId() {
         return mUserHelper.getMainDisplayId();
+    }
+
+    /**
+     * Checks whether the device has non-overlapping multitasking feature enabled.
+     *
+     * When this is true, we expect the Task to not occlude other Task below it,
+     * which means both Tasks can be resumed and visible.
+     */
+    protected boolean isNonOverlappingMultiWindowMode(Activity activity) {
+        if (!activity.isInMultiWindowMode()) {
+            return false;
+        }
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // Automotive SplitScreen Multitasking devices overlap the windows.
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Retrieves {@link DisplayContent} with {@code displayId} from {@code displays}, or
+     * {@code null} if there's no such {@link DisplayContent} in the list.
+     */
+    @Nullable
+    protected DisplayContent getDisplayState(@NonNull List<DisplayContent> displays,
+            int displayId) {
+        for (DisplayContent display : displays) {
+            if (display.mId == displayId) {
+                return display;
+            }
+        }
+        return null;
+    }
+
+    /** Return the display state with width, height, dpi. Always not default display. */
+    @Nullable
+    protected DisplayContent getDisplayState(@NonNull List<DisplayContent> displays, int width,
+            int height, int dpi) {
+        for (DisplayContent display : displays) {
+            if (display.mId == DEFAULT_DISPLAY) {
+                continue;
+            }
+            final Configuration config = display.getFullConfiguration();
+            if (config.densityDpi == dpi && config.screenWidthDp == width
+                    && config.screenHeightDp == height) {
+                return display;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets all {@link DisplayContent} instances from {@code mWmState}.
+     */
+    @NonNull
+    protected List<DisplayContent> getDisplaysStates() {
+        mWmState.computeState();
+        return mWmState.getDisplays();
+    }
+
+    /**
+     * Waits for display specific with {@code displayPredicate} gone, or fails with timeout.
+     */
+    void waitForDisplayGone(@NonNull Predicate<DisplayContent> displayPredicate) {
+        waitForOrFail("displays to be removed", () -> {
+            mWmState.computeState();
+            return mWmState.getDisplays().stream().noneMatch(displayPredicate);
+        });
+    }
+
+    /** Wait for provided number of displays and report their configurations. */
+    @NonNull
+    public List<DisplayContent> getDisplayStateAfterChange(int expectedDisplayCount) {
+        return Condition.waitForResult("the correct number of displays=" + expectedDisplayCount,
+                condition -> condition
+                        .setReturnLastResult(true)
+                        .setResultSupplier(this::getDisplaysStates)
+                        .setResultValidator(
+                                displays -> areDisplaysValid(displays, expectedDisplayCount)));
+    }
+
+    /**
+     * Finds the display that was not originally reported in {@code oldDisplays} and added in
+     * {@code newDisplays}.
+     */
+    @NonNull
+    public static List<DisplayContent> findNewDisplayStates(
+            @NonNull List<DisplayContent> oldDisplays,
+            @NonNull List<DisplayContent> newDisplays) {
+        final ArrayList<DisplayContent> result = new ArrayList<>();
+
+        for (DisplayContent newDisplay : newDisplays) {
+            if (oldDisplays.stream().noneMatch(d -> d.mId == newDisplay.mId)) {
+                result.add(newDisplay);
+            }
+        }
+
+        return result;
+    }
+
+    private static boolean areDisplaysValid(@NonNull List<DisplayContent> displays,
+            int expectedDisplayCount) {
+        if (displays.size() != expectedDisplayCount) {
+            return false;
+        }
+        for (DisplayContent display : displays) {
+            if (display.getOverrideConfiguration().densityDpi == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * This class should only be used when you need to test virtual display created by a
+     * non-privileged app.
+     * Or when you need to test on simulated display.
+     * <p>
+     * If you need to test virtual display created by a privileged app, please use
+     * {@link MultiDisplayTestBase.ExternalDisplaySession} instead.
+     */
+    public class VirtualDisplaySession implements AutoCloseable {
+        private int mDensityDpi = 222;
+        private boolean mLaunchInSplitScreen = false;
+        private boolean mCanShowWithInsecureKeyguard = false;
+        private boolean mPublicDisplay = false;
+        private boolean mResizeDisplay = true;
+        private boolean mShowSystemDecorations = false;
+        private boolean mOwnContentOnly = false;
+        private int mDisplayImePolicy = DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+        private boolean mPresentationDisplay = false;
+        private boolean mSimulateDisplay = false;
+        private boolean mSupportsTouch = false;
+        private boolean mMustBeCreated = true;
+        @NonNull
+        private Size mSimulationDisplaySize = new Size(1024 /* width */, 768 /* height */);
+
+        private boolean mVirtualDisplayCreated = false;
+        @Nullable
+        private OverlayDisplayDevicesSession mOverlayDisplayDeviceSession;
+
+        private static final int INVALID_DENSITY_DPI = -1;
+
+        /**
+         * Sets {@code densityDpi} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setDensityDpi(int densityDpi) {
+            mDensityDpi = densityDpi;
+            return this;
+        }
+
+        /**
+         * Sets {@code launchInSplitScreen} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setLaunchInSplitScreen(boolean launchInSplitScreen) {
+            mLaunchInSplitScreen = launchInSplitScreen;
+            return this;
+        }
+
+        /**
+         * Sets {@code canShowWithInsecureKeyguard} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setCanShowWithInsecureKeyguard(
+                boolean canShowWithInsecureKeyguard) {
+            mCanShowWithInsecureKeyguard = canShowWithInsecureKeyguard;
+            return this;
+        }
+
+        /**
+         * Sets {@code publicDisplay} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setPublicDisplay(boolean publicDisplay) {
+            mPublicDisplay = publicDisplay;
+            return this;
+        }
+
+        /**
+         * Sets {@code resizeDisplay} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setResizeDisplay(boolean resizeDisplay) {
+            mResizeDisplay = resizeDisplay;
+            return this;
+        }
+
+        /**
+         * Sets {@code showSystemDecorations} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setShowSystemDecorations(boolean showSystemDecorations) {
+            mShowSystemDecorations = showSystemDecorations;
+            return this;
+        }
+
+        /**
+         * Sets {@code ownContentOnly} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setOwnContentOnly(boolean ownContentOnly) {
+            mOwnContentOnly = ownContentOnly;
+            return this;
+        }
+
+        /**
+         * Sets {@code supportsTouch} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setSupportsTouch(boolean supportsTouch) {
+            mSupportsTouch = supportsTouch;
+            return this;
+        }
+
+
+        /**
+         * Sets the policy for how the display should show the ime.
+         * <p>
+         * Set to one of:
+         * <ul>
+         *   <li>{@link WindowManager#DISPLAY_IME_POLICY_LOCAL}
+         *   <li>{@link WindowManager#DISPLAY_IME_POLICY_FALLBACK_DISPLAY}
+         *   <li>{@link WindowManager#DISPLAY_IME_POLICY_HIDE}
+         * </ul>
+         */
+        @NonNull
+        public VirtualDisplaySession setDisplayImePolicy(int displayImePolicy) {
+            mDisplayImePolicy = displayImePolicy;
+            return this;
+        }
+
+        /**
+         * Sets {@code presentationDisplay} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setPresentationDisplay(boolean presentationDisplay) {
+            mPresentationDisplay = presentationDisplay;
+            return this;
+        }
+
+        // TODO(b/154565343) move simulate display out of VirtualDisplaySession
+        /**
+         * Sets {@code simulateDisplay} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setSimulateDisplay(boolean simulateDisplay) {
+            mSimulateDisplay = simulateDisplay;
+            return this;
+        }
+
+        /**
+         * Sets {@code width} and {@code height} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setSimulationDisplaySize(int width, int height) {
+            mSimulationDisplaySize = new Size(width, height);
+            return this;
+        }
+
+        /**
+         * Creates a virtual display.
+         *
+         * @param mustBeCreated {@code true} to throw exception if the display is failed to create.
+         * @return the created display , or {@code null} if {@code mustBeCreated} is {@code false}
+         *         and the display is failed to create.
+         * @throws IllegalStateException if the display is failed to create but
+         *                               {@code mustBeCreated} is {@code true}
+         */
+        @Nullable
+        public DisplayContent createDisplay(boolean mustBeCreated) {
+            mMustBeCreated = mustBeCreated;
+            final WindowManagerState.DisplayContent display = createDisplays(1).stream()
+                    .findFirst().orElse(null);
+            if (mustBeCreated && display == null) {
+                throw new IllegalStateException("No display is created");
+            }
+            return display;
+        }
+
+        /** @see #createDisplay(boolean)  */
+        @NonNull
+        public DisplayContent createDisplay() {
+            return Objects.requireNonNull(createDisplay(true /* mustBeCreated */));
+        }
+
+        /**
+         * Creates displays with {@code count}..
+         */
+        @NonNull
+        public List<DisplayContent> createDisplays(int count) {
+            if (mSimulateDisplay) {
+                return simulateDisplays(count);
+            } else {
+                return createVirtualDisplays(count);
+            }
+        }
+
+        /**
+         * Resizes the virtual display.
+         *
+         * @throws IllegalStateException if the created display is a simulated display
+         */
+        public void resizeDisplay() {
+            if (mSimulateDisplay) {
+                throw new IllegalStateException(
+                        "Please use ReportedDisplayMetrics#setDisplayMetrics to resize"
+                                + " simulate display");
+            }
+            executeShellCommand(getAmStartCmd(VIRTUAL_DISPLAY_ACTIVITY)
+                    + " -f 0x20000000" + " --es " + KEY_COMMAND + " " + COMMAND_RESIZE_DISPLAY);
+        }
+
+        @Override
+        public void close() {
+            if (mOverlayDisplayDeviceSession != null) {
+                mOverlayDisplayDeviceSession.close();
+            }
+            if (mVirtualDisplayCreated) {
+                destroyVirtualDisplays();
+                mVirtualDisplayCreated = false;
+            }
+        }
+
+        /**
+         * Simulate new display.
+         * <pre>
+         * <code>mDensityDpi</code> provide custom density for the display.
+         * </pre>
+         *
+         * @return {@link DisplayContent} of newly created display.
+         */
+        @NonNull
+        private List<DisplayContent> simulateDisplays(int count) {
+            mOverlayDisplayDeviceSession = new OverlayDisplayDevicesSession();
+            mOverlayDisplayDeviceSession.createDisplays(mSimulationDisplaySize, mDensityDpi,
+                    mOwnContentOnly, mShowSystemDecorations, count);
+            mOverlayDisplayDeviceSession.configureDisplays(mDisplayImePolicy /* imePolicy */);
+            return mOverlayDisplayDeviceSession.getCreatedDisplays();
+        }
+
+        /**
+         * Create new virtual display.
+         * <pre>
+         * <code>mDensityDpi</code> provide custom density for the display.
+         * <code>mLaunchInSplitScreen</code> start
+         *     {@link android.server.wm.app.VirtualDisplayActivity} to side from
+         *     {@link android.server.wm.app.LaunchingActivity} on primary display.
+         * <code>mCanShowWithInsecureKeyguard</code>  allow showing content when device is
+         *     showing an insecure keyguard.
+         * <code>mMustBeCreated</code> should assert if the display was or wasn't created.
+         * <code>mPublicDisplay</code> make display public.
+         * <code>mResizeDisplay</code> should resize display when surface size changes.
+         * <code>LaunchActivity</code> should launch test activity immediately after display
+         *     creation.
+         * </pre>
+         *
+         * @param displayCount number of displays to be created.
+         * @return A list of {@link DisplayContent} that represent newly created displays.
+         */
+        @NonNull
+        private List<DisplayContent> createVirtualDisplays(int displayCount) {
+            // Start an activity that is able to create virtual displays.
+            if (mLaunchInSplitScreen) {
+                getLaunchActivityBuilder()
+                        .setToSide(true)
+                        .setTargetActivity(VIRTUAL_DISPLAY_ACTIVITY)
+                        .execute();
+                final int secondaryTaskId =
+                        mWmState.getTaskByActivity(VIRTUAL_DISPLAY_ACTIVITY).getTaskId();
+                mTaskOrganizer.putTaskInSplitSecondary(secondaryTaskId);
+            } else {
+                launchActivity(VIRTUAL_DISPLAY_ACTIVITY);
+            }
+            mWmState.computeState(
+                    new WaitForValidActivityState(VIRTUAL_DISPLAY_ACTIVITY));
+            mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);
+            mWmState.assertFocusedActivity("Focus must be on virtual display host activity",
+                    VIRTUAL_DISPLAY_ACTIVITY);
+            final List<DisplayContent> originalDS = getDisplaysStates();
+
+            // Create virtual display with custom density dpi.
+            final StringBuilder createVirtualDisplayCommand = new StringBuilder(
+                    getAmStartCmd(VIRTUAL_DISPLAY_ACTIVITY))
+                    .append(" -f 0x20000000")
+                    .append(" --es " + KEY_COMMAND + " " + COMMAND_CREATE_DISPLAY);
+            if (mDensityDpi != INVALID_DENSITY_DPI) {
+                createVirtualDisplayCommand
+                        .append(" --ei " + KEY_DENSITY_DPI + " ")
+                        .append(mDensityDpi);
+            }
+            createVirtualDisplayCommand.append(" --ei " + KEY_COUNT + " ").append(displayCount)
+                    .append(" --ez " + KEY_CAN_SHOW_WITH_INSECURE_KEYGUARD + " ")
+                    .append(mCanShowWithInsecureKeyguard)
+                    .append(" --ez " + KEY_PUBLIC_DISPLAY + " ").append(mPublicDisplay)
+                    .append(" --ez " + KEY_RESIZE_DISPLAY + " ").append(mResizeDisplay)
+                    .append(" --ez " + KEY_SHOW_SYSTEM_DECORATIONS + " ")
+                    .append(mShowSystemDecorations)
+                    .append(" --ez " + KEY_PRESENTATION_DISPLAY + " ").append(mPresentationDisplay)
+                    .append(" --ez " + KEY_SUPPORTS_TOUCH + " ").append(mSupportsTouch);
+            executeShellCommand(createVirtualDisplayCommand.toString());
+            mVirtualDisplayCreated = true;
+
+            return assertAndGetNewDisplays(mMustBeCreated ? displayCount : -1, originalDS);
+        }
+
+        /**
+         * Destroy existing virtual display.
+         */
+        void destroyVirtualDisplays() {
+            final String destroyVirtualDisplayCommand = getAmStartCmd(VIRTUAL_DISPLAY_ACTIVITY)
+                    + " -f 0x20000000"
+                    + " --es " + KEY_COMMAND + " " + COMMAND_DESTROY_DISPLAY;
+            executeShellCommand(destroyVirtualDisplayCommand);
+            waitForDisplayGone(
+                    d -> d.getName() != null && d.getName().contains(VIRTUAL_DISPLAY_PREFIX));
+        }
+
+        /**
+         * Wait for desired number of displays to be created and get their properties.
+         *
+         * @param newDisplayCount expected display count, -1 if display should not be created.
+         * @param originalDisplays display states before creation of new display(s).
+         * @return list of new displays, empty list if no new display is created.
+         */
+        @NonNull
+        private List<DisplayContent> assertAndGetNewDisplays(int newDisplayCount,
+                @NonNull List<DisplayContent> originalDisplays) {
+            final int originalDisplayCount = originalDisplays.size();
+
+            // Wait for the display(s) to be created and get configurations.
+            final List<DisplayContent> ds = getDisplayStateAfterChange(
+                    originalDisplayCount + newDisplayCount);
+            if (newDisplayCount != -1) {
+                assertEquals("New virtual display(s) must be created",
+                        originalDisplayCount + newDisplayCount, ds.size());
+            } else {
+                assertEquals("New virtual display must not be created",
+                        originalDisplayCount, ds.size());
+                return Collections.emptyList();
+            }
+
+            // Find the newly added display(s).
+            final List<WindowManagerState.DisplayContent> newDisplays = findNewDisplayStates(
+                    originalDisplays, ds);
+            assertThat("New virtual display must be created", newDisplays,
+                    hasSize(newDisplayCount));
+
+            return newDisplays;
+        }
+
+        /**
+         * Helper class to save, set, and restore overlay_display_devices preference.
+         */
+        private class OverlayDisplayDevicesSession extends SettingsSession<String> {
+            /**
+             * See display_manager_overlay_display_name.
+             */
+            private static final String OVERLAY_DISPLAY_NAME_PREFIX = "Overlay #";
+
+            /**
+             * See {@code OverlayDisplayAdapter#OVERLAY_DISPLAY_FLAG_OWN_CONTENT_ONLY}.
+             */
+            private static final String OVERLAY_DISPLAY_FLAG_OWN_CONTENT_ONLY = ",own_content_only";
+
+            /**
+             * See {@code OverlayDisplayAdapter
+             * #OVERLAY_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS}.
+             */
+            private static final String OVERLAY_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS =
+                    ",should_show_system_decorations";
+
+            /**
+             * The displays which are created by this session.
+             */
+            @NonNull
+            private final List<WindowManagerState.DisplayContent> mDisplays = new ArrayList<>();
+            /**
+             * The configured displays that need to be restored when this session is closed.
+             */
+            @NonNull
+            private final List<OverlayDisplayState> mDisplayStates = new ArrayList<>();
+            @NonNull
+            private final WindowManager mWm;
+
+            OverlayDisplayDevicesSession() {
+                super(Settings.Global.getUriFor(Settings.Global.OVERLAY_DISPLAY_DEVICES),
+                        Settings.Global::getString,
+                        Settings.Global::putString);
+                // Remove existing overlay display to avoid display count problem.
+                removeExisting();
+                mWm = mContext.getSystemService(WindowManager.class);
+            }
+
+            @NonNull
+            List<WindowManagerState.DisplayContent> getCreatedDisplays() {
+                return new ArrayList<>(mDisplays);
+            }
+
+            @Override
+            public void set(String value) {
+                final List<DisplayContent> originalDisplays = getDisplaysStates();
+                super.set(value);
+                final int newDisplayCount = 1 + (int) value.chars().filter(ch -> ch == ';').count();
+                mDisplays.addAll(assertAndGetNewDisplays(newDisplayCount, originalDisplays));
+            }
+
+            /**
+             * Creates overlay display with custom density dpi, specified size, and test flags.
+             */
+            void createDisplays(Size displaySize, int densityDpi, boolean ownContentOnly,
+                                boolean shouldShowSystemDecorations, int count) {
+                final StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < count; i++) {
+                    String displaySettingsEntry = displaySize + "/" + densityDpi;
+                    if (ownContentOnly) {
+                        displaySettingsEntry += OVERLAY_DISPLAY_FLAG_OWN_CONTENT_ONLY;
+                    }
+                    if (shouldShowSystemDecorations) {
+                        displaySettingsEntry += OVERLAY_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                    }
+                    builder.append(displaySettingsEntry);
+                    // Creating n displays needs (n - 1) ';'.
+                    if (i < count - 1) {
+                        builder.append(';');
+                    }
+                }
+                set(builder.toString());
+            }
+
+            void configureDisplays(int imePolicy) {
+                SystemUtil.runWithShellPermissionIdentity(() -> {
+                    for (WindowManagerState.DisplayContent display : mDisplays) {
+                        final int oldImePolicy = mWm.getDisplayImePolicy(display.mId);
+                        mDisplayStates.add(new OverlayDisplayState(display.mId, oldImePolicy));
+                        if (imePolicy != oldImePolicy) {
+                            mWm.setDisplayImePolicy(display.mId, imePolicy);
+                            waitForOrFail("display config show-IME to be set",
+                                    () -> (mWm.getDisplayImePolicy(display.mId) == imePolicy));
+                        }
+                        if (isVisibleBackgroundUserSupported()) {
+                            // Ensure that the user who is running the test is assigned to the
+                            // overlay display during its configuration when it is created.
+                            assignUserToExtraDisplay(mUserId, display.mId);
+                        }
+                    }
+                });
+            }
+
+            private void restoreDisplayStates() {
+                mDisplayStates.forEach(state -> SystemUtil.runWithShellPermissionIdentity(() -> {
+                    mWm.setDisplayImePolicy(state.mId, state.mImePolicy);
+
+                    // Only need to wait the last flag to be set.
+                    waitForOrFail("display config show-IME to be restored",
+                            () -> (mWm.getDisplayImePolicy(state.mId) == state.mImePolicy));
+                    if (isVisibleBackgroundUserSupported()) {
+                        unassignUserToExtraDisplay(mUserId, state.mId);
+                    }
+                }));
+            }
+
+            @Override
+            public void close() {
+                // Need to restore display state before display is destroyed.
+                restoreDisplayStates();
+                super.close();
+                // Waiting for restoring to the state before this session was created.
+                waitForDisplayGone(display -> mDisplays.stream()
+                        .anyMatch(createdDisplay -> createdDisplay.mId == display.mId));
+            }
+
+            private void removeExisting() {
+                if (!mHasInitialValue || mInitialValue == null) {
+                    // No existing overlay displays.
+                    return;
+                }
+                delete(mUri);
+                // Make sure all overlay displays are completely removed.
+                waitForDisplayGone(
+                        display -> display.getName().startsWith(OVERLAY_DISPLAY_NAME_PREFIX));
+            }
+
+            private static class OverlayDisplayState {
+                int mId;
+                int mImePolicy;
+
+                OverlayDisplayState(int displayId, int imePolicy) {
+                    mId = displayId;
+                    mImePolicy = imePolicy;
+                }
+            }
+        }
     }
 }

@@ -103,6 +103,13 @@ public class StaticMetadata {
         "AF_MODE_EDOF"
     };
 
+    // Access via getAePriorityModeName()
+    public static final String[] AE_PRIORITY_MODE_NAMES = new String[] {
+        "AE_PRIORITY_MODE_OFF",
+        "AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY",
+        "AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY"
+    };
+
     // Index with android.control.aeState
     public static final String[] AE_STATE_NAMES = new String[] {
         "AE_STATE_INACTIVE",
@@ -530,6 +537,12 @@ public class StaticMetadata {
                 AF_MODE_NAMES[afMode];
     }
 
+    public static String getAePriorityModeName(int aePriorityMode) {
+        return (aePriorityMode >= AE_PRIORITY_MODE_NAMES.length) ?
+                String.format("Unknown priority mode %d", aePriorityMode) :
+                AE_PRIORITY_MODE_NAMES[aePriorityMode];
+    }
+
     /**
      * Get max AE regions and do validity check.
      *
@@ -624,16 +637,14 @@ public class StaticMetadata {
     }
 
     public Boolean isManualFlashStrengthControlSupported() {
-        if (Flags.cameraManualFlashStrengthControl()) {
-            Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
-            Boolean hasFlash = getValueFromKeyNonNull(key);
-            Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
-            Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
-            Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
-            Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
-            if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
-                return true;
-            }
+        Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
+        Boolean hasFlash = getValueFromKeyNonNull(key);
+        Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
+        Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
+        Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
+        Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
+        if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
+            return true;
         }
         return false;
     }
@@ -664,6 +675,17 @@ public class StaticMetadata {
                         mCharacteristics.get(keyLowLightBoostLuminanceRange);
                 return lowLightBoostLuminanceRange != null;
             }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if Night Mode Indicator key is available on this device
+     */
+    public Boolean isNightModeIndicatorSupported() {
+        if (Flags.nightModeIndicator()) {
+            return mCharacteristics.getAvailableCaptureResultKeys().contains(
+                    CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
         }
         return false;
     }
@@ -1413,6 +1435,33 @@ public class StaticMetadata {
     }
 
     /**
+     * Get aeAvailablePriorityModes and do the validity check.
+     *
+     * @return AE Priority available modes
+     */
+    public int[] getAeAvailablePriorityModesChecked() {
+        Key<int[]> modesKey = CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES;
+
+        int[] modes;
+        if (Flags.aePriority()) {
+            modes = getValueFromKeyNonNull(modesKey);
+        } else {
+            modes = mCharacteristics.get(modesKey);
+        }
+
+        if (modes == null) {
+            return new int[0];
+        }
+
+        List<Integer> modeList = Arrays.asList(CameraTestUtils.toObject(modes));
+        // OFF must be included.
+        checkTrueForKey(modesKey, " CONTROL_AE_PRIORITY_MODE_OFF must be included",
+                modeList.contains(CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF));
+
+        return modes;
+    }
+
+    /**
      * Get available AWB modes and do the validity check.
      *
      * @return array that contains available AWB modes, empty array if awbAvailableModes is
@@ -1504,6 +1553,16 @@ public class StaticMetadata {
      */
     public Size[] getHeicOutputSizesChecked() {
         return getAvailableSizesForFormatChecked(ImageFormat.HEIC,
+                StreamDirection.Output);
+    }
+
+    /**
+     * Get supported YCBCR_P210 output sizes and do the check.
+     *
+     * @return Empty size array if YCBCR_P210 output is not supported
+     */
+    public Size[] getP210OutputSizesChecked() {
+        return getAvailableSizesForFormatChecked(ImageFormat.YCBCR_P210,
                 StreamDirection.Output);
     }
 
@@ -2470,6 +2529,27 @@ public class StaticMetadata {
         return getValueFromKeyNonNull(CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE);
     }
 
+    /*
+     * Determine if camera device supports CCT mode for color correction
+     *
+     * @return {@code true} if CCT mode is supported
+     */
+    public boolean isCctModeSupported() {
+        int[] availableColorCorrectionModes = mCharacteristics.get(
+                CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES);
+
+        if (availableColorCorrectionModes == null) {
+            return false;
+        }
+
+        for (int mode : availableColorCorrectionModes) {
+            if (mode == CameraMetadata.COLOR_CORRECTION_MODE_CCT) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /*
      * Determine if camera device support manual lens shading map control

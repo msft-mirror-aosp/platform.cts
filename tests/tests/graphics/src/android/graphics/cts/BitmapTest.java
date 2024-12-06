@@ -675,11 +675,15 @@ public class BitmapTest {
 
     @Test
     public void testWrapHardwareBufferWithProtectedUsageFails() {
-        try (HardwareBuffer hwBuffer = HardwareBuffer.create(512, 512, HardwareBuffer.RGBA_8888, 1,
-                HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
-                        | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
-                        | HardwareBuffer.USAGE_COMPOSER_OVERLAY
-                        | HardwareBuffer.USAGE_PROTECTED_CONTENT)) {
+        long usage = HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
+                | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
+                | HardwareBuffer.USAGE_COMPOSER_OVERLAY
+                | HardwareBuffer.USAGE_PROTECTED_CONTENT;
+
+        assumeTrue("Creating a protected HW buffer is not supported",
+                HardwareBuffer.isSupported(512, 512, HardwareBuffer.RGBA_8888, 1, usage));
+        try (HardwareBuffer hwBuffer =
+                HardwareBuffer.create(512, 512, HardwareBuffer.RGBA_8888, 1, usage)) {
             assertThrows(IllegalArgumentException.class, () -> {
                 Bitmap.wrapHardwareBuffer(hwBuffer, ColorSpace.get(Named.SRGB));
             });

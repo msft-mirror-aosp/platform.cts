@@ -21,17 +21,19 @@ android_test {
     team: "trendy_team_bluetooth",
     defaults: ["cts_defaults"],
     static_libs: [
-        "ctstestrunner-axt",
+        "androidx.test.espresso.intents",
+        "androidx.test.rules",
+        "bluetooth_exported_flags_java_lib",
         "bluetooth-test-util-lib",
         "compatibility-device-util-axt",
-        "PlatformProperties",
-        "bluetooth_flags_java_lib",
+        "ctstestrunner-axt",
         "flag-junit",
-        "androidx.test.rules",
+        "PlatformProperties",
     ],
     libs: [
-        "android.test.runner.stubs.system",
         "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
+        "framework-bluetooth.stubs.module_lib",
     ],
     srcs: ["src/**/*.java"],
     // Allows access to system apis
@@ -41,6 +43,8 @@ android_test {
         "cts",
         "general-tests",
         "mts-bluetooth",
+        "dts",
     ],
     min_sdk_version: "Tiramisu",
+    sdk_version: "module_current",
 }

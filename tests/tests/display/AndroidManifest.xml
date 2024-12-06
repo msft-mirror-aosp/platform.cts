@@ -30,6 +30,8 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- For listening to cached mode of the test activity. -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <!-- For creating trusted displays. -->
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
 
     <application>
         <uses-library android:name="android.test.runner" />
@@ -44,6 +46,8 @@
             android:theme="@style/WhiteBackgroundTheme"
             android:exported="true"/>
         <activity android:name=".HdrConversionTestActivity" />
+        <activity android:name=".HdrContentActivity" />
+        <activity android:name=".DisplayEventPropertyChangeActivity" />
         <activity android:name=".SimpleActivity" android:exported="true" />
         <activity android:name=".SimpleActivity2" android:exported="true" />
     </application>

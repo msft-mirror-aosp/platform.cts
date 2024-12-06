@@ -21,7 +21,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -56,13 +55,18 @@ public abstract class BaseTestActivity extends PassFailButtons.Activity implemen
 
     private String mSsidValue;
     private String mPskValue;
+    protected boolean mPskRequired = false;
 
     protected abstract BaseTestCase getTestCase(Context context);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.wifi_main);
+        if (mPskRequired) {
+            setContentView(R.layout.wifi_main_psk_required);
+        } else  {
+            setContentView(R.layout.wifi_main);
+        }
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 

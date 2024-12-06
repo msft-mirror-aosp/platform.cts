@@ -50,7 +50,7 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",
@@ -82,7 +82,7 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/view/inputmethod/cts/InputBindingTest.java",

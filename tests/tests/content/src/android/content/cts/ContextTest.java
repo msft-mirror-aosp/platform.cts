@@ -25,8 +25,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.server.am.Flags.FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -148,13 +146,6 @@ public class ContextTest {
     private static final int SERVICE_TIMEOUT = 15000;
     private static final int ROOT_UID = 0;
 
-    /**
-     * Shell command to broadcast {@link ResultReceiver#MOCK_ACTION} as an external app.
-     */
-    private static final String EXTERNAL_APP_BROADCAST_COMMAND =
-            "am broadcast -a " + ResultReceiver.MOCK_ACTION + " -f "
-                    + Intent.FLAG_RECEIVER_FOREGROUND;
-
     /* TestService for testCheckContentUriPermissionFull tests. */
     private static final String PKG_TEST_SERVICE = "android.content.cts.contenturitestapp";
     private static final String CLS_TEST_SERVICE = PKG_TEST_SERVICE + ".TestService";
@@ -174,6 +165,10 @@ public class ContextTest {
     private ServiceConnection mBinderPermissionTestConnection;
 
     protected Context mContext;
+    /**
+     * Shell command to broadcast {@link ResultReceiver#MOCK_ACTION} as an external app.
+     */
+    private String mExternalAppBroadcastCommand;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -198,6 +193,8 @@ public class ContextTest {
         mLockObj = new Object();
 
         mRegisteredReceiverList = new ArrayList<BroadcastReceiver>();
+        mExternalAppBroadcastCommand = "am broadcast --user " + mContext.getUserId()
+                + " -a " + ResultReceiver.MOCK_ACTION + " -f " + Intent.FLAG_RECEIVER_FOREGROUND;
     }
 
     @After
@@ -1170,7 +1167,7 @@ public class ContextTest {
 
             activitySession.assertActivityLaunched(intent.getComponent().getClassName(),
                     () -> SystemUtil.runWithShellPermissionIdentity(() ->
-                            mContext.startActivityAsUser(intent, UserHandle.CURRENT)));
+                            mContext.startActivityAsUser(intent, mContext.getUser())));
         }
     }
 
@@ -1911,7 +1908,6 @@ public class ContextTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK)
     public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp()
             throws Exception {
         setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_DEFAULT);
@@ -2197,7 +2193,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION),
                 Context.RECEIVER_EXPORTED);
 
-        SystemUtil.runShellCommand(EXTERNAL_APP_BROADCAST_COMMAND);
+        SystemUtil.runShellCommand(mExternalAppBroadcastCommand);
 
         new PollingCheck(BROADCAST_TIMEOUT, "The broadcast to the exported receiver"
                 + " was not received within the timeout window") {
@@ -2223,7 +2219,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION),
                 Context.RECEIVER_EXPORTED_UNAUDITED);
 
-        SystemUtil.runShellCommand(EXTERNAL_APP_BROADCAST_COMMAND);
+        SystemUtil.runShellCommand(mExternalAppBroadcastCommand);
 
         new PollingCheck(BROADCAST_TIMEOUT, "The broadcast to the exported receiver"
                 + " was not received within the timeout window") {
@@ -2244,7 +2240,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION),
                 Context.RECEIVER_NOT_EXPORTED);
 
-        SystemUtil.runShellCommand(EXTERNAL_APP_BROADCAST_COMMAND);
+        SystemUtil.runShellCommand(mExternalAppBroadcastCommand);
 
         Thread.sleep(BROADCAST_TIMEOUT);
         assertFalse(

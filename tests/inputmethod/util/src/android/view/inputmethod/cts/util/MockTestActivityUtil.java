@@ -148,17 +148,20 @@ public final class MockTestActivityUtil {
     public static AutoCloseable launchSync(boolean instant, long timeout,
             @Nullable Map<String, String> extras) {
         final StringBuilder commandBuilder = new StringBuilder();
+        final int testUserId = UserHandle.myUserId();
         if (instant) {
             // Override app-links domain verification.
             runShellCommandOrThrow(
-                    String.format("pm set-app-links-user-selection --user cur --package %s true %s",
-                            TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
+                    String.format("pm set-app-links-user-selection --user %d --package %s true %s",
+                            testUserId, TEST_ACTIVITY.getPackageName(),
+                            TEST_ACTIVITY_URI.getHost()));
             final Uri uri = formatStringIntentParam(TEST_ACTIVITY_URI, extras);
             commandBuilder.append(String.format("am start -a %s -c %s --activity-clear-task %s",
                     Intent.ACTION_VIEW, Intent.CATEGORY_BROWSABLE, uri.toString()));
         } else {
-            commandBuilder.append(String.format("am start -a %s -n %s --activity-clear-task",
-                    Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString()));
+            commandBuilder.append(
+                    String.format("am start -a %s -n %s --user %d --activity-clear-task",
+                            Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString(), testUserId));
             if (extras != null) {
                 extras.forEach((key, value) -> commandBuilder.append(" --es ")
                         .append(key).append(" ").append(value));

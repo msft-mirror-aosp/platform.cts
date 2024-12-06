@@ -28,7 +28,7 @@ import java.util.function.BiPredicate;
 public class RequirementConstants {
     private static final String TAG = RequirementConstants.class.getSimpleName();
 
-    public static final String REPORT_LOG_NAME = "CtsMediaPerformanceClassTestCases";
+    public static final String REPORT_LOG_NAME = "MediaPerformanceClassTestCases";
     public static final String TN_FIELD_NAME = "test_name";
     public static final String PC_FIELD_NAME = "performance_class";
 

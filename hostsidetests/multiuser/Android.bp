@@ -28,7 +28,7 @@ java_test_host {
         "platform-test-annotations-host",
         "compatibility-host-util",
     ],
-    data: [
+    device_common_data: [
         ":CtsMultiuserApp",
         ":CtsMultiuserDpc",
     ],
@@ -36,5 +36,14 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
+    ],
+}
+
+java_library_host {
+    name: "cts-multi-user-test-utils",
+    srcs: ["src/android/host/multiuser/BaseMultiUserTest.java"],
+    libs: [
+        "cts-tradefed",
+        "tradefed",
     ],
 }

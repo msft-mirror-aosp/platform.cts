@@ -125,6 +125,10 @@ public abstract class CodecTestBase {
     public static final boolean IS_AT_LEAST_V =
             ApiLevelUtil.isAfter(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
                 || ApiLevelUtil.codenameEquals("VanillaIceCream");
+    //TODO(b/248315681) Change to a proper condition
+    public static final boolean IS_AT_LEAST_B =
+            ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                || ApiLevelUtil.codenameEquals("Baklava");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
@@ -188,6 +192,8 @@ public abstract class CodecTestBase {
     // max poll counter before test aborts and returns error
     public static final int RETRY_LIMIT = 100;
     public static final String INVALID_CODEC = "unknown.codec_";
+    public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
+    public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
     static final int[] MPEG2_PROFILES = new int[]{MPEG2ProfileSimple, MPEG2ProfileMain,
             MPEG2Profile422, MPEG2ProfileSNR, MPEG2ProfileSpatial, MPEG2ProfileHigh};
     static final int[] MPEG4_PROFILES = new int[]{MPEG4ProfileSimple, MPEG4ProfileSimpleScalable,
@@ -223,11 +229,17 @@ public abstract class CodecTestBase {
     static final int[] HEVC_PROFILES = combine(HEVC_SDR_PROFILES, HEVC_HDR_PROFILES);
     static final int[] AV1_SDR_PROFILES = new int[]{AV1ProfileMain8};
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
+    static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
+    static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
+            DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
+            DolbyVisionProfileDvheDtr, DolbyVisionProfileDvheStn, DolbyVisionProfileDvheDth,
+            DolbyVisionProfileDvheDtb, DolbyVisionProfileDvheSt, DolbyVisionProfileDvavSe,
+            DolbyVisionProfileDvav110};
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
@@ -444,6 +456,7 @@ public abstract class CodecTestBase {
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_PROFILES);
+        PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HLG_PROFILES);
 
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
@@ -457,6 +470,7 @@ public abstract class CodecTestBase {
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_PROFILES);

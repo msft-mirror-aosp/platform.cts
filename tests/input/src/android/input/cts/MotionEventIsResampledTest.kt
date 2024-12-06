@@ -17,17 +17,14 @@
 package android.input.cts
 
 import android.cts.input.EventVerifier
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputTouchScreen
-import com.android.cts.input.VirtualDisplayActivityScenarioRule
+import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withMotionAction
-import com.android.hardware.input.Flags
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -58,9 +55,7 @@ class MotionEventIsResampledTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {
@@ -76,7 +71,6 @@ class MotionEventIsResampledTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_POINTER_COORDS_IS_RESAMPLED_API)
     fun testIsResampled() {
         var x = 100
         val y = 100

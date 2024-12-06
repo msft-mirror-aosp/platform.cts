@@ -27,32 +27,41 @@ import android.graphics.Color;
 import android.icu.util.ULocale;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.Objects;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputMethodSubtypeTest {
+public final class InputMethodSubtypeTest {
 
     private static final CharSequence SUBTYPE_UNTRANSLATABLE_NAME = "my_new_subtype";
+
+    private static final CharSequence LAYOUT_LABEL_NON_LOCALIZED = "my_new_subtype_layout";
 
     private static final String NONEXISTENCE_PACKAGE = "com.android.cts.ime.nonexistentpackage";
 
     private static final String NONEXISTENCE_RELATIVE_NAME = ".NonexistentIme";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @NonNull
     private final InputMethodManager mImm = Objects.requireNonNull(
@@ -216,6 +225,131 @@ public class InputMethodSubtypeTest {
                 context, context.getPackageName(), null).toString();
 
         assertThat(actualSubtypeName).isEqualTo("new_subtype_name");
+    }
+
+    /**
+     * Verifies the subtype with a non-localized layout label can be parcelled and un-parcelled
+     * correctly.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getLayoutLabelNonLocalized",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setLayoutLabelNonLocalized",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testLayoutLabelNonLocalizedParcel() {
+        final SpannableStringBuilder expectedLayoutLabel =
+                new SpannableStringBuilder(LAYOUT_LABEL_NON_LOCALIZED);
+        expectedLayoutLabel.setSpan(new ForegroundColorSpan(Color.RED), 3, 5, 0);
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder()
+                        .setLayoutLabelNonLocalized(expectedLayoutLabel)
+                        .build();
+
+        assertThat(newSubtype.getLayoutLabelNonLocalized()).isEqualTo(expectedLayoutLabel);
+
+        final Parcel parcel = Parcel.obtain();
+        newSubtype.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        final Spannable layoutLabelSpannable =
+                (Spannable) InputMethodSubtype.CREATOR.createFromParcel(parcel)
+                        .getLayoutLabelNonLocalized();
+        parcel.recycle();
+
+        assertThat(layoutLabelSpannable.toString()).isEqualTo(expectedLayoutLabel.toString());
+        Object[] spans =
+                layoutLabelSpannable.getSpans(0, expectedLayoutLabel.length(), Object.class);
+        assertThat(spans.length).isEqualTo(1);
+        assertThat(layoutLabelSpannable.getSpanStart(spans[0])).isEqualTo(3);
+        assertThat(layoutLabelSpannable.getSpanEnd(spans[0])).isEqualTo(5);
+    }
+
+    /**
+     * Verifies the subtype without a non-localized layout label can be parcelled and un-parcelled
+     * correctly.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getLayoutLabelNonLocalized",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testNoLayoutLabelNonLocalizedParcel() {
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder().build();
+
+        assertThat(newSubtype.getLayoutLabelNonLocalized().length()).isEqualTo(0);
+
+        final Parcel parcel = Parcel.obtain();
+        newSubtype.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        final CharSequence layoutLabel =
+                InputMethodSubtype.CREATOR.createFromParcel(parcel).getLayoutLabelNonLocalized();
+        parcel.recycle();
+
+        assertThat(layoutLabel.length()).isEqualTo(0);
+    }
+
+    /**
+     * Verifies that
+     * {@link InputMethodSubtype.InputMethodSubtypeBuilder#setLayoutLabelNonLocalized} can
+     * correctly set the layout display name for the subtype.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getLayoutLabelNonLocalized",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setLayoutLabelNonLocalized",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testSetLayoutLabelNonLocalized() {
+        final CharSequence expectedLayoutLabel = LAYOUT_LABEL_NON_LOCALIZED;
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final Context context = instrumentation.getTargetContext();
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder()
+                        .setLayoutLabelNonLocalized(expectedLayoutLabel)
+                        .build();
+
+        assertThat(newSubtype.getLayoutLabelNonLocalized()).isEqualTo(expectedLayoutLabel);
+
+        final String actualLayoutLabel = newSubtype.getLayoutDisplayName(
+                context, context.getApplicationInfo()).toString();
+
+        assertThat(actualLayoutLabel).isEqualTo(expectedLayoutLabel);
+    }
+
+    /**
+     * Verifies that
+     * {@link InputMethodSubtype.InputMethodSubtypeBuilder#setLayoutLabelNonLocalized} won't
+     * impact the layout display name if the layout label resource is specified by
+     * {@link InputMethodSubtype.InputMethodSubtypeBuilder#setLayoutLabelResource}.
+     */
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodSubtype#getLayoutLabelNonLocalized",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setLayoutLabelNonLocalized",
+            "android.view.inputmethod.InputMethodSubtype.InputMethodSubtypeBuilder#"
+                    + "setLayoutLabelResource",
+    })
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
+    @Test
+    public void testSetLayoutLabelNonLocalizedWithLayoutLabelResource() {
+        final CharSequence expectedLayoutLabel = LAYOUT_LABEL_NON_LOCALIZED;
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final Context context = instrumentation.getTargetContext();
+        final InputMethodSubtype newSubtype =
+                new InputMethodSubtype.InputMethodSubtypeBuilder()
+                        .setLayoutLabelNonLocalized(expectedLayoutLabel)
+                        .setLayoutLabelResource(R.string.new_subtype_layout_name)
+                        .build();
+
+        assertThat(newSubtype.getLayoutLabelNonLocalized()).isEqualTo(expectedLayoutLabel);
+
+        String actualLayoutLabel = newSubtype.getLayoutDisplayName(
+                context, context.getApplicationInfo()).toString();
+
+        assertThat(actualLayoutLabel).isEqualTo("new_subtype_layout_name");
     }
 
     /**

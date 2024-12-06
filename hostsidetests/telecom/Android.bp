@@ -35,7 +35,7 @@ java_test_host {
     //compiles telecom CTS testcases for device
     target_required: ["CtsTelecomTestCases"],
 
-    data: [
+    device_common_data: [
         ":CtsTelecomTestCases",
         ":TelecomDeviceTest",
     ],

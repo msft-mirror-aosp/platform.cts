@@ -69,6 +69,7 @@ android_library {
 
     static_libs: [
         "android.media.audio-aconfig-java",
+        "android.service.chooser.flags-aconfig-java",
         "android-ex-camera2",
         "compatibility-common-util-devicesidelib",
         "cts-sensors-tests",
@@ -155,7 +156,6 @@ android_library {
         "src/com/android/cts/verifier/*.java",
         "src/**/I*.aidl",
     ],
-
     static_libs: [
         "androidx.legacy_legacy-support-v4",
         "compatibility-common-util-devicesidelib",
@@ -189,7 +189,7 @@ android_library {
 
 filegroup {
     name: "pre_installed_apps",
-    srcs: [
+    device_first_srcs: [
         ":CtsDefaultNotesApp",
         ":CtsDeviceControlsApp",
         ":CtsEmptyDeviceAdmin",
@@ -206,14 +206,15 @@ filegroup {
 // Apps to be installed as Instant App using adb install --instant
 filegroup {
     name: "pre_installed_instant_app",
-    srcs: [
+    device_first_srcs: [
         ":CtsVerifierInstantApp",
     ],
 }
 
 filegroup {
     name: "other_required_apps",
-    srcs: [
+    device_first_srcs: [
+        ":CameraFeatureCombinationVerifier",
         ":CtsCarWatchdogCompanionApp",
         ":CtsTileServiceApp",
         ":CtsVerifierUSBCompanion",
@@ -245,11 +246,13 @@ filegroup {
 genrule {
     name: "android-cts-verifier",
     srcs: [
-        ":android-cts-verifier-notice",
         ":cts_apps_to_include",
-        ":CtsVerifier",
         ":camera-its",
         ":camera-webcam-test",
+    ],
+    device_common_srcs: [
+        ":android-cts-verifier-notice",
+        ":CtsVerifier",
         ":multidevice-test",
     ],
     tools: [

@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 @Presubmit
 public class ServiceTest extends ActivityTestsBase {
@@ -447,13 +448,13 @@ public class ServiceTest extends ActivityTestsBase {
                             .executeShellCommand(cmd);
             byte[] buf = new byte[512];
             int bytesRead;
-            FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
-            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-            while ((bytesRead = fis.read(buf)) != -1) {
-                stdout.write(buf, 0, bytesRead);
+            try (FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd)) {
+                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                while ((bytesRead = fis.read(buf)) != -1) {
+                    stdout.write(buf, 0, bytesRead);
+                }
+                return stdout.toByteArray();
             }
-            fis.close();
-            return stdout.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -1676,10 +1677,14 @@ public class ServiceTest extends ActivityTestsBase {
         IsolatedConnection mConnection;
 
         IsolatedConnectionInfo(int group, int importance, int strong) {
+            this(group, importance, strong, "");
+        }
+
+        IsolatedConnectionInfo(int group, int importance, int strong, String instanceNamePostfix) {
             mGroup = group;
             mImportance = importance;
             mStrong = strong;
-            mInstanceName = group + "_" + importance;
+            mInstanceName = group + "_" + importance + instanceNamePostfix;
             StringBuilder b = new StringBuilder(mInstanceName);
             b.append('_');
             if (strong == BINDING_WEAK) {
@@ -1709,7 +1714,7 @@ public class ServiceTest extends ActivityTestsBase {
             if (mConnection != null) {
                 return true;
             }
-            Log.i("XXXXXXX", "Binding " + mLabel + ": conn=" + mConnection
+            Log.i(TAG, "Binding " + mLabel + ": conn=" + mConnection
                     + " context=" + context);
             mConnection = new IsolatedConnection();
             boolean result = context.bindIsolatedService(
@@ -1729,7 +1734,7 @@ public class ServiceTest extends ActivityTestsBase {
 
         void unbind(Context context) {
             if (mConnection != null) {
-                Log.i("XXXXXXX", "Unbinding " + mLabel + ": conn=" + mConnection
+                Log.i(TAG, "Unbinding " + mLabel + ": conn=" + mConnection
                         + " context=" + context);
                 context.unbindService(mConnection);
                 mConnection = null;
@@ -1803,6 +1808,16 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    private void doBindAndWaitForService(Context context, IsolatedConnectionInfo[] connections,
+            int group, int strong) {
+        for (IsolatedConnectionInfo ci : connections) {
+            if (ci.match(group, strong)) {
+                ci.bind(context);
+                ci.mConnection.waitForService(DELAY);
+            }
+        }
+    }
+
     private void doWaitForService(IsolatedConnectionInfo[] connections, int group,
             int strong) {
         for (IsolatedConnectionInfo ci : connections) {
@@ -1810,6 +1825,17 @@ public class ServiceTest extends ActivityTestsBase {
                 ci.mConnection.waitForService(DELAY);
             }
         }
+    }
+
+    private boolean doWaitWhile(BooleanSupplier condition, long pause, long timeout) {
+        final long endTime = System.currentTimeMillis() + timeout;
+        while (condition.getAsBoolean()) {
+            if (System.currentTimeMillis() > endTime) {
+                return false;
+            }
+            SystemClock.sleep(pause);
+        }
+        return true;
     }
 
     private void doUpdateServiceGroup(Context context, IsolatedConnectionInfo[] connections,
@@ -1857,18 +1883,18 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     private void logProc(int i, ProcessRecordProto proc) {
-        Log.i("XXXXXXXX", printProc(i, proc));
+        Log.i(TAG, printProc(i, proc));
     }
 
     private void verifyLruOrder(LruOrderItem[] orderItems) {
         List<ProcessRecordProto> procs = getLruProcesses();
-        Log.i("XXXXXXXX", "Processes:");
+        Log.i(TAG, "Processes:");
         int orderI = 0;
         for (int i = procs.size() - 1; i >= 0; i--) {
             ProcessRecordProto proc = procs.get(i);
             logProc(i, proc);
             final LruOrderItem lru = orderItems[orderI];
-            Log.i("XXXXXXXX", "Expecting uid: " + lru.getUid());
+            Log.i(TAG, "Expecting uid: " + lru.getUid());
             if (!lru.isEquivalentTo(proc)) {
                 if ((lru.getFlags() & LruOrderItem.FLAG_SKIP_UNKNOWN) != 0) {
                     while (i > 0) {
@@ -1994,20 +2020,36 @@ public class ServiceTest extends ActivityTestsBase {
 
         final Activity a = getRunningActivity();
 
-        final int CONN_1_1_W = 0;
-        final int CONN_1_1_S = 1;
-        final int CONN_1_2_W = 2;
-        final int CONN_1_2_S = 3;
-        final int CONN_2_1_W = 4;
-        final int CONN_2_1_S = 5;
-        final int CONN_2_2_W = 6;
-        final int CONN_2_2_S = 7;
-        final int CONN_2_3_W = 8;
-        final int CONN_2_3_S = 9;
+        final int CONN_0_0_W_0 = 0;
+        final int CONN_0_0_S_0 = 1;
+        final int CONN_0_0_W_1 = 2;
+        final int CONN_0_0_S_1 = 3;
+        final int CONN_0_0_W_2 = 4;
+        final int CONN_0_0_S_2 = 5;
+        final int CONN_0_0_W_3 = 6;
+        final int CONN_0_0_S_3 = 7;
+        final int CONN_1_1_W = 8;
+        final int CONN_1_1_S = 9;
+        final int CONN_1_2_W = 10;
+        final int CONN_1_2_S = 11;
+        final int CONN_2_1_W = 12;
+        final int CONN_2_1_S = 13;
+        final int CONN_2_2_W = 14;
+        final int CONN_2_2_S = 15;
+        final int CONN_2_3_W = 16;
+        final int CONN_2_3_S = 17;
 
         // We are going to have both weak and strong references to services, so we can allow
         // some to go down in the LRU list.
         final IsolatedConnectionInfo[] connections = new IsolatedConnectionInfo[] {
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w0"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s0"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w1"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s1"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w2"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s2"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w3"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s3"),
                 new IsolatedConnectionInfo(1, 1, BINDING_WEAK),
                 new IsolatedConnectionInfo(1, 1, BINDING_STRONG),
                 new IsolatedConnectionInfo(1, 2, BINDING_WEAK),
@@ -2035,6 +2077,50 @@ public class ServiceTest extends ActivityTestsBase {
         boolean passed = false;
 
         try {
+            // Start the group 0 processes and wait for them to come up.
+            doBindAndWaitForService(a, connections, 0, BINDING_ANY);
+
+            verifyLruOrder(new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
+
+            // send the app to background
+            assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App is still at the top of the LRU list after getting moved to background",
+                    doWaitWhile(() -> new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+
+            // bring the app back to foreground
+            a.startActivity(a.getIntent());
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App hasn't come to the top of LRU list after getting back to foreground",
+                    doWaitWhile(() -> !new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+
+            verifyLruOrder(new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
+
+            // Stop the group 0 processes.
+            doUnbind(a, connections, 0, BINDING_ANY);
+
             // Start the group 1 processes as weak.
             doBind(a, connections, 1, BINDING_WEAK);
             doUpdateServiceGroup(a, connections, 1, BINDING_WEAK);
@@ -2122,7 +2208,7 @@ public class ServiceTest extends ActivityTestsBase {
         } finally {
             if (!passed) {
                 List<ProcessRecordProto> procs = getLruProcesses();
-                Log.i("XXXXXXXX", "Processes:");
+                Log.i(TAG, "Processes:");
                 for (int i = procs.size() - 1; i >= 0; i--) {
                     ProcessRecordProto proc = procs.get(i);
                     logProc(i, proc);

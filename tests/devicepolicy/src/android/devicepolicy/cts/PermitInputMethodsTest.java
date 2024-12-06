@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyIdentifiers.PERMITTED_INPUT_METHODS_POLICY;
 import static android.app.admin.TargetUser.LOCAL_USER_ID;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY;
@@ -95,8 +96,8 @@ public final class PermitInputMethodsTest {
     @After
     public void teardown() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
         } catch (Exception e) {
             // Required for tests with invalid admins.
             Log.w(TAG, "Failed to clean up the permitted input methods", e);
@@ -107,11 +108,11 @@ public final class PermitInputMethodsTest {
     @PolicyAppliesTest(policy = {PermittedInputMethods.class, PermittedSystemInputMethods.class})
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_allPermitted() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                sDeviceState.dpc().componentName(), /* packageNames= */ null)).isTrue();
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                dpc(sDeviceState).componentName(), /* packageNames= */ null)).isTrue();
 
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                .getPermittedInputMethods(sDeviceState.dpc().componentName())).isNull();
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                .getPermittedInputMethods(dpc(sDeviceState).componentName())).isNull();
         assertThat(sLocalDevicePolicyManager.getPermittedInputMethods()).isNull();
         assertThat(sLocalDevicePolicyManager.getPermittedInputMethodsForCurrentUser()).isNull();
     }
@@ -120,8 +121,8 @@ public final class PermitInputMethodsTest {
     @CanSetPolicyTest(policy = {PermittedInputMethods.class, PermittedSystemInputMethods.class})
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_doesNotThrowException() {
-        sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                sDeviceState.dpc().componentName(), /* packageNames= */ null);
+        dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                dpc(sDeviceState).componentName(), /* packageNames= */ null);
     }
 
     @Postsubmit(reason = "New test")
@@ -130,8 +131,8 @@ public final class PermitInputMethodsTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
     public void setPermittedInputMethods_canNotSet_throwsException() {
         assertThrows(SecurityException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
         });
     }
 
@@ -139,8 +140,8 @@ public final class PermitInputMethodsTest {
     @CanSetPolicyTest(policy = PermittedSystemInputMethods.class)
     public void setPermittedInputMethods_nonEmptyList_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ List.of("package"));
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ List.of("package"));
         });
     }
 
@@ -153,12 +154,12 @@ public final class PermitInputMethodsTest {
 
         List<String> enabledNonSystemImes = NON_SYSTEM_INPUT_METHOD_PACKAGES;
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                sDeviceState.dpc().componentName(), /* packageNames= */ enabledNonSystemImes)
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                dpc(sDeviceState).componentName(), /* packageNames= */ enabledNonSystemImes)
         ).isTrue();
 
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                .getPermittedInputMethods(sDeviceState.dpc().componentName()))
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                .getPermittedInputMethods(dpc(sDeviceState).componentName()))
                 .containsExactlyElementsIn(enabledNonSystemImes);
         assertThat(sLocalDevicePolicyManager.getPermittedInputMethods()).isNull();
         assertThat(sLocalDevicePolicyManager.getPermittedInputMethodsForCurrentUser()).isNull();
@@ -176,12 +177,12 @@ public final class PermitInputMethodsTest {
         permittedPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
         permittedPlusSystem.addAll(enabledNonSystemImes);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                sDeviceState.dpc().componentName(), /* packageNames= */ enabledNonSystemImes)
+        assertThat(dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                dpc(sDeviceState).componentName(), /* packageNames= */ enabledNonSystemImes)
         ).isTrue();
 
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                .getPermittedInputMethods(sDeviceState.dpc().componentName()))
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                .getPermittedInputMethods(dpc(sDeviceState).componentName()))
                 .containsExactlyElementsIn(enabledNonSystemImes);
         assertThat(sLocalDevicePolicyManager.getPermittedInputMethods())
                 .containsExactlyElementsIn(permittedPlusSystem);
@@ -195,8 +196,8 @@ public final class PermitInputMethodsTest {
         // Invalid package name - too long
         List<String> badMethods = List.of(new String(new char[1000]).replace('\0', 'A'));
         assertThrows(IllegalArgumentException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                        sDeviceState.dpc().componentName(), badMethods));
+                dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                        dpc(sDeviceState).componentName(), badMethods));
     }
 
     @Postsubmit(reason = "new test")
@@ -212,8 +213,8 @@ public final class PermitInputMethodsTest {
             Set<String> permittedPlusSystem = new HashSet<>();
             permittedPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
             permittedPlusSystem.addAll(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
 
             PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                     new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
@@ -222,8 +223,8 @@ public final class PermitInputMethodsTest {
             assertThat(policyState.getCurrentResolvedPolicy()).containsExactlyElementsIn(
                     NON_SYSTEM_INPUT_METHOD_PACKAGES);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
         }
     }
 
@@ -238,16 +239,16 @@ public final class PermitInputMethodsTest {
                 SYSTEM_INPUT_METHODS_PACKAGES.isEmpty());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
 
             PolicySetResultUtils.assertPolicySetResultReceived(
                     sDeviceState,
                     PERMITTED_INPUT_METHODS_POLICY,
                     PolicyUpdateResult.RESULT_POLICY_SET, LOCAL_USER_ID, new Bundle());
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
         }
     }
 
@@ -264,8 +265,8 @@ public final class PermitInputMethodsTest {
             Set<String> permittedPlusSystem = new HashSet<>();
             permittedPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
             permittedPlusSystem.addAll(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), NON_SYSTEM_INPUT_METHOD_PACKAGES);
 
             PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                     new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
@@ -274,8 +275,8 @@ public final class PermitInputMethodsTest {
             assertThat(PolicyEngineUtils.getMostRecentStringSetMechanism(policyState))
                     .isEqualTo(MostRecent.MOST_RECENT);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
         }
     }
 
@@ -297,8 +298,8 @@ public final class PermitInputMethodsTest {
             Set<String> permittedPlusSystem = new HashSet<>();
             permittedPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
             permittedPlusSystem.addAll(enabledNonSystemImes);
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ enabledNonSystemImes);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ enabledNonSystemImes);
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
 //            TestApis.flags().set(
@@ -307,8 +308,8 @@ public final class PermitInputMethodsTest {
             PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                     new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
                     TestApis.users().instrumented().userHandle());
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .getPermittedInputMethods(sDeviceState.dpc().componentName()))
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getPermittedInputMethods(dpc(sDeviceState).componentName()))
                     .containsExactlyElementsIn(enabledNonSystemImes);
             assertThat(sLocalDevicePolicyManager.getPermittedInputMethods())
                     .containsExactlyElementsIn(permittedPlusSystem);
@@ -317,8 +318,8 @@ public final class PermitInputMethodsTest {
             assertThat(policyState.getCurrentResolvedPolicy())
                     .containsExactlyElementsIn(enabledNonSystemImes);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
-                    sDeviceState.dpc().componentName(), /* packageNames= */ null);
+            dpc(sDeviceState).devicePolicyManager().setPermittedInputMethods(
+                    dpc(sDeviceState).componentName(), /* packageNames= */ null);
 //            TestApis.flags().set(
 //                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }

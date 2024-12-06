@@ -39,7 +39,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginLeft="10dp">
+                android:layout_marginStart="10sp">
                 <Button
                     android:text="@string/audio_general_yes"
                     android:layout_width="wrap_content"
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginLeft="10dp">
+            android:layout_marginStart="10sp">
 
             <Button
                 android:layout_width="wrap_content"
@@ -82,21 +82,26 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="40dp"
-                android:textColor="#FFFFFF"
+                android:textSize="40sp"
+                android:textColor="?android:attr/textColorPrimary"
                 android:id="@+id/user_prompt_tx"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=""
+                android:textSize="20sp"
+                android:paddingTop="5sp"
+                android:paddingLeft="5sp"
+                android:paddingRight="5sp"
                 android:id="@+id/debug_message_tx"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text=""
+                android:textSize="20sp"
+                android:paddingTop="5sp"
+                android:paddingLeft="5sp"
+                android:paddingRight="5sp"
                 android:id="@+id/results_tx"/>
         </LinearLayout>
 

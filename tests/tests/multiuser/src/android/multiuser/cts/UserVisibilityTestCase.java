@@ -21,6 +21,8 @@ import static android.multiuser.cts.PermissionHelper.adoptShellPermissionIdentit
 import static android.multiuser.cts.TestingUtils.sContext;
 import static android.view.Display.DEFAULT_DISPLAY;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.ActivityManager;
@@ -113,7 +115,7 @@ public abstract class UserVisibilityTestCase {
         try (UserReference user = TestApis.users().createUser().name("childless_user").create()) {
             startVisibleBackgroundUser(user, displayId);
             try {
-                TestApp testApp = sDeviceState.testApps().any();
+                TestApp testApp = testApps(sDeviceState).any();
                 try (TestAppInstance instance = testApp.install(user)) {
                     test.run(user, displayId, instance);
                 }
@@ -148,7 +150,7 @@ public abstract class UserVisibilityTestCase {
                     // Make sure profile is stopped, as it could have been automatically started
                     // with parent user
                     Log.d(TAG, "Stopping profile " + profile.id()); profile.stop();
-                    TestApp testApp = sDeviceState.testApps().any();
+                    TestApp testApp = testApps(sDeviceState).any();
                     try (TestAppInstance instance = testApp.install(profile)) {
                         tester.run(user, profile, displayId, instance);
                     } // test instance

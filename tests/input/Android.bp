@@ -46,7 +46,6 @@ android_test {
         "compatibility-device-util-axt",
         "cts-input-lib",
         "cts-wm-util",
-        "flag-junit",
         "kotlin-test",
         "ui-trace-collector",
         "collector-device-lib",

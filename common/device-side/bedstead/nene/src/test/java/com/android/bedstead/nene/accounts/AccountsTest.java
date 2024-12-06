@@ -16,14 +16,16 @@
 
 package com.android.bedstead.nene.accounts;
 
+import static com.android.bedstead.accounts.AccountsDeviceStateExtensionsKt.account;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.accounts.annotations.EnsureHasAccount;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;
@@ -42,7 +44,7 @@ public final class AccountsTest {
     @EnsureHasAccount
     public void allOnDevice_includesAccountOnInstrumentedUser() {
         assertThat(TestApis.accounts().allOnDevice())
-                .contains(sDeviceState.account());
+                .contains(account(sDeviceState));
     }
 
     @Test
@@ -50,7 +52,7 @@ public final class AccountsTest {
     @EnsureHasAccount(onUser = ADDITIONAL_USER)
     @Ignore("/b271540793")
     public void allOnDevice_includesAccountOnOtherUser() {
-        assertThat(TestApis.accounts().all(sDeviceState.additionalUser()))
-                .contains(sDeviceState.account());
+        assertThat(TestApis.accounts().all(additionalUser(sDeviceState)))
+                .contains(account(sDeviceState));
     }
 }

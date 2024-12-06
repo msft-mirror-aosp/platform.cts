@@ -86,6 +86,8 @@ public class AccessibilityGlobalActionsTest {
 
     @After
     public void tearDown() throws Exception {
+        // dismisses screenshot popup if present.
+        sUiDevice.pressBack();
         // The majority of system actions involve System UI requests that both:
         //   - Can take a few seconds to take effect on certain device types.
         //   - Perform behavior that depends on the specific SystemUI implementation of the device,

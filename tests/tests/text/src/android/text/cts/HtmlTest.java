@@ -44,13 +44,13 @@ import android.text.style.UnderlineSpan;
 
 import androidx.test.filters.SmallTest;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
@@ -632,6 +632,13 @@ public class HtmlTest {
     public void testBadSurrogates() {
         Spanned s = Html.fromHtml("\udc31\ud83d");
         assertThat(Html.toHtml(s), matchesIgnoringTrailingWhitespace("<p dir=\"ltr\"></p>"));
+    }
+
+    @Test
+    public void testNullFamily() {
+        SpannableString s = new SpannableString("abcde");
+        s.setSpan(new TypefaceSpan((String) null), 1, 3, SPAN_EXCLUSIVE_INCLUSIVE);
+        Html.toHtml(s, Html.TO_HTML_PARAGRAPH_LINES_CONSECUTIVE);
     }
 
     private static StringIgnoringTrailingWhitespaceMatcher matchesIgnoringTrailingWhitespace(

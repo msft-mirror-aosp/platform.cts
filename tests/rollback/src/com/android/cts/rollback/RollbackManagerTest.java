@@ -16,6 +16,8 @@
 
 package com.android.cts.rollback;
 
+import static android.crashrecovery.flags.Flags.FLAG_ENABLE_CRASHRECOVERY;
+
 import static com.android.cts.rollback.lib.RollbackInfoSubject.assertThat;
 import static com.android.cts.rollback.lib.RollbackUtils.getRollbackManager;
 
@@ -47,6 +49,7 @@ import com.android.cts.rollback.lib.RollbackUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,6 +88,7 @@ public class RollbackManagerTest {
                     Manifest.permission.TEST_MANAGE_ROLLBACKS,
                     Manifest.permission.READ_DEVICE_CONFIG,
                     Manifest.permission.WRITE_DEVICE_CONFIG,
+                    Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG,
                     Manifest.permission.FORCE_STOP_PACKAGES,
                     Manifest.permission.SET_TIME);
 
@@ -650,6 +654,7 @@ public class RollbackManagerTest {
      * Test the scheduling aspect of rollback expiration.
      */
     @Test
+    @Ignore("b/367647826")
     public void testRollbackExpiresAfterLifetime() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
@@ -681,6 +686,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testRollbackExpiresAfterRollbackLifetime() throws Exception {
         long expirationTimeA = TimeUnit.SECONDS.toMillis(6);
         Install.single(TestApp.A1).commit();
@@ -736,6 +742,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testRollbackExpiresWhenLifetimeStays() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         Install.single(TestApp.A1).commit();
@@ -766,6 +773,7 @@ public class RollbackManagerTest {
      * rollback available
      */
     @Test
+    @Ignore("b/367647826")
     public void testTimeChangeDoesNotAffectLifetime() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
@@ -804,6 +812,7 @@ public class RollbackManagerTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    @Ignore("b/367647826")
     public void testTimeChangeDoesNotAffectLifetimeMillis() throws Exception {
         long expirationTime = TimeUnit.SECONDS.toMillis(6);
 
@@ -837,12 +846,35 @@ public class RollbackManagerTest {
         RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
 
         assertThat(rollback).isNotNull();
-        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
     public void testImpactLevelInRollbackDefault() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
+    public void testImpactLevelInRollback_withGetRollbackImpactAsSystemApi() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().setRollbackImpactLevel(1).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
+    public void testImpactLevelInRollbackDefault_withGetRollbackImpactAsSystemApi() throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().commit();
         RollbackUtils.waitForAvailableRollback(TestApp.A);

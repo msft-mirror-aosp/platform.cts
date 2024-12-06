@@ -43,12 +43,18 @@ filegroup {
     srcs: ["ApkGenerator.jks"],
 }
 
+filegroup {
+    name: "frameworks-res-CtsPackageManagerParsingApkGenerator",
+    device_common_srcs: [":framework-res"],
+    visibility: ["//cts/hostsidetests/packagemanager/parsing:__subpackages__"],
+}
+
 genrule_defaults {
     name: "CtsPackageManagerParsingApkGenerator",
     tool_files: [
         ":CtsPackageManagerApkGeneratorSrc",
         ":CtsPackageManagerApkGeneratorJks",
-        ":framework-res",
+        ":frameworks-res-CtsPackageManagerParsingApkGenerator",
     ],
     tools: [
         "aapt2",
@@ -56,7 +62,8 @@ genrule_defaults {
         "soong_zip",
     ],
     cmd: "python3 $(location :CtsPackageManagerApkGeneratorSrc) \"$(location aapt2)\" " +
-        "\"$(location :framework-res)\" \"$(location apksigner)\" " +
+        "\"$(location :frameworks-res-CtsPackageManagerParsingApkGenerator)\" " +
+        "\"$(location apksigner)\" " +
         "\"$(location :CtsPackageManagerApkGeneratorJks)\" " +
         "\"$(genDir)\" $(in) && $(location soong_zip) -o $(out) -L 0 -C $(genDir)/out -D $(genDir)/out",
 }

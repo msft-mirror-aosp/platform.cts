@@ -18,7 +18,10 @@ package com.android.bedstead.nene.packages;
 
 import static android.os.Build.VERSION_CODES.S;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -28,18 +31,18 @@ import static org.testng.Assert.assertThrows;
 
 import android.content.Intent;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -69,7 +72,7 @@ public class PackagesTest {
     private static final File NON_EXISTING_APK_FILE =
             new File("/data/local/tmp/ThisApkDoesNotExist.apk");
     private static final byte[] TEST_APP_BYTES = loadBytes(TEST_APP_APK_FILE);
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().exported().isTrue()
             ).get();
@@ -139,9 +142,9 @@ public class PackagesTest {
         Package pkg = null;
         try {
             pkg = TestApis.packages().install(mUser, TEST_APP_APK_FILE);
-            pkg.uninstall(sDeviceState.additionalUser());
+            pkg.uninstall(additionalUser(sDeviceState));
 
-            assertThat(TestApis.packages().installedForUser(sDeviceState.additionalUser()))
+            assertThat(TestApis.packages().installedForUser(additionalUser(sDeviceState)))
                     .doesNotContain(pkg);
         } finally {
             if (pkg != null) {
@@ -208,26 +211,26 @@ public class PackagesTest {
     @RequireRunOnInitialUser
     @EnsureHasWorkProfile
     public void install_inWorkProfile_isInstalled() {
-        TestApis.packages().install(sDeviceState.workProfile(), TEST_APP_APK_FILE);
+        TestApis.packages().install(workProfile(sDeviceState), TEST_APP_APK_FILE);
         Package pkg = TestApis.packages().find(TEST_APP_PACKAGE_NAME);
 
         try {
-            assertThat(pkg.installedOnUser(sDeviceState.workProfile())).isTrue();
+            assertThat(pkg.installedOnUser(workProfile(sDeviceState))).isTrue();
         } finally {
-            pkg.uninstall(sDeviceState.workProfile());
+            pkg.uninstall(workProfile(sDeviceState));
         }
     }
 
     @Test
     @EnsureHasAdditionalUser
     public void install_differentUser_isInstalled() {
-        TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_APK_FILE);
+        TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_APK_FILE);
         Package pkg = TestApis.packages().find(TEST_APP_PACKAGE_NAME);
 
         try {
-            assertThat(pkg.installedOnUser(sDeviceState.additionalUser())).isTrue();
+            assertThat(pkg.installedOnUser(additionalUser(sDeviceState))).isTrue();
         } finally {
-            pkg.uninstall(sDeviceState.additionalUser());
+            pkg.uninstall(additionalUser(sDeviceState));
         }
     }
 
@@ -236,9 +239,9 @@ public class PackagesTest {
     public void install_byteArray_differentUser_isInstalled() {
         Package pkg = null;
         try {
-            pkg = TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_BYTES);
+            pkg = TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_BYTES);
 
-            assertThat(pkg.installedOnUser(sDeviceState.additionalUser())).isTrue();
+            assertThat(pkg.installedOnUser(additionalUser(sDeviceState))).isTrue();
         } finally {
             if (pkg != null) {
                 pkg.uninstallFromAllUsers();
@@ -250,13 +253,13 @@ public class PackagesTest {
     @EnsureHasAdditionalUser
     public void install_userNotStarted_throwsException() {
         try {
-            sDeviceState.additionalUser().stop();
+            additionalUser(sDeviceState).stop();
 
             assertThrows(NeneException.class, () -> {
-                TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_APK_FILE);
+                TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_APK_FILE);
             });
         } finally {
-            sDeviceState.additionalUser().start();
+            additionalUser(sDeviceState).start();
         }
     }
 
@@ -264,41 +267,41 @@ public class PackagesTest {
     @EnsureHasAdditionalUser
     public void install_byteArray_userNotStarted_throwsException() {
         try {
-            sDeviceState.additionalUser().stop();
+            additionalUser(sDeviceState).stop();
 
             assertThrows(NeneException.class, () -> {
-                TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_BYTES);
+                TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_BYTES);
             });
         } finally {
-            sDeviceState.additionalUser().start();
+            additionalUser(sDeviceState).start();
         }
     }
 
 //    @Test
 //    @EnsureHasAdditionalUser
 //    public void install_userNotStarted_isInstalled() {
-//        sDeviceState.additionalUser().stop();
+//        additionalUser(sDeviceState).stop();
 //
-//        TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_APK_FILE);
+//        TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_APK_FILE);
 //        Package pkg = TestApis.packages().find(TEST_APP_PACKAGE_NAME);
 //
 //        try {
-//            assertThat(pkg.installedOnUser(sDeviceState.additionalUser())).isTrue();
+//            assertThat(pkg.installedOnUser(additionalUser(sDeviceState))).isTrue();
 //        } finally {
-//            pkg.uninstall(sDeviceState.additionalUser());
+//            pkg.uninstall(additionalUser(sDeviceState));
 //        }
 //    }
 //
 //    @Test
 //    @EnsureHasAdditionalUser
 //    public void install_byteArray_userNotStarted_isInstalled() {
-//        sDeviceState.additionalUser().stop();
+//        additionalUser(sDeviceState).stop();
 //
 //        Package pkg = null;
 //        try {
-//            pkg = TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_BYTES);
+//            pkg = TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_BYTES);
 //
-//            assertThat(pkg.installedOnUser(sDeviceState.additionalUser())).isTrue();
+//            assertThat(pkg.installedOnUser(additionalUser(sDeviceState))).isTrue();
 //        } finally {
 //            if (pkg != null) {
 //                pkg.uninstallFromAllUsers();
@@ -348,7 +351,7 @@ public class PackagesTest {
         Package pkg = null;
 
         try {
-            pkg = TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_APK_FILE);
+            pkg = TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_APK_FILE);
 
             TestApis.packages().install(mUser, TEST_APP_APK_FILE);
 
@@ -366,7 +369,7 @@ public class PackagesTest {
         Package pkg = null;
 
         try {
-            pkg = TestApis.packages().install(sDeviceState.additionalUser(), TEST_APP_BYTES);
+            pkg = TestApis.packages().install(additionalUser(sDeviceState), TEST_APP_BYTES);
 
             TestApis.packages().install(mUser, TEST_APP_BYTES);
 
@@ -489,7 +492,7 @@ public class PackagesTest {
     @Ignore // TODO(270963894): Restore
     public void kill_doesNotKillProcessInOtherUser() {
         try (TestAppInstance personalTestApp = sTestApp.install();
-                TestAppInstance workTestApp = sTestApp.install(sDeviceState.workProfile())) {
+                TestAppInstance workTestApp = sTestApp.install(workProfile(sDeviceState))) {
             // Start an activity so the process exists
             TestAppActivityReference activity =
                     personalTestApp.activities().query().whereActivity().exported().isTrue().get();
@@ -500,16 +503,16 @@ public class PackagesTest {
             try (PermissionContext p =
                          TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
                 TestApis.context().instrumentedContext().startActivityAsUser(
-                        intent, sDeviceState.workProfile().userHandle());
+                        intent, workProfile(sDeviceState).userHandle());
             }
             Poll.forValue("process",
-                    () -> sTestApp.pkg().runningProcess(sDeviceState.workProfile()))
+                    () -> sTestApp.pkg().runningProcess(workProfile(sDeviceState)))
                     .toNotBeNull()
                     .await();
 
              sTestApp.pkg().runningProcess().kill();
 
-            assertThat(sTestApp.pkg().runningProcess(sDeviceState.workProfile())).isNotNull();
+            assertThat(sTestApp.pkg().runningProcess(workProfile(sDeviceState))).isNotNull();
         }
     }
 

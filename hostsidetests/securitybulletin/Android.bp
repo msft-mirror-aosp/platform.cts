@@ -34,7 +34,7 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
     ],
-    data: [
+    device_common_data: [
         ":CtsHostLaunchAnyWhereApp",
         ":MainlineModuleDetector",
         ":hotspot",

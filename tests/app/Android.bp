@@ -19,7 +19,6 @@ package {
 
 android_test {
     name: "CtsAppTestCases",
-    team: "trendy_team_arc_app_compat",
     defaults: ["cts_defaults"],
     libs: [
         "android.test.runner.stubs.test",
@@ -44,7 +43,7 @@ android_test {
         "com.android.media.flags.bettertogether-aconfig-java",
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",
@@ -93,7 +92,7 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",
@@ -179,9 +178,9 @@ android_test {
     team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
@@ -273,6 +272,7 @@ android_test {
         "libprotobuf-java-lite",
         "flag-junit",
         "android.content.pm.flags-aconfig-java",
+        "com.android.media.flags.bettertogether-aconfig-java",
     ],
     aidl: {
         local_include_dirs: ["app/src"],
@@ -354,4 +354,28 @@ test_module_config {
     base: "CtsAppTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.app.cts.DownloadManagerTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_all-except-large",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_activitymanagerprocessstatetest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppFgsTestCases_pm_Presubmit",
+    base: "CtsAppFgsTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CELLULAR_2G;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_CELL_BROADCASTS;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_MOBILE_NETWORKS;
@@ -45,12 +46,12 @@ import android.telephony.data.ApnSetting;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.policies.DisallowCellular2g;
@@ -89,8 +90,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_CELL_BROADCASTS")
     public void setUserRestriction_disallowConfigCellBroadcasts_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_CELL_BROADCASTS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_CELL_BROADCASTS));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigCellBroadcasts.class)
@@ -98,14 +99,14 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_CELL_BROADCASTS")
     public void setUserRestriction_disallowConfigCellBroadcasts_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_CELL_BROADCASTS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
         }
     }
 
@@ -114,15 +115,15 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_CELL_BROADCASTS")
     public void setUserRestriction_disallowConfigCellBroadcasts_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_CELL_BROADCASTS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_CELL_BROADCASTS);
         }
     }
 
@@ -149,8 +150,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_MOBILE_NETWORKS")
     public void setUserRestriction_disallowConfigMobileNetworks_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigMobileNetworks.class)
@@ -158,14 +159,14 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_MOBILE_NETWORKS")
     public void setUserRestriction_disallowConfigMobileNetworks_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_MOBILE_NETWORKS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
         }
     }
 
@@ -174,15 +175,15 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_MOBILE_NETWORKS")
     public void setUserRestriction_disallowConfigMobileNetworks_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_MOBILE_NETWORKS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_MOBILE_NETWORKS);
         }
     }
 
@@ -209,8 +210,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_OUTGOING_CALLS")
     public void setUserRestriction_disallowOutgoingCalls_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_OUTGOING_CALLS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_OUTGOING_CALLS));
     }
 
     @PolicyAppliesTest(policy = DisallowOutgoingCalls.class)
@@ -219,14 +220,14 @@ public final class TelephonyTest {
     @Ignore // this test is unclear because DISALLOW_OUTGOING_CALLS is default on secondary users
     public void setUserRestriction_disallowOutgoingCalls_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_OUTGOING_CALLS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_OUTGOING_CALLS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_OUTGOING_CALLS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_OUTGOING_CALLS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_OUTGOING_CALLS);
         }
     }
 
@@ -236,15 +237,15 @@ public final class TelephonyTest {
     @Ignore // this test is unclear because DISALLOW_OUTGOING_CALLS is default on secondary users
     public void setUserRestriction_disallowOutgoingCalls_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_OUTGOING_CALLS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_OUTGOING_CALLS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_OUTGOING_CALLS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_OUTGOING_CALLS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_OUTGOING_CALLS);
         }
     }
 
@@ -271,8 +272,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SMS")
     public void setUserRestriction_disallowSms_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_SMS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_SMS));
     }
 
     @PolicyAppliesTest(policy = DisallowSms.class)
@@ -281,14 +282,14 @@ public final class TelephonyTest {
     @Ignore // this test is unclear because DISALLOW_OUTGOING_CALLS is default on secondary users
     public void setUserRestriction_disallowSms_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SMS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SMS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SMS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SMS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SMS);
         }
     }
 
@@ -298,15 +299,15 @@ public final class TelephonyTest {
     @Ignore // this test is unclear because DISALLOW_OUTGOING_CALLS is default on secondary users
     public void setUserRestriction_disallowSms_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SMS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SMS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SMS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SMS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SMS);
         }
     }
 
@@ -333,8 +334,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_DATA_ROAMING")
     public void setUserRestriction_disallowDataRoaming_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_DATA_ROAMING));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_DATA_ROAMING));
     }
 
     @PolicyAppliesTest(policy = DisallowDataRoaming.class)
@@ -342,14 +343,14 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_DATA_ROAMING")
     public void setUserRestriction_disallowDataRoaming_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_DATA_ROAMING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_DATA_ROAMING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_DATA_ROAMING))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_DATA_ROAMING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_DATA_ROAMING);
         }
     }
 
@@ -358,15 +359,15 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_DATA_ROAMING")
     public void setUserRestriction_disallowDataRoaming_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_DATA_ROAMING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_DATA_ROAMING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_DATA_ROAMING))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_DATA_ROAMING);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_DATA_ROAMING);
         }
     }
 
@@ -393,8 +394,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CELLULAR_2G")
     public void setUserRestriction_disallowCellular2g_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G));
     }
 
     @PolicyAppliesTest(policy = DisallowCellular2g.class)
@@ -404,14 +405,14 @@ public final class TelephonyTest {
         try {
             assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CELLULAR_2G))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
         }
     }
 
@@ -422,15 +423,15 @@ public final class TelephonyTest {
         try {
             assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CELLULAR_2G))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
         }
     }
 
@@ -441,8 +442,8 @@ public final class TelephonyTest {
         try {
             assumeFalse(isTelephonyCapableOfSettingNetworkTypes());
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), UserManager.DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), UserManager.DISALLOW_CELLULAR_2G);
 
             PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
                     getIdentifierForUserRestriction(UserManager.DISALLOW_CELLULAR_2G),
@@ -450,8 +451,8 @@ public final class TelephonyTest {
                     new Bundle());
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
         }
     }
 
@@ -462,16 +463,16 @@ public final class TelephonyTest {
         try {
             assumeTrue(isTelephonyCapableOfSettingNetworkTypes());
 
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), UserManager.DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), UserManager.DISALLOW_CELLULAR_2G);
 
             PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
                     getIdentifierForUserRestriction(UserManager.DISALLOW_CELLULAR_2G),
                     PolicyUpdateResult.RESULT_POLICY_SET, GLOBAL_USER_ID, new Bundle());
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CELLULAR_2G);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CELLULAR_2G);
         }
     }
 
@@ -498,8 +499,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ULTRA_WIDEBAND_RADIO")
     public void setUserRestriction_disallowUltraWidebandRadio_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO));
     }
 
     @PolicyAppliesTest(policy = DisallowUltraWidebandRadio.class)
@@ -507,14 +508,14 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ULTRA_WIDEBAND_RADIO")
     public void setUserRestriction_disallowUltraWidebandRadio_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ULTRA_WIDEBAND_RADIO))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
         }
     }
 
@@ -523,15 +524,15 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_ULTRA_WIDEBAND_RADIO")
     public void setUserRestriction_disallowUltraWidebandRadio_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_ULTRA_WIDEBAND_RADIO))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_ULTRA_WIDEBAND_RADIO);
         }
     }
 
@@ -562,8 +563,8 @@ public final class TelephonyTest {
     public void
             setUserRestriction_disallowUnmanagedSubscriptionsGlobally_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(),
                         DISALLOW_SIM_GLOBALLY));
     }
 
@@ -573,8 +574,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SIM_GLOBALLY")
     public void setUserRestriction_disallowUnmanagedSubscriptionsGlobally_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SIM_GLOBALLY);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SIM_GLOBALLY);
 
             assertThat(
                     TestApis
@@ -583,8 +584,8 @@ public final class TelephonyTest {
                         .isSet(DISALLOW_SIM_GLOBALLY))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SIM_GLOBALLY);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SIM_GLOBALLY);
         }
     }
 
@@ -594,8 +595,8 @@ public final class TelephonyTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SIM_GLOBALLY")
     public void setUserRestriction_disallowUnmanagedSubscriptionsGlobally_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SIM_GLOBALLY);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SIM_GLOBALLY);
 
             assertThat(
                     TestApis
@@ -604,8 +605,8 @@ public final class TelephonyTest {
                             .isSet(DISALLOW_SIM_GLOBALLY))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SIM_GLOBALLY);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SIM_GLOBALLY);
         }
     }
 
@@ -682,10 +683,10 @@ public final class TelephonyTest {
     public void addOverrideApn_overrideApnIsAdded() throws Exception {
         int insertedId = 0;
         try {
-            insertedId = sDeviceState.dpc().devicePolicyManager().addOverrideApn(
-                    sDeviceState.dpc().componentName(), TEST_APN_FULL);
-            List<ApnSetting> apnList = sDeviceState.dpc().devicePolicyManager()
-                    .getOverrideApns(sDeviceState.dpc().componentName());
+            insertedId = dpc(sDeviceState).devicePolicyManager().addOverrideApn(
+                    dpc(sDeviceState).componentName(), TEST_APN_FULL);
+            List<ApnSetting> apnList = dpc(sDeviceState).devicePolicyManager()
+                    .getOverrideApns(dpc(sDeviceState).componentName());
 
             assertThat(insertedId).isNotEqualTo(0);
             assertThat(apnList).hasSize(1);
@@ -693,8 +694,8 @@ public final class TelephonyTest {
             assertApnSettingEqual(receivedApn, TEST_APN_FULL);
         } finally {
             if (insertedId != 0) {
-                sDeviceState.dpc().devicePolicyManager()
-                        .removeOverrideApn(sDeviceState.dpc().componentName(), insertedId);
+                dpc(sDeviceState).devicePolicyManager()
+                        .removeOverrideApn(dpc(sDeviceState).componentName(), insertedId);
             }
         }
     }
@@ -705,20 +706,20 @@ public final class TelephonyTest {
     public void updateOverrideApn_isUpdated() throws Exception {
         int insertedId = 0;
         try {
-            insertedId = sDeviceState.dpc().devicePolicyManager().addOverrideApn(
-                    sDeviceState.dpc().componentName(), TEST_APN_FULL);
-            boolean result = sDeviceState.dpc().devicePolicyManager().updateOverrideApn(
-                    sDeviceState.dpc().componentName(), insertedId, UPDATE_APN);
-            List<ApnSetting> apnList = sDeviceState.dpc().devicePolicyManager()
-                    .getOverrideApns(sDeviceState.dpc().componentName());
+            insertedId = dpc(sDeviceState).devicePolicyManager().addOverrideApn(
+                    dpc(sDeviceState).componentName(), TEST_APN_FULL);
+            boolean result = dpc(sDeviceState).devicePolicyManager().updateOverrideApn(
+                    dpc(sDeviceState).componentName(), insertedId, UPDATE_APN);
+            List<ApnSetting> apnList = dpc(sDeviceState).devicePolicyManager()
+                    .getOverrideApns(dpc(sDeviceState).componentName());
 
             assertThat(result).isTrue();
             ApnSetting receivedApn = apnList.get(0);
             assertApnSettingEqual(receivedApn, UPDATE_APN);
         } finally {
             if (insertedId != 0) {
-                sDeviceState.dpc().devicePolicyManager()
-                        .removeOverrideApn(sDeviceState.dpc().componentName(), insertedId);
+                dpc(sDeviceState).devicePolicyManager()
+                        .removeOverrideApn(dpc(sDeviceState).componentName(), insertedId);
             }
         }
     }

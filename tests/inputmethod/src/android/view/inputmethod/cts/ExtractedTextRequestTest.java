@@ -27,16 +27,13 @@ import android.view.inputmethod.InputConnection;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ExtractedTextRequestTest {
+public final class ExtractedTextRequestTest {
 
     private static final int EXPECTED_FLAGS = InputConnection.GET_TEXT_WITH_STYLES;
     private static final int EXPECTED_HINT_MAX_CHARS = 100;

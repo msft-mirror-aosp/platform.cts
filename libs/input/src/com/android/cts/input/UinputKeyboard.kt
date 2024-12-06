@@ -19,13 +19,10 @@ package com.android.cts.input
 import android.app.Instrumentation
 import android.view.InputDevice.SOURCE_KEYBOARD
 
-private fun createKeyboardRegisterCommand(): UinputRegisterCommand {
+private fun createKeyboardRegisterCommand(keys: List<String>): UinputRegisterCommand {
     val configurationItems = listOf(
         ConfigurationItem("UI_SET_EVBIT", listOf("EV_KEY")),
-        ConfigurationItem("UI_SET_KEYBIT", listOf(
-            "KEY_Q", "KEY_W", "KEY_E", "KEY_A", "KEY_B", "KEY_C", "KEY_BACKSPACE", "KEY_ESC",
-            "KEY_LEFTALT", "KEY_LEFTMETA", "KEY_LEFT", "KEY_LEFTSHIFT", "KEY_CAPSLOCK",
-        ))
+        ConfigurationItem("UI_SET_KEYBIT", keys)
     )
 
     return UinputRegisterCommand(
@@ -43,8 +40,15 @@ private fun createKeyboardRegisterCommand(): UinputRegisterCommand {
 /**
  * A Keyboard that only has a few common keys (lots of keys are missing, for simplicity).
  */
-class UinputKeyboard(instrumentation: Instrumentation) : UinputDevice(
+class UinputKeyboard(
+    instrumentation: Instrumentation,
+    keys: List<String> = listOf(
+        "KEY_Q", "KEY_W", "KEY_E", "KEY_A", "KEY_B", "KEY_C", "KEY_BACKSPACE", "KEY_ESC",
+        "KEY_LEFTALT", "KEY_LEFTMETA", "KEY_LEFT", "KEY_LEFTSHIFT", "KEY_CAPSLOCK",
+    )
+) : UinputDevice(
     instrumentation,
     SOURCE_KEYBOARD,
-    createKeyboardRegisterCommand()
+    createKeyboardRegisterCommand(keys),
+    null // display
 )

@@ -36,7 +36,7 @@ java_test_host {
         "perfetto_trace-full",
         "platform-test-annotations-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsGraphicsProfilingDataApp",
     ],
     data_device_bins_both: ["ctsgraphicsgpucountersinit"],

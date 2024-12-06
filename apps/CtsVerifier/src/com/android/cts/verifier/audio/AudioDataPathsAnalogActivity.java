@@ -51,6 +51,9 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         getPassButton().setEnabled(passBtnEnabled());
     }
 
+    protected String getTestCategory() {
+        return "Audio Datapaths Analog Jack Test";
+    }
     void gatherTestModules(TestManager testManager) {
         AudioSourceProvider leftSineSourceProvider = new SparseChannelAudioSourceProvider(
                 SparseChannelAudioSourceProvider.CHANNELMASK_LEFT);
@@ -109,5 +112,10 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
 
     protected boolean hasPeripheralSupport() {
         return mHeadsetSupport;
+    }
+
+    @Override
+    String getRouteDescription() {
+        return "analog";
     }
 }

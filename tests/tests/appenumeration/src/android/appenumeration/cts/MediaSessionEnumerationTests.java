@@ -86,6 +86,7 @@ public class MediaSessionEnumerationTests extends AppEnumerationTestsBase {
             cmd.append("disallow_listener ");
         }
         cmd.append(packageName).append("/").append(ACTIVITY_CLASS_DUMMY_ACTIVITY).append(" ");
+        cmd.append(sContext.getUserId());
         runShellCommand(cmd.toString());
     }
 }

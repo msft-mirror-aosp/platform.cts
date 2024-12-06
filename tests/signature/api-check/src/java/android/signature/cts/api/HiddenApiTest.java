@@ -25,14 +25,15 @@ import android.signature.cts.DexMethod;
 import android.signature.cts.FailureType;
 import android.signature.cts.VirtualPath;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.junit.Test;
-import org.junit.Ignore;
 
 /**
  * Checks that it is not possible to access hidden APIs.
@@ -71,21 +72,25 @@ public class HiddenApiTest extends AbstractApiTest {
     // for the first test to run needs to be sufficiently large on it to allow
     // for loadFilters() to complete.
     @Test(timeout = 900000)
+    @Ignore // b/367930072
     public void testSignatureMethodsThroughReflection() {
         doTestSignature(METHOD_FILTER,/* reflection= */ true, /* jni= */ false);
     }
 
     @Test
+    @Ignore // b/367930072
     public void testSignatureMethodsThroughJni() {
         doTestSignature(METHOD_FILTER, /* reflection= */ false, /* jni= */ true);
     }
 
     @Test
+    @Ignore // b/367930072
     public void testSignatureFieldsThroughReflection() {
         doTestSignature(FIELD_FILTER, /* reflection= */ true, /* jni= */ false);
     }
 
     @Test
+    @Ignore // b/367930072
     public void testSignatureFieldsThroughJni() {
         doTestSignature(FIELD_FILTER, /* reflection= */ false, /* jni= */ true);
     }

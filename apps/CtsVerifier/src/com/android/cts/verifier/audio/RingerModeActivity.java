@@ -125,6 +125,7 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
         tests.add(new TestAdjustVolumeInPriorityOnlyAllowAlarmsMediaMode());
 
         tests.add(new SetModeAllTest());
+        tests.add(new SetModeNormalTest());
         tests.add(new TestAccessRingerMode());
         tests.add(new TestVibrateNotification());
         tests.add(new TestVibrateRinger());
@@ -632,6 +633,27 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
                 return;
             }
             status = PASS;
+        }
+    }
+
+    protected class SetModeNormalTest extends InteractiveTestCase {
+        @Override
+        protected View inflate(ViewGroup parent) {
+            return createRetryItem(parent, R.string.attention_ringer_mode_not_silent);
+        }
+
+        @Override
+        protected void test() {
+            if (mUserVerified) {
+                status = PASS;
+            } else {
+                status = WAIT_FOR_USER;
+            }
+        }
+
+        @Override
+        protected void tearDown() {
+            delay();
         }
     }
 

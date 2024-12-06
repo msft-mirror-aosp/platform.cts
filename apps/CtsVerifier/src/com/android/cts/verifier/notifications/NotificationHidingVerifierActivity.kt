@@ -32,21 +32,36 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.content.res.Resources
 import android.content.res.Resources.ID_NULL
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.Icon
+import android.hardware.display.VirtualDisplay
+import android.media.Image
+import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Binder
 import android.os.Bundle
+import android.os.Environment
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.SystemClock
+import android.util.DisplayMetrics
+import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.android.compatibility.common.util.CddTest
 import com.android.cts.verifier.PassFailButtons
 import com.android.cts.verifier.R
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 @CddTest(requirements = ["9.8.2"])
 class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
@@ -58,10 +73,14 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
     private lateinit var title: TextView
     private lateinit var instructions: TextView
     private lateinit var warning: TextView
+    private lateinit var screenCapturePath: TextView
     private lateinit var buttonView: View
     private var currentTestIdx = 0
     private var numFailures = 0
     private var mediaProjection: MediaProjection? = null
+    private val mediaProjectionCallback = object : MediaProjection.Callback() {}
+    private var imageReader: ImageReader? = null
+    private var virtualDisplay: VirtualDisplay? = null
     private var serviceConnection: ServiceConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +94,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         title = requireViewById(R.id.test_title)
         instructions = requireViewById(R.id.test_instructions)
         warning = requireViewById(R.id.test_warning)
+        screenCapturePath = requireViewById(R.id.test_screen_capture_path)
         buttonView = requireViewById(R.id.action_button_layout)
         requireViewById<Button>(R.id.test_step_passed).setOnClickListener { _ ->
             showNextTestOrSummary()
@@ -88,6 +108,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         }
         requireViewById<Button>(R.id.start_screenshare_button).setOnClickListener { _ ->
             startScreenRecording()
+        }
+        requireViewById<Button>(R.id.save_screen_capture_button).setOnClickListener { _ ->
+            saveScreenCapture()
         }
         val am = getSystemService(ActivityManager::class.java)!!
 
@@ -159,6 +182,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
                 warning.visibility = View.VISIBLE
                 warning.setText(testWarning)
             }
+            screenCapturePath.setText("")
         }
     }
 
@@ -188,7 +212,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
     /** Creates a [Notification.Builder] that is a conversation.  */
     private fun getConversationNotif(content: String): Notification.Builder {
-        val timeContent = "$content ${System.currentTimeMillis()}"
+        val timeContent = "$content at ${System.currentTimeMillis()}"
         val context = applicationContext
         val intent = Intent(context, BubbleActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
@@ -266,12 +290,168 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         )
     }
 
+    private fun setupVirtualDisplay() {
+        val maxWindowMetrics = getSystemService(WindowManager::class.java).maximumWindowMetrics
+        val windowBounds: Rect = maxWindowMetrics.bounds
+        if (imageReader == null) {
+            imageReader = ImageReader.newInstance(
+                windowBounds.width(), windowBounds.height(),
+                PixelFormat.RGBA_8888,
+                /* maxImages= */
+                1
+            ).also {
+                mediaProjection?.run {
+                    registerCallback(mediaProjectionCallback, Handler(Looper.getMainLooper()))
+
+                    val testTitle: String = getString(tests[currentTestIdx].getTestTitle())
+                    virtualDisplay = createVirtualDisplay(
+                        VIRTUAL_DISPLAY + "_" + testTitle,
+                        windowBounds.width(), windowBounds.height(),
+                        DisplayMetrics.DENSITY_HIGH,
+                        /* flags= */
+                        0,
+                        it.surface,
+                        /* callback= */
+                        null,
+                        Handler(Looper.getMainLooper())
+                    )
+                }
+            }
+        }
+    }
+
     private fun stopScreenRecording() {
-        mediaProjection?.stop()
+        imageReader = null
+        virtualDisplay?.apply {
+            surface.release()
+            release()
+        }
+        virtualDisplay = null
+        mediaProjection?.apply {
+            unregisterCallback(mediaProjectionCallback)
+            stop()
+        }
         mediaProjection = null
         serviceConnection?.let { applicationContext.unbindService(it) }
         serviceConnection = null
         applicationContext.stopService(mediaProjectionServiceIntent)
+    }
+
+    private fun saveScreenCapture() {
+        val testTitle: String = getString(tests[currentTestIdx].getTestTitle())
+        if (mediaProjection == null || imageReader == null || virtualDisplay == null) {
+            Log.w(
+                TAG,
+                "mediaProjection is null (${mediaProjection == null})" +
+                " or imageReader is null (${imageReader == null})" +
+                " or virtualDisplay is null (${virtualDisplay == null})" +
+                " which will cause screengrab failure for $testTitle"
+            )
+            Toast.makeText(
+                applicationContext,
+                "Screen capture failed. Is screen recording active?",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        imageReader?.let {
+            // All screen captures will be available in pictures directory on device.
+            val externalStoragePublicDirectory =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val ctsScreenshotStorageDir = File(externalStoragePublicDirectory, "cts.$TAG")
+            if (ctsScreenshotStorageDir == null) {
+                Log.w(TAG, "Failed to retrieve external files directory.")
+                Toast.makeText(
+                    applicationContext,
+                    "Failed to save screenshot",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return
+            }
+            val screenshotPath = saveScreenCapture(it, ctsScreenshotStorageDir, testTitle)
+            if (screenshotPath == null) {
+                Log.w(TAG, "Failed to save screenshot for $testTitle")
+                Toast.makeText(
+                    applicationContext,
+                    "Failed to save screenshot",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Log.i(TAG, "Screen shot of recording saved to  $screenshotPath")
+                Toast.makeText(
+                    applicationContext,
+                    "Screen shot of recording saved to " +
+                    "$screenshotPath",
+                    Toast.LENGTH_LONG
+                ).show()
+                screenCapturePath.text =
+                    getString(R.string.notif_hiding_save_screen_capture_path, screenshotPath)
+            }
+        }
+    }
+
+    private fun saveScreenCapture(
+        reader: ImageReader,
+        screenshotStorageDir: File,
+            testName: String
+    ): String? {
+        reader.acquireLatestImage().use { image: Image? ->
+            if (image == null) {
+                Log.w(TAG, "failed to save screenshot for $testName, image null")
+                return null
+            }
+
+            val plane: Image.Plane? = image.getPlanes()[0]
+            if (plane == null) {
+                Log.w(TAG, "failed to save screenshot for $testName, plane null")
+                return null
+            }
+
+            val rowPadding: Int =
+                plane.getRowStride() - plane.getPixelStride() * image.getWidth()
+            val bitmap = Bitmap.createBitmap(
+                /* width= */
+                image.getWidth() + rowPadding / plane.getPixelStride(),
+                /* height= */
+                image.getHeight(),
+                Bitmap.Config.ARGB_8888
+            )
+            if (bitmap == null) {
+                Log.w(TAG, "failed to save screenshot for $testName, bitmap null")
+                return null
+            }
+
+            val buffer: ByteBuffer = plane.getBuffer()
+            if (buffer == null) {
+                Log.w(TAG, "failed to save screenshot for $testName, buffer null")
+                return null
+            }
+
+            bitmap.copyPixelsFromBuffer(plane.getBuffer())
+
+            try {
+                if (!screenshotStorageDir.exists()) {
+                    if (!screenshotStorageDir.mkdirs()) {
+                        Log.d(TAG, "Failed to create media storage directory.")
+                        return null
+                    }
+                }
+                val fileName: String =
+                    testName + "_screenshot_" + System.currentTimeMillis() + ".jpg"
+                val screenshot: File = File(screenshotStorageDir, fileName)
+                FileOutputStream(screenshot).use { stream: FileOutputStream? ->
+                    if (stream == null) {
+                        Log.w(TAG, "failed to save screenshot for $testName, stream null")
+                        return null
+                    }
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                    return screenshot.absolutePath
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Unable to write out screenshot", e)
+            }
+        }
+        return null
     }
 
     override fun onActivityResult(
@@ -281,13 +461,14 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
     ) {
         if (requestCode == REQUEST_PROJECTION_CODE) {
             if (resultCode != Activity.RESULT_OK) {
-                Toast.makeText(this, "Please approve screen recording", Toast.LENGTH_SHORT)
+                Toast.makeText(this, "Please approve screen recording", Toast.LENGTH_SHORT).show()
                 return
             }
             applicationContext.startForegroundService(mediaProjectionServiceIntent)
             serviceConnection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                     mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data!!)
+                    setupVirtualDisplay()
                 }
 
                 override fun onServiceDisconnected(name: ComponentName?) {}
@@ -428,6 +609,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
     companion object {
         private const val TAG: String = "NotifHidingVerifier"
+        private const val VIRTUAL_DISPLAY: String = "NotifHidingVerifierVD"
         private const val NOTIFICATION_CHANNEL_ID = TAG
         private const val NOTIFICATION_ID = 1
         private const val FGS_NOTIFICATION_ID = 2
@@ -446,7 +628,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         /** What the tester should do & look for to verify this step was successful.  */
         abstract fun getTestInstructions(): Int
 
-        /** Returns string res id for any warnings associated with the test not passing prerequisites */
+        /** Returns string resid for warnings associated with the test not passing prerequisites */
         open fun getTestWarning(): Int = ID_NULL
 
         open fun sendNotification() = sendNotification(createBubble = false)

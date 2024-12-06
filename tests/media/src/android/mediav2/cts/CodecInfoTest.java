@@ -35,8 +35,11 @@ import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
+import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_VC1;
+import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_WMV;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
+import static android.mediav2.common.cts.CodecTestBase.PROFILE_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
@@ -47,17 +50,20 @@ import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecTestBase;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.util.Range;
 
 import androidx.test.filters.SdkSuppress;
@@ -67,7 +73,6 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.Assume;
@@ -113,6 +118,11 @@ public class CodecInfoTest {
                 continue;
             }
             String codecName = codecInfo.getName();
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                Log.v(LOG_TAG, "codec " + codecName + " skipped in mode "
+                                + TestUtils.currentTestModeName());
+                continue;
+            }
             if (codecPrefix != null && !codecName.startsWith(codecPrefix)
                     || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
@@ -126,6 +136,57 @@ public class CodecInfoTest {
     }
 
     /**
+     * Checks if the video codecs available on the device advertise support for at least one
+     * profile. The ability to encode / decode clips of that profile is beyond the scope of the
+     * test. The test only checks if at least one profile is advertised.
+     */
+    // Some devices running versions older than Android V fail this test.
+    // As this requirement was not enforced earlier, limit the test to Android V and above.
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
+    @Test
+    public void testCodecProfileSupport() {
+        Assume.assumeTrue("Test is applicable for video codecs and aac",
+                mMediaType.startsWith("video/") || mMediaType.equals(
+                        MediaFormat.MIMETYPE_AUDIO_AAC));
+        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
+        assertNotNull(mCodecName + " did not provide capabilities \n", caps);
+        assertTrue(mCodecName + " did not advertise any profile", caps.profileLevels.length > 0);
+        int[] profileArray = PROFILE_MAP.get(mMediaType);
+        if (profileArray != null) {
+            boolean hasStandardProfile = false;
+            for (CodecProfileLevel pl : caps.profileLevels) {
+                if (IntStream.of(profileArray).anyMatch(x -> x == pl.profile)) {
+                    hasStandardProfile = true;
+                    break;
+                }
+            }
+            assertTrue(mCodecName + " does not contain at least one standard profile",
+                    hasStandardProfile);
+        }
+    }
+
+    /**
+     * Checks if all the video codecs available on the device advertise supported dimensions.
+     * The ability to encode / decode clips of that size is beyond the scope of the
+     * test. The test only checks if all video codecs advertise valid size.
+     */
+    @ApiTest(apis = "android.media.MediaCodecInfo.VideoCapabilities#dimensions")
+    @Test
+    public void testSupportedDimensions() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
+        assertNotNull(mCodecName + " did not provide codec capabilities \n", caps);
+        MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
+        assertNotNull(mCodecName + " did not provide video capabilities \n", vcaps);
+        int minWidth = vcaps.getSupportedWidths().getLower();
+        int minHeight = vcaps.getSupportedHeights().getLower();
+        assertTrue(mCodecInfo.getName() + " does not specify size constraints for " + mMediaType,
+                minWidth > 0 && minHeight > 0);
+    }
+
+    /**
      * For all the available decoders on the device, the test checks if their decoding
      * capabilities are in sync with the device's display capabilities. Precisely, if a video
      * decoder advertises support for a HDR profile then the device should be capable of
@@ -135,7 +196,6 @@ public class CodecInfoTest {
     @Test
     // TODO (b/228237404) Remove the following once there is a reliable way to query HDR
     // display capabilities at native level, till then limit the test to vendor codecs
-    @NonMainlineTest
     @FrameworkSpecificTest
     @CddTest(requirements = "5.1.7/C-2-1")
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
@@ -284,7 +344,7 @@ public class CodecInfoTest {
     }
 
     /**
-     * All decoders for compression technologies that were introduced after 2002 must support
+     * All decoders for compression technologies that were introduced after 2006 must support
      * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
      */
     @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
@@ -295,10 +355,12 @@ public class CodecInfoTest {
     public void testDynamicColorAspectSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
         Assume.assumeFalse("Test is applicable only for decoders", mCodecInfo.isEncoder());
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
                 !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                 && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
+                && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
+                && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
         Assume.assumeTrue("Skipping, Only intended for devices with board first_api_level >= V",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         assertTrue(mCodecName + " does not support FEATURE_DynamicColorAspects.",
@@ -306,17 +368,19 @@ public class CodecInfoTest {
     }
 
     /**
-     * Components advertising support for compression technologies that were introduced after 2002
+     * Components advertising support for compression technologies that were introduced after 2006
      * must support a given resolution in both portrait and landscape mode.
      */
     @VsrTest(requirements = {"VSR-4.2-004.002"})
     @Test
     public void testResolutionSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
                 !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                 && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
+                && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
+                && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         if (!isFeatureSupported(mCodecName, mMediaType, "can-swap-width-height")) {
@@ -330,17 +394,19 @@ public class CodecInfoTest {
     }
 
     /**
-     * Components advertising support for compression technologies that were introduced after 2002
+     * Components advertising support for compression technologies that were introduced after 2006
      * must support 1x1 alignment for vp8, av1 and 2x2 for avc, hevc and vp9.
      */
     @VsrTest(requirements = {"VSR-4.2-004.001"})
     @Test
     public void testAlignmentSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
                 !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                         && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
+                        && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
+                        && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         MediaCodecInfo.VideoCapabilities vCaps =

@@ -19,9 +19,11 @@ package android.suspendapps.cts;
 import static android.content.Intent.ACTION_PACKAGE_UNSUSPENDED_MANUALLY;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.SUSPEND_APPS;
-import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -38,17 +40,17 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -74,7 +76,7 @@ public class CrossUserSuspendTest {
 
     private static final Context sContext = TestApis.context().instrumentedContext();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities()
             .contains(activity().where().exported().isTrue())
             .get();
@@ -85,7 +87,7 @@ public class CrossUserSuspendTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, SUSPEND_APPS})
     @Test
     public void suspendProfileActivityFromPrimary_verifyUnsuspendedBroadcast() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance instance = sTestApp.install(workProfile);
                 BlockingBroadcastReceiver broadcastReceiver =
                         sDeviceState.registerBroadcastReceiver(
@@ -121,7 +123,7 @@ public class CrossUserSuspendTest {
     @EnsureDoesNotHavePermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void suspendProfileActivityFromPrimary_withoutCrossUserFull_throws() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance ignored = sTestApp.install(workProfile)) {
             PackageManager profilePackageManager;
             try (PermissionContext ignoredToo = TestApis.permissions()

@@ -93,7 +93,9 @@ public class StatusCheckerAppTest {
         }
         copyResourceToFile(SECONDARY_DEX_RES, secondaryDexFile);
         assertThat(secondaryDexFile.setReadOnly()).isTrue();
-        classLoaderCtor.apply(secondaryDexFile.getAbsolutePath(), this.getClass().getClassLoader());
+        ClassLoader unused = classLoaderCtor.apply(
+                secondaryDexFile.getAbsolutePath(),
+                this.getClass().getClassLoader());
         return secondaryDexFile.getAbsolutePath();
     }
 

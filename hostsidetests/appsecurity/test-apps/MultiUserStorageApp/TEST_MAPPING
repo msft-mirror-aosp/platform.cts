@@ -1,12 +1,7 @@
 {
     "presubmit-large": [
         {
-            "name": "CtsAppSecurityHostTestCases",
-            "options": [
-                {
-                    "include-filter": "android.appsecurity.cts.ExternalStorageHostTest"
-                }
-            ]
+            "name": "CtsAppSecurityHostTestCases_cts_externalstoragehosttest"
         }
     ]
 }

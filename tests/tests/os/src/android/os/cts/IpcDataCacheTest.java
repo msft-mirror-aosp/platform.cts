@@ -26,6 +26,7 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import androidx.test.filters.SmallTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -81,10 +82,17 @@ public class IpcDataCacheTest {
         public Boolean apply(Integer x) {
             return mServer.query(x);
         }
+
         @Override
         public boolean shouldBypassCache(Integer x) {
             return x % 13 == 0;
         }
+    }
+
+    // Prepare for test mode.
+    @Before
+    public void setUp() throws Exception {
+        IpcDataCache.setTestMode(true);
     }
 
     // Clear the test mode after every test, in case this process is used for other
@@ -107,9 +115,6 @@ public class IpcDataCacheTest {
         IpcDataCache<Integer, Boolean> testCache =
                 new IpcDataCache<>(4, MODULE, API, "testCache1",
                         new ServerQuery(tester));
-
-        IpcDataCache.setTestMode(true);
-        testCache.testPropertyName();
 
         tester.verify(0);
         assertEquals(tester.value(3), testCache.query(3));
@@ -221,8 +226,6 @@ public class IpcDataCacheTest {
         TestCache(String module, String api, TestQuery query) {
             super(4, module, api, api, query);
             mQuery = query;
-            setTestMode(true);
-            testPropertyName();
         }
 
         int getRecomputeCount() {

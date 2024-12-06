@@ -18,20 +18,22 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SET_WALLPAPER;
 import static com.android.bedstead.permissions.CommonPermissions.READ_WALLPAPER_INTERNAL;
 import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import android.graphics.Bitmap;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.policies.Wallpaper;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
@@ -61,7 +63,7 @@ public final class WallpaperTest {
 
     private static final Bitmap sOriginalWallpaper = TestApis.wallpaper().getBitmap();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().any();
+    private static final TestApp sTestApp = testApps(sDeviceState).any();
 
     private static final Bitmap sReferenceWallpaper = BitmapUtils.generateRandomBitmap(97, 73);
     private static final InputStream sReferenceWallpaperStream =
@@ -73,7 +75,7 @@ public final class WallpaperTest {
     @PolicyAppliesTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_canSet() throws Exception {
         try {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sReferenceWallpaper);
+            dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
                     .toMeet((bitmap) ->
@@ -81,7 +83,7 @@ public final class WallpaperTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sOriginalWallpaper);
+            dpc(sDeviceState).wallpaperManager().setBitmap(sOriginalWallpaper);
         }
     }
 
@@ -91,7 +93,7 @@ public final class WallpaperTest {
     @PolicyDoesNotApplyTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_cannotSet() throws Exception {
         try {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sReferenceWallpaper);
+            dpc(sDeviceState).wallpaperManager().setBitmap(sReferenceWallpaper);
 
             Poll.forValue("wallpaper bitmap", () -> TestApis.wallpaper().getBitmap())
                     .toMeet((bitmap) ->
@@ -99,7 +101,7 @@ public final class WallpaperTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sOriginalWallpaper);
+            TestApis.wallpaper().setBitmap(sOriginalWallpaper);
         }
     }
 

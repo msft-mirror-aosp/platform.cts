@@ -159,6 +159,23 @@ public class CodecDecoderTestBase extends CodecTestBase {
         return null;
     }
 
+    protected void doOutputFormatChecks(MediaFormat defaultFormat, MediaFormat configuredFormat) {
+        String msg = String.format("Input test file format is not same as default format of"
+                + " component, but test did not receive INFO_OUTPUT_FORMAT_CHANGED signal"
+                + ".\nInput file format is :- %s \nDefault format is :- %s \n",
+                configuredFormat, defaultFormat);
+        assertTrue(msg + mTestConfig + mTestEnv,
+                mIsCodecInAsyncMode ? mAsyncHandle.hasOutputFormatChanged() :
+                mSignalledOutFormatChanged);
+
+        MediaFormat outputFormat =
+                mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
+        msg = String.format("Configured input format and received output format are "
+            + "not similar. \nConfigured Input format is :- %s \nReceived Output "
+            + "format is :- %s \n", configuredFormat, outputFormat);
+        assertTrue(msg + mTestConfig + mTestEnv, isFormatSimilar(configuredFormat, outputFormat));
+    }
+
     int getColorFormat(String name, String mediaType, boolean surfaceMode, boolean hbdMode) {
         if (surfaceMode) return COLOR_FormatSurface;
         if (hbdMode) {
@@ -368,10 +385,23 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
-    public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
-            int mode, int frameLimit, boolean isAsync, boolean signalledEos)
-            throws IOException, InterruptedException {
-        mSaveToMem = true;
+    /**
+     * This function decodes the input file using the component given and stores the result in
+     * OutputManager. By default the decoded frames pts information is stored. This is used for
+     * general validation. Storing decoded frames is dependent on saveToMem argument and
+     * mediaType.
+     * <ul>
+     *     <li>If saveToMem is true and mediaType is audio, then the raw output is stored in a
+     *     byte buffer.</li>
+     *     <li>If saveToMem is true and mediaType is video, it is unrealistic to store all the
+     *     frames in raw format as it occupies huge space. So, for them their checksum is
+     *     preserved.</li>
+     * </ul>
+     */
+    public void decodeToMemory(String file, String decoder, OutputManager outputBuff,
+            boolean saveToMem, long pts, int mode, int frameLimit, boolean isAsync,
+            boolean signalledEos) throws IOException, InterruptedException {
+        mSaveToMem = saveToMem;
         mOutputBuff = outputBuff;
         mCodec = MediaCodec.createByCodecName(decoder);
         MediaFormat format = setUpSource(file);
@@ -385,6 +415,13 @@ public class CodecDecoderTestBase extends CodecTestBase {
         mCodec.release();
         mExtractor.release();
         mSaveToMem = false;
+    }
+
+    public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
+            int mode, int frameLimit, boolean isAsync, boolean signalledEos)
+            throws IOException, InterruptedException {
+        decodeToMemory(file, decoder, outputBuff, true, pts, mode, frameLimit, isAsync,
+                signalledEos);
     }
 
     public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,

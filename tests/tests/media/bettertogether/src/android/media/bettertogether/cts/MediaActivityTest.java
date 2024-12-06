@@ -39,12 +39,13 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -60,13 +61,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Test {@link MediaSessionTestActivity} which has called {@link Activity#setMediaController}.
- */
+/** Test {@link MediaSessionTestActivity} which has called {@link Activity#setMediaController}. */
 @FrameworkSpecificTest
-@NonMainlineTest
 @LargeTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class MediaActivityTest {
     private static final String TAG = "MediaActivityTest";
     private static final int WAIT_TIME_MS = 5000;
@@ -101,8 +99,6 @@ public class MediaActivityTest {
 
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.HDMI_CEC);
 
         mContext = mInstrumentation.getContext();
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
@@ -134,6 +130,9 @@ public class MediaActivityTest {
                 () -> mActivityScenario = ActivityScenario.launch(intent),
                 Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX
         );
+        // Add permission after runWithShellPermissionIdentity else it gets removed.
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.HDMI_CEC);
         ConditionVariable activityReferenceObtained = new ConditionVariable();
         mActivityScenario.onActivity(activity -> {
             mActivity = activity;
@@ -183,10 +182,9 @@ public class MediaActivityTest {
         }
     }
 
-    /**
-     * Tests whether volume key changes volume with the session's stream.
-     */
+    /** Tests whether volume key changes volume with the session's stream. */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testVolumeKey_whileSessionAlive() throws Exception {
         assumeTrue(/* message= */ "Test skipped on automotive target",
                 !isAutomotive());
@@ -215,10 +213,11 @@ public class MediaActivityTest {
     }
 
     /**
-     * Tests whether volume key changes a stream volume even after the session is released,
-     * without being ignored.
+     * Tests whether volume key changes a stream volume even after the session is released, without
+     * being ignored.
      */
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testVolumeKey_afterSessionReleased() throws Exception {
         assumeTrue(/* message= */ "Test skipped on automotive target",
                 !isAutomotive());
@@ -248,6 +247,7 @@ public class MediaActivityTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testMediaKey_whileSessionAlive() throws Exception {
         int testKeyEvent = KeyEvent.KEYCODE_MEDIA_PLAY;
 
@@ -270,6 +270,7 @@ public class MediaActivityTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testMediaKey_whileSessionReleased() throws Exception {
         int testKeyEvent = KeyEvent.KEYCODE_MEDIA_PLAY;
 

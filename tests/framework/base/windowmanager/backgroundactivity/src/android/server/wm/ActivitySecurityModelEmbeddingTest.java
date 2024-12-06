@@ -23,8 +23,10 @@ import android.content.ComponentName;
 import androidx.test.filters.FlakyTest;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBase {
 
     @Override

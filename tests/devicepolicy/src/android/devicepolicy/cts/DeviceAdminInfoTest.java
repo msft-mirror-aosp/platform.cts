@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -78,7 +79,7 @@ public final class DeviceAdminInfoTest {
     public void getComponent_isCorrect() throws Exception {
         DeviceAdminInfo info = createDeviceAdminInfo();
 
-        assertThat(sDeviceState.dpc().componentName()).isEqualTo(info.getComponent());
+        assertThat(dpc(sDeviceState).componentName()).isEqualTo(info.getComponent());
     }
 
     @EnsureHasDeviceOwner
@@ -87,7 +88,7 @@ public final class DeviceAdminInfoTest {
     public void getPackageName_isCorrect() throws Exception {
         DeviceAdminInfo info = createDeviceAdminInfo();
 
-        assertThat(sDeviceState.dpc().componentName()
+        assertThat(dpc(sDeviceState).componentName()
                 .getPackageName()).isEqualTo(info.getPackageName());
     }
 
@@ -97,7 +98,7 @@ public final class DeviceAdminInfoTest {
     public void getReceiverName_isCorrect() throws Exception {
         DeviceAdminInfo info = createDeviceAdminInfo();
 
-        assertThat(sDeviceState.dpc().componentName()
+        assertThat(dpc(sDeviceState).componentName()
                 .getClassName()).isEqualTo(info.getReceiverName());
     }
 
@@ -409,7 +410,7 @@ public final class DeviceAdminInfoTest {
         DeviceAdminInfo info = createDeviceAdminInfo();
 
         assertThat(info.getActivityInfo().getComponentName()).isEqualTo(
-                sDeviceState.dpc().componentName());
+                dpc(sDeviceState).componentName());
     }
 
     @EnsureHasDeviceOwner // We need something with a DeviceAdminReceiver
@@ -463,7 +464,7 @@ public final class DeviceAdminInfoTest {
     private DeviceAdminInfo createDeviceAdminInfo() throws Exception {
         ResolveInfo resolveInfo = new ResolveInfo();
         resolveInfo.activityInfo = sContext.getPackageManager()
-                .getReceiverInfo(sDeviceState.dpc().componentName(), PackageManager.GET_META_DATA);
+                .getReceiverInfo(dpc(sDeviceState).componentName(), PackageManager.GET_META_DATA);
         return new DeviceAdminInfo(sContext, resolveInfo);
     }
 

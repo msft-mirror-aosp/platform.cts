@@ -22,35 +22,20 @@ import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
-import com.android.bedstead.harrier.annotations.OtherUser;
 import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
@@ -58,6 +43,20 @@ import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasTvProfile;
+import com.android.bedstead.multiuser.annotations.OtherUser;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
@@ -65,7 +64,6 @@ import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -79,7 +77,6 @@ import org.junit.runners.model.TestClass;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,6 +86,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -107,6 +105,9 @@ import java.util.stream.Stream;
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
+
+    private static final Map<Annotation, Integer> ANNOTATION_COST_CACHE = new HashMap<>();
+    private static final Map<Annotation, Integer> ANNOTATION_PRIORITY_CACHE = new HashMap<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
     private boolean mHasManualHarrierRule = false;
@@ -233,11 +234,26 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         sIgnoredAnnotationPackages.add("org.junit");
     }
 
-    static int annotationSorter(Annotation a, Annotation b) {
+    /**
+     * Annotation sorter using the priority method added to an annotation,
+     * higher priority numbers are earlier in the list, if a priority is not provided
+     * {@link AnnotationPriorityRunPrecedence#PRECEDENCE_NOT_IMPORTANT} will be used
+     */
+    public static int annotationSorter(Annotation a, Annotation b) {
         return getAnnotationPriority(a) - getAnnotationPriority(b);
     }
 
     private static int getAnnotationCost(Annotation annotation) {
+        return ANNOTATION_COST_CACHE.computeIfAbsent(
+                annotation, BedsteadJUnit4::computeAnnotationCost);
+    }
+
+    private static int getAnnotationPriority(Annotation annotation) {
+        return ANNOTATION_PRIORITY_CACHE.computeIfAbsent(
+                annotation, BedsteadJUnit4::computeAnnotationPriority);
+    }
+
+    private static int computeAnnotationCost(Annotation annotation) {
         try {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
@@ -248,7 +264,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
     }
 
-    private static int getAnnotationPriority(Annotation annotation) {
+    private static int computeAnnotationPriority(Annotation annotation) {
         if (annotation instanceof DynamicParameterizedAnnotation) {
             // Special case, not important
             return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
@@ -544,7 +560,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
 
         for (FrameworkMethod m : basicTests) {
-            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m);
+            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m.getAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
@@ -616,7 +632,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     }
                     hasParameterised = true;
 
-                    expandedMethods = generatePolicyArgumentTests(method, expandedMethods);
+                    HarrierToEnterpriseMediator mediator =
+                            HarrierToEnterpriseMediator.Companion.getMediatorOrThrowException(
+                                    "you can't use @PolicyArgument without the enterprise module"
+                            );
+                    expandedMethods = mediator.generatePolicyArgumentTests(method, expandedMethods);
                 } else if (annotation instanceof StringTestParameter) {
                     if (hasParameterised) {
                         throw new IllegalStateException(
@@ -659,95 +679,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
 
-        return expandedMethods;
-    }
-
-    private static Stream<FrameworkMethod> generatePolicyArgumentTests(
-            FrameworkMethod frameworkMethod, Stream<FrameworkMethod> expandedMethods) {
-        try {
-            Class<?>[] policyClasses;
-            PolicyAppliesTest policyAppliesTestAnnotation =
-                    frameworkMethod.getMethod().getAnnotation(PolicyAppliesTest.class);
-            PolicyDoesNotApplyTest policyDoesNotApplyTestAnnotation =
-                    frameworkMethod.getMethod().getAnnotation(PolicyDoesNotApplyTest.class);
-            CanSetPolicyTest canSetPolicyTestAnnotation =
-                    frameworkMethod.getMethod().getAnnotation(CanSetPolicyTest.class);
-            CannotSetPolicyTest cannotSetPolicyTestAnnotation =
-                    frameworkMethod.getMethod().getAnnotation(CannotSetPolicyTest.class);
-
-            if (policyAppliesTestAnnotation != null) {
-                policyClasses = policyAppliesTestAnnotation.policy();
-            } else if (policyDoesNotApplyTestAnnotation != null) {
-                policyClasses = policyDoesNotApplyTestAnnotation.policy();
-            } else if (canSetPolicyTestAnnotation != null) {
-                policyClasses = canSetPolicyTestAnnotation.policy();
-            } else if (cannotSetPolicyTestAnnotation != null) {
-                policyClasses = cannotSetPolicyTestAnnotation.policy();
-            } else {
-                throw new NeneException("PolicyArgument annotation can only by used with a test "
-                        + "that is marked with either @PolicyAppliesTest, "
-                        + "@PolicyDoesNotApplyTest, @CanSetPolicyTest or @CannotSetPolicyTest.");
-            }
-
-            Map<String, Set<Annotation>> policyClassToAnnotationsMap =
-                    Policy.getAnnotationsForPolicies(
-                            Policy.getEnterprisePolicyWithCallingClass(policyClasses));
-
-            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
-            Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
-            for (Class<?> policyClass : policyClasses) {
-                Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
-                Set<?> validArguments =
-                        (Set<?>) validArgumentsMethod.invoke(policyClass.newInstance());
-                if (validArguments.isEmpty()) {
-                    throw new NeneException(
-                            "Empty valid arguments passed for "
-                                    + policyClass.getSimpleName()
-                                    + " policy");
-                }
-
-                Set<Annotation> policyAnnotations =
-                        policyClassToAnnotationsMap.get(policyClass.getName());
-
-                for (FrameworkMethod expandedMethod : expandedMethodList) {
-                    List<Annotation> parameterizedAnnotations =
-                            ((BedsteadFrameworkMethod) expandedMethod)
-                                    .getParameterizedAnnotations();
-                    for (Annotation parameterizedAnnotation : parameterizedAnnotations) {
-                        if ((policyAppliesTestAnnotation != null
-                                        && policyAnnotations.contains((parameterizedAnnotation)))
-                                || (policyDoesNotApplyTestAnnotation != null)
-                                || (canSetPolicyTestAnnotation != null
-                                        && policyAnnotations.contains(parameterizedAnnotation))
-                                || (cannotSetPolicyTestAnnotation != null)) {
-                            tempExpandedFrameworkMethodSet.addAll(
-                                    applyPolicyArgumentParameter(expandedMethod, validArguments));
-                        }
-                    }
-                }
-            }
-
-            return tempExpandedFrameworkMethodSet.stream();
-        } catch (NoSuchMethodException
-                | InvocationTargetException
-                | IllegalAccessException
-                | InstantiationException e) {
-            // Should never happen as validArguments method will always have a default
-            // implementation for every EnterprisePolicy
-            throw new NeneException(
-                    "PolicyArgument parameter annotation cannot be added to a test "
-                            + "without the validArguments method specified for the "
-                            + "EnterprisePolicy",
-                    e);
-        }
-    }
-
-    private static List<FrameworkMethodWithParameter> applyPolicyArgumentParameter(
-            FrameworkMethod frameworkMethod, Set<?> validArguments) {
-        List<FrameworkMethodWithParameter> expandedMethods = new ArrayList<>(validArguments.size());
-        for (Object arg : validArguments) {
-            expandedMethods.add(new FrameworkMethodWithParameter(frameworkMethod, arg));
-        }
         return expandedMethods;
     }
 
@@ -860,9 +791,15 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return annotationCosts;
     }
 
-    private Set<Annotation> getParameterizedAnnotations(FrameworkMethod method) {
+    /**
+     * Filters array of annotations and returns only annotations of type
+     * {@link ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
+     *
+     * @param methodAnnotations the array of annotations of test method
+     */
+    public static Set<Annotation> getParameterizedAnnotations(Annotation[] methodAnnotations) {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
-        List<Annotation> annotations = new ArrayList<>(Arrays.asList(method.getAnnotations()));
+        List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         parseEnterpriseAnnotations(annotations);
         parsePermissionAnnotations(annotations);
@@ -878,118 +815,18 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Create a new {@link EnterprisePolicy} by merging a group of policies.
-     *
-     * <p>Each policy will have flags validated.
-     *
-     * <p>If policies support different delegation scopes, then they cannot be merged and an
-     * exception will be thrown. These policies require separate tests.
-     */
-    private static EnterprisePolicy mergePolicies(Class<?>[] policies) {
-        if (policies.length == 0) {
-            throw new IllegalStateException("Cannot merge 0 policies");
-        } else if (policies.length == 1) {
-            // Nothing to merge, just return the only one
-            return policies[0].getAnnotation(EnterprisePolicy.class);
-        }
-
-        Set<Integer> dpc = new HashSet<>();
-        Set<EnterprisePolicy.Permission> permissions = new HashSet<>();
-        Set<EnterprisePolicy.AppOp> appOps = new HashSet<>();
-        Set<String> delegatedScopes = new HashSet<>();
-
-        for (Class<?> policy : policies) {
-            EnterprisePolicy enterprisePolicy = policy.getAnnotation(EnterprisePolicy.class);
-            Policy.validateFlags(policy.getName(), enterprisePolicy.dpc());
-
-            for (int dpcPolicy : enterprisePolicy.dpc()) {
-                dpc.add(dpcPolicy);
-            }
-
-            for (EnterprisePolicy.Permission permission : enterprisePolicy.permissions()) {
-                permissions.add(permission);
-            }
-
-            for (EnterprisePolicy.AppOp appOp : enterprisePolicy.appOps()) {
-                appOps.add(appOp);
-            }
-
-            if (enterprisePolicy.delegatedScopes().length > 0) {
-                ImmutableSet<String> newDelegatedScopes = ImmutableSet.copyOf(enterprisePolicy.delegatedScopes());
-                if (!delegatedScopes.isEmpty()
-                        && !delegatedScopes.containsAll(newDelegatedScopes)) {
-                    throw new IllegalStateException("Cannot merge multiple policies which define "
-                            + "different delegated scopes. You should separate this into multiple "
-                            + "tests.");
-                }
-
-                delegatedScopes = newDelegatedScopes;
-            }
-        }
-
-        return Policy.enterprisePolicy(dpc.stream().mapToInt(Integer::intValue).toArray(),
-                permissions.toArray(new EnterprisePolicy.Permission[0]),
-                appOps.toArray(new EnterprisePolicy.AppOp[0]),
-                delegatedScopes.toArray(new String[0]));
-
-    }
-
-    /**
      * Parse enterprise-specific annotations.
      *
      * <p>To be used before general annotation processing.
      */
     static void parseEnterpriseAnnotations(List<Annotation> annotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            if (annotation instanceof PolicyAppliesTest) {
-                annotations.remove(index);
-
-                List<Annotation> replacementAnnotations =
-                        Policy.policyAppliesStates(
-                                mergePolicies(((PolicyAppliesTest) annotation).policy()));
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else if (annotation instanceof PolicyDoesNotApplyTest) {
-                annotations.remove(index);
-
-                List<Annotation> replacementAnnotations =
-                        Policy.policyDoesNotApplyStates(
-                                mergePolicies(((PolicyDoesNotApplyTest) annotation).policy()));
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else if (annotation instanceof CannotSetPolicyTest) {
-                annotations.remove(index);
-
-                List<Annotation> replacementAnnotations =
-                        Policy.cannotSetPolicyStates(
-                                mergePolicies(((CannotSetPolicyTest) annotation).policy()),
-                                ((CannotSetPolicyTest) annotation).includeDeviceAdminStates(),
-                                ((CannotSetPolicyTest) annotation).includeNonDeviceAdminStates());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else if (annotation instanceof CanSetPolicyTest) {
-                annotations.remove(index);
-                boolean singleTestOnly = ((CanSetPolicyTest) annotation).singleTestOnly();
-
-                List<Annotation> replacementAnnotations =
-                        Policy.canSetPolicyStates(
-                                mergePolicies(((CanSetPolicyTest) annotation).policy()),
-                                singleTestOnly);
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else {
-                index++;
-            }
+        HarrierToEnterpriseMediator mediator =
+                HarrierToEnterpriseMediator.Companion.getMediatorOrNull();
+        if (mediator == null) {
+            System.out.println(LOG_TAG + " bedstead-enterprise module is not loaded, "
+                    + "parseEnterpriseAnnotations will not be executed");
+        } else {
+            mediator.parseEnterpriseAnnotations(annotations);
         }
     }
 

@@ -474,6 +474,7 @@ public class CameraTestUtils extends Assert {
                 case ImageFormat.JPEG:
                 case ImageFormat.YUV_420_888:
                 case ImageFormat.YCBCR_P010:
+                case ImageFormat.YCBCR_P210:
                 case ImageFormat.Y8:
                 case ImageFormat.HEIC:
                 case ImageFormat.DEPTH16:
@@ -1797,8 +1798,8 @@ public class CameraTestUtils extends Assert {
      *
      * <p>For JPEG, it returns a 1-D byte array contains a complete JPEG image.</p>
      *
-     * <p>For YUV P010, it returns a byte array that contains Y plane first, followed
-     * by the interleaved U(Cb)/V(Cr) plane.</p>
+     * <p>For YUV P010 and P210, it returns a byte array that contains Y plane first,
+     * followed by the interleaved U(Cb)/V(Cr) plane.</p>
      */
     public static byte[] getDataFromImage(Image image) {
         assertNotNull("Invalid image:", image);
@@ -1820,7 +1821,8 @@ public class CameraTestUtils extends Assert {
         // Same goes for DEPTH_POINT_CLOUD, RAW_PRIVATE, DEPTH_JPEG, and HEIC
         if (format == ImageFormat.JPEG || format == ImageFormat.DEPTH_POINT_CLOUD ||
                 format == ImageFormat.RAW_PRIVATE || format == ImageFormat.DEPTH_JPEG ||
-                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R) {
+                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R ||
+                format == ImageFormat.HEIC_ULTRAHDR) {
             buffer = planes[0].getBuffer();
             assertNotNull("Fail to get jpeg/depth/heic ByteBuffer", buffer);
             data = new byte[buffer.remaining()];
@@ -1858,7 +1860,38 @@ public class CameraTestUtils extends Assert {
                 buffer.rewind();
             }
             return data;
+        } else if (format == ImageFormat.YCBCR_P210) {
+            // P210 samples are stored within 16 bit values
+            int offset = 0;
+            int bytesPerPixelRounded = ImageFormat.getBitsPerPixel(format) / 8;
+            data = new byte[width * height * bytesPerPixelRounded];
+            assertTrue("Unexpected number of planes, expected " + 3 + " actual " + planes.length,
+                    planes.length == 3);
+            for (int i = 0; i < 2; i++) {
+                buffer = planes[i].getBuffer();
+                assertNotNull("Fail to get bytebuffer from plane", buffer);
+                buffer.rewind();
+                rowStride = planes[i].getRowStride();
+                if (VERBOSE) {
+                    Log.v(TAG, "rowStride " + rowStride);
+                    Log.v(TAG, "width " + width);
+                    Log.v(TAG, "height " + height);
+                }
+                for (int row = 0; row < height; row++) {
+                    // Each 10-bit pixel occupies 2 bytes
+                    int length = 2 * width;
+                    buffer.get(data, offset, length);
+                    offset += length;
+                    if (row < height - 1) {
+                        buffer.position(buffer.position() + rowStride - length);
+                    }
+                }
+                if (VERBOSE) Log.v(TAG, "Finished reading data from plane " + i);
+                buffer.rewind();
+            }
+            return data;
         }
+
 
         int offset = 0;
         data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
@@ -1929,6 +1962,7 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.NV21:
             case ImageFormat.YV12:
             case ImageFormat.YCBCR_P010:
+            case ImageFormat.YCBCR_P210:
                 assertEquals("YUV420 format Images should have 3 planes", 3, planes.length);
                 break;
             case ImageFormat.JPEG:
@@ -1939,6 +1973,7 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.DEPTH_JPEG:
             case ImageFormat.Y8:
             case ImageFormat.HEIC:
+            case ImageFormat.HEIC_ULTRAHDR:
             case ImageFormat.JPEG_R:
                 assertEquals("JPEG/RAW/depth/Y8 Images should have one plane", 1, planes.length);
                 break;
@@ -2677,6 +2712,9 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.YCBCR_P010:
                 validateP010Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
+            case ImageFormat.YCBCR_P210:
+                validateP210Data(data, width, height, format, image.getTimestamp(), filePath);
+                break;
             case ImageFormat.YUV_420_888:
             case ImageFormat.YV12:
                 validateYuvData(data, width, height, format, image.getTimestamp(), filePath);
@@ -2697,7 +2735,10 @@ public class CameraTestUtils extends Assert {
                 validateY8Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
             case ImageFormat.HEIC:
-                validateHeicData(data, width, height, filePath);
+                validateHeicData(data, width, height, filePath, false /*gainmapPresent*/);
+                break;
+            case ImageFormat.HEIC_ULTRAHDR:
+                validateHeicData(data, width, height, filePath, true /*gainmapPresent*/);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported format for validation: "
@@ -2819,10 +2860,8 @@ public class CameraTestUtils extends Assert {
     private static void validateP010Data(byte[] p010Data, int width, int height, int format,
             long ts, String filePath) {
         if (VERBOSE) Log.v(TAG, "Validating P010 data");
-        // The P010 10 bit samples are stored in two bytes so the size needs to be adjusted
-        // accordingly.
-        int bytesPerPixelRounded = (ImageFormat.getBitsPerPixel(format) + 7) / 8;
-        int expectedSize = width * height * bytesPerPixelRounded;
+        int bytesPerPixel = ImageFormat.getBitsPerPixel(format) / 8;
+        int expectedSize = width * height * bytesPerPixel;
         assertEquals("P010 data doesn't match", expectedSize, p010Data.length);
 
         if (DEBUG && filePath != null) {
@@ -2831,6 +2870,21 @@ public class CameraTestUtils extends Assert {
             dumpFile(fileName, p010Data);
         }
     }
+
+    private static void validateP210Data(byte[] p210Data, int width, int height, int format,
+            long ts, String filePath) {
+        if (VERBOSE) Log.v(TAG, "Validating P210 data");
+        int bytesPerPixel = ImageFormat.getBitsPerPixel(format) / 8;
+        int expectedSize = width * height * bytesPerPixel;
+        assertEquals("P210 data doesn't match", expectedSize, p210Data.length);
+
+        if (DEBUG && filePath != null) {
+            String fileName =
+                    filePath + "/" + width + "x" + height + "_" + ts / 1e6 + ".p210";
+            dumpFile(fileName, p210Data);
+        }
+    }
+
     private static void validateRaw16Data(byte[] rawData, int width, int height, int format,
             long ts, String filePath) {
         if (VERBOSE) Log.v(TAG, "Validating raw data");
@@ -2920,7 +2974,8 @@ public class CameraTestUtils extends Assert {
 
     }
 
-    private static void validateHeicData(byte[] heicData, int width, int height, String filePath) {
+    private static void validateHeicData(byte[] heicData, int width, int height, String filePath,
+            boolean gainMapPresent) {
         BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
         // DecodeBound mode: only parse the frame header to get width/height.
         // it doesn't decode the pixel.
@@ -2931,12 +2986,19 @@ public class CameraTestUtils extends Assert {
 
         // Pixel decoding mode: decode whole image. check if the image data
         // is decodable here.
-        assertNotNull("Decoding heic failed",
-                BitmapFactory.decodeByteArray(heicData, 0, heicData.length));
+        Bitmap bitmapImage = BitmapFactory.decodeByteArray(heicData, 0, heicData.length);
+        assertNotNull("Decoding heic failed", bitmapImage);
+
         if (DEBUG && filePath != null) {
             String fileName =
                     filePath + "/" + width + "x" + height + ".heic";
             dumpFile(fileName, heicData);
+        }
+
+        if (gainMapPresent) {
+            Gainmap gainMap = bitmapImage.getGainmap();
+            assertNotNull(gainMap);
+            assertNotNull(gainMap.getGainmapContents());
         }
     }
 

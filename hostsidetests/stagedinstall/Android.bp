@@ -34,8 +34,10 @@ java_test_host {
     ],
     static_libs: ["cts-install-lib-host"],
     data: [
-        ":StagedInstallTest",
         ":deapexer.zip",
+    ],
+    device_common_data: [
+        ":StagedInstallTest",
     ],
     test_suites: [
         "cts",

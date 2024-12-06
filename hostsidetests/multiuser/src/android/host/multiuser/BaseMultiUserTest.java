@@ -269,7 +269,7 @@ public abstract class BaseMultiUserTest extends BaseHostJUnit4Test {
 
         private final BaseHostJUnit4Test mDeviceTest;
 
-        SupportsMultiUserRule(BaseHostJUnit4Test deviceTest) {
+        public SupportsMultiUserRule(BaseHostJUnit4Test deviceTest) {
             mDeviceTest = deviceTest;
         }
 

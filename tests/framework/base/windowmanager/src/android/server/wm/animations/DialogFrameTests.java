@@ -29,6 +29,8 @@ import static android.server.wm.animations.DialogFrameTestActivity.TEST_OVER_SIZ
 import static android.server.wm.animations.DialogFrameTestActivity.TEST_OVER_SIZED_DIMENSIONS_NO_LIMITS;
 import static android.server.wm.animations.DialogFrameTestActivity.TEST_WITH_MARGINS;
 import static android.view.WindowInsets.Type.captionBar;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -44,7 +46,6 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.WindowState;
-import android.view.WindowInsets;
 
 import androidx.test.rule.ActivityTestRule;
 
@@ -296,14 +297,14 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
                             // test failures.
                             // Non-freeform windowing modes will not be affected due to having zero
                             // caption bar.
+                            final int types = (systemBars() | displayCutout()) & ~captionBar();
                             final Insets insets =
                                     mDialogTestActivity
                                             .getActivity()
                                             .getWindow()
                                             .getDecorView()
                                             .getRootWindowInsets()
-                                            .getInsets(
-                                                    WindowInsets.Type.systemBars() & ~captionBar());
+                                            .getInsets(types);
                             mContentInsets =
                                     Insets.of(insets.left, insets.top, insets.right, insets.bottom);
                         });

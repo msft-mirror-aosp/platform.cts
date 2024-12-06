@@ -799,6 +799,12 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
                 mErrorCollector.checkThat("isFinished", controller.isFinished(), is(false));
                 mErrorCollector.checkThat("isCancelled", controller.isCancelled(), is(true));
             }
+            if (mCancelledStack != null) {
+                mErrorCollector.addError(
+                        new AssertionError(
+                                "onCancelled called multiple times (cause is the previous call) ",
+                                mCancelledStack));
+            }
             mCancelledStack = new RuntimeException("onCancelled called here");
             report(CANCELLED);
         }

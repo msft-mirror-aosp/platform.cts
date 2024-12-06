@@ -18,16 +18,17 @@ package com.android.bedstead.testapisreflection.processor;
 
 import static com.android.bedstead.testapisreflection.processor.utils.ResourceLoader.load;
 
+import com.android.bedstead.testapis.parser.TestApisParser;
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 import com.android.bedstead.testapis.parser.signatures.PackageSignature;
-import com.android.bedstead.testapis.parser.TestApisParser;
 import com.android.bedstead.testapisreflection.processor.annotations.TestApisReflectionTrigger;
 import com.android.bedstead.testapisreflection.processor.generators.ProxyClassesGenerator;
 import com.android.bedstead.testapisreflection.processor.generators.ProxyMethodExtensionsGenerator;
 
 import com.google.auto.service.AutoService;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,10 +80,10 @@ import javax.lang.model.element.TypeElement;
 @AutoService(javax.annotation.processing.Processor.class)
 public class Processor extends AbstractProcessor {
 
-    public static final ImmutableSet<String> BLOCKLISTED_TEST_CLASSES =
+    public static final ImmutableList<String> BLOCKLISTED_TEST_CLASSES =
             load("/apis/blocklisted-test-classes.txt");
 
-    public static final ImmutableSet<String> ALLOWLISTED_TEST_FIELDS =
+    public static final ImmutableList<String> ALLOWLISTED_TEST_FIELDS =
             load("/apis/allowlisted-test-fields.txt");
 
     public static final String PACKAGE_NAME = "android.cts.testapisreflection";
@@ -99,11 +100,11 @@ public class Processor extends AbstractProcessor {
             return true;
         }
 
-        Set<PackageSignature> testApis = TestApisParser.parse();
-        Set<ClassSignature> testClasses = testApis.stream()
+        List<PackageSignature> testApis = TestApisParser.parse();
+        List<ClassSignature> testClasses = testApis.stream()
                 .flatMap(p -> p.getClassSignatures().stream()
                         .filter(c -> c.isTestClass(processingEnv.getElementUtils())))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableList());
 
         // Generate proxy classes for classes annotated as @TestApi as a whole.
         new ProxyClassesGenerator(processingEnv).generatedMethods(testClasses);

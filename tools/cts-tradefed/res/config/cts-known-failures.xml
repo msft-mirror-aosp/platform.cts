@@ -19,6 +19,9 @@
     <!-- <option name="compatibility:exclude-filter" value="MODULE_NAME PACKAGE_NAME.CLASS_NAME" /> Excludes whole class -->
     <!-- <option name="compatibility:exclude-filter" value="MODULE_NAME PACKAGE_NAME.CLASS_NAME#TEST_NAME" /> Excludes individual test -->
 
+    <!-- b/363173199 -->
+    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testPermissionlessService_ignored" />
+
     <!-- b/38182235 -->
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases android.location.cts.GnssTtffTests#testTtffWithNetwork" />
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases[instant] android.location.cts.GnssTtffTests#testTtffWithNetwork" />
@@ -257,7 +260,9 @@
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-
+    <!-- b/330287133 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testCreateAdminSupportIntent" />
@@ -305,6 +310,16 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
 
+    <!-- b/363168669 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:3:REAR_DISPLAY_STATE] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:3:REAR_DISPLAY_STATE] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
 
@@ -326,11 +341,6 @@
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier_usingGetMethodToCreateManager" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
-    <!-- b/357552749 -->
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlViewHostTests#testEmbeddedViewReceivesRawInputCoordinatesInDisplaySpace" />
-
-    <!-- b/357552752 -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceInput android.server.wm.input.WallpaperWindowInputTests#testShowWallpaper_withTouchEnabled" />
 
     <!-- b/355285596 -->
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
@@ -340,4 +350,31 @@
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:3:OPEN] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+
+    <!-- b/355597917 -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withStylusTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[instant] android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withStylusTap" />
+
+    <!-- b/339846869 -->
+    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService" />
+    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.CarrierRoamingSatelliteSmsTest" />
+
+    <!-- b/368509186 -->
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
+
+    <!-- b/370790791 -->
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testMode" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
+    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
+
+    <!-- b/382231688 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
 </configuration>

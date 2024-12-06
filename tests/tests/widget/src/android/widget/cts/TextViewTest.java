@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -83,6 +84,7 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -3794,7 +3796,8 @@ public class TextViewTest {
 
     @UiThreadTest
     @Test
-    public void testSetGetFontVariationSettings() {
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
+    public void testSetGetFontVariationSettings_Api35() {
         mTextView = new TextView(mActivity);
         Context context = InstrumentationRegistry.getTargetContext();
         Typeface typeface = Typeface.createFromAsset(context.getAssets(), "multiaxis.ttf");
@@ -3856,6 +3859,47 @@ public class TextViewTest {
         for (String effectiveSetting : effectiveSettings) {
             assertTrue(mTextView.setFontVariationSettings(effectiveSetting));
             assertEquals(effectiveSetting, mTextView.getFontVariationSettings());
+        }
+
+        mTextView.setFontVariationSettings("");
+        assertNull(mTextView.getFontVariationSettings());
+    }
+
+    @UiThreadTest
+    @Test
+    public void testSetGetFontVariationSettings() {
+        mTextView = new TextView(mActivity);
+        Context context = InstrumentationRegistry.getTargetContext();
+        Typeface typeface = Typeface.createFromAsset(context.getAssets(), "multiaxis.ttf");
+        mTextView.setTypeface(typeface);
+
+        // multiaxis.ttf supports "aaaa", "BBBB", "a b ", " C D" axes.
+
+        // The default variation settings should be null.
+        assertNull(mTextView.getFontVariationSettings());
+
+        final String[] invalidFormatSettings = {
+                "invalid syntax",
+                "'aaa' 1.0",  // tag is not 4 ascii chars
+        };
+        for (String settings : invalidFormatSettings) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                mTextView.setFontVariationSettings(settings);
+            });
+            assertNull("Must not change settings for " + settings,
+                    mTextView.getFontVariationSettings());
+        }
+        final String[] varSettingsList = {
+                "'aaaa' 1.0",  // supported tag
+                "'a b ' .7",  // supported tag (contains whitespace)
+                "'aaaa' 1.0, 'BBBB' 0.5",  // both are supported
+                "'aaaa' 1.0, ' C D' 0.5",  // both are supported
+                "'aaaa' 1.0, 'bbbb' 0.4",  // 'bbbb' is unspported.
+        };
+
+        for (String varSettings : varSettingsList) {
+            assertTrue(mTextView.setFontVariationSettings(varSettings));
+            assertEquals(varSettings, mTextView.getFontVariationSettings());
         }
 
         mTextView.setFontVariationSettings("");
@@ -5220,7 +5264,6 @@ public class TextViewTest {
         assertEquals(10.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(0.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(3.3f, mTextView.getShadowRadius(), 0.01f);
-        assertTrue(mTextView.isElegantTextHeight());
 
         // This TextView has both a TextAppearance and a style, so the style should override.
         mTextView = findTextView(R.id.textview_textappearance_attrs3);
@@ -5235,7 +5278,6 @@ public class TextViewTest {
         assertEquals(1.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(10.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(5.3f, mTextView.getShadowRadius(), 0.01f);
-        assertFalse(mTextView.isElegantTextHeight());
 
         // This TextView has no TextAppearance and has a style, so the style should be applied.
         mTextView = findTextView(R.id.textview_textappearance_attrs4);
@@ -5249,7 +5291,6 @@ public class TextViewTest {
         assertEquals(1.3f, mTextView.getShadowDx(), 0.01f);
         assertEquals(10.5f, mTextView.getShadowDy(), 0.01f);
         assertEquals(5.3f, mTextView.getShadowRadius(), 0.01f);
-        assertFalse(mTextView.isElegantTextHeight());
 
         // Note: text, link and hint colors can't be tested due to the default style overriding
         // values b/63923542

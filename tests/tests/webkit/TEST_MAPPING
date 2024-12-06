@@ -1,22 +1,12 @@
 {
   "presubmit": [
     {
-      "name": "CtsWebkitTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsWebkitTestCases"
     }
   ],
   "kernel-presubmit": [
     {
-      "name": "CtsWebkitTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsWebkitTestCases"
     }
   ]
 }

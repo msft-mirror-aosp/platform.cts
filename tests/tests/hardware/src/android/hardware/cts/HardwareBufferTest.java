@@ -16,6 +16,8 @@
 
 package android.hardware.cts;
 
+import static android.media.codec.Flags.p210FormatSupport;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -77,22 +79,42 @@ public class HardwareBufferTest {
     }
 
     private static Object[] paramsForTestCreateOptionalFormats() {
-        return new Integer[]{
-            HardwareBuffer.RGBA_FP16,
-            HardwareBuffer.RGBA_1010102,
-            HardwareBuffer.YCBCR_420_888,
-            HardwareBuffer.D_16,
-            HardwareBuffer.D_24,
-            HardwareBuffer.DS_24UI8,
-            HardwareBuffer.D_FP32,
-            HardwareBuffer.DS_FP32UI8,
-            HardwareBuffer.S_UI8,
-            HardwareBuffer.YCBCR_P010,
-            HardwareBuffer.R_8,
-            HardwareBuffer.R_16,
-            HardwareBuffer.RG_1616,
-            HardwareBuffer.RGBA_10101010
-        };
+        if (p210FormatSupport()) {
+            return new Integer[]{
+                HardwareBuffer.RGBA_FP16,
+                HardwareBuffer.RGBA_1010102,
+                HardwareBuffer.YCBCR_420_888,
+                HardwareBuffer.D_16,
+                HardwareBuffer.D_24,
+                HardwareBuffer.DS_24UI8,
+                HardwareBuffer.D_FP32,
+                HardwareBuffer.DS_FP32UI8,
+                HardwareBuffer.S_UI8,
+                HardwareBuffer.YCBCR_P010,
+                HardwareBuffer.YCBCR_P210,
+                HardwareBuffer.R_8,
+                HardwareBuffer.R_16,
+                HardwareBuffer.RG_1616,
+                HardwareBuffer.RGBA_10101010
+            };
+        } else {
+            return new Integer[]{
+                HardwareBuffer.RGBA_FP16,
+                HardwareBuffer.RGBA_1010102,
+                HardwareBuffer.YCBCR_420_888,
+                HardwareBuffer.D_16,
+                HardwareBuffer.D_24,
+                HardwareBuffer.DS_24UI8,
+                HardwareBuffer.D_FP32,
+                HardwareBuffer.DS_FP32UI8,
+                HardwareBuffer.S_UI8,
+                HardwareBuffer.YCBCR_P010,
+                HardwareBuffer.R_8,
+                HardwareBuffer.R_16,
+                HardwareBuffer.RG_1616,
+                HardwareBuffer.RGBA_10101010
+            };
+        }
     }
 
     @Test

@@ -18,6 +18,7 @@ package android.server.wm.other;
 
 import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.Flags.FLAG_ENABLE_PIP_UI_STATE_CALLBACK_ON_ENTERING;
+import static android.app.Flags.FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
@@ -96,6 +97,8 @@ import static android.server.wm.app.Components.TestActivity.EXTRA_CONFIGURATION;
 import static android.server.wm.app.Components.TestActivity.TEST_ACTIVITY_ACTION_FINISH_SELF;
 import static android.server.wm.app27.Components.SDK_27_LAUNCH_ENTER_PIP_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_PIP_ACTIVITY;
+import static android.server.wm.apptv.Components.TV_LAUNCH_ENTER_PIP_ACTIVITY;
+import static android.server.wm.apptv.Components.TV_PIP_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -131,6 +134,7 @@ import android.os.RemoteCallback;
 import android.os.UserManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -150,9 +154,11 @@ import android.util.Size;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.wm.shell.Flags;
 
 import com.google.common.truth.Truth;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -165,12 +171,14 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:PinnedStackTests
+ * atest CtsWindowManagerDeviceOther:PinnedStackTests
  */
 @Presubmit
 @android.server.wm.annotation.Group2
 public class PinnedStackTests extends ActivityManagerTestBase {
     private static final String TAG = PinnedStackTests.class.getSimpleName();
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_PIP_ACTIVITY.getPackageName();
+    private static final String TEST_PACKAGE_TV = TV_PIP_ACTIVITY.getPackageName();
 
     private static final String APP_OPS_OP_ENTER_PICTURE_IN_PICTURE = "PICTURE_IN_PICTURE";
     private static final int APP_OPS_MODE_IGNORED = 1;
@@ -202,6 +210,12 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assumeFalse("PiP in HSUM not supported", UserManager.isHeadlessSystemUserMode());
     }
 
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
+        stopTestPackage(TEST_PACKAGE_TV);
+    }
+
     @Test
     public void testMinimumDeviceSize() {
         mWmState.assertDeviceDefaultDisplaySizeForMultiWindow(
@@ -216,6 +230,15 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    public void testTvEnterPictureInPictureMode() {
+        assumeTrue(isTv());
+        // Check that normal PiP entry still works for an app without the
+        // android.permission.TV_IMPLICIT_ENTER_PIP permission.
+        pinnedStackTester(getAmStartCmd(TV_PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true")),
+                TV_PIP_ACTIVITY, TV_PIP_ACTIVITY, false /* isFocusable */);
+    }
+
+    @Test
     public void testIsInPictureInPictureModeInOnPause() throws Exception {
         // Launch the activity that requests enter pip when receives onUserLeaveHint
         launchActivity(PIP_ACTIVITY,
@@ -225,12 +248,37 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvIsNotInPictureInPictureModeInOnPause() throws Exception {
+        assumeTrue(isTv());
+
+        // Launch the activity that requests enter pip when receives onUserLeaveHint
+        launchActivity(TV_PIP_ACTIVITY,
+                extraString(EXTRA_ENTER_PIP_ON_USER_LEAVE_HINT, " true"));
+
+        assertIsNotInPiPModeInOnPause(TV_PIP_ACTIVITY);
+    }
+
+    @Test
     public void testAutoEnterPipIsInPictureInPictureModeInOnPause() throws Exception {
         // Launch the activity that supports auto-enter-pip
         launchActivity(PIP_ACTIVITY,
                 extraString(EXTRA_ALLOW_AUTO_PIP, "true"));
 
         assertIsInPictureInPictureModeInOnPause();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvAutoEnterPipIsNotInPictureInPictureModeInOnPause() throws Exception {
+        assumeTrue(isTv());
+
+        // Launch an activity that supports auto-enter-pip, but does not have the permission
+        // required for TV.
+        launchActivity(TV_PIP_ACTIVITY,
+                extraString(EXTRA_ALLOW_AUTO_PIP, "true"));
+
+        assertIsNotInPiPModeInOnPause(TV_PIP_ACTIVITY);
     }
 
     private void assertIsInPictureInPictureModeInOnPause() throws Exception {
@@ -246,6 +294,22 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
         Truth.assertThat(future.get(5000, TimeUnit.MILLISECONDS)).isEqualTo(true);
+    }
+
+    private void assertIsNotInPiPModeInOnPause(ComponentName componentName) throws Exception {
+        final CompletableFuture<Boolean> future = new CompletableFuture<>();
+        final RemoteCallback onPauseCallback = new RemoteCallback(
+                (Bundle result) -> future.complete(result.getBoolean(IS_IN_PIP_MODE_RESULT)));
+        mBroadcastActionTrigger.doActionWithRemoteCallback(ACTION_SET_ON_PAUSE_REMOTE_CALLBACK,
+                EXTRA_PIP_ON_PAUSE_CALLBACK, onPauseCallback);
+
+        pressHomeButton();
+
+        // Ensure Activity#isInPictureInPictureMode returns false when in onPause
+        mWmState.computeState(
+                new WaitForValidActivityState(componentName));
+        assertPinnedStackDoesNotExist();
+        Truth.assertThat(future.get(5000, TimeUnit.MILLISECONDS)).isEqualTo(false);
     }
 
     // This test is black-listed in cts-known-failures.xml (b/35314835).
@@ -331,7 +395,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackActivityIsInDisplayBounds(PIP_ACTIVITY);
     }
 
+    // TODO (b/380030822): Wrong minimal bounds in PiP2 sometimes on first run.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testEnterPipWithMinimalSize() throws Exception {
         // Launch a PiP activity with minimal size specified
         launchActivity(PIP_ACTIVITY_WITH_MINIMAL_SIZE, extraString(EXTRA_ENTER_PIP, "true"));
@@ -398,6 +464,19 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvDoesNotEnterPipOnBackPressed() {
+        assumeTrue(isTv());
+
+        // Launch the PIP activity that calls enterPictureInPictureMode when it receives
+        // onBackPressed callback and set its pip params to allow auto-pip.
+        // OnBackPressed is called after onPause and is therefore also restricted.
+        launchActivity(TV_PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP_ON_BACK_PRESSED, "true"));
+
+        assertNoEnterPipOnBackPressed(TV_PIP_ACTIVITY);
+    }
+
+    @Test
     public void testEnterPipOnBackPressedWithAutoPipEnabled() {
         // Launch the PIP activity that calls enterPictureInPictureMode when it receives
         // onBackPressed callback and set its pip params to allow auto-pip.
@@ -408,12 +487,35 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertEnterPipOnBackPressed(PIP_ACTIVITY);
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvDoesNotEnterPipOnBackPressedWithAutoPipEnabled() {
+        assumeTrue(isTv());
+
+        // Launch the PIP activity that calls enterPictureInPictureMode when it receives
+        // onBackPressed callback and set its pip params to allow auto-pip.
+        // OnBackPressed is called after onPause and is therefore also restricted.
+        launchActivity(TV_PIP_ACTIVITY,
+                extraString(EXTRA_ALLOW_AUTO_PIP, "true"),
+                extraString(EXTRA_ENTER_PIP_ON_BACK_PRESSED, "true"));
+
+        assertNoEnterPipOnBackPressed(TV_PIP_ACTIVITY);
+    }
+
     private void assertEnterPipOnBackPressed(ComponentName componentName) {
         // Press the back button.
         pressBackButton();
         // Assert that we have entered PiP.
         waitForEnterPipAnimationComplete(componentName);
         assertPinnedStackExists();
+    }
+
+    private void assertNoEnterPipOnBackPressed(ComponentName componentName) {
+        // Press the back button.
+        pressBackButton();
+        mWmState.computeState(
+                new WaitForValidActivityState(componentName));
+        assertPinnedStackDoesNotExist();
     }
 
     @Test
@@ -705,6 +807,24 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvAutoEnterPictureInPictureRestricted() {
+        assumeTrue(isTv());
+
+        // Launch a test activity so that we're not over home
+        launchActivity(TEST_ACTIVITY);
+
+        // Try to launch the PIP activity on pause with app that does not have the permission
+        launchActivity(TV_PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP_ON_PAUSE, "true"));
+        assertPinnedStackDoesNotExist();
+
+        // Go home and ensure that there is not a pinned stack
+        launchHomeActivity();
+        assertPinnedStackDoesNotExist();
+        waitAndAssertActivityState(TV_PIP_ACTIVITY, STATE_STOPPED, "activity must be stopped");
+    }
+
+    @Test
     public void testAutoEnterPictureInPictureOnUserLeaveHintWhenPipRequestedNotOverridden()
             {
         // Launch a test activity so that we're not over home
@@ -933,7 +1053,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is now in the fullscreen/freeform stack (when
         // no fullscreen/freeform stack existed before)
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
@@ -949,7 +1069,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed in the fullscreen/freeform stack,
         // behind the top fullscreen/freeform activity
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 testAppWindowingMode, ACTIVITY_TYPE_STANDARD, pipWindowingMode);
     }
@@ -966,16 +1086,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
 
     @Test
     public void testMovePipToBackWithNoFullscreenOrFreeformStack() {
-        // Start with a clean slate, remove all the stacks but home
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-
         // Launch a pip activity
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
@@ -1085,6 +1202,23 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertEquals(1, task.getActivities().size());
         assertPinnedStackExists();
         waitAndAssertActivityState(PIP_ACTIVITY, STATE_PAUSED, "activity must be paused");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvNoAutoEnterPipFromTaskWithMultipleActivities() {
+        assumeTrue(isTv());
+
+        // Try to enter picture-in-picture from an activity that has more than one activity in the
+        // task with auto-enter-pip being enabled
+        launchActivity(TV_LAUNCH_ENTER_PIP_ACTIVITY,
+                extraString(EXTRA_ALLOW_AUTO_PIP, "true"),
+                extraString(EXTRA_ENTER_PIP, "false"));
+
+        // Don't auto enter pip on going back to home on TV without permission.
+        pressHomeButton();
+        waitAndAssertActivityState(TV_PIP_ACTIVITY, STATE_PAUSED, "activity must be paused");
+        assertPinnedStackDoesNotExist();
     }
 
     @Test
@@ -1333,7 +1467,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Dismiss it
         separateTestJournal();
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         waitForExitPipToFullscreen(PIP_ACTIVITY);
         waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
 
@@ -1669,6 +1803,22 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPip(PIP_ACTIVITY);
         assertPinnedStackExists();
         waitAndAssertActivityState(PIP_ACTIVITY, STATE_PAUSED, "activity must be paused");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_TV_IMPLICIT_ENTER_PIP_RESTRICTION)
+    public void testTvNoAutoPipOnLaunchingActivityWithNoAnimation() {
+        assumeTrue(isTv());
+
+        // Launch the PIP activity and set its pip params to allow auto-pip.
+        launchActivity(TV_PIP_ACTIVITY, extraString(EXTRA_ALLOW_AUTO_PIP, "true"));
+        assertPinnedStackDoesNotExist();
+
+        // Launch a regular activity with FLAG_ACTIVITY_NO_ANIMATION and
+        // ensure that there is no pinned stack.
+        launchActivityWithNoAnimation(TEST_ACTIVITY);
+        assertPinnedStackDoesNotExist();
+        waitAndAssertActivityState(TV_PIP_ACTIVITY, STATE_STOPPED, "activity must be stopped");
     }
 
     @Test
@@ -2106,6 +2256,16 @@ public class PinnedStackTests extends ActivityManagerTestBase {
             mWmState.assertDoesNotContainStack("Must not contain pinned stack.",
                     WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
         }
+    }
+
+    private void removeRootTasksInPinnedWindowingModes() {
+        runWithShellPermission(
+                () -> mAtm.removeRootTasksInWindowingModes(new int[]{WINDOWING_MODE_PINNED}));
+        waitForIdle();
+    }
+
+    private boolean isTv() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
     public static class TestActivity extends Activity { }

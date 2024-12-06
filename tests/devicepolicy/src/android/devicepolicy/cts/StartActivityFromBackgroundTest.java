@@ -18,6 +18,8 @@ package android.devicepolicy.cts;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import android.content.Intent;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -46,12 +48,12 @@ public class StartActivityFromBackgroundTest {
     @CannotSetPolicyTest(policy = StartActivityFromBackground.class)
     @Test
     public void startActivityFromBackground_dpcNotAllowed_unableToStart() {
-        TestAppActivityReference testActivity = sDeviceState.dpc().activities().any();
+        TestAppActivityReference testActivity = dpc(sDeviceState).activities().any();
         Intent intent = new Intent()
                 .addFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setComponent(testActivity.component().componentName());
 
-        sDeviceState.dpc().context().startActivity(intent);
+        dpc(sDeviceState).context().startActivity(intent);
 
         Poll.forValue("Start foreground activity from background",
                 () -> TestApis.activities().foregroundActivity())
@@ -62,12 +64,12 @@ public class StartActivityFromBackgroundTest {
     @CanSetPolicyTest(policy = StartActivityFromBackground.class)
     @Test
     public void startActivityFromBackground_dpcAllowed_ableToStart() {
-        TestAppActivityReference testActivity = sDeviceState.dpc().activities().any();
+        TestAppActivityReference testActivity = dpc(sDeviceState).activities().any();
         Intent intent = new Intent()
                 .addFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setComponent(testActivity.component().componentName());
 
-        sDeviceState.dpc().context().startActivity(intent);
+        dpc(sDeviceState).context().startActivity(intent);
 
         Poll.forValue("Start foreground activity from background",
                 () -> TestApis.activities().foregroundActivity())

@@ -32,9 +32,14 @@ a card emulator and the other acting as an NFC reader. The devices should be
 placed back to back.
 """
 
-import sys
+from http.client import HTTPSConnection
+import json
 import logging
+import ssl
+import sys
+import time
 
+from android.platform.test.annotations import CddTest
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
@@ -43,14 +48,33 @@ from mobly.controllers import android_device
 from mobly.controllers import android_device_lib
 from mobly.snippet import errors
 
+
 _LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 try:
     import pn532
-    from pn532.nfcutils import (parse_protocol_params, create_select_apdu, poll_and_transact,
-                                get_apdus)
-except ImportError:
-    _LOG.warning("Cannot import PN532 library")
+    from pn532.nfcutils import (
+        parse_protocol_params,
+        create_select_apdu,
+        poll_and_transact,
+        poll_and_observe_frames,
+        get_apdus,
+        POLLING_FRAME_ALL_TEST_CASES,
+        POLLING_FRAMES_TYPE_A_SPECIAL,
+        POLLING_FRAMES_TYPE_B_SPECIAL,
+        POLLING_FRAMES_TYPE_F_SPECIAL,
+        POLLING_FRAMES_TYPE_A_LONG,
+        POLLING_FRAMES_TYPE_B_LONG,
+        POLLING_FRAME_ON,
+        POLLING_FRAME_OFF,
+        get_frame_test_stats,
+        TimedWrapper,
+        ns_to_ms,
+        ns_to_us,
+        us_to_ms,
+    )
+except ImportError as e:
+    _LOG.warning(f"Cannot import PN532 library due to {e}")
 
 # Timeout to give the NFC service time to perform async actions such as
 # discover tags.
@@ -80,10 +104,25 @@ _SCREEN_ON_ONLY_OFF_HOST_SERVICE = _SERVICE_PACKAGE + ".ScreenOnOnlyOffHostServi
 _THROUGHPUT_SERVICE = _SERVICE_PACKAGE + ".ThroughputService"
 _TRANSPORT_SERVICE_1 = _SERVICE_PACKAGE + ".TransportService1"
 _TRANSPORT_SERVICE_2 = _SERVICE_PACKAGE + ".TransportService2"
+_POLLING_LOOP_SERVICE_1 = _SERVICE_PACKAGE + ".PollingLoopService"
+_POLLING_LOOP_SERVICE_2 = _SERVICE_PACKAGE + ".PollingLoopService2"
 
 _NUM_POLLING_LOOPS = 50
 _FAILED_TAG_MSG =  "Reader did not detect tag, transaction not attempted."
 _FAILED_TRANSACTION_MSG = "Transaction failed, check device logs for more information."
+
+_FRAME_EVENT_TIMEOUT_SEC = 1
+_POLLING_FRAME_TIMESTAMP_TOLERANCE_MS = 5
+_POLLING_FRAME_TIMESTAMP_EXCEED_COUNT_TOLERANCE_ = 3
+_FAILED_MISSING_POLLING_FRAMES_MSG = "Device did not receive all polling frames"
+_FAILED_TIMESTAMP_TOLERANCE_EXCEEDED_MSG = "Polling frame timestamp tolerance exceeded"
+_FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE = """
+Polling frame vendor specific gain value dropped on power increase
+"""
+_FAILED_FRAME_TYPE_INVALID = "Polling frame type is invalid"
+_FAILED_FRAME_DATA_INVALID = "Polling frame data is invalid"
+
+
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
@@ -158,6 +197,21 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun()
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
+    def _is_cuttlefish_device(self, ad: android_device.AndroidDevice) -> bool:
+        product_name = ad.adb.getprop("ro.product.name")
+        return "cf_x86" in product_name
+
+    def _get_casimir_id_for_device(self):
+        host = "localhost"
+        conn = HTTPSConnection(host, 1443, context=ssl._create_unverified_context())
+        path = '/devices'
+        headers = {'Content-type': 'application/json'}
+        conn.request("GET", path, {}, headers)
+        response = conn.getresponse()
+        json_obj = json.loads(response.read())
+        first_device = json_obj[0]
+        return first_device["device_id"]
+
     def setup_class(self):
         """
         Sets up class by registering an emulator device, enabling NFC, and loading snippets.
@@ -210,7 +264,16 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             else:
                 pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-            if len(pn532_serial_path) > 0:
+            casimir_id = None
+            if self._is_cuttlefish_device(self.emulator):
+                self._setup_failure_reason = 'Failed to set up casimir connection for Cuttlefish device'
+                casimir_id = self._get_casimir_id_for_device()
+
+            if casimir_id is not None and len(casimir_id) > 0:
+                self._setup_failure_reason = 'Failed to connect to casimir'
+                _LOG.info("casimir_id = " + casimir_id)
+                self.pn532 = pn532.Casimir(casimir_id)
+            elif len(pn532_serial_path) > 0:
                 self._setup_failure_reason = 'Failed to connect to PN532 board.'
                 self.pn532 = pn532.PN532(pn532_serial_path)
                 self.pn532.mute()
@@ -271,7 +334,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                     destination=self.current_test_info.output_path,
                 )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_single_non_payment_service(self):
         """Tests successful APDU exchange between non-payment service and
         reader.
@@ -299,7 +362,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_single_payment_service(self):
         """Tests successful APDU exchange between payment service and
         reader.
@@ -331,7 +394,42 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
             self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    def test_single_payment_service_crashes(self):
+        """Tests successful APDU exchange between payment service and
+        reader.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies emulator device sets the instrumentation emulator app to the
+        default wallet app.
+        2. Verifies a successful APDU exchange between the emulator and
+        Transport Service after _NFC_TIMEOUT_SEC.
+        """
+        self._set_up_emulator(
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+
+        ps = self.emulator.adb.shell(["ps", "|", "grep", "com.android.nfc.emulator.payment"]).decode("utf-8")
+        pid = ps.split()[1]
+        self.emulator.adb.shell(["kill", "-9", pid])
+
+        self._set_up_reader_and_assert_transaction(
+            expected_service=_PAYMENT_SERVICE_1,
+            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
+            self.pn532 else None)
+
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_dual_payment_service(self):
         """Tests successful APDU exchange between a payment service and
         reader when two payment services are set up on the emulator.
@@ -361,7 +459,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startDualPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_foreground_payment_emulator(self):
         """Tests successful APDU exchange between non-default payment service and
         reader when the foreground app sets a preference for the non-default
@@ -393,7 +491,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startForegroundPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dynamic_aid_emulator(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has registered dynamic AIDs.
@@ -421,7 +519,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startDynamicAidReaderActivity if not self.pn532 else
             None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_payment_prefix_emulator(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has statically registered prefix AIDs.
@@ -451,7 +549,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_prefix_payment_emulator_2(self):
         """Tests successful APDU exchange between payment service and reader
         when the payment service has statically registered prefix AIDs.
@@ -483,7 +581,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_other_prefix(self):
         """Tests successful APDU exchange when the emulator dynamically
         registers prefix AIDs for a non-payment service.
@@ -508,7 +606,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_offhost_service(self):
         """Tests successful APDU exchange between offhost service and reader.
 
@@ -531,7 +629,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startOffHostReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_on_and_offhost_service(self):
         """Tests successful APDU exchange between when reader selects both an on-host and off-host
         service.
@@ -555,7 +653,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startOnAndOffHostReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_dual_non_payment(self):
         """Tests successful APDU exchange between transport service and reader
         when two non-payment services are enabled.
@@ -583,7 +681,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startDualNonPaymentReaderActivity if not
             self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_foreground_non_payment(self):
         """Tests successful APDU exchange between non-payment service and
           reader when the foreground app sets a preference for the
@@ -613,7 +711,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startForegroundNonPaymentReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_throughput(self):
         """Tests that APDU sequence exchange occurs with under 60ms per APDU.
 
@@ -629,6 +727,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
          transport service with the duration averaging under 60 ms per single
          exchange.
          """
+        asserts.skip_if("_cf_x86_" in self.emulator.adb.getprop("ro.product.name"),
+                        "Skipping throughput test on Cuttlefish")
         self.emulator.nfc_emulator.startThroughputEmulatorActivity()
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduUnderThreshold')
@@ -640,7 +740,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startThroughputReaderActivity()
         test_pass_handler.waitAndGet('ApduUnderThreshold', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_tap_50_times(self):
         """Tests that 50 consecutive APDU exchanges are successful.
 
@@ -680,7 +780,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
                 self.reader.nfc_reader.closeActivity()
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_large_num_aids(self):
         """Tests that a long APDU sequence (256 commands/responses) is
         successfully exchanged.
@@ -704,7 +804,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startLargeNumAidsReaderActivity
             if not self.pn532 else None)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_off_payment(self):
         """Tests that APDU exchange occurs when device screen is off.
 
@@ -741,7 +841,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None
         )
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_conflicting_non_payment(self):
         """ This test registers two non-payment services with conflicting AIDs,
         selects a service to use, and ensures the selected service exchanges
@@ -784,7 +884,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_conflicting_non_payment_prefix(self):
         """ This test registers two non-payment services with conflicting
         prefix AIDs, selects a service to use, and ensures the selected
@@ -812,6 +912,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         if self.pn532:
             command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
                                                       _PREFIX_TRANSPORT_SERVICE_2)
+            test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+                'ApduSuccess'
+            )
             poll_and_transact(self.pn532, command_apdus[:1], response_apdus[:1])
         else:
             self.reader.nfc_reader.startConflictingNonPaymentPrefixReaderActivity()
@@ -828,9 +931,53 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
                 'ApduSuccess'
             )
             self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
-            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+    #@CddTest(requirements = {"TODO"})
+    def test_event_listener(self):
+        """ This test registers an event listener with the emulator and ensures
+        that the event listener receives callbacks when the field status changes and
+        when an AID goes unrouted.
+
+        Test Steps:
+        1. Start the emulator.
+        2. Start the reader.
+        3. Select an unrouted AID on the emulator.
+        4. Select a routed AID on the emulator.
+
+        Verifies:
+        1. Verifies that the event listener receives callbacks when the field
+        status changes and when an AID goes unrouted.
+        """
+        self._set_up_emulator(
+            start_emulator_fun=self.emulator.nfc_emulator.startEventListenerActivity,
+            is_payment=False
+        )
+
+        if not self.pn532:
+            asserts.skip('PN532 is required for this test.')
+
+        # unrouted AID
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                    _ACCESS_SERVICE)
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'EventListenerSuccess'
+        )
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_false(transacted, _FAILED_TRANSACTION_MSG)
+
+        # routed AID
+        command_apdus, response_apdus = get_apdus(self.emulator.nfc_emulator,
+                                                    _TRANSPORT_SERVICE_1)
+        tag_detected, transacted = poll_and_transact(self.pn532, command_apdus, response_apdus)
+        asserts.assert_true(tag_detected, _FAILED_TAG_MSG)
+        asserts.assert_true(transacted, _FAILED_TRANSACTION_MSG)
+        test_pass_handler.waitAndGet('EventListenerSuccess', _NFC_TIMEOUT_SEC)
+
+
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_protocol_params(self):
         """ Tests that the Nfc-A and ISO-DEP protocol parameters are being
         set correctly.
@@ -866,7 +1013,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.reader.nfc_reader.startProtocolParamsReaderActivity()
             test_pass_handler.waitAndGet('TestPass', _NFC_TIMEOUT_SEC)
 
-    #@CddTest(requirements = {"7.4.4/C-2-2", "7.4.4/C-1-2"})
+    @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2"])
     def test_screen_on_only_off_host_service(self):
         """
         Test Steps:
@@ -955,11 +1102,324 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
             self.pn532 else None)
 
+    def test_polling_frame_timestamp(self):
+        """Tests that PollingFrame object timestamp values are reported correctly
+        and do not deviate from host measurements
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over matching polling loop frame
+        and device time measurements. Calculate elapsed time for each and verify
+        that the host-device difference does not exceed the delay threshold.
+
+        Verifies:
+        1. Verifies that timestamp values are reported properly
+        for each tested frame type.
+        2. Verifies that the difference between matching host and device
+        timestamps does not exceed _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS.
+        """
+        # 1. Mute the field before starting the emulator
+        # in order to be able to trigger ON event when the test starts
+        self.pn532.mute()
+
+        # 2. Start emuator activity
+        self._set_up_emulator(
+            start_emulator_fun=self.emulator.nfc_emulator.startPollingFrameEmulatorActivity
+        )
+
+        timed_pn532 = TimedWrapper(self.pn532)
+        testcases = [
+            POLLING_FRAME_ON,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_A_LONG,
+            *POLLING_FRAMES_TYPE_A_LONG,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_LONG,
+            *POLLING_FRAMES_TYPE_B_LONG,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            POLLING_FRAME_OFF,
+        ]
+        # 3. Transmit polling frames
+        frames = poll_and_observe_frames(
+            pn532=timed_pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+            restore_original_frame_ordering=True
+        )
+        timings = timed_pn532.timings
+
+        # Pre-format data for error if one happens
+        frame_stats = get_frame_test_stats(
+            frames=frames,
+            testcases=testcases,
+            timestamps=[ns_to_us(timestamp) for (_, timestamp) in timings]
+        )
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            frame_stats
+        )
+
+        # For each event, calculate the amount of time elapsed since the previous one
+        # Subtract the resulting host/device time delta values
+        # Verify that the difference does not exceed the threshold
+        previous_timestamp_device = None
+        first_timestamp_start, first_timestamp_end = timings[0]
+        first_timestamp = (first_timestamp_start + first_timestamp_end) / 2
+        first_timestamp_error = (first_timestamp_end - first_timestamp_start)/ 2
+        first_timestamp_device = frames[0].timestamp
+
+        num_exceeding_threshold = 0
+        for idx, (frame, timing, testcase) in enumerate(zip(frames, timings, testcases)):
+            timestamp_host_start, timestamp_host_end = timing
+            timestamp_host = (timestamp_host_start + timestamp_host_end) / 2
+            timestamp_error = (timestamp_host_end - timestamp_host_start) / 2
+            timestamp_device = frame.timestamp
+
+            _LOG.debug(
+               f"{testcase.data.upper():32}" + \
+               f" ({testcase.configuration.type}" + \
+               f", {'+' if testcase.configuration.crc else '-'}" + \
+               f", {testcase.configuration.bits})" + \
+               f" -> {frame.data.hex().upper():32} ({frame.type})"
+            )
+
+            pre_previous_timestamp_device = previous_timestamp_device
+            previous_timestamp_device = timestamp_device
+
+            # Skip cases when timestamp value wraps
+            # as there's no way to establish the delta
+            # and re-establish the baselines
+            if (timestamp_device - first_timestamp_device) < 0:
+                _LOG.warning(
+                    "Timestamp value wrapped" + \
+                    f" from {pre_previous_timestamp_device}" + \
+                    f" to {previous_timestamp_device} for frame {frame};" + \
+                    " Skipping comparison..."
+                )
+                first_timestamp_device = timestamp_device
+                first_timestamp = timestamp_host
+                first_timestamp_error = timestamp_error
+                continue
+
+            device_host_difference = us_to_ms(timestamp_device - first_timestamp_device) - \
+                ns_to_ms(timestamp_host - first_timestamp)
+            total_error = ns_to_ms(timestamp_error + first_timestamp_error)
+            if abs(device_host_difference) > _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS + total_error:
+                debug_info = {
+                    "index": idx,
+                    "frame_sent": testcase.format_for_error(timestamp=ns_to_us(timestamp_host)),
+                    "frame_received": frame.to_dict(),
+                    "difference": device_host_difference,
+                    "time_device": us_to_ms(timestamp_device - first_timestamp_device),
+                    "time_host": ns_to_ms(timestamp_host - first_timestamp),
+                    "total_error": total_error,
+                }
+                num_exceeding_threshold = num_exceeding_threshold + 1
+                _LOG.warning(f"Polling frame timestamp tolerance exceeded: {debug_info}")
+        asserts.assert_less(num_exceeding_threshold,
+                                  _POLLING_FRAME_TIMESTAMP_EXCEED_COUNT_TOLERANCE_)
+
+    def test_polling_frame_vendor_specific_gain(self):
+        """Tests that PollingFrame object vendorSpecificGain value
+        changes when overall NFC reader output power changes
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. For each power level (0-100% with 20% step), send polling loop
+        consisting of normally encountered polling frames
+        4. For each result, calculate average vendorSpecificGain per NFC mode
+        compare those values against the previous power step, and assert that
+        they are equal or bigger than the previous one
+
+        Verifies:
+        1. Verifies that vendorSpecificGain value increases or stays the same
+        when PN532 output power increases.
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
+        )
+
+        # Loop two times so that HostEmulationManager releases all frames
+        testcases = [
+            POLLING_FRAME_ON,
+            *POLLING_FRAMES_TYPE_A_SPECIAL,
+            *POLLING_FRAMES_TYPE_B_SPECIAL,
+            *POLLING_FRAMES_TYPE_F_SPECIAL,
+            POLLING_FRAME_OFF
+        ] * 2
+
+        # 6 steps; 0%, 20%, 40%, 60%, 80%, 100%
+        power_levels = [0, 1, 2, 3, 4, 5]
+        polling_frame_types = ("A", "B", "F")
+
+        results_for_power_level = {}
+
+        for power_level in power_levels:
+            # Warning for 0% might appear,
+            # as it's possible for no events to be produced
+            frames = poll_and_observe_frames(
+                testcases=testcases,
+                pn532=self.pn532,
+                emulator=emulator,
+                # Scale from 0 to 100%
+                power_level = power_level * 20,
+                ignore_field_off_event_timeout=power_level == 0
+            )
+
+            frames_for_type = {
+                type_: [
+                    f.vendor_specific_gain for f in frames if f.type == type_
+                ] for type_ in polling_frame_types
+            }
+            results_for_power_level[power_level] = {
+                # If no frames for type, assume gain is negative -1
+                type_: (sum(frames) / len(frames)) if len(frames) else -1
+                for type_, frames in frames_for_type.items()
+            }
+
+        _LOG.debug(f"Polling frame gain results {results_for_power_level}")
+
+        for power_level in power_levels:
+            # No value to compare to
+            if power_level == 0:
+                continue
+
+            for type_ in polling_frame_types:
+                previous_gain = results_for_power_level[power_level - 1][type_]
+                current_gain = results_for_power_level[power_level][type_]
+                asserts.assert_greater_equal(
+                    current_gain, previous_gain,
+                    _FAILED_VENDOR_GAIN_VALUE_DROPPED_ON_POWER_INCREASE,
+                    {
+                        "type": type_,
+                        "power_level": power_level * 20,
+                        "previous_gain": previous_gain,
+                        "current_gain": current_gain,
+                    }
+                )
+
+    def test_polling_frame_type(self):
+        """Tests that PollingFrame object 'type' value is set correctly
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over sent and received frame pairs,
+        verify that polling frame type matches.
+
+        Verifies:
+        1. Verifies that PollingFrame.type value is set correctly
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
+        )
+
+        testcases = POLLING_FRAME_ALL_TEST_CASES
+
+        # 3. Transmit polling frames
+        frames = poll_and_observe_frames(
+            pn532=self.pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+            restore_original_frame_ordering=True,
+        )
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            get_frame_test_stats(frames=frames, testcases=testcases)
+        )
+
+        issues = [
+            {
+                "index": idx,
+                "expected": testcase.success_types,
+                "received": frame.type,
+                "data": frame.data.hex(),
+            } for idx, (testcase, frame) in enumerate(zip(testcases, frames))
+            if frame.type not in testcase.success_types
+        ]
+
+        asserts.assert_equal(len(issues), 0, _FAILED_FRAME_TYPE_INVALID, issues)
+
+    def test_polling_frame_data(self):
+        """Tests that PollingFrame object 'data' value is set correctly
+
+        Test Steps:
+        1. Toggle NFC reader field OFF
+        2. Start emulator activity
+        3. Perform a polling loop, wait for field OFF event.
+        4. Collect polling frames. Iterate over sent and received frame pairs,
+        verify that polling frame type matches.
+
+        Verifies:
+        1. Verifies that PollingFrame.data value is set correctly
+        """
+        self.pn532.mute()
+        emulator = self.emulator.nfc_emulator
+
+        self._set_up_emulator(
+            start_emulator_fun=emulator.startPollingFrameEmulatorActivity
+        )
+
+        testcases = POLLING_FRAME_ALL_TEST_CASES
+
+        # 3. Transmit polling frames
+        frames = poll_and_observe_frames(
+            pn532=self.pn532,
+            emulator=self.emulator.nfc_emulator,
+            testcases=testcases,
+            restore_original_frame_ordering=True,
+        )
+
+        # Check that there are as many polling loop events as frames sent
+        asserts.assert_equal(
+            len(testcases), len(frames),
+            _FAILED_MISSING_POLLING_FRAMES_MSG,
+            get_frame_test_stats(frames=frames, testcases=testcases)
+        )
+
+        issues = [
+            {
+                "index": idx,
+                "expected": testcase.expected_data,
+                "received": frame.data.hex()
+            } for idx, (testcase, frame) in enumerate(zip(testcases, frames))
+            if frame.data.hex() not in testcase.expected_data
+        ]
+
+        for testcase, frame in zip(testcases, frames):
+            if frame.data.hex() not in testcase.warning_data:
+                continue
+            _LOG.warning(
+                f"Polling frame data variation '{frame.data.hex()}'" + \
+                f" is accepted but not correct {testcase.success_data}"
+            )
+
+        asserts.assert_equal(len(issues), 0, _FAILED_FRAME_DATA_INVALID, issues)
+
     def teardown_test(self):
         if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
             self.emulator.nfc_emulator.closeActivity()
-            self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name +
-                                               " ***")
+            self.emulator.nfc_emulator.logInfo(
+                "*** TEST END: " + self.current_test_info.name + " ***")
         param_list = []
         if self.pn532:
             self.pn532.reset_buffers()
@@ -967,7 +1427,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             param_list = [[self.emulator]]
         elif hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
             self.reader.nfc_reader.closeActivity()
-            self.reader.nfc_reader.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
+            self.reader.nfc_reader.logInfo(
+                "*** TEST END: " + self.current_test_info.name + " ***")
             param_list = [[self.emulator], [self.reader]]
         utils.concurrent_exec(lambda d: d.services.create_output_excerpts_all(
             self.current_test_info),

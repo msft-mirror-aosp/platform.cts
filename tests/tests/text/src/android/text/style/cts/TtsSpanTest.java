@@ -20,10 +20,13 @@ import static org.junit.Assert.assertEquals;
 
 import android.os.Parcel;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.text.style.TtsSpan;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.android.text.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -469,6 +472,40 @@ public class TtsSpanTest {
             assertEquals(20, args.getInt(TtsSpan.ARG_HOURS));
             assertEquals(50, args.getInt(TtsSpan.ARG_MINUTES));
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TTS_SPAN_DURATION)
+    public void testTimeBuilder_withSecondsBuilder() {
+        {
+            final TtsSpan t = new TtsSpan.TimeBuilder()
+                    .setHours(20)
+                    .setMinutes(50)
+                    .setSeconds(30)
+                    .build();
+            assertEquals(TtsSpan.TYPE_TIME, t.getType());
+            final PersistableBundle args = t.getArgs();
+            assertEquals(3, args.size());
+            assertEquals(20, args.getInt(TtsSpan.ARG_HOURS));
+            assertEquals(50, args.getInt(TtsSpan.ARG_MINUTES));
+            assertEquals(30, args.getInt(TtsSpan.ARG_SECONDS));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TTS_SPAN_DURATION)
+    public void testDurationBuilder() {
+        final TtsSpan t = new TtsSpan.DurationBuilder()
+                .setHours(20)
+                .setMinutes(50)
+                .setSeconds(45)
+                .build();
+        assertEquals(TtsSpan.TYPE_DURATION, t.getType());
+        final PersistableBundle args = t.getArgs();
+        assertEquals(3, args.size());
+        assertEquals(20, args.getInt(TtsSpan.ARG_HOURS));
+        assertEquals(50, args.getInt(TtsSpan.ARG_MINUTES));
+        assertEquals(45, args.getInt(TtsSpan.ARG_SECONDS));
     }
 
     @Test

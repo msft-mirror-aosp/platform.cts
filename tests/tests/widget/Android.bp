@@ -30,6 +30,7 @@ android_test {
         "mockito-target-minus-junit4",
         "android-common",
         "compatibility-device-util-axt",
+        "compatibility-device-preconditions",
         "ctstestrunner-axt",
         "platform-test-annotations",
         "truth",
@@ -40,7 +41,7 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "flag-junit",
-        "Harrier",
+        "bedstead",
     ],
 
     libs: ["android.test.runner.stubs.system"],

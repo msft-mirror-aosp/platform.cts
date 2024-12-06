@@ -34,6 +34,7 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.policies.DeprecatedResetPassword
 import com.android.bedstead.harrier.policies.FailedPasswordAttempts
 import com.android.bedstead.harrier.policies.PasswordExpirationTimeout
@@ -1557,22 +1558,31 @@ class PasswordTest {
     )
     @EnsurePasswordSet(password = TEST_PASSWORD)
     fun currentFailedPasswordAttempts_increasesBy1_onFailedPasswordAttempt() {
-        val wrongPassword = TEST_PASSWORD + "5"
-        assertThat(
+        try {
+            val wrongPassword = TEST_PASSWORD + "5"
+            assertThat(
                 deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
-        ).isEqualTo(0)
-        // Try an incorrect password.
-        assertThat(TestApis.users().instrumented().lockCredentialEquals(wrongPassword)).isFalse()
-        // Test that now there is one failed attempt.
-        assertThat(
+            ).isEqualTo(0)
+            // Try an incorrect password.
+            assertThat(
+                TestApis.users().instrumented().lockCredentialEquals(wrongPassword)
+            ).isFalse()
+            // Test that now there is one failed attempt.
+            assertThat(
                 deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
-        ).isEqualTo(1)
-        // Try an incorrect password.
-        assertThat(TestApis.users().instrumented().lockCredentialEquals(wrongPassword)).isFalse()
-        // Test that now there are two failed attempts.
-        assertThat(
+            ).isEqualTo(1)
+            // Try an incorrect password.
+            assertThat(
+                TestApis.users().instrumented().lockCredentialEquals(wrongPassword)
+            ).isFalse()
+            // Test that now there are two failed attempts.
+            assertThat(
                 deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
-        ).isEqualTo(2)
+            ).isEqualTo(2)
+        } finally {
+            // Set back the correct password to reset currentFailedPasswordAttempts.
+            TestApis.users().instrumented().lockCredentialEquals(TEST_PASSWORD)
+        }
     }
 
     companion object {

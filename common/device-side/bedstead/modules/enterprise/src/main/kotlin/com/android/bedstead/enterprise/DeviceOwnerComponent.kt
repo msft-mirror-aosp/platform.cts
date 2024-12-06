@@ -16,6 +16,7 @@
 package com.android.bedstead.enterprise
 
 import android.os.Build
+import com.android.bedstead.accounts.AccountsComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.AnnotationExecutorUtil
@@ -23,8 +24,6 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.components.AccountsComponent
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -37,6 +36,7 @@ import com.android.bedstead.nene.utils.Versions
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapp.TestAppQueryBuilder
+import com.android.bedstead.testapps.TestAppsComponent
 import java.util.stream.Collectors
 import org.junit.AssumptionViolatedException
 

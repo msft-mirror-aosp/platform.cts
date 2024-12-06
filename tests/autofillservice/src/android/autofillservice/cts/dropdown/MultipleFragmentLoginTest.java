@@ -28,10 +28,12 @@ import android.app.assist.AssistStructure.ViewNode;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.FragmentContainerActivity;
 import android.autofillservice.cts.activities.FragmentWithMoreEditTexts;
+import android.autofillservice.cts.activities.SimpleAfterLoginActivity;
 import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.autofill.AutofillValue;
@@ -160,6 +162,9 @@ public class MultipleFragmentLoginTest
 
         // Manually fill view
         mActivity.syncRunOnUiThread(() -> editText5.setText("editText5-manually-filled"));
+
+        // Start a post login activity before finishing the current one
+        mActivity.startActivity(new Intent(mActivity, SimpleAfterLoginActivity.class));
 
         // Finish activity and save data
         mActivity.finish();

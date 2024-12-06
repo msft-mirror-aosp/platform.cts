@@ -36,7 +36,7 @@ class TouchInjector(instrumentation: Instrumentation) {
     /**
      * Inject a single pointer motion event by indicating the action and pointer.
      */
-   fun sendEvent(action: Int, pt: PointF) {
+   fun sendEvent(action: Int, pt: PointF, displayId: Int) {
         val eventTime = when (action) {
             MotionEvent.ACTION_DOWN -> {
                 downTime = SystemClock.uptimeMillis()
@@ -45,6 +45,7 @@ class TouchInjector(instrumentation: Instrumentation) {
             else -> SystemClock.uptimeMillis()
         }
         val event = MotionEvent.obtain(downTime, eventTime, action, pt.x, pt.y, 0 /*metaState*/)
+        event.displayId = displayId
         event.source = InputDevice.SOURCE_TOUCHSCREEN
         instrumentation.sendPointerSync(event)
     }
@@ -55,7 +56,11 @@ class TouchInjector(instrumentation: Instrumentation) {
      *
      * @param cancelPointer: true if the ACTION_POINTER_UP event is a pointer cancel.
      */
-    fun sendMultiTouchEvent(pointers: Array<PointF>, cancelPointer: Boolean = false) {
+    fun sendMultiTouchEvent(
+        pointers: Array<PointF>,
+        displayId: Int,
+        cancelPointer: Boolean = false
+    ) {
         val eventTime = SystemClock.uptimeMillis()
         val pointerCount = pointers.size
         val properties = arrayOfNulls<MotionEvent.PointerProperties>(pointerCount)
@@ -70,13 +75,14 @@ class TouchInjector(instrumentation: Instrumentation) {
             coords[i]!!.y = pointers[i].y
         }
 
-        sendEvent(MotionEvent.ACTION_DOWN, pointers[0])
-        sendEvent(MotionEvent.ACTION_MOVE, pointers[0])
+        sendEvent(MotionEvent.ACTION_DOWN, pointers[0], displayId)
+        sendEvent(MotionEvent.ACTION_MOVE, pointers[0], displayId)
 
         var event = MotionEvent.obtain(downTime, eventTime, PointerConstants.ACTION_POINTER_1_DOWN,
                 pointerCount, properties, coords, 0 /*metaState*/, 0 /*buttonState*/,
                 0f /*xPrecision*/, 0f /*yPrecision*/, 0 /*deviceId*/, 0 /*edgeFlags*/,
                 InputDevice.SOURCE_TOUCHSCREEN, 0 /*flags */)
+        event.displayId = displayId
         instrumentation.sendPointerSync(event)
 
         val flags = when (cancelPointer) {
@@ -87,8 +93,9 @@ class TouchInjector(instrumentation: Instrumentation) {
                 pointerCount, properties, coords, 0 /*metaState*/, 0 /*buttonState*/,
                 0f /*xPrecision*/, 0f /*yPrecision*/, 0 /*deviceId*/, 0 /*edgeFlags*/,
                 InputDevice.SOURCE_TOUCHSCREEN, flags)
+        event.displayId = displayId
         instrumentation.sendPointerSync(event)
 
-        sendEvent(MotionEvent.ACTION_UP, pointers[0])
+        sendEvent(MotionEvent.ACTION_UP, pointers[0], displayId)
     }
 }

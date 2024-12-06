@@ -24,18 +24,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
+import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.test.MoreAsserts;
 import android.text.TextUtils;
+import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.google.common.collect.ObjectArrays;
 
@@ -56,9 +59,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +78,7 @@ import javax.crypto.spec.IvParameterSpec;
 @RunWith(JUnitParamsRunner.class)
 public class KeyGeneratorTest {
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_PROVIDER_NAME;
+    private static final String TAG = KeyGeneratorTest.class.getSimpleName();
 
     static String[] EXPECTED_ALGORITHMS = {
         "AES",
@@ -110,17 +116,42 @@ public class KeyGeneratorTest {
     }
 
     private static Object[] kmTypes_x_algorithms() {
-        return new Object[] {
-            new Object[] {KmType.SB, "AES"},
-            new Object[] {KmType.SB, "HmacSHA256"},
+        var permutations = new ArrayList<>(List.of(new Object[][] {
+            {KmType.SB, "AES"},
+            {KmType.SB, "HmacSHA256"},
 
-            new Object[] {KmType.TEE, "AES"},
-            new Object[] {KmType.TEE, "HmacSHA1"},
-            new Object[] {KmType.TEE, "HmacSHA224"},
-            new Object[] {KmType.TEE, "HmacSHA256"},
-            new Object[] {KmType.TEE, "HmacSHA384"},
-            new Object[] {KmType.TEE, "HmacSHA512"},
-        };
+            {KmType.TEE, "AES"},
+            {KmType.TEE, "HmacSHA1"},
+            {KmType.TEE, "HmacSHA224"},
+            {KmType.TEE, "HmacSHA256"},
+            {KmType.TEE, "HmacSHA384"},
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
+    }
+
+    private static Object[] kmTypes_x_hmacAlgorithms() {
+        var permutations = new ArrayList<>(List.of(new Object[][] {
+            {KmType.SB, "HmacSHA256"},
+
+            {KmType.TEE, "HmacSHA1"},
+            {KmType.TEE, "HmacSHA224"},
+            {KmType.TEE, "HmacSHA256"},
+            {KmType.TEE, "HmacSHA384"},
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        return permutations.toArray();
+    }
+
+    private static Object[] kmTypes_x_signingAlgorithms() {
+        var permutations = new ArrayList<>(Arrays.asList(kmTypes_x_hmacAlgorithms()));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
     }
 
     private Context getContext() {
@@ -335,7 +366,6 @@ public class KeyGeneratorTest {
         }
     }
 
-    // TODO: This test will fail until b/117509689 is resolved.
     @Test
     public void testDESKeySupportedSizes() throws Exception {
         if (!TestUtils.supports3DES()) {
@@ -371,19 +401,17 @@ public class KeyGeneratorTest {
                     assertEquals(0, rng.getOutputSizeBytes());
                 }
             } catch (Throwable e) {
-                throw new RuntimeException("Failed for key size " + i +
-                    "\n***This test will continue to fail until b/117509689 is resolved***", e);
+                throw new RuntimeException("Failed for key size " + i, e);
             }
         }
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testHmacKeySupportedSizes(KmType kmType, String algorithm) throws Exception {
         assumeKmSupport(kmType);
         CountingSecureRandom rng = new CountingSecureRandom();
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
 
         for (int i = -16; i <= 1024; i++) {
             try {
@@ -433,12 +461,11 @@ public class KeyGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testHmacKeyOnlyOneDigestCanBeAuthorized(KmType kmType, String algorithm)
             throws Exception {
         assumeKmSupport(kmType);
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
 
         try {
             String digest = TestUtils.getHmacAlgorithmDigest(algorithm);
@@ -583,12 +610,11 @@ public class KeyGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testInitWithKeyAlgorithmDigestMissingFromAuthorizedDigestFails(
             KmType kmType, String algorithm) {
         assumeKmSupport(kmType);
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
         try {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
 
@@ -719,6 +745,47 @@ public class KeyGeneratorTest {
     }
 
     @Test
+    @Parameters(method = "kmTypes_x_signingAlgorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm)
+            throws Exception {
+        checkDeviceCompatibility();
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyGenerator keyGenerator = getKeyGenerator(algorithm);
+            keyGenerator.init(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            keyGenerator.generateKey();
+        }
+    }
+
+    @Test
+    @Parameters(method = "kmTypes_x_signingAlgorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
+            throws Exception {
+        checkDeviceCompatibility();
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyGenerator keyGenerator = getKeyGenerator(algorithm);
+            keyGenerator.init(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_BIOMETRIC_STRONG
+                            | KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            keyGenerator.generateKey();
+        }
+    }
+
+    @Test
     @Parameters(method = "kmTypes")
     @TestCaseName(value = "{method}_{0}")
     public void testUniquenessOfAesKeys(KmType kmType) throws Exception {
@@ -767,9 +834,10 @@ public class KeyGeneratorTest {
                 results.add(new String(cipherText));
             }
             // Verify unique cipher text is generated for all different keys
-            assertEquals(TextUtils.formatSimple("%d different cipher text should have been"
-                                + " generated for %d different keys. Failed for message \"%s\".",
-                            numberOfKeysToTest, numberOfKeysToTest, new String(msg)),
+            assertEquals(
+                    TextUtils.formatSimple("%d different cipher text should have been"
+                                    + " generated for %d different keys. Failed for message |%s|.",
+                            numberOfKeysToTest, numberOfKeysToTest, HexEncoding.encode(msg)),
                     numberOfKeysToTest, results.size());
         }
     }
@@ -807,9 +875,18 @@ public class KeyGeneratorTest {
                 // Add generated mac signature to HashSet so that unique signatures will be counted
                 results.add(new String(macSign));
             }
+
+            if ((msg == null || msg.length == 0)
+                    && TestUtils.getVendorApiLevel() <= Build.VERSION_CODES.P) {
+                // Skip empty and null inputs on older devices as HAL is unable to handle them.
+                Log.d(TAG, "Skipping test for unsupported input on pre-Q launch device.");
+                continue;
+            }
+
             // Verify unique MAC is generated for all different keys
-            assertEquals(TextUtils.formatSimple("%d different MAC should have been generated for "
-                    + "%d different keys.", numberOfKeysToTest, numberOfKeysToTest),
+            assertEquals(TextUtils.formatSimple("%d different MACs should have been generated for "
+                                         + "%d different keys over message |%s|",
+                                 numberOfKeysToTest, numberOfKeysToTest, HexEncoding.encode(msg)),
                     numberOfKeysToTest, results.size());
         }
     }
@@ -825,5 +902,11 @@ public class KeyGeneratorTest {
     private static KeyGenerator getKeyGenerator(String algorithm) throws NoSuchAlgorithmException,
             NoSuchProviderException {
         return KeyGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
+    }
+
+
+    private void checkDeviceCompatibility() {
+        assumeFalse("Skipping test as DUT does not support this operation",
+                getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 }

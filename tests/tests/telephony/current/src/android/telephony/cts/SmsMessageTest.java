@@ -31,11 +31,14 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
+
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -62,12 +65,14 @@ public class SmsMessageTest {
     private static final String OA2 = "+15122977683";
     private static final String OA3 = "_@";
     private static final String OA4 = "\u0394@";
+    private static final String DA = "+8613693092030";
     // pseudo subject will always be empty
     private static final String PSEUDO_SUBJECT = "";
     private static final String SCA1 = "+16466220020";
     private static final String SCA2 = "+12063130012";
     private static final String SCA3 = "+14155551212";
     private static final String SCA4 = "+14155551212";
+    private static final String SCA5 = "+8613800250500";
     private static final int NOT_CREATE_FROM_SIM = -1;
     private static final int NOT_CREATE_FROM_ICC = -1;
     private static final int PROTOCOL_IDENTIFIER = 0;
@@ -99,6 +104,7 @@ public class SmsMessageTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SMS_OVER_IMS_APIS)
     public void testCreateFromPdu() throws Exception {
         // TODO: temp workaround, need to adjust test to use CDMA pdus
         assumeFalse(mPackageManager.hasSystemFeature(
@@ -131,6 +137,16 @@ public class SmsMessageTest {
         assertEquals(STATUS_ON_SIM_DEF, sms.getStatusOnSim());
         assertEquals(STATUS_ON_ICC_DEF, sms.getStatusOnIcc());
         assertEquals(TIMESTAMP_MILLIS, sms.getTimestampMillis());
+        //Test getRecipientAddress() from SMS_SUBMIT_PDU
+        pdu = "0891683108200505F011000D91683196032930F000000006C8329BFD0E01";
+        sms = SmsMessage.createFromPdu(hexStringToByteArray(pdu), SmsMessage.FORMAT_3GPP);
+        assertEquals(SCA5, sms.getServiceCenterAddress());
+        assertEquals(DA, sms.getRecipientAddress());
+
+        //Test getRecipientAddress() from SMS_SUBMIT_PDU where toa is invalid in address
+        pdu = "0891683108200505F011000D01683196032930F000000006C8329BFD0E01";
+        sms = SmsMessage.createFromPdu(hexStringToByteArray(pdu), SmsMessage.FORMAT_3GPP);
+        assertNull(sms);
 
         // Test create from null Pdu
         sms = SmsMessage.createFromPdu(null, SmsMessage.FORMAT_3GPP);

@@ -17,6 +17,8 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import static android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -31,10 +33,13 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.DeviceConfig;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -52,6 +57,7 @@ import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.ClassRule;
 
@@ -68,6 +74,13 @@ public class PackageInstallerCujTestBase {
     public static final String TAG = "PackageInstallerCujTestBase";
 
     public static final String AUTHORITY_NAME = ".fileprovider";
+    public static final String DEVICE_ADMIN_APK_NAME = "CtsPackageInstallerDeviceAdminApp.apk";
+    public static final String DEVICE_ADMIN_APP_PACKAGE_LABEL =
+            "Cts Package Installer Device Admin App";
+    public static final String DEVICE_ADMIN_APP_PACKAGE_NAME =
+            "android.packageinstaller.cts.deviceadminapp";
+    public static final String DEVICE_ADMIN_APP_RECEIVER_NAME =
+            "android.packageinstaller.cts.deviceadminapp.TestDeviceAdminReceiver";
     public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
     public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
     public static final String INSTALLER_LABEL = "CTS CUJ Installer";
@@ -96,12 +109,15 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UPDATE_LABEL = "Update";
     public static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
+    public static final String CLONE_LABEL = "Clone";
+    public static final String DELETE_LABEL = "delete";
+    public static final String INSTALLING_LABEL = "Installing";
     public static final String TOGGLE_ALLOW_LABEL = "allow";
     public static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
     public static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
     public static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
-    public static final String INSTALLING_LABEL = "Installing";
     public static final String UNINSTALL_LABEL = "uninstall";
+    public static final String WORK_PROFILE_LABEL = "work profile";
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     public static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
@@ -135,6 +151,15 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
+        setupTestEnvironment();
+    }
+
+    /**
+     * 1. Assume the device is running on the supported device and the system has the installed
+     * system package Installer.
+     * 2. Uninstall the {@link #TEST_APP_PACKAGE_NAME} and assert it is not installed.
+     */
+    public static void setupTestEnvironment() {
         assumeFalse("The device is not supported", isNotSupportedDevice());
 
         assumeFalse("The device doesn't have package installer",
@@ -228,10 +253,58 @@ public class PackageInstallerCujTestBase {
     /**
      * Touch outside of the PackageInstaller dialog.
      */
-    public static void touchOutside() {
+    public static void touchOutside() throws Exception {
+        Rect bound = getPackageInstallerDialogBound();
         DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        getUiDevice().click(displayMetrics.widthPixels / 3, displayMetrics.heightPixels / 10);
+
+        // Get the insets of system bars and displayCutOut
+        WindowManager wm = getContext().getSystemService(WindowManager.class);
+        Insets insets = wm.getCurrentWindowMetrics().getWindowInsets().getInsets(
+                displayCutout() | systemBars());
+
+        // the minimum of top is the maximum of (display height / 10) and
+        // the top of the insets + 24 * dp
+        int gapBuffer = (int) (24 * displayMetrics.density);
+        int minTop = Math.max(insets.top + gapBuffer, displayMetrics.heightPixels / 10);
+        int maxTop = bound.top - gapBuffer;
+
+        Log.d(TAG, "touchOutside heightPixels = " + displayMetrics.heightPixels
+                + ", displayMetrics.density = " + displayMetrics.density + ", insets = " + insets
+                + ", minTop = " + minTop + ", maxTop = " + maxTop);
+
+        // x is the center of the dialog
+        int x = (bound.left + bound.right) / 2;
+        // The default value of y is the (minTop + maxTop) / 2
+        int y = (minTop + maxTop) / 2;
+        if (minTop > maxTop) {
+            // the maximum of bottom is the minimum of (display height * 9 / 10) and
+            // the display height - the bottom of the insets - 24 * dp
+            int maxBottom = Math.min(displayMetrics.heightPixels - insets.bottom - gapBuffer,
+                    displayMetrics.heightPixels * 9 / 10);
+            int minBottom = bound.bottom + gapBuffer;
+            Log.d(TAG, "minBottom = " + minBottom + ", maxBottom = " + maxBottom);
+            if (minBottom > maxBottom) {
+                // close the dialog
+                pressBack();
+                throw new AssumptionViolatedException("There is no space to touch outside!");
+            }
+            y = (minBottom + maxBottom) / 2;
+        }
+
+        Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
+        getUiDevice().click(x, y);
         waitForUiIdle();
+    }
+
+    private static Rect getPackageInstallerDialogBound() {
+        UiObject2 object = getUiDevice().findObject(By.pkg(getPackageInstallerPackageName()));
+        UiObject2 parent = object.getParent();
+        while (parent != null) {
+            object = parent;
+            parent = object.getParent();
+        }
+        logUiObject(object);
+        return object.getVisibleBounds();
     }
 
     /**
@@ -245,15 +318,15 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Get the new BySelector with the package name is {@link #sPackageInstallerPackageName}.
+     * Get the new BySelector with the package name is {@link #getPackageInstallerPackageName()}.
      */
     public static BySelector getPackageInstallerBySelector(BySelector bySelector) {
-        return bySelector.pkg(sPackageInstallerPackageName);
+        return bySelector.pkg(getPackageInstallerPackageName());
     }
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}.
+     * {@link #getPackageInstallerPackageName()}.
      */
     public static UiObject2 findPackageInstallerObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
@@ -262,8 +335,8 @@ public class PackageInstallerCujTestBase {
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
-     * is not null.
+     * {@link #getPackageInstallerPackageName()}. If {@code checkNull} is true, also check the
+     * object is not null.
      */
     public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull)
             throws Exception {
@@ -448,12 +521,24 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Install the test apk {@code apkName}.
+     * Install the test apk {@code apkName} for all users.
      */
     public static void installPackage(@NonNull String apkName) throws IOException {
         Log.d(TAG, "installPackage(): apkName= " + apkName);
         SystemUtil.runShellCommand("pm install -t "
                 + new File(TEST_APK_LOCATION, apkName).getCanonicalPath());
+    }
+
+    /**
+     * Install the installed {@code packageName} on the user {@code user}.
+     */
+    public static void installExistingPackageOnUser(String packageName, int userId) {
+        Log.d(TAG, "installExistingPackageAsUser(): packageName= " + packageName
+                + ", userId= " + userId);
+        assertThat(SystemUtil.runShellCommand(
+                String.format("pm install-existing --user %s %s", userId, packageName)))
+                .isEqualTo(
+                        String.format("Package %s installed for user: %s\n", packageName, userId));
     }
 
     /**
@@ -465,18 +550,34 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * If the test package {@link #TEST_APP_PACKAGE_NAME} is installed on the {@code userContext},
+     * return true. Otherwise, return false.
+     */
+    public static boolean isTestPackageInstalledOnUser(@NonNull Context userContext) {
+        return isInstalled(userContext, TEST_APP_PACKAGE_NAME);
+    }
+
+    /**
      * If the test package {@code packageName} is installed, return true. Otherwise,
      * return false.
      */
     public static boolean isInstalled(@NonNull String packageName) {
+        return isInstalled(getContext(), packageName);
+    }
+
+    /**
+     * If the test package {@code packageName} is installed on the {@code context},
+     * return true. Otherwise, return false.
+     */
+    public static boolean isInstalled(@NonNull Context context, @NonNull String packageName) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
-                + getContext().getUser());
+                + context.getUser());
         try {
-            getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
+            context.getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             Log.v(TAG, "Package " + packageName + " not installed for user "
-                    + getContext().getUser() + ": " + e);
+                    + context.getUser() + ": " + e);
             return false;
         }
     }
@@ -519,7 +620,7 @@ public class PackageInstallerCujTestBase {
     }
 
     @Nullable
-    private static String getPackageInstallerPackageName() {
+    public static String getPackageInstallerPackageName() {
         if (sPackageInstallerPackageName != null) {
             return sPackageInstallerPackageName;
         }
