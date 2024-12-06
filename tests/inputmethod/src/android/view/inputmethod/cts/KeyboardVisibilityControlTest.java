@@ -122,6 +122,7 @@ import androidx.test.uiautomator.Until;
 import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
@@ -178,6 +179,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private Instrumentation mInstrumentation;
     private CtsTouchUtils mCtsTouchUtils;
+    private TestActivity mTestActivity;
 
     @Before
     public void setup() {
@@ -201,7 +203,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             @NonNull String nonFocusedMarker) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
         final AtomicReference<EditText> nonFocusedEditTextRef = new AtomicReference<>();
-        TestActivity.startSync(activity -> {
+        final var activityStarter = new TestActivity.Starter().withDisplayId(
+                new UserHelper().getMainDisplayId());
+        mTestActivity = activityStarter.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -218,7 +222,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             nonFocusedEditTextRef.set(nonFocusedEditText);
             layout.addView(nonFocusedEditText);
             return layout;
-        });
+        }, TestActivity.class);
         return new Pair<>(focusedEditTextRef.get(), nonFocusedEditTextRef.get());
     }
 
@@ -228,7 +232,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private EditText launchTestActivity2(@NonNull String marker) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
-        new TestActivity.Starter().startSync(activity -> {
+        mTestActivity = new TestActivity.Starter().startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -245,9 +249,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testBasicShowHideSoftInput() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -261,6 +262,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -298,7 +300,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             @NonNull PreBackPressProcedure preBackPressProcedure) throws Exception {
         final Instrumentation instrumentation = mInstrumentation;
         final Context context = instrumentation.getTargetContext();
-        final InputMethodManager imm = context.getSystemService(InputMethodManager.class);
 
         // Whether 'OnBackInvokedCallback' or 'onBackPressed' (legacy back) is used is defined by
         // the 'enableOnBackInvokedCallback' flag in the Application manifest.
@@ -341,6 +342,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -481,9 +483,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testToggleSoftInput() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -498,6 +497,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
 
             // Test toggleSoftInputFromWindow() flow
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             runOnMainSync(() -> imm.toggleSoftInputFromWindow(editText.getWindowToken(), 0, 0));
 
             expectEvent(stream.copy(), showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -581,9 +581,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testShowHideKeyboardImmediately() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -594,6 +591,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
+            final var imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -627,9 +625,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testShowSoftInputWithShowForcedFlagWhenAppIsLeaving() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -665,6 +660,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(ediTextRef.get())));
 
@@ -699,8 +695,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     public void testFloatingImeHideKeyboardAfterBackPressed() throws Exception {
         final Instrumentation instrumentation = mInstrumentation;
-        final InputMethodManager imm = instrumentation.getTargetContext().getSystemService(
-                InputMethodManager.class);
 
         // Initial MockIme with floating IME settings.
         try (MockImeSession imeSession = MockImeSession.create(
@@ -714,6 +708,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -1261,8 +1256,11 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
             assertNotNull(uiDevice.wait(Until.hasObject(dialogSelector), TIMEOUT));
 
+            final UserHelper mUserHelper = new UserHelper();
+
             // Dismiss dialog and back to original test activity
-            MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG);
+            MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG,
+                    mUserHelper.getUserId());
 
             final CountDownLatch imeVisibilityUpdateLatch = new CountDownLatch(1);
             AtomicReference<Boolean> imeInsetsVisible = new AtomicReference<>();
@@ -1318,8 +1316,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 expectImeInvisible(TIMEOUT);
 
                 // Request showSoftInput, expect the request is valid and soft-keyboard visible.
+                final UserHelper userHelper = new UserHelper();
                 MockTestActivityUtil.sendBroadcastAction(
-                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT);
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, userHelper.getUserId());
                 expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                 expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
@@ -1430,8 +1429,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
         assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
 
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
         // Disable auto-rotate screen and set the screen orientation to portrait mode.
         setAutoRotateScreen(false);
         final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
@@ -1454,6 +1451,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
@@ -1489,6 +1487,10 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * "NOT_FOCUSABLE | ALT_FOCUSABLE_IM" flags popup during pressing the recents key to the
      * overview screen.</b>
      */
+    @RequireNotVisibleBackgroundUsers(reason =
+        "To pass on secondary user on secondary display, this test should use UinputKeyboard "
+        + "instead of `mInstrumentation.sendKeyDownUpSync`. b/368974455 will allow "
+        + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
         assumeTrue(hasRecentsScreen());
@@ -1521,6 +1523,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             testActivity.getWindow().getDecorView().postDelayed(
                     () -> SystemUtil.runWithShellPermissionIdentity(() ->
                     testActivity.showOverlayWindow(true /* imeFocusable */)), 100);
+            // TODO(b/368974455): Use UinputKeyboard instead.
             mInstrumentation.sendKeyDownUpSync(
                     KeyEvent.KEYCODE_RECENT_APPS);
 
@@ -1532,6 +1535,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
         } finally {
             // Back to home to clean up states after the test finished.
+            // TODO(b/368974455): Use UinputKeyboard instead.
             UiDevice.getInstance(mInstrumentation).pressHome();
         }
     }
