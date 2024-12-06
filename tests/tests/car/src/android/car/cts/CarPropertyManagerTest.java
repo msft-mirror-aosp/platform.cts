@@ -7221,13 +7221,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testPermissionReadSteeringStateGranted() {
-        if (Flags.vehicleProperty25q23pPermissions()) {
-            verifyExpectedPropertiesWhenPermissionsGranted(
-                    PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
-                    Car.PERMISSION_READ_STEERING_STATE_3P);
-        }
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadSteeringState3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
+                Car.PERMISSION_READ_STEERING_STATE_3P);
     }
 
     @Test
