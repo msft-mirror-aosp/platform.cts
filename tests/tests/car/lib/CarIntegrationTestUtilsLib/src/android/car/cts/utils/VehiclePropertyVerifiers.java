@@ -125,6 +125,22 @@ public class VehiclePropertyVerifiers {
             ImmutableSet.<Integer>builder().add(VehicleTurnSignal.STATE_NONE,
                     VehicleTurnSignal.STATE_RIGHT, VehicleTurnSignal.STATE_LEFT).build();
 
+    /** Gets the verifier builder for PERF_STEERING_ANGLE. */
+    public static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Float> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.PERF_STEERING_ANGLE,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                                Float.class)
+                        .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P)
+                : verifierBuilder;
+    }
+
     /**
      * Gets the verifier builder for LOCATION_CHARACTERIZATION.
      */
