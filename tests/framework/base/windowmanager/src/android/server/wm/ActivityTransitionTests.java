@@ -798,17 +798,17 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
-            getWindow().getAttributes().layoutInDisplayCutoutMode =
-                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-            // Ensure the activity is edge-to-edge
-            // In tests we rely on the activity's content filling the entire window
-            getWindow().setDecorFitsSystemWindows(false);
-
             View view = new View(this);
             view.setLayoutParams(new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
             view.setOnApplyWindowInsetsListener((v, insets) -> mInsets = insets);
             view.setBackgroundColor(Color.CYAN);
             setContentView(view);
+
+            getWindow().getAttributes().layoutInDisplayCutoutMode =
+                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+            // Ensure the activity is edge-to-edge
+            // In tests we rely on the activity's content filling the entire window
+            getWindow().setDecorFitsSystemWindows(false);
         }
 
         private Rect getActivityTestableRegion() {
