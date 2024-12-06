@@ -32,6 +32,7 @@ import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.LocationCharacterization;
 import android.car.hardware.property.VehicleSizeClass;
+import android.car.hardware.property.VehicleTurnSignal;
 import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
@@ -120,6 +121,9 @@ public class VehiclePropertyVerifiers {
                             VehicleSizeClass.US_GVWR_CLASS_7_CV,
                             VehicleSizeClass.US_GVWR_CLASS_8_CV)
                     .build();
+    private static final ImmutableSet<Integer> TURN_SIGNAL_STATES =
+            ImmutableSet.<Integer>builder().add(VehicleTurnSignal.STATE_NONE,
+                    VehicleTurnSignal.STATE_RIGHT, VehicleTurnSignal.STATE_LEFT).build();
 
     /**
      * Gets the verifier builder for LOCATION_CHARACTERIZATION.
@@ -1095,5 +1099,42 @@ public class VehiclePropertyVerifiers {
                             }
                         })
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getTurnSignalLightStateVerifierBuilder() {
+        ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
+                .addAll(TURN_SIGNAL_STATES)
+                .add(VehicleTurnSignal.STATE_LEFT | VehicleTurnSignal.STATE_RIGHT)
+                .build();
+
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class)
+                .setAllPossibleEnumValues(combinedCarPropertyValues)
+                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
+    }
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer> getTurnSignalSwitchVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class)
+                .setAllPossibleEnumValues(TURN_SIGNAL_STATES)
+                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
+                .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 }
