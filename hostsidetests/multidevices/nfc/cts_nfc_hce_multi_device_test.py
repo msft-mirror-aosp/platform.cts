@@ -1120,6 +1120,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         2. Verifies that the difference between matching host and device
         timestamps does not exceed _POLLING_FRAME_TIMESTAMP_TOLERANCE_MS.
         """
+        asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
+            "Skipping polling frame timestamp test, observe mode not supported")
+
         # 1. Mute the field before starting the emulator
         # in order to be able to trigger ON event when the test starts
         self.pn532.mute()
@@ -1244,6 +1247,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         1. Verifies that vendorSpecificGain value increases or stays the same
         when PN532 output power increases.
         """
+        asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    "Skipping polling frame gain test, observe mode not supported")
+
         self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
@@ -1323,6 +1329,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Verifies:
         1. Verifies that PollingFrame.type value is set correctly
         """
+        asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    "Skipping polling frame type test, observe mode not supported")
         self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
@@ -1372,6 +1380,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Verifies:
         1. Verifies that PollingFrame.data value is set correctly
         """
+        asserts.skip_if(not self.emulator.nfc_emulator.isObserveModeSupported(),
+                    "Skipping polling frame data test, observe mode not supported")
         self.pn532.mute()
         emulator = self.emulator.nfc_emulator
 
