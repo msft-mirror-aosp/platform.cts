@@ -53,7 +53,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.car.Car;
-import android.car.EvConnectorType;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
 import android.car.PortLocationType;
@@ -87,6 +86,7 @@ import android.car.hardware.property.ElectronicStabilityControlState;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.EvChargeState;
+import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.EvRegenerativeBrakingState;
 import android.car.hardware.property.EvStoppingMode;
 import android.car.hardware.property.ForwardCollisionWarningState;
@@ -2718,19 +2718,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isIn(
                                                 ImmutableSet.builder()
                                                         .add(
-                                                                EvConnectorType.UNKNOWN,
-                                                                EvConnectorType.J1772,
-                                                                EvConnectorType.MENNEKES,
-                                                                EvConnectorType.CHADEMO,
-                                                                EvConnectorType.COMBO_1,
-                                                                EvConnectorType.COMBO_2,
-                                                                EvConnectorType.TESLA_ROADSTER,
-                                                                EvConnectorType.TESLA_HPWC,
-                                                                EvConnectorType.TESLA_SUPERCHARGER,
-                                                                EvConnectorType.GBT,
-                                                                EvConnectorType.GBT_DC,
-                                                                EvConnectorType.SCAME,
-                                                                EvConnectorType.OTHER)
+                                                                EvChargingConnectorType.UNKNOWN,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_3_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_4_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_ROADSTER,
+                                                                EvChargingConnectorType.TESLA_HPWC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_SUPERCHARGER,
+                                                                EvChargingConnectorType.GBT_AC,
+                                                                EvChargingConnectorType.GBT_DC,
+                                                                EvChargingConnectorType.OTHER)
                                                         .build());
                             }
                         })
