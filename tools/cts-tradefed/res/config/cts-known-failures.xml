@@ -263,6 +263,9 @@
     <!-- b/330287133 -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <!-- b/377901387 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testCreateAdminSupportIntent" />
