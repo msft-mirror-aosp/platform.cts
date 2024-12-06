@@ -15,6 +15,7 @@
  */
 package android.quickaccesswallet.cts;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 
@@ -699,7 +700,9 @@ public class QuickAccessWalletClientTest {
     private static boolean setDefaultWalletRoleHolder(Context context, String packageName)
             throws InterruptedException {
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        MANAGE_DEFAULT_APPLICATIONS, INTERACT_ACROSS_USERS_FULL);
         try {
             RoleManager roleManager = context.getSystemService(RoleManager.class);
             if (!roleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
