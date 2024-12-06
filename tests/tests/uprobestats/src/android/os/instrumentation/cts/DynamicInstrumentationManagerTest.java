@@ -21,6 +21,7 @@ import static com.android.art.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -52,7 +53,8 @@ public class DynamicInstrumentationManagerTest {
     private static final String METHOD_NOT_IN_ART_PROFILE = "getExecutableMethodFileOffsets";
     private static final String[] PARAMS_NOT_IN_ART_PROFILE = new String[]{
             "android.os.instrumentation.TargetProcess",
-            "android.os.instrumentation.MethodDescriptor"};
+            "android.os.instrumentation.MethodDescriptor",
+            "android.os.instrumentation.IOffsetCallback"};
 
     static {
         System.loadLibrary("dynamic_instrumentation_manager_test_jni");
@@ -82,6 +84,22 @@ public class DynamicInstrumentationManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
+    public void appAotCompiled() throws Exception {
+        OffsetsWithStatusCode result = getOffsetsWithStatusCode(
+                Process.myUid(), Process.myPid(),
+                Process.myProcessName(),
+                "android.os.SystemClock",
+                "elapsedRealtime", new String[0]);
+        assertThat(result.statusCode).isEqualTo(0);
+        assertThat(result.offsets).isNotNull();
+        assertThat(result.offsets.containerPath).endsWith("boot-framework.oat");
+        assertThat(result.offsets.containerOffset).isGreaterThan(0);
+        assertThat(result.offsets.methodOffset).isGreaterThan(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
+    @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void jitCompiled_null() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
                 FQCN_NOT_IN_ART_PROFILE, METHOD_NOT_IN_ART_PROFILE, PARAMS_NOT_IN_ART_PROFILE);
@@ -103,10 +121,9 @@ public class DynamicInstrumentationManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
-    public void notSystemServer_UnsupportedOperationException() {
-        OffsetsWithStatusCode result = getOffsetsWithStatusCode("foo", FQCN_IN_ART_PROFILE,
+    public void appProcessNotFound() throws Exception {
+        OffsetsWithStatusCode result = getOffsetsWithStatusCode(0, 0, "foo", FQCN_IN_ART_PROFILE,
                 METHOD_IN_ART_PROFILE, PARAMS_IN_ART_PROFILE);
-        assertThat(result.statusCode).isEqualTo(-7);
         assertThat(result.offsets).isNull();
     }
 
@@ -121,13 +138,14 @@ public class DynamicInstrumentationManagerTest {
 
     private static OffsetsWithStatusCode getOffsetsWithStatusCode(String fqcn, String methodName,
             String[] fqParameters) {
-        return getOffsetsWithStatusCode(SYSTEM_SERVER, fqcn, methodName,
+        return getOffsetsWithStatusCode(0, 0, SYSTEM_SERVER, fqcn, methodName,
                 fqParameters);
     }
 
     private static OffsetsWithStatusCode getOffsetsWithStatusCode(
-            String processName, String fqcn, String methodName, String[] fqParameters) {
-        return getExecutableMethodFileOffsetsNative(processName, fqcn, methodName,
+            int uid, int pid, String processName, String fqcn, String methodName,
+            String[] fqParameters) {
+        return getExecutableMethodFileOffsetsNative(uid, pid, processName, fqcn, methodName,
                 fqParameters);
     }
 
@@ -156,5 +174,6 @@ public class DynamicInstrumentationManagerTest {
     }
 
     private static native OffsetsWithStatusCode getExecutableMethodFileOffsetsNative(
-            String processName, String fqcn, String methodName, String[] fqParameters);
+            int uid, int pid, String processName, String fqcn, String methodName,
+            String[] fqParameters);
 }

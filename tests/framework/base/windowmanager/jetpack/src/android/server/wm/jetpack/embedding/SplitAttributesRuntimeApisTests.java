@@ -68,18 +68,12 @@ public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
                     .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.8f))
                     .build();
 
-    // TODO(b/293658614): Clean up after Activity Embedding animation customization is released.
     private static final SplitAttributes TOP_TO_BOTTOM_SPLIT_ATTRS =
-            Flags.activityEmbeddingAnimationCustomizationFlag()
-                    ? new SplitAttributes.Builder()
-                            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
-                            .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
-                            .setAnimationParams(ANIMATION_PARAMS)
-                            .build()
-                    : new SplitAttributes.Builder()
-                            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
-                            .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
-                            .build();
+            new SplitAttributes.Builder()
+                    .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
+                    .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
+                    .setAnimationParams(ANIMATION_PARAMS)
+                    .build();
 
     @Parameterized.Parameters(name = "{1}")
     public static Object[][] data() {

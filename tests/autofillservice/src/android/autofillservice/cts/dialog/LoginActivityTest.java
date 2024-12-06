@@ -27,9 +27,8 @@ import static android.autofillservice.cts.testcore.Helper.assertMockImeStatus;
 import static android.autofillservice.cts.testcore.Helper.assertNoFlags;
 import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.enableFillDialogFeature;
-import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeature;
+import static android.autofillservice.cts.testcore.Helper.enableFillDialogImprovements;
 import static android.autofillservice.cts.testcore.Helper.isImeShowing;
-import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
 import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
 
@@ -52,6 +51,8 @@ import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequ
 import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.View;
 import android.view.autofill.AutofillManager;
@@ -77,46 +78,9 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         disablePccDetectionFeature(sContext);
     }
 
-    @Test
-    public void testPccRequest() throws Exception {
-        // Enable feature and test service
-        enablePccDetectionFeature(sContext, "username");
-        enableFillDialogFeature(sContext);
-        sReplier.setIdMode(IdMode.PCC_ID);
-        enableService();
-
-        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
-
-        // Set response with a dataset > fill dialog should have two buttons
-        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
-                .addDataset(new CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setField(ID_PASSWORD, "sweet")
-                        .setPresentation(createPresentation("Dropdown Presentation"))
-                        .setDialogPresentation(createPresentation("Dialog Presentation"))
-                        .build())
-                .setDialogHeader(createPresentation("Dialog Header"))
-                .setSaveTypes(~0); // indicate to trigger SaveDialog on all fields
-
-        sReplier.addResponse(builder.build());
-
-        // Start activity and autofill
-        LoginActivity activity = startLoginActivity();
-        mUiBot.waitForIdleSync();
-
-        // Check onFillRequest has hints populated
-        final FillRequest request = sReplier.getNextFillRequest();
-        if (isPccEnabled) {
-            assertThat(request.hints.size()).isEqualTo(1);
-            assertThat(request.hints.get(0)).isEqualTo("username");
-        }
-        mUiBot.waitForIdleSync();
-        disablePccDetectionFeature(sContext);
-        sReplier.setIdMode(IdMode.RESOURCE_ID);
-    }
-
-    // This test cannot assert if the icon has changed programitically.
+    // This test cannot assert if the icon has changed programmatically.
     // Need to manually check that the icon has changed.
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialogCustomIcon() throws Exception {
         // Breaks for HSUM
@@ -174,6 +138,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
 
     // This does not assert that icon is actually hidden, this has to be done manually.
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHideServiceIcon() throws Exception {
         // Enable feature and test service
@@ -221,7 +186,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     }
 
     @Test
-    public void testTextView_withoutFillDialog_clickTwice_showIme() throws Exception {
+    public void testTextView_noFillResponse_clickTwice_showIme() throws Exception {
         // Start activity and autofill
         LoginActivity activity = startLoginActivity();
         mUiBot.waitForIdleSync();
@@ -240,6 +205,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         assertThat(isImeShowing(activity.getRootWindowInsets())).isTrue();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testTextView_clickTwiceWithShowFillDialog_showIme() throws Exception {
         mUiBot.assumeMinimumResolution(500);
@@ -283,6 +249,52 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         assertMockImeStatus(activity, true);
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testTextView_clickTwiceWithShowFillDialog_showIme_v2() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        mUiBot.assertFillDialogDatasets("Dialog Presentation");
+
+        // Dismiss fill dialog
+        mUiBot.touchOutsideDialog();
+        mUiBot.waitForIdle();
+
+//        // Click on password field again
+//        mUiBot.selectByRelativeId(ID_PASSWORD);
+//        mUiBot.waitForIdleSync();
+
+        // Verify IME is shown
+        assertMockImeStatus(activity, true);
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog() throws Exception {
         // Enable feature and test service
@@ -331,6 +343,56 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testShowFillDialog_v2() throws Exception {
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+
+        // Click on password field
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        // Waits a while
+        mUiBot.waitForIdleSync();
+
+        final FillRequest fillRequest = sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Verify IME is not shown
+        assertThat(isImeShowing(activity.getRootWindowInsets())).isFalse();
+
+        // Verify the content of fill dialog, and then select dataset in fill dialog
+        mUiBot.assertFillDialogHeader("Dialog Header");
+        mUiBot.assertFillDialogRejectButton();
+        mUiBot.assertFillDialogAcceptButton();
+        final UiObject2 picker = mUiBot.assertFillDialogDatasets("Dialog Presentation");
+
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset(picker, "Dialog Presentation");
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_onlyShowOnce() throws Exception {
        mUiBot.assumeMinimumResolution(500);
@@ -396,6 +458,72 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testShowFillDialog_onlyShowOnce_v2() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset, there are two ids to trigger fill dialog.
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_USERNAME, ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        final FillRequest fillRequest = sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        mUiBot.assertFillDialogDatasets("Dialog Presentation");
+
+        // Hide fill dialog via touch outside, but ime will appear. to hide IME before next test.
+        mUiBot.touchOutsideDialog();
+        mUiBot.waitForIdleSync();
+
+        assertMockImeStatus(activity, true);
+
+        activity.hideSoftInput();
+
+        assertMockImeStatus(activity, false);
+
+        // Click on the username field to trigger autofill. Although the username field supports
+        // a fill dialog, the fill dialog is only shown once, so now it shows the dropdown UI.
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdleSync();
+
+        mUiBot.assertNoFillDialog();
+        mUiBot.assertDatasets("Dropdown Presentation");
+
+        // Focus on password field to trigger dropdown UI
+        // Note: It will click on dropdown UI if click the password field via UiDevice, so just
+        // switch focus via activity.
+        activity.onPassword(View::requestFocus);
+        mUiBot.waitForIdleSync();
+
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset("Dropdown Presentation");
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_twoSuggestions_oneButton() throws Exception {
         // Enable feature and test service
@@ -447,6 +575,58 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testShowFillDialog_twoSuggestions_oneButton_v2() throws Exception {
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with two datasets > fill dialog should only one button
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "DUDE")
+                        .setField(ID_PASSWORD, "SWEET")
+                        .setPresentation(createPresentation("Dropdown Presentation2"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation2"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Trigger autofill on the password field and verify fill dialog is shown
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Verify the content of fill dialog
+        mUiBot.assertFillDialogHeader("Dialog Header");
+        mUiBot.assertFillDialogRejectButton();
+        mUiBot.assertFillDialogNoAcceptButton();
+        final UiObject2 picker =
+                mUiBot.assertFillDialogDatasets("Dialog Presentation", "Dialog Presentation2");
+
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset(picker, "Dialog Presentation");
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_switchToUnsupportedField_fallbackDropdown() throws Exception {
         mUiBot.assumeMinimumResolution(500);
@@ -497,6 +677,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testFillDialog_fromUnsupportedFieldSwitchToSupported_noFillDialog()
             throws Exception {
@@ -545,6 +726,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_datasetNoDialogPresentation_notShownInDialog() throws Exception {
         // Enable feature and test service
@@ -583,17 +765,61 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testShowFillDialog_datasetNoDialogPresentation_notShownInDialog_v2()
+            throws Exception {
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with one dataset is no dialog presentation
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "DUDE")
+                        .setField(ID_PASSWORD, "SWEET")
+                        .setPresentation(createPresentation("Dropdown Presentation2"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog, then select
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectFillDialogDataset("Dialog Presentation");
+
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_empty_notShowFillDialog() throws Exception {
-        testHintsNotMatch("");
+        testHintsNotMatchLegacy("");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_notExisting_notShowFillDialog() throws Exception {
-        testHintsNotMatch("name:postalAddress:postalCode");
+        testHintsNotMatchLegacy("name:postalAddress:postalCode");
     }
 
-    private void testHintsNotMatch(String hints) throws Exception {
+    private void testHintsNotMatchLegacy(String hints) throws Exception {
         // Set hints config, enable fill dialog and test service
         setFillDialogHints(sContext, hints);
         enableService();
@@ -635,41 +861,46 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         mUiBot.selectDataset("Dropdown Presentation");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_emptyButEnabled_showFillDialog() throws Exception {
-        testHintsNotMatchButFeatureEnabled("");
+        testHintsNotMatchButFeatureEnabledLegacy("");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_notExistingButEnabled_showFillDialog() throws Exception {
-        testHintsNotMatchButFeatureEnabled("name:postalAddress:postalCode");
+        testHintsNotMatchButFeatureEnabledLegacy("name:postalAddress:postalCode");
     }
 
     // Tests the activity does not have allowed hints but fill dialog is enabled
-    private void testHintsNotMatchButFeatureEnabled(String hints) throws Exception {
+    private void testHintsNotMatchButFeatureEnabledLegacy(String hints) throws Exception {
         // Enable fill dialog feature
         enableFillDialogFeature(sContext);
         // The test step is the same as if there is at least one match in the allowed
         // list when the feature is enabled.
-        testHintsConfigMatchAtLeastOneField(hints);
+        testHintsConfigMatchAtLeastOneFieldLegacy(hints);
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_username_showFillDialog() throws Exception {
-        testHintsConfigMatchAtLeastOneField("username");
+        testHintsConfigMatchAtLeastOneFieldLegacy("username");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_emailAddress_showFillDialog() throws Exception {
-        testHintsConfigMatchAtLeastOneField("emailAddress");
+        testHintsConfigMatchAtLeastOneFieldLegacy("emailAddress");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_usernameAndPhone_showFillDialog() throws Exception {
-        testHintsConfigMatchAtLeastOneField("username:phone");
+        testHintsConfigMatchAtLeastOneFieldLegacy("username:phone");
     }
 
-    private void testHintsConfigMatchAtLeastOneField(String hints) throws Exception {
+    private void testHintsConfigMatchAtLeastOneFieldLegacy(String hints) throws Exception {
         // Set hints config, enable fill dialog and test service
         setFillDialogHints(sContext, hints);
         enableService();
@@ -706,6 +937,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         mUiBot.selectFillDialogDataset("Dialog Presentation");
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testHints_passwordAuto_showFillDialog() throws Exception {
         // Set hints and test service
@@ -754,6 +986,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testCancelFillDialog_showDropdown() throws Exception {
         mUiBot.assumeMinimumResolution(500);
@@ -802,6 +1035,56 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testCancelFillDialog_showDropdown_v2() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Verify the fill dialog shown
+        mUiBot.assertFillDialogDatasets("Dialog Presentation");
+
+        // Touch outside to cancel the fill dialog, should back to dropdown UI
+        mUiBot.touchOutsideDialog();
+        mUiBot.waitForIdle();
+
+        mUiBot.assertDatasets("Dropdown Presentation");
+        assertMockImeStatus(activity, true);
+
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset("Dropdown Presentation");
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testDismissedFillDialog_showIme() throws Exception {
         // Enable feature and test service
@@ -842,6 +1125,48 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         assertMockImeStatus(activity, true);
     }
 
+    @RequiresFlagsEnabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @Test
+    public void testDismissedFillDialog_showIme_v2() throws Exception {
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("Dropdown Presentation"))
+                        .setDialogPresentation(createPresentation("Dialog Presentation"))
+                        .build())
+                .setDialogHeader(createPresentation("Dialog Header"))
+                .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Verify the fill dialog shown
+        mUiBot.assertFillDialogDatasets("Dialog Presentation");
+
+        // Touch "No thanks" button to dismiss the fill dialog
+        mUiBot.clickFillDialogDismiss();
+        mUiBot.waitForIdleSync();
+
+        // Verify IME is shown
+        assertMockImeStatus(activity, true);
+    }
+
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
     public void testSuppressingFillDialog_onCredmanFieldOnlyActivity_withIsCredman()
@@ -849,6 +1174,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         testSuppressFillDialog_onlyCredentialFields(false);
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
     public void testSuppressFillDialog_onMixedFields_withIsCredman()
@@ -874,6 +1200,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         assertThat(v.isCredential()).isFalse();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void test_triggerFillDialogThenCloseActivity() throws Exception {
         // Enable feature and test service
@@ -916,6 +1243,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         mUiBot.waitForIdleSync();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     @AsbSecurityTest(cveBugId = 281666022)
     public void remoteViews_doesNotSpillAcrossUsers() throws Exception {

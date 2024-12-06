@@ -31,6 +31,8 @@ import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.LocationCharacterization;
+import android.car.hardware.property.VehicleSizeClass;
+import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -78,6 +80,45 @@ public class VehiclePropertyVerifiers {
             ImmutableSet.<Integer>builder()
                     .add(
                             CarHvacFanDirection.UNKNOWN)
+                    .build();
+    private static final ImmutableSet<Integer> VEHICLE_SIZE_CLASSES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            VehicleSizeClass.EPA_TWO_SEATER,
+                            VehicleSizeClass.EPA_MINICOMPACT,
+                            VehicleSizeClass.EPA_SUBCOMPACT,
+                            VehicleSizeClass.EPA_COMPACT,
+                            VehicleSizeClass.EPA_MIDSIZE,
+                            VehicleSizeClass.EPA_LARGE,
+                            VehicleSizeClass.EPA_SMALL_STATION_WAGON,
+                            VehicleSizeClass.EPA_MIDSIZE_STATION_WAGON,
+                            VehicleSizeClass.EPA_LARGE_STATION_WAGON,
+                            VehicleSizeClass.EPA_SMALL_PICKUP_TRUCK,
+                            VehicleSizeClass.EPA_STANDARD_PICKUP_TRUCK,
+                            VehicleSizeClass.EPA_VAN,
+                            VehicleSizeClass.EPA_MINIVAN,
+                            VehicleSizeClass.EPA_SMALL_SUV,
+                            VehicleSizeClass.EPA_STANDARD_SUV,
+                            VehicleSizeClass.EU_A_SEGMENT,
+                            VehicleSizeClass.EU_B_SEGMENT,
+                            VehicleSizeClass.EU_C_SEGMENT,
+                            VehicleSizeClass.EU_D_SEGMENT,
+                            VehicleSizeClass.EU_E_SEGMENT,
+                            VehicleSizeClass.EU_F_SEGMENT,
+                            VehicleSizeClass.EU_J_SEGMENT,
+                            VehicleSizeClass.EU_M_SEGMENT,
+                            VehicleSizeClass.EU_S_SEGMENT,
+                            VehicleSizeClass.JPN_KEI,
+                            VehicleSizeClass.JPN_SMALL_SIZE,
+                            VehicleSizeClass.JPN_NORMAL_SIZE,
+                            VehicleSizeClass.US_GVWR_CLASS_1_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_2_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_3_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_4_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_5_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_6_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_7_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_8_CV)
                     .build();
 
     /**
@@ -1014,5 +1055,45 @@ public class VehiclePropertyVerifiers {
                     }).collect(Collectors.toList()));
         }
         return allPossibleFanDirectionsBuilder.build();
+    }
+
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}.
+     */
+    public static VehiclePropertyVerifier.Builder<String> getInfoModelTrimVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_MODEL_TRIM,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        String.class)
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer[]>
+            getInfoVehicleSizeClassVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer[].class)
+                .setCarPropertyValueVerifier(
+                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                         sizeClasses) -> {
+                            ArraySet<Integer> presentStandards = new ArraySet<>();
+                            for (int sizeClass : sizeClasses) {
+                                assertWithMessage("Size class " + sizeClass + " doesn't exist in "
+                                        + "possible values: " + VEHICLE_SIZE_CLASSES)
+                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass)).isTrue();
+                                int standard = sizeClass & 0xf00;
+                                assertWithMessage("Multiple values from the standard of size class "
+                                        + sizeClass + " are in use.")
+                                        .that(presentStandards.contains(standard)).isFalse();
+                                presentStandards.add(standard);
+                            }
+                        })
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 }

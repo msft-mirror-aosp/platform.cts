@@ -34,6 +34,8 @@
         <option name="test-file-name" value="CtsDeviceInfo.apk" />
         <option name="test-file-name" value="CtsSecurityTestCases.apk" />
         <option name="test-file-name" value="CtsAdvancedProtectionTestApp.apk" />
+        <option name="test-file-name" value="TestIntrusionDetectionApp.apk" />
+        <option name="install-arg" value="-t" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.CrashReporter" />
 
@@ -78,7 +80,7 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="setprop intrusiondetection_package_name com.android.coretests.apps.testapp/.TestLoggingService" />
+        <option name="run-command" value="setprop debug.intrusiondetection_package_name com.android.coretests.apps.testapp/.TestLoggingService" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
