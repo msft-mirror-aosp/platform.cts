@@ -19,6 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -89,11 +93,7 @@ public class HearingAidProfileTest {
             sBluetoothAdapter.getRemoteDevice("42:11:22:AA:BB:CC");
 
     private static List<Integer> sValidConnectionStates =
-            List.of(
-                    BluetoothProfile.STATE_CONNECTING,
-                    BluetoothProfile.STATE_CONNECTED,
-                    BluetoothProfile.STATE_DISCONNECTED,
-                    BluetoothProfile.STATE_DISCONNECTING);
+            List.of(STATE_CONNECTING, STATE_CONNECTED, STATE_DISCONNECTED, STATE_DISCONNECTING);
 
     private BluetoothHearingAid mService;
 
@@ -140,8 +140,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getConnectionState() {
-        assertThat(mService.getConnectionState(sFakeDevice))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(sFakeDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     /**

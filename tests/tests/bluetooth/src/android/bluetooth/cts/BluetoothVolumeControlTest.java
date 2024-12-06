@@ -18,14 +18,16 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BluetoothAdapter;
@@ -49,6 +51,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -59,6 +63,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @RunWith(AndroidJUnit4.class)
 public class BluetoothVolumeControlTest {
     private static final String TAG = BluetoothVolumeControlTest.class.getSimpleName();
+
+    @Mock private BluetoothVolumeControl.Callback mCallback;
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
@@ -71,67 +77,15 @@ public class BluetoothVolumeControlTest {
     private boolean mIsProfileReady;
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
-    private boolean mVolumeOffsetChangedCallbackCalled;
-    private boolean mAudioLocationChangedCallbackCalled;
-    private boolean mAudioDescriptionChangedCallbackCalled;
-    private boolean mDeviceVolumeChangedCallbackCalled;
-    private TestCallback mTestCallback;
     private Executor mTestExecutor;
     private BluetoothDevice mTestDevice;
-    private int mTestVocsInstanceId;
-    private int mTestVolumeOffset;
-    private int mTestAudioLocation;
-    private String mTestAudioDescription;
-    private int mTestVolume;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    class TestCallback implements BluetoothVolumeControl.Callback {
-        @Override
-        public void onVolumeOffsetChanged(
-                BluetoothDevice device, int instanceId, int volumeOffset) {
-            mVolumeOffsetChangedCallbackCalled = true;
-            assertTrue(device == mTestDevice);
-            assertTrue(instanceId == mTestVocsInstanceId);
-            assertTrue(volumeOffset == mTestVolumeOffset);
-        }
-
-        @Override
-        public void onVolumeOffsetChanged(BluetoothDevice device, int volumeOffset) {
-            mVolumeOffsetChangedCallbackCalled = true;
-            assertTrue(device == mTestDevice);
-            assertTrue(volumeOffset == mTestVolumeOffset);
-        }
-
-        @Override
-        public void onVolumeOffsetAudioLocationChanged(
-                BluetoothDevice device, int instanceId, int audioLocation) {
-            mAudioLocationChangedCallbackCalled = true;
-            assertTrue(device == mTestDevice);
-            assertTrue(instanceId == mTestVocsInstanceId);
-            assertTrue(audioLocation == mTestAudioLocation);
-        }
-
-        @Override
-        public void onVolumeOffsetAudioDescriptionChanged(
-                BluetoothDevice device, int instanceId, String audioDescription) {
-            mAudioDescriptionChangedCallbackCalled = true;
-            assertTrue(device == mTestDevice);
-            assertTrue(instanceId == mTestVocsInstanceId);
-            assertTrue(audioDescription == mTestAudioDescription);
-        }
-
-        @Override
-        public void onDeviceVolumeChanged(BluetoothDevice device, int volume) {
-            mDeviceVolumeChangedCallbackCalled = true;
-            assertThat(device).isEqualTo(mTestDevice);
-            assertThat(volume).isEqualTo(mTestVolume);
-        }
-    }
-
     @Before
     public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mHasBluetooth =
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
@@ -142,7 +96,7 @@ public class BluetoothVolumeControlTest {
 
         BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
@@ -154,9 +108,7 @@ public class BluetoothVolumeControlTest {
                 TestUtils.isProfileEnabled(BluetoothProfile.VOLUME_CONTROL);
         if (isLeAudioSupportedInConfig) {
             /* If Le Audio is supported then Volume Control shall be supported */
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isVolumeControlEnabledInConfig);
+            assertThat(isVolumeControlEnabledInConfig).isTrue();
         }
 
         if (isVolumeControlEnabledInConfig) {
@@ -165,9 +117,8 @@ public class BluetoothVolumeControlTest {
                             mContext,
                             new BluetoothVolumeControlServiceListener(),
                             BluetoothProfile.VOLUME_CONTROL);
-            assertTrue("Service shall be supported ", mIsVolumeControlSupported);
+            assertThat(mIsVolumeControlSupported).isTrue();
 
-            mTestCallback = new TestCallback();
             mTestExecutor = mContext.getMainExecutor();
         }
     }
@@ -180,11 +131,6 @@ public class BluetoothVolumeControlTest {
                 mBluetoothVolumeControl = null;
                 mIsProfileReady = false;
                 mTestDevice = null;
-                mTestVocsInstanceId = 0;
-                mTestVolumeOffset = 0;
-                mTestAudioLocation = 0;
-                mTestAudioDescription = null;
-                mTestCallback = null;
                 mTestExecutor = null;
             }
             mAdapter = null;
@@ -195,52 +141,50 @@ public class BluetoothVolumeControlTest {
     @Test
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
-        assertTrue(mIsProfileReady);
+        assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.VOLUME_CONTROL, mBluetoothVolumeControl);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(waitForProfileDisconnect()).isTrue();
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
         List<BluetoothDevice> connectedDevices = mBluetoothVolumeControl.getConnectedDevices();
-        assertTrue(connectedDevices.isEmpty());
+        assertThat(mBluetoothVolumeControl.getConnectedDevices()).isEmpty();
     }
 
     @Test
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices =
-                mBluetoothVolumeControl.getDevicesMatchingConnectionStates(null);
-        assertTrue(connectedDevices.isEmpty());
+        assertThat(mBluetoothVolumeControl.getDevicesMatchingConnectionStates(null)).isEmpty();
     }
 
     @Test
     public void registerUnregisterCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         // Verify parameter
         assertThrows(
                 NullPointerException.class,
-                () -> mBluetoothVolumeControl.registerCallback(null, mTestCallback));
+                () -> mBluetoothVolumeControl.registerCallback(null, mCallback));
         assertThrows(
                 NullPointerException.class,
                 () -> mBluetoothVolumeControl.registerCallback(mTestExecutor, null));
@@ -248,14 +192,14 @@ public class BluetoothVolumeControlTest {
                 NullPointerException.class, () -> mBluetoothVolumeControl.unregisterCallback(null));
 
         // Test success register unregister
-        mBluetoothVolumeControl.registerCallback(mTestExecutor, mTestCallback);
-        mBluetoothVolumeControl.unregisterCallback(mTestCallback);
+        mBluetoothVolumeControl.registerCallback(mTestExecutor, mCallback);
+        mBluetoothVolumeControl.unregisterCallback(mCallback);
 
         TestUtils.dropPermissionAsShellUid();
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
         assertThrows(
                 SecurityException.class,
-                () -> mBluetoothVolumeControl.registerCallback(mTestExecutor, mTestCallback));
+                () -> mBluetoothVolumeControl.registerCallback(mTestExecutor, mCallback));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
@@ -263,7 +207,7 @@ public class BluetoothVolumeControlTest {
     @Test
     public void setVolumeOffset() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
@@ -276,13 +220,15 @@ public class BluetoothVolumeControlTest {
     @Test
     public void setDeviceVolume() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        mBluetoothVolumeControl.setDeviceVolume(mTestDevice, mTestVolume, true);
-        mBluetoothVolumeControl.setDeviceVolume(mTestDevice, mTestVolume, false);
+        int testVolume = 43;
+
+        mBluetoothVolumeControl.setDeviceVolume(mTestDevice, testVolume, true);
+        mBluetoothVolumeControl.setDeviceVolume(mTestDevice, testVolume, false);
 
         // volume expect in range [0, 255]
         assertThrows(
@@ -293,13 +239,13 @@ public class BluetoothVolumeControlTest {
                 () -> mBluetoothVolumeControl.setDeviceVolume(mTestDevice, 256, true));
 
         enforceConnectAndPrivileged(
-                () -> mBluetoothVolumeControl.setDeviceVolume(mTestDevice, mTestVolume, true));
+                () -> mBluetoothVolumeControl.setDeviceVolume(mTestDevice, testVolume, true));
     }
 
     @Test
     public void isVolumeOffsetAvailable() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
@@ -307,16 +253,15 @@ public class BluetoothVolumeControlTest {
         enforceConnectAndPrivileged(
                 () -> mBluetoothVolumeControl.isVolumeOffsetAvailable(mTestDevice));
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        // Verify returns false if bluetooth is not enabled
-        assertTrue(!mBluetoothVolumeControl.isVolumeOffsetAvailable(mTestDevice));
+        assertThat(mBluetoothVolumeControl.isVolumeOffsetAvailable(mTestDevice)).isFalse();
     }
 
     @Test
     public void getNumberOfVolumeOffsetInstances() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
@@ -324,167 +269,84 @@ public class BluetoothVolumeControlTest {
         enforceConnectAndPrivileged(
                 () -> mBluetoothVolumeControl.getNumberOfVolumeOffsetInstances(mTestDevice));
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns 0 if bluetooth is not enabled
         assertEquals(0, mBluetoothVolumeControl.getNumberOfVolumeOffsetInstances(mTestDevice));
     }
 
     @Test
-    public void volumeOffsetCallback() {
-        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothVolumeControl);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mVolumeOffsetChangedCallbackCalled = false;
-
-        /* Note. This is just for api coverage until proper testing tools are set up */
-        mTestVolumeOffset = 1;
-        mTestCallback.onVolumeOffsetChanged(mTestDevice, mTestVolumeOffset);
-        assertTrue(mVolumeOffsetChangedCallbackCalled);
-    }
-
-    @Test
-    public void volumeOffsetWithInstanceIdCallback() {
-        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothVolumeControl);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mVolumeOffsetChangedCallbackCalled = false;
-
-        /* Note. This is just for api coverage until proper testing tools are set up */
-        mTestVocsInstanceId = 1;
-        mTestVolumeOffset = 1;
-        mTestCallback.onVolumeOffsetChanged(mTestDevice, mTestVocsInstanceId, mTestVolumeOffset);
-        assertTrue(mVolumeOffsetChangedCallbackCalled);
-    }
-
-    @Test
-    public void volumeOffsetAudioLocationCallback() {
-        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothVolumeControl);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mAudioLocationChangedCallbackCalled = false;
-
-        /* Note. This is just for api coverage until proper testing tools are set up */
-        mTestVocsInstanceId = 1;
-        mTestAudioLocation = 1;
-        mTestCallback.onVolumeOffsetAudioLocationChanged(
-                mTestDevice, mTestVocsInstanceId, mTestAudioLocation);
-        assertTrue(mAudioLocationChangedCallbackCalled);
-    }
-
-    @Test
-    public void volumeOffsetAudioDescriptionCallback() {
-        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothVolumeControl);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mAudioDescriptionChangedCallbackCalled = false;
-
-        /* Note. This is just for api coverage until proper testing tools are set up */
-        mTestVocsInstanceId = 1;
-        mTestAudioDescription = "test";
-        mTestCallback.onVolumeOffsetAudioDescriptionChanged(
-                mTestDevice, mTestVocsInstanceId, mTestAudioDescription);
-        assertTrue(mAudioDescriptionChangedCallbackCalled);
-    }
-
-    @Test
-    public void deviceVolumeChangedCallback() {
-        assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothVolumeControl);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mDeviceVolumeChangedCallbackCalled = false;
-
-        mTestVolume = 30;
-        mTestCallback.onDeviceVolumeChanged(mTestDevice, mTestVolume);
-        assertTrue(mDeviceVolumeChangedCallbackCalled);
-    }
-
-    @Test
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(
-                BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothVolumeControl.getConnectionState(null));
+        assertEquals(STATE_DISCONNECTED, mBluetoothVolumeControl.getConnectionState(null));
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothVolumeControl.getConnectionState(testDevice));
+        assertEquals(STATE_DISCONNECTED, mBluetoothVolumeControl.getConnectionState(testDevice));
     }
 
     @Test
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
         assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothVolumeControl.getConnectionPolicy(null));
+                CONNECTION_POLICY_FORBIDDEN, mBluetoothVolumeControl.getConnectionPolicy(null));
 
         enforceConnectAndPrivileged(() -> mBluetoothVolumeControl.getConnectionPolicy(testDevice));
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
         assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+                CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothVolumeControl.getConnectionPolicy(testDevice));
     }
 
     @Test
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothVolumeControl.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothVolumeControl.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(
+                        mBluetoothVolumeControl.setConnectionPolicy(
+                                testDevice, CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(mBluetoothVolumeControl.setConnectionPolicy(null, CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         enforceConnectAndPrivileged(
                 () ->
                         mBluetoothVolumeControl.setConnectionPolicy(
-                                testDevice, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+                                testDevice, CONNECTION_POLICY_ALLOWED));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothVolumeControl.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(
+                        mBluetoothVolumeControl.setConnectionPolicy(
+                                testDevice, CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test
     public void getAudioInputControlServices() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
-        assertTrue(waitForProfileConnect());
+        assertThat(waitForProfileConnect()).isTrue();
         assertNotNull(mBluetoothVolumeControl);
 
         assertThrows(

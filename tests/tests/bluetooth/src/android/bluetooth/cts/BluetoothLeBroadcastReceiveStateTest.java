@@ -19,10 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -79,26 +79,19 @@ public class BluetoothLeBroadcastReceiveStateTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
-            boolean isBroadcastAssistantEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -135,7 +128,7 @@ public class BluetoothLeBroadcastReceiveStateTest {
         assertEquals(TEST_BROADCAST_ID, state.getBroadcastId());
         assertEquals(TEST_PA_SYNC_STATE, state.getPaSyncState());
         assertEquals(TEST_BIG_ENCRYPTION_STATE, state.getBigEncryptionState());
-        assertNull(state.getBadCode());
+        assertThat(state.getBadCode()).isNull();
         assertEquals(TEST_NUM_SUBGROUPS, state.getNumSubgroups());
         assertArrayEquals(TEST_BIS_SYNC_STATE, state.getBisSyncState().toArray(new Long[0]));
         assertArrayEquals(

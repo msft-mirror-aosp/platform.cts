@@ -25,7 +25,6 @@ import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementMethod;
@@ -66,7 +65,7 @@ public class DistanceMeasurementMethodTest {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
     }
