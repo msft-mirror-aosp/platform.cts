@@ -1365,7 +1365,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
             String propertyName = VehiclePropertyIds.toString(propertyId);
             expectWithMessage("Property: " + propertyName + " is not a defined system property")
-                    .that(propertyId).isIn(allSystemPropertyIds);
+                    .that(propertyId)
+                    .isIn(allSystemPropertyIds);
         }
     }
 
@@ -1773,15 +1774,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testIndividualProperty(
             @TestParameter(valuesProvider = AllVerifierBuildersProvider.class)
-            VerifierInfo verifierInfo,
+                    VerifierInfo verifierInfo,
             @TestParameter(valuesProvider = AllStepsProvider.class) String step) {
         // Check preconditions.
         var flag = verifierInfo.mFlag;
         if (flag != null) {
-            if (flag.equals(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)) {
-                assumeTrue("Flag: " + flag + " is disabled ", Flags.androidVicVehicleProperties());
-            } else {
-                throw new IllegalStateException("Unknown flag: " + flag);
+            switch (flag) {
+                case Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES:
+                    assumeTrue(
+                            "Flag: " + flag + " is disabled ", Flags.androidVicVehicleProperties());
+                    break;
+                case Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS:
+                    // Do nothing as property should be supported when this flag is enabled and when
+                    // it is disabled.
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown flag: " + flag);
             }
         }
         if (verifierInfo.mAssumeStandardCC != null) {
@@ -7114,8 +7122,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionReadSteeringStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_READ_STEERING_STATE_PROPERTIES,
-                Car.PERMISSION_READ_STEERING_STATE);
+                PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
     }
 
     @Test

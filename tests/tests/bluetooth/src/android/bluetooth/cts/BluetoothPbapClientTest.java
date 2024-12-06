@@ -49,13 +49,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class BluetoothPbapClientTest {
     private static final String TAG = BluetoothPbapClientTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -72,8 +71,8 @@ public class BluetoothPbapClientTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
 
         mIsPbapClientSupported = BluetoothProperties.isProfilePbapClientEnabled().orElse(false);
@@ -91,8 +90,8 @@ public class BluetoothPbapClientTest {
         mIsProfileReady = false;
         mBluetoothPbapClient = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothPbapClientServiceListener(),
-                BluetoothProfile.PBAP_CLIENT);
+        mAdapter.getProfileProxy(
+                mContext, new BluetoothPbapClientServiceListener(), BluetoothProfile.PBAP_CLIENT);
     }
 
     @After
@@ -101,8 +100,7 @@ public class BluetoothPbapClientTest {
             return;
         }
         if (mAdapter != null && mBluetoothPbapClient != null) {
-            mAdapter.closeProfileProxy(BluetoothProfile.PBAP_CLIENT,
-                    mBluetoothPbapClient);
+            mAdapter.closeProfileProxy(BluetoothProfile.PBAP_CLIENT, mBluetoothPbapClient);
             mBluetoothPbapClient = null;
             mIsProfileReady = false;
         }
@@ -143,13 +141,15 @@ public class BluetoothPbapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothPbapClient.getConnectionPolicy(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothPbapClient.getConnectionPolicy(testDevice));
     }
 
@@ -162,13 +162,14 @@ public class BluetoothPbapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothPbapClient.getConnectionState(null));
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED, mBluetoothPbapClient.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothPbapClient.getConnectionState(testDevice));
     }
 
@@ -182,7 +183,7 @@ public class BluetoothPbapClientTest {
 
         // Verify returns empty list if bluetooth is not enabled
         List<BluetoothDevice> connectedDevices =
-                mBluetoothPbapClient.getDevicesMatchingConnectionStates(new int[]{});
+                mBluetoothPbapClient.getDevicesMatchingConnectionStates(new int[] {});
         assertTrue(connectedDevices.isEmpty());
     }
 
@@ -195,16 +196,19 @@ public class BluetoothPbapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothPbapClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothPbapClient.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothPbapClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothPbapClient.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothPbapClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothPbapClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     private boolean waitForProfileConnect() {
@@ -247,8 +251,8 @@ public class BluetoothPbapClientTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothPbapClientServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothPbapClientServiceListener
+            implements BluetoothProfile.ServiceListener {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {

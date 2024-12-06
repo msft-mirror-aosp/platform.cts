@@ -26,9 +26,10 @@ import static android.bluetooth.le.DistanceMeasurementMethod.DISTANCE_MEASUREMEN
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -60,8 +61,7 @@ public class DistanceMeasurementParamsTest {
     private BluetoothDevice mDevice;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -88,8 +88,8 @@ public class DistanceMeasurementParamsTest {
     public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
-            DistanceMeasurementParams params = new DistanceMeasurementParams
-                    .Builder(mDevice).build();
+            DistanceMeasurementParams params =
+                    new DistanceMeasurementParams.Builder(mDevice).build();
             params.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             DistanceMeasurementParams paramsFromParcel =
@@ -104,8 +104,8 @@ public class DistanceMeasurementParamsTest {
     @Test
     public void defaultParameters() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice).build();
-        assertEquals(DistanceMeasurementParams.getDefaultDurationSeconds(),
-                params.getDurationSeconds());
+        assertEquals(
+                DistanceMeasurementParams.getDefaultDurationSeconds(), params.getDurationSeconds());
         assertEquals(REPORT_FREQUENCY_LOW, params.getFrequency());
         assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
     }
@@ -120,24 +120,28 @@ public class DistanceMeasurementParamsTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetDurationSeconds() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDurationSeconds(120).build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice).setDurationSeconds(120).build();
         assertEquals(120, params.getDurationSeconds());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetFrequency() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setFrequency(REPORT_FREQUENCY_HIGH).build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setFrequency(REPORT_FREQUENCY_HIGH)
+                        .build();
         assertEquals(REPORT_FREQUENCY_HIGH, params.getFrequency());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMethodId() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setMethodId(DISTANCE_MEASUREMENT_METHOD_RSSI).build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setMethodId(DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .build();
         assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
     }
 
@@ -146,8 +150,10 @@ public class DistanceMeasurementParamsTest {
     public void setGetChannelSoundingParams() {
         ChannelSoundingParams csParams =
                 new ChannelSoundingParams.Builder().setSightType(SIGHT_TYPE_LINE_OF_SIGHT).build();
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setChannelSoundingParams(csParams).build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setChannelSoundingParams(csParams)
+                        .build();
         assertEquals(csParams, params.getChannelSoundingParams());
     }
 
@@ -155,14 +161,16 @@ public class DistanceMeasurementParamsTest {
     @Test
     public void readWriteParcelForCs() {
         Parcel parcel = Parcel.obtain();
-        ChannelSoundingParams csParams = new ChannelSoundingParams.Builder()
-                .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
-                .setLocationType(LOCATION_TYPE_OUTDOOR)
-                .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
-                .build();
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setChannelSoundingParams(csParams)
-                .build();
+        ChannelSoundingParams csParams =
+                new ChannelSoundingParams.Builder()
+                        .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                        .setLocationType(LOCATION_TYPE_OUTDOOR)
+                        .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
+                        .build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setChannelSoundingParams(csParams)
+                        .build();
         params.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         DistanceMeasurementParams paramsFromParcel =
@@ -174,13 +182,8 @@ public class DistanceMeasurementParamsTest {
     }
 
     private void assertParamsEquals(DistanceMeasurementParams p, DistanceMeasurementParams other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getDevice(), other.getDevice());
         assertEquals(p.getDurationSeconds(), other.getDurationSeconds());
