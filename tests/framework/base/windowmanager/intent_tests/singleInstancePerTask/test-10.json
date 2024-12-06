@@ -18,28 +18,34 @@
             }
         ]
     },
-    "initialState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskDocumentNeverActivity",
-                        "state": "RESUMED"
-                    }
-                ]
-            }
-        ]
-    },
-    "endState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskDocumentNeverActivity",
-                        "state": "RESUMED"
-                    }
-                ]
-            }
-        ]
-    }
+    "initialStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskDocumentNeverActivity",
+                            "state": "RESUMED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ],
+    "endStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskDocumentNeverActivity",
+                            "state": "RESUMED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ]
 }
