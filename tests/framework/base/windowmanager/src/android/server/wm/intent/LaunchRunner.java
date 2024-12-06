@@ -343,10 +343,8 @@ public class LaunchRunner {
         assertNotNull("Intent: " + intent.toString(), activity);
 
         final ComponentName testActivityName = activity.getComponentName();
-        mTestBase.waitAndAssertResumedActivity(
-                testActivityName, "Activity must be resumed");
-        assertEquals(
-                launchDisplayId, mTestBase.getWmState().getDisplayByActivity(testActivityName));
+        mTestBase.waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName,
+                launchDisplayId, "Activity must be resumed");
     }
 
     /**
