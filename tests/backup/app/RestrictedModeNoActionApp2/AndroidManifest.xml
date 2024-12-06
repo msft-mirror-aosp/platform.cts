@@ -15,11 +15,17 @@
   ~ limitations under the License.
   -->
 
-<resources>
-    <!--
-        TODO(b/309578419): Make MockIme handle insets properly and then remove this.
-    -->
-    <style name="MockImeTheme" parent="@android:style/Theme.DeviceDefault.InputMethod">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
-</resources>
+<!-- This app does not set PROPERTY_USE_RESTRICTED_BACKUP_MODE. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.cts.backup.restrictedmodenoactionapp2">
+    <application
+        android:name="android.backup.app.CustomApplication"
+        android:allowBackup="true"
+        android:backupAgent="android.backup.app.ApplicationCastingFullBackupAgent"
+        android:label="RestrictedModeNoActionApp2"
+        android:fullBackupOnly="true"
+        android:debuggable="true"
+        android:testOnly="true">
+        <uses-library android:name="android.test.runner"/>
+    </application>
+</manifest>

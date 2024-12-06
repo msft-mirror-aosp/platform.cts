@@ -31,6 +31,9 @@ import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.LocationCharacterization;
+import android.car.hardware.property.VehicleSizeClass;
+import android.car.hardware.property.VehicleTurnSignal;
+import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -79,6 +82,64 @@ public class VehiclePropertyVerifiers {
                     .add(
                             CarHvacFanDirection.UNKNOWN)
                     .build();
+    private static final ImmutableSet<Integer> VEHICLE_SIZE_CLASSES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            VehicleSizeClass.EPA_TWO_SEATER,
+                            VehicleSizeClass.EPA_MINICOMPACT,
+                            VehicleSizeClass.EPA_SUBCOMPACT,
+                            VehicleSizeClass.EPA_COMPACT,
+                            VehicleSizeClass.EPA_MIDSIZE,
+                            VehicleSizeClass.EPA_LARGE,
+                            VehicleSizeClass.EPA_SMALL_STATION_WAGON,
+                            VehicleSizeClass.EPA_MIDSIZE_STATION_WAGON,
+                            VehicleSizeClass.EPA_LARGE_STATION_WAGON,
+                            VehicleSizeClass.EPA_SMALL_PICKUP_TRUCK,
+                            VehicleSizeClass.EPA_STANDARD_PICKUP_TRUCK,
+                            VehicleSizeClass.EPA_VAN,
+                            VehicleSizeClass.EPA_MINIVAN,
+                            VehicleSizeClass.EPA_SMALL_SUV,
+                            VehicleSizeClass.EPA_STANDARD_SUV,
+                            VehicleSizeClass.EU_A_SEGMENT,
+                            VehicleSizeClass.EU_B_SEGMENT,
+                            VehicleSizeClass.EU_C_SEGMENT,
+                            VehicleSizeClass.EU_D_SEGMENT,
+                            VehicleSizeClass.EU_E_SEGMENT,
+                            VehicleSizeClass.EU_F_SEGMENT,
+                            VehicleSizeClass.EU_J_SEGMENT,
+                            VehicleSizeClass.EU_M_SEGMENT,
+                            VehicleSizeClass.EU_S_SEGMENT,
+                            VehicleSizeClass.JPN_KEI,
+                            VehicleSizeClass.JPN_SMALL_SIZE,
+                            VehicleSizeClass.JPN_NORMAL_SIZE,
+                            VehicleSizeClass.US_GVWR_CLASS_1_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_2_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_3_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_4_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_5_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_6_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_7_CV,
+                            VehicleSizeClass.US_GVWR_CLASS_8_CV)
+                    .build();
+    private static final ImmutableSet<Integer> TURN_SIGNAL_STATES =
+            ImmutableSet.<Integer>builder().add(VehicleTurnSignal.STATE_NONE,
+                    VehicleTurnSignal.STATE_RIGHT, VehicleTurnSignal.STATE_LEFT).build();
+
+    /** Gets the verifier builder for PERF_STEERING_ANGLE. */
+    public static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Float> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.PERF_STEERING_ANGLE,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                                Float.class)
+                        .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_STEERING_STATE_3P)
+                : verifierBuilder;
+    }
 
     /**
      * Gets the verifier builder for LOCATION_CHARACTERIZATION.
@@ -1014,5 +1075,82 @@ public class VehiclePropertyVerifiers {
                     }).collect(Collectors.toList()));
         }
         return allPossibleFanDirectionsBuilder.build();
+    }
+
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}.
+     */
+    public static VehiclePropertyVerifier.Builder<String> getInfoModelTrimVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_MODEL_TRIM,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        String.class)
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer[]>
+            getInfoVehicleSizeClassVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer[].class)
+                .setCarPropertyValueVerifier(
+                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                         sizeClasses) -> {
+                            ArraySet<Integer> presentStandards = new ArraySet<>();
+                            for (int sizeClass : sizeClasses) {
+                                assertWithMessage("Size class " + sizeClass + " doesn't exist in "
+                                        + "possible values: " + VEHICLE_SIZE_CLASSES)
+                                        .that(VEHICLE_SIZE_CLASSES.contains(sizeClass)).isTrue();
+                                int standard = sizeClass & 0xf00;
+                                assertWithMessage("Multiple values from the standard of size class "
+                                        + sizeClass + " are in use.")
+                                        .that(presentStandards.contains(standard)).isFalse();
+                                presentStandards.add(standard);
+                            }
+                        })
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_LIGHT_STATE}.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getTurnSignalLightStateVerifierBuilder() {
+        ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
+                .addAll(TURN_SIGNAL_STATES)
+                .add(VehicleTurnSignal.STATE_LEFT | VehicleTurnSignal.STATE_RIGHT)
+                .build();
+
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class)
+                .setAllPossibleEnumValues(combinedCarPropertyValues)
+                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
+    }
+
+    /**
+     * Gets the verifier for {@link VehiclePropertyIds#TURN_SIGNAL_SWITCH}.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer> getTurnSignalSwitchVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class)
+                .setAllPossibleEnumValues(TURN_SIGNAL_STATES)
+                .addReadPermission(Car.PERMISSION_READ_EXTERIOR_LIGHTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS)
+                .addWritePermission(Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 }

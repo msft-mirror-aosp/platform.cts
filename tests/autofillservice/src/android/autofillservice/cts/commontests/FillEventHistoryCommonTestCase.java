@@ -33,6 +33,9 @@ import static android.autofillservice.cts.testcore.Helper.assertFillEventForSave
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForViewEntered;
 import static android.autofillservice.cts.testcore.Helper.assertHasEventMatchingTypeAndFilter;
 import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClientState;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
 import static android.service.autofill.FillEventHistory.Event.NO_SAVE_UI_REASON_DATASET_MATCH;
@@ -61,6 +64,9 @@ import android.content.IntentSender;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.autofill.FillEventHistory;
 import android.service.autofill.FillEventHistory.Event;
 import android.service.autofill.FillResponse;
@@ -72,6 +78,7 @@ import android.view.autofill.AutofillId;
 
 import androidx.test.filters.FlakyTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -86,6 +93,9 @@ import java.util.regex.Pattern;
 @AppModeFull(reason = "Service-specific test")
 public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivityTestCase {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     protected FillEventHistoryCommonTestCase() {}
 
     protected FillEventHistoryCommonTestCase(UiBot inlineUiBot) {
@@ -96,6 +106,147 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         final Bundle bundle = new Bundle();
         bundle.putString(key, value);
         return bundle;
+    }
+
+    @Test
+    @RequiresFlagsEnabled({"android.service.autofill.add_last_focused_id_to_fill_event_history"})
+    public void testAuthenticationSelected_withLastFocusedId() throws Exception {
+        enableService();
+
+        // Set up FillResponse with dataset authentication
+        Bundle clientState = new Bundle();
+        clientState.putCharSequence("clientStateKey", "clientStateValue");
+
+        // Prepare the authenticated response
+        final IntentSender authentication =
+                AuthenticationActivity.createSender(
+                        mContext,
+                        1,
+                        new CannedDataset.Builder()
+                                .setField(ID_USERNAME, "dude")
+                                .setField(ID_PASSWORD, "sweet")
+                                .setPresentation("Dataset", isInlineMode())
+                                .build());
+
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "username")
+                                        .setId("name")
+                                        .setPresentation("authentication", isInlineMode())
+                                        .setAuthentication(authentication)
+                                        .build())
+                        .setExtras(clientState)
+                        .build());
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger autofill and IME.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdle();
+
+        // Authenticate
+        sReplier.getNextFillRequest();
+        mUiBot.selectDataset("authentication");
+        mActivity.assertAutoFilled();
+
+        // Verify fill selection
+        final List<Event> events = InstrumentedAutoFillService.getFillEvents(3);
+
+        // Verify that focused id at shown event is the same as focused id at selection event.
+        assertShownAndSelectedHaveSameFocusedId(events.get(0), events.get(1));
+
+        // Verify that focused id at shown event is the same as focused id at notify view entered
+        // event.
+        assertShownAndViewEnteredHaveSameFocusedId(events.get(0), events.get(2));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({"android.service.autofill.add_last_focused_id_to_fill_event_history"})
+    public void testAuthenticationSelected_withDifferentLastFocusedIdForShownAndSelection()
+            throws Exception {
+        enableService();
+
+        // Set up FillResponse with dataset authentication
+        Bundle clientState = new Bundle();
+        clientState.putCharSequence("clientStateKey", "clientStateValue");
+
+        // Prepare the authenticated response
+        final IntentSender authentication =
+                AuthenticationActivity.createSender(
+                        mContext,
+                        1,
+                        new CannedDataset.Builder()
+                                .setField(ID_USERNAME, "dude")
+                                .setField(ID_PASSWORD, "sweet")
+                                .setPresentation("Dataset", isInlineMode())
+                                .build());
+
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "username")
+                                        .setField(ID_PASSWORD, "password")
+                                        .setId("name")
+                                        .setPresentation("authentication", isInlineMode())
+                                        .setAuthentication(authentication)
+                                        .build())
+                        .setExtras(clientState)
+                        .build());
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger autofill and IME.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdle();
+
+        // Re-focus on password field.
+        mUiBot.focusByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdle();
+
+        // Authenticate
+        sReplier.getNextFillRequest();
+        mUiBot.selectDataset("authentication");
+        mActivity.assertAutoFilled();
+
+        // Verify fill selection
+        final List<Event> events = InstrumentedAutoFillService.getFillEvents(4);
+
+        // Verify that focused id at first shown event is different from focused id at selection
+        // event.
+        assertShownAndSelectedHaveDifferentFocusedId(events.get(0), events.get(3));
+
+        // Verify that focused id at second shown event is the same as focused id at view
+        // entered event.
+        assertShownAndViewEnteredHaveSameFocusedId(events.get(2), events.get(1));
+
+        // Verify that focused id at second shown event is the same as focused id at selection
+        // event.
+        assertShownAndSelectedHaveSameFocusedId(events.get(2), events.get(3));
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.autofill_session_destroyed")
+    public void test_onSessionDestroyed() throws Exception {
+        enableService();
+
+        sReplier.addResponse(CannedFillResponse.NO_RESPONSE);
+
+        // Trigger autofill on username
+        mActivity.onUsername(View::requestFocus);
+        sReplier.getNextFillRequest();
+        mUiBot.assertNoDatasetsEver();
+
+        // Trigger save
+        mActivity.onUsername((v) -> v.setText("malkovich"));
+        mActivity.onPassword((v) -> v.setText("malkovich"));
+        final String expectedMessage = getWelcomeMessage("malkovich");
+        final String actualMessage = mActivity.tapLogin();
+
+        // Commit the Session
+        mUiBot.pressHome();
+
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+        assertThat(sReplier.getLastFillEventHistory()).isNull();
     }
 
     @Test

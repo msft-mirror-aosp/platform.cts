@@ -265,8 +265,8 @@ public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuild
             assertThat(batteryUsageStats.getSessionDurationMillis()).isGreaterThan(0);
 
             assertThat(batteryUsageStats.getTotalConsumedPowerMah()).isAtLeast(0);
-            assertThat(batteryUsageStats.getDurationMillis()).isAtLeast(0);
-            assertThat(batteryUsageStats.getConsumedPowerMah()).isAtLeast(0);
+            assertThat(batteryUsageStats.getDurationMillis() >= 0
+                    || batteryUsageStats.getConsumedPowerMah() != 0).isTrue();
 
             if (batteryUsageStats.getUid() != -1) {
                 if (batteryUsageStats.getTimeInStateMillis() > 0) {

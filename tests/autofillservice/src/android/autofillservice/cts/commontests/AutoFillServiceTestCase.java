@@ -49,6 +49,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.autofill.InlinePresentation;
@@ -217,6 +219,7 @@ public final class AutoFillServiceTestCase {
             final Intent intent = new Intent(mContext, LoginActivity.class)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
+            mUiBot.waitForIdleSync();
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginActivity.getCurrentActivity();
         }
@@ -287,6 +290,10 @@ public final class AutoFillServiceTestCase {
                     cleanAllActivities();
                 });
 
+        @Rule
+        public final CheckFlagsRule mCheckFlagsRule =
+                DeviceFlagsValueProvider.createCheckFlagsRule();
+
         private final AutofillLoggingTestRule mLoggingRule = new AutofillLoggingTestRule(TAG);
 
         protected final SafeCleanerRule mSafeCleanerRule = new SafeCleanerRule()
@@ -328,6 +335,8 @@ public final class AutoFillServiceTestCase {
                 //
                 // mRetryRule should be closest to the main test as possible
                 .around(mRetryRule)
+                // mCheckFlagsRule checks for required flags for a test
+                .around(mCheckFlagsRule)
                 //
                 // Augmented Autofill should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
@@ -343,6 +352,11 @@ public final class AutoFillServiceTestCase {
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS,
                         ""))
+                //
+                // Fill Dialog Improvements should be disabled by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog",
+                        Boolean.toString(false)))
 
                 //
                 // CredentialManager-Autofill integration enabled by default
@@ -380,6 +394,11 @@ public final class AutoFillServiceTestCase {
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
                             "include_all_autofill_type_not_none_views_in_assist_structure",
                             Boolean.toString(false)))
+
+                //
+                // Relayout fix should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "enable_relayout", Boolean.toString(true)))
 
 
                 //

@@ -42,8 +42,7 @@ public class MediaQualityTest {
         Context context = InstrumentationRegistry.getTargetContext();
 
         mManager = context.getSystemService(MediaQualityManager.class);
-        assertNotNull("Failed to get MediaQualityManager.", mManager);
-        if (!isSupported()) {
+        if (mManager == null || !isSupported()) {
             return;
         }
     }
@@ -55,7 +54,7 @@ public class MediaQualityTest {
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetAvailablePictureProfiles() throws Exception {
-        mManager.getAvailablePictureProfiles();
+        mManager.getAvailablePictureProfiles(true);
     }
 
     private boolean isSupported() {

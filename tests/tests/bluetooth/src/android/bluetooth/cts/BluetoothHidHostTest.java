@@ -59,7 +59,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class BluetoothHidHostTest {
@@ -67,8 +66,10 @@ public class BluetoothHidHostTest {
 
     private static final String[] DEFAULT_PERMISSIONS = {BLUETOOTH_CONNECT};
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Context mContext;
     private boolean mHasBluetooth;
     private boolean mIsHidHostSupported;
@@ -250,9 +251,7 @@ public class BluetoothHidHostTest {
 
         // Verify returns TRANSPORT_AUTO if bluetooth is not enabled
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertEquals(
-                BluetoothDevice.TRANSPORT_AUTO,
-                mHidHost.getPreferredTransport(testDevice));
+        assertEquals(BluetoothDevice.TRANSPORT_AUTO, mHidHost.getPreferredTransport(testDevice));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP)
@@ -266,7 +265,8 @@ public class BluetoothHidHostTest {
 
         // Verify that BLUETOOTH_PRIVILEGED permission is enforced
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        assertThrows("BLUETOOTH_PRIVILEGED permission not enforced",
+        assertThrows(
+                "BLUETOOTH_PRIVILEGED permission not enforced",
                 SecurityException.class,
                 () -> {
                     mHidHost.setPreferredTransport(testDevice, BluetoothDevice.TRANSPORT_AUTO);
@@ -274,7 +274,9 @@ public class BluetoothHidHostTest {
 
         // Verify that BLUETOOTH_CONNECT permission is enforced
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_PRIVILEGED);
-        assertThrows("BLUETOOTH_CONNECT permission not enforced", SecurityException.class,
+        assertThrows(
+                "BLUETOOTH_CONNECT permission not enforced",
+                SecurityException.class,
                 () -> {
                     mHidHost.setPreferredTransport(testDevice, BluetoothDevice.TRANSPORT_AUTO);
                 });
@@ -283,9 +285,7 @@ public class BluetoothHidHostTest {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mHidHost.setPreferredTransport(
-                        testDevice, BluetoothDevice.TRANSPORT_AUTO));
+        assertFalse(mHidHost.setPreferredTransport(testDevice, BluetoothDevice.TRANSPORT_AUTO));
 
         // Verify throws NullPointerException when null BluetoothDevice is used
         assertThrows(
@@ -296,9 +296,7 @@ public class BluetoothHidHostTest {
 
         // Verify returns false if bluetooth is not enabled
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(
-                mHidHost.setPreferredTransport(
-                        testDevice, BluetoothDevice.TRANSPORT_AUTO));
+        assertFalse(mHidHost.setPreferredTransport(testDevice, BluetoothDevice.TRANSPORT_AUTO));
     }
 
     private boolean waitForProfileConnect() {

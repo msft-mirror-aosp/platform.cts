@@ -335,8 +335,10 @@
         <activity android:name="android.server.wm.animations.LayoutTests$TestActivity"
              android:theme="@style/no_animation"/>
         <activity android:name="android.server.wm.animations.LocationOnScreenTests$TestActivity"
+             android:screenOrientation="locked"
              android:theme="@style/no_starting_window"/>
-        <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"/>
+        <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"
+             android:screenOrientation="locked"/>
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
                   android:screenOrientation="locked"
                   android:theme="@style/no_action_bar"/>
@@ -378,6 +380,10 @@
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
             </intent-filter>
         </activity>
+
+        <activity android:name="android.server.wm.insets.DecorInsetTestsBase$TestActivity"
+                  android:label="DecorInsetTestsBase.TestActivity"
+                  android:exported="true"/>
 
         <activity android:name="android.server.wm.other.DragDropTest$SoftwareCanvasDragDropActivity"
             android:screenOrientation="locked"

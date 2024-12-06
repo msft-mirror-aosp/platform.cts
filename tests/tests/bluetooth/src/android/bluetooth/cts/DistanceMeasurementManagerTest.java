@@ -19,8 +19,12 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
+import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
@@ -45,6 +49,8 @@ import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
+import com.google.common.truth.Correspondence;
+
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -57,6 +63,12 @@ import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementManagerTest {
+    private static final Correspondence<DistanceMeasurementMethod, Integer> METHOD_ID_EQUALS =
+            Correspondence.from(
+                    (DistanceMeasurementMethod method, Integer methodId) ->
+                            method.getMethodId() == methodId,
+                    "is equal to");
+
     private Context mContext;
     private BluetoothAdapter mAdapter;
     private BluetoothDevice mDevice;
@@ -64,18 +76,17 @@ public class DistanceMeasurementManagerTest {
 
     private DistanceMeasurementSession.Callback mTestcallback =
             new DistanceMeasurementSession.Callback() {
-        public void onStarted(DistanceMeasurementSession session) {}
+                public void onStarted(DistanceMeasurementSession session) {}
 
-        public void onStartFail(int reason) {}
+                public void onStartFail(int reason) {}
 
-        public void onStopped(DistanceMeasurementSession session, int reason) {}
+                public void onStopped(DistanceMeasurementSession session, int reason) {}
 
-        public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
-    };
+                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
+            };
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -102,21 +113,31 @@ public class DistanceMeasurementManagerTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startMeasurementSession() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDurationSeconds(15)
-                .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
-                .build();
-        CancellationSignal signal = mDistanceMeasurementManager.startMeasurementSession(params,
-                mContext.getMainExecutor(), mTestcallback);
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setDurationSeconds(15)
+                        .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
+                        .build();
+        CancellationSignal signal =
+                mDistanceMeasurementManager.startMeasurementSession(
+                        params, mContext.getMainExecutor(), mTestcallback);
         assertNotNull(signal);
         signal.cancel();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getSupportedMethods() {
         List<DistanceMeasurementMethod> list = mDistanceMeasurementManager.getSupportedMethods();
         assertNotNull(list);
+
+        if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+            assertThat(list)
+                    .comparingElementsUsing(METHOD_ID_EQUALS)
+                    .contains(
+                            DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING);
+        }
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -144,10 +165,17 @@ public class DistanceMeasurementManagerTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getChannelSoundingSupportedSecurityLevels() {
-        Set<Integer> securityLevels =
-                mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
-        assertNotNull(securityLevels);
-        // TODO(b/378926246): check the CS availability.
-        // assertTrue(securityLevels.size() > 0);
+        if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+            Set<Integer> securityLevels =
+                    mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+            assertNotNull(securityLevels);
+            assertTrue(securityLevels.size() > 0);
+        } else {
+            assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> {
+                        mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+                    });
+        }
     }
 }

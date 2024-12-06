@@ -25,9 +25,8 @@ import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.JoinSpec;
 import android.app.appsearch.PropertyPath;
 import android.app.appsearch.SearchSpec;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 
@@ -37,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,8 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SearchSpecCtsTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     @Test
     public void testBuildSearchSpecWithoutTermMatch() {
@@ -1043,8 +1042,8 @@ public class SearchSpecCtsTest {
 
     @Test
     @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_ADDITIONAL_BUILDER_COPY_CONSTRUCTORS,
-            Flags.FLAG_ENABLE_SCORABLE_PROPERTY
+        Flags.FLAG_ENABLE_ADDITIONAL_BUILDER_COPY_CONSTRUCTORS,
+        Flags.FLAG_ENABLE_SCORABLE_PROPERTY
     })
     public void testSearchSpecBuilder_copyConstructorWithScorableProperty() {
         List<String> expectedPropertyPaths1 = ImmutableList.of("path1", "path2");

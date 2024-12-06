@@ -15,11 +15,13 @@
  */
 package com.android.cts.appsearch.helper;
 
+import static android.app.appsearch.testutil.AppSearchTestUtils.calculateDigest;
 import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResultSuccess;
 import static android.app.appsearch.testutil.AppSearchTestUtils.convertSearchResultsToDocuments;
 
 import android.app.Service;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
@@ -29,11 +31,13 @@ import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
+import android.app.appsearch.OpenBlobForWriteResponse;
 import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
+import android.app.appsearch.SetBlobVisibilityRequest;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.app.appsearch.testutil.AppSearchSessionShimImpl;
@@ -41,11 +45,15 @@ import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.util.ArraySet;
 import android.util.Log;
 
 import com.android.cts.appsearch.ICommandReceiver;
 
+import com.google.common.collect.ImmutableSet;
+
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -252,6 +260,154 @@ public class AppSearchTestService extends Service {
                 return true;
             } catch (Exception e) {
                 Log.e(TAG, "Failed to index globally searchable document.", e);
+            }
+            return false;
+        }
+
+        /**
+         * Write a blob and set it is visible to the given visibility configs.
+         *
+         * @param packageName        The name of opackage to store the blob.
+         * @param databaseName       The name of database to store the blob.
+         * @param namespace          The namespace of the blob
+         * @param data               The actual blob data
+         * @param packageBundles     The VisibleToPackage settings in VisibleToConfig
+         * @param permissionBundles  The VisibleToPermission settings in VisibleToConfig
+         * @param publicAclPackage   The target public acl settings in VisibleToConfig
+         * @return whether this operation is successful.
+         */
+        @Override
+        public boolean writeGloballySearchableBlobVisibleToConfig(String packageName,
+                String databaseName, String namespace, byte[] data, List<Bundle> packageBundles,
+                List<Bundle> permissionBundles, Bundle publicAclPackage) {
+            try {
+                AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                                AppSearchTestService.this,
+                                new AppSearchManager.SearchContext.Builder(databaseName).build(),
+                                Executors.newCachedThreadPool())
+                        .get();
+
+                SchemaVisibilityConfig.Builder configBuilder = new SchemaVisibilityConfig.Builder();
+                for (int i = 0; i < packageBundles.size(); i++) {
+                    configBuilder.addAllowedPackage(
+                            new PackageIdentifier(
+                                    packageBundles.get(i).getString("packageName"),
+                                    packageBundles.get(i).getByteArray("sha256Cert")));
+                }
+                for (int i = 0; i < permissionBundles.size(); i++) {
+                    configBuilder.addRequiredPermissions(
+                            new ArraySet<>(permissionBundles.get(i)
+                                    .getIntegerArrayList("permission")));
+                }
+                if (publicAclPackage != null) {
+                    configBuilder.setPubliclyVisibleTargetPackage(
+                            new PackageIdentifier(
+                                    publicAclPackage.getString("packageName"),
+                                    publicAclPackage.getByteArray("sha256Cert")));
+                }
+                db.setBlobVisibilityAsync(new SetBlobVisibilityRequest.Builder()
+                        .addNamespaceVisibleToConfig(namespace, configBuilder.build())
+                        .build()).get();
+
+                byte[] digest = calculateDigest(data);
+                AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                        digest, packageName, databaseName, namespace);
+
+                try (OpenBlobForWriteResponse writeResponse =
+                             db.openBlobForWriteAsync(ImmutableSet.of(handle)).get()) {
+                    AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> writeResult =
+                            writeResponse.getResult();
+
+                    ParcelFileDescriptor writePfd = writeResult.getSuccesses().get(handle);
+                    try (OutputStream outputStream =
+                                 new ParcelFileDescriptor.AutoCloseOutputStream(writePfd)) {
+                        outputStream.write(data);
+                        outputStream.flush();
+                    }
+                }
+                return db.commitBlobAsync(ImmutableSet.of(handle)).get().getResult()
+                        .isSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to write globally not searchable blob.", e);
+            }
+            return false;
+        }
+
+
+        /**
+         * Write a blob and set it is not visible to anything.
+         *
+         * @param packageName        The name of opackage to store the blob.
+         * @param databaseName       The name of database to store the blob.
+         * @param namespace          The namespace of the blob
+         * @param data               The actual blob data
+         * @return whether this operation is successful.
+         */
+        @Override
+        public boolean writeGloballyNotSearchableBlob(String packageName, String databaseName,
+                                                      String namespace, byte[] data) {
+            try {
+                AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                                AppSearchTestService.this,
+                                new AppSearchManager.SearchContext.Builder(databaseName).build(),
+                                Executors.newCachedThreadPool())
+                        .get();
+
+                // Set the blob is not visible to blobal reader
+                db.setBlobVisibilityAsync(new SetBlobVisibilityRequest.Builder()
+                        .setNamespaceDisplayedBySystem(namespace, /* displayed= */ false)
+                        .build()).get();
+
+                byte[] digest = calculateDigest(data);
+                AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                        digest, packageName, databaseName, namespace);
+
+                try (OpenBlobForWriteResponse writeResponse =
+                             db.openBlobForWriteAsync(ImmutableSet.of(handle)).get()) {
+                    AppSearchBatchResult<AppSearchBlobHandle, ParcelFileDescriptor> writeResult =
+                            writeResponse.getResult();
+
+                    ParcelFileDescriptor writePfd = writeResult.getSuccesses().get(handle);
+                    try (OutputStream outputStream =
+                                 new ParcelFileDescriptor.AutoCloseOutputStream(writePfd)) {
+                        outputStream.write(data);
+                        outputStream.flush();
+                    }
+                }
+                return db.commitBlobAsync(ImmutableSet.of(handle)).get().getResult()
+                        .isSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to write globally searchable blob.", e);
+            }
+            return false;
+        }
+
+        /**
+         * Remove a blob from database.
+         *
+         * @param packageName        The name of opackage to store the blob.
+         * @param databaseName       The name of database to store the blob.
+         * @param namespace          The namespace of the blob
+         * @param data               The actual blob data
+         * @return whether this operation is successful.
+         */
+        @Override
+        public boolean removeBlob(String packageName, String databaseName, String namespace,
+                                  byte[] data) {
+            try {
+                AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                                AppSearchTestService.this,
+                                new AppSearchManager.SearchContext.Builder(databaseName).build(),
+                                Executors.newCachedThreadPool())
+                        .get();
+
+                byte[] digest = calculateDigest(data);
+                AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
+                        digest, packageName, databaseName, namespace);
+
+                return db.removeBlobAsync(ImmutableSet.of(handle)).get().getResult().isSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to remove blob.", e);
             }
             return false;
         }

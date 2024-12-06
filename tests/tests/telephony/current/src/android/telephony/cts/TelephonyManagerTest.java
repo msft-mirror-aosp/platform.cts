@@ -189,6 +189,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -324,6 +325,7 @@ public class TelephonyManagerTest {
             + "\nx2vNRWONSm2UGwdb00tLsTloxeqCOMpbkBiqi/RhOlIKIOWMPojukA5+xryh2FVs"
             + "\n7bdw"
             + "\n-----END CERTIFICATE-----";
+    private static final Pattern HEXADECIMAL_PATTERN = Pattern.compile("\\p{XDigit}+");
 
     private static final int RADIO_HAL_VERSION_1_5 = makeRadioVersion(1, 5);
     private static final int RADIO_HAL_VERSION_1_6 = makeRadioVersion(1, 6);
@@ -7486,5 +7488,35 @@ public class TelephonyManagerTest {
                         (tm) -> tm.getCarrierIdFromCarrierIdentifier(carrier));
         assertTrue(carrierId == TelephonyManager.UNKNOWN_CARRIER_ID);
 
+    }
+
+    /**
+     * Tests that getGroupIdLevel2 methods return null or hexadecimal
+     */
+    @Test
+    public void testGetGroupIdLevel2() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+
+        // The API requires READ_PRIVILEGED_PHONE_STATE privilege
+        try {
+            mTelephonyManager.getGroupIdLevel2();
+            fail("Telephony#getGroupIdLevel2 should throw SecurityException without"
+                    + " READ_PRIVILEGED_PHONE_STATE");
+        } catch (SecurityException expected) {
+        }
+
+        // With READ_PRIVILEGED_PHONE_STATE, it should work
+        String groupIdLevel2 =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                        (tm) -> tm.getGroupIdLevel2());
+        assertTrue((groupIdLevel2 == null || isHexadecimal(groupIdLevel2)));
+    }
+
+    private boolean isHexadecimal(String input) {
+        if (input == null) {
+            return false;
+        }
+        final Matcher matcher = HEXADECIMAL_PATTERN.matcher(input);
+        return matcher.matches();
     }
 }

@@ -22,11 +22,15 @@ import static android.security.advancedprotection.AdvancedProtectionManager.FEAT
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -37,6 +41,9 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_CELLULAR_2G)
@@ -53,6 +60,79 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
         mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
     }
 
+    private static boolean isEmbeddedSubscriptionVisible(SubscriptionInfo subInfo) {
+        if (subInfo.isEmbedded()
+                && (subInfo.getProfileClass() == SubscriptionManager.PROFILE_CLASS_PROVISIONING
+                        || (com.android.internal.telephony.flags.Flags.oemEnabledSatelliteFlag()
+                                && subInfo.isOnlyNonTerrestrialNetwork()))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private List<TelephonyManager> getTelephonyManagers() {
+        SubscriptionManager subscriptionManager =
+                mInstrumentation.getContext().getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> subscriptions =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        subscriptionManager,
+                        (sm) -> sm.getActiveSubscriptionInfoList(),
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+        List<TelephonyManager> managers = new ArrayList<>();
+        for (SubscriptionInfo info : subscriptions) {
+            if (isEmbeddedSubscriptionVisible(info)) {
+                managers.add(
+                        mInstrumentation
+                                .getContext()
+                                .getSystemService(TelephonyManager.class)
+                                .createForSubscriptionId(info.getSubscriptionId()));
+            }
+        }
+
+        return managers;
+    }
+
+    private boolean isAvailable() {
+        for (TelephonyManager telephonyManager : getTelephonyManagers()) {
+            boolean hasCellular =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            telephonyManager,
+                            (tm) ->
+                                    tm.isRadioInterfaceCapabilitySupported(
+                                        tm.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK)
+                                    && tm.isDataCapable(),
+                            Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+            if (hasCellular) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void setAdvancedProtectionModeEnabled(boolean enabled) {
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mManager,
+                (m) -> m.setAdvancedProtectionEnabled(enabled),
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
+    }
+
+    private long getNumFeatures() {
+        return ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mManager,
+                (m) ->
+                        m.getAdvancedProtectionFeatures().stream()
+                                .filter(
+                                        feature ->
+                                                feature.getId()
+                                                        .equals(FEATURE_ID_DISALLOW_CELLULAR_2G))
+                                .count(),
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
+    }
+
     @ApiTest(
             apis = {
                 "android.security.advancedprotection.AdvancedProtectionManager"
@@ -61,13 +141,28 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                         + "#FEATURE_ID_DISALLOW_CELLULAR_2G"
             })
     @Test
-    public void testGetFeatures() {
+    public void testGetFeatures_cellularAvailable() {
+        assumeTrue(isAvailable());
+
         assertEquals(
-                "The Disallow Ceullar 2G feature is not in the feature list",
-                1,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(feature -> feature.getId().equals(FEATURE_ID_DISALLOW_CELLULAR_2G))
-                        .count());
+                "The Disallow Cellular 2G feature is not in the feature list", 1, getNumFeatures());
+    }
+
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#getAdvancedProtectionFeatures",
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#FEATURE_ID_DISALLOW_CELLULAR_2G"
+            })
+    @Test
+    public void testGetFeatures_cellularUnavailable() {
+        assumeFalse(isAvailable());
+
+        assertEquals(
+                "The Disallow Cellular 2G feature should not be in the feature list",
+                0,
+                getNumFeatures());
     }
 
     @ApiTest(
@@ -77,7 +172,10 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
             })
     @Test
     public void testEnableProtection() throws InterruptedException {
-        mManager.setAdvancedProtectionEnabled(true);
+        assumeTrue(isAvailable());
+
+        setAdvancedProtectionModeEnabled(true);
+
         Thread.sleep(TIMEOUT_S * 1000);
         assertTrue(
                 "The DISALLOW_CELLULAR_2G restriction is not set",
@@ -91,7 +189,10 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
             })
     @Test
     public void testDisableProtection() throws InterruptedException {
-        mManager.setAdvancedProtectionEnabled(false);
+        assumeTrue(isAvailable());
+
+        setAdvancedProtectionModeEnabled(false);
+
         Thread.sleep(TIMEOUT_S * 1000);
         assertFalse(
                 "The DISALLOW_CELLULAR_2G restriction is set",
@@ -105,23 +206,26 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
             })
     @Test
     public void testStateAfterToggle() throws InterruptedException {
-        mManager.setAdvancedProtectionEnabled(true);
+        assumeTrue(isAvailable());
+
+        setAdvancedProtectionModeEnabled(true);
         Thread.sleep(TIMEOUT_S * 1000);
-        mManager.setAdvancedProtectionEnabled(false);
+        setAdvancedProtectionModeEnabled(false);
         Thread.sleep(TIMEOUT_S * 1000);
 
-        TelephonyManager telephonyManager =
-                mInstrumentation.getContext().getSystemService(TelephonyManager.class);
-        long allowedTypes =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        telephonyManager,
-                        (tm) ->
-                                tm.getAllowedNetworkTypesForReason(
-                                        TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
-                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        for (TelephonyManager telephonyManager : getTelephonyManagers()) {
+            long allowedTypes =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            telephonyManager,
+                            (tm) ->
+                                    tm.getAllowedNetworkTypesForReason(
+                                            TelephonyManager
+                                                    .ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
+                            Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
 
-        assertTrue(
-                "2G networking is still enabled after advanced protection is disabled",
-                (allowedTypes & TelephonyManager.NETWORK_CLASS_BITMASK_2G) == 0);
+            assertTrue(
+                    "2G networking is still enabled after advanced protection is disabled",
+                    (allowedTypes & TelephonyManager.NETWORK_CLASS_BITMASK_2G) == 0);
+        }
     }
 }

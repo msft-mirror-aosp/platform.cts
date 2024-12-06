@@ -743,6 +743,27 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_SYSTEM_APIS)
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChangedWithNull() {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged("
+                        + selectedSubId + ")");
+
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        null, callback));
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), null));
+
+        revokeSatellitePermission();
+    }
+
+    @Test
     public void testRequestSatelliteAttachEnabledForCarrier() throws Exception {
         if (!shouldTestSatellite()) return;
 
@@ -998,6 +1019,32 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(CharSequence result) {
+                        displayNameForSubscription.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSatelliteDisplayName(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testProvisionSatellite() {
         if (!shouldTestSatellite()) return;
 
@@ -1083,5 +1130,30 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
             logd(ex.toString());
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_SYSTEM_APIS)
+    public void testRegisterForSatelliteDisallowedReasonsChangedWithNull() {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+
+        SatelliteDisallowedReasonsCallback callback = new SatelliteDisallowedReasonsCallback() {
+            @Override
+            public void onSatelliteDisallowedReasonsChanged(
+                    int[] disallowedReasons) {
+                logd("onNtnSignalStrengthChanged(" + Arrays.toString(disallowedReasons) + ")");
+            }
+        };
+
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        null, callback));
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        getContext().getMainExecutor(), null));
+
+        revokeSatellitePermission();
     }
 }

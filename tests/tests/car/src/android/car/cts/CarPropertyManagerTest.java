@@ -42,6 +42,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureD
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -53,7 +54,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.car.Car;
-import android.car.EvConnectorType;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
 import android.car.PortLocationType;
@@ -66,6 +66,7 @@ import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
 import android.car.cts.property.CarSvcPropsParser;
 import android.car.cts.utils.VehiclePropertyVerifier;
+import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
@@ -86,6 +87,7 @@ import android.car.hardware.property.ElectronicStabilityControlState;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.EvChargeState;
+import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.EvRegenerativeBrakingState;
 import android.car.hardware.property.EvStoppingMode;
 import android.car.hardware.property.ForwardCollisionWarningState;
@@ -778,6 +780,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.PERF_STEERING_ANGLE,
                             VehiclePropertyIds.PERF_REAR_STEERING_ANGLE)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.PERF_STEERING_ANGLE).build();
     private static final ImmutableList<Integer> PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -1035,6 +1039,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_MEASURED_DISTANCE)
+                    .build();
+    private static final ImmutableList<Integer>
+            PERMISSION_READ_EXTERIOR_LIGHTS_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
+                            VehiclePropertyIds.TURN_SIGNAL_SWITCH)
                     .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
@@ -1340,6 +1351,50 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     /**
+     * If the feature flag: FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled, the B properties must
+     * not be supported.
+     */
+    @RequiresFlagsDisabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    @Test
+    @ApiTest(
+            apis = {
+                    "android.car.hardware.property.CarPropertyManager#getPropertyList",
+                    "android.car.hardware.property.CarPropertyManager#getCarPropertyConfig",
+            })
+    public void testBPropertiesMustNotBeSupportedIfFlagDisabled() {
+        CarSvcPropsParser parser = new CarSvcPropsParser();
+        List<Integer> bSystemPropertyIds = parser.getSystemPropertyIdsForFlag(
+                "FLAG_ANDROID_B_VEHICLE_PROPERTIES");
+
+        List<CarPropertyConfig> configs = new ArrayList<>();
+        // Use shell permission identity to get as many property configs as possible.
+        runWithShellPermissionIdentity(() -> {
+            configs.addAll(mCarPropertyManager.getPropertyList());
+        });
+
+        for (int i = 0; i < configs.size(); i++) {
+            int propertyId = configs.get(i).getPropertyId();
+            if (!isSystemProperty(propertyId)) {
+                continue;
+            }
+
+            String propertyName = VehiclePropertyIds.toString(propertyId);
+            expectWithMessage("Property: " + propertyName + " must not be supported if "
+                    + "FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled").that(propertyId)
+                    .isNotIn(bSystemPropertyIds);
+        }
+
+        runWithShellPermissionIdentity(() -> {
+            for (int propertyId : bSystemPropertyIds) {
+                String propertyName = VehiclePropertyIds.toString(propertyId);
+                expectWithMessage("getCarPropertyConfig for: " + propertyName
+                        + " when FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled must return null")
+                        .that(mCarPropertyManager.getCarPropertyConfig(propertyId)).isNull();
+            }
+        });
+    }
+
+    /**
      * Test that all supported system property IDs are defined.
      */
     @Test
@@ -1365,7 +1420,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
             String propertyName = VehiclePropertyIds.toString(propertyId);
             expectWithMessage("Property: " + propertyName + " is not a defined system property")
-                    .that(propertyId).isIn(allSystemPropertyIds);
+                    .that(propertyId)
+                    .isIn(allSystemPropertyIds);
         }
     }
 
@@ -1766,6 +1822,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
                 new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
 
@@ -1773,15 +1837,26 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testIndividualProperty(
             @TestParameter(valuesProvider = AllVerifierBuildersProvider.class)
-            VerifierInfo verifierInfo,
+                    VerifierInfo verifierInfo,
             @TestParameter(valuesProvider = AllStepsProvider.class) String step) {
         // Check preconditions.
         var flag = verifierInfo.mFlag;
         if (flag != null) {
-            if (flag.equals(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)) {
-                assumeTrue("Flag: " + flag + " is disabled ", Flags.androidVicVehicleProperties());
-            } else {
-                throw new IllegalStateException("Unknown flag: " + flag);
+            switch (flag) {
+                case Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES:
+                    assumeTrue(
+                            "Flag: " + flag + " is disabled ", Flags.androidVicVehicleProperties());
+                    break;
+                case Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS:
+                    // Do nothing as property should be supported when this flag is enabled and when
+                    // it is disabled.
+                    break;
+                case Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES:
+                    assumeTrue("Flag: " + flag + " is disabled ",
+                            Flags.androidBVehicleProperties());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown flag: " + flag);
             }
         }
         if (verifierInfo.mAssumeStandardCC != null) {
@@ -2657,19 +2732,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isIn(
                                                 ImmutableSet.builder()
                                                         .add(
-                                                                EvConnectorType.UNKNOWN,
-                                                                EvConnectorType.J1772,
-                                                                EvConnectorType.MENNEKES,
-                                                                EvConnectorType.CHADEMO,
-                                                                EvConnectorType.COMBO_1,
-                                                                EvConnectorType.COMBO_2,
-                                                                EvConnectorType.TESLA_ROADSTER,
-                                                                EvConnectorType.TESLA_HPWC,
-                                                                EvConnectorType.TESLA_SUPERCHARGER,
-                                                                EvConnectorType.GBT,
-                                                                EvConnectorType.GBT_DC,
-                                                                EvConnectorType.SCAME,
-                                                                EvConnectorType.OTHER)
+                                                                EvChargingConnectorType.UNKNOWN,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_3_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_4_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_ROADSTER,
+                                                                EvChargingConnectorType.TESLA_HPWC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_SUPERCHARGER,
+                                                                EvChargingConnectorType.GBT_AC,
+                                                                EvChargingConnectorType.GBT_DC,
+                                                                EvChargingConnectorType.OTHER)
                                                         .build());
                             }
                         })
@@ -4103,16 +4186,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 EvRegenerativeBrakingState.STATE_PARTIALLY_ENABLED,
                                 EvRegenerativeBrakingState.STATE_FULLY_ENABLED))
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.PERF_STEERING_ANGLE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
@@ -7013,7 +7086,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionCarInfoGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_INFO_PROPERTIES,
+                Flags.androidBVehicleProperties() ?
+                        ImmutableList.<Integer>builder().addAll(PERMISSION_CAR_INFO_PROPERTIES).add(
+                                VehiclePropertyIds.INFO_MODEL_TRIM).add(
+                                VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS).build()
+                        : PERMISSION_CAR_INFO_PROPERTIES,
                 Car.PERMISSION_CAR_INFO);
     }
 
@@ -7113,9 +7190,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testPermissionReadSteeringStateGranted() {
+        if (Flags.vehicleProperty25q23pPermissions()) {
+            verifyExpectedPropertiesWhenPermissionsGranted(
+                    PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
+                    Car.PERMISSION_READ_STEERING_STATE_3P);
+        }
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_READ_STEERING_STATE_PROPERTIES,
-                Car.PERMISSION_READ_STEERING_STATE);
+                PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
     }
 
     @Test
@@ -7213,7 +7294,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
+                Flags.androidBVehicleProperties() ? ImmutableList.<Integer>builder().addAll(
+                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES).add(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH).add(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE).build() :
+                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
                 Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 
@@ -7384,6 +7469,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_ACCESS_FINE_LOCATION_PROPERTIES,
                 ACCESS_FINE_LOCATION);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testPermissionReadExteriorLightsGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_EXTERIOR_LIGHTS_PROPERTIES,
+                Car.PERMISSION_READ_EXTERIOR_LIGHTS);
     }
 
     @Test

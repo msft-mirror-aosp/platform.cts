@@ -16,8 +16,11 @@
 
 package android.app.appsearch;
 
+import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.SuppressLint;
+
+import com.android.appsearch.flags.Flags;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -107,6 +110,162 @@ public interface AppSearchSessionShim extends Closeable {
     @NonNull
     ListenableFuture<AppSearchBatchResult<String, GenericDocument>> getByDocumentIdAsync(
             @NonNull GetByDocumentIdRequest request);
+
+    /**
+     * Opens a batch of AppSearch Blobs for writing.
+     *
+     * <p>A "blob" is a large binary object. It is used to store a significant amount of data that
+     * is not searchable, such as images, videos, audio files, or other binary data. Unlike other
+     * fields in AppSearch, blobs are stored as blob files on disk rather than in memory, and use
+     * {@link android.os.ParcelFileDescriptor} to read and write. This allows for efficient handling
+     * of large, non-searchable content.
+     *
+     * <p>Once done writing, call {@link #commitBlob} to commit blob files.
+     *
+     * <p>This call will create a empty blob file for each given {@link AppSearchBlobHandle}, and a
+     * {@link android.os.ParcelFileDescriptor} of that blob file will be returned in the {@link
+     * OpenBlobForWriteResponse}.
+     *
+     * <p>If the blob file is already stored in AppSearch and committed. A failed {@link
+     * AppSearchResult} with error code {@link AppSearchResult#RESULT_ALREADY_EXISTS} will be
+     * associated with the {@link AppSearchBlobHandle}.
+     *
+     * <p>If the blob file is already stored in AppSearch but not committed. A {@link
+     * android.os.ParcelFileDescriptor} of that blob file will be returned for continue writing.
+     *
+     * <p>For given duplicate {@link AppSearchBlobHandle}, the same {@link
+     * android.os.ParcelFileDescriptor} pointing to the same blob file will be returned.
+     *
+     * <p>Pending blob files won't be lost or auto-commit if {@link AppSearchSessionShim} closed.
+     * Pending blob files will be stored in disk rather than memory. You can re-open {@link
+     * AppSearchSessionShim} and re-write the pending blob files.
+     *
+     * <p>A committed blob file will be considered as an orphan if no {@link GenericDocument}
+     * references it. Uncommitted pending blob files and orphan blobs files will be cleaned up if
+     * they has been created for an extended period (default is 1 week).
+     *
+     * <p>Both pending blob files and committed blob files can be manually removed via {@link
+     * #removeBlob}.
+     *
+     * <p class="caution">The returned {@link OpenBlobForWriteResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the writeable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    default ListenableFuture<OpenBlobForWriteResponse> openBlobForWriteAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
+
+    /**
+     * Removes the blob data from AppSearch.
+     *
+     * <p>After this call, the blob data is removed immediately and cannot be recovered. It will not
+     * accessible via {@link #openBlobForRead}. {@link #openBlobForWrite} could reopen and rewrite
+     * it.
+     *
+     * <p>This API can be used to remove pending blob data and committed blob data.
+     *
+     * <p class="caution">Removing a committed blob data that is still referenced by documents will
+     * leave those documents with no readable blob content. It is highly recommended to let
+     * AppSearch control the blob data's life cycle. AppSearch automatically recycles orphaned and
+     * pending blob data. The default time to recycle pending and orphan blob file is 1 week. A blob
+     * file will be considered as an orphan if no {@link GenericDocument} references it. If you want
+     * to remove a committed blob data, you should remove the reference documents first.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blob data.
+     * @return a response containing the remove results.
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    default ListenableFuture<RemoveBlobResponse> removeBlobAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
+
+    /**
+     * Commits the blobs to make it retrievable and immutable.
+     *
+     * <p>After this call, the blob is readable via {@link #openBlobForRead}. Any change to the
+     * content or rewrite via {@link #openBlobForWrite} of this blob won't be allowed.
+     *
+     * <p>If the blob is already stored in AppSearch and committed. A failed {@link AppSearchResult}
+     * with error code {@link AppSearchResult#RESULT_ALREADY_EXISTS} will be associated with the
+     * {@link AppSearchBlobHandle}.
+     *
+     * <p>If the blob content doesn't match the digest in {@link AppSearchBlobHandle}, a failed
+     * {@link AppSearchResult} with error code {@link AppSearchResult#RESULT_INVALID_ARGUMENT} will
+     * be associated with the {@link AppSearchBlobHandle}. The pending Blob file will be removed
+     * from AppSearch.
+     *
+     * <p>Pending blobs won't be lost or auto-commit if {@link AppSearchSessionShim} closed. Pending
+     * blobs will store in disk rather than memory. You can re-open {@link AppSearchSessionShim} and
+     * re-write the pending blobs.
+     *
+     * <p>The default time to recycle pending and orphan blobs is 1 week. A blob will be considered
+     * as an orphan if no {@link GenericDocument} references it.
+     *
+     * <p>Both pending blob files and committed blob files can be manually removed via {@link
+     * #removeBlob}.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the commit results.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    default ListenableFuture<CommitBlobResponse> commitBlobAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
+
+    /**
+     * Opens a batch of AppSearch Blobs for reading.
+     *
+     * <p>Only blobs committed via {@link #commitBlob} are available for reading.
+     *
+     * <p class="caution">The returned {@link OpenBlobForReadResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the readable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    default ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
+
+    /**
+     * Sets the visibility configuration for all blob namespaces within an appsearch database.
+     *
+     * <p>Blobs under the same namespace will share same visibility settings.
+     *
+     * <p>The default setting is blobs will be only visible to the owner package and System. To
+     * configure other kinds of sharing, set {@link SchemaVisibilityConfig} via {@link
+     * SetBlobVisibilityRequest}.
+     *
+     * @param request The request holds visibility settings for all blob namespaces
+     * @return The pending result of performing this operation which resolves to {@code null} on
+     *     success.
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    @NonNull
+    default ListenableFuture<Void> setBlobVisibilityAsync(
+            @NonNull SetBlobVisibilityRequest request) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
 
     /**
      * Retrieves documents from the open {@link AppSearchSessionShim} that match a given query

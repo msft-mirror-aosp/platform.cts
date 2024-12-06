@@ -20,13 +20,11 @@ import android.annotation.NonNull;
 import android.app.appsearch.Features;
 
 /**
- * An implementation of {@link Features}. This implementation always returns true. This is
- * sufficient for the use in the local backend because all features are always available on the
- * local backend.
+ * An implementation of {@link Features} available on the local backend.
  *
  * @hide
  */
-public class AlwaysSupportedFeatures implements Features {
+public class FeaturesImpl implements Features {
 
     @Override
     public boolean isFeatureSupported(@NonNull String feature) {
@@ -92,7 +90,17 @@ public class AlwaysSupportedFeatures implements Features {
             case Features.SEARCH_SPEC_ADD_FILTER_DOCUMENT_IDS:
                 // fall through
             case Features.SCHEMA_SCORABLE_PROPERTY_CONFIG:
+                // fall through
+            case Features.SEARCH_RESULT_PARENT_TYPES:
+                // fall through
+            case Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM:
                 return true;
+            case Features.INDEXER_MOBILE_APPLICATIONS:
+                // The Apps Indexer is only available on platform storage and some versions of
+                // GMSCore AppSearch. It can't be ran by local storage because local storage
+                // does not have a service component or any background jobs. It would also
+                // duplicate documents already indexed and available in PlatformStorage.
+                return false;
             default:
                 return false;
         }

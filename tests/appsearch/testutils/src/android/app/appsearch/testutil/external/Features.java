@@ -270,6 +270,41 @@ public interface Features {
     String BLOB_STORAGE = "BLOB_STORAGE";
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature indicates whether or not the
+     * MobileApplication corpus is being indexed.
+     *
+     * <p>This corpus contains documents representing applications installed on the device, and each
+     * document includes an icon uri, a package id, a display name, and nicknames of the app. This
+     * corpus may be queried by applications interested in querying for and launching applications,
+     * such as a search app. {@link android.app.appsearch.builtintypes.MobileApplication} can be
+     * used to parse documents returned from this corpus.
+     *
+     * <p>This corpus can be queried with a {@link GlobalSearchSession}, by filtering on the
+     * "android" package and the "apps" namespace, for example: <code>
+     * globalSession.query("",
+     * new SearchSpec.Builder().addFilterPackageNames("android").addFilterNamespace("apps").build())
+     * </code>
+     *
+     * @see android.app.appsearch.builtintypes.MobileApplication
+     */
+    String INDEXER_MOBILE_APPLICATIONS = "INDEXER_MOBILE_APPLICATIONS";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether to wrap the
+     * parent types of a document in the corresponding {@link android.app.appsearch.SearchResult},
+     * instead of in {@link android.app.appsearch.GenericDocument}.
+     */
+    String SEARCH_RESULT_PARENT_TYPES = "SEARCH_RESULT_PARENT_TYPES";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.StringPropertyConfig#DELETE_PROPAGATION_TYPE_PROPAGATE_FROM} and {@link
+     * AppSearchSchema.StringPropertyConfig.Builder#setDeletePropagationType}.
+     */
+    String SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM =
+            "SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM";
+
+    /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in
      * question, the AppSearch backend being used and the Android version of the device.
      *

@@ -17,6 +17,7 @@
 package android.cts.statsdatom.powermanager;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.extensions.proto.ProtoTruth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -26,7 +27,8 @@ import android.os.WakeLockLevelEnum;
 
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.os.AtomsProto;
-import com.android.os.StatsLog;
+import com.android.os.AtomsProto.WakelockStateChanged;
+import com.android.os.AttributionNode;
 import com.android.os.adpf.AdpfExtensionAtoms;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
@@ -43,6 +45,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,6 +87,14 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         mCtsBuild = buildInfo;
     }
 
+    private static <T> List<T> listOf(T... values) {
+        return Collections.unmodifiableList(Arrays.asList(values));
+    }
+
+    private WakelockStateChanged buildForUid(WakelockStateChanged.Builder builder, int uid) {
+        return builder.clone().addAttributionNode(AttributionNode.newBuilder().setUid(uid)).build();
+    }
+
     @Test
     public void testAcquireModifyAndReleasedWakelockIsPushed() throws Exception {
         int atomId = AtomsProto.Atom.WAKELOCK_STATE_CHANGED_FIELD_NUMBER;
@@ -101,63 +113,46 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         assertThat(status).isEqualTo(TestStatus.PASSED);
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         AdpfExtensionAtoms.registerAllExtensions(registry);
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
-                        registry).stream()
-                .filter(eventMetricData -> eventMetricData.getAtom().getWakelockStateChanged()
-                        .getTag().equals("TestWakelockForCts")).toList();
-        assertThat(data.size()).isEqualTo(8);
+        List<WakelockStateChanged> wList =
+                ReportUtils.getEventMetricDataList(getDevice(), registry)
+                        .stream()
+                        .map(eventMetricData -> eventMetricData.getAtom().getWakelockStateChanged())
+                        .filter(wakelockStateChanged
+                                -> wakelockStateChanged.getTag().equals("TestWakelockForCts"))
+                        .toList();
+        assertThat(wList.size()).isEqualTo(8);
 
-        validateWakelockAtomFields(data.get(0).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.ACQUIRE);
+        // The UID of the process acquiring the wakelock varies so read it here.
+        int testProcessUid = wList.get(0).getAttributionNode(0).getUid();
 
-        // Validate the uid which acquired the wakelock is released because of worksource
-        int acquirerUid =
-                data.get(0).getAtom().getWakelockStateChanged().getAttributionNode(0).getUid();
-        validateWakelockAtomFields(acquirerUid, data.get(1).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.RELEASE);
+        WakelockStateChanged.Builder baseBuilder = WakelockStateChanged.newBuilder()
+                                                   .setTag("TestWakelockForCts")
+                                                   .setType(WakeLockLevelEnum.PARTIAL_WAKE_LOCK);
+        WakelockStateChanged.Builder acquireBuilder = baseBuilder.clone()
+                                                      .setState(WakelockStateChanged.State.ACQUIRE);
+        WakelockStateChanged.Builder releaseBuilder = baseBuilder.clone()
+                                                      .setState(WakelockStateChanged.State.RELEASE);
 
-        // Validate the UIDs supplied in the worksource are acquired
-        validateWakelockAtomFields(1010, data.get(2).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.ACQUIRE);
-        validateWakelockAtomFields(2010, data.get(3).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.ACQUIRE);
+        assertThat(wList.get(0))
+                .comparingExpectedFieldsOnly()
+                .isEqualTo(buildForUid(acquireBuilder, testProcessUid));
 
-        // Validate the UIDs supplied in the new worksource are acquired, and the old UIDs are
-        // released
-        validateWakelockAtomFields(3010, data.get(4).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.ACQUIRE);
-        validateWakelockAtomFields(1010, data.get(5).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.RELEASE);
-        validateWakelockAtomFields(2010, data.get(6).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.RELEASE);
+        assertThat(wList.subList(1, 4))
+                .comparingExpectedFieldsOnly()
+                .containsExactlyElementsIn(listOf(
+                        buildForUid(releaseBuilder, testProcessUid),
+                        buildForUid(acquireBuilder, 1010),
+                        buildForUid(acquireBuilder, 2010)));
 
-        // With the release of the wakelock, we release the acquired UIDs
-        validateWakelockAtomFields(3010, data.get(7).getAtom().getWakelockStateChanged(),
-                "TestWakelockForCts", WakeLockLevelEnum.PARTIAL_WAKE_LOCK,
-                AtomsProto.WakelockStateChanged.State.RELEASE);
-    }
+        assertThat(wList.subList(4, 7))
+                .comparingExpectedFieldsOnly()
+                .containsExactlyElementsIn(listOf(
+                        buildForUid(releaseBuilder, 1010),
+                        buildForUid(releaseBuilder, 2010),
+                        buildForUid(acquireBuilder, 3010)));
 
-    private void validateWakelockAtomFields(int uid,
-                                            AtomsProto.WakelockStateChanged wakelockStateChanged,
-                                            String tag, WakeLockLevelEnum wakeLockLevelEnum,
-                                            AtomsProto.WakelockStateChanged.State state) {
-        assertThat(wakelockStateChanged.getAttributionNode(0).getUid()).isEqualTo(uid);
-        validateWakelockAtomFields(wakelockStateChanged, tag, wakeLockLevelEnum, state);
-
-    }
-
-    private void validateWakelockAtomFields(AtomsProto.WakelockStateChanged wakelockStateChanged,
-                                            String tag, WakeLockLevelEnum wakeLockLevelEnum,
-                                            AtomsProto.WakelockStateChanged.State state) {
-        assertThat(wakelockStateChanged.getTag()).isEqualTo(tag);
-        assertThat(wakelockStateChanged.getType()).isEqualTo(wakeLockLevelEnum);
-        assertThat(wakelockStateChanged.getState()).isEqualTo(state);
+        assertThat(wList.get(7))
+                .comparingExpectedFieldsOnly()
+                .isEqualTo(buildForUid(releaseBuilder, 3010));
     }
 }
