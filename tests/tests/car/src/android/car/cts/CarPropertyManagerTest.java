@@ -46,6 +46,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVeri
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getWindshieldWipersStateVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -115,7 +116,6 @@ import android.car.hardware.property.VehicleLightSwitch;
 import android.car.hardware.property.VehicleOilLevel;
 import android.car.hardware.property.VehicleTurnSignal;
 import android.car.hardware.property.VehicleVendorPermission;
-import android.car.hardware.property.WindshieldWipersState;
 import android.car.hardware.property.WindshieldWipersSwitch;
 import android.os.Build;
 import android.os.SystemClock;
@@ -256,14 +256,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehicleOilLevel.LEVEL_NORMAL,
                             VehicleOilLevel.LEVEL_HIGH,
                             VehicleOilLevel.LEVEL_ERROR)
-                    .build();
-    private static final ImmutableSet<Integer> WINDSHIELD_WIPERS_STATES =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            WindshieldWipersState.OTHER,
-                            WindshieldWipersState.OFF,
-                            WindshieldWipersState.ON,
-                            WindshieldWipersState.SERVICE)
                     .build();
     private static final ImmutableSet<Integer> WINDSHIELD_WIPERS_SWITCHES =
             ImmutableSet.<Integer>builder()
@@ -896,6 +888,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.WINDSHIELD_WIPERS_PERIOD,
                             VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
                             VehiclePropertyIds.WINDSHIELD_WIPERS_SWITCH)
+                    .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_WINDSHIELD_WIPERS_3P_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(VehiclePropertyIds.WINDSHIELD_WIPERS_STATE)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_WINDSHIELD_WIPERS_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -3534,18 +3530,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class)
                 .requireMinMaxValues()
                 .requireMinValuesToBeZero()
-                .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer>
-            getWindshieldWipersStateVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
                 .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
     }
 
@@ -7289,15 +7273,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlCarClimateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_CLIMATE_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                PERMISSION_CONTROL_CAR_CLIMATE_PROPERTIES, Car.PERMISSION_CONTROL_CAR_CLIMATE);
     }
 
     @Test
     public void testPermissionControlCarDoorsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_DOORS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_DOORS);
+                PERMISSION_CONTROL_CAR_DOORS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_DOORS);
     }
 
     @Test
@@ -7310,8 +7292,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlCarWindowsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_WINDOWS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_WINDOWS);
+                PERMISSION_CONTROL_CAR_WINDOWS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_WINDOWS);
     }
 
     @Test
@@ -7319,6 +7300,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_WINDSHIELD_WIPERS_PROPERTIES,
                 Car.PERMISSION_READ_WINDSHIELD_WIPERS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadWindshieldWipers3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_WINDSHIELD_WIPERS_3P_PROPERTIES,
+                Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P);
     }
 
     @Test

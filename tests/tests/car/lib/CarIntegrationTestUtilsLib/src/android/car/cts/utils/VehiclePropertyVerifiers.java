@@ -35,6 +35,7 @@ import android.car.hardware.property.LocationCharacterization;
 import android.car.hardware.property.VehicleAutonomousState;
 import android.car.hardware.property.VehicleSizeClass;
 import android.car.hardware.property.VehicleTurnSignal;
+import android.car.hardware.property.WindshieldWipersState;
 import android.util.ArraySet;
 
 import com.google.common.collect.ImmutableList;
@@ -144,6 +145,33 @@ public class VehiclePropertyVerifiers {
                             VehicleSeatOccupancyState.VACANT,
                             VehicleSeatOccupancyState.OCCUPIED)
                     .build();
+
+    private static final ImmutableSet<Integer> WINDSHIELD_WIPERS_STATES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            WindshieldWipersState.OTHER,
+                            WindshieldWipersState.OFF,
+                            WindshieldWipersState.ON,
+                            WindshieldWipersState.SERVICE)
+                    .build();
+
+    /** Gets the verifier builder for {@link VehiclePropertyIds#WINDSHIELD_WIPERS_STATE}. */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getWindshieldWipersStateVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                                Integer.class)
+                        .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
+                        .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P)
+                : verifierBuilder;
+    }
 
     /** Gets the verifier builder for {@link VehiclePropertyIds#PERF_ODOMETER}. */
     public static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
