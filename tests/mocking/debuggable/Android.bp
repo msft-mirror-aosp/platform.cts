@@ -33,3 +33,10 @@ android_test {
     ],
     sdk_version: "current",
 }
+
+test_module_config {
+    name: "CtsMockingDebuggableTestCases_NoLarge",
+    base: "CtsMockingDebuggableTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

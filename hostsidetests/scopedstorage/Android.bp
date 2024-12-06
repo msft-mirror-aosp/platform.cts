@@ -734,3 +734,13 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config_host {
+    name: "CtsAppCloningMediaProviderHostTest_postsubmit-methods",
+    base: "CtsAppCloningMediaProviderHostTest",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.scopedstorage.cts.host.AppCloningMediaProviderHostTest#testInsertCrossUserFilesInDirectoryViaMediaProvider",
+        "android.scopedstorage.cts.host.AppCloningMediaProviderHostTest#testGetFilesInDirectoryViaMediaProvider",
+    ],
+}

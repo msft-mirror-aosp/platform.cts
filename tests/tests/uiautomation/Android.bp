@@ -36,3 +36,13 @@ android_test {
     srcs: ["src/**/*.java"],
     sdk_version: "test_current",
 }
+
+test_module_config {
+    name: "CtsUiAutomationTestCases_shell_permission",
+    base: "CtsUiAutomationTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.app.uiautomation.cts.UiAutomationTest#testAdoptSomeShellPermissions",
+        "android.app.uiautomation.cts.UiAutomationTest#testAdoptAllShellPermissions",
+    ],
+}

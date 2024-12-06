@@ -32,3 +32,10 @@ java_test_host {
         "general-tests",
     ],
 }
+
+test_module_config_host {
+    name: "CtsDumpsysHostTestCases-qualified",
+    base: "CtsDumpsysHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.dumpsys.cts.GfxInfoDumpsysTest#testGfxinfoFramestats"],
+}

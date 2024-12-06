@@ -65,3 +65,18 @@ android_test {
         "mts-media",
     ],
 }
+
+test_module_config {
+    name: "CtsMediaEncoderTestCases_Presubmit_NoDevice",
+    base: "CtsMediaEncoderTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}
+
+test_module_config {
+    name: "MctsMediaEncoderTestCases_Presubmit",
+    base: "MctsMediaEncoderTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}

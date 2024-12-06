@@ -111,3 +111,18 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.media.decoder.cts.DecoderRenderTest"],
 }
+
+test_module_config {
+    name: "CtsMediaDecoderTestCases_Presubmit_NoDevice",
+    base: "CtsMediaDecoderTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}
+
+test_module_config {
+    name: "MctsMediaDecoderTestCases_Presubmit",
+    base: "MctsMediaDecoderTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
