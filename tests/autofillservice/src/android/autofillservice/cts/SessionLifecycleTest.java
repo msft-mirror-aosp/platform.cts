@@ -66,6 +66,7 @@ import com.android.compatibility.common.util.Timeout;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
@@ -287,6 +288,7 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
         }
     }
 
+    @Ignore("b/238252288 : No longer relevant with relayout fixes")
     @Test
     public void testAuthCanceledWhileAutofilledAppIsLifecycled() throws Exception {
         // Set service.
