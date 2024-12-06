@@ -35,6 +35,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import org.junit.Before
@@ -43,6 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 private const val OVERLAY_ACTIVITY_FOCUSED = "android.input.cts.action.OVERLAY_ACTIVITY_FOCUSED"
+private val FOCUS_PROPAGATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10)
 
 private fun getViewCenterOnScreen(v: View): Pair<Float, Float> {
     val location = IntArray(2)
@@ -124,7 +126,10 @@ class IncompleteMotionTest {
 
                     // Now send hasFocus=false event to the app by launching a new focusable window
                     startOverlayActivity()
-                    PollingCheck.waitFor { receiver.overlayActivityIsFocused() }
+                    PollingCheck.waitFor(
+                        FOCUS_PROPAGATION_TIMEOUT_MILLIS,
+                        { receiver.overlayActivityIsFocused() }
+                    )
                     activity.unregisterReceiver(receiver)
                     handlerThread.quit()
                     // We need to ensure that the focus event has been written to the app's socket
@@ -142,7 +147,10 @@ class IncompleteMotionTest {
             }
             sendMoveAndFocus.join()
         }
-        PollingCheck.waitFor { !activity.hasWindowFocus() }
+        PollingCheck.waitFor(
+            FOCUS_PROPAGATION_TIMEOUT_MILLIS,
+            { !activity.hasWindowFocus() }
+        )
         // If the platform implementation has a bug, it would consume both MOVE and FOCUS events,
         // but will only call 'finish' for the focus event.
         // The MOVE event would not be propagated to the app, because the Choreographer
