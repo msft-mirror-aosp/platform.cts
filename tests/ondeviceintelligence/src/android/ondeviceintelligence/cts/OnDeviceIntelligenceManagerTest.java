@@ -1050,7 +1050,7 @@ public class OnDeviceIntelligenceManagerTest {
 
                     @Override
                     public void onDataAugmentRequest(Bundle processedContent,
-                            @OnDeviceIntelligenceManager.InferenceParams Consumer<Bundle> contentConsumer) {
+                            Consumer<Bundle> contentConsumer) {
                         Bundle bundle = new Bundle();
                         bundle.putString(TEST_AUGMENT_KEY, TEST_AUGMENT_CONTENT);
                         contentConsumer.accept(bundle);

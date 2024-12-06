@@ -374,4 +374,7 @@
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
+
+    <!-- b/382231688 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
 </configuration>

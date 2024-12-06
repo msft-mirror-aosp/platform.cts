@@ -16,11 +16,9 @@
 
 package android.bluetooth.cts;
 
-
 import android.bluetooth.UidTraffic;
 import android.os.Parcel;
 import android.test.AndroidTestCase;
-
 
 public class UidTrafficTest extends AndroidTestCase {
 
