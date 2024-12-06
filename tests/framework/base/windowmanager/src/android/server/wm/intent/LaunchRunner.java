@@ -288,14 +288,17 @@ public class LaunchRunner {
 
     public Activity launchFromContext(Context context, Intent intent,
                                       int launchTaskDisplayAreaFeatureId, int launchDisplayId) {
+        assertNotNull(intent.getComponent());
+        String intentComponentName = intent.getComponent().getClassName();
         Instrumentation.ActivityMonitor monitor = getInstrumentation()
-                .addMonitor((String) null, null, false);
+                .addMonitor(intentComponentName, null /* result */, false /* block */);
 
         context.startActivity(intent,
                 getLaunchOptions(launchTaskDisplayAreaFeatureId, launchDisplayId));
         Activity activity = monitor.waitForActivityWithTimeout(ACTIVITY_LAUNCH_TIMEOUT);
         waitAndAssertActivityLaunched(activity, intent, launchDisplayId);
 
+        assertEquals(intentComponentName, activity.getComponentName().getClassName());
         return activity;
     }
 
@@ -306,8 +309,10 @@ public class LaunchRunner {
 
     public Activity launch(Activity activityContext, Intent intent, boolean startForResult,
                            int launchTaskDisplayAreaFeatureId, int launchDisplayId) {
+        assertNotNull(intent.getComponent());
+        String intentComponentName = intent.getComponent().getClassName();
         Instrumentation.ActivityMonitor monitor = getInstrumentation()
-                .addMonitor((String) null, null, false);
+                .addMonitor(intentComponentName, null /* result */, false /* block */);
 
         if (startForResult) {
             activityContext.startActivityForResult(intent, 1,
@@ -329,6 +334,7 @@ public class LaunchRunner {
             waitAndAssertActivityLaunched(activity, intent, launchDisplayId);
         }
 
+        assertEquals(intentComponentName, activity.getComponentName().getClassName());
         return activity;
     }
 
