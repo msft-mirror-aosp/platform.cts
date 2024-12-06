@@ -1811,6 +1811,28 @@ public final class Helper {
     }
 
     /**
+     * Enable fill dialog improvements
+     */
+    public static void enableFillDialogImprovements(@NonNull Context context) {
+        enableFillDialogFeature(context);
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog");
+        setDeviceConfig(deviceConfigStateManager, "true");
+    }
+
+    /**
+     * Disable fill dialog improvements
+     */
+    public static void disableFillDialogImprovements(@NonNull Context context) {
+        disableFillDialogFeature(context);
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog");
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
      * Enable PCC Detection Feature Hints
      */
     public static void enablePccDetectionFeature(@NonNull Context context, String...types) {

@@ -219,6 +219,7 @@ public final class AutoFillServiceTestCase {
             final Intent intent = new Intent(mContext, LoginActivity.class)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
+            mUiBot.waitForIdleSync();
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginActivity.getCurrentActivity();
         }
@@ -351,6 +352,11 @@ public final class AutoFillServiceTestCase {
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS,
                         ""))
+                //
+                // Fill Dialog Improvements should be disabled by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog",
+                        Boolean.toString(false)))
 
                 //
                 // CredentialManager-Autofill integration enabled by default
