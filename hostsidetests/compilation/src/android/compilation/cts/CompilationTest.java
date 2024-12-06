@@ -16,12 +16,17 @@
 
 package android.compilation.cts;
 
+import static android.compilation.cts.Utils.CompilationArtifacts;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.compilation.cts.annotation.CtsTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
@@ -30,9 +35,11 @@ import com.android.tradefed.util.Pair;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -49,6 +56,7 @@ public class CompilationTest extends BaseHostJUnit4Test {
             "android.compilation.cts.statuscheckerapp.StatusCheckerAppTest";
     private static final String TEST_APP_PKG = "android.compilation.cts";
     private static final String TEST_APP_APK_RES = "/CtsCompilationApp.apk";
+    private static final String TEST_APP_PROF_RES = "/CtsCompilationApp.prof";
     private static final String TEST_APP_DM_RES = "/CtsCompilationApp.dm";
     private static final String TEST_APP_WITH_GOOD_PROFILE_RES =
             "/CtsCompilationApp_with_good_profile.apk";
@@ -62,6 +70,10 @@ public class CompilationTest extends BaseHostJUnit4Test {
             "/AppUsedByOtherApp_1_disable_embedded_profile.dm";
     private static final String DISABLE_EMBEDDED_PROFILE_DM_RES = "/disable_embedded_profile.dm";
     private static final String EMPTY_CONFIG_DM_RES = "/empty_config.dm";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     private Utils mUtils;
 
@@ -392,6 +404,21 @@ public class CompilationTest extends BaseHostJUnit4Test {
         });
 
         assertThat(throwable.getMessage()).contains("Invalid compiler filter");
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM,
+            com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
+    public void testSdmOk() throws Exception {
+        CompilationArtifacts artifacts =
+                mUtils.generateCompilationArtifacts(TEST_APP_APK_RES, TEST_APP_PROF_RES);
+        File dmFile = mUtils.createDm(TEST_APP_PROF_RES, artifacts.vdexFile());
+        File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
+
+        mUtils.installFromResourcesWithSdm(getAbi(), TEST_APP_APK_RES, dmFile, sdmFile);
+        String dump =
+                mUtils.assertCommandSucceeds("pm art dump --verify-sdm-signatures " + TEST_APP_PKG);
+        assertThat(dump).contains("[sdm-signature=verified]");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
