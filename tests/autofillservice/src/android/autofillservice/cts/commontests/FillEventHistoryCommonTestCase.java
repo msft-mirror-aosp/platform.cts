@@ -64,6 +64,7 @@ import android.content.IntentSender;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -415,6 +416,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
 
     @Test
     @RequiresFlagsEnabled("android.service.autofill.autofill_session_destroyed")
+    @RequiresFlagsDisabled("android.service.autofill.multiple_fill_history")
     public void test_onSessionDestroyed() throws Exception {
         enableService();
 

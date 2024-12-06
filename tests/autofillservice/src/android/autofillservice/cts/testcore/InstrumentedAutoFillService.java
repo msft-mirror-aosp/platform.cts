@@ -100,6 +100,7 @@ public class InstrumentedAutoFillService extends AutofillService {
     private static Consumer<SavedDatasetsInfoCallback> sSavedDatasetsInfoReplier;
 
     private static AtomicBoolean sConnected = new AtomicBoolean(false);
+    private static AtomicBoolean sTestRunning = new AtomicBoolean(false);
 
     // We must handle all requests in a separate thread as the service's main thread is the also
     // the UI thread of the test process and we don't want to hose it in case of failures here
@@ -114,10 +115,19 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     public InstrumentedAutoFillService() {
-        sInstance.set(this);
-        sServiceLabel = SERVICE_CLASS;
+        Log.v(TAG, "constructor " + SERVICE_CLASS + " " + sConnected.get());
+
         mHandler = Handler.createAsync(sMyThread.getLooper());
-        sReplier.setHandler(mHandler);
+
+        if (!sConnected.get()) {
+            sInstance.set(this);
+            sReplier.setHandler(mHandler);
+        }
+
+        // Only set class variable after/before a test
+        if (!sTestRunning.get()) {
+            sServiceLabel = SERVICE_CLASS;
+        }
     }
 
     private static InstrumentedAutoFillService peekInstance() {
@@ -180,7 +190,6 @@ public class InstrumentedAutoFillService extends AutofillService {
         // expected number of events is set.
         SystemClock.sleep(FILL_EVENTS_TIMEOUT.ms());
         assertThat(peekInstance().getFillEventHistory()).isNull();
-
     }
 
     /**
@@ -377,7 +386,17 @@ public class InstrumentedAutoFillService extends AutofillService {
         return sReplier;
     }
 
+    /** Marks that a test is in session */
+    public static void startTest() {
+        sTestRunning.set(true);
+    }
+
+    public static void setAutofillServiceClass(String name) {
+        sServiceLabel = name;
+    }
+
     public static void resetStaticState() {
+        sTestRunning.set(false);
         sConnected.set(false);
         sServiceLabel = SERVICE_CLASS;
         sSavedDatasetsInfoReplier = null;
