@@ -30,7 +30,6 @@ import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Bundle;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -164,7 +163,6 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
         }
     }
 
-    @CddTest(requirements = {"5.2/C-2-1"})
     @ApiTest(apis = "android.media.MediaCodec#PARAMETER_KEY_VIDEO_BITRATE")
     @Test
     public void testAdaptiveBitRate() throws IOException, InterruptedException,
