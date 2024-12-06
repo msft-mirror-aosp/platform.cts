@@ -584,6 +584,8 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("TURN_SIGNAL_SWITCH");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY))
                 .isEqualTo("INSTANTANEOUS_FUEL_ECONOMY");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY))
+                .isEqualTo("INSTANTANEOUS_EV_EFFICIENCY");
     }
 
     /**
