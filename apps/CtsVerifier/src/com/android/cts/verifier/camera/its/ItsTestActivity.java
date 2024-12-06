@@ -160,6 +160,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
             Pattern.compile("test_night_extension_.*");
 
+    private static final String FEATURE_COMBINATION_QUERY_KEY = "feature_query_proto";
+
     private static final String PERF_METRICS_KEY_CHART_LUMA = "chart_luma";
     private static final String PERF_METRICS_KEY_AVG_LUMA = "avg_luma";
     private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
@@ -485,6 +487,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                                 Log.e(TAG, "Error parsing perf result string:" + perfResult, e);
                             }
                         }
+
+                        // Update feature combination query proto for each camera
+                        if (sceneResult.isNull(FEATURE_COMBINATION_QUERY_KEY)) {
+                            continue;
+                        }
+
+                        JSONArray featureQueryProtos =
+                                sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
+                        String featureQueryProtoStr = featureQueryProtos.getString(0);
+                        camJsonObj.put(FEATURE_COMBINATION_QUERY_KEY, featureQueryProtoStr);
                     }
                     // Add performance metrics for all scenes along with camera_id as json arr
                     // to CtsVerifierReportLog for each camera.
