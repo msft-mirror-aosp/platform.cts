@@ -534,50 +534,47 @@ public class WebViewTest extends SharedWebViewTest {
     public void testGoBackAndForward() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    assertGoBackOrForwardBySteps(false, -1);
-                    assertGoBackOrForwardBySteps(false, 1);
+        assertGoBackOrForwardBySteps(false, -1);
+        assertGoBackOrForwardBySteps(false, 1);
 
-                    String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
-                    String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
-                    String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
+        String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
+        String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
+        String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url1);
-                    pollingCheckWebBackForwardList(url1, 0, 1);
-                    assertGoBackOrForwardBySteps(false, -1);
-                    assertGoBackOrForwardBySteps(false, 1);
+        mOnUiThread.loadUrlAndWaitForCompletion(url1);
+        pollingCheckWebBackForwardList(url1, 0, 1);
+        assertGoBackOrForwardBySteps(false, -1);
+        assertGoBackOrForwardBySteps(false, 1);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url2);
-                    pollingCheckWebBackForwardList(url2, 1, 2);
-                    assertGoBackOrForwardBySteps(true, -1);
-                    assertGoBackOrForwardBySteps(false, 1);
+        mOnUiThread.loadUrlAndWaitForCompletion(url2);
+        pollingCheckWebBackForwardList(url2, 1, 2);
+        assertGoBackOrForwardBySteps(true, -1);
+        assertGoBackOrForwardBySteps(false, 1);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url3);
-                    pollingCheckWebBackForwardList(url3, 2, 3);
-                    assertGoBackOrForwardBySteps(true, -2);
-                    assertGoBackOrForwardBySteps(false, 1);
+        mOnUiThread.loadUrlAndWaitForCompletion(url3);
+        pollingCheckWebBackForwardList(url3, 2, 3);
+        assertGoBackOrForwardBySteps(true, -2);
+        assertGoBackOrForwardBySteps(false, 1);
 
-                    mWebView.goBack();
-                    pollingCheckWebBackForwardList(url2, 1, 3);
-                    assertGoBackOrForwardBySteps(true, -1);
-                    assertGoBackOrForwardBySteps(true, 1);
+        mOnUiThread.goBack();
+        pollingCheckWebBackForwardList(url2, 1, 3);
+        assertGoBackOrForwardBySteps(true, -1);
+        assertGoBackOrForwardBySteps(true, 1);
 
-                    mWebView.goForward();
-                    pollingCheckWebBackForwardList(url3, 2, 3);
-                    assertGoBackOrForwardBySteps(true, -2);
-                    assertGoBackOrForwardBySteps(false, 1);
+        mOnUiThread.goForward();
+        pollingCheckWebBackForwardList(url3, 2, 3);
+        assertGoBackOrForwardBySteps(true, -2);
+        assertGoBackOrForwardBySteps(false, 1);
 
-                    mWebView.goBackOrForward(-2);
-                    pollingCheckWebBackForwardList(url1, 0, 3);
-                    assertGoBackOrForwardBySteps(false, -1);
-                    assertGoBackOrForwardBySteps(true, 2);
+        mOnUiThread.goBackOrForward(-2);
+        pollingCheckWebBackForwardList(url1, 0, 3);
+        assertGoBackOrForwardBySteps(false, -1);
+        assertGoBackOrForwardBySteps(true, 2);
 
-                    mWebView.goBackOrForward(2);
-                    pollingCheckWebBackForwardList(url3, 2, 3);
-                    assertGoBackOrForwardBySteps(true, -2);
-                    assertGoBackOrForwardBySteps(false, 1);
-                });
+        mOnUiThread.goBackOrForward(2);
+        pollingCheckWebBackForwardList(url3, 2, 3);
+        assertGoBackOrForwardBySteps(true, -2);
+        assertGoBackOrForwardBySteps(false, 1);
     }
 
     @Test
@@ -1987,96 +1984,94 @@ public class WebViewTest extends SharedWebViewTest {
     public void testClearHistory() throws Exception {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
-                () -> {
-                    String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
-                    String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
-                    String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
+        String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
+        String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
+        String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url1);
-                    pollingCheckWebBackForwardList(url1, 0, 1);
+        mOnUiThread.loadUrlAndWaitForCompletion(url1);
+        pollingCheckWebBackForwardList(url1, 0, 1);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url2);
-                    pollingCheckWebBackForwardList(url2, 1, 2);
+        mOnUiThread.loadUrlAndWaitForCompletion(url2);
+        pollingCheckWebBackForwardList(url2, 1, 2);
 
-                    mOnUiThread.loadUrlAndWaitForCompletion(url3);
-                    pollingCheckWebBackForwardList(url3, 2, 3);
+        mOnUiThread.loadUrlAndWaitForCompletion(url3);
+        pollingCheckWebBackForwardList(url3, 2, 3);
 
-                    mWebView.clearHistory();
+        mOnUiThread.clearHistory();
 
-                    // only current URL is left after clearing
-                    pollingCheckWebBackForwardList(url3, 0, 1);
-                });
+        // only current URL is left after clearing
+        pollingCheckWebBackForwardList(url3, 0, 1);
     }
 
     @Test
     public void testSaveAndRestoreState() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
 
-        WebkitUtils.onMainThreadSync(
+        assertNull(
+                "Should return null when there's nothing to save",
+                mOnUiThread.saveState(new Bundle()));
+
+        String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
+        String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
+        String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
+
+        // make a history list
+        mOnUiThread.loadUrlAndWaitForCompletion(url1);
+        pollingCheckWebBackForwardList(url1, 0, 1);
+        mOnUiThread.loadUrlAndWaitForCompletion(url2);
+        pollingCheckWebBackForwardList(url2, 1, 2);
+        mOnUiThread.loadUrlAndWaitForCompletion(url3);
+        pollingCheckWebBackForwardList(url3, 2, 3);
+
+        // save the list
+        Bundle bundle = new Bundle();
+        WebBackForwardList saveList = mOnUiThread.saveState(bundle);
+        assertNotNull(saveList);
+        assertEquals(3, saveList.getSize());
+        assertEquals(2, saveList.getCurrentIndex());
+        assertEquals(url1, saveList.getItemAtIndex(0).getUrl());
+        assertEquals(url2, saveList.getItemAtIndex(1).getUrl());
+        assertEquals(url3, saveList.getItemAtIndex(2).getUrl());
+
+        WebViewOnUiThread newOnUiThread = new WebViewOnUiThread(WebkitUtils.onMainThreadSync(
                 () -> {
-                    assertNull(
-                            "Should return null when there's nothing to save",
-                            mWebView.saveState(new Bundle()));
-
-                    String url1 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL1);
-                    String url2 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL2);
-                    String url3 = mWebServer.getAssetUrl(TestHtmlConstants.HTML_URL3);
-
-                    // make a history list
-                    mOnUiThread.loadUrlAndWaitForCompletion(url1);
-                    pollingCheckWebBackForwardList(url1, 0, 1);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url2);
-                    pollingCheckWebBackForwardList(url2, 1, 2);
-                    mOnUiThread.loadUrlAndWaitForCompletion(url3);
-                    pollingCheckWebBackForwardList(url3, 2, 3);
-
-                    // save the list
-                    Bundle bundle = new Bundle();
-                    WebBackForwardList saveList = mWebView.saveState(bundle);
-                    assertNotNull(saveList);
-                    assertEquals(3, saveList.getSize());
-                    assertEquals(2, saveList.getCurrentIndex());
-                    assertEquals(url1, saveList.getItemAtIndex(0).getUrl());
-                    assertEquals(url2, saveList.getItemAtIndex(1).getUrl());
-                    assertEquals(url3, saveList.getItemAtIndex(2).getUrl());
-
                     // change the content to a new "blank" web view without history
-                    final WebView newWebView = new WebView(mContext);
+                    return new WebView(mContext);
+                }));
+        try {
+            WebBackForwardList copyListBeforeRestore = newOnUiThread.copyBackForwardList();
+            assertNotNull(copyListBeforeRestore);
+            assertEquals(0, copyListBeforeRestore.getSize());
 
-                    WebBackForwardList copyListBeforeRestore = newWebView.copyBackForwardList();
-                    assertNotNull(copyListBeforeRestore);
-                    assertEquals(0, copyListBeforeRestore.getSize());
+            // restore the list
+            final WebBackForwardList restoreList = newOnUiThread.restoreState(bundle);
+            assertNotNull(restoreList);
+            assertEquals(3, restoreList.getSize());
+            assertEquals(2, saveList.getCurrentIndex());
 
-                    // restore the list
-                    final WebBackForwardList restoreList = newWebView.restoreState(bundle);
-                    assertNotNull(restoreList);
-                    assertEquals(3, restoreList.getSize());
-                    assertEquals(2, saveList.getCurrentIndex());
+            // wait for the list items to get inflated
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return restoreList.getItemAtIndex(0).getUrl() != null
+                            && restoreList.getItemAtIndex(1).getUrl() != null
+                            && restoreList.getItemAtIndex(2).getUrl() != null;
+                }
+            }.run();
+            assertEquals(url1, restoreList.getItemAtIndex(0).getUrl());
+            assertEquals(url2, restoreList.getItemAtIndex(1).getUrl());
+            assertEquals(url3, restoreList.getItemAtIndex(2).getUrl());
 
-                    // wait for the list items to get inflated
-                    new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-                        @Override
-                        protected boolean check() {
-                            return restoreList.getItemAtIndex(0).getUrl() != null
-                                    && restoreList.getItemAtIndex(1).getUrl() != null
-                                    && restoreList.getItemAtIndex(2).getUrl() != null;
-                        }
-                    }.run();
-                    assertEquals(url1, restoreList.getItemAtIndex(0).getUrl());
-                    assertEquals(url2, restoreList.getItemAtIndex(1).getUrl());
-                    assertEquals(url3, restoreList.getItemAtIndex(2).getUrl());
-
-                    WebBackForwardList copyListAfterRestore = newWebView.copyBackForwardList();
-                    assertNotNull(copyListAfterRestore);
-                    assertEquals(3, copyListAfterRestore.getSize());
-                    assertEquals(2, copyListAfterRestore.getCurrentIndex());
-                    assertEquals(url1, copyListAfterRestore.getItemAtIndex(0).getUrl());
-                    assertEquals(url2, copyListAfterRestore.getItemAtIndex(1).getUrl());
-                    assertEquals(url3, copyListAfterRestore.getItemAtIndex(2).getUrl());
-
-                    newWebView.destroy();
-                });
+            WebBackForwardList copyListAfterRestore = newOnUiThread.copyBackForwardList();
+            assertNotNull(copyListAfterRestore);
+            assertEquals(3, copyListAfterRestore.getSize());
+            assertEquals(2, copyListAfterRestore.getCurrentIndex());
+            assertEquals(url1, copyListAfterRestore.getItemAtIndex(0).getUrl());
+            assertEquals(url2, copyListAfterRestore.getItemAtIndex(1).getUrl());
+            assertEquals(url3, copyListAfterRestore.getItemAtIndex(2).getUrl());
+        } finally {
+            newOnUiThread.cleanUp();
+        }
     }
 
     @Test
@@ -2746,7 +2741,7 @@ public class WebViewTest extends SharedWebViewTest {
         new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
             @Override
             protected boolean check() {
-                WebBackForwardList list = mWebView.copyBackForwardList();
+                WebBackForwardList list = mOnUiThread.copyBackForwardList();
                 return checkWebBackForwardList(list, currUrl, currIndex, size);
             }
         }.run();
@@ -2769,13 +2764,13 @@ public class WebViewTest extends SharedWebViewTest {
 
         // check all the steps in the history
         for (int i = start; i <= end; i++) {
-            assertEquals(expected, mWebView.canGoBackOrForward(i));
+            assertEquals(expected, mOnUiThread.canGoBackOrForward(i));
 
             // shortcut methods for one step
             if (i == 1) {
-                assertEquals(expected, mWebView.canGoForward());
+                assertEquals(expected, mOnUiThread.canGoForward());
             } else if (i == -1) {
-                assertEquals(expected, mWebView.canGoBack());
+                assertEquals(expected, mOnUiThread.canGoBack());
             }
         }
     }
