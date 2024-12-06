@@ -337,7 +337,8 @@
         <activity android:name="android.server.wm.animations.LocationOnScreenTests$TestActivity"
              android:screenOrientation="locked"
              android:theme="@style/no_starting_window"/>
-        <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"/>
+        <activity android:name="android.server.wm.animations.LocationInWindowTests$TestActivity"
+             android:screenOrientation="locked"/>
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
                   android:screenOrientation="locked"
                   android:theme="@style/no_action_bar"/>
