@@ -34,6 +34,7 @@ android_test {
         "bedstead",
         "junit",
         "truth",
+        "uprobestats_flags_java_lib",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [
