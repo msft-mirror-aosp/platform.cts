@@ -31,10 +31,14 @@ import android.car.cts.builtin.activity.TaskInfoTestActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.server.wm.ActivityManagerTestBase;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.DisplayCutout;
+import android.view.Display;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -136,8 +140,16 @@ public final class TaskInfoHelperTest extends ActivityManagerTestBase {
     @Test
     public void testGetBounds() throws Exception {
         TaskInfo taskInfo = getTaskInfo(mTestActivity.getTaskId());
-
         Rect bounds = TaskInfoHelper.getBounds(taskInfo);
+        Display display = mTestActivity.getDisplay();
+        DisplayCutout cutout = display.getCutout();
+
+        if (cutout != null) {
+            Rect safeBounds = new Rect(bounds);
+            safeBounds.inset(cutout.getSafeInsetLeft(), cutout.getSafeInsetTop(),
+                cutout.getSafeInsetRight(), cutout.getSafeInsetBottom());
+            bounds = safeBounds;
+        }
 
         View testActivityDecorView = mTestActivity.getWindow().getDecorView();
         assertThat(bounds).isNotNull();
