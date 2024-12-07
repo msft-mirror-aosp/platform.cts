@@ -37,6 +37,8 @@ import android.app.AsyncNotedAppOp
 import android.app.PendingIntent
 import android.app.SyncNotedAppOp
 import android.bluetooth.BluetoothManager
+import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
+import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 import android.bluetooth.le.ScanCallback
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -73,7 +75,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Process
-import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -101,8 +102,6 @@ import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -377,14 +376,6 @@ class AppOpsLoggingTest {
     fun noteAsyncOpAndCheckCustomMessage() {
         rethrowThrowableFrom {
             testService.callApiThatNotesAsyncOpAndCheckCustomMessage(AppOpsUserClient(context))
-        }
-    }
-
-    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
-    @Test
-    fun noteAsyncOpsMultipleTimes() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context))
         }
     }
 
@@ -1079,19 +1070,6 @@ class AppOpsLoggingTest {
                 runWithShellPermissionIdentity {
                     appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
                             null, "custom msg")
-                }
-            }
-        }
-
-        override fun noteAsyncOpMultipleTimesWithAttribution(attributionTag: String) {
-            val callingUid = getCallingUid()
-            handler.post {
-                runWithShellPermissionIdentity {
-                    repeat(5) {
-                        appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
-                            attributionTag, "custom msg")
-                    }
-                    SystemClock.sleep(3000)
                 }
             }
         }

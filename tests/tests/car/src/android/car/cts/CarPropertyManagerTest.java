@@ -42,6 +42,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureD
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -773,12 +774,20 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.PERF_ODOMETER)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_MILEAGE_3P_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
+                            VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY)
+                    .build();
     private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
                             VehiclePropertyIds.PERF_STEERING_ANGLE,
                             VehiclePropertyIds.PERF_REAR_STEERING_ANGLE)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.PERF_STEERING_ANGLE).build();
     private static final ImmutableList<Integer> PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -1036,6 +1045,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_MEASURED_DISTANCE)
+                    .build();
+    private static final ImmutableList<Integer>
+            PERMISSION_READ_EXTERIOR_LIGHTS_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE,
+                            VehiclePropertyIds.TURN_SIGNAL_SWITCH)
                     .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
@@ -1815,6 +1831,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
                 new VerifierInfo(VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder())
+                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+                new VerifierInfo(
+                        VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
                         .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
@@ -4172,16 +4198,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 EvRegenerativeBrakingState.STATE_PARTIALLY_ENABLED,
                                 EvRegenerativeBrakingState.STATE_FULLY_ENABLED))
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getPerfSteeringAngleVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.PERF_STEERING_ANGLE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_READ_STEERING_STATE);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
@@ -7185,7 +7201,19 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    public void testPermissionMileage3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_MILEAGE_3P_PROPERTIES,
+                Car.PERMISSION_MILEAGE_3P);
+    }
+
+    @Test
     public void testPermissionReadSteeringStateGranted() {
+        if (Flags.vehicleProperty25q23pPermissions()) {
+            verifyExpectedPropertiesWhenPermissionsGranted(
+                    PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
+                    Car.PERMISSION_READ_STEERING_STATE_3P);
+        }
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
     }
@@ -7285,7 +7313,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
+                Flags.androidBVehicleProperties() ? ImmutableList.<Integer>builder().addAll(
+                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES).add(
+                        VehiclePropertyIds.TURN_SIGNAL_SWITCH).add(
+                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE).build() :
+                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
                 Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 
@@ -7456,6 +7488,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_ACCESS_FINE_LOCATION_PROPERTIES,
                 ACCESS_FINE_LOCATION);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testPermissionReadExteriorLightsGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_EXTERIOR_LIGHTS_PROPERTIES,
+                Car.PERMISSION_READ_EXTERIOR_LIGHTS);
     }
 
     @Test

@@ -81,6 +81,7 @@ java_test_host {
         ":CtsPackageInstallerApp",
         ":CtsPermissionApp",
         ":CtsProfileOwnerApp",
+        ":CtsSimpleApp",
         ":CtsSimplePreMApp",
         ":CtsTransferOwnerIncomingApp",
         ":CtsTransferOwnerOutgoingApp",

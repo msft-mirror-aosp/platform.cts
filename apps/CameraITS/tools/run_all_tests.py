@@ -48,6 +48,7 @@ RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
 PERFORMANCE_KEY = 'performance_metrics'
+FEATURE_QUERY_KEY = 'feature_query_proto'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
@@ -668,6 +669,7 @@ def main():
     its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
+    tablet_name = "sensor_fusion"
 
   testing_sensor_fusion_with_controller = False
   if TEST_KEY_SENSOR_FUSION in config_file_test_key:
@@ -813,6 +815,7 @@ def main():
       results[s]['TEST_STATUS'] = []
       results[s][METRICS_KEY] = []
       results[s][PERFORMANCE_KEY] = []
+      results[s][FEATURE_QUERY_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -914,6 +917,7 @@ def main():
             test_mpc_req = ''
             perf_test_metrics = ''
             hdr_mpc_req = ''
+            feature_query_proto = ''
             content = file.read()
 
             # Find media performance class logging
@@ -936,6 +940,17 @@ def main():
                 hdr_mpc_req = one_line
                 break
 
+            # Find feature combination query proto
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              feature_comb_query_string_match = re.search(
+                  '^feature_query_proto:(.*)', one_line
+              )
+              if feature_comb_query_string_match:
+                feature_query_proto = feature_comb_query_string_match.group(1)
+                break
+
+            # Find performance metrics logging
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
               perf_metrics_string_match = re.search(
@@ -983,6 +998,9 @@ def main():
           results[s][METRICS_KEY].append(test_mpc_req)
         if hdr_mpc_req:
           results[s][METRICS_KEY].append(hdr_mpc_req)
+        if feature_query_proto:
+          results[s][FEATURE_QUERY_KEY].append(feature_query_proto)
+
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if (test in _LIGHTING_CONTROL_TESTS and
