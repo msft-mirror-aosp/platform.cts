@@ -17,11 +17,13 @@ package android.server.wm;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
 import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.support.test.uiautomator.UiObjectNotFoundException;
@@ -36,6 +38,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import org.junit.After;
@@ -58,23 +62,29 @@ public class SurfaceViewSurfaceValidatorTest {
     public TestName mName = new TestName();
     private CapturedActivity mActivity;
 
+    private ActivityScenario<CapturedActivity> mScenario;
+
     @Before
     public void setup() {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mActivity.dismissPermissionDialog();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        mScenario = mActivityRule.getScenario();
+        mScenario.onActivity(activity -> {
+                    assumeFalse("Test/capture infrastructure not supported on Watch",
+                            activity.getPackageManager().hasSystemFeature(
+                                    PackageManager.FEATURE_WATCH));
+                    activity.setLogicalDisplaySize(getLogicalDisplaySize());
+                    assertTrue("Failed to accept ScreenCapture Dialog",
+                    activity.awaitClickAcceptButtonInPermissionDialog());
+                    mActivity = activity;
+                }
+        );
     }
 
-    /**
-     * Want to be especially sure we don't leave up the permission dialog, so try and dismiss
-     * after test.
-     */
     @After
     public void tearDown() throws UiObjectNotFoundException {
-        mActivity.dismissPermissionDialog();
+        mScenario.close();
     }
 
-    class SurfaceFiller implements SurfaceHolder.Callback {
+    static class SurfaceFiller implements SurfaceHolder.Callback {
         SurfaceView mSurfaceView;
 
         SurfaceFiller(Context c) {
@@ -88,10 +98,10 @@ public class SurfaceViewSurfaceValidatorTest {
             holder.unlockCanvasAndPost(canvas);
         }
 
-        public void surfaceCreated(SurfaceHolder holder) {
+        public void surfaceCreated(@NonNull SurfaceHolder holder) {
         }
 
-        public void surfaceDestroyed(SurfaceHolder holder) {
+        public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         }
     }
 
@@ -100,6 +110,7 @@ public class SurfaceViewSurfaceValidatorTest {
      */
     @Test
     public void testOnTopHasNoBackground() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         SurfaceControlTestCase.ParentSurfaceConsumer psc =
             new SurfaceControlTestCase.ParentSurfaceConsumer () {
                     @Override
@@ -138,6 +149,7 @@ public class SurfaceViewSurfaceValidatorTest {
     // is behind all SurfaceView (e.g. the first is not obscured)
     @Test
     public void testBackgroundIsBehindAllSurfaceView() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         SurfaceControlTestCase.ParentSurfaceConsumer psc =
             new SurfaceControlTestCase.ParentSurfaceConsumer () {
                     @Override
