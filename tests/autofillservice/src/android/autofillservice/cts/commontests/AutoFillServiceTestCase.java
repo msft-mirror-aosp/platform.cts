@@ -70,7 +70,6 @@ import com.android.compatibility.common.util.RetryRule;
 import com.android.compatibility.common.util.SafeCleanerRule;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.TestNameUtils;
-import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSessionRule;
 
@@ -219,6 +218,7 @@ public final class AutoFillServiceTestCase {
             final Intent intent = new Intent(mContext, LoginActivity.class)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
+            mUiBot.waitForIdleSync();
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginActivity.getCurrentActivity();
         }
@@ -351,6 +351,11 @@ public final class AutoFillServiceTestCase {
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS,
                         ""))
+                //
+                // Fill Dialog Improvements should be disabled by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog",
+                        Boolean.toString(false)))
 
                 //
                 // CredentialManager-Autofill integration enabled by default
@@ -430,21 +435,14 @@ public final class AutoFillServiceTestCase {
                 .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
-            this(sDefaultUiBot);
+            mPackageName = mContext.getPackageName();
+            mUiBot = sDefaultUiBot;
         }
 
         private BaseTestCase(@NonNull UiBot uiBot) {
             mPackageName = mContext.getPackageName();
             mUiBot = uiBot;
             mUiBot.reset();
-            // Context#getDisplayId() always returns the default display ID, even if it is called
-            // from an app running as a visible background user (b/356478691).
-            // To work around it, let's set the correct display ID manually.
-            final UserHelper userHelper = new UserHelper(mContext);
-            final int myDisplayId = userHelper.getMainDisplayId();
-            if (mContext.getDisplayId() != myDisplayId) {
-                mContext.updateDisplay(myDisplayId);
-            }
         }
 
         protected int getSmartSuggestionMode() {

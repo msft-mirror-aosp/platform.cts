@@ -28,5 +28,4 @@ interface IAppOpsUserClient {
     void noteAsyncOp();
     void noteAsyncOpWithAttribution(String attributionTag);
     void noteAsyncOpWithCustomMessage();
-    void noteAsyncOpMultipleTimesWithAttribution(String attributionTag);
 }
