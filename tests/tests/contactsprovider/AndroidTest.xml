@@ -33,12 +33,12 @@
     </target_preparer>
 
     <!-- TODO:: remove FeatureFlagTargetPreparer once new_default_account_api_enabled and
-                cp2_account_move_flag are released-->
+                disable_cp2_account_move_flag are released-->
     <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
         <option name="flag-value"
             value="contacts/android.provider.new_default_account_api_enabled=true"/>
         <option name="flag-value"
-            value="contacts/com.android.providers.contacts.flags.cp2_account_move_flag=true"/>
+            value="contacts/com.android.providers.contacts.flags.disable_cp2_account_move_flag=false"/>
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
