@@ -155,6 +155,27 @@ public class VehiclePropertyVerifiers {
                             WindshieldWipersState.SERVICE)
                     .build();
 
+    /**
+     * Gets the verifier builder for {@link
+     * VehiclePropertyIds#VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL}.
+     */
+    public static VehiclePropertyVerifier.Builder<Integer>
+            getVehicleDrivingAutomationCurrentLevelVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Integer> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                                Integer.class)
+                        .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
+                        .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE_3P)
+                : verifierBuilder;
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#ENGINE_RPM}. */
     public static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =

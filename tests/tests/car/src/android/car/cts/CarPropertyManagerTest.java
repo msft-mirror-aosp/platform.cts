@@ -47,6 +47,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVeri
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getVehicleDrivingAutomationCurrentLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getWindshieldWipersStateVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
@@ -3374,18 +3375,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Boolean.class)
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_DOORS)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_DOORS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer>
-            getVehicleDrivingAutomationCurrentLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL,
-                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                Integer.class)
-            .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-            .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getMirrorZPosVerifierBuilder() {
@@ -7245,8 +7234,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_EXTERIOR_LIGHTS_PROPERTIES,
-                Car.PERMISSION_EXTERIOR_LIGHTS);
+                PERMISSION_EXTERIOR_LIGHTS_PROPERTIES, Car.PERMISSION_EXTERIOR_LIGHTS);
     }
 
     @Test
@@ -7313,11 +7301,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                Flags.androidBVehicleProperties() ? ImmutableList.<Integer>builder().addAll(
-                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES).add(
-                        VehiclePropertyIds.TURN_SIGNAL_SWITCH).add(
-                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE).build() :
-                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
+                Flags.androidBVehicleProperties()
+                        ? ImmutableList.<Integer>builder()
+                                .addAll(PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES)
+                                .add(VehiclePropertyIds.TURN_SIGNAL_SWITCH)
+                                .add(VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE)
+                                .build()
+                        : PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
                 Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 
@@ -7358,10 +7348,17 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
-    public void testPermissionCarDrivingStateGranted() {
+    public void testPermissionCarDriving3pStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CAR_DRIVING_STATE_PROPERTIES,
                 Car.PERMISSION_CAR_DRIVING_STATE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionCarDrivingStateGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CAR_DRIVING_STATE_PROPERTIES, Car.PERMISSION_CAR_DRIVING_STATE_3P);
     }
 
     @Test
