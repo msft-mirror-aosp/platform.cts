@@ -20,6 +20,7 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -785,6 +786,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ENGINE_RPM,
                             VehiclePropertyIds.ENGINE_IDLE_AUTO_STOP_ENABLED)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_CAR_ENGINE_DETAILED_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.ENGINE_RPM).build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -4262,24 +4265,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENGINE_RPM,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                engineRpm) ->
-                                assertWithMessage(
-                                        "ENGINE_RPM Float value must be greater than or"
-                                                + " equal 0")
-                                        .that(engineRpm)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Boolean>
             getEngineIdleAutoStopEnabledVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -7221,6 +7206,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     public void testPermissionCarEngineDetailedGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES, Car.PERMISSION_CAR_ENGINE_DETAILED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionCarEngineDetailed3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CAR_ENGINE_DETAILED_3P_PROPERTIES,
+                Car.PERMISSION_CAR_ENGINE_DETAILED_3P);
     }
 
     @Test

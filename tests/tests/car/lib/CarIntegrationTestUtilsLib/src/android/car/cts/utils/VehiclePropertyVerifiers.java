@@ -155,6 +155,34 @@ public class VehiclePropertyVerifiers {
                             WindshieldWipersState.SERVICE)
                     .build();
 
+    /** Gets the verifier builder for {@link VehiclePropertyIds#ENGINE_RPM}. */
+    public static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
+        VehiclePropertyVerifier.Builder<Float> verifierBuilder =
+                VehiclePropertyVerifier.newBuilder(
+                                VehiclePropertyIds.ENGINE_RPM,
+                                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                                Float.class)
+                        .setCarPropertyValueVerifier(
+                                (verifierContext,
+                                        carPropertyConfig,
+                                        propertyId,
+                                        areaId,
+                                        timestampNanos,
+                                        engineRpm) ->
+                                        assertWithMessage(
+                                                        "ENGINE_RPM Float value must be greater"
+                                                                + " than or equal 0")
+                                                .that(engineRpm)
+                                                .isAtLeast(0))
+                        .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
+
+        return Flags.vehicleProperty25q23pPermissions()
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED_3P)
+                : verifierBuilder;
+    }
+
     /** Gets the verifier builder for {@link VehiclePropertyIds#WINDSHIELD_WIPERS_STATE}. */
     public static VehiclePropertyVerifier.Builder<Integer>
             getWindshieldWipersStateVerifierBuilder() {
