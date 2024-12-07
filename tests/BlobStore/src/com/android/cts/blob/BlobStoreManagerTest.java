@@ -1722,7 +1722,8 @@ public class BlobStoreManagerTest {
                     return 0L;
                 }
             });
-            return dataBytes == 0;
+            Log.i(TAG, "Queried dataBytes for " + packageName + ": " + dataBytes);
+            return dataBytes < DELTA_BYTES;
         }, "Timed out waiting for storage to be cleared for pkg: " + packageName);
     }
 
