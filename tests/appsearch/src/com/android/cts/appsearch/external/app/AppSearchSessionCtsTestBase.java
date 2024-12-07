@@ -54,6 +54,7 @@ import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportUsageRequest;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SearchResult;
+import android.app.appsearch.SearchResults;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SearchSuggestionResult;
@@ -11903,13 +11904,12 @@ public abstract class AppSearchSessionCtsTestBase {
                         .setListFilterQueryLanguageEnabled(true)
                         .addEmbeddingParameters(searchEmbedding)
                         .build();
+        SearchResultsShim results =
+                mDb1.search("semanticSearch(getEmbeddingParameter(0), -1, 1)", searchSpec);
         UnsupportedOperationException exception =
                 assertThrows(
                         UnsupportedOperationException.class,
-                        () ->
-                                mDb1.search(
-                                        "semanticSearch(getEmbeddingParameter(0), -1, 1)",
-                                        searchSpec));
+                        () -> results.getNextPageAsync().get());
         assertThat(exception)
                 .hasMessageThat()
                 .contains(
