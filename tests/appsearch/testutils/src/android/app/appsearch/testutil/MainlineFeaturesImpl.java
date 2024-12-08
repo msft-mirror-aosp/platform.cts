@@ -19,6 +19,7 @@ package android.app.appsearch.testutil;
 import android.annotation.NonNull;
 import android.app.appsearch.Features;
 import android.os.Build;
+import android.util.Log;
 
 /**
  * An implementation of {@link Features}. It returns true for most of the features, as all features
@@ -76,8 +77,6 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SET_SCHEMA_REQUEST_ADD_SCHEMA_TYPE_VISIBLE_TO_CONFIG:
                 // fall through
-            case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
-                // fall through
             case Features.SCHEMA_EMBEDDING_QUANTIZATION:
                 // fall through
             case Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS:
@@ -100,6 +99,10 @@ public class MainlineFeaturesImpl implements Features {
                 // fall through
             case Features.SCHEMA_ADD_PARENT_TYPE:
                 return Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
+            // Features which are supported on Baklava+ devices only.
+            case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
+                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
         }
         throw new IllegalArgumentException("Unhandled Features string: " + feature);
     }
