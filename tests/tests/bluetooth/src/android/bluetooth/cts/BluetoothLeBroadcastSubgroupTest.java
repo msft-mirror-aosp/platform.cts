@@ -50,9 +50,11 @@ import org.junit.runner.RunWith;
 public class BluetoothLeBroadcastSubgroupTest {
     private static final int TEST_CODEC_ID = 42;
     private static final BluetoothLeBroadcastChannel[] TEST_CHANNELS = {
-            new BluetoothLeBroadcastChannel.Builder().setChannelIndex(42).setSelected(true)
-                    .setCodecMetadata(new BluetoothLeAudioCodecConfigMetadata.Builder().build())
-                    .build()
+        new BluetoothLeBroadcastChannel.Builder()
+                .setChannelIndex(42)
+                .setSelected(true)
+                .setCodecMetadata(new BluetoothLeAudioCodecConfigMetadata.Builder().build())
+                .build()
     };
 
     // For BluetoothLeAudioCodecConfigMetadata
@@ -86,7 +88,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -95,7 +98,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
@@ -118,11 +122,14 @@ public class BluetoothLeBroadcastSubgroupTest {
                         .build();
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
-        BluetoothLeBroadcastSubgroup.Builder builder = new BluetoothLeBroadcastSubgroup.Builder()
-                .setCodecId(TEST_CODEC_ID)
-                .setCodecSpecificConfig(codecMetadata)
-                .setContentMetadata(contentMetadata);
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
+        BluetoothLeBroadcastSubgroup.Builder builder =
+                new BluetoothLeBroadcastSubgroup.Builder()
+                        .setCodecId(TEST_CODEC_ID)
+                        .setCodecSpecificConfig(codecMetadata)
+                        .setContentMetadata(contentMetadata);
         for (BluetoothLeBroadcastChannel channel : TEST_CHANNELS) {
             builder.addChannel(channel);
         }
@@ -131,8 +138,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         assertEquals(codecMetadata, subgroup.getCodecSpecificConfig());
         assertEquals(contentMetadata, subgroup.getContentMetadata());
         assertTrue(subgroup.hasChannelPreference());
-        assertArrayEquals(TEST_CHANNELS,
-                subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
+        assertArrayEquals(
+                TEST_CHANNELS, subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
         builder.clearChannel();
         // builder expect at least one channel
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -149,11 +156,14 @@ public class BluetoothLeBroadcastSubgroupTest {
                         .build();
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
-        BluetoothLeBroadcastSubgroup.Builder builder = new BluetoothLeBroadcastSubgroup.Builder()
-                .setCodecId(TEST_CODEC_ID)
-                .setCodecSpecificConfig(codecMetadata)
-                .setContentMetadata(contentMetadata);
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
+        BluetoothLeBroadcastSubgroup.Builder builder =
+                new BluetoothLeBroadcastSubgroup.Builder()
+                        .setCodecId(TEST_CODEC_ID)
+                        .setCodecSpecificConfig(codecMetadata)
+                        .setContentMetadata(contentMetadata);
         for (BluetoothLeBroadcastChannel channel : TEST_CHANNELS) {
             builder.addChannel(channel);
         }
@@ -164,7 +174,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         assertEquals(codecMetadata, subgroupCopy.getCodecSpecificConfig());
         assertEquals(contentMetadata, subgroupCopy.getContentMetadata());
         assertTrue(subgroupCopy.hasChannelPreference());
-        assertArrayEquals(TEST_CHANNELS,
+        assertArrayEquals(
+                TEST_CHANNELS,
                 subgroupCopy.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
         builder.clearChannel();
         // builder expect at least one channel

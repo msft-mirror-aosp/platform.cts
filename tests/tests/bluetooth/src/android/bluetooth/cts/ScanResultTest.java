@@ -38,35 +38,34 @@ import org.junit.runner.RunWith;
 
 /**
  * Unit test cases for Bluetooth LE scans.
- * <p>
- * To run this test, use adb shell am instrument -e class 'android.bluetooth.ScanResultTest' -w
+ *
+ * <p>To run this test, use adb shell am instrument -e class 'android.bluetooth.ScanResultTest' -w
  * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 @RunWith(AndroidJUnit4.class)
 public class ScanResultTest {
     private static final String DEVICE_ADDRESS = "01:02:03:04:05:06";
-    private static final byte[] SCAN_RECORD = new byte[] {
-            1, 2, 3 };
+    private static final byte[] SCAN_RECORD = new byte[] {1, 2, 3};
     private static final int RSSI = -10;
     private static final long TIMESTAMP_NANOS = 10000L;
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
-    /**
-     * Test read and write parcel of ScanResult
-     */
+    /** Test read and write parcel of ScanResult */
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void scanResultParceling() {
         BluetoothDevice device =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
-        ScanResult result = new ScanResult(device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI,
-                TIMESTAMP_NANOS);
+        ScanResult result =
+                new ScanResult(
+                        device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI, TIMESTAMP_NANOS);
         Parcel parcel = Parcel.obtain();
         result.writeToParcel(parcel, 0);
         // Need to reset parcel data position to the beginning.
@@ -85,8 +84,9 @@ public class ScanResultTest {
     public void describeContents() {
         BluetoothDevice device =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
-        ScanResult result = new ScanResult(device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI,
-                TIMESTAMP_NANOS);
+        ScanResult result =
+                new ScanResult(
+                        device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI, TIMESTAMP_NANOS);
         assertEquals(0, result.describeContents());
     }
 
@@ -104,8 +104,18 @@ public class ScanResultTest {
         int rssi = 0xABAB;
         int periodicAdvertisingInterval = 0xABBA;
         long timestampNanos = 0xABBB;
-        ScanResult result = new ScanResult(device, eventType, primaryPhy, secondaryPhy,
-                advertisingSid, txPower, rssi, periodicAdvertisingInterval, null, timestampNanos);
+        ScanResult result =
+                new ScanResult(
+                        device,
+                        eventType,
+                        primaryPhy,
+                        secondaryPhy,
+                        advertisingSid,
+                        txPower,
+                        rssi,
+                        periodicAdvertisingInterval,
+                        null,
+                        timestampNanos);
         assertEquals(result.getDevice(), device);
         assertNull(result.getScanRecord());
         assertEquals(result.getRssi(), rssi);
@@ -118,8 +128,18 @@ public class ScanResultTest {
         assertEquals(result.getPeriodicAdvertisingInterval(), periodicAdvertisingInterval);
 
         // specific value of event type for isLegacy and isConnectable to be true
-        ScanResult result2 = new ScanResult(device, 0x11, primaryPhy, secondaryPhy,
-                advertisingSid, txPower, rssi, periodicAdvertisingInterval, null, timestampNanos);
+        ScanResult result2 =
+                new ScanResult(
+                        device,
+                        0x11,
+                        primaryPhy,
+                        secondaryPhy,
+                        advertisingSid,
+                        txPower,
+                        rssi,
+                        periodicAdvertisingInterval,
+                        null,
+                        timestampNanos);
         assertTrue(result2.isLegacy());
         assertTrue(result2.isConnectable());
     }

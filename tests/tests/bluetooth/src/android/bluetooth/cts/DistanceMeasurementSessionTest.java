@@ -50,14 +50,14 @@ public class DistanceMeasurementSessionTest {
 
     private DistanceMeasurementSession.Callback mTestcallback =
             new DistanceMeasurementSession.Callback() {
-        public void onStarted(DistanceMeasurementSession session) {}
+                public void onStarted(DistanceMeasurementSession session) {}
 
-        public void onStartFail(int reason) {}
+                public void onStartFail(int reason) {}
 
-        public void onStopped(DistanceMeasurementSession session, int reason) {}
+                public void onStopped(DistanceMeasurementSession session, int reason) {}
 
-        public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
-    };
+                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
+            };
 
     @Before
     public void setUp() {

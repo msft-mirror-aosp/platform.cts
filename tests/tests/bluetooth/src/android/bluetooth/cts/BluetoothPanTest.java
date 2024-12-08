@@ -55,7 +55,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothPanTest {
     private static final String TAG = BluetoothPanTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -71,12 +71,13 @@ public class BluetoothPanTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
 
-        mIsPanSupported = BluetoothProperties.isProfilePanPanuEnabled().orElse(false)
-                || BluetoothProperties.isProfilePanNapEnabled().orElse(false);
+        mIsPanSupported =
+                BluetoothProperties.isProfilePanPanuEnabled().orElse(false)
+                        || BluetoothProperties.isProfilePanNapEnabled().orElse(false);
         if (!mIsPanSupported) return;
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
@@ -90,8 +91,7 @@ public class BluetoothPanTest {
         mIsProfileReady = false;
         mBluetoothPan = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothPanServiceListener(),
-                BluetoothProfile.PAN);
+        mAdapter.getProfileProxy(mContext, new BluetoothPanServiceListener(), BluetoothProfile.PAN);
     }
 
     @After
@@ -156,14 +156,13 @@ public class BluetoothPanTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothPan.getConnectionState(null));
+        assertEquals(BluetoothProfile.STATE_DISCONNECTED, mBluetoothPan.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothPan.getConnectionState(testDevice));
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED, mBluetoothPan.getConnectionState(testDevice));
     }
 
     @Test
@@ -175,23 +174,26 @@ public class BluetoothPanTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothPan.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothPan.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothPan.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothPan.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothPan.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothPan.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     @Test
     public void setAndCheckBluetoothTethering() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED,
-                TETHER_PRIVILEGED);
+        TestUtils.adoptPermissionAsShellUid(
+                BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, TETHER_PRIVILEGED);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothPan);
 

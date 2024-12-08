@@ -64,6 +64,7 @@ import android.app.WallpaperInfo;
 import android.app.WallpaperManager;
 import android.app.cts.wallpapers.util.WallpaperTestUtils;
 import android.app.wallpaper.WallpaperDescription;
+import android.app.wallpaper.WallpaperInstance;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -626,6 +627,76 @@ public class WallpaperManagerTest {
     public void getWallpaperInfo_badFlagsArgument_throwsException() {
         assertThrows(IllegalArgumentException.class, () ->
                 mWallpaperManager.getWallpaperInfo(FLAG_SYSTEM | FLAG_LOCK));
+    }
+
+    @Test
+    public void setStaticWallpaper_homeScreen_wallpaperInstanceCorrect() throws IOException {
+        assertNullOrDefaultWallpaper(FLAG_SYSTEM);
+
+        mWallpaperManager.setResource(R.drawable.icon_red, FLAG_SYSTEM);
+
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_SYSTEM)).isNotNull();
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_SYSTEM).getInfo()).isNull();
+    }
+
+    @Test
+    public void setStaticWallpaper_lockScreen_wallpaperInstanceCorrect() throws IOException {
+        assertNullOrDefaultWallpaper(FLAG_LOCK);
+
+        mWallpaperManager.setResource(R.drawable.icon_green, FLAG_LOCK);
+
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_LOCK)).isNotNull();
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_LOCK).getInfo()).isNull();
+    }
+
+    @Test
+    public void setStaticWallpaper_both_wallpaperInstanceCorrect() throws IOException {
+        assertNullOrDefaultWallpaper(FLAG_SYSTEM);
+        assertNullOrDefaultWallpaper(FLAG_LOCK);
+
+        mWallpaperManager.setResource(R.drawable.icon_green, FLAG_SYSTEM | FLAG_LOCK);
+
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_SYSTEM)).isNotNull();
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_SYSTEM).getInfo()).isNull();
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_LOCK)).isNull();
+    }
+
+    @Test
+    public void setLiveWallpaper_homeScreen_wallpaperInstanceCorrect() {
+        assertNullOrDefaultWallpaper(FLAG_SYSTEM);
+
+        runWithShellPermissionIdentity(() ->
+                setWallpaperComponentAndWait(TEST_COMPONENT_NAME, FLAG_SYSTEM));
+
+        assertNotNullOrDefaultInstance(FLAG_SYSTEM);
+    }
+
+    @Test
+    public void setLiveWallpaper_lockScreen_wallpaperInstanceCorrect() {
+        assertNullOrDefaultWallpaper(FLAG_LOCK);
+
+        runWithShellPermissionIdentity(() ->
+                setWallpaperComponentAndWait(TEST_COMPONENT_NAME, FLAG_LOCK));
+
+        assertNotNullOrDefaultInstance(FLAG_LOCK);
+    }
+
+    @Test
+    public void setLiveWallpaper_both_wallpaperInstanceCorrect() {
+        assertNullOrDefaultWallpaper(FLAG_SYSTEM);
+        assertNullOrDefaultWallpaper(FLAG_LOCK);
+
+        runWithShellPermissionIdentity(() ->
+                setWallpaperComponentAndWait(TEST_COMPONENT_NAME, FLAG_SYSTEM | FLAG_LOCK));
+
+        assertNotNullOrDefaultInstance(FLAG_SYSTEM);
+        assertThat(mWallpaperManager.getWallpaperInstance(FLAG_LOCK)).isNull();
+    }
+
+    @Test
+    public void getWallpaperInstance_badFlagsArgument_throwsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+                mWallpaperManager.getWallpaperInstance(FLAG_SYSTEM | FLAG_LOCK));
     }
 
     @Test
@@ -1892,6 +1963,24 @@ public class WallpaperManagerTest {
 
                     int sourceFlag = which == FLAG_LOCK ? FLAG_LOCK : FLAG_SYSTEM;
 
+                    if (useDescription) {
+                        // TODO(b/380245309) Update this check when description crop logic updated.
+                        WallpaperInstance instance = mWallpaperManager.getWallpaperInstance(
+                                sourceFlag);
+                        if (instance != null) {
+                            assertThat(instance.getDescription()).isNotNull();
+                            SparseArray<Rect> descCropHints =
+                                    instance.getDescription().getCropHints();
+                            assertThat(descCropHints).isNotNull();
+                            assertThat(descCropHints.size()).isEqualTo(cropHintsSparseArray.size());
+                            for (int i = 0; i < descCropHints.size(); i++) {
+                                int key = descCropHints.keyAt(i);
+                                assertAlmostEqual(cropHintsSparseArray.get(key),
+                                        descCropHints.get(key));
+                            }
+                        }
+                    }
+
                     SparseArray<Rect> outCropHints = mWallpaperManager.getBitmapCrops(sourceFlag);
                     assertThat(outCropHints.size()).isEqualTo(cropHintsSparseArray.size());
                     for (int i = 0; i < outCropHints.size(); i++) {
@@ -2110,6 +2199,18 @@ public class WallpaperManagerTest {
             assertThat(wallpaperInfo.getComponent()).isNotEqualTo(
                     mDefaultWallpaperInfo.getComponent());
         }
+    }
+
+    private void assertNotNullOrDefaultInstance(int which) {
+        runWithShellPermissionIdentity(() -> {
+            WallpaperInstance instance = mWallpaperManager.getWallpaperInstance(which);
+            assertThat(instance).isNotNull();
+            assertThat(instance.getInfo()).isNotNull();
+            if (mDefaultWallpaperInfo != null) {
+                assertThat(instance.getInfo().getComponent()).isNotEqualTo(
+                        mDefaultWallpaperInfo.getComponent());
+            }
+        });
     }
 
     private void setWallpaperComponentAndWait(ComponentName component, int which) {

@@ -86,7 +86,8 @@ public class BluetoothLeBroadcastReceiveStateTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -95,7 +96,8 @@ public class BluetoothLeBroadcastReceiveStateTest {
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
@@ -113,18 +115,19 @@ public class BluetoothLeBroadcastReceiveStateTest {
     public void createBroadcastReceiveState() {
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, TEST_SOURCE_ADDRESS_TYPE);
-        BluetoothLeBroadcastReceiveState state = createBroadcastReceiveStateForTest(
-                TEST_SOURCE_ID,
-                TEST_SOURCE_ADDRESS_TYPE,
-                testDevice,
-                TEST_ADVERTISER_SID,
-                TEST_BROADCAST_ID,
-                TEST_PA_SYNC_STATE,
-                TEST_BIG_ENCRYPTION_STATE,
-                null /* badCode */,
-                TEST_NUM_SUBGROUPS,
-                Arrays.asList(TEST_BIS_SYNC_STATE),
-                Arrays.asList(TEST_SUBGROUP_METADATA));
+        BluetoothLeBroadcastReceiveState state =
+                createBroadcastReceiveStateForTest(
+                        TEST_SOURCE_ID,
+                        TEST_SOURCE_ADDRESS_TYPE,
+                        testDevice,
+                        TEST_ADVERTISER_SID,
+                        TEST_BROADCAST_ID,
+                        TEST_PA_SYNC_STATE,
+                        TEST_BIG_ENCRYPTION_STATE,
+                        null /* badCode */,
+                        TEST_NUM_SUBGROUPS,
+                        Arrays.asList(TEST_BIS_SYNC_STATE),
+                        Arrays.asList(TEST_SUBGROUP_METADATA));
         assertEquals(TEST_SOURCE_ID, state.getSourceId());
         assertEquals(TEST_SOURCE_ADDRESS_TYPE, state.getSourceAddressType());
         assertEquals(testDevice, state.getSourceDevice());
@@ -135,14 +138,21 @@ public class BluetoothLeBroadcastReceiveStateTest {
         assertNull(state.getBadCode());
         assertEquals(TEST_NUM_SUBGROUPS, state.getNumSubgroups());
         assertArrayEquals(TEST_BIS_SYNC_STATE, state.getBisSyncState().toArray(new Long[0]));
-        assertArrayEquals(TEST_SUBGROUP_METADATA,
+        assertArrayEquals(
+                TEST_SUBGROUP_METADATA,
                 state.getSubgroupMetadata().toArray(new BluetoothLeAudioContentMetadata[0]));
     }
 
     static BluetoothLeBroadcastReceiveState createBroadcastReceiveStateForTest(
-            int sourceId, int sourceAddressType,
-            BluetoothDevice sourceDevice, int sourceAdvertisingSid, int broadcastId,
-            int paSyncState, int bigEncryptionState, byte[] badCode, int numSubgroups,
+            int sourceId,
+            int sourceAddressType,
+            BluetoothDevice sourceDevice,
+            int sourceAdvertisingSid,
+            int broadcastId,
+            int paSyncState,
+            int bigEncryptionState,
+            byte[] badCode,
+            int numSubgroups,
             List<Long> bisSyncState,
             List<BluetoothLeAudioContentMetadata> subgroupMetadata) {
         Parcel out = Parcel.obtain();

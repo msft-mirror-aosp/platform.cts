@@ -48,62 +48,67 @@ import java.util.UUID;
 @RunWith(AndroidJUnit4.class)
 public class BluetoothGattServerCallbackTest {
 
-    private final BluetoothGattServerCallback mCallbacks = new BluetoothGattServerCallback() {
-        @Override
-        public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        }
+    private final BluetoothGattServerCallback mCallbacks =
+            new BluetoothGattServerCallback() {
+                @Override
+                public void onConnectionStateChange(
+                        BluetoothDevice device, int status, int newState) {}
 
-        @Override
-        public void onServiceAdded(int status, BluetoothGattService service) {
-        }
+                @Override
+                public void onServiceAdded(int status, BluetoothGattService service) {}
 
-        @Override
-        public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
-                int offset, BluetoothGattCharacteristic characteristic) {
-        }
+                @Override
+                public void onCharacteristicReadRequest(
+                        BluetoothDevice device,
+                        int requestId,
+                        int offset,
+                        BluetoothGattCharacteristic characteristic) {}
 
-        @Override
-        public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
-                BluetoothGattCharacteristic characteristic,
-                boolean preparedWrite, boolean responseNeeded,
-                int offset, byte[] value) {
-        }
+                @Override
+                public void onCharacteristicWriteRequest(
+                        BluetoothDevice device,
+                        int requestId,
+                        BluetoothGattCharacteristic characteristic,
+                        boolean preparedWrite,
+                        boolean responseNeeded,
+                        int offset,
+                        byte[] value) {}
 
-        @Override
-        public void onDescriptorReadRequest(BluetoothDevice device, int requestId,
-                int offset, BluetoothGattDescriptor descriptor) {
-        }
+                @Override
+                public void onDescriptorReadRequest(
+                        BluetoothDevice device,
+                        int requestId,
+                        int offset,
+                        BluetoothGattDescriptor descriptor) {}
 
-        @Override
-        public void onDescriptorWriteRequest(BluetoothDevice device, int requestId,
-                BluetoothGattDescriptor descriptor,
-                boolean preparedWrite, boolean responseNeeded,
-                int offset, byte[] value) {
-        }
+                @Override
+                public void onDescriptorWriteRequest(
+                        BluetoothDevice device,
+                        int requestId,
+                        BluetoothGattDescriptor descriptor,
+                        boolean preparedWrite,
+                        boolean responseNeeded,
+                        int offset,
+                        byte[] value) {}
 
-        @Override
-        public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-        }
+                @Override
+                public void onExecuteWrite(
+                        BluetoothDevice device, int requestId, boolean execute) {}
 
-        @Override
-        public void onNotificationSent(BluetoothDevice device, int status) {
-        }
+                @Override
+                public void onNotificationSent(BluetoothDevice device, int status) {}
 
-        @Override
-        public void onMtuChanged(BluetoothDevice device, int mtu) {
-        }
+                @Override
+                public void onMtuChanged(BluetoothDevice device, int mtu) {}
 
-        @Override
-        public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        }
+                @Override
+                public void onPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {}
 
-        @Override
-        public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        }
-
-    };
+                @Override
+                public void onPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {}
+            };
     private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-    private final byte[] mBytes = new byte[]{};
+    private final byte[] mBytes = new byte[] {};
     private Context mContext;
     private BluetoothDevice mBluetoothDevice;
     private BluetoothAdapter mAdapter;
@@ -124,8 +129,8 @@ public class BluetoothGattServerCallbackTest {
         mAdapter = manager.getAdapter();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         mBluetoothDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        mBluetoothGattService = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        mBluetoothGattService =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
         mBluetoothGattDescriptor = new BluetoothGattDescriptor(TEST_UUID, 0x11);
     }
@@ -145,25 +150,29 @@ public class BluetoothGattServerCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void allMethods() {
-        mCallbacks.onConnectionStateChange(mBluetoothDevice, BluetoothProfile.STATE_CONNECTED,
+        mCallbacks.onConnectionStateChange(
+                mBluetoothDevice,
+                BluetoothProfile.STATE_CONNECTED,
                 BluetoothProfile.STATE_CONNECTED);
         mCallbacks.onServiceAdded(BluetoothGatt.GATT_SUCCESS, mBluetoothGattService);
-        mCallbacks.onCharacteristicReadRequest(mBluetoothDevice, 0, 0,
-                mBluetoothGattCharacteristic);
-        mCallbacks.onCharacteristicWriteRequest(mBluetoothDevice, 0,
-                mBluetoothGattCharacteristic,
-                true, true, 0, mBytes);
-        mCallbacks.onDescriptorReadRequest(mBluetoothDevice, 0, 0,
-                mBluetoothGattDescriptor);
-        mCallbacks.onDescriptorWriteRequest(mBluetoothDevice, 0,
-                mBluetoothGattDescriptor, true,
-                true, 0, mBytes);
+        mCallbacks.onCharacteristicReadRequest(
+                mBluetoothDevice, 0, 0, mBluetoothGattCharacteristic);
+        mCallbacks.onCharacteristicWriteRequest(
+                mBluetoothDevice, 0, mBluetoothGattCharacteristic, true, true, 0, mBytes);
+        mCallbacks.onDescriptorReadRequest(mBluetoothDevice, 0, 0, mBluetoothGattDescriptor);
+        mCallbacks.onDescriptorWriteRequest(
+                mBluetoothDevice, 0, mBluetoothGattDescriptor, true, true, 0, mBytes);
         mCallbacks.onExecuteWrite(mBluetoothDevice, 0, true);
         mCallbacks.onNotificationSent(mBluetoothDevice, BluetoothGatt.GATT_SUCCESS);
         mCallbacks.onMtuChanged(mBluetoothDevice, 0);
-        mCallbacks.onPhyUpdate(mBluetoothDevice, BluetoothDevice.PHY_LE_2M,
-                BluetoothDevice.PHY_LE_2M, BluetoothGatt.GATT_SUCCESS);
-        mCallbacks.onPhyRead(mBluetoothDevice, BluetoothDevice.PHY_LE_2M,
+        mCallbacks.onPhyUpdate(
+                mBluetoothDevice,
+                BluetoothDevice.PHY_LE_2M,
+                BluetoothDevice.PHY_LE_2M,
+                BluetoothGatt.GATT_SUCCESS);
+        mCallbacks.onPhyRead(
+                mBluetoothDevice,
+                BluetoothDevice.PHY_LE_2M,
                 BluetoothDevice.PHY_LE_2M,
                 BluetoothGatt.GATT_SUCCESS);
     }

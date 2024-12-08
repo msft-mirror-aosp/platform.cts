@@ -35,17 +35,25 @@ import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.AppModeFull;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.modules.utils.build.SdkLevel;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,7 +63,7 @@ import java.io.InputStream;
  *
  * @see com.android.packageinstaller.permission.service.BackupHelper
  */
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class PermissionTest extends BaseBackupCtsTest {
 
     /** The name of the package of the apps under test */
@@ -78,13 +86,13 @@ public class PermissionTest extends BaseBackupCtsTest {
                 @Override
                 protected InputStream executeShellCommand(String command) throws IOException {
                     ParcelFileDescriptor pfd =
-                            getInstrumentation().getUiAutomation().executeShellCommand(command);
+                            mInstrumentation.getUiAutomation().executeShellCommand(command);
                     return new ParcelFileDescriptor.AutoCloseInputStream(pfd);
                 }
             };
 
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
 
         resetApp(APP);
@@ -94,6 +102,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of regular runtime permission.
      */
+    @Test
     public void testGrantDeniedRuntimePermission() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -113,6 +122,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of pre-M regular runtime permission.
      */
+    @Test
     public void testGrantDeniedRuntimePermission22() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -132,6 +142,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of foreground runtime permission.
      */
+    @Test
     public void testNoTriStateRuntimePermission() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -161,6 +172,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of foreground runtime permission.
      */
+    @Test
     public void testNoTriStateRuntimePermission22() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -177,6 +189,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of foreground runtime permission.
      */
+    @Test
     public void testGrantForegroundRuntimePermission() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -220,6 +233,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of foreground runtime permission.
      */
+    @Test
     public void testGrantForegroundAndBackgroundRuntimePermission() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -241,6 +255,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and restore of foreground runtime permission.
      */
+    @Test
     public void testGrantForegroundAndBackgroundRuntimePermission22() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -263,6 +278,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Restore if the permission was reviewed
      */
+    @Test
     public void testRestorePermReviewed() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -280,6 +296,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Restore if the permission was user set
      */
+    @Test
     public void testRestoreUserSet() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -296,6 +313,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Restore if the permission was user fixed
      */
+    @Test
     public void testRestoreUserFixed() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -312,6 +330,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Restoring of a flag should not grant the permission
      */
+    @Test
     public void testRestoreOfFlagDoesNotGrantPermission() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -328,6 +347,7 @@ public class PermissionTest extends BaseBackupCtsTest {
     /**
      * Test backup and delayed restore of regular runtime permission.
      */
+    @Test
     public void testDelayedRestore() throws Exception {
         if (!isBackupSupported()) {
             return;

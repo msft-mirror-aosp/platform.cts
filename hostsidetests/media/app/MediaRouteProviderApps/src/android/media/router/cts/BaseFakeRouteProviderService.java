@@ -70,12 +70,12 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
     }
 
     protected static MediaRoute2Info createPermissionsRequiredRoute(String id, String name,
-            Set<String> requiredPermissions, String... deduplicationIds) {
+            List<Set<String>> permissionSets, String... deduplicationIds) {
         if (Flags.enableRouteVisibilityControlApi()) {
             return new MediaRoute2Info.Builder(id, name)
                     .addFeature(FEATURE_SAMPLE)
                     .setDeduplicationIds(Set.of(deduplicationIds))
-                    .setRequiredPermissions(requiredPermissions)
+                    .setRequiredPermissions(permissionSets)
                     .build();
         } else {
             throw new IllegalStateException("Required flag not set");

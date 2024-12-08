@@ -81,6 +81,7 @@ java_defaults {
         "cts-wm-shared",
         "platform-compat-test-rules",
         "cts_window_jetpack_utils",
+        "com.android.hardware.input-aconfig-java",
         "com.android.window.flags.window-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.app.flags-aconfig-java",

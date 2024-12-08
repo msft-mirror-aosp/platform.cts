@@ -105,6 +105,7 @@ android_test {
         ":CertBlocklistTestApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
         ":CtsAdvancedProtectionTestApp",
+        ":TestIntrusionDetectionApp",
     ],
 }
 

@@ -4047,7 +4047,7 @@ public class ViewTest {
         final WindowMetrics metrics = windowManager.getMaximumWindowMetrics();
         final Insets insets =
                 metrics.getWindowInsets().getInsets(
-                        WindowInsets.Type.navigationBars() | WindowInsets.Type.displayCutout());
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
         final int expectedWidth = metrics.getBounds().width() - insets.left - insets.right;
         final int expectedHeight = metrics.getBounds().height() - insets.top - insets.bottom;
         assertEquals(0, outRect.left);

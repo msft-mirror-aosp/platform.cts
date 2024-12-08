@@ -51,7 +51,7 @@ class SettingsPreferenceMetadataTest {
             .setAvailable(true)
             .setWritable(true)
             .setRestricted(true)
-            .setWriteSensitivity(SettingsPreferenceMetadata.SENSITIVE)
+            .setWriteSensitivity(SettingsPreferenceMetadata.EXPECT_POST_CONFIRMATION)
             .setLaunchIntent(intent)
             .setExtras(Bundle().apply { putString("bKey", "bValue") })
             .build()
@@ -70,10 +70,21 @@ class SettingsPreferenceMetadataTest {
             assertThat(isAvailable).isTrue()
             assertThat(isWritable).isTrue()
             assertThat(isRestricted).isTrue()
-            assertThat(writeSensitivity).isEqualTo(SettingsPreferenceMetadata.SENSITIVE)
+            assertThat(writeSensitivity)
+                .isEqualTo(SettingsPreferenceMetadata.EXPECT_POST_CONFIRMATION)
             assertThat(launchIntent!!).isEqualTo(intent)
             assertThat(extras.getString("bKey")!!).isEqualTo("bValue")
         }
+    }
+
+    @Test
+    fun buildMetadata_excludedSensitivity_nullLaunchIntent() {
+        val md = SettingsPreferenceMetadata.Builder("screenKey", "key")
+            .setLaunchIntent(intent)
+            .setWriteSensitivity(SettingsPreferenceMetadata.NO_DIRECT_ACCESS)
+            .build()
+        assertThat(md.writeSensitivity).isEqualTo(SettingsPreferenceMetadata.NO_DIRECT_ACCESS)
+        assertThat(md.launchIntent).isNull()
     }
 
     @Test
@@ -95,7 +106,8 @@ class SettingsPreferenceMetadataTest {
             assertThat(isAvailable).isTrue()
             assertThat(isWritable).isTrue()
             assertThat(isRestricted).isTrue()
-            assertThat(writeSensitivity).isEqualTo(SettingsPreferenceMetadata.SENSITIVE)
+            assertThat(writeSensitivity)
+                .isEqualTo(SettingsPreferenceMetadata.EXPECT_POST_CONFIRMATION)
             assertThat(launchIntent!!.toUri(0)).isEqualTo(intent.toUri(0))
             assertThat(extras.getString("bKey")!!).isEqualTo("bValue")
         }
