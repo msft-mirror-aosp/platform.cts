@@ -694,6 +694,16 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     public void testJobUidState() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        if (mUserHelper.isVisibleBackgroundUserSupported()) {
+            Log.d(TAG, "Skip the test on devices that support visible background users"
+                    + ", because the device might not enter sleep mode even with KEYCODE_SLEEP.");
+            return;
+        }
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         toggleScreenOn(false);

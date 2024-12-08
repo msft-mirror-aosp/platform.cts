@@ -394,6 +394,41 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
             self.pn532 else None)
 
+    def test_single_payment_service_crashes(self):
+        """Tests successful APDU exchange between payment service and
+        reader.
+
+        Test Steps:
+        1. Set callback handler on emulator for when the instrumentation app is
+        set to default wallet app.
+        2. Start emulator activity and wait for the role to be set.
+        2. Set callback handler on emulator for when a TestPass event is
+        received.
+        3. Start reader activity, which should trigger APDU exchange between
+        reader and emulator.
+
+        Verifies:
+        1. Verifies emulator device sets the instrumentation emulator app to the
+        default wallet app.
+        2. Verifies a successful APDU exchange between the emulator and
+        Transport Service after _NFC_TIMEOUT_SEC.
+        """
+        self._set_up_emulator(
+            service_list=[_PAYMENT_SERVICE_1],
+            expected_service=_PAYMENT_SERVICE_1,
+            is_payment=True,
+            payment_default_service=_PAYMENT_SERVICE_1
+        )
+
+        ps = self.emulator.adb.shell(["ps", "|", "grep", "com.android.nfc.emulator.payment"]).decode("utf-8")
+        pid = ps.split()[1]
+        self.emulator.adb.shell(["kill", "-9", pid])
+
+        self._set_up_reader_and_assert_transaction(
+            expected_service=_PAYMENT_SERVICE_1,
+            start_reader_fun=self.reader.nfc_reader.startSinglePaymentReaderActivity if not
+            self.pn532 else None)
+
     @CddTest(requirements = ["7.4.4/C-2-2", "7.4.4/C-1-2", "9.1/C-0-1"])
     def test_dual_payment_service(self):
         """Tests successful APDU exchange between a payment service and

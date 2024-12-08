@@ -17,6 +17,7 @@
 package com.android.cts.apimap;
 
 import com.android.cts.apicommon.ApiCoverage;
+import com.android.cts.apicommon.ApiPackage;
 import com.android.cts.apicommon.ApiXmlHandler;
 import com.android.cts.ctsprofiles.ClassProfile;
 import com.android.cts.ctsprofiles.ModuleProfile;
@@ -237,8 +238,10 @@ public final class ApiMap {
                     }
                     Pair<String, String> packageClass = Utils.getPackageClassFromASM(
                             className.substring(0, className.length() - 6));
-                    String packageName = packageClass.getFirst();
-                    if (ignorePackage(packageName)) {
+                    if (ignoreClass(
+                            packageClass.getFirst(),
+                            packageClass.getSecond(),
+                            apiCoverage)) {
                         continue;
                     }
                     ClassReader cr = new ClassReader(bis);
@@ -272,12 +275,19 @@ public final class ApiMap {
         return currentXmlHandler.getApi();
     }
 
-    private static boolean ignorePackage(String packageName) {
+    private static boolean ignoreClass(
+            String packageName,
+            String className,
+            ApiCoverage apiCoverage
+    ) {
         for (String ignorePackage: IGNORE_PACKAGES) {
             if (packageName.startsWith(ignorePackage)) {
                 return true;
             }
         }
-        return false;
+        ApiPackage apiPackage = apiCoverage.getPackage(packageName);
+        return apiPackage != null && apiPackage.getClass(
+                className.split("\\.")[0]) != null;
     }
 }
+

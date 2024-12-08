@@ -21,9 +21,7 @@ import android.test.AndroidTestCase;
 
 import androidx.test.filters.SmallTest;
 
-/**
- * Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}.
- */
+/** Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}. */
 public class BluetoothHidDeviceAppSdpSettingsTest extends AndroidTestCase {
     @SmallTest
     public void testGetters() {
@@ -32,8 +30,9 @@ public class BluetoothHidDeviceAppSdpSettingsTest extends AndroidTestCase {
         String provider = "test-provider";
         byte subclass = 1;
         byte[] descriptors = new byte[] {10};
-        BluetoothHidDeviceAppSdpSettings settings = new BluetoothHidDeviceAppSdpSettings(
-                name, description, provider, subclass, descriptors);
+        BluetoothHidDeviceAppSdpSettings settings =
+                new BluetoothHidDeviceAppSdpSettings(
+                        name, description, provider, subclass, descriptors);
         assertEquals(name, settings.getName());
         assertEquals(description, settings.getDescription());
         assertEquals(provider, settings.getProvider());

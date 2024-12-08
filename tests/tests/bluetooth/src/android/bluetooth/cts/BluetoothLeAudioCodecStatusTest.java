@@ -39,42 +39,48 @@ import java.util.List;
 public class BluetoothLeAudioCodecStatusTest {
     private static final BluetoothLeAudioCodecConfig LC3_16KHZ_CONFIG =
             new BluetoothLeAudioCodecConfig.Builder()
-                .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
-                .setSampleRate(BluetoothLeAudioCodecConfig.SAMPLE_RATE_16000)
-                .build();
+                    .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
+                    .setSampleRate(BluetoothLeAudioCodecConfig.SAMPLE_RATE_16000)
+                    .build();
     private static final BluetoothLeAudioCodecConfig LC3_48KHZ_CONFIG =
             new BluetoothLeAudioCodecConfig.Builder()
-                .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
-                .setSampleRate(BluetoothLeAudioCodecConfig.SAMPLE_RATE_48000)
-                .build();
+                    .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
+                    .setSampleRate(BluetoothLeAudioCodecConfig.SAMPLE_RATE_48000)
+                    .build();
 
     private static final BluetoothLeAudioCodecConfig LC3_48KHZ_16KHZ_CONFIG =
-             new BluetoothLeAudioCodecConfig.Builder()
-               .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
-               .setSampleRate(BluetoothLeAudioCodecConfig.SAMPLE_RATE_48000
-                                | BluetoothLeAudioCodecConfig.SAMPLE_RATE_16000)
-               .build();
-    private static final List<BluetoothLeAudioCodecConfig> INPUT_CAPABILITIES_CONFIG = List.of(
-            LC3_48KHZ_16KHZ_CONFIG);
+            new BluetoothLeAudioCodecConfig.Builder()
+                    .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
+                    .setSampleRate(
+                            BluetoothLeAudioCodecConfig.SAMPLE_RATE_48000
+                                    | BluetoothLeAudioCodecConfig.SAMPLE_RATE_16000)
+                    .build();
+    private static final List<BluetoothLeAudioCodecConfig> INPUT_CAPABILITIES_CONFIG =
+            List.of(LC3_48KHZ_16KHZ_CONFIG);
 
-    private static final List<BluetoothLeAudioCodecConfig> OUTPUT_CAPABILITIES_CONFIG = List.of(
-            LC3_48KHZ_16KHZ_CONFIG);
+    private static final List<BluetoothLeAudioCodecConfig> OUTPUT_CAPABILITIES_CONFIG =
+            List.of(LC3_48KHZ_16KHZ_CONFIG);
 
-    private static final List<BluetoothLeAudioCodecConfig> INPUT_SELECTABLE_CONFIG = List.of(
-            LC3_16KHZ_CONFIG);
+    private static final List<BluetoothLeAudioCodecConfig> INPUT_SELECTABLE_CONFIG =
+            List.of(LC3_16KHZ_CONFIG);
 
-    private static final List<BluetoothLeAudioCodecConfig> OUTPUT_SELECTABLE_CONFIG = List.of(
-            LC3_48KHZ_16KHZ_CONFIG);
+    private static final List<BluetoothLeAudioCodecConfig> OUTPUT_SELECTABLE_CONFIG =
+            List.of(LC3_48KHZ_16KHZ_CONFIG);
 
     private static final BluetoothLeAudioCodecStatus LE_CODEC_STATUS =
-            new BluetoothLeAudioCodecStatus(LC3_16KHZ_CONFIG, LC3_48KHZ_CONFIG,
-                        INPUT_CAPABILITIES_CONFIG, OUTPUT_CAPABILITIES_CONFIG,
-                        INPUT_SELECTABLE_CONFIG, OUTPUT_SELECTABLE_CONFIG);
+            new BluetoothLeAudioCodecStatus(
+                    LC3_16KHZ_CONFIG,
+                    LC3_48KHZ_CONFIG,
+                    INPUT_CAPABILITIES_CONFIG,
+                    OUTPUT_CAPABILITIES_CONFIG,
+                    INPUT_SELECTABLE_CONFIG,
+                    OUTPUT_SELECTABLE_CONFIG);
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -93,23 +99,24 @@ public class BluetoothLeAudioCodecStatusTest {
     @Test
     public void getInputCodecLocalCapabilities() {
         assertTrue(
-                LE_CODEC_STATUS.getInputCodecLocalCapabilities()
-                                .equals(INPUT_CAPABILITIES_CONFIG));
+                LE_CODEC_STATUS.getInputCodecLocalCapabilities().equals(INPUT_CAPABILITIES_CONFIG));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getOutputCodecLocalCapabilities() {
         assertTrue(
-                LE_CODEC_STATUS.getOutputCodecLocalCapabilities()
-                                .equals(OUTPUT_CAPABILITIES_CONFIG));
+                LE_CODEC_STATUS
+                        .getOutputCodecLocalCapabilities()
+                        .equals(OUTPUT_CAPABILITIES_CONFIG));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getInputCodecSelectableCapabilities() {
         assertTrue(
-                LE_CODEC_STATUS.getInputCodecSelectableCapabilities()
+                LE_CODEC_STATUS
+                        .getInputCodecSelectableCapabilities()
                         .equals(INPUT_SELECTABLE_CONFIG));
     }
 
@@ -117,7 +124,8 @@ public class BluetoothLeAudioCodecStatusTest {
     @Test
     public void getOutputCodecSelectableCapabilities() {
         assertTrue(
-                LE_CODEC_STATUS.getOutputCodecSelectableCapabilities()
+                LE_CODEC_STATUS
+                        .getOutputCodecSelectableCapabilities()
                         .equals(OUTPUT_SELECTABLE_CONFIG));
     }
 
@@ -152,16 +160,20 @@ public class BluetoothLeAudioCodecStatusTest {
         assertTrue(codecStatusFromParcel.getInputCodecConfig().equals(LC3_16KHZ_CONFIG));
         assertTrue(codecStatusFromParcel.getOutputCodecConfig().equals(LC3_48KHZ_CONFIG));
         assertTrue(
-                codecStatusFromParcel.getInputCodecLocalCapabilities()
-                                .equals(INPUT_CAPABILITIES_CONFIG));
+                codecStatusFromParcel
+                        .getInputCodecLocalCapabilities()
+                        .equals(INPUT_CAPABILITIES_CONFIG));
         assertTrue(
-                codecStatusFromParcel.getOutputCodecLocalCapabilities()
-                                .equals(OUTPUT_CAPABILITIES_CONFIG));
+                codecStatusFromParcel
+                        .getOutputCodecLocalCapabilities()
+                        .equals(OUTPUT_CAPABILITIES_CONFIG));
         assertTrue(
-                codecStatusFromParcel.getInputCodecSelectableCapabilities()
-                                .equals(INPUT_SELECTABLE_CONFIG));
+                codecStatusFromParcel
+                        .getInputCodecSelectableCapabilities()
+                        .equals(INPUT_SELECTABLE_CONFIG));
         assertTrue(
-                codecStatusFromParcel.getOutputCodecSelectableCapabilities()
-                                .equals(OUTPUT_SELECTABLE_CONFIG));
+                codecStatusFromParcel
+                        .getOutputCodecSelectableCapabilities()
+                        .equals(OUTPUT_SELECTABLE_CONFIG));
     }
 }

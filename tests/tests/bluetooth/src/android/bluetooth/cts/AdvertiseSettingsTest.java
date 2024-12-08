@@ -18,8 +18,8 @@ package android.bluetooth.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -36,16 +36,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Test for {@link AdvertiseSettings}.
- */
+/** Test for {@link AdvertiseSettings}. */
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseSettingsTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -73,20 +72,21 @@ public class AdvertiseSettingsTest {
     public void readWriteParcel() {
         final int timeoutMillis = 60 * 1000;
         Parcel parcel = Parcel.obtain();
-        AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                .setConnectable(false)
-                .setDiscoverable(false)
-                .setTimeout(timeoutMillis)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-                .setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT)
-                .build();
+        AdvertiseSettings settings =
+                new AdvertiseSettings.Builder()
+                        .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                        .setConnectable(false)
+                        .setDiscoverable(false)
+                        .setTimeout(timeoutMillis)
+                        .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
+                        .setOwnAddressType(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT)
+                        .build();
         settings.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseSettings settingsFromParcel = AdvertiseSettings.CREATOR.createFromParcel(parcel);
         assertEquals(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY, settingsFromParcel.getMode());
-        assertEquals(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM,
-                settingsFromParcel.getTxPowerLevel());
+        assertEquals(
+                AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settingsFromParcel.getTxPowerLevel());
         assertEquals(timeoutMillis, settingsFromParcel.getTimeout());
         assertFalse(settings.isConnectable());
         assertFalse(settings.isDiscoverable());
@@ -101,19 +101,9 @@ public class AdvertiseSettingsTest {
         builder.setTimeout(0).build();
         builder.setTimeout(180 * 1000).build();
         // Maximum timeout is 3 minutes.
-        try {
-            builder.setTimeout(180 * 1000 + 1).build();
-            fail("should not allow setting timeout to more than 3 minutes");
-        } catch (IllegalArgumentException e) {
-            // nothing to do.
-        }
+        assertThrows(
+                IllegalArgumentException.class, () -> builder.setTimeout(180 * 1000 + 1).build());
         // Negative time out is not allowed.
-        try {
-            builder.setTimeout(-1).build();
-            fail("should not allow setting timeout to more than 3 minutes");
-        } catch (IllegalArgumentException e) {
-            // nothing to do.
-        }
-
+        assertThrows(IllegalArgumentException.class, () -> builder.setTimeout(-1).build());
     }
 }

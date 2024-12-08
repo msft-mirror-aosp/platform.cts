@@ -56,8 +56,8 @@ public class BluetoothCddTest {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mHasBluetooth = TestUtils.hasBluetooth();
         Assume.assumeTrue(mHasBluetooth);
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED,
-                BLUETOOTH_SCAN);
+        TestUtils.adoptPermissionAsShellUid(
+                BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
 
         assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
@@ -74,7 +74,8 @@ public class BluetoothCddTest {
             }
             try {
                 Thread.sleep(BLUETOOTH_TOGGLE_DELAY_MS);
-            } catch (InterruptedException ignored) { }
+            } catch (InterruptedException ignored) {
+            }
         }
         mAdapter = null;
         mContext = null;
@@ -97,12 +98,13 @@ public class BluetoothCddTest {
             assertThat(mAdapter.getSupportedProfiles()).doesNotContain(BluetoothProfile.LE_AUDIO);
             return;
         }
-        assertThat(mAdapter.getSupportedProfiles()).containsAtLeast(
-                BluetoothProfile.LE_AUDIO,
-                BluetoothProfile.CSIP_SET_COORDINATOR,
-                PROFILE_MCP_SERVER,
-                BluetoothProfile.VOLUME_CONTROL,
-                PROFILE_LE_CALL_CONTROL);
+        assertThat(mAdapter.getSupportedProfiles())
+                .containsAtLeast(
+                        BluetoothProfile.LE_AUDIO,
+                        BluetoothProfile.CSIP_SET_COORDINATOR,
+                        PROFILE_MCP_SERVER,
+                        BluetoothProfile.VOLUME_CONTROL,
+                        PROFILE_LE_CALL_CONTROL);
         assertThat(mAdapter.isLe2MPhySupported()).isTrue();
         assertThat(mAdapter.isLeExtendedAdvertisingSupported()).isTrue();
     }
@@ -114,16 +116,16 @@ public class BluetoothCddTest {
         // BluetoothAdapter#getSupportedProfiles() return the same information
         if (mAdapter.isLeAudioBroadcastSourceSupported()
                 != BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertThat(mAdapter.getSupportedProfiles()).doesNotContain(
-                    BluetoothProfile.LE_AUDIO_BROADCAST);
+            assertThat(mAdapter.getSupportedProfiles())
+                    .doesNotContain(BluetoothProfile.LE_AUDIO_BROADCAST);
         } else {
-            assertThat(mAdapter.getSupportedProfiles()).containsAtLeast(
-                    BluetoothProfile.LE_AUDIO_BROADCAST,
-                    BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
+            assertThat(mAdapter.getSupportedProfiles())
+                    .containsAtLeast(
+                            BluetoothProfile.LE_AUDIO_BROADCAST,
+                            BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
             assertThat(mAdapter.isLePeriodicAdvertisingSupported()).isTrue();
             // TODO: Enforce Periodic Advertising support
         }
-
     }
 
     @CddTest(requirements = {"7.4.3/C-9-2"})
@@ -133,11 +135,11 @@ public class BluetoothCddTest {
         // BluetoothAdapter#getSupportedProfiles() return the same information
         if (mAdapter.isLeAudioBroadcastAssistantSupported()
                 != BluetoothStatusCodes.FEATURE_SUPPORTED) {
-            assertThat(mAdapter.getSupportedProfiles()).doesNotContain(
-                    BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
+            assertThat(mAdapter.getSupportedProfiles())
+                    .doesNotContain(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
         } else {
-            assertThat(mAdapter.getSupportedProfiles()).contains(
-                    BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
+            assertThat(mAdapter.getSupportedProfiles())
+                    .contains(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
             assertThat(mAdapter.isLePeriodicAdvertisingSupported()).isTrue();
             // TODO: Enforce Periodic Advertising support
         }
