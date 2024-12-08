@@ -53,12 +53,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothA2dpSinkTest {
     private static final String TAG = BluetoothA2dpSinkTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;;
+    private UiAutomation mUiAutomation;
 
     private BluetoothA2dpSink mBluetoothA2dpSink;
     private boolean mIsA2dpSinkSupported;
@@ -88,8 +88,8 @@ public class BluetoothA2dpSinkTest {
         mIsProfileReady = false;
         mBluetoothA2dpSink = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothA2dpSinkServiceListener(),
-                BluetoothProfile.A2DP_SINK);
+        mAdapter.getProfileProxy(
+                mContext, new BluetoothA2dpSinkServiceListener(), BluetoothProfile.A2DP_SINK);
     }
 
     @After
@@ -136,8 +136,9 @@ public class BluetoothA2dpSinkTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothA2dpSink);
 
-        assertEquals(mBluetoothA2dpSink.getDevicesMatchingConnectionStates(
-                new int[]{BluetoothProfile.STATE_CONNECTED}),
+        assertEquals(
+                mBluetoothA2dpSink.getDevicesMatchingConnectionStates(
+                        new int[] {BluetoothProfile.STATE_CONNECTED}),
                 new ArrayList<BluetoothDevice>());
     }
 
@@ -149,12 +150,13 @@ public class BluetoothA2dpSinkTest {
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(mBluetoothA2dpSink.getConnectionState(testDevice),
+        assertEquals(
+                mBluetoothA2dpSink.getConnectionState(testDevice),
                 BluetoothProfile.STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class,
-                () -> mBluetoothA2dpSink.getConnectionState(testDevice));
+        assertThrows(
+                SecurityException.class, () -> mBluetoothA2dpSink.getConnectionState(testDevice));
     }
 
     @Test
@@ -166,13 +168,15 @@ public class BluetoothA2dpSinkTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothA2dpSink.getConnectionPolicy(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothA2dpSink.getConnectionPolicy(testDevice));
     }
 
@@ -185,16 +189,19 @@ public class BluetoothA2dpSinkTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothA2dpSink.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothA2dpSink.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothA2dpSink.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothA2dpSink.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothA2dpSink.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothA2dpSink.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     @Test
@@ -254,8 +261,8 @@ public class BluetoothA2dpSinkTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothA2dpSinkServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothA2dpSinkServiceListener
+            implements BluetoothProfile.ServiceListener {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {

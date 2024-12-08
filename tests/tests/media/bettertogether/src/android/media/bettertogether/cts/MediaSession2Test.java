@@ -40,9 +40,12 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Process;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -56,10 +59,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Tests {@link android.media.MediaSession2}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link android.media.MediaSession2}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class MediaSession2Test {
     private static final long WAIT_TIME_MS = 300L;
@@ -116,6 +117,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setIllegalArguments() {
         assertThrows("null context shouldn't be allowed",
                 IllegalArgumentException.class,
@@ -129,6 +131,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setSessionActivity() {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0 /* requestCode */,
@@ -142,6 +145,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_createSessionWithoutId() {
         try (MediaSession2 session = new MediaSession2.Builder(mContext).build()) {
             assertThat(session.getId()).isEqualTo("");
@@ -149,6 +153,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_createSessionWithDupId() {
         final String dupSessionId = "TEST_SESSION_DUP_ID";
         MediaSession2.Builder builder = new MediaSession2.Builder(mContext).setId(dupSessionId);
@@ -160,6 +165,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setExtras_withFrameworkParcelable() {
         final String testKey = "test_key";
         final Session2Token frameworkParcelable = new Session2Token(mContext,
@@ -179,6 +185,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setExtras_withCustomParcelable() {
         final String testKey = "test_key";
         final CustomParcelable customParcelable = new CustomParcelable(1);
@@ -194,6 +201,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2Token() {
         final Bundle extras = new Bundle();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
@@ -210,6 +218,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2Token_extrasNotSet() {
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
                 .build()) {
@@ -219,6 +228,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetConnectedControllers_newController() throws Exception {
         Session2Callback sessionCallback = new Session2Callback();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
@@ -245,6 +255,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetConnectedControllers_closedController() throws Exception {
         Session2Callback sessionCallback = new Session2Callback();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
@@ -265,6 +276,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2Token_writeToParcel() {
         final Bundle extras = new Bundle();
         extras.putString(TEST_KEY, TEST_VALUE);
@@ -292,6 +304,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBroadcastSessionCommand() throws Exception {
         Session2Callback sessionCallback = new Session2Callback();
 
@@ -354,6 +367,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onConnect_onDisconnect() throws Exception {
         Session2Callback sessionCallback = new Session2Callback();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
@@ -393,6 +407,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onPostConnect_connected() throws Exception {
         Session2Callback sessionCallback = new Session2Callback();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)
@@ -410,6 +425,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onPostConnect_rejected() throws Exception {
         Session2Callback sessionCallback = new Session2Callback() {
             @Override
@@ -433,6 +449,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onSessionCommand() {
         Session2Callback sessionCallback = new Session2Callback();
 
@@ -478,6 +495,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onCommandResult() {
         Session2Callback sessionCallback = new Session2Callback();
 
@@ -533,6 +551,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSetPlaybackActive() {
         final boolean testInitialPlaybackActive = true;
         final boolean testPlaybackActive = false;
@@ -569,6 +588,7 @@ public class MediaSession2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCancelSessionCommand() {
         Session2Callback sessionCallback = new Session2Callback();
         try (MediaSession2 session = new MediaSession2.Builder(mContext)

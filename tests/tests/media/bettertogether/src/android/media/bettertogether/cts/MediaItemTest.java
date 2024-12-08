@@ -21,18 +21,17 @@ import android.media.MediaDescription;
 import android.media.browse.MediaBrowser.MediaItem;
 import android.os.Parcel;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Test {@link android.media.browse.MediaBrowser.MediaItem}.
- */
+/** Test {@link android.media.browse.MediaBrowser.MediaItem}. */
 @FrameworkSpecificTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class MediaItemTest {
     private static final String DESCRIPTION = "test_description";
     private static final String MEDIA_ID = "test_media_id";
@@ -71,6 +70,7 @@ public class MediaItemTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testPlayableMediaItem() {
         MediaDescription description = new MediaDescription.Builder()
                 .setDescription(DESCRIPTION).setMediaId(MEDIA_ID)

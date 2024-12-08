@@ -26,6 +26,7 @@ import android.hardware.radio.RadioIndicationType;
 import android.hardware.radio.RadioResponseInfo;
 import android.hardware.radio.sim.CardStatus;
 import android.hardware.radio.sim.Carrier;
+import android.hardware.radio.sim.CarrierInfo;
 import android.hardware.radio.sim.CarrierRestrictions;
 import android.hardware.radio.sim.IRadioSim;
 import android.hardware.radio.sim.IRadioSimIndication;
@@ -36,11 +37,13 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
+import android.service.carrier.CarrierIdentifier;
 import android.telephony.mockmodem.MockModemConfigBase.SimInfoChangedResult;
 import android.telephony.mockmodem.MockSimService.SimAppData;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.List;
 import com.android.internal.telephony.flags.Flags;
 
 public class IRadioSimImpl extends IRadioSim.Stub {
@@ -241,6 +244,30 @@ public class IRadioSimImpl extends IRadioSim.Stub {
             carriers.allowedCarriers = new Carrier[0];
         } else {
             carriers.allowedCarriers = mCarrierList;
+            Log.d(mTag, "getAllowedCarriers InterfaceVersion = " +getInterfaceVersion());
+            if (getInterfaceVersion() >=3 && mCarrierList.length > 0) {
+                carriers.allowedCarrierInfoList = new CarrierInfo[mCarrierList.length];
+                for (int count = 0; count < mCarrierList.length; count++) {
+                    String spn = null;
+                    String imsi = null;
+                    String gid1 = null;
+                    String gid2 = null;
+                    if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.GID1) {
+                        gid1 = mCarrierList[count].matchData;
+                    } else if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.GID2) {
+                        gid2 = mCarrierList[count].matchData;
+                    } else if (mCarrierList[count].matchType
+                            == CarrierIdentifier.MatchType.IMSI_PREFIX) {
+                        imsi = mCarrierList[count].matchData;
+                    } else if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.SPN) {
+                        spn = mCarrierList[count].matchData;
+                    }
+                    android.hardware.radio.sim.CarrierInfo carrierInfo = getCarrierInfo(
+                            mCarrierList[count].mcc, mCarrierList[count].mnc, spn, gid1, gid2, imsi,
+                            null, null, null);
+                    carriers.allowedCarrierInfoList[count] = carrierInfo;
+                }
+            }
         }
         carriers.excludedCarriers = new Carrier[0];
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
@@ -1079,5 +1106,22 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         Log.d(mTag, "updateCarrierRestrictionRules");
         mCarrierRestrictionRules = carrierRestrictionRules;
         mMultiSimPolicy = multiSimPolicy;
+    }
+
+    private android.hardware.radio.sim.CarrierInfo getCarrierInfo(String mcc, String mnc,
+            String spn, String gid1, String gid2, String imsi,
+            List<android.hardware.radio.sim.Plmn> ehplmn, String iccid, String impi) {
+        android.hardware.radio.sim.CarrierInfo carrierInfo =
+                new android.hardware.radio.sim.CarrierInfo();
+        carrierInfo.mcc = mcc;
+        carrierInfo.mnc = mnc;
+        carrierInfo.spn = spn;
+        carrierInfo.gid1 = gid1;
+        carrierInfo.gid2 = gid2;
+        carrierInfo.imsiPrefix = imsi;
+        carrierInfo.ehplmn = ehplmn;
+        carrierInfo.iccid = iccid;
+        carrierInfo.impi = impi;
+        return carrierInfo;
     }
 }

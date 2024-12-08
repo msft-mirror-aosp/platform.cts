@@ -55,10 +55,19 @@ public class BluetoothLeAudioContentMetadataTest {
     private static final String TEST_LANGUAGE_WITH_WHITESPACE = "   deu     ";
     // See Page 6 of Generic Audio assigned number specification
     private static final byte[] TEST_METADATA_BYTES = {
-            // length is 0x05, type is 0x03, data is "Test" in UTF-8 "54 65 73 74" hex
-            0x05, 0x03, 0x54, 0x65, 0x73, 0x74,
-            // length is 0x04, type is 0x04, data is "deu" in ASCII "64 65 75" hex
-            0x04, 0x04, 0x64, 0x65, 0x75
+        // length is 0x05, type is 0x03, data is "Test" in UTF-8 "54 65 73 74" hex
+        0x05,
+        0x03,
+        0x54,
+        0x65,
+        0x73,
+        0x74,
+        // length is 0x04, type is 0x04, data is "deu" in ASCII "64 65 75" hex
+        0x04,
+        0x04,
+        0x64,
+        0x65,
+        0x75
     };
 
     private Context mContext;
@@ -81,7 +90,8 @@ public class BluetoothLeAudioContentMetadataTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -90,7 +100,8 @@ public class BluetoothLeAudioContentMetadataTest {
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
@@ -107,7 +118,9 @@ public class BluetoothLeAudioContentMetadataTest {
     public void createContentMetadataFromBuilder() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         assertEquals(TEST_PROGRAM_INFO, contentMetadata.getProgramInfo());
         assertEquals(TEST_LANGUAGE, contentMetadata.getLanguage());
         assertArrayEquals(TEST_METADATA_BYTES, contentMetadata.getRawMetadata());
@@ -118,8 +131,8 @@ public class BluetoothLeAudioContentMetadataTest {
                         .setProgramInfo(TEST_PROGRAM_INFO)
                         .setLanguage(TEST_LANGUAGE_WITH_WHITESPACE.toLowerCase().strip())
                         .build();
-        assertArrayEquals(contentMetadata.getRawMetadata(),
-                contentMetadataStrippedLanguage.getRawMetadata());
+        assertArrayEquals(
+                contentMetadata.getRawMetadata(), contentMetadataStrippedLanguage.getRawMetadata());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -127,7 +140,9 @@ public class BluetoothLeAudioContentMetadataTest {
     public void createContentMetadataFromCopy() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         BluetoothLeAudioContentMetadata contentMetadataCopy =
                 new BluetoothLeAudioContentMetadata.Builder(contentMetadata).build();
         assertEquals(TEST_PROGRAM_INFO, contentMetadataCopy.getProgramInfo());
