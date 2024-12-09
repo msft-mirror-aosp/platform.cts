@@ -111,3 +111,16 @@ cc_test_library {
         "NativeMediaFormatUnitTest.cpp",
     ],
 }
+
+cc_test_library {
+    name: "libctsmediav2codecinfo_jni",
+    defaults: [
+        "cts_mediav2_jni_defaults",
+    ],
+    cflags: [
+        "-Wno-nonnull",
+    ],
+    srcs: [
+        "NativeAMediaCodecInfoUnitTest.cpp",
+    ],
+}
