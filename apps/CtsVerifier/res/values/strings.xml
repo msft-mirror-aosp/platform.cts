@@ -6130,47 +6130,42 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Analog Headset Test -->
     <string name="audio_headset_audio_test">Analog Headset Audio Test</string>
-    <string name="analog_headset_query">Does this Android device have an analog headset jack?</string>
-    <string name="analog_headset_play">Play</string>
-    <string name="analog_headset_stop">Stop</string>
-    <string name="analog_headset_playback_prompt">Play a test tone and verify correct playback</string>
-    <string name="analog_headset_playback_query">Was the audio correctly played through the headset?</string>
     <string name="analog_headset_keycodes_label">Headset key codes</string>
     <string name="analog_headset_headsethook">HEADSETHOOK</string>
     <string name="analog_headset_volup">VOLUME_UP</string>
     <string name="analog_headset_voldown">VOLUME_DOWN</string>
     <string name="analog_headset_test">Analog Headset Test</string>
-    <string name="analog_headset_pass_noheadset">"PASS - No headset port available"</string>
-    <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
     <string name="analog_headset_port_detected">"Headset port detected"</string>
     <string name="analog_headset_port_notsupported">"Headset not support on this device."</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Analog headset connected</string>
-    <string name="analog_headset_no_headset">No Analog Headset - Connect headset to 3.5mm jack</string>
+    <string name="analog_headset_no_headset">Connect headset to 3.5mm jack</string>
     <string name="analog_headset_action_received">ACTION_HEADSET_PLUG received - </string>
     <string name="analog_headset_unplugged">Unplugged</string>
     <string name="analog_headset_plugged">Plugged</string>
-    <string name="analog_headset_mic"> [mic]</string>
     <string name="analog_headset_reportnojack">No analog Jack. PASS</string>
-    <string name="analog_headset_no_jack">No analog jack detected. Please connect a headset, or PASS</string>
     <string name="analog_headset_connect_headset">Please connect an analog headset</string>
-    <string name="analog_headset_play_audio">Please test audio through the analog headset</string>
     <string name="analog_headset_test_buttons">Please test transport buttons</string>
+    <string name="analog_headset_playback_moved">Testing of audio signal integrity has moved to the Audio Datapaths Analog Jack Test</string>
+    <string name="analog_headset_supportundertermined">Supoort for an Analog Headset could not be determing. Please run test if applicable."</string>
+    <string name="analog_headset_heasdsetunknown">Headset Unknown</string>
+    <string name="analog_headset_nosupportpass">No headset support or headsetup support undetermined. PASS</string>
+    <string name="analog_headset_dutdoesntsupportheadset">"The DUT does not support an Analog Headset. PASS"</string>
+    <string name="analog_headset_supportsheadset">The DUT supports an Analog Headset. Please run test.</string>
 
     <string name="analog_headset_test_info">This test tests the following functionality with respect to wired analog headsets.\n
-        1. Correct audio playback.\n
         2. Plug intents.\n
         3. Headset keycodes.\n
         \nTo execute test:\n
         1. Plug in an Android-compatible, analog headset. Verify connection/recognition.\n
-        2. Play test tone and verify correct behavior.\n
-        3. Press headset buttons until all are recognized on the test screen.\n
+        2. Press headset buttons until all are recognized on the test screen.\n
         \nTo run this test it is necessary to have an Android device with a 3.5mm analog headset jack and a compatible analog headset with Hook, Volume Up and Volume Down buttons.\n
         \n(see <a href="https://source.android.com/devices/accessories/headset/plug-headset-spec">3.5 mm Headset: Accessory Specification</a> and
         <a href="https://source.android.com/compatibility/android-cdd#7_8_2_1_analog_audio_ports">Android CDD § 7.8.2.1. Analog Audio Ports</a>)
     </string>
+
     <!-- Audio AEC Test -->
     <string name="audio_aec_test">Audio Acoustic Echo Cancellation (AEC) Test</string>
     <string name="audio_aec_info">
