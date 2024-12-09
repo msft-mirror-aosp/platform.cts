@@ -17,8 +17,7 @@
 package android.security.net.config.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertFalse;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -46,12 +45,12 @@ import javax.net.ssl.HttpsURLConnection;
     com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
 })
 // TODO(b/383539782): replace reused test helpers & constants with common utils
-public class LogListVerificationTest extends BaseTestCase {
+public class SctValidationNoLogListPresentTest extends BaseTestCase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final String SCT_PROVIDED_DOMAIN = "https://android.com";
+    private static final String NO_SCT_PROVIDED_DOMAIN = "https://no-sct.badssl.com/";
     private static final int HTTP_OK_RESPONSE_CODE = 200;
 
     // Path copied from com.android.server.net.ct.Config
@@ -60,23 +59,9 @@ public class LogListVerificationTest extends BaseTestCase {
     private static final String CT_ROOT_DIRECTORY_PATH = "/data/misc/keychain/ct/";
 
     @Test
-    public void testCTVerification_whenLogListPresent_sctDomain_connectionSucceeds()
-            throws IOException {
-        assumeTrue(isLogListFilePresent());
-        URL url = new URL(SCT_PROVIDED_DOMAIN);
-
-        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-        urlConnection.connect();
-
-        assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
-        urlConnection.disconnect();
-    }
-
-    @Test
-    public void testCTVerification_whenLogListAbsent_sctDomain_failsOpen() throws IOException {
-        // TODO(b/378424118): look into a way to delete log list for this test
-        assumeFalse(isLogListFilePresent());
-        URL url = new URL(SCT_PROVIDED_DOMAIN);
+    public void testCTVerification_whenLogListAbsent_noSctDomain_failsOpen() throws IOException {
+        assertFalse(isLogListFilePresent());
+        URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
         HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         urlConnection.connect();
@@ -90,7 +75,6 @@ public class LogListVerificationTest extends BaseTestCase {
      * whether the correct log list file version is present.
      */
     private static boolean isLogListFilePresent() {
-        // TODO(b/378421935): trigger a log list download if not present
         // TODO(b/378427150): replace with Conscrypt API once implemented
         try {
             Path ctRootDir = Paths.get(CT_ROOT_DIRECTORY_PATH);
