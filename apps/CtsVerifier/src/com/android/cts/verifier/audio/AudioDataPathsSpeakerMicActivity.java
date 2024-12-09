@@ -42,6 +42,10 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
         getPassButton().setEnabled(passBtnEnabled());
     }
 
+    protected String getTestCategory() {
+        return "Audio Datapaths Speaker/Mic Test";
+    }
+
     void gatherTestModules(TestManager testManager) {
         AudioSourceProvider sinSourceProvider = new SinAudioSourceProvider();
 
