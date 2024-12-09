@@ -16,11 +16,13 @@
 
 package android.backup.cts;
 
+import static junit.framework.Assert.assertTrue;
+
 import android.app.Instrumentation;
 import android.content.pm.PackageManager;
 import android.os.ParcelFileDescriptor;
-import android.platform.test.annotations.AppModeFull;
-import android.test.InstrumentationTestCase;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BackupUtils;
 import com.android.compatibility.common.util.LogcatInspector;
@@ -32,30 +34,29 @@ import java.io.InputStream;
  *
  * Ensures that backup is enabled and local transport selected, and provides some utility methods.
  */
-@AppModeFull
-public class BaseBackupCtsTest extends InstrumentationTestCase {
+public class BaseBackupCtsTest {
     private static final String APP_LOG_TAG = "BackupCTSApp";
 
+    public final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private boolean mIsBackupSupported;
     private LogcatInspector mLogcatInspector =
             new LogcatInspector() {
                 @Override
                 protected InputStream executeShellCommand(String command) {
-                    return executeInstrumentationShellCommand(getInstrumentation(), command);
+                    return executeInstrumentationShellCommand(mInstrumentation, command);
                 }
             };
     private BackupUtils mBackupUtils =
             new BackupUtils() {
                 @Override
                 protected InputStream executeShellCommand(String command) {
-                    return executeInstrumentationShellCommand(getInstrumentation(), command);
+                    return executeInstrumentationShellCommand(mInstrumentation, command);
                 }
             };
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        PackageManager packageManager = getInstrumentation().getContext().getPackageManager();
+    /** Inheritors need to call this on their @Before methods. */
+    public void setUp() throws Exception {
+        PackageManager packageManager = mInstrumentation.getContext().getPackageManager();
         mIsBackupSupported =
                 packageManager != null
                         && packageManager.hasSystemFeature(PackageManager.FEATURE_BACKUP);
@@ -64,7 +65,7 @@ public class BaseBackupCtsTest extends InstrumentationTestCase {
             assertTrue("Backup not enabled", mBackupUtils.isBackupEnabled());
             assertTrue("LocalTransport not selected", mBackupUtils.isLocalTransportSelected());
             getBackupUtils()
-                    .executeShellCommandSync("setprop log.tag." + APP_LOG_TAG +" VERBOSE");
+                    .executeShellCommandSync("setprop log.tag." + APP_LOG_TAG + " VERBOSE");
         }
     }
 
@@ -97,6 +98,21 @@ public class BaseBackupCtsTest extends InstrumentationTestCase {
                         + "/android.backup.app.MainActivity "
                         + "-e file_size " + size);
         waitForLogcat(30, "File created!");
+    }
+
+    protected void setLocalTransportParameters(String parameters) throws Exception {
+        getBackupUtils().executeShellCommandSync(
+                "settings put secure backup_local_transport_parameters " + parameters);
+    }
+
+    protected void clearBackupDataInLocalTransport(String packageName) throws Exception {
+        getBackupUtils().executeShellCommandSync(
+                String.format("bmgr wipe %s %s", "com.android.localtransport/.LocalTransport",
+                        packageName));
+    }
+
+    protected void forceStopPackage(String packageName) throws Exception {
+        getBackupUtils().executeShellCommandSync(String.format("am force-stop %s", packageName));
     }
 
     private static InputStream executeInstrumentationShellCommand(

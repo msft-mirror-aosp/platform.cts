@@ -181,8 +181,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 new Handler(Looper.getMainLooper()), startedListener, finishedListener);
         launcherActivity.startActivity(options, TransitionActivity.class);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(new ComponentName(mContext, TransitionActivity.class),
-                getMainDisplayId(), "Activity must be launched");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                new ComponentName(mContext, TransitionActivity.class), getMainDisplayId(),
+                "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
@@ -213,7 +214,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent, bundle);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
@@ -248,8 +249,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent, bundle);
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
-        waitAndAssertTopResumedActivity(customWindowAnimationActivity, getMainDisplayId(),
-                "Activity must be launched");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(customWindowAnimationActivity,
+                getMainDisplayId(), "Activity must be launched");
 
         latch.await(5, TimeUnit.SECONDS);
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();

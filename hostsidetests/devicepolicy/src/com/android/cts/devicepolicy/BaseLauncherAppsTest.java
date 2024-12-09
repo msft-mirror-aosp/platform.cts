@@ -48,7 +48,7 @@ public abstract class BaseLauncherAppsTest extends BaseDevicePolicyTest {
     }
 
     protected void startCallbackService(int userId) throws Exception {
-        String command = "am startservice --user " + userId
+        String command = "am start-foreground-service --user " + userId
                 + " -a " + LAUNCHER_TESTS_SUPPORT_PKG + ".REGISTER_CALLBACK "
                 + LAUNCHER_TESTS_SUPPORT_COMPONENT;
         CLog.d("Output for command " + command + ": " + getDevice().executeShellCommand(command));

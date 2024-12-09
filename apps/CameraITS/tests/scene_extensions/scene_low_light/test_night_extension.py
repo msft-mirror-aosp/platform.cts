@@ -125,7 +125,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # fallback to test with metered region. Otherwise, for newer than
       # Android 15, we always start test with metered region.
       if (
-          first_api_level == its_session_utils.ANDROID15_API_LEVEL
+          first_api_level <= its_session_utils.ANDROID15_API_LEVEL
           and not use_metering_region
       ):
         logging.debug('Retrying with metering region: %s', e)

@@ -16,10 +16,12 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.le.PeriodicAdvertisingParameters;
 import android.os.Parcel;
@@ -43,8 +45,9 @@ public class PeriodicAdvertisingParametersTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -83,15 +86,18 @@ public class PeriodicAdvertisingParametersTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void intervalWithInvalidValues() {
-        int[] invalidValues = { INTERVAL_MIN - 1, INTERVAL_MAX + 1 };
-        for (int i = 0; i < invalidValues.length; i++) {
-            try {
-                new PeriodicAdvertisingParameters.Builder().setInterval(invalidValues[i]).build();
-                fail();
-            } catch (IllegalArgumentException e) {
-                // expected
-            }
-        }
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new PeriodicAdvertisingParameters.Builder()
+                                .setInterval(INTERVAL_MIN - 1)
+                                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new PeriodicAdvertisingParameters.Builder()
+                                .setInterval(INTERVAL_MAX + 1)
+                                .build());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -109,15 +115,10 @@ public class PeriodicAdvertisingParametersTest {
         assertEquals(0, params.describeContents());
     }
 
-    private void assertParamsEquals(PeriodicAdvertisingParameters p,
-            PeriodicAdvertisingParameters other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+    private void assertParamsEquals(
+            PeriodicAdvertisingParameters p, PeriodicAdvertisingParameters other) {
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getIncludeTxPower(), other.getIncludeTxPower());
         assertEquals(p.getInterval(), other.getInterval());

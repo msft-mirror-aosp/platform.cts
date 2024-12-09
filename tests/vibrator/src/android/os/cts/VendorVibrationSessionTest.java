@@ -19,6 +19,7 @@ package android.os.cts;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -191,8 +192,7 @@ public class VendorVibrationSessionTest {
         assumeFalse(mVibrator.areVendorSessionsSupported());
 
         TestCallback callback = startSession(TOUCH_ATTRIBUTES);
-        assertThat(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        assertThat(callback.mStatus).isEqualTo(VendorVibrationSession.STATUS_UNSUPPORTED);
+        assertSessionNeverStarted(callback, VendorVibrationSession.STATUS_UNSUPPORTED);
     }
 
     @Test
@@ -208,14 +208,10 @@ public class VendorVibrationSessionTest {
         assumeTrue(mVibrator.areVendorSessionsSupported());
 
         TestCallback callback = startSession(TOUCH_ATTRIBUTES);
-        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
-        assertThat(session).isNotNull();
-        assertThat(callback.isFinishing()).isFalse();
-        assertThat(callback.isFinished()).isFalse();
+        VendorVibrationSession session = assertSessionRunning(callback);
 
         session.close();
-        assertThat(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        assertThat(callback.mStatus).isEqualTo(VendorVibrationSession.STATUS_SUCCESS);
+        assertSessionFinishingThenFinished(callback, VendorVibrationSession.STATUS_SUCCESS);
     }
 
     @Test
@@ -231,14 +227,10 @@ public class VendorVibrationSessionTest {
         assumeTrue(mVibrator.areVendorSessionsSupported());
 
         TestCallback callback = startSession(TOUCH_ATTRIBUTES);
-        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
-        assertThat(session).isNotNull();
-        assertThat(callback.isFinishing()).isFalse();
-        assertThat(callback.isFinished()).isFalse();
+        VendorVibrationSession session = assertSessionRunning(callback);
 
         session.cancel();
-        assertThat(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        assertThat(callback.mStatus).isEqualTo(VendorVibrationSession.STATUS_CANCELED);
+        assertSessionFinishingThenFinished(callback, VendorVibrationSession.STATUS_CANCELED);
     }
 
     @Test
@@ -254,8 +246,9 @@ public class VendorVibrationSessionTest {
         TestCallback callback = startSession(TOUCH_ATTRIBUTES, cancellationSignal);
         cancellationSignal.cancel();
 
-        assertThat(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        assertThat(callback.mStatus).isEqualTo(VendorVibrationSession.STATUS_CANCELED);
+        // Cannot assert if onStarted() and onFinishing() were triggered because the session might
+        // be cancelled by the signal before it starts.
+        assertSessionFinished(callback, VendorVibrationSession.STATUS_CANCELED);
     }
 
     @Test
@@ -271,19 +264,13 @@ public class VendorVibrationSessionTest {
         assumeTrue(mVibrator.areVendorSessionsSupported());
 
         TestCallback firstCallback = startSession(TOUCH_ATTRIBUTES);
-        assertThat(firstCallback.waitForSession(CALLBACK_TIMEOUT_MILLIS)).isNotNull();
-        assertThat(firstCallback.isFinishing()).isFalse();
-        assertThat(firstCallback.isFinished()).isFalse();
+        assertSessionRunning(firstCallback);
 
         TestCallback secondCallback = startSession(RINGTONE_ATTRIBUTES);
-        assertThat(secondCallback.waitForSession(CALLBACK_TIMEOUT_MILLIS)).isNotNull();
-        assertThat(secondCallback.isFinishing()).isFalse();
-        assertThat(secondCallback.isFinished()).isFalse();
+        assertSessionRunning(secondCallback);
 
-        assertThat(firstCallback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        // First session started, so it gets notified when it starts finishing
-        assertThat(firstCallback.isFinishing()).isTrue();
-        assertThat(firstCallback.mStatus).isEqualTo(VendorVibrationSession.STATUS_CANCELED);
+        // First session started, so expect it to be notified by onFinishing()
+        assertSessionFinishingThenFinished(firstCallback, VendorVibrationSession.STATUS_CANCELED);
     }
 
     @Test
@@ -300,17 +287,13 @@ public class VendorVibrationSessionTest {
         assumeTrue(mVibrator.areVendorSessionsSupported());
 
         TestCallback callback = startSession(TOUCH_ATTRIBUTES);
-        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
-        assertThat(session).isNotNull();
-        assertThat(callback.isFinishing()).isFalse();
-        assertThat(callback.isFinished()).isFalse();
+        VendorVibrationSession session = assertSessionRunning(callback);
 
         session.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE), "r");
         assertVibratorStateChangesTo(true);
 
         session.close();
-        assertThat(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
-        assertThat(callback.mStatus).isEqualTo(VendorVibrationSession.STATUS_SUCCESS);
+        assertSessionFinishingThenFinished(callback, VendorVibrationSession.STATUS_SUCCESS);
         assertVibratorStateChangesTo(false);
     }
 
@@ -339,6 +322,40 @@ public class VendorVibrationSessionTest {
         }
     }
 
+    private VendorVibrationSession assertSessionRunning(TestCallback callback)
+            throws InterruptedException {
+        assertWithMessage("Expected session running, got status " + callback.mStatus)
+                .that(callback.isFinished()).isFalse();
+        assertWithMessage("Expected session running, got notified for onFinishing()")
+                .that(callback.wasNotifiedFinishing()).isFalse();
+        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
+        assertWithMessage("Expected session running, no notification for onStarted")
+                .that(session).isNotNull();
+        return session;
+    }
+
+    private void assertSessionNeverStarted(TestCallback callback, int expectedStatus)
+            throws InterruptedException {
+        assertSessionFinished(callback, expectedStatus);
+        assertWithMessage("Unexpected session started").that(callback.mSession).isNull();
+        assertWithMessage("Unexpected notification for onFinishing() on session that never started")
+                .that(callback.wasNotifiedFinishing()).isFalse();
+    }
+
+    private void assertSessionFinishingThenFinished(TestCallback callback, int expectedStatus)
+            throws InterruptedException {
+        assertSessionFinished(callback, expectedStatus);
+        assertWithMessage("Missing notification for onFinishing()")
+                .that(callback.wasNotifiedFinishing()).isTrue();
+    }
+
+    private void assertSessionFinished(TestCallback callback, int expectedStatus)
+            throws InterruptedException {
+        assertWithMessage("Missing notification for onFinished()")
+                .that(callback.waitToBeFinished(CALLBACK_TIMEOUT_MILLIS)).isTrue();
+        assertThat(callback.mStatus).isEqualTo(expectedStatus);
+    }
+
     /** Test implementation for {@link VendorVibrationSession.Callback}. */
     private static final class TestCallback implements VendorVibrationSession.Callback {
 
@@ -364,7 +381,7 @@ public class VendorVibrationSessionTest {
             notifyAll();
         }
 
-        synchronized boolean isFinishing() {
+        synchronized boolean wasNotifiedFinishing() {
             return mNotifiedFinishing;
         }
 

@@ -28,13 +28,19 @@ import android.app.backup.RestoreObserver;
 import android.app.backup.RestoreSession;
 import android.content.Context;
 import android.os.Bundle;
-import android.platform.test.annotations.AppModeFull;
+
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
     private static final String BACKUP_APP_PACKAGE
             = "android.cts.backup.backuprestoreeventloggerapp";
@@ -59,13 +65,13 @@ public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
     private CountDownLatch mOperationLatch;
     private RestoreSession mRestoreSession;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
 
-        Context context = getInstrumentation().getTargetContext();
+        Context context = mInstrumentation.getTargetContext();
 
-        mUiAutomation = getInstrumentation().getUiAutomation();
+        mUiAutomation = mInstrumentation.getUiAutomation();
         mBackupManager = new BackupManager(context);
         mBackupObserver = new TestBackupObserver();
         mRestoreObserver = new TestRestoreObserver();
@@ -73,17 +79,16 @@ public class BackupRestoreEventLoggerTest extends BaseBackupCtsTest {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.BACKUP);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
 
         if (mRestoreSession != null){
             mRestoreSession.endRestoreSession();
         }
         mUiAutomation.dropShellPermissionIdentity();
-
-        super.tearDown();
     }
 
+    @Test
     public void testBackupRestoreRoundTrip_logsSentToMonitor() throws Exception {
         if (!isBackupSupported()) {
             return;

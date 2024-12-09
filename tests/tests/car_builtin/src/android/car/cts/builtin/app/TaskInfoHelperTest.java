@@ -164,7 +164,7 @@ public final class TaskInfoHelperTest extends ActivityManagerTestBase {
                 .startActivitySync(startIntent, /* options= */null);
 
         ComponentName testActivityName = testActivity.getComponentName();
-        waitAndAssertTopResumedActivity(testActivityName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(testActivityName, DEFAULT_DISPLAY,
                 "Activity must be resumed");
 
         return testActivity;

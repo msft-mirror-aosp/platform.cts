@@ -63,8 +63,9 @@ public class MediaRoute2InfoTest {
     public static final int TEST_VOLUME = 65;
     public static final Set<String> TEST_ALLOWED_PACKAGES =
             Set.of("com.android.systemui", "com.android.settings");
-    public static final Set<String> TEST_REQUIRED_PERMISSIONS =
-            Set.of("some.permission.one", "some.permission.two");
+    public static final List<Set<String>> TEST_REQUIRED_PERMISSIONS =
+            List.of(Set.of("some.permission.one"),
+                    Set.of("some.permission.two", "some.permission.three"));
 
     public static final String TEST_KEY = "test_key";
     public static final String TEST_VALUE = "test_value";
@@ -397,19 +398,20 @@ public class MediaRoute2InfoTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
-    public void testSetRequiredPermissionsWithOnePermission() {
+    public void testSetRequiredPermissionsWithOnePermissionSet() {
         MediaRoute2Info routeInfo =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
                         .addFeature(TEST_ROUTE_TYPE_0)
                         .setRequiredPermissions(Set.of("some.named.permission"))
                         .build();
         assertThat(routeInfo.getRequiredPermissions()).hasSize(1);
-        assertThat(routeInfo.getRequiredPermissions()).containsExactly("some.named.permission");
+        assertThat(routeInfo.getRequiredPermissions()).containsExactly(
+                Set.of("some.named.permission"));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
-    public void testSetRequiredPermissionsWithMultiplePermissions() {
+    public void testSetRequiredPermissionsWithMultiplePermissionSets() {
         MediaRoute2Info routeInfo =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
                         .addFeature(TEST_ROUTE_TYPE_0)

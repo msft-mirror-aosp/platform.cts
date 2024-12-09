@@ -55,7 +55,7 @@ public final class DeviceMethodCallStats {
      */
     public void dump(String tag, String prefix, String testClassName, String testMethodName) {
         String logPrefix = String.format(
-                "%s %s:%s:",
+                "%s %s:%s",
                 prefix,
                 testClassName,
                 removeMethodParameters(testMethodName));

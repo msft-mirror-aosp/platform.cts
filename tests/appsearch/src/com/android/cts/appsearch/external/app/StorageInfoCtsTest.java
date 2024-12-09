@@ -19,10 +19,18 @@ package android.app.appsearch.cts.app;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.appsearch.StorageInfo;
+import android.app.appsearch.testutil.AppSearchTestUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
+import com.android.appsearch.flags.Flags;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class StorageInfoCtsTest {
+
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     @Test
     public void testBuildStorageInfo() {
@@ -45,5 +53,24 @@ public class StorageInfoCtsTest {
         assertThat(storageInfo.getAliveDocumentsCount()).isEqualTo(0);
         assertThat(storageInfo.getSizeBytes()).isEqualTo(0L);
         assertThat(storageInfo.getAliveNamespacesCount()).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testBuildStorageInfo_withBlob() {
+        StorageInfo storageInfo =
+                new StorageInfo.Builder().setBlobSizeBytes(12L).setBlobCount(20).build();
+
+        assertThat(storageInfo.getBlobCount()).isEqualTo(20);
+        assertThat(storageInfo.getBlobSizeBytes()).isEqualTo(12L);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    public void testBuildStorageInfo_withBlobDefaults() {
+        StorageInfo storageInfo = new StorageInfo.Builder().build();
+
+        assertThat(storageInfo.getBlobCount()).isEqualTo(0);
+        assertThat(storageInfo.getBlobSizeBytes()).isEqualTo(0L);
     }
 }

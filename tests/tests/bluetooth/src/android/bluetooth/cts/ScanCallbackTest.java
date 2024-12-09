@@ -16,10 +16,12 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -32,46 +34,43 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-/**
- * Test cases for {@link ScanCallback}.
- */
+/** Test cases for {@link ScanCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class ScanCallbackTest {
-
-    // Scan types are used to determine which callback method is expected.
-    private final static int SCAN_TYPE_SUCCESS = 0;
-    private final static int SCAN_TYPE_FAIL = 1;
-    private final static int SCAN_TYPE_BATCH = 2;
-
     private MockScanner mMockScanner = new MockScanner();
-    private BleScanCallback mMockScanCallback = new BleScanCallback();
+    @Mock ScanCallback mScanCallback;
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        MockitoAnnotations.initMocks(this);
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void scanSuccess() {
-        mMockScanCallback.mScanType = SCAN_TYPE_SUCCESS;
-        mMockScanner.startScan(new ScanSettings.Builder().build(), mMockScanCallback);
+        mMockScanner.startScan(new ScanSettings.Builder().build(), mScanCallback);
+        verify(mScanCallback).onScanResult(anyInt(), any());
+        verifyNoMoreInteractions(mScanCallback);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
     public void batchScans() {
-        ScanSettings settings = new ScanSettings.Builder().setReportDelay(1000).build();
-        mMockScanCallback.mScanType = SCAN_TYPE_BATCH;
-        mMockScanner.startScan(settings, mMockScanCallback);
+        mMockScanner.startScan(
+                new ScanSettings.Builder().setReportDelay(1000).build(), mScanCallback);
+        verify(mScanCallback).onBatchScanResults(any());
+        verifyNoMoreInteractions(mScanCallback);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -80,11 +79,14 @@ public class ScanCallbackTest {
     public void scanFail() {
         ScanSettings settings = new ScanSettings.Builder().build();
         // The first scan is success.
-        mMockScanCallback.mScanType = SCAN_TYPE_SUCCESS;
-        mMockScanner.startScan(settings, mMockScanCallback);
+        mMockScanner.startScan(settings, mScanCallback);
+        verify(mScanCallback).onScanResult(anyInt(), any());
+        verifyNoMoreInteractions(mScanCallback);
+
         // A second scan with the same callback should fail.
-        mMockScanCallback.mScanType = SCAN_TYPE_FAIL;
-        mMockScanner.startScan(settings, mMockScanCallback);
+        mMockScanner.startScan(settings, mScanCallback);
+        verify(mScanCallback).onScanFailed(anyInt());
+        verifyNoMoreInteractions(mScanCallback);
     }
 
     // A mock scanner for mocking BLE scanner functionalities.
@@ -105,31 +107,5 @@ public class ScanCallbackTest {
                 }
             }
         }
-    }
-
-    private static class BleScanCallback extends ScanCallback {
-        int mScanType = SCAN_TYPE_SUCCESS;
-
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            if (mScanType != SCAN_TYPE_SUCCESS) {
-                fail("scan should fail");
-            }
-        }
-
-        @Override
-        public void onBatchScanResults(List<ScanResult> results) {
-            if (mScanType != SCAN_TYPE_BATCH) {
-                fail("not a batch scan");
-            }
-        }
-
-        @Override
-        public void onScanFailed(int errorCode) {
-            if (mScanType != SCAN_TYPE_FAIL) {
-                fail("scan should not fail");
-            }
-        }
-
     }
 }

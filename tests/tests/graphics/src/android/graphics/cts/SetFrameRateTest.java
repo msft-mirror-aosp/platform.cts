@@ -90,7 +90,8 @@ public class SetFrameRateTest {
     @Test
     public void testExactFrameRateMatch_Seamless() throws InterruptedException {
         FrameRateCtsActivity activity = mActivityRule.getActivity();
-        activity.testExactFrameRateMatch(Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS, false);
+        activity.testFrameRateMatch(Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS, false);
     }
 
     @Test
@@ -99,13 +100,15 @@ public class SetFrameRateTest {
         // flag instead.
         assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateApi());
         FrameRateCtsActivity activity = mActivityRule.getActivity();
-        activity.testExactFrameRateMatch(Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS, true);
+        activity.testFrameRateMatch(Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS, true);
     }
 
     @Test
     public void testExactFrameRateMatch_NonSeamless() throws InterruptedException {
         FrameRateCtsActivity activity = mActivityRule.getActivity();
-        activity.testExactFrameRateMatch(Surface.CHANGE_FRAME_RATE_ALWAYS, false);
+        activity.testFrameRateMatch(
+                Surface.FRAME_RATE_COMPATIBILITY_DEFAULT, Surface.CHANGE_FRAME_RATE_ALWAYS, false);
     }
 
     @Test
@@ -114,7 +117,28 @@ public class SetFrameRateTest {
         // flag instead.
         assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateApi());
         FrameRateCtsActivity activity = mActivityRule.getActivity();
-        activity.testExactFrameRateMatch(Surface.CHANGE_FRAME_RATE_ALWAYS, true);
+        activity.testFrameRateMatch(
+                Surface.FRAME_RATE_COMPATIBILITY_DEFAULT, Surface.CHANGE_FRAME_RATE_ALWAYS, true);
+    }
+
+    @Test
+    public void testGte_Seamless() throws InterruptedException {
+        // Could not get CheckFlagsRule to work with AdoptShellPermissionsRule, so assumeTrue on the
+        // flag instead.
+        assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateGteEnum());
+        FrameRateCtsActivity activity = mActivityRule.getActivity();
+        activity.testFrameRateMatch(Surface.FRAME_RATE_COMPATIBILITY_GTE,
+                Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS, false);
+    }
+
+    @Test
+    public void testGte_NonSeamless() throws InterruptedException {
+        // Could not get CheckFlagsRule to work with AdoptShellPermissionsRule, so assumeTrue on the
+        // flag instead.
+        assumeTrue(com.android.graphics.surfaceflinger.flags.Flags.arrSetframerateGteEnum());
+        FrameRateCtsActivity activity = mActivityRule.getActivity();
+        activity.testFrameRateMatch(
+                Surface.FRAME_RATE_COMPATIBILITY_GTE, Surface.CHANGE_FRAME_RATE_ALWAYS, false);
     }
 
     @Test

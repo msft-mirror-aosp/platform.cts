@@ -115,7 +115,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         newDisplayIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
         getInstrumentation().getTargetContext().startActivity(newDisplayIntent,
                 launchOptions.toBundle());
-        waitAndAssertTopResumedActivity(activityName, displayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityName, displayId,
                 "Activity moved to secondary display must be focused");
 
         if (handlesConfigChange) {
@@ -232,7 +232,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         final Activity activity = activitySession.getActivity();
         final ComponentName activityName = activity.getComponentName();
 
-        waitAndAssertTopResumedActivity(activityName, displayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityName, displayId,
                 "Activity launched on display:" + displayId + " must be focused");
 
         // Test View#getdisplay() from activity

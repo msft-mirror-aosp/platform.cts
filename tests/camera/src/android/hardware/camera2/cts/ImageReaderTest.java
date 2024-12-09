@@ -627,7 +627,6 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                 params.mUseDataSpace = true;
                 params.mDataSpace = DataSpace.DATASPACE_HEIF_ULTRAHDR;
                 params.mHardwareBufferFormat = HardwareBuffer.BLOB;
-                params.mValidateImageData = false;
                 bufferFormatTestByCamera(params);
             } finally {
                 closeDevice(id);

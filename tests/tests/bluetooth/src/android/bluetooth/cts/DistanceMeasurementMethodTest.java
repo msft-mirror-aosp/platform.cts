@@ -22,9 +22,10 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementMethod;
@@ -56,8 +57,7 @@ public class DistanceMeasurementMethodTest {
     private BluetoothAdapter mAdapter;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -82,10 +82,12 @@ public class DistanceMeasurementMethodTest {
     public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
-            DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
-                    .setAzimuthAngleSupported(true)
-                    .setAltitudeAngleSupported(true).build();
+            DistanceMeasurementMethod method =
+                    new DistanceMeasurementMethod.Builder(
+                                    DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                            .setAzimuthAngleSupported(true)
+                            .setAltitudeAngleSupported(true)
+                            .build();
             method.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             DistanceMeasurementMethod methodFromParcel =
@@ -102,9 +104,10 @@ public class DistanceMeasurementMethodTest {
     public void createFromParcelForMethodId() {
         final Parcel parcel = Parcel.obtain();
         try {
-            DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
-                    .build();
+            DistanceMeasurementMethod method =
+                    new DistanceMeasurementMethod.Builder(
+                                    DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                            .build();
             method.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             DistanceMeasurementMethod methodFromParcel =
@@ -113,67 +116,69 @@ public class DistanceMeasurementMethodTest {
         } finally {
             parcel.recycle();
         }
-
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetId() {
-        DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI).build();
-        assertEquals(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI,
-                method.getId(), 0.0);
+        DistanceMeasurementMethod method =
+                new DistanceMeasurementMethod.Builder(
+                                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .build();
+        assertEquals(
+                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI, method.getId(), 0.0);
     }
 
     @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMethodId() {
-        DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI).build();
-        assertEquals(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI,
-                method.getMethodId());
+        DistanceMeasurementMethod method =
+                new DistanceMeasurementMethod.Builder(
+                                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .build();
+        assertEquals(
+                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI, method.getMethodId());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isAzimuthAngleSupported() {
-        DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
-                    .setAzimuthAngleSupported(true)
-                    .build();
+        DistanceMeasurementMethod method =
+                new DistanceMeasurementMethod.Builder(
+                                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .setAzimuthAngleSupported(true)
+                        .build();
         assertEquals(true, method.isAzimuthAngleSupported());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void isAltitudeAngleSupported() {
-        DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
-                    .setAltitudeAngleSupported(true)
-                    .build();
+        DistanceMeasurementMethod method =
+                new DistanceMeasurementMethod.Builder(
+                                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .setAltitudeAngleSupported(true)
+                        .build();
         assertEquals(true, method.isAltitudeAngleSupported());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void validHashCode() {
-        DistanceMeasurementMethod method = new DistanceMeasurementMethod
-                    .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
-                    .setAltitudeAngleSupported(true)
-                    .build();
-        assertEquals(Objects.hash(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI),
+        DistanceMeasurementMethod method =
+                new DistanceMeasurementMethod.Builder(
+                                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .setAltitudeAngleSupported(true)
+                        .build();
+        assertEquals(
+                Objects.hash(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI),
                 method.hashCode());
     }
 
     private void assertMethodEquals(DistanceMeasurementMethod p, DistanceMeasurementMethod other) {
-        if (p == null && other == null) {
-            return;
-        }
-
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
         assertEquals(p.getId(), other.getId(), 0.0);
         assertEquals(p.isAzimuthAngleSupported(), other.isAzimuthAngleSupported());

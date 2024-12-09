@@ -82,13 +82,6 @@ public class SettingsMultiPaneDeepLinkTest {
         assumeFalse("Skipping test: The device does not support Activity embedding",
                 !mIsSplitSupported && mDeepLinkIntentResolveInfo == null);
 
-        // TODO(b/214606992): Remove this check once automotive support was implemented.
-        assumeFalse("Skipping test: not supported on automotive yet",
-                mDeepLinkIntentResolveInfo == null
-                        && InstrumentationRegistry.getInstrumentation().getContext()
-                                .getPackageManager()
-                                .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
         assumeFalse("Skipping test: not supported on television yet",
                 mDeepLinkIntentResolveInfo == null
                         && InstrumentationRegistry.getInstrumentation().getContext()

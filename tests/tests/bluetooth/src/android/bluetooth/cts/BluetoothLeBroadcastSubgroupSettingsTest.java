@@ -47,8 +47,7 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
     private static final String TEST_PROGRAM_INFO = "Test";
     // German language code in ISO 639-3
     private static final String TEST_LANGUAGE = "deu";
-    private static final int TEST_QUALITY =
-            BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
+    private static final int TEST_QUALITY = BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
@@ -69,7 +68,8 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -78,7 +78,8 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
@@ -95,11 +96,13 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
     public void createBroadcastSubgroupSettingsFromBuilder() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         BluetoothLeBroadcastSubgroupSettings.Builder builder =
                 new BluetoothLeBroadcastSubgroupSettings.Builder()
-                .setPreferredQuality(TEST_QUALITY)
-                .setContentMetadata(contentMetadata);
+                        .setPreferredQuality(TEST_QUALITY)
+                        .setContentMetadata(contentMetadata);
 
         BluetoothLeBroadcastSubgroupSettings settings = builder.build();
         assertEquals(TEST_QUALITY, settings.getPreferredQuality());
@@ -111,11 +114,13 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
     public void createBroadcastSubgroupFromCopy() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         BluetoothLeBroadcastSubgroupSettings.Builder builder =
                 new BluetoothLeBroadcastSubgroupSettings.Builder()
-                .setPreferredQuality(TEST_QUALITY)
-                .setContentMetadata(contentMetadata);
+                        .setPreferredQuality(TEST_QUALITY)
+                        .setContentMetadata(contentMetadata);
         BluetoothLeBroadcastSubgroupSettings settings = builder.build();
         BluetoothLeBroadcastSubgroupSettings settingsCopy =
                 new BluetoothLeBroadcastSubgroupSettings.Builder(settings).build();

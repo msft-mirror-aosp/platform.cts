@@ -21,6 +21,7 @@ import static android.jobscheduler.cts.JobThrottlingTest.setTestPackageStandbyBu
 import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -35,6 +36,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +56,7 @@ public class ExpeditedJobTest {
     private int mTestJobId;
     private NetworkingHelper mNetworkingHelper;
     private TestAppInterface mTestAppInterface;
+    private UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -66,6 +69,7 @@ public class ExpeditedJobTest {
                 AppOpsManager.MODE_ALLOWED);
         mNetworkingHelper = new NetworkingHelper(
                 InstrumentationRegistry.getInstrumentation(), mContext);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @After
@@ -77,6 +81,13 @@ public class ExpeditedJobTest {
 
     @Test
     public void testJobUidState_noRequiredNetwork() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         setScreenState(mUiDevice, false);
@@ -98,6 +109,13 @@ public class ExpeditedJobTest {
 
     @Test
     public void testJobUidState_withRequiredNetwork() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         setScreenState(mUiDevice, false);

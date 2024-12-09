@@ -772,20 +772,22 @@ public class FrameRateCtsActivity extends Activity {
         }
     }
 
-    public void testExactFrameRateMatch(int changeFrameRateStrategy, boolean useArrVersionApi)
-            throws InterruptedException {
-        String type = changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
-                ? "seamless" : "always";
-        runTestsWithPreconditions(api
-                -> testExactFrameRateMatch(api, changeFrameRateStrategy, useArrVersionApi),
-                type + " exact frame rate match");
-    }
-
     public void testClearFrameRate() throws InterruptedException {
         runTestsWithPreconditions(this::testClearFrameRate, "clear frame rate");
     }
 
-    private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy,
+    public void testFrameRateMatch(int compatibility, int changeFrameRateStrategy,
+            boolean useArrVersionApi) throws InterruptedException {
+        String type = changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
+                ? "seamless" : "always";
+        runTestsWithPreconditions(api
+                -> testFrameRateMatch(
+                        api, compatibility, changeFrameRateStrategy, useArrVersionApi),
+                type + (compatibility == Surface.FRAME_RATE_COMPATIBILITY_DEFAULT ? "exact" : "GTE")
+                        + " frame rate match" + (useArrVersionApi ? " (ARR)" : ""));
+    }
+
+    private void testFrameRateMatch(Api api, int compatibility, int changeFrameRateStrategy,
             boolean useArrVersionApi) throws InterruptedException {
         if (useArrVersionApi && api == Api.SURFACE_CONTROL
                 && !com.android.graphics.surfaceflinger.flags.Flags
@@ -805,8 +807,8 @@ public class FrameRateCtsActivity extends Activity {
                         Floats.asList(currentMode.getAlternativeRefreshRates());
                 for (float frameRate : seamlessRefreshRates) {
                     int initialNumEvents = mModeChangedEvents.size();
-                    surface.setFrameRate(frameRate, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
-                            Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
+                    surface.setFrameRate(
+                            frameRate, compatibility, Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
                     verifyCompatibleAndStableFrameRate(frameRate,
                             new IsMultipleWithTolerance(FRAME_RATE_TOLERANCE_RELAXED), surface);
                     verifyModeSwitchesAreSeamless(initialNumEvents, mModeChangedEvents.size());
@@ -824,8 +826,8 @@ public class FrameRateCtsActivity extends Activity {
                 List<Float> seamedRefreshRates = getSeamedRefreshRates(currentMode, display);
                 for (float frameRate : seamedRefreshRates) {
                     int initialNumEvents = mModeChangedEvents.size();
-                    surface.setFrameRate(frameRate, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
-                            Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
+                    surface.setFrameRate(
+                            frameRate, compatibility, Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
                     // Mode switch can occur, since we could potentially switch to a multiple
                     // that happens to be seamless.
                     verifyModeSwitchesAreSeamless(initialNumEvents, mModeChangedEvents.size());
@@ -835,8 +837,8 @@ public class FrameRateCtsActivity extends Activity {
                 List<Float> allRefreshRates = getRefreshRates(currentMode, display);
                 for (float frameRate : allRefreshRates) {
                     int initialNumEvents = mModeChangedEvents.size();
-                    surface.setFrameRate(frameRate, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
-                            Surface.CHANGE_FRAME_RATE_ALWAYS);
+                    surface.setFrameRate(
+                            frameRate, compatibility, Surface.CHANGE_FRAME_RATE_ALWAYS);
                     verifyCompatibleAndStableFrameRate(frameRate,
                             new IsMultipleWithTolerance(FRAME_RATE_TOLERANCE_RELAXED), surface);
                     verifyModeSwitchesDontChangeResolution(initialNumEvents,

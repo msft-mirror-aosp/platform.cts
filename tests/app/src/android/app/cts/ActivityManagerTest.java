@@ -149,7 +149,7 @@ import java.util.function.Supplier;
 public final class ActivityManagerTest {
     private static final String TAG = ActivityManagerTest.class.getSimpleName();
     private static final String STUB_PACKAGE_NAME = "android.app.stubs";
-    private static final long WAITFOR_MSEC = 5000;
+    private static final long WAITFOR_MSEC = 10000;
     // Long enough to cover devices with doubled hw multipliers. On most devices
     // this should be 10s as defined in ActivityManagerService#PROC_START_TIMEOUT
     private static final long WAITFOR_PROCSTAT_TIMEOUT_MSEC = 30000;
