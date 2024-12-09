@@ -72,6 +72,7 @@ import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1676,6 +1677,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @Ignore("blocked on b/381279192")
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnEmergencyCallbackModeListener() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
