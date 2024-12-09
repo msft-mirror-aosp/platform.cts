@@ -26,7 +26,6 @@ java_defaults {
         "cts",
         "general-tests",
     ],
-    certificate: ":cts-compilation-testkey",
 }
 
 android_test_helper_app {

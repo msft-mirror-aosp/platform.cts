@@ -16,7 +16,7 @@
 
 package android.media.mediaquality.cts;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
 import android.media.quality.MediaQualityManager;
@@ -42,7 +42,6 @@ public class MediaQualityTest {
         Context context = InstrumentationRegistry.getTargetContext();
 
         mManager = context.getSystemService(MediaQualityManager.class);
-        assumeTrue(mManager != null);
         if (mManager == null || !isSupported()) {
             return;
         }

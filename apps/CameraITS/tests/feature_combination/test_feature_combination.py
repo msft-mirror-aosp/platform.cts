@@ -108,36 +108,23 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     feature_combo_for_camera.entries.append(entry)
 
-  def _output_feature_combo_proto(self, feature_combo_for_camera):
-    """Finish logging feature combination info and write to ReportLogFiles."""
+  def _write_feature_combo_proto_to_file(
+      self, file_name, feature_combo_for_camera):
+    """Finish logging feature combination info and write to file."""
     debug_mode = self.debug_mode
-    log_to_file = self.log_feature_combo_support
     database = feature_combination_info_pb2.FeatureCombinationDatabase()
     database.build_fingerprint = (
         its_session_utils.get_build_fingerprint(self.dut.serial))
     database.timestamp_in_sec = int(time.time())
     database.feature_combination_for_camera.append(feature_combo_for_camera)
 
-    # Log the feature combination query result and send over to ItsService
-    database_str_oneline = text_format.MessageToString(
-        database, as_one_line=True)
-    print(f'feature_query_proto:{database_str_oneline}')
+    with open(file_name, 'wb') as f:
+      f.write(database.SerializeToString())
 
-    if log_to_file:
-      current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-      proto_file_name = (
-          f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
-      )
-      logging.debug('proto_file_name %s', proto_file_name)
-
-      with open(proto_file_name, 'wb') as f:
-        f.write(database.SerializeToString())
-
-      if debug_mode:
-        txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
-        with open(txtpb_file_name, 'w') as tf:
-          database_str = text_format.MessageToString(database)
-          tf.write(database_str)
+    if debug_mode:
+      txtpb_file_name = file_name.replace('.pb', '.txtpb')
+      with open(txtpb_file_name, 'w') as tf:
+        tf.write(text_format.MessageToString(database))
 
   def _finish_combination(self, combination_name, is_stabilized, passed,
                           recording_obj, gyro_events, test_name, log_path,
@@ -172,6 +159,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id) as cam:
+      log_feature_combo_support = self.log_feature_combo_support
 
       # Skip if the device doesn't support feature combination query
       props = cam.get_camera_properties()
@@ -181,8 +169,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         feature_combination_query_version = (
             its_session_utils.ANDROID14_API_LEVEL
         )
-      support_query = (feature_combination_query_version >=
-                       its_session_utils.ANDROID15_API_LEVEL)
+      should_run = (feature_combination_query_version >=
+                    its_session_utils.ANDROID15_API_LEVEL or
+                    log_feature_combo_support)
+      camera_properties_utils.skip_unless(should_run)
 
       # Log ffmpeg version being used
       video_processing_utils.log_ffmpeg_version()
@@ -221,7 +211,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
       test_failures = []
       feature_verification_futures = []
-      database = self._create_feature_combo_proto()
+      current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+      proto_file_name = (
+          f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
+      )
+      logging.debug('proto_file_name %s', proto_file_name)
+      if log_feature_combo_support:
+        database = self._create_feature_combo_proto()
       for stream_combination in combinations:
         streams_name = stream_combination['name']
         min_frame_duration = 0
@@ -277,7 +273,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             hlg10_params.append(True)
           hlg10_params.append(False)
 
-          features_passed = []  # feature combinations already supported
+          features_tested = []  # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
@@ -302,12 +298,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                   f'[{fps_range[0]}, {fps_range[1]}])')
               logging.debug('combination name: %s', combination_name)
 
-              if support_query:
+              if not log_feature_combo_support:
                 # Is the feature combination supported?
-                support_claimed = cam.is_stream_combination_supported(
+                supported = cam.is_stream_combination_supported(
                     output_surfaces, settings)
-                if not support_claimed:
+                if not supported:
                   logging.debug('%s not supported', combination_name)
+                  break
 
               passed = True
               is_stabilized = False
@@ -315,14 +312,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   camera_properties_utils.STABILIZATION_MODE_PREVIEW):
                 is_stabilized = True
 
-              # If a superset of features are already tested, skip and assuming
-              # the subset of those features are supported.
-              skip_test = its_session_utils.check_features_passed(
-                  features_passed, hlg10, is_stabilized)
-              if skip_test:
-                self._add_feature_combo_entry_to_proto(
-                    database, output_surfaces, passed,
-                    fps_range, is_stabilized)
+              # If a superset of features are already tested, skip.
+              skip_test = its_session_utils.check_and_update_features_tested(
+                  features_tested, hlg10, is_stabilized)
+              if not log_feature_combo_support and skip_test:
                 continue
 
               recording_obj = (
@@ -394,11 +387,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 test_failures.append(failure_msg)
                 passed = False
 
-              if passed:
-                its_session_utils.mark_features_passed(
-                    features_passed, hlg10, is_stabilized)
-
-              # TODO: b/382255298 - Decouple stabilization test.
               # Schedule finishing up of verification to run asynchronously
               future = executor.submit(
                   self._finish_combination, combination_name, is_stabilized,
@@ -415,18 +403,21 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           failure_msg = f"{result['name']}: {result['stabilization_failure']}"
           test_failures.append(failure_msg)
 
-        self._add_feature_combo_entry_to_proto(
-            database, result['output_surfaces'], result['passed'],
-            result['fps_range'], result['is_stabilized'])
+        if log_feature_combo_support:
+          self._add_feature_combo_entry_to_proto(
+              database, result['output_surfaces'], result['passed'],
+              result['fps_range'], result['is_stabilized'])
 
-      # Output the feature combination proto to ItsService and optionally to
-      # file
-      self._output_feature_combo_proto(database)
+      # Write the feature combination proto to file
+      if log_feature_combo_support:
+        self._write_feature_combo_proto_to_file(
+            proto_file_name, database)
 
       # Assert PASS/FAIL criteria
       if test_failures:
-        logging.debug(test_failures)
-        if support_query:
+        if log_feature_combo_support:
+          logging.debug(test_failures)
+        else:
           raise AssertionError(test_failures)
 
 if __name__ == '__main__':

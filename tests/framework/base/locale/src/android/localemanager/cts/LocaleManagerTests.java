@@ -128,16 +128,14 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
         sPreviousSystemLocales = sLocaleManager.getSystemLocales();
         runWithShellPermissionIdentity(() ->
                         sLocaleManager.setSystemLocales(DEFAULT_SYSTEM_LOCALES),
-                Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS,
-                Manifest.permission.INTERACT_ACROSS_USERS);
+                Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS);
     }
 
     @AfterClass
     public static void tearDownClass() {
         runWithShellPermissionIdentity(() ->
                         sLocaleManager.setSystemLocales(sPreviousSystemLocales),
-                Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS,
-                Manifest.permission.INTERACT_ACROSS_USERS);
+                Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS);
     }
 
     @Override

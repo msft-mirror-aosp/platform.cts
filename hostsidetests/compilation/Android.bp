@@ -20,10 +20,6 @@ package {
 java_defaults {
     name: "CompilationTestCases_defaults",
     srcs: ["src/**/*.java"],
-    data: [
-        ":apksigner",
-        ":cts-compilation-testkey-files",
-    ],
     device_common_data: [
         ":StatusCheckerApp",
     ],
@@ -50,11 +46,6 @@ java_defaults {
         "compatibility-host-util",
         "guava",
         "truth",
-    ],
-    static_libs: [
-        "android.content.pm.flags-aconfig-java-host",
-        "art-aconfig-flags-java-lib-host",
-        "flag-junit-host",
     ],
 }
 

@@ -39,16 +39,13 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.AfterClass;
-import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -62,9 +59,6 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @AppModeNonSdkSandbox(reason = "MediaSession2Service use is restricted to the sandbox.")
 public class MediaSession2ServiceTest {
-
-    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
-
     private static final long TIMEOUT_MS = 3000L;
     private static final long WAIT_TIME_FOR_NO_RESPONSE_MS = 500L;
 

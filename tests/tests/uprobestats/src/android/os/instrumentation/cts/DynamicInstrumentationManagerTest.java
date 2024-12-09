@@ -68,10 +68,7 @@ public class DynamicInstrumentationManagerTest {
             DeviceFlagsValueProvider.createCheckFlagsRule()).around(sDeviceState);
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void aotCompiled() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(FQCN_IN_ART_PROFILE,
@@ -85,10 +82,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void appAotCompiled() throws Exception {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(
@@ -114,10 +108,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureDoesNotHavePermission(DYNAMIC_INSTRUMENTATION)
     public void noPermission_SecurityException() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(FQCN_IN_ART_PROFILE,
@@ -128,10 +119,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void appProcessNotFound() throws Exception {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode(0, 0, "foo", FQCN_IN_ART_PROFILE,
@@ -140,10 +128,7 @@ public class DynamicInstrumentationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_EXECUTABLE_METHOD_FILE_OFFSETS,
-        android.uprobestats.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS
-    })
+    @RequiresFlagsEnabled(FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
     @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
     public void notFound_IllegalArgumentException() {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode("", "", new String[]{});

@@ -39,7 +39,8 @@ java_test_host {
         ":MainlineModuleDetector",
         ":hotspot",
     ],
-    data_device_bins_both: [
+    target_required: [
+        // Need for running inputflinger test in TEST_MAPPING
         "Bug-115739809",
     ],
     per_testcase_directory: true,

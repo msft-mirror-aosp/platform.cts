@@ -23,7 +23,6 @@ import static junit.framework.TestCase.fail;
 
 import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
@@ -161,7 +160,7 @@ public class PowerManager_ThermalTest {
         // Add listener1
         mPowerManager.addThermalHeadroomListener(mExec, mHeadroomListener1);
         verify(mHeadroomListener1, timeout(CALLBACK_TIMEOUT_MILLI_SEC)
-                .times(1)).onThermalHeadroomChanged(anyFloat(), anyFloat(), anyInt(), any());
+                .times(1)).onThermalHeadroomChanged(anyInt(), anyInt(), anyInt(), any());
         reset(mHeadroomListener1);
         // Add listener1 again
         try {
@@ -172,7 +171,7 @@ public class PowerManager_ThermalTest {
         // Add listener2 on main thread.
         mPowerManager.addThermalHeadroomListener(mHeadroomListener2);
         verify(mHeadroomListener2, timeout(CALLBACK_TIMEOUT_MILLI_SEC)
-                .times(1)).onThermalHeadroomChanged(anyFloat(), anyFloat(), anyInt(), any());
+                .times(1)).onThermalHeadroomChanged(anyInt(), anyInt(), anyInt(), any());
         reset(mHeadroomListener2);
         // Remove listener1
         mPowerManager.removeThermalHeadroomListener(mHeadroomListener1);
