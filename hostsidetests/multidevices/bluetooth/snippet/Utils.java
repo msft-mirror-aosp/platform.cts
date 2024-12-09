@@ -19,6 +19,10 @@ package com.google.snippet.bluetooth;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.OobData;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -28,8 +32,11 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class Utils {
+    private static final String TAG = "Utils";
+
     private Utils() {}
 
     public static void adoptShellPermission() {
@@ -133,4 +140,36 @@ public class Utils {
         }
         return jsonArray;
     }
+
+    // Helper class to wait for bond state changed intents.
+    public static class BondStateBroadcastReceiverImpl extends BroadcastReceiver {
+        private final int mWaitForBondState;
+        private final BluetoothDevice mRemoteAddress;
+        private final CountDownLatch mBondingBlocker;
+
+        BondStateBroadcastReceiverImpl(
+                int waitForBondState,
+                BluetoothDevice remoteAddress,
+                CountDownLatch bondingBlocker) {
+            mWaitForBondState = waitForBondState;
+            mRemoteAddress = remoteAddress;
+            mBondingBlocker = bondingBlocker;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "onReceive: " + intent.getAction());
+            if (intent.getAction().equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
+                int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 0);
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                Log.i(TAG, "onReceive: bondState=" + bondState);
+                if (device.equals(mRemoteAddress)
+                        && bondState == mWaitForBondState
+                        && mBondingBlocker != null) {
+                    mBondingBlocker.countDown();
+                }
+            }
+        }
+    }
+    ;
 }
