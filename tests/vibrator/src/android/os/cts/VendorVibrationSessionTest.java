@@ -324,11 +324,11 @@ public class VendorVibrationSessionTest {
 
     private VendorVibrationSession assertSessionRunning(TestCallback callback)
             throws InterruptedException {
+        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
         assertWithMessage("Expected session running, got status " + callback.mStatus)
                 .that(callback.isFinished()).isFalse();
         assertWithMessage("Expected session running, got notified for onFinishing()")
                 .that(callback.wasNotifiedFinishing()).isFalse();
-        VendorVibrationSession session = callback.waitForSession(CALLBACK_TIMEOUT_MILLIS);
         assertWithMessage("Expected session running, no notification for onStarted")
                 .that(session).isNotNull();
         return session;
