@@ -51,7 +51,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -822,15 +821,6 @@ public final class MockIme extends InputMethodService {
                 getTracer().onVerify("isUiContext", this::verifyIsUiContext);
                 getTracer().onVerify("getDisplay", this::verifyGetDisplay);
             }
-
-            // Ensure the window height is tall enough to receive system window insets.
-            final FrameLayout windowSizeEnsurer = new FrameLayout(this);
-            windowSizeEnsurer.setFitsSystemWindows(true);
-            windowSizeEnsurer.setWillNotDraw(true);
-            final ViewGroup decorView = (ViewGroup) getWindow().getWindow().getDecorView();
-            decorView.addView(windowSizeEnsurer, new ViewGroup.LayoutParams(
-                    MATCH_PARENT, WRAP_CONTENT));
-
             final int windowFlags = mSettings.getWindowFlags(0);
             final int windowFlagsMask = mSettings.getWindowFlagsMask(0);
             if (windowFlags != 0 || windowFlagsMask != 0) {
@@ -843,6 +833,7 @@ public final class MockIme extends InputMethodService {
                     final boolean hadFlag = (prevFlags & FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
                     final boolean hasFlag = (windowFlags & FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
                     if (hadFlag != hasFlag) {
+                        final View decorView = getWindow().getWindow().getDecorView();
                         decorView.post(() -> decorView.requestLayout());
                     }
                 }
