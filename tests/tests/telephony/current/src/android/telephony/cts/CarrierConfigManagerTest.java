@@ -242,6 +242,11 @@ public class CarrierConfigManagerTest {
                     config.getInt(
                             KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT),
                     180);
+            assertEquals("KEY_SATELLITE_IGNORE_DATA_ROAMING_SETTING_BOOL "
+                            + "doesn't match static default.",
+                    config.getBoolean(
+                            CarrierConfigManager.KEY_SATELLITE_IGNORE_DATA_ROAMING_SETTING_BOOL),
+                    false);
             assertTrue("KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL));
