@@ -260,4 +260,29 @@ public abstract class BuilderBase {
     public int getRouteDeviceId() {
         return mRouteDevice == null ? ROUTED_DEVICE_ID_DEFAULT : mRouteDevice.getId();
     }
+
+    public static class BuilderException extends Throwable {
+        private final int mStatusCode; // a StreamBase error code
+
+        BuilderException(String errorMessage, int statusCode) {
+            super(errorMessage + ", status = " + statusCode);
+
+            mStatusCode = statusCode;
+        }
+
+        public int getStatusCode() {
+            return mStatusCode;
+        }
+    }
+
+    /**
+     * Exception class used to signal a failure to allocate an API-specific stream in the build()
+     * method.
+     */
+    public static class BadStateException extends BuilderException {
+        public BadStateException(String errorMessage, int statusCode) {
+            super(errorMessage, statusCode);
+        }
+    }
+
 }

@@ -20,6 +20,7 @@
 #include "AudioSink.h"
 
 static const char * const TAG = "OboeRecorder(native)";
+static const bool LOG = true;
 
 using namespace oboe;
 
@@ -33,12 +34,15 @@ OboeRecorder::OboeRecorder(AudioSink* sink, int32_t subtype)
 //
 // State
 //
-StreamBase::Result OboeRecorder::setupStream(int32_t channelCount, int32_t sampleRate,
+StreamBase::Result OboeRecorder::buildStream(int32_t channelCount, int32_t sampleRate,
                         int32_t performanceMode, int32_t sharingMode, int32_t routeDeviceId,
                         int32_t inputPreset)
 {
     //TODO much of this could be pulled up into OboeStream.
 
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s()", __FUNCTION__);
+    }
     std::lock_guard<std::mutex> lock(mStreamLock);
 
     oboe::Result result = oboe::Result::ErrorInternal;
@@ -53,47 +57,71 @@ StreamBase::Result OboeRecorder::setupStream(int32_t channelCount, int32_t sampl
         mInputPreset = inputPreset;
 
         // Create an audio stream
-        AudioStreamBuilder builder;
-        builder.setChannelCount(mChannelCount);
-        builder.setSampleRate(mSampleRate);
-        builder.setCallback(this);
+        mBuilder.setChannelCount(mChannelCount);
+        mBuilder.setSampleRate(mSampleRate);
+        mBuilder.setCallback(this);
         if (mInputPreset != DEFAULT_INPUT_NONE) {
-            builder.setInputPreset((enum InputPreset)mInputPreset);
+            mBuilder.setInputPreset((enum InputPreset)mInputPreset);
         }
-        builder.setPerformanceMode((PerformanceMode) performanceMode);
-        builder.setSharingMode((SharingMode) sharingMode);
-        builder.setSampleRateConversionQuality(SampleRateConversionQuality::None);
-        builder.setDirection(Direction::Input);
+        mBuilder.setPerformanceMode((PerformanceMode) performanceMode);
+        mBuilder.setSharingMode((SharingMode) sharingMode);
+        mBuilder.setSampleRateConversionQuality(SampleRateConversionQuality::None);
+        mBuilder.setDirection(Direction::Input);
 
         if (mRouteDeviceId != -1) {
-            builder.setDeviceId(mRouteDeviceId);
+            mBuilder.setDeviceId(mRouteDeviceId);
         }
 
         if (mSubtype == SUB_TYPE_OBOE_AAUDIO) {
-            builder.setAudioApi(AudioApi::AAudio);
+            mBuilder.setAudioApi(AudioApi::AAudio);
         } else if (mSubtype == SUB_TYPE_OBOE_OPENSL_ES) {
-            builder.setAudioApi(AudioApi::OpenSLES);
+            mBuilder.setAudioApi(AudioApi::OpenSLES);
         }
 
-        result = builder.openStream(mAudioStream);
-        if (result != oboe::Result::OK){
-            __android_log_print(
-                    ANDROID_LOG_ERROR,
-                    TAG,
-                    "openStream failed. Error: %s", convertToText(result));
-        } else {
-            mBufferSizeInFrames = mAudioStream->getFramesPerBurst();
-            mAudioSink->init(mBufferSizeInFrames, mChannelCount);
-        }
+        result = oboe::Result::OK;
     }
 
+    if (LOG) {
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s() return:%d",
+                        __FUNCTION__, OboeErrorToMegaAudioError(result));
+    }
+    return OboeErrorToMegaAudioError(result);
+}
+
+StreamBase::Result OboeRecorder::openStream() {
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s()", __FUNCTION__);
+    }
+    oboe::Result result = mBuilder.openStream(mAudioStream);
+    if (result != oboe::Result::OK){
+        __android_log_print(
+                ANDROID_LOG_ERROR,
+                TAG,
+                "openStream failed. Error: %s", convertToText(result));
+    } else {
+        mBufferSizeInFrames = mAudioStream->getFramesPerBurst();
+        mAudioSink->init(mBufferSizeInFrames, mChannelCount);
+    }
+
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s() return:%d",
+                            __FUNCTION__, OboeErrorToMegaAudioError(result));
+    }
     return OboeErrorToMegaAudioError(result);
 }
 
 StreamBase::Result OboeRecorder::startStream() {
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s()", __FUNCTION__);
+    }
     StreamBase::Result result = Recorder::startStream();
-    if (result == OK) {
+    if (result == StreamBase::Result::OK) {
         mAudioSink->start();
+    }
+    // this is already a StreamBase::Result, so no need to convert
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "%s() return:%d",
+                            __FUNCTION__, result);
     }
     return result;
 }
@@ -126,12 +154,18 @@ Java_org_hyphonate_megaaudio_recorder_OboeRecorder_setInputPresetN(
 }
 
 JNIEXPORT jint JNICALL
-Java_org_hyphonate_megaaudio_recorder_OboeRecorder_setupStreamN(
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_buildStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder, jint channel_count, jint sample_rate,
         jint performanceMode, jint sharingMode, jint route_device_id, jint input_preset) {
-    return ((OboeRecorder*)native_recorder)->setupStream(
+    return ((OboeRecorder*)native_recorder)->buildStream(
             channel_count, sample_rate, performanceMode, sharingMode, route_device_id,
             input_preset);
+}
+
+JNIEXPORT jint JNICALL
+        Java_org_hyphonate_megaaudio_recorder_OboeRecorder_openStreamN(
+        JNIEnv *env, jobject thiz, jlong native_recorder) {
+    return ((OboeRecorder*)native_recorder)->openStream();
 }
 
 JNIEXPORT jint JNICALL
@@ -147,9 +181,15 @@ Java_org_hyphonate_megaaudio_recorder_OboeRecorder_startStreamN(
 }
 
 JNIEXPORT jint JNICALL
-Java_org_hyphonate_megaaudio_recorder_OboeRecorder_stopN(
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_stopStreamN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
     return ((OboeRecorder*)native_recorder)->stopStream();
+}
+
+JNIEXPORT jint JNICALL
+        Java_org_hyphonate_megaaudio_recorder_OboeRecorder_closeStreamN(
+        JNIEnv *env, jobject thiz, jlong native_recorder) {
+    return ((OboeRecorder*)native_recorder)->closeStream();
 }
 
 JNIEXPORT jboolean JNICALL

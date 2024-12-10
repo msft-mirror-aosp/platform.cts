@@ -105,15 +105,25 @@ public class AudioDisconnectActivity
         static final int OPTION_MMAP = 0x00000004;
         int mOptions;
 
+        static final int RESULT_DETECTED = 0; // i.e. the disconnect notification was received
         static final int RESULT_NOTTESTED = -1;
         static final int RESULT_TIMEOUT = -2;
         static final int RESULT_SKIPPED = -3;
         static final int RESULT_BADDISCONNECTCODE = -4;
-        static final int RESULT_DETECTED = 0; // i.e. the disconnect notification was received
+        static final int RESULT_BADSTART = -5;
+        // Stream Errors
+        static final int RESULT_STREAM_OK = 0;
+        static final int RESULT_BADSTREAMBUILD = -6;
+        static final int RESULT_BADSTREAMOPEN = -7;
+        static final int RESULT_BADSTREAMSTART = -8;
+        static final int RESULT_BADSTREAMUNKNOWN = -9;
 
         /*
          * These variables monitor the stream states that we are interested in.
          */
+        // Monitore stream start
+        int mStreamStartResult;
+
         // Monitors insertion (plug-in) events.
         int mInsertPlugResult;
 
@@ -146,6 +156,7 @@ public class AudioDisconnectActivity
 
             mOptions = options;
 
+            mStreamStartResult = RESULT_NOTTESTED;
             mInsertPlugResult = RESULT_NOTTESTED;
             mInsertStreamDisconnectResult = RESULT_NOTTESTED;
             mInsertStreamOboeDisconnectResult = RESULT_NOTTESTED;
@@ -183,6 +194,18 @@ public class AudioDisconnectActivity
                 case RESULT_BADDISCONNECTCODE:
                     return "BAD DISCONNECT CODE";
 
+                case RESULT_BADSTART:
+                    return "BAD AUDIO START";
+
+                case RESULT_BADSTREAMBUILD:
+                    return "BAD STREAM BUILD";
+
+                case RESULT_BADSTREAMOPEN:
+                    return "BAD STREAM OPEN";
+
+                case RESULT_BADSTREAMSTART:
+                    return "BAD STREAM START";
+
                 default:
                     return "??";
             }
@@ -201,11 +224,11 @@ public class AudioDisconnectActivity
 
             sb.append("-----------\n");
             sb.append(getConfigString() + "\n");
-            sb.append("insert:" + resultToString(mInsertPlugResult) + "\n"
+            sb.append("insert: " + resultToString(mInsertPlugResult) + "\n"
                     + "stream disconnect: " + resultToString(mInsertStreamDisconnectResult) + "\n"
                     + "disconnect code: " + resultToString(mInsertStreamOboeDisconnectResult)
                     + "\n"
-                    + "remove:" + resultToString(mRemovalPlugResult) + "\n"
+                    + "remove: " + resultToString(mRemovalPlugResult) + "\n"
                     + "stream disconnect: " + resultToString(mRemovalStreamDisconnectResult) + "\n"
                     + "disconnect code: " + resultToString(mRemovalStreamOboeDisconnectResult)
                     + "\n");
@@ -214,7 +237,8 @@ public class AudioDisconnectActivity
         }
 
         boolean isPass() {
-            return (mInsertPlugResult == RESULT_DETECTED
+            return mStreamStartResult == RESULT_STREAM_OK
+                    && (mInsertPlugResult == RESULT_DETECTED
                         || mInsertPlugResult == RESULT_SKIPPED)
                     && (mInsertStreamDisconnectResult == RESULT_DETECTED
                         || mInsertStreamDisconnectResult == RESULT_SKIPPED)
@@ -236,6 +260,46 @@ public class AudioDisconnectActivity
             mRemovalStreamDisconnectResult = RESULT_SKIPPED;
             mRemovalStreamOboeDisconnectResult = RESULT_SKIPPED;
         }
+
+        String buildErrorString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Failed Configuration: " + getConfigString());
+
+            // Prose Description
+            // move this string build into TestConfiguration class
+            sb.append("\n\n");
+            if (mInsertPlugResult == TestConfiguration.RESULT_TIMEOUT) {
+                sb.append(getString(R.string.audio_disconnect_insert_fail_prose));
+            } else if (mInsertStreamDisconnectResult
+                    == TestConfiguration.RESULT_TIMEOUT) {
+                sb.append(getString(R.string.audio_stream_disconnect_insert_fail_prose));
+            } else if (mInsertStreamOboeDisconnectResult
+                    == TestConfiguration.RESULT_BADDISCONNECTCODE) {
+                sb.append(getString(R.string.audio_stream_disconnect_code_insert_fail_prose)
+                        + " code:" + mInsertStreamOboeDisconnectCode);
+            } else if (mRemovalPlugResult == TestConfiguration.RESULT_TIMEOUT) {
+                sb.append(getString(R.string.audio_disconnect_remove_fail_prose));
+            } else if (mRemovalStreamDisconnectResult
+                    == TestConfiguration.RESULT_TIMEOUT) {
+                sb.append(getString(R.string.audio_stream_disconnect_remove_fail_prose));
+            } else if (mRemovalStreamOboeDisconnectResult
+                    == TestConfiguration.RESULT_BADDISCONNECTCODE) {
+                sb.append(getString(R.string.audio_stream_disconnect_code_remove_fail_prose)
+                        + " code:" + mRemovalStreamOboeDisconnectCode);
+            } else if (mStreamStartResult == TestConfiguration.RESULT_BADSTREAMBUILD) {
+                sb.append("Stream Build Error: " + mStreamStartResult);
+            } else if (mStreamStartResult == TestConfiguration.RESULT_BADSTREAMOPEN) {
+                sb.append("Stream Open Error: " + mStreamStartResult);
+            } else if (mStreamStartResult == TestConfiguration.RESULT_BADSTREAMSTART) {
+                sb.append("Stream Start Error: " + mStreamStartResult);
+            } else if (mStream != null) {
+                sb.append("Other Error: " + StreamState.toString(mStream.getStreamState()));
+            } else {
+                sb.append("No Stream.");
+            }
+
+            return sb.toString();
+        }
     }
 
     private ArrayList<TestConfiguration> mTestConfigs = new ArrayList<TestConfiguration>();
@@ -249,9 +313,7 @@ public class AudioDisconnectActivity
 //        LOWLATENCY // legacy
 //        NONE
 
-
         // Player
-        // mTestConfigs.add(new TestConfiguration(true, false, 41000, 2));
         mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_OUTPUT,
                 mSystemSampleRate, 2,
                 TestConfiguration.OPTION_LOWLATENCY));
@@ -292,6 +354,7 @@ public class AudioDisconnectActivity
 
     void resetTestConfigs() {
         for (TestConfiguration testConfig : mTestConfigs) {
+            testConfig.mStreamStartResult = TestConfiguration.RESULT_NOTTESTED;
             testConfig.mInsertPlugResult = TestConfiguration.RESULT_NOTTESTED;
             testConfig.mInsertStreamDisconnectResult = TestConfiguration.RESULT_NOTTESTED;
             testConfig.mInsertStreamOboeDisconnectResult = TestConfiguration.RESULT_NOTTESTED;
@@ -324,33 +387,8 @@ public class AudioDisconnectActivity
         // Find the failed module
         TestConfiguration failedConfig = findFailedConfiguration();
         if (failedConfig != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Failed Configuration: " + failedConfig.getConfigString());
-
-            // Prose Description
-            sb.append("\n\n");
-            if (failedConfig.mInsertPlugResult == TestConfiguration.RESULT_TIMEOUT) {
-                sb.append(getString(R.string.audio_disconnect_insert_fail_prose));
-            } else if (failedConfig.mInsertStreamDisconnectResult
-                    == TestConfiguration.RESULT_TIMEOUT) {
-                sb.append(getString(R.string.audio_stream_disconnect_insert_fail_prose));
-            } else if (failedConfig.mInsertStreamOboeDisconnectResult
-                    == TestConfiguration.RESULT_BADDISCONNECTCODE) {
-                sb.append(getString(R.string.audio_stream_disconnect_code_insert_fail_prose)
-                        + " code:" + failedConfig.mInsertStreamOboeDisconnectCode);
-            } else if (failedConfig.mRemovalPlugResult == TestConfiguration.RESULT_TIMEOUT) {
-                sb.append(getString(R.string.audio_disconnect_remove_fail_prose));
-            } else if (failedConfig.mRemovalStreamDisconnectResult
-                    == TestConfiguration.RESULT_TIMEOUT) {
-                sb.append(getString(R.string.audio_stream_disconnect_remove_fail_prose));
-            } else if (failedConfig.mRemovalStreamOboeDisconnectResult
-                    == TestConfiguration.RESULT_BADDISCONNECTCODE) {
-                sb.append(getString(R.string.audio_stream_disconnect_code_remove_fail_prose)
-                        + " code:" + failedConfig.mRemovalStreamOboeDisconnectCode);
-            } else {
-                sb.append("Other Error: " + StreamState.toString(mStream.getStreamState()));
-            }
-            mDebugMessageTx.setText(sb.toString());
+            String errorStr = failedConfig.buildErrorString();
+            mDebugMessageTx.setText(errorStr);
         }
     }
 
@@ -388,10 +426,9 @@ public class AudioDisconnectActivity
                 //-----------------------------------------
                 // Start Audio
                 //-----------------------------------------
-                if (LOG) {
-                    Log.d(TAG, "startAudio()");
+                if (!startAudio(testConfig)) {
+                    break;  // ERROR
                 }
-                startAudio(testConfig);
 
                 setTextMessage(mUserPromptTx, "Waiting for " + streamName + " to start.");
                 try {
@@ -622,7 +659,7 @@ public class AudioDisconnectActivity
                             TestConfiguration.RESULT_DETECTED;
 
                 } catch (InterruptedException ex) {
-                    Log.e(TAG, "InterruptedException: " + ex);
+                    Log.e(TAG, "InterruptedException: ex:", ex);
                     abortTest = true;
                 }
                 runOnUiThread(new Runnable() {
@@ -631,9 +668,6 @@ public class AudioDisconnectActivity
                         showTestResults();
                     }
                 });
-                if (LOG) {
-                    Log.d(TAG, "stopAudio()");
-                }
                 stopAudio();
             } // for looping over the TestConfigurations
 
@@ -657,6 +691,9 @@ public class AudioDisconnectActivity
     }
 
     void endTest() {
+        if (LOG) {
+            Log.d(TAG, "endTest()");
+        }
         showTestResults();
         runOnUiThread(new Runnable() {
             @Override
@@ -807,6 +844,10 @@ public class AudioDisconnectActivity
         }
         stopAudio();
         Globals.setMMapEnabled(config.isMMap());
+
+        int buildResult = StreamBase.OK;
+        int openResult = StreamBase.OK;
+        int startResult = StreamBase.OK;
         if (config.mDirection == TestConfiguration.IO_OUTPUT) {
             AudioSourceProvider sourceProvider = new SilenceAudioSourceProvider();
             try {
@@ -821,13 +862,22 @@ public class AudioDisconnectActivity
                 playerBuilder.setSampleRate(config.mSampleRate);
                 playerBuilder.setSourceProvider(sourceProvider);
                 playerBuilder.setPlayerType(BuilderBase.TYPE_OBOE);
-                mPlayer = (OboePlayer) playerBuilder.build();
-                mPlayer.startStream();
-                mIsAudioRunning = true;
-                mStream = mPlayer;
+                mPlayer = (OboePlayer) playerBuilder.allocStream();
+                if ((buildResult = mPlayer.build(playerBuilder)) == StreamBase.OK
+                        && (openResult = mPlayer.open()) == StreamBase.OK
+                        && (startResult = mPlayer.start()) == StreamBase.OK) {
+                    mIsAudioRunning = true;
+                    mStream = mPlayer;
+                } else {
+                    mIsAudioRunning = false;
+                    config.mInsertPlugResult = TestConfiguration.RESULT_BADSTART;
+                    mPlayer.unwind();
+                    mPlayer = null;
+                }
             } catch (PlayerBuilder.BadStateException badStateException) {
                 Log.e(TAG, "BadStateException: " + badStateException);
                 mIsAudioRunning = false;
+                config.mInsertPlugResult = TestConfiguration.RESULT_BADSTART;
             }
         } else {
             AudioSinkProvider sinkProvider = new NopAudioSinkProvider();
@@ -845,16 +895,38 @@ public class AudioDisconnectActivity
                 recorderBuilder.setSharingMode(config.isExclusive()
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE
                         : BuilderBase.SHARING_MODE_SHARED);
-                mRecorder = (OboeRecorder) recorderBuilder.build();
-                mRecorder.startStream();
-                mIsAudioRunning = true;
-                mStream = mRecorder;
+                mRecorder = (OboeRecorder) recorderBuilder.allocStream();
+                if ((buildResult = mRecorder.build(recorderBuilder)) == StreamBase.OK
+                        && (openResult = mRecorder.open()) == StreamBase.OK
+                        && (startResult = mRecorder.start()) == StreamBase.OK) {
+                    mIsAudioRunning = true;
+                    mStream = mRecorder;
+                } else {
+                    mIsAudioRunning = false;
+                    config.mInsertPlugResult = TestConfiguration.RESULT_BADSTART;
+                    mRecorder.unwind();
+                    mRecorder = null;
+                }
             } catch (RecorderBuilder.BadStateException badStateException) {
                 Log.e(TAG, "BadStateException: " + badStateException);
                 mIsAudioRunning = false;
+                config.mInsertPlugResult = TestConfiguration.RESULT_BADSTART;
             }
         }
-        Globals.setMMapEnabled(Globals.isMMapSupported());
+        if (mIsAudioRunning) {
+            Globals.setMMapEnabled(Globals.isMMapSupported());
+            config.mStreamStartResult = TestConfiguration.RESULT_STREAM_OK;
+        } else {
+            if (buildResult != StreamBase.OK) {
+                config.mStreamStartResult = TestConfiguration.RESULT_BADSTREAMBUILD;
+            } else if (openResult != StreamBase.OK) {
+                config.mStreamStartResult = TestConfiguration.RESULT_BADSTREAMOPEN;
+            } else if (startResult != StreamBase.OK) {
+                config.mStreamStartResult = TestConfiguration.RESULT_BADSTREAMSTART;
+            } else {
+                config.mStreamStartResult = TestConfiguration.RESULT_BADSTREAMUNKNOWN;
+            }
+        }
 
         if (LOG) {
             Log.d(TAG, "  mIsAudioRunning: " + mIsAudioRunning);
@@ -868,18 +940,23 @@ public class AudioDisconnectActivity
     }
 
     private void stopAudio() {
+        if (LOG) {
+            Log.d(TAG, "stopAudio()");
+        }
         if (!mIsAudioRunning) {
             return; // nothing to do
         }
 
         if (mPlayer != null) {
-            mPlayer.stopStream();
-            mPlayer.teardownStream();
+            // The stop will happen here along with the rest of the teardown
+            mPlayer.unwind();
+            mPlayer = null;
         }
 
         if (mRecorder != null) {
-            mRecorder.stopStream();
-            mRecorder.teardownStream();
+            // The stop will happen here along with the rest of the teardown
+            mRecorder.unwind();
+            mRecorder = null;
         }
 
         mIsAudioRunning = false;

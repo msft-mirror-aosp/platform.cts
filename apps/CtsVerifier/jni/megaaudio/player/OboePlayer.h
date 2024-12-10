@@ -34,9 +34,12 @@ public:
     virtual void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
     virtual void onErrorBeforeClose(oboe::AudioStream * oboeStream, oboe::Result error) override;
 
-    Result setupStream(int32_t channelCount, int32_t channelMask, int32_t sampleRate,
+    Result buildStream(int32_t channelCount, int32_t channelMask, int32_t sampleRate,
         int32_t performanceMode, int32_t sharingMode, int32_t routeDeviceId);
-    virtual Result startStream() override;
+
+    Result openStream();
+
+    Result startStream();
 
     bool getJavaTimestamp(jobject timestampObj);
 

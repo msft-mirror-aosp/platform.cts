@@ -5739,6 +5739,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_inputscolon">Inputs:</string>
     <string name="audio_general_outputscolon">Outputs:</string>
 
+    <string name="audio_general_build_fail">%1$s BUILD failure:%2$d</string>
+    <string name="audio_general_open_fail">%1$s OPEN failure:%2$d</string>
+    <string name="audio_general_start_fail">%1$s START failure:%2$d</string>
+
     <!-- Audio Loopback Calibration -->
     <string name="audio_calibration_info">
         This panel allows you to set levels for loopback signals
@@ -6080,9 +6084,14 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_channel_mask_topbackleft">Top Back Left</string>
     <string name="audio_channel_mask_topbackright">Top Back Right</string>
 
-     <!-- Audio Cold-Start Latency Test -->
+    <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
     <string name="audio_coldstart_in_latency_test">Audio Cold Start Input Latency Test</string>
+    <string name="audio_coldstart_badrecorderstate">Bad recorder state.</string>
+    <string name="audio_coldstart_badrecorderstart">Can\'t start recorder.</string>
+    <string name="audio_coldstart_badplayererstate">Bad player state.</string>
+    <string name="audio_coldstart_badplayerstart">Can\'t start player.</string>
+    <string name="audio_coldstart_notimestamp">NO TIME STAMP</string>
 
     <string name="audio_coldstart_output_info">
         This test measures the time required to play audio from a suspended \"cold\" audio system.

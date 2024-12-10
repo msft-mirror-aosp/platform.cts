@@ -18,6 +18,8 @@ package org.hyphonate.megaaudio.player;
 import android.media.AudioTimestamp;
 import android.util.Log;
 
+import org.hyphonate.megaaudio.common.BuilderBase;
+
 public class OboePlayer extends Player {
     @SuppressWarnings("unused")
     private static final String TAG = OboePlayer.class.getSimpleName();
@@ -28,8 +30,7 @@ public class OboePlayer extends Player {
 
     private long mNativePlayer;
 
-    public OboePlayer(PlayerBuilder builder, AudioSourceProvider sourceProvider,
-                      int playerSubtype) {
+    public OboePlayer(AudioSourceProvider sourceProvider, int playerSubtype) {
         super(sourceProvider);
 
         mPlayerSubtype = playerSubtype;
@@ -43,8 +44,85 @@ public class OboePlayer extends Player {
             mNativePlayer = allocNativePlayer(
                     JavaSourceProxy.allocNativeSource(mAudioSource), mPlayerSubtype);
         }
+    }
 
-        setupStream(builder);
+    //
+    // Lifecycle
+    //
+
+    @Override
+    public int build(BuilderBase builder) {
+        mChannelCount = builder.getChannelCount();
+        mChannelMask = builder.getChannelMask();
+        mSampleRate = builder.getSampleRate();
+        mNumExchangeFrames = builder.getNumExchangeFrames();
+        mPerformanceMode = builder.getPerformanceMode();
+        mSharingMode = builder.getSharingMode();
+        int routeDeviceId = builder.getRouteDeviceId();
+        if (LOG) {
+            Log.d(TAG, "build()");
+            Log.d(TAG, "  chans:" + mChannelCount);
+            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
+            Log.d(TAG, "  rate: " + mSampleRate);
+            Log.d(TAG, "  frames: " + mNumExchangeFrames);
+            Log.d(TAG, "  perf mode: " + mPerformanceMode);
+            Log.d(TAG, "  route device: " + routeDeviceId);
+            Log.d(TAG, "  sharing mode: " + mSharingMode);
+        }
+        return trackBuild(buildStreamN(
+                mNativePlayer, mChannelCount, mChannelMask, mSampleRate,
+                mPerformanceMode, mSharingMode,
+                routeDeviceId));
+    }
+
+    @Override
+    public int open() {
+        if (LOG) {
+            Log.d(TAG, "open()");
+        }
+        return trackOpen(openStreamN(mNativePlayer));
+    }
+
+    @Override
+    public int start() {
+        if (LOG) {
+            Log.d(TAG, "start()");
+        }
+        int retVal = startStreamN(mNativePlayer, mPlayerSubtype);
+        // TODO - Need Java constants defined for the C++ StreamBase.Result enum
+        mPlaying = retVal == 0;
+        return trackStart(retVal);
+    }
+
+    @Override
+    public int stop() {
+        if (LOG) {
+            Log.d(TAG, "stop()");
+        }
+        mPlaying = false;
+
+        return trackStop(stopStreamN(mNativePlayer));
+    }
+
+    @Override
+    public int close() {
+        if (LOG) {
+            Log.d(TAG, "close()");
+        }
+        return trackClose(closeStreamN(mNativePlayer));
+    }
+
+    @Override
+    public int teardown() {
+        if (LOG) {
+            Log.d(TAG, "teardown()");
+        }
+        int errCode = teardownStreamN(mNativePlayer);
+
+        mChannelCount = 0;
+        mSampleRate = 0;
+
+        return trackTeardown(errCode);
     }
 
     public int getNumBufferFrames() {
@@ -71,55 +149,6 @@ public class OboePlayer extends Player {
         return isMMapN(mNativePlayer);
     }
 
-    private int setupStream(PlayerBuilder builder) {
-        mChannelCount = builder.getChannelCount();
-        mChannelMask = builder.getChannelMask();
-        mSampleRate = builder.getSampleRate();
-        mNumExchangeFrames = builder.getNumExchangeFrames();
-        mPerformanceMode = builder.getPerformanceMode();
-        mSharingMode = builder.getSharingMode();
-        int routeDeviceId = builder.getRouteDeviceId();
-        if (LOG) {
-            Log.d(TAG, "setupStream()");
-            Log.d(TAG, "  chans:" + mChannelCount);
-            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
-            Log.d(TAG, "  rate: " + mSampleRate);
-            Log.d(TAG, "  frames: " + mNumExchangeFrames);
-            Log.d(TAG, "  perf mode: " + mPerformanceMode);
-            Log.d(TAG, "  route device: " + routeDeviceId);
-            Log.d(TAG, "  sharing mode: " + mSharingMode);
-        }
-        return setupStreamN(
-                mNativePlayer, mChannelCount, mChannelMask, mSampleRate,
-                mPerformanceMode, mSharingMode,
-                routeDeviceId);
-    }
-
-    @Override
-    public int teardownStream() {
-        int errCode = teardownStreamN(mNativePlayer);
-
-        mChannelCount = 0;
-        mSampleRate = 0;
-
-        return errCode;
-    }
-
-    @Override
-    public int startStream() {
-        int retVal = startStreamN(mNativePlayer, mPlayerSubtype);
-        // TODO - Need Java constants defined for the C++ StreamBase.Result enum
-        mPlaying = retVal == 0;
-        return retVal;
-    }
-
-    @Override
-    public int stopStream() {
-        mPlaying = false;
-
-        return stopN(mNativePlayer);
-    }
-
     /**
      * Gets a timestamp from the audio stream
      *
@@ -140,15 +169,19 @@ public class OboePlayer extends Player {
 
     private native long allocNativePlayer(long nativeSource, int playerSubtype);
 
-    private native int setupStreamN(long nativePlayer, int channelCount, int channelMask,
+    private native int buildStreamN(long nativePlayer, int channelCount, int channelMask,
                                     int sampleRate, int performanceMode, int sharingMode,
                                     int routeDeviceId);
 
-    private native int teardownStreamN(long nativePlayer);
+    private native int openStreamN(long nativePlayer);
 
     private native int startStreamN(long nativePlayer, int playerSubtype);
 
-    private native int stopN(long nativePlayer);
+    private native int stopStreamN(long nativePlayer);
+
+    private native int closeStreamN(long nativePlayer);
+
+    private native int teardownStreamN(long nativePlayer);
 
     private native int getBufferFrameCountN(long mNativePlayer);
 

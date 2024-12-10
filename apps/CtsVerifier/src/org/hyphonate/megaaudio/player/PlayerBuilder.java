@@ -18,6 +18,7 @@ package org.hyphonate.megaaudio.player;
 import android.util.Log;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
+import org.hyphonate.megaaudio.common.StreamState;
 
 /**
  * Class to construct contrete Player objects.
@@ -26,7 +27,7 @@ public class PlayerBuilder extends BuilderBase {
     @SuppressWarnings("unused")
     private static final String TAG = PlayerBuilder.class.getSimpleName();
     @SuppressWarnings("unused")
-    private static final boolean LOG = false;
+    private static final boolean LOG = true;
 
     /**
      * Provides audio data for this stream.
@@ -62,17 +63,17 @@ public class PlayerBuilder extends BuilderBase {
     }
 
     /**
-     * Allocates an initializes an API-specific player stream.
+     * Allocates and initializes an API-specific player stream.
      * @return The allocated player or null in case of error or if a player type of TYPE_NONE
      * is specified.
      * @throws BadStateException if an invalid API has been specified.
      */
-    public Player build() throws BadStateException {
+    public Player allocStream() throws BadStateException {
         if (LOG) {
             Log.i(TAG, "build() mSourceProvider:" + mSourceProvider);
         }
         if (mSourceProvider == null) {
-            throw new BadStateException();
+            throw new BadStateException("No SourceProvider Specified.", StreamState.UNINITIALIZED);
         }
 
         Player player = null;
@@ -83,26 +84,22 @@ public class PlayerBuilder extends BuilderBase {
                 break;
 
             case TYPE_JAVA:
-                player = new JavaPlayer(this, mSourceProvider);
+                player = new JavaPlayer(mSourceProvider);
                 break;
 
             case TYPE_OBOE: {
                 int playerSubType = mType & SUB_TYPE_MASK;
-                player = new OboePlayer(this, mSourceProvider, playerSubType);
+                player = new OboePlayer(mSourceProvider, playerSubType);
             }
             break;
 
             default:
-                throw new BadStateException();
+                throw new BuilderBase.BadStateException(
+                        "Invalid Audio API Specified [" + playerType + "]",
+                        StreamState.UNKNOWN);
         }
 
         return player;
     }
 
-    /**
-     * Exception class used to signal a failure to allocate an API-specific stream in the build()
-     * method.
-     */
-    public class BadStateException extends Throwable {
-    }
 }
