@@ -57,6 +57,7 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUna
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.policies.DisallowBluetooth
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
@@ -808,6 +809,16 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun dpc_primaryTestApp_returnsTestApp() {
         assertThat(sDeviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
+    }
+
+    @EnsureTestAppInstalledAsPrimaryDPC(key = EnsureTestAppInstalled.DEFAULT_KEY)
+    @AdditionalQueryParameters(
+        forTestApp = EnsureTestAppInstalled.DEFAULT_KEY,
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+    )
+    @Test
+    fun additionalQueryParameters_ensureTestAppInstalled_isRespected() {
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
     }
 
     companion object {
