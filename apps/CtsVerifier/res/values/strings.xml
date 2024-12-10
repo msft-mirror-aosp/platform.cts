@@ -5629,6 +5629,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_record_colon"> record:</string>
 
     <string name="audio_general_results">Results</string>
+    <string name="audio_general_test">Test</string>
 
     <string name="audio_general_supporteddevices">Supported Devices</string>
     <string name="audio_general_availabledevices">Available Devices</string>
@@ -5646,11 +5647,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
 
     <!-- Audio Data Paths Test-->
-    <string name="audio_datapaths_clearresults">Clear Results</string>
-    <string name="audio_datapaths_legacy">Legacy</string>
-    <string name="audio_datapaths_mmap_shared">MMAP Shared</string>
-    <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
-    <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
+    <string name="audio_datapaths_clearresults">Clr</string>
+    <string name="audio_datapaths_showresults">Show</string>
+    <string name="audio_datapaths_shareresults">Share</string>
 
     <string name="perf_mode_none_abreviation">None</string>
     <string name="perf_mode_lowlatency_abreviation">LowLat</string>
