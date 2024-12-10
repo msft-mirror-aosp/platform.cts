@@ -38,6 +38,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -62,10 +63,15 @@ import org.junit.rules.TestName;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -109,7 +115,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String JCA_ACTIVITY_NAME = "MainActivity";
     private static final String JCA_FILES_CHILD_PATHNAME = "Images/JCATestCaptures";
     private static final String JCA_VIDEO_FILES_CHILD_PATHNAME = "Videos/JCATestCaptures";
-    public static final String JCA_CAPTURE_PATH_TAG = "JCA_CAPTURE_PATH";
+    private static final String JCA_DEBUG_MODE_KEY = "KEY_DEBUG_MODE";
+    public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
 
     private static final String RESULT_PASS = "PASS";
@@ -1220,8 +1227,30 @@ public class ItsTestActivity extends DialogTestListActivity {
             if (resultCode != RESULT_OK) {
                 Logt.e(TAG, "Capture failed!");
             }
+            Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
+                    MediaStore.EXTRA_OUTPUT).toString());
+            ArrayList<String> jcaCapturePaths = new ArrayList<String>();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+                    "yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
+            String timestamp = formatter.format(Instant.now());
+            int i = 0;
+            for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
+                Uri uri = Uri.parse(intentUri);
+                try {
+                    Path imagePath = moveImageFromUri(
+                            uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
+                    jcaCapturePaths.add(imagePath.toString());
+                } catch (FileNotFoundException e) {
+                    Logt.e(TAG, "File not found from uri: " + e);
+                    return;
+                } catch (IOException e) {
+                    Logt.e(TAG, "Error copying file from uri: " + e);
+                    return;
+                }
+                i++;
+            }
             Intent serviceIntent = new Intent(this, ItsService.class);
-            serviceIntent.putExtra(JCA_CAPTURE_PATH_TAG, mJcaCapturePath);
+            serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
             serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
             startService(serviceIntent);
         } else {
@@ -1230,33 +1259,32 @@ public class ItsTestActivity extends DialogTestListActivity {
     }
 
     private void doJcaCapture() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File imageDir = new File(this.getExternalFilesDir(null), JCA_FILES_CHILD_PATHNAME);
-        imageDir.mkdirs();
-        if (!imageDir.exists()) {
-            Logt.e(TAG, "Could not create image directory");
-            return;
-        }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-                .withZone(ZoneId.systemDefault());
-        String timestamp = formatter.format(Instant.now());
-        File imageFile = new File(imageDir, "ITS_JCA_" + timestamp + ".jpg");
-        Logt.i(TAG, "file path: " + imageFile.toString());
-        mJcaCapturePath = imageFile.toString();
-        Uri photoUri = FileProvider.getUriForFile(
-                this,
-                "com.android.cts.verifier.managedprovisioning.fileprovider",
-                imageFile);
-        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+        Intent takePictureIntent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
         takePictureIntent.setComponent(new ComponentName(
                 JCA_PACKAGE_NAME, JCA_PACKAGE_NAME + "." + JCA_ACTIVITY_NAME));
-        takePictureIntent.setFlags(
-                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        takePictureIntent.putExtra(JCA_DEBUG_MODE_KEY, true);
         try {
             startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
         } catch (ActivityNotFoundException e) {
             Logt.e(TAG, "Error starting image capture intent activity: " + e);
         }
+    }
+
+    private Path moveImageFromUri(Uri uri, String name)
+            throws FileNotFoundException, IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(uri, "r");
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        FileInputStream inputStream = new FileInputStream(fileDescriptor);
+        File imageDir = new File(this.getExternalFilesDir(null), JCA_FILES_CHILD_PATHNAME);
+        imageDir.mkdirs();
+        if (!imageDir.exists()) {
+            throw new IOException("Could not create image directory");
+        }
+        Path imagePath = new File(imageDir, name).toPath();
+        Files.copy(inputStream, imagePath, StandardCopyOption.REPLACE_EXISTING);
+        getContentResolver().delete(uri, null, null);
+        return imagePath;
     }
 
     private void doJcaVideoCapture() {
