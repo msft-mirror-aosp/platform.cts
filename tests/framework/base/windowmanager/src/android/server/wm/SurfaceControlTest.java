@@ -16,26 +16,29 @@
 package android.server.wm;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
-import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.MultiRectChecker;
-import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.RectChecker;
+import static android.server.wm.SurfaceControlTestActivity.MultiRectChecker;
+import static android.server.wm.SurfaceControlTestActivity.RectChecker;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.view.Surface;
 import android.view.SurfaceControl;
-import android.view.SurfaceHolder;
-import android.view.cts.surfacevalidator.ASurfaceControlTestActivity;
-import android.view.cts.surfacevalidator.ASurfaceControlTestActivity.PixelChecker;
 import android.view.cts.surfacevalidator.PixelColor;
 
-import androidx.annotation.NonNull;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,46 +55,44 @@ public class SurfaceControlTest {
             DEFAULT_SURFACE_SIZE - 1);
 
     @Rule
-    public ActivityScenarioRule<ASurfaceControlTestActivity> mActivityRule =
-            createFullscreenActivityScenarioRule(ASurfaceControlTestActivity.class);
+    public ActivityScenarioRule<SurfaceControlTestActivity> mActivityRule =
+            createFullscreenActivityScenarioRule(SurfaceControlTestActivity.class);
 
     @Rule
     public TestName mName = new TestName();
-    private ASurfaceControlTestActivity mActivity;
 
-    private abstract class SurfaceHolderCallback implements
-            SurfaceHolder.Callback {
+    private SurfaceControlTestActivity mActivity;
 
-        public abstract void addChildren(SurfaceControl parent);
+    private ActivityScenario<SurfaceControlTestActivity> mScenario;
 
-        @Override
-        public void surfaceCreated(@NonNull SurfaceHolder holder) {
-            addChildren(mActivity.getSurfaceView().getSurfaceControl());
-        }
-
-        @Override
-        public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width,
-                int height) {}
-
-        @Override
-        public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
-    }
-
-    private void verifyTest(SurfaceHolder.Callback callback, PixelChecker pixelChecker) {
-        mActivity.verifyTest(callback, pixelChecker);
-    }
+    /**
+     * Shorty delay to allow for SurfaceTransactions applying to SurfaceView so it will
+     * be picked up in screenshot for comparison.
+     */
+    private static final Long SURFACE_TRANSACTION_APPLY_DURATION = 200L; //ms
 
     @Before
     public void setup() {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mScenario = mActivityRule.getScenario();
+        mScenario.onActivity(activity -> {
+                    assumeFalse("Test/capture infrastructure not supported on Watch",
+                            activity.getPackageManager().hasSystemFeature(
+                                    PackageManager.FEATURE_WATCH));
+                    mActivity = activity;
+                }
+        );
+    }
+
+    @After
+    public void tearDown() {
+        mScenario.close();
     }
 
     @Test
     public void testLifecycle() {
         final SurfaceControl.Builder b = new SurfaceControl.Builder();
         final SurfaceControl sc = b.setName("CTS").build();
-
-        assertTrue("Failed to build SurfaceControl", sc != null);
+        assertNotNull("Failed to build SurfaceControl", sc);
         assertTrue(sc.isValid());
         sc.release();
         assertFalse(sc.isValid());
@@ -148,18 +149,17 @@ public class SurfaceControlTest {
      */
     @Test
     public void testShow() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback() {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(parent);
-
-                        new SurfaceControl.Transaction().setVisibility(sc, true).apply();
-
-                        sc.release();
-                    }
-                },
-                new RectChecker(DEFAULT_RECT, PixelColor.RED));
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(
+                             sc, true)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.RED));
+        }
     }
 
     /**
@@ -167,18 +167,17 @@ public class SurfaceControlTest {
      */
     @Test
     public void testHide() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(parent);
-
-                        new SurfaceControl.Transaction().setVisibility(sc, false).apply();
-
-                        sc.release();
-                    }
-                },
-                new RectChecker(DEFAULT_RECT, PixelColor.BLACK));
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(
+                             sc, false)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.BLACK));
+        }
     }
 
     /**
@@ -186,23 +185,20 @@ public class SurfaceControlTest {
      */
     @Test
     public void testReparentOff() throws Throwable {
-        final SurfaceControl sc = buildDefaultRedSurface(null);
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        new SurfaceControl.Transaction().reparent(sc, parent).apply();
-                        new SurfaceControl.Transaction().reparent(sc, null).apply();
-                    }
-                },
-                new RectChecker(DEFAULT_RECT, PixelColor.BLACK));
-      // Since the SurfaceControl is parented off-screen, if we release our reference
-      // it may completely die. If this occurs while the render thread is still rendering
-      // the RED background we could trigger a crash. For this test defer destroying the
-      // Surface until we have collected our test results.
-      if (sc != null) {
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        try (SurfaceControl.Transaction transaction = new SurfaceControl.Transaction().reparent(
+                sc, parent)) {
+            transaction.apply();
+        }
+        try (SurfaceControl.Transaction transaction = new SurfaceControl.Transaction().reparent(
+                sc, null)) {
+            transaction.apply();
+        }
+        SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+        final Bitmap bm = mActivity.screenShot();
         sc.release();
-      }
+        verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.BLACK));
     }
 
     /**
@@ -210,20 +206,18 @@ public class SurfaceControlTest {
      */
     @Test
     public void testReparentOn() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(null);
-
-                        new SurfaceControl.Transaction().setVisibility(sc, true)
-                            .reparent(sc, parent)
-                            .apply();
-
-                        sc.release();
-                    }
-                },
-                new RectChecker(DEFAULT_RECT, PixelColor.RED));
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(null);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(
+                                     sc, true)
+                             .reparent(sc, parent)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.RED));
+        }
     }
 
     /**
@@ -231,23 +225,21 @@ public class SurfaceControlTest {
      */
     @Test
     public void testSetLayer() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(parent);
-                        final SurfaceControl sc2 = buildDefaultSurface(parent, Color.GREEN);
-
-                        new SurfaceControl.Transaction().setVisibility(sc, true)
-                            .setVisibility(sc2, true)
-                            .setLayer(sc, 1)
-                            .setLayer(sc2, 2)
-                            .apply();
-
-                        sc.release();
-                    }
-                },
-                new RectChecker(DEFAULT_RECT, PixelColor.GREEN));
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        final SurfaceControl sc2 = buildDefaultSurface(parent, Color.GREEN);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(
+                                     sc, true)
+                             .setVisibility(sc2, true)
+                             .setLayer(sc, 1)
+                             .setLayer(sc2, 2)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.GREEN));
+        }
     }
 
     /**
@@ -255,31 +247,34 @@ public class SurfaceControlTest {
      */
     @Test
     public void testSetGeometry_dstBoundsOffScreen() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(parent);
-                        new SurfaceControl.Transaction().setVisibility(sc, true)
-                            .setGeometry(sc, null, new Rect(-50, -50, 50, 50), Surface.ROTATION_0)
-                            .apply();
-                        sc.release();
-                    }
-                },
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(sc, true)
+                             .setGeometry(sc, null,
+                                     new Rect(-50, -50, 50, 50),
+                                     Surface.ROTATION_0)
+        ) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            // The rect should be offset by -50 pixels
+            final RectChecker rc = new MultiRectChecker(DEFAULT_RECT) {
+                final PixelColor red = new PixelColor(PixelColor.RED);
+                final PixelColor black = new PixelColor(PixelColor.BLACK);
 
-                // The rect should be offset by -50 pixels
-                new MultiRectChecker(DEFAULT_RECT) {
-                    final PixelColor red = new PixelColor(PixelColor.RED);
-                    final PixelColor black = new PixelColor(PixelColor.BLACK);
-                    @Override
-                    public PixelColor getExpectedColor(int x, int y) {
-                        if (x < 50 && y < 50) {
-                            return red;
-                        } else {
-                            return black;
-                        }
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    if (x < 50 && y < 50) {
+                        return red;
+                    } else {
+                        return black;
                     }
-                });
+                }
+            };
+            verifyResult(bm, rc);
+        }
     }
 
     /**
@@ -287,53 +282,62 @@ public class SurfaceControlTest {
      */
     @Test
     public void testSetGeometry_dstBoundsOnScreen() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildDefaultRedSurface(parent);
-                        new SurfaceControl.Transaction().setVisibility(sc, true)
-                            .setGeometry(sc, null, new Rect(50, 50, 150, 150), Surface.ROTATION_0)
-                            .apply();
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildDefaultRedSurface(parent);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(sc, true)
+                             .setGeometry(sc, null,
+                                     new Rect(50, 50, 150, 150),
+                                     Surface.ROTATION_0)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            // The rect should be offset by 50 pixels
+            final RectChecker rc = new MultiRectChecker(DEFAULT_RECT) {
+                final PixelColor red = new PixelColor(PixelColor.RED);
+                final PixelColor black = new PixelColor(PixelColor.BLACK);
 
-                        sc.release();
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    if (x >= 50 && y >= 50) {
+                        return red;
+                    } else {
+                        return black;
                     }
-                },
-
-                // The rect should be offset by 50 pixels
-                new MultiRectChecker(DEFAULT_RECT) {
-                    final PixelColor red = new PixelColor(PixelColor.RED);
-                    final PixelColor black = new PixelColor(PixelColor.BLACK);
-                    @Override
-                    public PixelColor getExpectedColor(int x, int y) {
-                        if (x >= 50 && y >= 50) {
-                            return red;
-                        } else {
-                            return black;
-                        }
-                    }
-                });
+                }
+            };
+            verifyResult(bm, rc);
+        }
     }
 
     /**
-     * Try scaling a surface
+     * Try scaling a surface.
      */
     @Test
     public void testSetGeometry_dstBoundsScaled() throws Throwable {
-        verifyTest(
-                new SurfaceHolderCallback () {
-                    @Override
-                    public void addChildren(SurfaceControl parent) {
-                        final SurfaceControl sc = buildSmallRedSurface(parent);
-                        new SurfaceControl.Transaction().setVisibility(sc, true)
-                            .setGeometry(sc, new Rect(0, 0, DEFAULT_SURFACE_SIZE / 2, DEFAULT_SURFACE_SIZE / 2),
-                                    new Rect(0, 0, DEFAULT_SURFACE_SIZE , DEFAULT_SURFACE_SIZE),
-                                    Surface.ROTATION_0)
-                            .apply();
-                        sc.release();
-                    }
-                },
+        final SurfaceControl parent = mActivity.awaitSurfaceControl();
+        final SurfaceControl sc = buildSmallRedSurface(parent);
+        try (SurfaceControl.Transaction transaction =
+                     new SurfaceControl.Transaction().setVisibility(sc, true)
+                             .setGeometry(sc, new Rect(0, 0, DEFAULT_SURFACE_SIZE / 2,
+                                             DEFAULT_SURFACE_SIZE / 2),
+                                     new Rect(0, 0, DEFAULT_SURFACE_SIZE, DEFAULT_SURFACE_SIZE),
+                                     Surface.ROTATION_0)) {
+            transaction.apply();
+            SystemClock.sleep(SURFACE_TRANSACTION_APPLY_DURATION);
+            final Bitmap bm = mActivity.screenShot();
+            sc.release();
+            verifyResult(bm, new RectChecker(DEFAULT_RECT, PixelColor.RED));
+        }
+    }
 
-                new RectChecker(DEFAULT_RECT, PixelColor.RED));
+    private void verifyResult(final Bitmap actual, final RectChecker desired) {
+        int numMatchingPixels = desired.getNumMatchingPixels(actual, mActivity.getWindow());
+        Rect bounds = desired.getBoundsToCheck(actual);
+        boolean success = desired.checkPixels(numMatchingPixels, actual.getWidth(),
+                actual.getHeight());
+        assertTrue("Actual matched pixels:" + numMatchingPixels
+                + " Bitmap size:" + bounds.width() + "x" + bounds.height(), success);
     }
 }

@@ -403,7 +403,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.view.cts.surfacevalidator.ASurfaceControlTestActivity"
+        <activity android:name="android.server.wm.SurfaceControlTestActivity"
                   android:screenOrientation="locked"
                   android:theme="@style/WhiteBackgroundTheme"
                   android:exported="true">
@@ -496,7 +496,13 @@
         <activity
             android:name="androidx.test.core.app.InstrumentationActivityInvoker$BootstrapActivity"
             tools:replace="android:theme"
-            android:theme="@style/WhiteBackgroundTheme" />
+            android:theme="@style/WhiteBackgroundTheme">
+        </activity>
+        <activity
+            android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity"
+            tools:replace="android:theme"
+            android:theme="@style/WhiteBackgroundTheme">
+        </activity>
         <activity android:name="android.server.wm.SplitActivityLifecycleTest$ActivityA"
                   android:exported="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
