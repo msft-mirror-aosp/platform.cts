@@ -26,6 +26,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.os.MessageQueue;
 import android.os.TestLooperManager;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.ravenwood.RavenwoodRule;
@@ -65,7 +66,7 @@ public class TestLooperManagerTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         assertFalse(tlm.hasMessages(handler, null, 42));
-
+        assertFalse(tlm.isBlockedOnSyncBarrier());
         handler.sendEmptyMessage(42);
         handler.post(() -> {
             latch.countDown();
@@ -97,6 +98,14 @@ public class TestLooperManagerTest {
 
         assertNull(tlm.peekWhen());
         assertNull(tlm.poll());
+
+        MessageQueue mQueue = looper.getQueue();
+        int token = mQueue.postSyncBarrier();
+        assertFalse(tlm.isBlockedOnSyncBarrier());
+        handler.sendEmptyMessage(42);
+        assertTrue(tlm.isBlockedOnSyncBarrier());
+        mQueue.removeSyncBarrier(token);
+        assertFalse(tlm.isBlockedOnSyncBarrier());
 
         tlm.release();
     }

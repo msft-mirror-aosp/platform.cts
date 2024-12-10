@@ -98,7 +98,7 @@ public class IntentHelperTest {
     public void testExtractCancelUiRequest() {
         boolean shouldShowCancellationUi = true;
         Intent intent = IntentFactory.createCancelUiIntent(mContext, TOKEN,
-                shouldShowCancellationUi, PACKAGE_NAME);
+                shouldShowCancellationUi, PACKAGE_NAME, /* userId = */ 0);
 
         CancelSelectionRequest cancelUiRequestExtracted = IntentHelper.extractCancelUiRequest(
                 intent);
@@ -128,7 +128,7 @@ public class IntentHelperTest {
         );
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null));
+                new ArrayList<>(), new ResultReceiver(null), /* userId = */ 0);
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 
@@ -158,7 +158,7 @@ public class IntentHelperTest {
                 /*isShowAllOptionsRequested=*/ false);
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null));
+                new ArrayList<>(), new ResultReceiver(null), /* userId = */ 0);
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 
