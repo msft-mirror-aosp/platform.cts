@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.test;
+package com.android.bedstead.enterprise;
 
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
