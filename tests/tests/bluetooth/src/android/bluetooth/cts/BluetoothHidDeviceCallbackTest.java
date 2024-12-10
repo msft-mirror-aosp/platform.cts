@@ -26,32 +26,34 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothHidDeviceCallbackTest {
-    private BluetoothHidDevice.Callback mHidDeviceCallback = new BluetoothHidDevice.Callback() {
-        @Override
-        public void onGetReport(BluetoothDevice device, byte type, byte id, int bufferSize) {
-            super.onGetReport(device, type, id, bufferSize);
-        }
+    private BluetoothHidDevice.Callback mHidDeviceCallback =
+            new BluetoothHidDevice.Callback() {
+                @Override
+                public void onGetReport(
+                        BluetoothDevice device, byte type, byte id, int bufferSize) {
+                    super.onGetReport(device, type, id, bufferSize);
+                }
 
-        @Override
-        public void onSetReport(BluetoothDevice device, byte type, byte id, byte[] data) {
-            super.onSetReport(device, type, id, data);
-        }
+                @Override
+                public void onSetReport(BluetoothDevice device, byte type, byte id, byte[] data) {
+                    super.onSetReport(device, type, id, data);
+                }
 
-        @Override
-        public void onSetProtocol(BluetoothDevice device, byte protocol) {
-            super.onSetProtocol(device, protocol);
-        }
+                @Override
+                public void onSetProtocol(BluetoothDevice device, byte protocol) {
+                    super.onSetProtocol(device, protocol);
+                }
 
-        @Override
-        public void onInterruptData(BluetoothDevice device, byte reportId, byte[] data) {
-            super.onInterruptData(device, reportId, data);
-        }
+                @Override
+                public void onInterruptData(BluetoothDevice device, byte reportId, byte[] data) {
+                    super.onInterruptData(device, reportId, data);
+                }
 
-        @Override
-        public void onVirtualCableUnplug(BluetoothDevice device) {
-            super.onVirtualCableUnplug(device);
-        }
-    };
+                @Override
+                public void onVirtualCableUnplug(BluetoothDevice device) {
+                    super.onVirtualCableUnplug(device);
+                }
+            };
 
     @Test
     public void hidDeviceCallback() {

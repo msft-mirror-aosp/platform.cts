@@ -40,11 +40,20 @@ using namespace android;
 using namespace std::chrono_literals;
 using android::base::StringPrintf;
 
+struct ThermalHeadroomChangeData {
+    float headroom;
+    float forecastHeadroom;
+    int32_t forecastSeconds;
+    const AThermalHeadroomThreshold *thresholds;
+    size_t thresholdsCount;
+};
+
 struct AThermalTestContext {
     AThermalManager *mThermalMgr;
     std::mutex mMutex;
     std::condition_variable mCv;
     std::vector<AThermalStatus> mListenerStatus GUARDED_BY(mMutex);
+    std::vector<ThermalHeadroomChangeData> mListenerHeadroom GUARDED_BY(mMutex);
 };
 
 static jclass    gNativeThermalTest_class;
@@ -57,6 +66,20 @@ void onStatusChange(void *data, AThermalStatus status) {
     } else {
         std::lock_guard<std::mutex> guard(ctx->mMutex);
         ctx->mListenerStatus.push_back(status);
+        ctx->mCv.notify_all();
+    }
+}
+
+void onHeadroomChange(void *data, float headroom, float forecastHeadroom, int32_t forecastSeconds,
+                      const AThermalHeadroomThreshold *thresholds, size_t thresholdsCount) {
+    AThermalTestContext *ctx = static_cast<AThermalTestContext *>(data);
+    if (ctx == nullptr) {
+        return;
+    } else {
+        std::lock_guard<std::mutex> guard(ctx->mMutex);
+        ctx->mListenerHeadroom.push_back(ThermalHeadroomChangeData{headroom, forecastHeadroom,
+                                                                   forecastSeconds, thresholds,
+                                                                   thresholdsCount});
         ctx->mCv.notify_all();
     }
 }
@@ -279,6 +302,187 @@ static jstring nativeTestThermalStatusListenerDoubleRegistration(JNIEnv *env, jo
     return returnJString(env, testThermalStatusListenerDoubleRegistration(env, obj));
 }
 
+static std::optional<std::string> testRegisterThermalHeadroomListener(JNIEnv *, jobject) {
+    AThermalTestContext ctx;
+    std::unique_lock<std::mutex> lock(ctx.mMutex);
+
+    ctx.mThermalMgr = AThermal_acquireManager();
+    if (ctx.mThermalMgr == nullptr) {
+        return "AThermal_acquireManager failed";
+    }
+
+    // Register a listener with valid callback
+    int ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != 0) {
+        return StringPrintf("AThermal_registerThermalHeadroomListener failed: %s", strerror(ret));
+    }
+
+    // Expect the callback after registration
+    if (ctx.mCv.wait_for(lock, 1s) == std::cv_status::timeout) {
+        return "Listener callback should be called after registration";
+    }
+
+    auto headroomRes = ctx.mListenerHeadroom.back();
+    // verify if headroom is nan or not:
+    if (!isnan(headroomRes.headroom)) {
+        if (headroomRes.headroom < 0.0f || headroomRes.headroom > 1) {
+            return StringPrintf("Expected headroom of range [0, 1] but got %2.2f",
+                                headroomRes.headroom);
+        }
+    }
+    if (!isnan(headroomRes.forecastHeadroom)) {
+        if (headroomRes.forecastHeadroom < 0.0f || headroomRes.forecastHeadroom > 1) {
+            return StringPrintf("Expected forecast headroom of range [0, 1] but got %2.2f",
+                                headroomRes.forecastHeadroom);
+        }
+        if (headroomRes.forecastSeconds < 0) {
+            return StringPrintf("Expected forecast seconds to be non-negative but got %" PRId32,
+                                headroomRes.forecastSeconds);
+        }
+    }
+
+    // verify if thresholds from headroomRes of type ThermalHeadroomChangeData are empty or not
+    if (headroomRes.thresholdsCount > 0) {
+        for (int i = 0; i < headroomRes.thresholdsCount; i++) {
+            if (!isnan(headroomRes.thresholds[i].headroom)) {
+                auto threshold = headroomRes.thresholds[i];
+                if (threshold.headroom < 0.0f ||
+                    (threshold.thermalStatus == ATHERMAL_STATUS_SEVERE &&
+                     threshold.headroom != 1.0f) ||
+                    (threshold.thermalStatus < ATHERMAL_STATUS_SEVERE && threshold.headroom > 1)) {
+                    return StringPrintf("Expected headroom threshold for status %d of range [0, 1] "
+                                        "but got %2.2f",
+                                        threshold.thermalStatus, threshold.headroom);
+                }
+            }
+        }
+    }
+
+    // Unregister listener
+    ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != 0) {
+        return StringPrintf("AThermal_unregisterThermalHeadroomListener failed: %s", strerror(ret));
+    }
+
+    AThermal_releaseManager(ctx.mThermalMgr);
+    return std::nullopt;
+}
+
+static jstring nativeTestRegisterThermalHeadroomListener(JNIEnv *env, jobject obj) {
+    return returnJString(env, testRegisterThermalHeadroomListener(env, obj));
+}
+
+static std::optional<std::string> testThermalHeadroomRegisterNullListener() {
+    AThermalTestContext ctx;
+    std::unique_lock<std::mutex> lock(ctx.mMutex);
+    ctx.mThermalMgr = AThermal_acquireManager();
+    if (ctx.mThermalMgr == nullptr) {
+        return StringPrintf("AThermal_acquireManager failed");
+    }
+
+    // Register a listener with null callback
+    int ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, nullptr, &ctx);
+    if (ret != EINVAL) {
+        return "AThermal_registerThermalHeadroomListener should fail with null callback";
+    }
+
+    // Register a listener with null data
+    ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, nullptr);
+    if (ret != 0) {
+        return StringPrintf("AThermal_registerThermalHeadroomListener with null data failed: %s",
+                            strerror(ret));
+    }
+
+    // Unregister listener
+    ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, nullptr);
+    if (ret != 0) {
+        return StringPrintf("AThermal_unregisterThermalHeadroomListener with null data failed: %s",
+                            strerror(ret));
+    }
+
+    // Unregister listener with null callback and null data
+    ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, nullptr, nullptr);
+    if (ret != EINVAL) {
+        return "AThermal_unregisterThermalHeadroomListener should fail with null listener";
+    }
+
+    AThermal_releaseManager(ctx.mThermalMgr);
+    return std::nullopt;
+}
+
+static jstring nativeTestThermalHeadroomRegisterNullListener(JNIEnv *env, jobject) {
+    return returnJString(env, testThermalHeadroomRegisterNullListener());
+}
+
+static std::optional<std::string> testThermalHeadroomListenerDoubleRegistration(JNIEnv *env,
+                                                                                jobject obj) {
+    AThermalTestContext ctx;
+    std::unique_lock<std::mutex> lock(ctx.mMutex);
+
+    ctx.mThermalMgr = AThermal_acquireManager();
+    if (ctx.mThermalMgr == nullptr) {
+        return "AThermal_acquireManager failed";
+    }
+
+    // Register a listener with valid callback
+    int ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != 0) {
+        return StringPrintf("AThermal_registerThermalHeadroomListener failed: %s", strerror(ret));
+    }
+
+    // Expect listener callback for initial registration
+    if (ctx.mCv.wait_for(lock, 1s) == std::cv_status::timeout) {
+        return "Thermal listener callback timeout for initial registration";
+    }
+
+    // Register the listener again with same callback and data
+    ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != EINVAL) {
+        return "Register should fail as listener already registered";
+    }
+
+    // Expect no listener callback for double registration
+    if (ctx.mCv.wait_for(lock, 1s) != std::cv_status::timeout) {
+        return "Thermal listener got callback after double registration.";
+    }
+
+    // Register a listener with same callback but null data
+    ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, nullptr);
+    if (ret != 0) {
+        return StringPrintf("Register listener with null data failed: %s", strerror(ret));
+    }
+
+    // Expect no listener callback for another registration
+    if (ctx.mCv.wait_for(lock, 1s) != std::cv_status::timeout) {
+        return "Thermal listener got callback after third registration.";
+    }
+
+    // Unregister listener
+    ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != 0) {
+        return StringPrintf("AThermal_unregisterThermalHeadroomListener failed: %s", strerror(ret));
+    }
+
+    setThermalStatusOverride(env, obj, ATHERMAL_STATUS_CRITICAL);
+    // Expect no listener callback
+    if (ctx.mCv.wait_for(lock, 1s) != std::cv_status::timeout) {
+        return "Thermal listener got callback after unregister.";
+    }
+
+    // Unregister listener already unregistered
+    ret = AThermal_unregisterThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
+    if (ret != EINVAL) {
+        return "Unregister should fail with listener already unregistered";
+    }
+
+    AThermal_releaseManager(ctx.mThermalMgr);
+    return std::nullopt;
+}
+
+static jstring nativeTestThermalHeadroomListenerDoubleRegistration(JNIEnv *env, jobject obj) {
+    return returnJString(env, testThermalHeadroomListenerDoubleRegistration(env, obj));
+}
+
 static std::optional<std::string> testGetThermalHeadroom(JNIEnv *, jobject) {
     AThermalTestContext ctx;
     std::unique_lock<std::mutex> lock(ctx.mMutex);
@@ -356,6 +560,7 @@ static std::optional<std::string> testGetThermalHeadroomThresholds(JNIEnv *, job
         }
     }
     AThermal_releaseManager(ctx.mThermalMgr);
+    delete[] thresholds;
     return std::nullopt;
 }
 
@@ -370,18 +575,24 @@ static jstring nativeTestGetThermalHeadroomThresholds(JNIEnv *env, jobject obj) 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     const JNINativeMethod methodTable[] = {
-        {"nativeTestGetCurrentThermalStatus", "(I)Ljava/lang/String;",
-         (void*)nativeTestGetCurrentThermalStatus},
-        {"nativeTestRegisterThermalStatusListener", "()Ljava/lang/String;",
-         (void*)nativeTestRegisterThermalStatusListener},
-        {"nativeTestThermalStatusRegisterNullListener", "()Ljava/lang/String;",
-         (void*)nativeTestThermalStatusRegisterNullListener},
-        {"nativeTestThermalStatusListenerDoubleRegistration", "()Ljava/lang/String;",
-         (void*)nativeTestThermalStatusListenerDoubleRegistration},
-        {"nativeTestGetThermalHeadroom", "()Ljava/lang/String;",
-         (void*)nativeTestGetThermalHeadroom},
-        {"nativeTestGetThermalHeadroomThresholds", "()Ljava/lang/String;",
-         (void*)nativeTestGetThermalHeadroomThresholds},
+            {"nativeTestGetCurrentThermalStatus", "(I)Ljava/lang/String;",
+             (void *)nativeTestGetCurrentThermalStatus},
+            {"nativeTestRegisterThermalStatusListener", "()Ljava/lang/String;",
+             (void *)nativeTestRegisterThermalStatusListener},
+            {"nativeTestThermalStatusRegisterNullListener", "()Ljava/lang/String;",
+             (void *)nativeTestThermalStatusRegisterNullListener},
+            {"nativeTestThermalStatusListenerDoubleRegistration", "()Ljava/lang/String;",
+             (void *)nativeTestThermalStatusListenerDoubleRegistration},
+            {"nativeTestRegisterThermalHeadroomListener", "()Ljava/lang/String;",
+             (void *)nativeTestRegisterThermalHeadroomListener},
+            {"nativeTestThermalHeadroomRegisterNullListener", "()Ljava/lang/String;",
+             (void *)nativeTestThermalHeadroomRegisterNullListener},
+            {"nativeTestThermalHeadroomListenerDoubleRegistration", "()Ljava/lang/String;",
+             (void *)nativeTestThermalHeadroomListenerDoubleRegistration},
+            {"nativeTestGetThermalHeadroom", "()Ljava/lang/String;",
+             (void *)nativeTestGetThermalHeadroom},
+            {"nativeTestGetThermalHeadroomThresholds", "()Ljava/lang/String;",
+             (void *)nativeTestGetThermalHeadroomThresholds},
     };
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;

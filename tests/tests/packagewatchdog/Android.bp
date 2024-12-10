@@ -34,6 +34,7 @@ android_test {
     ],
     libs: ["android.test.base.stubs.test"],
     static_libs: [
+        "android.crashrecovery.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "truth",

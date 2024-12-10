@@ -217,6 +217,27 @@ public class WifiP2pConfigTest extends AndroidTestCase {
         assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
     }
 
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#isAuthorizeConnectionFromPeer",
+            "android.net.wifi.p2p.WifiP2pConfig.Builder#setAuthorizeConnectionFromPeer"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testWifiP2pConfigBuilderWithAuthorizeConnectionFromPeer() throws Exception {
+        WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
+                new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
+                        .PAIRING_BOOTSTRAPPING_METHOD_OUT_OF_BAND, "1234");
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                .setPairingBootstrappingConfig(pairingBootstrappingConfig)
+                .setGroupOperatingFrequency(2437)
+                .setAuthorizeConnectionFromPeer(true)
+                .build();
+        WifiP2pPairingBootstrappingConfig expectedPairingBootstrappingConfig =
+                config.getPairingBootstrappingConfig();
+        assertNotNull(expectedPairingBootstrappingConfig);
+        assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
+        assertTrue(config.isAuthorizeConnectionFromPeer());
+    }
+
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,
             String networkName, String passphrase, int groupOwnerFrequency, String deviceAddress,
             int networkId, int groupClientIpProvisioningMode) {

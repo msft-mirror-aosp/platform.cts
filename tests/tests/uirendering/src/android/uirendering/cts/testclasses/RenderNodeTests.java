@@ -605,11 +605,17 @@ public class RenderNodeTests extends ActivityTestBase {
         final Rect insetBounds = new Rect(blurRadius, blurRadius, TEST_WIDTH - blurRadius,
                 TEST_HEIGHT - blurRadius);
 
-        final Rect unblurredBounds = new Rect(insetBounds);
-        unblurredBounds.inset(blurRadius, blurRadius);
         createTest()
                 .addLayout(R.layout.frame_layout, (view) -> {
                     FrameLayout root = view.findViewById(R.id.frame_layout);
+                    root.setRenderEffect(
+                            RenderEffect.createBlurEffect(
+                                    blurRadius,
+                                    blurRadius,
+                                    null,
+                                    Shader.TileMode.DECAL
+                            )
+                    );
                     View innerView = new View(view.getContext());
                     innerView.setLayoutParams(
                             new FrameLayout.LayoutParams(TEST_WIDTH, TEST_HEIGHT));
@@ -617,14 +623,7 @@ public class RenderNodeTests extends ActivityTestBase {
                     root.addView(innerView);
                 }, true)
                 .runWithVerifier(
-                        new RegionVerifier()
-                                .addVerifier(
-                                        unblurredBounds,
-                                        new ColorVerifier(Color.BLUE))
-                                .addVerifier(
-                                        fullBounds,
-                                        new BlurPixelVerifier(Color.BLUE, Color.WHITE)
-                                )
+                        new BlurPixelVerifier(Color.BLUE, Color.WHITE, insetBounds, blurRadius)
             );
     }
 
@@ -723,21 +722,12 @@ public class RenderNodeTests extends ActivityTestBase {
             renderNode.endRecording();
         }
 
-        final Rect unblurredBounds = new Rect(insetBounds);
-        unblurredBounds.inset(blurRadius, blurRadius);
         createTest()
                 .addCanvasClientWithoutUsingPicture((canvas, width, height) -> {
                     canvas.drawRenderNode(renderNode);
                 }, true)
                 .runWithVerifier(
-                        new RegionVerifier()
-                                .addVerifier(
-                                        unblurredBounds,
-                                        new ColorVerifier(Color.BLUE))
-                                .addVerifier(
-                                        fullBounds,
-                                        new BlurPixelVerifier(Color.BLUE, Color.WHITE)
-                                )
+                        new BlurPixelVerifier(Color.BLUE, Color.WHITE, insetBounds, blurRadius)
             );
     }
 
@@ -770,21 +760,12 @@ public class RenderNodeTests extends ActivityTestBase {
             renderNode.endRecording();
         }
 
-        final Rect unblurredBounds = new Rect(insetBounds);
-        unblurredBounds.inset(blurRadius, blurRadius);
         createTest()
                 .addCanvasClientWithoutUsingPicture((canvas, width, height) -> {
                     canvas.drawRenderNode(renderNode);
                 }, true)
                 .runWithVerifier(
-                        new RegionVerifier()
-                                .addVerifier(
-                                        unblurredBounds,
-                                        new ColorVerifier(Color.BLUE))
-                                .addVerifier(
-                                        fullBounds,
-                                        new BlurPixelVerifier(Color.BLUE, Color.WHITE)
-                                )
+                        new BlurPixelVerifier(Color.BLUE, Color.WHITE, insetBounds, blurRadius)
             );
     }
 

@@ -5521,8 +5521,14 @@ public class TelephonyManagerTest {
                     .getUiAutomation()
                     .adoptShellPermissionIdentity(
                             android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-            PollingCheck.waitFor(5000, () -> !mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN),
+            PollingCheck.waitFor(
+                    5000,
+                    () -> !mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN),
                     "Timeout when waiting for DUN APN to become unmetered");
+            PollingCheck.waitFor(
+                    5000,
+                    () -> mTelephonyManager.isApnMetered(ApnSetting.TYPE_MMS),
+                    "Timeout when waiting for MMS APN to become metered");
 
             assertTrue(mTelephonyManager.isApnMetered(ApnSetting.TYPE_MMS));
             assertFalse(mTelephonyManager.isApnMetered(ApnSetting.TYPE_DUN));

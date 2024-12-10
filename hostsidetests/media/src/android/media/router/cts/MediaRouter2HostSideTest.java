@@ -242,11 +242,11 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
     @Test
-    public void testRequiredPermissions_routeVisibleWhenPermissionIsHeld() throws Exception {
+    public void testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld() throws Exception {
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
-                "requiredPermissions_routeVisibleWhenPermissionIsHeld");
+                "requiredPermissions_routeVisibleWhenOnePermissionIsHeld");
     }
 
     @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
@@ -254,11 +254,62 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
     @Test
-    public void testRequiredPermissions_routeNotVisibleWhenPermissionNotHeld() throws Exception {
+    public void testRequiredPermissions_routeNotVisibleWhenOnePermissionNotHeld()
+            throws Exception {
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
-                "requiredPermissions_routeNotVisibleWhenPermissionNotHeld");
+                "requiredPermissions_routeNotVisibleWhenOnePermissionNotHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld()
+            throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeVisibleWhenFirstSetInListIsHeld() throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeVisibleWhenFirstSetInListIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeVisibleWhenSecondSetInListIsHeld() throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeVisibleWhenSecondSetInListIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld()
+            throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld");
     }
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})

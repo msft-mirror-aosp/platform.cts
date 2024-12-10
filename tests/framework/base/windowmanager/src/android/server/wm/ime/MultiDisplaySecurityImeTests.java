@@ -46,6 +46,10 @@ public class MultiDisplaySecurityImeTests extends MultiDisplayTestBase {
     @Before
     @Override
     public void setUp() throws Exception {
+        assumeRunNotOnVisibleBackgroundNonProfileUser("On visible background users, having the"
+                + "keyboard in one display and the app that consumes the key events in another "
+                + "virtual display, is not supported");
+
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());

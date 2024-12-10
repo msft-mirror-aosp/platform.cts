@@ -101,6 +101,10 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     @Before
     @Override
     public void setUp() throws Exception {
+        assumeRunNotOnVisibleBackgroundNonProfileUser("On visible background users, having the"
+                + "keyboard in one display and the app that consumes the key events in another "
+                + "virtual display, is not supported");
+
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());
@@ -440,8 +444,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .allowMultipleInstances(false)
                 .setDisplayId(DEFAULT_DISPLAY).execute();
-        waitAndAssertTopResumedActivity(imeTestActivitySession.getActivity().getComponentName(),
-                DEFAULT_DISPLAY, "Activity launched on default display and on top");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                imeTestActivitySession.getActivity().getComponentName(), DEFAULT_DISPLAY,
+                "Activity launched on default display and on top");
 
         // Activity is no longer on the secondary display
         assertThat(mWmState.hasActivityInDisplay(newDisplay.mId, imeTestActivityName)).isFalse();
@@ -538,9 +543,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     .setDisplayId(secondDisplay.mId).execute();
 
             // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
-            waitAndAssertTopResumedActivity(imeTestActivitySession.getActivity().getComponentName(),
-                    secondDisplay.mId, "ImeTestActivity must be top-resumed on display#"
-                            + secondDisplay.mId);
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    imeTestActivitySession.getActivity().getComponentName(), secondDisplay.mId,
+                    "ImeTestActivity must be top-resumed on display#" + secondDisplay.mId);
             assertThat(mWmState.hasActivityInDisplay(firstDisplay.mId,
                     imeTestActivitySession.getActivity().getComponentName())).isFalse();
             // Wait until IME is ready for the IME client to call showSoftInput().

@@ -508,7 +508,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 + " --display " + newDisplay.mId + " --user " + mContext.getUserId();
         executeShellCommand(startCmd);
 
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
 
         // Launch another activity with third different uid from app on secondary display and
@@ -520,7 +520,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 .setTargetActivity(THIRD_ACTIVITY)
                 .execute();
 
-        waitAndAssertTopResumedActivity(THIRD_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(THIRD_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
     }
 
@@ -547,7 +547,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
         // Launch an activity from a different UID into the first activity's task.
         getLaunchActivityBuilder().setTargetActivity(SECOND_ACTIVITY).execute();
 
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
         frontTask = mWmState.getRootTask(frontRootTaskId);
         assertEquals("Secondary display must contain 1 task", 1,

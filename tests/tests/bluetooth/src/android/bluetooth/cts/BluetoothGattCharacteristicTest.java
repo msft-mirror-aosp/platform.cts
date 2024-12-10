@@ -41,8 +41,9 @@ public class BluetoothGattCharacteristicTest {
 
     @Before
     public void setUp() throws Exception {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
 
         mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
     }
@@ -58,8 +59,8 @@ public class BluetoothGattCharacteristicTest {
     public void getService() {
         // Service is null after initialization with public constructor
         assertNull(mBluetoothGattCharacteristic.getService());
-        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        BluetoothGattService service =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         service.addCharacteristic(mBluetoothGattCharacteristic);
 

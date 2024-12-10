@@ -16,6 +16,8 @@
 
 package android.backup.cts;
 
+import static junit.framework.Assert.assertEquals;
+
 import android.app.GrammaticalInflectionManager;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -23,14 +25,18 @@ import android.content.res.Configuration;
 import android.os.ParcelFileDescriptor;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.BackupUtils;
 
 import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+@RunWith(AndroidJUnit4.class)
 public class AppGrammaticalGenderBackupTest extends BaseBackupCtsTest {
     private static final String RESTORE_TOKEN = "1";
     private static final String SYSTEM_PACKAGE = "android";
@@ -39,20 +45,22 @@ public class AppGrammaticalGenderBackupTest extends BaseBackupCtsTest {
             new BackupUtils() {
                 @Override
                 protected InputStream executeShellCommand(String command) {
-                    return executeInstrumentationShellCommand(getInstrumentation(), command);
+                    return executeInstrumentationShellCommand(mInstrumentation, command);
                 }
             };
 
     private GrammaticalInflectionManager mGrammaticalInflectionManager;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         final Context context = InstrumentationRegistry.getContext();
         mGrammaticalInflectionManager = context.getSystemService(
                 GrammaticalInflectionManager.class);
     }
 
     /** Test installed app set gender before restoring */
+    @Test
     public void testBackupRestore_setGenderBeforeRestoring_doesNotRestore()
             throws IOException {
         if (!isBackupSupported()) {

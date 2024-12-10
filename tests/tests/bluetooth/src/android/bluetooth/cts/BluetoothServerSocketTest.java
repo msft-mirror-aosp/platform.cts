@@ -41,8 +41,8 @@ public class BluetoothServerSocketTest extends AndroidTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        mHasBluetooth = getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);

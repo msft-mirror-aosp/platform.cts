@@ -329,6 +329,7 @@ private class Impl<A : Activity>(
         // UI thread to process them before making sure the window is visible.
         WindowManagerStateHelper().waitUntilActivityReadyForInputInjection(
             activity,
+            instrumentation,
             TAG,
             "test: ${testName.methodName}, virtualDisplayId=$displayId"
         )

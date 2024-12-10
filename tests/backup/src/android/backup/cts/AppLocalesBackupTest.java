@@ -22,6 +22,10 @@ import static android.app.time.cts.shell.DeviceConfigShellHelper.SYNC_DISABLED_M
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+
 import android.Manifest;
 import android.app.LocaleManager;
 import android.app.time.ExternalTimeSuggestion;
@@ -36,22 +40,24 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.LocaleList;
 import android.os.SystemClock;
-import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ShellUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class AppLocalesBackupTest extends BaseBackupCtsTest {
     private static final String APK_PATH = "/data/local/tmp/cts/backup/";
     private static final String TEST_APP_APK_1 = APK_PATH + "CtsAppLocalesBackupApp1.apk";
@@ -81,14 +87,13 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
     private DeviceShellCommandExecutor mShellCommandExecutor;
 
     @Before
-    @Override
     public void setUp() throws Exception {
         super.setUp();
 
         mContext = InstrumentationRegistry.getTargetContext();
         mLocaleManager = mContext.getSystemService(LocaleManager.class);
         mShellCommandExecutor = new InstrumentationShellCommandExecutor(
-                InstrumentationRegistry.getInstrumentation().getUiAutomation());
+                mInstrumentation.getUiAutomation());
 
         mOriginalAutoTime = isAutoDetectionEnabled(mShellCommandExecutor);
         // Auto time needs to be enabled to be able to suggest external time
@@ -118,6 +123,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      * operation finishes. The only condition is that the apps should not have the locales set
      * already before restore.
      */
+    @Test
     public void testBackupRestore_allAppsInstalledNoAppLocalesSet_restoresImmediately()
             throws Exception {
         if (!isBackupSupported()) {
@@ -138,6 +144,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      *
      * <p>The locales from the backup data should be ignored in this case.
      */
+    @Test
     public void testBackupRestore_localeAlreadySet_doesNotRestore() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -162,6 +169,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      * restored from the stage file if the app is installed within a certain amount of time after
      * the initial restore.
      */
+    @Test
     public void testBackupRestore_appInstalledAfterRestore_doesLazyRestore() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -214,6 +222,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      *
      * <p>The data for the uninstalled app should be removed from the next backup pass.
      */
+    @Test
     public void testBackupRestore_uninstallApp_deletesDataFromBackup() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -243,6 +252,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      * <p>Stage data should be removed since retention period has expired.
      * <p><b>Note:</b>Manipulates device's system clock directly to simulate the passage of time.
      */
+    @Test
     public void testRetentionPeriod_backupPassAfterRetentionPeriod_removesStagedData()
             throws Exception {
         if (!isBackupSupported()) {
@@ -340,6 +350,7 @@ public class AppLocalesBackupTest extends BaseBackupCtsTest {
      * <p>Stage data should be removed since retention period has expired.
      * <p><b>Note:</b>Manipulates device's system clock directly to simulate the passage of time.
      */
+    @Test
     public void testRetentionPeriod_lazyRestoreAfterRetentionPeriod_removesStagedData()
             throws Exception {
         if (!isBackupSupported()) {

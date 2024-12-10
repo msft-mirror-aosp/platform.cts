@@ -66,6 +66,7 @@ import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.net.TetheringManager;
 import android.net.Uri;
+import android.net.wifi.BlockingOption;
 import android.net.wifi.CoexUnsafeChannel;
 import android.net.wifi.MloLink;
 import android.net.wifi.MscsParams;
@@ -7657,5 +7658,17 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_BSSID_BLOCKLIST_FOR_SUGGESTION)
+    @Test
+    public void testBlockingOption() {
+        BlockingOption option = new BlockingOption
+                .Builder(100)
+                .setBlockingBssidOnly(true)
+                .build();
+        assertEquals(100, option.getBlockingTimeSeconds());
+        assertTrue(option.isBlockingBssidOnly());
+        sWifiManager.disallowCurrentSuggestedNetwork(option);
     }
 }

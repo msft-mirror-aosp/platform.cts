@@ -24,9 +24,9 @@ import androidx.test.filters.SmallTest;
 
 /**
  * Unit test cases for {@link BluetoothClass}.
- * <p>
- * To run this test, use adb shell am instrument -e class 'android.bluetooth.BluetoothClassTest' -w
- * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
+ *
+ * <p>To run this test, use adb shell am instrument -e class 'android.bluetooth.BluetoothClassTest'
+ * -w 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 public class BluetoothClassTest extends AndroidTestCase {
 
@@ -71,13 +71,13 @@ public class BluetoothClassTest extends AndroidTestCase {
                 mBluetoothClassHeadphones.getDeviceClass(),
                 BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
         assertEquals(
-                mBluetoothClassPhone.getDeviceClass(),
-                BluetoothClass.Device.PHONE_UNCATEGORIZED);
+                mBluetoothClassPhone.getDeviceClass(), BluetoothClass.Device.PHONE_UNCATEGORIZED);
     }
 
     @SmallTest
     public void testGetClassOfDevice() {
-        assertEquals(mBluetoothClassHeadphones.getDeviceClass(),
+        assertEquals(
+                mBluetoothClassHeadphones.getDeviceClass(),
                 BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
         assertEquals(mBluetoothClassPhone.getMajorDeviceClass(), BluetoothClass.Device.Major.PHONE);
     }

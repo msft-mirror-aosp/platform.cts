@@ -81,8 +81,8 @@ void getLibFunction(void* handle, const char* identifier, T* out) {
 
 extern "C" jobject
 Java_android_os_instrumentation_cts_DynamicInstrumentationManagerTest_getExecutableMethodFileOffsetsNative(
-        JNIEnv* env, jclass, jstring processName, jstring fqcn, jstring methodName,
-        jobjectArray fqParameters) {
+        JNIEnv* env, jclass, jint uid, jint pid, jstring processName, jstring fqcn,
+        jstring methodName, jobjectArray fqParameters) {
     void* handle = dlopen(kLibandroidPath, RTLD_NOW | RTLD_LOCAL);
     if (!handle) {
         ALOGE("dlopen error: %s %s", __func__, dlerror());
@@ -136,7 +136,7 @@ Java_android_os_instrumentation_cts_DynamicInstrumentationManagerTest_getExecuta
     ScopedUtfChars cFqcn = GET_UTF_OR_RETURN(env, fqcn);
     ScopedUtfChars cMethodName = GET_UTF_OR_RETURN(env, methodName);
     const ADynamicInstrumentationManager_TargetProcess* targetProcess =
-            targetProcess_create(0, 0, cProcessName.c_str());
+            targetProcess_create((uid_t)uid, (pid_t)pid, cProcessName.c_str());
     const ADynamicInstrumentationManager_MethodDescriptor* methodDescriptor =
             methodDescriptor_create(cFqcn.c_str(), cMethodName.c_str(), cParams.data(), numParams);
 

@@ -35,8 +35,9 @@ import org.junit.runner.RunWith;
 
 /**
  * Unit test cases for {@link TransportBlock}.
- * <p>
- * To run the test, use adb shell am instrument -e class 'android.bluetooth.le.TransportBlockTest' -w
+ *
+ * <p>To run the test, use adb shell am instrument -e class
+ * 'android.bluetooth.le.TransportBlockTest' -w
  * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 @RunWith(AndroidJUnit4.class)
@@ -56,12 +57,10 @@ public class TransportBlockTest {
     @Test
     public void init() {
         Parcel parcel = Parcel.obtain();
-        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {
-                (byte) 0xF0, 0x00 });
+        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {(byte) 0xF0, 0x00});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
-        TransportBlock dataFromParcel =
-                TransportBlock.CREATOR.createFromParcel(parcel);
+        TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
     }
 
@@ -73,8 +72,7 @@ public class TransportBlockTest {
         TransportBlock data = new TransportBlock(1, 0, 0, null);
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
-        TransportBlock dataFromParcel =
-                TransportBlock.CREATOR.createFromParcel(parcel);
+        TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         assertEquals(data, dataFromParcel);
     }
 
@@ -83,12 +81,10 @@ public class TransportBlockTest {
     @Test
     public void totalBytes() {
         Parcel parcel = Parcel.obtain();
-        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {
-                (byte) 0xF0, 0x00 });
+        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {(byte) 0xF0, 0x00});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
-        TransportBlock dataFromParcel =
-                TransportBlock.CREATOR.createFromParcel(parcel);
+        TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         assertEquals(data.totalBytes(), 5);
         assertEquals(dataFromParcel.totalBytes(), 5);
         assertEquals(data, dataFromParcel);
@@ -99,12 +95,10 @@ public class TransportBlockTest {
     @Test
     public void getValues() {
         Parcel parcel = Parcel.obtain();
-        TransportBlock data = new TransportBlock(1, 3, 2, new byte[] {
-                (byte) 0xF0, 0x00 });
+        TransportBlock data = new TransportBlock(1, 3, 2, new byte[] {(byte) 0xF0, 0x00});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
-        TransportBlock dataFromParcel =
-                TransportBlock.CREATOR.createFromParcel(parcel);
+        TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         assertEquals(data.getOrgId(), 1);
         assertEquals(dataFromParcel.getOrgId(), 1);
         assertEquals(data.getTdsFlags(), 3);
@@ -120,12 +114,10 @@ public class TransportBlockTest {
     @Test
     public void toByteArray() {
         Parcel parcel = Parcel.obtain();
-        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {
-                (byte) 0xF0, 0x00 });
+        TransportBlock data = new TransportBlock(1, 0, 2, new byte[] {(byte) 0xF0, 0x00});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
-        TransportBlock dataFromParcel =
-                TransportBlock.CREATOR.createFromParcel(parcel);
+        TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         TestUtils.assertArrayEquals(data.toByteArray(), dataFromParcel.toByteArray());
         assertEquals(data, dataFromParcel);
     }

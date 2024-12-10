@@ -28,14 +28,14 @@ import static android.autofillservice.cts.testcore.Helper.assertDeprecatedClient
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForAuthenticationSelected;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetAuthenticationSelected;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetSelected;
-import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
-import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
-import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForSaveShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForViewEntered;
 import static android.autofillservice.cts.testcore.Helper.assertHasEventMatchingTypeAndFilter;
 import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClientState;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
+import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
 import static android.service.autofill.FillEventHistory.Event.NO_SAVE_UI_REASON_DATASET_MATCH;
@@ -64,7 +64,6 @@ import android.content.IntentSender;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -79,8 +78,8 @@ import android.view.autofill.AutofillId;
 
 import androidx.test.filters.FlakyTest;
 
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -224,6 +223,30 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Verify that focused id at second shown event is the same as focused id at selection
         // event.
         assertShownAndSelectedHaveSameFocusedId(events.get(2), events.get(3));
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.autofill_session_destroyed")
+    public void test_onSessionDestroyed() throws Exception {
+        enableService();
+
+        sReplier.addResponse(CannedFillResponse.NO_RESPONSE);
+
+        // Trigger autofill on username
+        mActivity.onUsername(View::requestFocus);
+        sReplier.getNextFillRequest();
+        mUiBot.assertNoDatasetsEver();
+
+        // Trigger save
+        mActivity.onUsername((v) -> v.setText("malkovich"));
+        mActivity.onPassword((v) -> v.setText("malkovich"));
+        final String expectedMessage = getWelcomeMessage("malkovich");
+        final String actualMessage = mActivity.tapLogin();
+
+        // Commit the Session
+        mUiBot.pressHome();
+
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+        assertThat(sReplier.getLastFillEventHistory()).isNull();
     }
 
     @Test

@@ -16,29 +16,32 @@
 
 package android.packagewatchdog.cts;
 
+import static android.service.watchdog.ExplicitHealthCheckService.EXTRA_HEALTH_CHECK_PASSED_PACKAGE;
+
 import static com.google.common.truth.Truth.assertThat;
 
+import android.annotation.FlaggedApi;
+import android.crashrecovery.flags.Flags;
+import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.service.watchdog.ExplicitHealthCheckService;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
-@Ignore("b/361126781") // TODO: b/361126781 Re-enable after creating the API
+@FlaggedApi(Flags.FLAG_ENABLE_CRASHRECOVERY)
 public final class ExplicitHealthCheckServiceTest {
 
     private ExplicitHealthCheckService mExplicitHealthCheckService;
     private static final String PACKAGE_NAME = "com.test.package";
-    private static final String EXTRA_HEALTH_CHECK_PASSED_PACKAGE =
-            "android.service.watchdog.extra.health_check_passed_package";
 
     @Before
     public void setup() throws Exception {
@@ -52,14 +55,17 @@ public final class ExplicitHealthCheckServiceTest {
     @Test
     public void testNotifyHealthCheckPassed() throws Exception {
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        RemoteCallback callback = new RemoteCallback(result -> {
-            assertThat(result.get(EXTRA_HEALTH_CHECK_PASSED_PACKAGE)).isEqualTo(PACKAGE_NAME);
-            countDownLatch.countDown();
-        });
-        // TODO: b/361126781 Uncomment after creating the API
-        // mExplicitHealthCheckService.setCallback(callback);
-        // mExplicitHealthCheckService.notifyHealthCheckPassed(PACKAGE_NAME);
-        // countDownLatch.await();
+        RemoteCallback callback =
+                new RemoteCallback(
+                        result -> {
+                            assertThat(result.getString(EXTRA_HEALTH_CHECK_PASSED_PACKAGE))
+                                    .isEqualTo(PACKAGE_NAME);
+                            countDownLatch.countDown();
+                        });
+        Consumer<Bundle> bundleConsumer = callback::sendResult;
+        mExplicitHealthCheckService.setHealthCheckResultCallback(null, bundleConsumer);
+        mExplicitHealthCheckService.notifyHealthCheckPassed(PACKAGE_NAME);
+        countDownLatch.await();
     }
 
     private static class FakeExplicitHealthCheckService extends ExplicitHealthCheckService {

@@ -22,7 +22,7 @@ import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
 
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static junit.framework.Assert.assertTrue;
 
 import static org.testng.Assert.expectThrows;
 
@@ -30,13 +30,19 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.IBinder;
-import android.platform.test.annotations.AppModeFull;
+
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Scanner;
 
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class AgentBindingTest extends BaseBackupCtsTest {
     private static final String FULL_BACKUP_PACKAGE_NAME = "android.backup.app";
     private static final String KEY_VALUE_BACKUP_PACKAGE_NAME = "android.backup.kvapp";
@@ -52,23 +58,23 @@ public class AgentBindingTest extends BaseBackupCtsTest {
     private int mFullBackupAgentEnabledState;
     private int mKeyValueBackupAgentEnabledState;
 
-    @Override
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
-        mContext = getInstrumentation().getTargetContext();
+        mContext = mInstrumentation.getTargetContext();
         mFullBackupAgentEnabledState = mContext.getPackageManager().getComponentEnabledSetting(
                 FULL_BACKUP_AGENT_NAME);
         mKeyValueBackupAgentEnabledState = mContext.getPackageManager().getComponentEnabledSetting(
                 KEY_VALUE_BACKUP_AGENT_NAME);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         setComponentEnabledSetting(FULL_BACKUP_AGENT_NAME, mFullBackupAgentEnabledState);
         setComponentEnabledSetting(KEY_VALUE_BACKUP_AGENT_NAME, mKeyValueBackupAgentEnabledState);
     }
 
+    @Test
     public void testUnbindBackupAgent_isNotCallableFromCts() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -76,6 +82,7 @@ public class AgentBindingTest extends BaseBackupCtsTest {
         expectThrows(Exception.class, () -> unbindBackupAgent(mContext.getApplicationInfo()));
     }
 
+    @Test
     public void testBindBackupAgent_isNotCallableFromCts() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -83,6 +90,7 @@ public class AgentBindingTest extends BaseBackupCtsTest {
         expectThrows(Exception.class, () -> bindBackupAgent(mContext.getPackageName(), 0, 0));
     }
 
+    @Test
     public void testFullBackupAgentComponentDisabled() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -94,6 +102,7 @@ public class AgentBindingTest extends BaseBackupCtsTest {
         runBackupAndAssertAgentError(FULL_BACKUP_PACKAGE_NAME);
     }
 
+    @Test
     public void testKeyValueBackupAgentComponentDisabled() throws Exception {
         if (!isBackupSupported()) {
             return;

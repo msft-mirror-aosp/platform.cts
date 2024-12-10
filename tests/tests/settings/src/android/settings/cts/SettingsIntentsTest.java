@@ -80,4 +80,14 @@ public class SettingsIntentsTest {
         targetContext.startActivity(intent);
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ACTION_SIM_PREFERENCE_SETTINGS)
+    public void testSimPreferenceIntentReceiverExists() {
+        final Intent intent = new Intent(Settings.ACTION_SIM_PREFERENCE_SETTINGS).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK);
+        final ResolveInfo info = mPackageManager.resolveActivity(intent,
+                PackageManager.MATCH_DEFAULT_ONLY);
+        assertNotNull(info);
+    }
 }

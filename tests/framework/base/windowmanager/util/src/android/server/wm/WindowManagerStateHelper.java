@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
 import android.server.wm.WindowManagerState.Activity;
@@ -514,12 +515,15 @@ public class WindowManagerStateHelper extends WindowManagerState {
      * {@link android.hardware.input.InputManager#injectInputEvent(InputEvent, int)}.
      */
     public <T extends android.app.Activity> void waitUntilActivityReadyForInputInjection(T activity,
-            String tag, String windowDumpErrMsg) throws InterruptedException {
+            Instrumentation instrumentation, String tag, String windowDumpErrMsg)
+                    throws InterruptedException {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
         waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
+        instrumentation.getUiAutomation().syncInputTransactions();
+        instrumentation.waitForIdleSync();
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);

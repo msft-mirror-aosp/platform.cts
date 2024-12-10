@@ -30,9 +30,14 @@ public class BluetoothHidDeviceAppQosSettingsTest extends AndroidTestCase {
 
     @Override
     public void setUp() throws Exception {
-        mBluetoothHidDeviceAppQosSettings = new BluetoothHidDeviceAppQosSettings(
-                BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT, TEST_TOKEN_RATE,
-                TEST_TOKEN_BUCKET_SIZE, TEST_PEAK_BANDWIDTH, TEST_LATENCY, TEST_DELAY_VARIATION);
+        mBluetoothHidDeviceAppQosSettings =
+                new BluetoothHidDeviceAppQosSettings(
+                        BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
+                        TEST_TOKEN_RATE,
+                        TEST_TOKEN_BUCKET_SIZE,
+                        TEST_PEAK_BANDWIDTH,
+                        TEST_LATENCY,
+                        TEST_DELAY_VARIATION);
     }
 
     @Override
@@ -40,15 +45,13 @@ public class BluetoothHidDeviceAppQosSettingsTest extends AndroidTestCase {
         mBluetoothHidDeviceAppQosSettings = null;
     }
 
-
     public void test_allMethods() {
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getServiceType(),
-                TEST_SERVICE_TYPE);
+        assertEquals(mBluetoothHidDeviceAppQosSettings.getServiceType(), TEST_SERVICE_TYPE);
         assertEquals(mBluetoothHidDeviceAppQosSettings.getLatency(), TEST_LATENCY);
         assertEquals(mBluetoothHidDeviceAppQosSettings.getTokenRate(), TEST_TOKEN_RATE);
         assertEquals(mBluetoothHidDeviceAppQosSettings.getPeakBandwidth(), TEST_PEAK_BANDWIDTH);
         assertEquals(mBluetoothHidDeviceAppQosSettings.getDelayVariation(), TEST_DELAY_VARIATION);
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getTokenBucketSize(),
-                TEST_TOKEN_BUCKET_SIZE);
+        assertEquals(
+                mBluetoothHidDeviceAppQosSettings.getTokenBucketSize(), TEST_TOKEN_BUCKET_SIZE);
     }
 }

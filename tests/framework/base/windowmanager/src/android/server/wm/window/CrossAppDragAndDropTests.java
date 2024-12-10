@@ -235,7 +235,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
         Point topLeft = new Point(leftSide ? 0 : displaySize.x / 2, 0);
         Point bottomRight = new Point(leftSide ? displaySize.x / 2 : displaySize.x, displaySize.y);
         resizeActivityTask(componentName, topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-        waitAndAssertTopResumedActivity(componentName, DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(componentName, DEFAULT_DISPLAY,
                 "Activity launched as freeform should be resumed");
     }
 

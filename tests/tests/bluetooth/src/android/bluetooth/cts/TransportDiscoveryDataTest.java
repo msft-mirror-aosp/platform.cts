@@ -38,8 +38,9 @@ import java.util.List;
 
 /**
  * Unit test cases for {@link TransportDiscoveryData}.
- * <p>
- * To run the test, use adb shell am instrument -e class 'android.bluetooth.le.TransportDiscoveryDataTest' -w
+ *
+ * <p>To run the test, use adb shell am instrument -e class
+ * 'android.bluetooth.le.TransportDiscoveryDataTest' -w
  * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 @RunWith(AndroidJUnit4.class)
@@ -47,8 +48,9 @@ public class TransportDiscoveryDataTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -57,8 +59,8 @@ public class TransportDiscoveryDataTest {
     public void initList() {
         Parcel parcel = Parcel.obtain();
         List<TransportBlock> transportBlocks = new ArrayList();
-        transportBlocks.add(new TransportBlock(1, 0, 4, new byte[] {
-                (byte) 0xF0, 0x00, 0x02, 0x15 }));
+        transportBlocks.add(
+                new TransportBlock(1, 0, 4, new byte[] {(byte) 0xF0, 0x00, 0x02, 0x15}));
         TransportDiscoveryData data = new TransportDiscoveryData(1, transportBlocks);
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -72,8 +74,9 @@ public class TransportDiscoveryDataTest {
     @Test
     public void initByteArray() {
         Parcel parcel = Parcel.obtain();
-        TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
-                0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
+        TransportDiscoveryData data =
+                new TransportDiscoveryData(
+                        new byte[] {0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportDiscoveryData dataFromParcel =
@@ -86,8 +89,9 @@ public class TransportDiscoveryDataTest {
     @Test
     public void getValues() {
         Parcel parcel = Parcel.obtain();
-        TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
-                0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
+        TransportDiscoveryData data =
+                new TransportDiscoveryData(
+                        new byte[] {0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportDiscoveryData dataFromParcel =
@@ -105,8 +109,9 @@ public class TransportDiscoveryDataTest {
     @Test
     public void totalBytes() {
         Parcel parcel = Parcel.obtain();
-        TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
-                0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
+        TransportDiscoveryData data =
+                new TransportDiscoveryData(
+                        new byte[] {0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportDiscoveryData dataFromParcel =
@@ -121,8 +126,9 @@ public class TransportDiscoveryDataTest {
     @Test
     public void toByteArray() {
         Parcel parcel = Parcel.obtain();
-        TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
-                0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
+        TransportDiscoveryData data =
+                new TransportDiscoveryData(
+                        new byte[] {0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15});
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportDiscoveryData dataFromParcel =

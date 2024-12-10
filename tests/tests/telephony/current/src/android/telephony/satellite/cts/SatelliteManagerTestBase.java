@@ -73,7 +73,6 @@ import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.text.TextUtils;
-import android.util.IntArray;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.UwbManager;
@@ -1896,6 +1895,39 @@ public class SatelliteManagerTestBase {
             fail(e.toString());
         }
         return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
+    }
+
+    protected static Pair<CharSequence, Integer> requestSatelliteDisplayName() {
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(CharSequence result) {
+                        logd("requestSatelliteDisplayName.onResult: result=" +
+                                result);
+                        displayNameForSubscription.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("requestSatelliteDisplayName.onError: onError="
+                                + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSatelliteDisplayName(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(displayNameForSubscription.get(), errorCode.get());
     }
 
     protected static Pair<Boolean, Integer> provisionSatellite(List<SatelliteSubscriberInfo> list) {

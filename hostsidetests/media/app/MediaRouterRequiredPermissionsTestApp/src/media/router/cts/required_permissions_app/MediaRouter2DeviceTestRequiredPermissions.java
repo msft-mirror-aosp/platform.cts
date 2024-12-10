@@ -16,10 +16,20 @@
 
 package android.media.router.cts.required_permissions_app;
 
+import static android.content.pm.PackageManager.PERMISSION_DENIED;
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_1_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_2;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_2;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
-import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_PERMISSIONS;
-import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_PERMISSIONS;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_REQUIRES_ONE_PERMISSION;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_REQUIRES_ONE_PERMISSION;
 import static android.media.cts.app.common.MediaRouter2TestUtils.launchScreenOnActivity;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 import static android.os.Process.myUid;
@@ -30,7 +40,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
@@ -53,6 +62,15 @@ import java.util.concurrent.TimeoutException;
  * held by the app requesting them.
  */
 public class MediaRouter2DeviceTestRequiredPermissions {
+    private static final List<Set<String>> REQUIRED_PERMISSIONS_SETS =
+            List.of(Set.of(REQUIRED_PERMISSIONS_SET_1_1),
+                    Set.of(
+                            REQUIRED_PERMISSIONS_SET_2_1,
+                            REQUIRED_PERMISSIONS_SET_2_2),
+                    Set.of(
+                            REQUIRED_PERMISSIONS_SET_3_1,
+                            REQUIRED_PERMISSIONS_SET_3_2,
+                            REQUIRED_PERMISSIONS_SET_3_3));
 
     private ExecutorService mExecutor;
     private Context mContext;
@@ -78,13 +96,9 @@ public class MediaRouter2DeviceTestRequiredPermissions {
     }
 
     @Test
-    public void requiredPermissions_routeNotVisibleWhenPermissionNotHeld() throws TimeoutException {
-        mUiAutomation.addOverridePermissionState(
-                myUid(),
-                Manifest.permission.POST_NOTIFICATIONS,
-                PackageManager.PERMISSION_DENIED);
-        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.POST_NOTIFICATIONS))
-                .isEqualTo(PackageManager.PERMISSION_DENIED);
+    public void requiredPermissions_routeNotVisibleWhenOnePermissionNotHeld()
+            throws TimeoutException {
+        overridePermissions(Set.of(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_DENIED);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
         RouteDiscoveryPreference preference =
@@ -97,17 +111,12 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                         preference,
                         Set.of(ROUTE_ID_APP_1_ROUTE_1),
                         mExecutor);
-        assertThat(routes.get(ROUTE_ID_REQUIRES_PERMISSIONS)).isNull();
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ONE_PERMISSION)).isNull();
     }
 
     @Test
-    public void requiredPermissions_routeVisibleWhenPermissionIsHeld() throws TimeoutException {
-        mUiAutomation.addOverridePermissionState(
-                myUid(),
-                Manifest.permission.POST_NOTIFICATIONS,
-                PackageManager.PERMISSION_GRANTED);
-        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.POST_NOTIFICATIONS))
-                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+    public void requiredPermissions_routeVisibleWhenOnePermissionIsHeld() throws TimeoutException {
+        overridePermissions(Set.of(Manifest.permission.POST_NOTIFICATIONS), PERMISSION_GRANTED);
 
         mScreenOnActivity = launchScreenOnActivity(mContext);
         RouteDiscoveryPreference preference =
@@ -118,9 +127,103 @@ public class MediaRouter2DeviceTestRequiredPermissions {
                 waitForAndGetRoutes(
                         mRouter,
                         preference,
-                        Set.of(ROUTE_ID_REQUIRES_PERMISSIONS),
+                        Set.of(ROUTE_ID_REQUIRES_ONE_PERMISSION),
                         mExecutor);
-        assertThat(routes.get(ROUTE_ID_REQUIRES_PERMISSIONS).getName()).isEqualTo(
-                ROUTE_NAME_REQUIRES_PERMISSIONS);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ONE_PERMISSION).getName()).isEqualTo(
+                ROUTE_NAME_REQUIRES_ONE_PERMISSION);
+    }
+
+    @Test
+    public void requiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld()
+            throws TimeoutException {
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(0), PERMISSION_DENIED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(1), PERMISSION_DENIED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(2), PERMISSION_DENIED);
+
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter,
+                        preference,
+                        Set.of(ROUTE_ID_APP_1_ROUTE_1),
+                        mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET)).isNull();
+    }
+
+    @Test
+    public void requiredPermissions_routeVisibleWhenFirstSetInListIsHeld() throws TimeoutException {
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(0), PERMISSION_GRANTED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(1), PERMISSION_DENIED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(2), PERMISSION_DENIED);
+
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter,
+                        preference,
+                        Set.of(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET),
+                        mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET).getName()).isEqualTo(
+                ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET);
+    }
+
+    @Test
+    public void requiredPermissions_routeVisibleWhenSecondSetInListIsHeld()
+            throws TimeoutException {
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(0), PERMISSION_DENIED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(1), PERMISSION_GRANTED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(2), PERMISSION_DENIED);
+
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter,
+                        preference,
+                        Set.of(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET),
+                        mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET).getName()).isEqualTo(
+                ROUTE_NAME_REQUIRES_ANY_PERMISSION_SET);
+    }
+
+    @Test
+    public void requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld()
+            throws TimeoutException {
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(0), PERMISSION_DENIED);
+        overridePermissions(REQUIRED_PERMISSIONS_SETS.get(1), PERMISSION_DENIED);
+        overridePermissions(Set.of(REQUIRED_PERMISSIONS_SET_3_2), PERMISSION_DENIED);
+        overridePermissions(Set.of(REQUIRED_PERMISSIONS_SET_3_1, REQUIRED_PERMISSIONS_SET_3_3),
+                PERMISSION_GRANTED);
+
+        mScreenOnActivity = launchScreenOnActivity(mContext);
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                        List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        mRouter,
+                        preference,
+                        Set.of(ROUTE_ID_APP_1_ROUTE_1),
+                        mExecutor);
+        assertThat(routes.get(ROUTE_ID_REQUIRES_ANY_PERMISSION_SET)).isNull();
+    }
+
+    protected void overridePermissions(Set<String> permissions, int state) {
+        for (String permission : permissions) {
+            mUiAutomation.addOverridePermissionState(myUid(), permission, state);
+            assertThat(mContext.checkCallingOrSelfPermission(permission)).isEqualTo(state);
+        }
     }
 }

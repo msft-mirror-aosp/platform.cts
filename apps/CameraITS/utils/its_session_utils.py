@@ -3062,30 +3062,42 @@ def remove_mp4_file(file_name_with_path):
     logging.debug('File not found: %s', file_name_with_path)
 
 
-def check_and_update_features_tested(
-    features_tested, hlg10, is_stabilized):
-  """Check if the [hlg10, is_stabilized] combination is already tested.
+def check_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Check if the [hlg10, is_stabilized] combination is already tested
+  to be supported.
 
   Args:
-    features_tested: The list of feature combinations already tested
+    features_passed: The list of feature combinations already supported
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
 
   Returns:
-    Whether the [hlg10, is_stabilized] is already tested.
+    Whether the [hlg10, is_stabilized] is already tested to be supported.
   """
   feature_mask = 0
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
   tested = False
-  for tested_feature in features_tested:
+  for tested_feature in features_passed:
     # Only test a combination if they aren't already a subset
     # of another tested combination.
     if (tested_feature | feature_mask) == tested_feature:
       tested = True
       break
-
-  if not tested:
-    features_tested.append(feature_mask)
-
   return tested
+
+
+def mark_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Mark the [hlg10, is_stabilized] combination as tested to pass.
+
+  Args:
+    features_passed: The list of feature combinations already tested
+    hlg10: boolean; Whether HLG10 is enabled
+    is_stabilized: boolean; Whether preview stabilizatoin is enabled
+  """
+  feature_mask = 0
+  if hlg10: feature_mask |= _BIT_HLG10
+  if is_stabilized: feature_mask |= _BIT_STABILIZATION
+  features_passed.append(feature_mask)

@@ -28,10 +28,9 @@ import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.OpenBlobForReadResponse;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 
@@ -39,13 +38,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
 public class OpenBlobForReadResponseTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     ParcelFileDescriptor mPfd;
     private AppSearchResult<ParcelFileDescriptor> mSuccessResult;

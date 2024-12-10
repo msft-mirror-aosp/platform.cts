@@ -62,13 +62,12 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothMapClientTest {
     private static final String TAG = BluetoothMapClientTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private static final String ACTION_MESSAGE_SENT_SUCCESSFULLY =
             "android.bluetooth.cts.BluetoothMapClientTest.MESSAGE_SENT_SUCCESSFULLY";
     private static final String ACTION_MESSAGE_DELIVERED_SUCCESSFULLY =
-            "android.bluetooth.cts.BluetoothMapClientTest"
-            + ".MESSAGE_DELIVERED_SUCCESSFULLY";
+            "android.bluetooth.cts.BluetoothMapClientTest" + ".MESSAGE_DELIVERED_SUCCESSFULLY";
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -87,8 +86,8 @@ public class BluetoothMapClientTest {
 
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (!mHasBluetooth) return;
 
         mIsMapClientSupported = BluetoothProperties.isProfileMapClientEnabled().orElse(false);
@@ -106,8 +105,8 @@ public class BluetoothMapClientTest {
         mIsProfileReady = false;
         mBluetoothMapClient = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothMapClientServiceListener(),
-                BluetoothProfile.MAP_CLIENT);
+        mAdapter.getProfileProxy(
+                mContext, new BluetoothMapClientServiceListener(), BluetoothProfile.MAP_CLIENT);
     }
 
     @After
@@ -116,8 +115,7 @@ public class BluetoothMapClientTest {
             return;
         }
         if (mAdapter != null && mBluetoothMapClient != null) {
-            mAdapter.closeProfileProxy(BluetoothProfile.MAP_CLIENT,
-                    mBluetoothMapClient);
+            mAdapter.closeProfileProxy(BluetoothProfile.MAP_CLIENT, mBluetoothMapClient);
             mBluetoothMapClient = null;
             mIsProfileReady = false;
         }
@@ -158,13 +156,15 @@ public class BluetoothMapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothMapClient.getConnectionPolicy(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothMapClient.getConnectionPolicy(testDevice));
     }
 
@@ -177,13 +177,14 @@ public class BluetoothMapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothMapClient.getConnectionState(null));
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED, mBluetoothMapClient.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothMapClient.getConnectionState(testDevice));
     }
 
@@ -210,22 +211,34 @@ public class BluetoothMapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         Collection<Uri> contacts = new HashSet<Uri>();
         String message = "";
-        PendingIntent sentIntent = PendingIntent.getBroadcast(mContext, 0,
-                new Intent(ACTION_MESSAGE_SENT_SUCCESSFULLY),
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
-        PendingIntent deliveredIntent = PendingIntent.getBroadcast(mContext, 0,
-                new Intent(ACTION_MESSAGE_DELIVERED_SUCCESSFULLY),
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent sentIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        new Intent(ACTION_MESSAGE_SENT_SUCCESSFULLY),
+                        PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent deliveredIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        new Intent(ACTION_MESSAGE_DELIVERED_SUCCESSFULLY),
+                        PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
 
         // Verify returns false when invalid input device is given
-        assertFalse(mBluetoothMapClient.sendMessage(
-                /* BluetoothDevice */ null, contacts, message, sentIntent, deliveredIntent));
+        assertFalse(
+                mBluetoothMapClient.sendMessage(
+                        /* BluetoothDevice */ null,
+                        contacts,
+                        message,
+                        sentIntent,
+                        deliveredIntent));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothMapClient.sendMessage(
-                testDevice, contacts, message, sentIntent, deliveredIntent));
+        assertFalse(
+                mBluetoothMapClient.sendMessage(
+                        testDevice, contacts, message, sentIntent, deliveredIntent));
     }
 
     @Test
@@ -237,16 +250,19 @@ public class BluetoothMapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothMapClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothMapClient.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothMapClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothMapClient.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothMapClient.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothMapClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     private boolean waitForProfileConnect() {
@@ -289,8 +305,8 @@ public class BluetoothMapClientTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothMapClientServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothMapClientServiceListener
+            implements BluetoothProfile.ServiceListener {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {

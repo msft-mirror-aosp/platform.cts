@@ -44,12 +44,15 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.UserTest;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,6 +66,9 @@ import java.util.concurrent.TimeUnit;
 @RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class MediaSession2Test {
+
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
+
     private static final long WAIT_TIME_MS = 300L;
 
     private static final String TEST_KEY = "test_key";

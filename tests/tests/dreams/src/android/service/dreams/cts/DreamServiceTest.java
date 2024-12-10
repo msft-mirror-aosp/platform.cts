@@ -138,7 +138,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
 
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mDreamCoordinator.stopDream();
     }
@@ -207,7 +207,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
 
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
 
         removeRootTasksWithDreamTypeActivity();
@@ -238,7 +238,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
                 ComponentName.unflattenFromString(DREAM_SERVICE_COMPONENT);
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mDreamCoordinator.stopDream();
 

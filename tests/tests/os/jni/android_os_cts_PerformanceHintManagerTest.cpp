@@ -472,6 +472,27 @@ static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
                                  .c_str());
     }
 
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), true, false, "CTS hint");
+    if (result != 0 && result != ENOTSUP) {
+        return toJString(env,
+                         std::format("notifyWorkloadSpike(true, false) returned {}", result)
+                                 .c_str());
+    }
+
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, true, "CTS hint");
+    if (result != 0 && result != ENOTSUP) {
+        return toJString(env,
+                         std::format("notifyWorkloadSpike(false, true) returned {}", result)
+                                 .c_str());
+    }
+
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, false, "CTS hint");
+    if (result != EINVAL && result != ENOTSUP) {
+        return toJString(env,
+                         std::format("notifyWorkloadSpike(false, false) returned {}", result)
+                                 .c_str());
+    }
+
     return nullptr;
 }
 

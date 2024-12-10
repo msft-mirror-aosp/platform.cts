@@ -66,7 +66,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothHidDeviceTest {
     private static final String TAG = BluetoothHidDevice.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private boolean mHasBluetooth;
@@ -77,7 +77,6 @@ public class BluetoothHidDeviceTest {
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
     private BluetoothHidDevice mBluetoothHidDevice;
-
 
     @Before
     public void setUp() throws Exception {
@@ -102,8 +101,8 @@ public class BluetoothHidDeviceTest {
         mIsProfileReady = false;
         mBluetoothHidDevice = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothHidServiceListener(),
-                BluetoothProfile.HID_DEVICE);
+        mAdapter.getProfileProxy(
+                mContext, new BluetoothHidServiceListener(), BluetoothProfile.HID_DEVICE);
     }
 
     @After
@@ -138,9 +137,10 @@ public class BluetoothHidDeviceTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHidDevice);
 
-        assertEquals(new ArrayList<BluetoothDevice>(),
+        assertEquals(
+                new ArrayList<BluetoothDevice>(),
                 mBluetoothHidDevice.getDevicesMatchingConnectionStates(
-                        new int[]{BluetoothProfile.STATE_CONNECTED}));
+                        new int[] {BluetoothProfile.STATE_CONNECTED}));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
@@ -159,13 +159,14 @@ public class BluetoothHidDeviceTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns STATE_DISCONNECTED when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothHidDevice.getConnectionState(null));
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothHidDevice.getConnectionState(testDevice));
     }
 
@@ -217,16 +218,19 @@ public class BluetoothHidDeviceTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothHidDevice.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(mBluetoothHidDevice.setConnectionPolicy(
-                null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertFalse(
+                mBluetoothHidDevice.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
+        assertFalse(
+                mBluetoothHidDevice.setConnectionPolicy(
+                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothHidDevice.setConnectionPolicy(
-                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertFalse(
+                mBluetoothHidDevice.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
     }
 
     private boolean waitForProfileConnect() {
@@ -269,8 +273,7 @@ public class BluetoothHidDeviceTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothHidServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothHidServiceListener implements BluetoothProfile.ServiceListener {
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
             mProfileConnectionlock.lock();
@@ -294,6 +297,4 @@ public class BluetoothHidDeviceTest {
             }
         }
     }
-
-
 }

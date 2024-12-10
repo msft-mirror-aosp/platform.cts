@@ -16,6 +16,7 @@
 
 package android.car.cts;
 
+import static android.car.feature.Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES;
 import static android.car.feature.Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -565,6 +566,47 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
         assertThat(VehiclePropertyIds.toString(
                 VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE))
                 .isEqualTo("LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE");
+    }
+
+    /**
+     * Test for {@link VehiclePropertyIds#toString()} for properties added in Android V.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    public void testToStringForAndroidBVehicleProperties() {
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_MODEL_TRIM))
+                .isEqualTo("INFO_MODEL_TRIM");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS))
+                .isEqualTo("INFO_VEHICLE_SIZE_CLASS");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE))
+                .isEqualTo("TURN_SIGNAL_LIGHT_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.TURN_SIGNAL_SWITCH))
+                .isEqualTo("TURN_SIGNAL_SWITCH");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY))
+                .isEqualTo("INSTANTANEOUS_FUEL_ECONOMY");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY))
+                .isEqualTo("INSTANTANEOUS_EV_EFFICIENCY");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.VEHICLE_HORN_ENGAGED))
+                .isEqualTo("VEHICLE_HORN_ENGAGED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL))
+                .isEqualTo("VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE))
+                .isEqualTo("ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE))
+                .isEqualTo("BRAKE_PEDAL_COMPRESSION_PERCENTAGE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE))
+                .isEqualTo("BRAKE_PAD_WEAR_PERCENTAGE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW))
+                .isEqualTo("BRAKE_FLUID_LEVEL_LOW");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT))
+                .isEqualTo("VEHICLE_PASSIVE_SUSPENSION_HEIGHT");
     }
 
     /**

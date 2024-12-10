@@ -66,7 +66,7 @@ public class DistanceMeasurementManagerTest {
     private static final Correspondence<DistanceMeasurementMethod, Integer> METHOD_ID_EQUALS =
             Correspondence.from(
                     (DistanceMeasurementMethod method, Integer methodId) ->
-                        method.getMethodId() == methodId,
+                            method.getMethodId() == methodId,
                     "is equal to");
 
     private Context mContext;
@@ -76,18 +76,17 @@ public class DistanceMeasurementManagerTest {
 
     private DistanceMeasurementSession.Callback mTestcallback =
             new DistanceMeasurementSession.Callback() {
-        public void onStarted(DistanceMeasurementSession session) {}
+                public void onStarted(DistanceMeasurementSession session) {}
 
-        public void onStartFail(int reason) {}
+                public void onStartFail(int reason) {}
 
-        public void onStopped(DistanceMeasurementSession session, int reason) {}
+                public void onStopped(DistanceMeasurementSession session, int reason) {}
 
-        public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
-    };
+                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
+            };
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -114,12 +113,14 @@ public class DistanceMeasurementManagerTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startMeasurementSession() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDurationSeconds(15)
-                .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
-                .build();
-        CancellationSignal signal = mDistanceMeasurementManager.startMeasurementSession(params,
-                mContext.getMainExecutor(), mTestcallback);
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setDurationSeconds(15)
+                        .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
+                        .build();
+        CancellationSignal signal =
+                mDistanceMeasurementManager.startMeasurementSession(
+                        params, mContext.getMainExecutor(), mTestcallback);
         assertNotNull(signal);
         signal.cancel();
     }
@@ -132,9 +133,10 @@ public class DistanceMeasurementManagerTest {
         assertNotNull(list);
 
         if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
-            assertThat(list).comparingElementsUsing(METHOD_ID_EQUALS)
-                    .contains(DistanceMeasurementMethod
-                           .DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING);
+            assertThat(list)
+                    .comparingElementsUsing(METHOD_ID_EQUALS)
+                    .contains(
+                            DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING);
         }
     }
 
@@ -169,9 +171,11 @@ public class DistanceMeasurementManagerTest {
             assertNotNull(securityLevels);
             assertTrue(securityLevels.size() > 0);
         } else {
-            assertThrows(UnsupportedOperationException.class, () -> {
-                mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
-            });
+            assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> {
+                        mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+                    });
         }
     }
 }

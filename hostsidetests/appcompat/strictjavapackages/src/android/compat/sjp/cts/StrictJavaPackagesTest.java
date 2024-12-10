@@ -28,6 +28,7 @@ import android.compat.testing.Classpaths;
 import android.compat.testing.SharedLibraryInfo;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
 import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -81,6 +82,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final String ANDROID_TEST_MOCK_JAR = "/system/framework/android.test.mock.jar";
     private static final String TEST_HELPER_PACKAGE = "android.compat.sjp.app";
     private static final String TEST_HELPER_APK = "StrictJavaPackagesTestApp.apk";
+    private static final String LOG_TAG = "SJP";
 
     private static final Pattern APEX_JAR_PATTERN =
             Pattern.compile("\\/apex\\/(?<apexName>[^\\/]+)\\/.*\\.(jar|apk)");
@@ -846,6 +848,32 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 .isEmpty();
     }
 
+    private String bytesToString(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " bytes";
+        }
+        if (bytes < 1024 * 1024) {
+            return bytes / 1024 + " KB";
+        }
+        if (bytes < 1024 * 1024 * 1024) {
+            return bytes / (1024 * 1024) + " MB";
+        }
+        return bytes / (1024 * 1024 * 1024) + " GB";
+    }
+
+    private void logFileDetails(File file) {
+        if (file == null) {
+            CLog.d(LOG_TAG, "File is null");
+            return;
+        }
+        CLog.d(LOG_TAG, "File absolute path: " + file.getAbsolutePath());
+        CLog.d(LOG_TAG, "File exists: " + file.exists());
+        CLog.d(LOG_TAG, "File size: " + bytesToString(file.length()));
+        CLog.d(LOG_TAG, "File size: " + file.length() + " bytes");
+        CLog.d(LOG_TAG, "File can read: " + file.canRead());
+        CLog.d(LOG_TAG, "File free space: " + bytesToString(file.getFreeSpace()));
+    }
+
     /**
      * Ensure that no apk-in-apex bundles classes that could be eclipsed by jars in
      * BOOTCLASSPATH.
@@ -861,13 +889,14 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     File apkFile = null;
                     try {
                         apkFile = pullJarFromDevice(getDevice(), apk);
+                        logFileDetails(apkFile);
                         final ImmutableSet<String> apkClasses;
                         try {
                             apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
                         } catch (IOException e) {
-                            throw new RuntimeException("Failed to get class defs from APK: "
+                            throw new IOException("Failed to get class defs from APK: "
                                                            + apkFile.getAbsolutePath(), e);
                         }
                         // b/226559955: The directory paths containing APKs contain the build ID,

@@ -234,11 +234,6 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       log_path = self.log_path
       test_name_with_log_path = os.path.join(log_path, _NAME)
 
-      # Load chart for scene
-      its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, self.chart_distance,
-          log_path)
-
       # Check skip conditions
       max_ae_regions = props['android.control.maxRegionsAe']
       max_awb_regions = props['android.control.maxRegionsAwb']
@@ -250,6 +245,11 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
            max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE))
       logging.debug('maximum AE regions: %d', max_ae_regions)
       logging.debug('maximum AWB regions: %d', max_awb_regions)
+
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance,
+          log_path)
 
       # Find largest preview size to define capture size to find aruco markers
       common_preview_size_info = (

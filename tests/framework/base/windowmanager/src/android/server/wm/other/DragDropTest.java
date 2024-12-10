@@ -345,7 +345,8 @@ public class DragDropTest extends WindowManagerTestBase {
         assumeFalse(isWatchDevice());
         UiAutomatorUtils.getUiDevice().waitForIdle();
         mActivity = startActivityInWindowingMode(DragDropActivity.class, WINDOWING_MODE_FULLSCREEN);
-        mWmState.waitUntilActivityReadyForInputInjection(mActivity, TAG, "test: " + TAG);
+        mWmState.waitUntilActivityReadyForInputInjection(mActivity, mInstrumentation,
+                TAG, "test: " + TAG);
 
         mStartReceived = new CountDownLatch(1);
         mEndReceived = new CountDownLatch(1);

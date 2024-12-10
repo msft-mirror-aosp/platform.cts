@@ -387,8 +387,8 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
 
         getTransitionLog().clear();
         launchActivityAndWait(SecondActivity.class);
-
-        waitForIdle();
+        // Wait for the transition animation complete.
+        mInstrumentation.getUiAutomation().syncInputTransactions();
 
         TransitionVerifier.assertOrder(
                 getTransitionLog(),

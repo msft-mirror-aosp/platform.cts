@@ -46,8 +46,8 @@ public class BufferConstraintsTest {
     @Before
     public void setUp() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth = context.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
     }
 
     @Test
@@ -61,8 +61,8 @@ public class BufferConstraintsTest {
             int defaultBufferTime = DEFAULT_BUFFER_TIME;
             int maximumBufferTime = MAXIMUM_BUFFER_TIME;
             int minimumBufferTime = MINIMUM_BUFFER_TIME;
-            BufferConstraint bufferConstraint = new BufferConstraint(defaultBufferTime,
-                    maximumBufferTime, minimumBufferTime);
+            BufferConstraint bufferConstraint =
+                    new BufferConstraint(defaultBufferTime, maximumBufferTime, minimumBufferTime);
             mBufferConstraintList.add(bufferConstraint);
         }
         mBufferConstraints = new BufferConstraints(mBufferConstraintList);

@@ -74,7 +74,6 @@ public class BluetoothLeAdvertiserTest {
     private BluetoothLeAdvertiser mAdvertiser;
     private TestAdvertisingSetCallback mCallback;
 
-
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -95,8 +94,8 @@ public class BluetoothLeAdvertiserTest {
     public void tearDown() throws Exception {
         if (mAdvertiser != null) {
             mAdvertiser.stopAdvertisingSet(mCallback);
-            assertTrue(mCallback.mAdvertisingSetStoppedLatch.await(TIMEOUT_MS,
-                    TimeUnit.MILLISECONDS));
+            assertTrue(
+                    mCallback.mAdvertisingSetStoppedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
             mAdvertiser = null;
             mAdapter = null;
         }
@@ -109,8 +108,14 @@ public class BluetoothLeAdvertiserTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startAdvertisingSetWithCallbackAndHandler() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                mCallback, new Handler(Looper.getMainLooper()));
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
         assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
         assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
         assertNotNull(mCallback.mAdvertisingSet);
@@ -119,8 +124,8 @@ public class BluetoothLeAdvertiserTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startAdvertisingSetWithDurationAndCallback() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                0, 0, mCallback);
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS, null, null, null, null, 0, 0, mCallback);
         assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
         assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
         assertNotNull(mCallback.mAdvertisingSet);
@@ -128,10 +133,17 @@ public class BluetoothLeAdvertiserTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void startAdvertisingSetWithDurationCallbackAndHandler()
-            throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                0, 0, mCallback, new Handler(Looper.getMainLooper()));
+    public void startAdvertisingSetWithDurationCallbackAndHandler() throws InterruptedException {
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
         assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
         assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
         assertNotNull(mCallback.mAdvertisingSet);
@@ -144,15 +156,34 @@ public class BluetoothLeAdvertiserTest {
         BluetoothGattServer gattServer =
                 mManager.openGattServer(mContext, new BluetoothGattServerCallback() {});
 
-        assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
-                () -> mAdvertiser.startAdvertisingSet(ADVERTISING_SET_USING_NRPA_PARAMETERS, null, null,
-                                null, null, 0, 0, gattServer, mCallback,
+        assertThrows(
+                "No BLUETOOTH_PRIVILEGED permission",
+                SecurityException.class,
+                () ->
+                        mAdvertiser.startAdvertisingSet(
+                                ADVERTISING_SET_USING_NRPA_PARAMETERS,
+                                null,
+                                null,
+                                null,
+                                null,
+                                0,
+                                0,
+                                gattServer,
+                                mCallback,
                                 new Handler(Looper.getMainLooper())));
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_PRIVILEGED);
 
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_USING_NRPA_PARAMETERS, null, null,
-                null, null, 0, 0, gattServer, mCallback,
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_USING_NRPA_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                gattServer,
+                mCallback,
                 new Handler(Looper.getMainLooper()));
         assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
         assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
@@ -162,8 +193,16 @@ public class BluetoothLeAdvertiserTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getAdvertisingSetId() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null, 0, 0,
-                mCallback, new Handler(Looper.getMainLooper()));
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
         mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
         assertNotNull(mCallback.mAdvertisingSet);
@@ -183,8 +222,8 @@ public class BluetoothLeAdvertiserTest {
         public AtomicReference<AdvertisingSet> mAdvertisingSet = new AtomicReference();
 
         @Override
-        public void onAdvertisingSetStarted(AdvertisingSet advertisingSet, int txPower,
-                int status) {
+        public void onAdvertisingSetStarted(
+                AdvertisingSet advertisingSet, int txPower, int status) {
             super.onAdvertisingSetStarted(advertisingSet, txPower, status);
             mAdvertisingSetStartedStatus.set(status);
             mAdvertisingSet.set(advertisingSet);
@@ -192,8 +231,8 @@ public class BluetoothLeAdvertiserTest {
         }
 
         @Override
-        public void onAdvertisingEnabled(AdvertisingSet advertisingSet, boolean enable,
-                int status) {
+        public void onAdvertisingEnabled(
+                AdvertisingSet advertisingSet, boolean enable, int status) {
             super.onAdvertisingEnabled(advertisingSet, enable, status);
             if (enable) {
                 mAdvertisingEnabledStatus.set(status);

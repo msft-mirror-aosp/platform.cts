@@ -113,6 +113,7 @@ public class CardEmulationTest {
         mContext = InstrumentationRegistry.getContext();
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertNotNull(mAdapter);
+        assumeTrue(NfcUtils.enableNfc(mAdapter, mContext));
 
         CardEmulation instance = CardEmulation.getInstance(mAdapter);
         FieldReader serviceField = new FieldReader(instance,

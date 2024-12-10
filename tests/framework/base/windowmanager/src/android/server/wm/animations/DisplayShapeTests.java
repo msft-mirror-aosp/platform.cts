@@ -16,7 +16,6 @@
 
 package android.server.wm.animations;
 
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.RoundedCorner.POSITION_BOTTOM_LEFT;
 import static android.view.RoundedCorner.POSITION_TOP_LEFT;
 
@@ -32,7 +31,6 @@ import android.graphics.RectF;
 import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
@@ -118,8 +116,7 @@ public class DisplayShapeTests extends WindowManagerTestBase {
 
     @Test
     public void testDisplayShapeOnVirtualDisplay() {
-        try (MultiDisplayTestBase.VirtualDisplaySession session =
-                     new MultiDisplayTestBase.VirtualDisplaySession()) {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // Setup a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
             Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)

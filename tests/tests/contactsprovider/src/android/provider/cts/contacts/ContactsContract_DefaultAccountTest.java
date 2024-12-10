@@ -25,11 +25,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -201,6 +203,11 @@ public class ContactsContract_DefaultAccountTest {
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsCloud() throws Exception {
+        assumeTrue(
+                "Skipped for target SDK version < Android B",
+                mContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA
+        );
+
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofCloud(ACCT_1)));
         assertEquals(DefaultAccountAndState.ofCloud(ACCT_1), getDefaultAccountForNewContacts());
@@ -362,6 +369,11 @@ public class ContactsContract_DefaultAccountTest {
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsCloud() throws Exception {
+        assumeTrue(
+                "Skipped for target SDK version < Android B",
+                mContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA
+        );
+
         SystemUtil.runWithShellPermissionIdentity(
                 () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofCloud(ACCT_1)));
         assertEquals(DefaultAccountAndState.ofCloud(ACCT_1), getDefaultAccountForNewContacts());

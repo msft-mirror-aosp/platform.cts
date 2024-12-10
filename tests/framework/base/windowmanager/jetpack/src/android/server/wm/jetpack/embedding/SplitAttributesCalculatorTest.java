@@ -35,6 +35,7 @@ import android.content.Intent;
 import android.server.wm.NestedShellPermission;
 import android.server.wm.RotationSession;
 import android.server.wm.TestTaskOrganizer;
+import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
@@ -350,6 +351,56 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called because"
                 + " the host task leaves to split screen");
+    }
+
+    /**
+     * Verifies the calculator function is called when the activity launches on either default or
+     * secondary display.
+     */
+    @Test
+    public void testSplitAttributesCalculatorInvocation_acrossDisplays()
+            throws InterruptedException {
+        final String tag = "testSplitAttributesCalculatorInvocation_acrossDisplays";
+        final InvocationVerifier verifier = new InvocationVerifier(tag);
+
+        // Set the calculator function before the split pair launch.
+        mActivityEmbeddingComponent.setSplitAttributesCalculator(verifier);
+
+        // Create a split rule for activity A and activity B where the split ratio is 0.5.
+        final SplitPairRule splitPairRule = createSplitPairRuleBuilder(
+                activityActivityPair -> true /* activityPairPredicate */,
+                activityIntentPair -> true, /* activityIntentPairPredicate */
+                parentWindowMetrics -> true /* parentWindowMetricsPredicate */)
+                .setDefaultSplitAttributes(DEFAULT_SPLIT_ATTRS)
+                .setTag(tag)
+                .build();
+
+        // Register the split pair rule.
+        mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
+
+        // Launch the activity A and B split and verify that the split pair matches
+        // defaultSplitAttributes.
+        Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
+                ACTIVITY_A_ID);
+        Activity activityB = startActivityAndVerifySplitAttributes(activityA,
+                TestActivityWithId.class, splitPairRule, ACTIVITY_B_ID, mSplitInfoConsumer);
+
+        verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
+                + " split pair launch.");
+
+        final DisplayContent display = MultiDisplayTestHelper
+                .createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
+        // Launch Activity A to secondary display.
+        launchActivityOnDisplay(activityA.getComponentName(), display.mId);
+        waitForOrFail("Activity A must be resumed.", () ->
+                getResumedActivityById(ACTIVITY_A_ID) != null);
+        activityA = getResumedActivityById(ACTIVITY_A_ID);
+
+        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
+                "activityC", mSplitInfoConsumer);
+
+        verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
+                + " split pair launch on secondary display.");
     }
 
     private static class InvocationVerifier

@@ -1891,7 +1891,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     }
 
     private void assumeDynamicRoutingIsDisabled() {
-        assumeFalse("Requires dynamic audio routing",
+        assumeFalse("Requires dynamic audio routing disabled",
                 mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
     }
 

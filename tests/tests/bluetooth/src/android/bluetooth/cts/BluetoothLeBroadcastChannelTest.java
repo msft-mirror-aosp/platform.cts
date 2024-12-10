@@ -73,7 +73,8 @@ public class BluetoothLeBroadcastChannelTest {
         if (mIsBroadcastAssistantSupported) {
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastAssistantEnabledInConfig);
         }
 
@@ -81,9 +82,9 @@ public class BluetoothLeBroadcastChannelTest {
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
             boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(
-                            BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
+                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
+            assertTrue(
+                    "Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
 
@@ -141,8 +142,8 @@ public class BluetoothLeBroadcastChannelTest {
         assertTrue(channelCopy.isSelected());
         assertEquals(TEST_CHANNEL_INDEX, channelCopy.getChannelIndex());
         assertEquals(codecMetadata, channelCopy.getCodecMetadata());
-        assertEquals(TEST_AUDIO_LOCATION_FRONT_LEFT,
-                channelCopy.getCodecMetadata().getAudioLocation());
+        assertEquals(
+                TEST_AUDIO_LOCATION_FRONT_LEFT, channelCopy.getCodecMetadata().getAudioLocation());
         assertNotNull(channelCopy.getCodecMetadata());
         assertEquals(channel.getCodecMetadata(), channelCopy.getCodecMetadata());
     }

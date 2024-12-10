@@ -35,7 +35,7 @@ android_test {
         "guava",
         "junit",
         "junit-params",
-        "bedstead",
+        "bedstead-enterprise",
         "CtsMockInputMethodLib",
         "CtsSurfaceValidatorLib",
         "hamcrest-library",
