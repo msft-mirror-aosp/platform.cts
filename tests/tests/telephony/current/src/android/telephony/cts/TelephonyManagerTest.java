@@ -3664,8 +3664,9 @@ public class TelephonyManagerTest {
             }
         }
 
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
         // just verify no crash
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -3729,8 +3730,9 @@ public class TelephonyManagerTest {
             }
         }
 
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
         // just verify no crash
         String result = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.iccTransmitApduLogicalChannelByPort(
@@ -3783,8 +3785,9 @@ public class TelephonyManagerTest {
         }
 
         // just verify no crash
-        int slotIndex = getValidSlotIndexAndPort().getKey();
-        int portIndex = getValidSlotIndexAndPort().getValue();
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
                     mTelephonyManager, (tm) -> tm.iccTransmitApduBasicChannelByPort(
