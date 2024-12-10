@@ -78,6 +78,7 @@ import android.view.autofill.AutofillId;
 
 import androidx.test.filters.FlakyTest;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -106,6 +107,13 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         final Bundle bundle = new Bundle();
         bundle.putString(key, value);
         return bundle;
+    }
+
+    @After
+    public void resetAfterTest() {
+        // Close the activity to force close Autofill Session
+        mActivity.syncRunOnUiThread(() -> mActivity.finish());
+        mUiBot.pressHome();
     }
 
     @Test
