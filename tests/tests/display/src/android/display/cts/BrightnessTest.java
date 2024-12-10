@@ -174,6 +174,7 @@ public class BrightnessTest extends TestBase {
                     Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
             int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
             assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL, mode);
+            recordSliderEvents();
             var newEvents = setDisplayBrightness(brtClosable.getMinimumBrightness());
             assertTrue(newEvents.isEmpty());
             // Then change the brightness
@@ -513,6 +514,7 @@ public class BrightnessTest extends TestBase {
     }
 
     private void waitForFirstSliderEvent() throws  InterruptedException {
+        recordSliderEvents();
         // Keep changing brightness until we get an event to handle devices with sensors
         // that take a while to warm up.
         int brightness = 25;
