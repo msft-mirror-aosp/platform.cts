@@ -96,6 +96,7 @@ public class VehiclePropertyVerifier<T> {
     private static final float FLOAT_INEQUALITY_THRESHOLD = 0.00001f;
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
+    private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
     private static final ImmutableSet<Integer> WHEEL_AREAS = ImmutableSet.of(
             VehicleAreaWheel.WHEEL_LEFT_FRONT, VehicleAreaWheel.WHEEL_LEFT_REAR,
             VehicleAreaWheel.WHEEL_RIGHT_FRONT, VehicleAreaWheel.WHEEL_RIGHT_REAR);
@@ -550,12 +551,16 @@ public class VehiclePropertyVerifier<T> {
                     verifyCarPropertyValueCallback();
                     verifyGetPropertiesAsync();
                 }
+
+                if (turnOffHvacPowerIfHvacPowerDependent()) {
+                    verifyGetNotAvailable();
+                }
             }, readPermission);
 
             disableAdasFeatureIfAdasStatePropertyAndVerify(ImmutableSet.<String>builder()
                         .add(readPermission)
                         .addAll(mDependentOnPropertyPermissions)
-                        .build().toArray(new String[0]));
+                        .build().toArray(new String[0]), /* verifySet= */ false);
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -710,7 +715,7 @@ public class VehiclePropertyVerifier<T> {
             }, propertyPermissions.toArray(new String[0]));
 
             disableAdasFeatureIfAdasStatePropertyAndVerify(
-                    propertyPermissions.toArray(new String[0]));
+                    propertyPermissions.toArray(new String[0]), /* verifySet= */ true);
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -787,10 +792,11 @@ public class VehiclePropertyVerifier<T> {
         }, mDependentOnPropertyPermissions.toArray(new String[0]));
     }
 
-    private void disableAdasFeatureIfAdasStatePropertyAndVerify(String[] enabledPermissionsList) {
+    private void disableAdasFeatureIfAdasStatePropertyAndVerify(
+            String[] enabledPermissionsList, boolean verifySet) {
         if (disableAdasFeatureIfAdasStateProperty()) {
             runWithShellPermissionIdentity(() -> {
-                verifyAdasPropertyDisabled();
+                verifyAdasPropertyDisabled(verifySet);
             }, enabledPermissionsList);
         }
     }
@@ -1270,11 +1276,45 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
+    private void verifyGetNotAvailable() {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            try {
+                // getProperty may/may not throw exception when the property is not available.
+                CarPropertyValue<T> currentValue =
+                        mCarPropertyManager.getProperty(mPropertyId, areaId);
+                assertWithMessage("When the power is turned off getProperty should throw"
+                                        + " PropertyNotAvailableException when trying to get a"
+                                        + " property with StatusCode.NOT_AVAILABLE or return a"
+                                        + " CarPropertyValue with status UNAVAILABLE."
+                                        + " Returned CarPropertyValue: " + currentValue.toString())
+                        .that(currentValue.getStatus())
+                        .isEqualTo(CarPropertyValue.STATUS_UNAVAILABLE);
+            } catch (Exception e) {
+                // If the property is read or read-write, then this should throw
+                // PropertyNotAvailableException. If the property is write-only, then it will throw
+                // IllegalArgumentException.
+                assertWithMessage(
+                                "Getting property " + mPropertyName + " when it's not available"
+                                    + " should throw either PropertyNotAvailableException or"
+                                    + " IllegalArgumentException.")
+                        .that(e.getClass())
+                        .isAnyOf(PropertyNotAvailableException.class,
+                                IllegalArgumentException.class);
+            }
+        }
+    }
+
     private void verifySetNotAvailable() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if (!Flags.areaIdConfigAccess() && carPropertyConfig.getAccess()
                 != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return;
+        }
+
+        T valueToSet = getDefaultValue(mPropertyType);
+        if (valueToSet == null) {
+            assertWithMessage("Testing mixed type property is not supported").fail();
         }
         for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
             if (Flags.areaIdConfigAccess() && areaIdConfig.getAccess()
@@ -1282,15 +1322,27 @@ public class VehiclePropertyVerifier<T> {
                 continue;
             }
             int areaId = areaIdConfig.getAreaId();
-            CarPropertyValue<T> currentValue = null;
+            SetterCallback setterCallback = new SetterCallback(mPropertyId, areaId, valueToSet);
+            assertWithMessage("Failed to register no change setter callback for "
+                            + VehiclePropertyIds.toString(mPropertyId))
+                    .that(subscribePropertyEvents(mCarPropertyManager, setterCallback, mPropertyId,
+                            CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
+
             try {
-                // getProperty may/may not throw exception when the property is not available.
-                currentValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
-                T valueToSet = getDefaultValue(mPropertyType);
-                if (valueToSet == null) {
-                    assertWithMessage("Testing mixed type property is not supported").fail();
+                mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
+                CarPropertyValue<T> updatedValue =
+                        setterCallback.waitForPropertyEvent(SET_PROPERTY_CALLBACK_TIMEOUT_SEC);
+                if (updatedValue != null
+                        && updatedValue.getStatus() == CarPropertyValue.STATUS_AVAILABLE) {
+                    // If the callback receives a new event with the value set before the timeout,
+                    // then this check will fail.
+                    assertWithMessage(
+                            "Received onChangeEvent(s) for " + mPropertyName
+                                    + " with updated value: " + valueToSet + " before 5s timeout."
+                                    + " When the power is turned off, this property must not be"
+                                    + " available to set.")
+                            .that(updatedValue.getValue()).isNotEqualTo(valueToSet);
                 }
-                verifySetProperty(areaId, valueToSet);
             } catch (Exception e) {
                 // In normal cases, this should throw PropertyNotAvailableException.
                 // In rare cases, the value we are setting is the same as the current value,
@@ -1305,23 +1357,18 @@ public class VehiclePropertyVerifier<T> {
                         .that(e.getClass())
                         .isAnyOf(PropertyNotAvailableException.class,
                                 IllegalArgumentException.class);
+            } finally {
+                unsubscribePropertyEvents(mCarPropertyManager, setterCallback, mPropertyId);
             }
-            if (currentValue == null) {
-                // If the property is not available for getting, continue.
-                continue;
-            }
-            CarPropertyValue<T> newValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
-            assertWithMessage(
-                            "Setting property " + mPropertyName + " while power is off or required"
-                                + " property is disabled must have no effect.")
-                    .that(newValue.getValue())
-                    .isEqualTo(currentValue.getValue());
         }
     }
 
-    private void verifyAdasPropertyDisabled() {
+    private void verifyAdasPropertyDisabled(boolean verifySet) {
         if (!mVerifyErrorStates) {
-            verifySetNotAvailable();
+            verifyGetNotAvailable();
+            if (verifySet) {
+                verifySetNotAvailable();
+            }
             return;
         }
 
@@ -2569,16 +2616,16 @@ public class VehiclePropertyVerifier<T> {
             return value.toString();
         }
 
-        public CarPropertyValue<?> waitForUpdatedCarPropertyValue() {
+        public CarPropertyValue<?> waitForPropertyEvent(int timeoutInSec) {
             try {
                 assertWithMessage(
-                        "Never received onChangeEvent(s) for " + mPropertyName + " new value: "
-                                + valueToString(mExpectedSetValue) + " before 5s timeout."
-                                + " Received: "
+                        "Never received onChangeEvent(s) or onErrorEvent(s) for " + mPropertyName
+                                + " new value: " + valueToString(mExpectedSetValue) + " before"
+                                + " timeout. Received: "
                                 + (mReceivedValue == null
                                     ? "No value"
                                     : valueToString(mReceivedValue)))
-                        .that(mCountDownLatch.await(5, TimeUnit.SECONDS)).isTrue();
+                        .that(mCountDownLatch.await(timeoutInSec, TimeUnit.SECONDS)).isTrue();
             } catch (InterruptedException e) {
                 assertWithMessage("Waiting for onChangeEvent set callback for "
                         + mPropertyName + " threw an exception: " + e).fail();
@@ -2588,6 +2635,7 @@ public class VehiclePropertyVerifier<T> {
 
         @Override
         public void onChangeEvent(CarPropertyValue carPropertyValue) {
+            // Checking whether the updated carPropertyValue is caused by the setProperty request.
             if (mUpdatedCarPropertyValue != null || carPropertyValue.getPropertyId() != mPropertyId
                     || carPropertyValue.getAreaId() != mAreaId
                     || carPropertyValue.getTimestamp() <= mCreationTimeNanos
@@ -2604,7 +2652,21 @@ public class VehiclePropertyVerifier<T> {
         }
 
         @Override
-        public void onErrorEvent(int propId, int zone) {
+        public void onErrorEvent(int propId, int areaId) {
+            onErrorEvent(propId, areaId, CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_UNKNOWN);
+        }
+
+
+        @Override
+        public void onErrorEvent(int propId, int areaId, int errorCode) {
+            if (propId != mPropertyId || areaId != mAreaId) {
+                Log.d(TAG, "SetterCallback - Received unexpected setProperty error code: "
+                        + errorCode + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+                return;
+            }
+            Log.w(TAG, "SetterCallback - Received setProperty error code: " + errorCode
+                    + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+            mCountDownLatch.countDown();
         }
     }
 
@@ -2970,7 +3032,8 @@ public class VehiclePropertyVerifier<T> {
             return null;
         }
 
-        CarPropertyValue<U> carPropertyValue = setterCallback.waitForUpdatedCarPropertyValue();
+        CarPropertyValue<U> carPropertyValue =
+                setterCallback.waitForPropertyEvent(SET_PROPERTY_CALLBACK_TIMEOUT_SEC);
         unsubscribePropertyEvents(carPropertyManager, setterCallback, propertyId);
         return carPropertyValue;
     }
