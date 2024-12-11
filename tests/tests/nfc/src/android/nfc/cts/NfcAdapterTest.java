@@ -113,17 +113,13 @@ public class NfcAdapterTest {
     @Test
     public void testDisableWithNoParams() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.disable();
-        Assert.assertTrue(result);
-        result = adapter.enable();
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
     }
 
     @Test
     public void testDisableWithParam() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.disable(true);
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
     }
 
     @Test
@@ -143,8 +139,8 @@ public class NfcAdapterTest {
     @Test
     public void testEnable() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.enable();
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
     }
 
     @Test
