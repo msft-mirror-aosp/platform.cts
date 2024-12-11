@@ -369,6 +369,11 @@
     <!-- b/368509186 -->
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
     <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[instant] android.gameframerate.cts.GameFrameRateTest" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:102:STAY_REAR_SELFIE] android.gameframerate.cts.GameFrameRateTest"/>
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:104:STAY_SMALL_DISPLAY_LOCK] android.gameframerate.cts.GameFrameRateTest"/>
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:105:STAND] android.gameframerate.cts.GameFrameRateTest"/>
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:106:VERTICAL] android.gameframerate.cts.GameFrameRateTest"/>
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases[foldable:1:OPENED] android.gameframerate.cts.GameFrameRateTest"/>
 
     <!-- b/370790791 -->
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testModeSwitchOnPrimaryDisplay" />

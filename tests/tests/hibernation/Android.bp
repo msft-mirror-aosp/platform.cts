@@ -67,3 +67,10 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsHibernationTestCases_cts_apphibernationintegrationtest",
+    base: "CtsHibernationTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hibernation.cts.AppHibernationIntegrationTest"],
+}
