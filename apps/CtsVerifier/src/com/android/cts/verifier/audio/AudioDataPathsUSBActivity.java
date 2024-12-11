@@ -53,6 +53,9 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
         enableTestButtons(mCanRunTest);
     }
 
+    protected String getTestCategory() {
+        return "Audio Datapaths USB Test";
+    }
     void gatherTestModules(TestManager testManager) {
         AudioSourceProvider leftSineSourceProvider = new SparseChannelAudioSourceProvider(
                 SparseChannelAudioSourceProvider.CHANNELMASK_LEFT);

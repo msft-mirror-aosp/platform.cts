@@ -17,8 +17,9 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -29,7 +30,6 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -127,7 +127,7 @@ public class BluetoothGattServerCallbackTest {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         mBluetoothDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mBluetoothGattService =
                 new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -150,10 +150,7 @@ public class BluetoothGattServerCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void allMethods() {
-        mCallbacks.onConnectionStateChange(
-                mBluetoothDevice,
-                BluetoothProfile.STATE_CONNECTED,
-                BluetoothProfile.STATE_CONNECTED);
+        mCallbacks.onConnectionStateChange(mBluetoothDevice, STATE_CONNECTED, STATE_CONNECTED);
         mCallbacks.onServiceAdded(BluetoothGatt.GATT_SUCCESS, mBluetoothGattService);
         mCallbacks.onCharacteristicReadRequest(
                 mBluetoothDevice, 0, 0, mBluetoothGattCharacteristic);

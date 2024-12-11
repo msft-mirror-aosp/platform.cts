@@ -35,3 +35,14 @@ android_test {
     ],
     sdk_version: "test_current",
 }
+
+test_module_config {
+    name: "CtsSettingsSuggestionsTest-qualified",
+    base: "CtsSettingsSuggestionsTest",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.service.settings.suggestions.SuggestionTest#buildSuggestion_emptyKey_shouldCrash",
+        "android.service.settings.suggestions.SuggestionTest#buildSuggestion_fromParcelable",
+        "android.service.settings.suggestions.SuggestionTest#buildSuggestion_allFieldsShouldBeSet",
+    ],
+}
