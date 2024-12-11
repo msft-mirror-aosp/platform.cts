@@ -6234,6 +6234,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_tap2tone_buffer_frames">Buffer Frames: </string>
     <string name="audio_tap2tone_bad_streams">Can\'t open streams.</string>
     <string name="audio_tap2tone_noio">No mic and/or speaker. PASS</string>
+    <string name="audio_tap2tone_isemulator">DUT is an emulator. PASS</string>
 
     <!-- Strings for 6DoF test -->
     <string name="six_dof_test">6DoF Test</string>
