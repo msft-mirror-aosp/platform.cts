@@ -24,6 +24,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.Settings
 import android.text.Editable
+import android.text.Selection
 import android.text.Spannable
 import android.text.TextUtils
 import android.text.style.BackgroundColorSpan
@@ -40,7 +41,6 @@ import android.uirendering.cts.bitmapverifiers.GoldenImageVerifier
 import android.uirendering.cts.testinfrastructure.ActivityTestBase
 import android.view.View
 import android.view.accessibility.AccessibilityManager
-import android.widget.EditText
 import android.widget.TextView
 import androidx.test.filters.MediumTest
 import androidx.test.runner.AndroidJUnit4
@@ -87,14 +87,14 @@ class TextViewHighContrastTextTests : ActivityTestBase() {
         id: Int,
         useHardware: Boolean = false,
         text: CharSequence,
-        onViewInitialized: ((view: EditText) -> Unit)? = null
+        onViewInitialized: ((view: TextView) -> Unit)? = null
     ) {
         createTest()
                 .addLayout(
                     R.layout.high_contrast_textview,
                     {
-                        val textView = it.findViewById<EditText>(R.id.label)!!
-                        textView.setText(text, TextView.BufferType.EDITABLE)
+                        val textView = it.findViewById<TextView>(R.id.label)!!
+                        textView.setText(text, TextView.BufferType.SPANNABLE)
                         textView.typeface = typeface
 
                         onViewInitialized?.invoke(textView)
@@ -133,7 +133,8 @@ class TextViewHighContrastTextTests : ActivityTestBase() {
             R.drawable.golden_hct_disabled_selection_highlight,
             text = generateAllSpanExamples()
         ) {
-                it.setSelection(
+                Selection.setSelection(
+                    it.text as Spannable,
                     /* start= */
                     7,
                     /* stop= */
@@ -151,8 +152,9 @@ class TextViewHighContrastTextTests : ActivityTestBase() {
             R.drawable.golden_hct_enabled_selection_highlight,
             text = generateAllSpanExamples()
         ) {
-                it.setSelection(
-                    /* start= */
+                Selection.setSelection(
+                    it.text as Spannable,
+                        /* start= */
                     7,
                     /* stop= */
                     13
