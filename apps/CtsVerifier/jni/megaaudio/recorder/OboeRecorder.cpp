@@ -43,6 +43,8 @@ StreamBase::Result OboeRecorder::setupStream(int32_t channelCount, int32_t sampl
 
     oboe::Result result = oboe::Result::ErrorInternal;
     if (mAudioStream != nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG,
+                            "ERROR_INVALID_STATE - Stream Already Open");
         return ERROR_INVALID_STATE;
     } else {
         mChannelCount = channelCount;
