@@ -19,12 +19,11 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -102,26 +101,21 @@ public class BluetoothLeBroadcastMetadataTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -162,14 +156,14 @@ public class BluetoothLeBroadcastMetadataTest {
             builder.addSubgroup(subgroup);
         }
         BluetoothLeBroadcastMetadata metadata = builder.build();
-        assertFalse(metadata.isEncrypted());
-        assertFalse(metadata.isPublicBroadcast());
+        assertThat(metadata.isEncrypted()).isFalse();
+        assertThat(metadata.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, metadata.getBroadcastName());
         assertEquals(testDevice, metadata.getSourceDevice());
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadata.getSourceAddressType());
         assertEquals(TEST_ADVERTISER_SID, metadata.getSourceAdvertisingSid());
         assertEquals(TEST_BROADCAST_ID, metadata.getBroadcastId());
-        assertNull(metadata.getBroadcastCode());
+        assertThat(metadata.getBroadcastCode()).isNull();
         assertEquals(TEST_PA_SYNC_INTERVAL, metadata.getPaSyncInterval());
         assertEquals(TEST_PRESENTATION_DELAY_MS, metadata.getPresentationDelayMicros());
         assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadata.getAudioConfigQuality());
@@ -214,14 +208,14 @@ public class BluetoothLeBroadcastMetadataTest {
         BluetoothLeBroadcastMetadata metadata = builder.build();
         BluetoothLeBroadcastMetadata metadataCopy =
                 new BluetoothLeBroadcastMetadata.Builder(metadata).build();
-        assertFalse(metadataCopy.isEncrypted());
-        assertFalse(metadataCopy.isPublicBroadcast());
+        assertThat(metadataCopy.isEncrypted()).isFalse();
+        assertThat(metadataCopy.isPublicBroadcast()).isFalse();
         assertEquals(TEST_BROADCAST_NAME, metadataCopy.getBroadcastName());
         assertEquals(testDevice, metadataCopy.getSourceDevice());
         assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadataCopy.getSourceAddressType());
         assertEquals(TEST_ADVERTISER_SID, metadataCopy.getSourceAdvertisingSid());
         assertEquals(TEST_BROADCAST_ID, metadataCopy.getBroadcastId());
-        assertNull(metadataCopy.getBroadcastCode());
+        assertThat(metadataCopy.getBroadcastCode()).isNull();
         assertEquals(TEST_PA_SYNC_INTERVAL, metadataCopy.getPaSyncInterval());
         assertEquals(TEST_PRESENTATION_DELAY_MS, metadataCopy.getPresentationDelayMicros());
         assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadataCopy.getAudioConfigQuality());

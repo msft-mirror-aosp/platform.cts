@@ -51,3 +51,10 @@ android_test {
         "modules-utils-build",
     ],
 }
+
+test_module_config {
+    name: "CtsPhotoPickerTest_NoLarge",
+    base: "CtsPhotoPickerTest",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

@@ -141,3 +141,15 @@ test_module_config {
     include_filters: ["android.media.audio.cts.AudioNativeTest"],
     include_annotations: ["android.platform.test.annotations.Presubmit"],
 }
+
+test_module_config {
+    name: "CtsMediaAudioTestCases_Presubmit_NoDevice",
+    base: "CtsMediaAudioTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_filters: [
+        "android.media.audio.cts.AudioPlaybackCaptureTest",
+        "android.media.audio.cts.AudioRecordTest",
+    ],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}
