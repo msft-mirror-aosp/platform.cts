@@ -20,6 +20,7 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -42,7 +43,13 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureD
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getVehicleCurbWeightVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getVehicleDrivingAutomationCurrentLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getWindshieldWipersStateVerifierBuilder;
 import static android.car.hardware.property.CarPropertyManager.GetPropertyResult;
 import static android.car.hardware.property.CarPropertyManager.SetPropertyResult;
 
@@ -112,7 +119,6 @@ import android.car.hardware.property.VehicleLightSwitch;
 import android.car.hardware.property.VehicleOilLevel;
 import android.car.hardware.property.VehicleTurnSignal;
 import android.car.hardware.property.VehicleVendorPermission;
-import android.car.hardware.property.WindshieldWipersState;
 import android.car.hardware.property.WindshieldWipersSwitch;
 import android.os.Build;
 import android.os.SystemClock;
@@ -253,14 +259,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehicleOilLevel.LEVEL_NORMAL,
                             VehicleOilLevel.LEVEL_HIGH,
                             VehicleOilLevel.LEVEL_ERROR)
-                    .build();
-    private static final ImmutableSet<Integer> WINDSHIELD_WIPERS_STATES =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            WindshieldWipersState.OTHER,
-                            WindshieldWipersState.OFF,
-                            WindshieldWipersState.ON,
-                            WindshieldWipersState.SERVICE)
                     .build();
     private static final ImmutableSet<Integer> WINDSHIELD_WIPERS_SWITCHES =
             ImmutableSet.<Integer>builder()
@@ -510,9 +508,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             LowSpeedAutomaticEmergencyBrakingState.ACTIVATED,
                             LowSpeedAutomaticEmergencyBrakingState.USER_OVERRIDE)
                     .build();
-    private static final ImmutableSet<Integer> VEHICLE_SEAT_OCCUPANCY_STATES = ImmutableSet.of(
-            /*VehicleSeatOccupancyState.UNKNOWN=*/0, /*VehicleSeatOccupancyState.VACANT=*/1,
-            /*VehicleSeatOccupancyState.OCCUPIED=*/2);
     private static final ImmutableSet<Integer> CRUISE_CONTROL_TYPE_UNWRITABLE_STATES =
             ImmutableSet.<Integer>builder()
                     .addAll(ERROR_STATES)
@@ -639,6 +634,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ELECTRONIC_TOLL_COLLECTION_CARD_STATUS,
                             VehiclePropertyIds.GENERAL_SAFETY_REGULATION_COMPLIANCE)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_CAR_INFO_PROPERTIES_3P =
+            ImmutableList.<Integer>builder()
+                    .addAll(PERMISSION_CAR_INFO_PROPERTIES)
+                    .add(
+                            VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
+                            VehiclePropertyIds.INFO_MODEL_TRIM,
+                            VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS)
+                    .build();
     private static final ImmutableList<Integer> PERMISSION_CAR_POWERTRAIN_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -691,15 +694,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.SEAT_AIRBAGS_DEPLOYED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_CAR_AIRBAGS_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.SEAT_AIRBAG_ENABLED)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.SEAT_AIRBAG_ENABLED).build();
     private static final ImmutableList<Integer> PERMISSION_READ_IMPACT_SENSORS_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.IMPACT_DETECTED)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.IMPACT_DETECTED).build();
+    private static final ImmutableList<Integer> PERMISSION_READ_CAR_SEATS_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.SEAT_OCCUPANCY).build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_CAR_SEATS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -765,15 +764,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_IDENTIFICATION_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.INFO_VIN)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.INFO_VIN).build();
     private static final ImmutableList<Integer> PERMISSION_MILEAGE_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.PERF_ODOMETER)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.PERF_ODOMETER).build();
     private static final ImmutableList<Integer> PERMISSION_MILEAGE_3P_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -797,6 +790,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ENGINE_RPM,
                             VehiclePropertyIds.ENGINE_IDLE_AUTO_STOP_ENABLED)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_CAR_ENGINE_DETAILED_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.ENGINE_RPM).build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -814,6 +809,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.TIRE_PRESSURE,
                             VehiclePropertyIds.CRITICALLY_LOW_TIRE_PRESSURE)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_TIRES_3P_PROPERTIES =
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.TIRE_PRESSURE).build();
     private static final ImmutableList<Integer> PERMISSION_EXTERIOR_LIGHTS_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -898,6 +895,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.WINDSHIELD_WIPERS_PERIOD,
                             VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
                             VehiclePropertyIds.WINDSHIELD_WIPERS_SWITCH)
+                    .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_WINDSHIELD_WIPERS_3P_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(VehiclePropertyIds.WINDSHIELD_WIPERS_STATE)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_WINDSHIELD_WIPERS_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -1402,24 +1403,39 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
         List<CarPropertyConfig> configs = new ArrayList<>();
         // Use shell permission identity to get as many property configs as possible.
-        runWithShellPermissionIdentity(() -> {
-            configs.addAll(mCarPropertyManager.getPropertyList());
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    configs.addAll(mCarPropertyManager.getPropertyList());
+                });
 
         for (int i = 0; i < configs.size(); i++) {
             int propertyId = configs.get(i).getPropertyId();
             if (!isSystemProperty(propertyId)) {
                 continue;
             }
+            // PERF_ODOMETER existed before Android B properties, but a new permission for 3p access
+            // was added.
+            if (propertyId == VehiclePropertyIds.PERF_ODOMETER) {
+                continue;
+            }
 
             String propertyName = VehiclePropertyIds.toString(propertyId);
-            expectWithMessage("Property: " + propertyName + " must not be supported if "
-                    + "FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled").that(propertyId)
+            expectWithMessage(
+                            "Property: "
+                                    + propertyName
+                                    + " must not be supported if "
+                                    + "FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled")
+                    .that(propertyId)
                     .isNotIn(bSystemPropertyIds);
         }
 
         runWithShellPermissionIdentity(() -> {
             for (int propertyId : bSystemPropertyIds) {
+                // PERF_ODOMETER existed before Android B properties, but a new permission for 3p
+                // access was added.
+                if (propertyId == VehiclePropertyIds.PERF_ODOMETER) {
+                    continue;
+                }
                 String propertyName = VehiclePropertyIds.toString(propertyId);
                 expectWithMessage("getCarPropertyConfig for: " + propertyName
                         + " when FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled must return null")
@@ -3369,18 +3385,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_DOORS);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer>
-            getVehicleDrivingAutomationCurrentLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL,
-                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                Integer.class)
-            .setAllPossibleEnumValues(VEHICLE_AUTONOMOUS_STATES)
-            .addReadPermission(Car.PERMISSION_CAR_DRIVING_STATE);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getMirrorZPosVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.MIRROR_Z_POS,
@@ -3526,18 +3530,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class)
                 .requireMinMaxValues()
                 .requireMinValuesToBeZero()
-                .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer>
-            getWindshieldWipersStateVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.WINDSHIELD_WIPERS_STATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WINDOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Integer.class)
-                .setAllPossibleEnumValues(WINDSHIELD_WIPERS_STATES)
                 .addReadPermission(Car.PERMISSION_READ_WINDSHIELD_WIPERS);
     }
 
@@ -3741,27 +3733,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION));
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getTirePressureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.TIRE_PRESSURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .requireMinMaxValues()
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                tirePressure) ->
-                                assertWithMessage(
-                                                "TIRE_PRESSURE Float value"
-                                                        + " at Area ID equals to "
-                                                        + areaId
-                                                        + " must be greater than or equal 0")
-                                        .that(tirePressure)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_TIRES);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
@@ -4291,24 +4262,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float> getEngineRpmVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENGINE_RPM,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                engineRpm) ->
-                                assertWithMessage(
-                                        "ENGINE_RPM Float value must be greater than or"
-                                                + " equal 0")
-                                        .that(engineRpm)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_ENGINE_DETAILED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Boolean>
             getEngineIdleAutoStopEnabledVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -4331,24 +4284,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(IMPACT_SENSOR_LOCATIONS)
                 .setBitMapEnumEnabled(true)
                 .addReadPermission(Car.PERMISSION_READ_IMPACT_SENSORS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getPerfOdometerVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.PERF_ODOMETER,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                perfOdometer) ->
-                                assertWithMessage(
-                                        "PERF_ODOMETER Float value must be greater than or"
-                                                + " equal 0")
-                                        .that(perfOdometer)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_MILEAGE);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getTurnSignalStateVerifierBuilder() {
@@ -4503,44 +4438,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer.class)
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_STATES)
                 .addReadPermission(Car.PERMISSION_READ_INTERIOR_LIGHTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getVehicleCurbWeightVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.VEHICLE_CURB_WEIGHT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setConfigArrayVerifier(
-                        (verifierContext, configArray) -> {
-                            assertWithMessage(
-                                    "VEHICLE_CURB_WEIGHT configArray must contain the gross"
-                                            + " weight in kilograms")
-                                    .that(configArray)
-                                    .hasSize(1);
-                            assertWithMessage(
-                                    "VEHICLE_CURB_WEIGHT configArray[0] must contain the"
-                                            + " gross weight in kilograms and be greater than"
-                                            + " zero")
-                                    .that(configArray.get(0))
-                                    .isGreaterThan(0);
-                        })
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                curbWeightKg) -> {
-                            Integer grossWeightKg = carPropertyConfig.getConfigArray().get(0);
-
-                            assertWithMessage("VEHICLE_CURB_WEIGHT must be greater than zero")
-                                    .that(curbWeightKg)
-                                    .isGreaterThan(0);
-                            assertWithMessage(
-                                    "VEHICLE_CURB_WEIGHT must be less than the gross"
-                                            + " weight")
-                                    .that(curbWeightKg)
-                                    .isLessThan(grossWeightKg);
-                        })
-                .addReadPermission(Car.PERMISSION_PRIVILEGED_CAR_INFO);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getHeadlightsSwitchVerifierBuilder() {
@@ -5330,17 +5227,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_HEAD_UP_DISPLAY_STATUS)
                 .addReadPermission(Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY)
                 .addWritePermission(Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getSeatOccupancyVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.SEAT_OCCUPANCY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                Integer.class)
-                .setAllPossibleEnumValues(VEHICLE_SEAT_OCCUPANCY_STATES)
-                .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
     }
 
 
@@ -7145,10 +7031,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionCarInfoGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                Flags.androidBVehicleProperties() ?
-                        ImmutableList.<Integer>builder().addAll(PERMISSION_CAR_INFO_PROPERTIES).add(
-                                VehiclePropertyIds.INFO_MODEL_TRIM).add(
-                                VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS).build()
+                Flags.androidBVehicleProperties()
+                        ? PERMISSION_CAR_INFO_PROPERTIES_3P
                         : PERMISSION_CAR_INFO_PROPERTIES,
                 Car.PERMISSION_CAR_INFO);
     }
@@ -7234,6 +7118,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadCarSeatsGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_CAR_SEATS_PROPERTIES, Car.PERMISSION_READ_CAR_SEATS);
+    }
+
+    @Test
     public void testPermissionIdentificationGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_IDENTIFICATION_PROPERTIES,
@@ -7243,11 +7134,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionMileageGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_MILEAGE_PROPERTIES,
-                Car.PERMISSION_MILEAGE);
+                PERMISSION_MILEAGE_PROPERTIES, Car.PERMISSION_MILEAGE);
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
     public void testPermissionMileage3pGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_MILEAGE_3P_PROPERTIES,
@@ -7256,27 +7147,36 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     @Test
     public void testPermissionReadSteeringStateGranted() {
-        if (Flags.vehicleProperty25q23pPermissions()) {
-            verifyExpectedPropertiesWhenPermissionsGranted(
-                    PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
-                    Car.PERMISSION_READ_STEERING_STATE_3P);
-        }
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_STEERING_STATE_PROPERTIES, Car.PERMISSION_READ_STEERING_STATE);
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadSteeringState3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_STEERING_STATE_3P_PROPERTIES,
+                Car.PERMISSION_READ_STEERING_STATE_3P);
+    }
+
+    @Test
     public void testPermissionCarEngineDetailedGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES,
-                Car.PERMISSION_CAR_ENGINE_DETAILED);
+                PERMISSION_CAR_ENGINE_DETAILED_PROPERTIES, Car.PERMISSION_CAR_ENGINE_DETAILED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionCarEngineDetailed3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CAR_ENGINE_DETAILED_3P_PROPERTIES,
+                Car.PERMISSION_CAR_ENGINE_DETAILED_3P);
     }
 
     @Test
     public void testPermissionControlEnergyPortsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES,
-                Car.PERMISSION_CONTROL_ENERGY_PORTS);
+                PERMISSION_CONTROL_ENERGY_PORTS_PROPERTIES, Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
     @Test
@@ -7289,22 +7189,26 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionTiresGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_TIRES_PROPERTIES,
-                Car.PERMISSION_TIRES);
+                PERMISSION_TIRES_PROPERTIES, Car.PERMISSION_TIRES);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionTires3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_TIRES_3P_PROPERTIES, Car.PERMISSION_TIRES_3P);
     }
 
     @Test
     public void testPermissionExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_EXTERIOR_LIGHTS_PROPERTIES,
-                Car.PERMISSION_EXTERIOR_LIGHTS);
+                PERMISSION_EXTERIOR_LIGHTS_PROPERTIES, Car.PERMISSION_EXTERIOR_LIGHTS);
     }
 
     @Test
     public void testPermissionCarDynamicsStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_DYNAMICS_STATE_PROPERTIES,
-                Car.PERMISSION_CAR_DYNAMICS_STATE);
+                PERMISSION_CAR_DYNAMICS_STATE_PROPERTIES, Car.PERMISSION_CAR_DYNAMICS_STATE);
     }
 
     @Test
@@ -7318,29 +7222,25 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlCarClimateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_CLIMATE_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_CLIMATE);
+                PERMISSION_CONTROL_CAR_CLIMATE_PROPERTIES, Car.PERMISSION_CONTROL_CAR_CLIMATE);
     }
 
     @Test
     public void testPermissionControlCarDoorsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_DOORS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_DOORS);
+                PERMISSION_CONTROL_CAR_DOORS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_DOORS);
     }
 
     @Test
     public void testPermissionControlCarMirrorsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_MIRRORS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_MIRRORS);
+                PERMISSION_CONTROL_CAR_MIRRORS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_MIRRORS);
     }
 
     @Test
     public void testPermissionControlCarWindowsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_WINDOWS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_WINDOWS);
+                PERMISSION_CONTROL_CAR_WINDOWS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_WINDOWS);
     }
 
     @Test
@@ -7348,6 +7248,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_WINDSHIELD_WIPERS_PROPERTIES,
                 Car.PERMISSION_READ_WINDSHIELD_WIPERS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionReadWindshieldWipers3pGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_WINDSHIELD_WIPERS_3P_PROPERTIES,
+                Car.PERMISSION_READ_WINDSHIELD_WIPERS_3P);
     }
 
     @Test
@@ -7360,19 +7268,20 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlExteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                Flags.androidBVehicleProperties() ? ImmutableList.<Integer>builder().addAll(
-                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES).add(
-                        VehiclePropertyIds.TURN_SIGNAL_SWITCH).add(
-                        VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE).build() :
-                        PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
+                Flags.androidBVehicleProperties()
+                        ? ImmutableList.<Integer>builder()
+                                .addAll(PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES)
+                                .add(VehiclePropertyIds.TURN_SIGNAL_SWITCH)
+                                .add(VehiclePropertyIds.TURN_SIGNAL_LIGHT_STATE)
+                                .build()
+                        : PERMISSION_CONTROL_EXTERIOR_LIGHTS_PROPERTIES,
                 Car.PERMISSION_CONTROL_EXTERIOR_LIGHTS);
     }
 
     @Test
     public void testPermissionReadInteriorLightsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_READ_INTERIOR_LIGHTS_PROPERTIES,
-                Car.PERMISSION_READ_INTERIOR_LIGHTS);
+                PERMISSION_READ_INTERIOR_LIGHTS_PROPERTIES, Car.PERMISSION_READ_INTERIOR_LIGHTS);
     }
 
     @Test
@@ -7385,30 +7294,34 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionCarEpochTimeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CAR_EPOCH_TIME_PROPERTIES,
-                Car.PERMISSION_CAR_EPOCH_TIME);
+                PERMISSION_CAR_EPOCH_TIME_PROPERTIES, Car.PERMISSION_CAR_EPOCH_TIME);
     }
 
     @Test
     public void testPermissionControlCarEnergyGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_ENERGY_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_ENERGY);
+                PERMISSION_CONTROL_CAR_ENERGY_PROPERTIES, Car.PERMISSION_CONTROL_CAR_ENERGY);
     }
 
     @Test
     public void testPermissionPrivilegedCarInfoGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_PRIVILEGED_CAR_INFO_PROPERTIES,
-                Car.PERMISSION_PRIVILEGED_CAR_INFO);
+                PERMISSION_PRIVILEGED_CAR_INFO_PROPERTIES, Car.PERMISSION_PRIVILEGED_CAR_INFO);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
-    public void testPermissionCarDrivingStateGranted() {
+    public void testPermissionCarDriving3pStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CAR_DRIVING_STATE_PROPERTIES,
                 Car.PERMISSION_CAR_DRIVING_STATE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS)
+    public void testPermissionCarDrivingStateGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CAR_DRIVING_STATE_PROPERTIES, Car.PERMISSION_CAR_DRIVING_STATE_3P);
     }
 
     @Test
@@ -7423,8 +7336,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlValetModeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_VALET_MODE_PROPERTIES,
-                Car.PERMISSION_CONTROL_VALET_MODE);
+                PERMISSION_CONTROL_VALET_MODE_PROPERTIES, Car.PERMISSION_CONTROL_VALET_MODE);
     }
 
     @Test
@@ -7454,11 +7366,12 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             continue;
                         }
                         assertWithMessage(
-                                "%s found in CarPropertyManager#getPropertyList() but was not "
-                                        + "expected to be exposed by %s and %s",
-                                VehiclePropertyIds.toString(carPropertyConfig.getPropertyId()),
-                                Car.PERMISSION_CONTROL_DISPLAY_UNITS,
-                                Car.PERMISSION_VENDOR_EXTENSION)
+                                        "%s found in CarPropertyManager#getPropertyList() but was"
+                                                + " not expected to be exposed by %s and %s",
+                                        VehiclePropertyIds.toString(
+                                                carPropertyConfig.getPropertyId()),
+                                        Car.PERMISSION_CONTROL_DISPLAY_UNITS,
+                                        Car.PERMISSION_VENDOR_EXTENSION)
                                 .that(carPropertyConfig.getPropertyId())
                                 .isIn(PERMISSION_CONTROL_DISPLAY_UNITS_VENDOR_EXTENSION_PROPERTIES);
                     }
