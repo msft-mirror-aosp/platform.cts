@@ -222,7 +222,7 @@ public class MediaStore_FilesTest {
             // Verify that querying with QUERY_ARG_MEDIA_STANDARD_SORT_ORDER
             // returns the media files based on date_modified (DESC, newest first)
             try (Cursor c = mResolver.query(
-                    MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                    MediaStore.Downloads.getContentUri(mVolumeName),
                     new String[]{MediaColumns.DATA, MediaColumns.INFERRED_DATE}, extras,
                     null)) {
                 assumeTrue(c.getCount() == 3);
