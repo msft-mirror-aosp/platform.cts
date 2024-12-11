@@ -27,8 +27,8 @@ import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
-import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
+import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -985,12 +985,6 @@ public class VibrationEffectXmlSerializationTest {
     @Test
     @RequiresFlagsDisabled(FLAG_NORMALIZED_PWLE_EFFECTS)
     public void testParseWaveformEnvelopeEffect_withFeatureFlagDisabled_fails() throws Exception {
-        VibrationEffect effect = new VibrationEffect.WaveformEnvelopeBuilder()
-                .setInitialFrequencyHz(20)
-                .addControlPoint(0.2f, 80f, 10)
-                .addControlPoint(0.5f, 150f, 10)
-                .build();
-
         String xml = """
                 <vibration-effect>
                     <waveform-envelope-effect initialFrequencyHz="20.0">
@@ -1000,12 +994,7 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
                 """;
 
-        assertSuccessfulParse(xml, effect);
-
-        effect = new VibrationEffect.WaveformEnvelopeBuilder()
-                .addControlPoint(0.2f, 80f, 10)
-                .addControlPoint(0.5f, 150f, 10)
-                .build();
+        assertFailedParse(xml);
 
         xml = """
                 <vibration-effect>
@@ -1016,7 +1005,8 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
                 """;
 
-        assertSuccessfulParse(xml, effect);
+        assertFailedParse(xml);
+
     }
 
     @Test
@@ -1118,12 +1108,6 @@ public class VibrationEffectXmlSerializationTest {
     @Test
     @RequiresFlagsDisabled(FLAG_NORMALIZED_PWLE_EFFECTS)
     public void testParseBasicEnvelopeEffect_withFeatureFlagDisabled_fails() throws Exception {
-        VibrationEffect effect = new VibrationEffect.BasicEnvelopeBuilder()
-                .setInitialSharpness(0.3f)
-                .addControlPoint(0.2f, 0.5f, 100)
-                .addControlPoint(0f, 0.5f, 100)
-                .build();
-
         String xml = """
                 <vibration-effect>
                     <basic-envelope-effect initialSharpness="0.3">
@@ -1133,12 +1117,7 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
                 """;
 
-        assertSuccessfulParse(xml, effect);
-
-        effect = new VibrationEffect.BasicEnvelopeBuilder()
-                .addControlPoint(0.2f, 0.5f, 100)
-                .addControlPoint(0f, 0.5f, 100)
-                .build();
+        assertFailedParse(xml);
 
         xml = """
                 <vibration-effect>
@@ -1149,7 +1128,7 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
                 """;
 
-        assertSuccessfulParse(xml, effect);
+        assertFailedParse(xml);
     }
 
     @Test

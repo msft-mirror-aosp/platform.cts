@@ -98,9 +98,10 @@ _MANUAL_SCENES = ('scene5',)
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_low_light'),
                       )
-
+_GEN2_RIG_SCENES = ('scene_ip',)
 # All possible scenes
-_ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
+_ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
+               _FLASH_SCENES + _GEN2_RIG_SCENES)
 
 # Scenes that are logically grouped and can be called as group
 # scene6_tele is not grouped with scene6 because it requires extension rig
@@ -123,7 +124,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene2_d': 'The picture with 3 faces in tests/scene2_d/scene2_d.png',
     'scene2_e': 'The picture with 3 faces in tests/scene2_e/scene2_e.png',
     'scene2_f': 'The picture with 3 faces in tests/scene2_f/scene2_f.png',
-    'scene2_g': 'The picture with 3 profile faces in tests/scene2_g/scene2_g.png',
+    'scene2_g': 'The picture with 3 profile faces in '
+                'tests/scene2_g/scene2_g.png',
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
@@ -163,6 +165,9 @@ _SCENE_REQ = types.MappingProxyType({
     'scene_video': 'A tablet displayed scene with a series of circles moving '
                    'at different simulated frame rates. '
                    'See tests/scene_video/scene_video.mp4',
+    'scene_ip': 'A chart with features such as QR code, color checker chart, '
+                'dead leaf patch, dynamic range chart used to analyze metrics '
+                'such as brightness, sharpness, color accuracy.',
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -573,6 +578,7 @@ def main():
   camera_id_combos = []
   testbed_index = None
   num_testbeds = None
+
   # Override camera, scenes and testbed with cmd line values if available
   for s in list(sys.argv[1:]):
     if 'scenes=' in s:
@@ -599,7 +605,8 @@ def main():
         not s.startswith(('checkerboard', 'sensor_fusion',
                           'flash', 'feature_combination', '<scene-name>'))):
       scenes[i] = f'scene{s}'
-    if s.startswith('flash') or s.startswith('extensions'):
+    if (s.startswith('flash') or s.startswith('extensions')
+        or s.startswith('ip')):
       scenes[i] = f'scene_{s}'
     # Handle scene_extensions
     if any(s.startswith(extension) for extension in _EXTENSION_NAMES):
@@ -669,7 +676,7 @@ def main():
     its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
-    tablet_name = "sensor_fusion"
+    tablet_name = 'sensor_fusion'
 
   testing_sensor_fusion_with_controller = False
   if TEST_KEY_SENSOR_FUSION in config_file_test_key:
@@ -1046,7 +1053,6 @@ def main():
       # Delete temporary yml file after scene run.
       new_yaml_file_path = os.path.join(YAML_FILE_DIR, new_yml_file_name)
       os.remove(new_yaml_file_path)
-
     # Log results per camera
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)

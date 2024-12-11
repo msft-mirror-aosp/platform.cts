@@ -19,8 +19,6 @@ import android.app.ActivityManager
 import android.app.contentsuggestions.ContentSuggestionsManager
 import android.app.role.RoleManager
 import android.provider.Settings
-import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
-import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.annotations.EnsureDemoMode
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode
@@ -29,7 +27,6 @@ import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePropertySet
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme
 import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled
@@ -54,7 +51,6 @@ import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireResourcesIntegerValue
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode
@@ -73,8 +69,6 @@ import com.android.bedstead.nene.display.Display.getDisplayTheme
 import com.android.bedstead.nene.display.Display.getScreenOrientation
 import com.android.bedstead.nene.display.DisplayProperties
 import com.android.bedstead.nene.utils.Tags.hasTag
-import com.android.queryable.annotations.IntegerQuery
-import com.android.queryable.annotations.Query
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Ignore
@@ -295,16 +289,6 @@ class MainAnnotationExecutorTest {
         assertThat(
             context().instrumentedContext().getSystemService(ContentSuggestionsManager::class.java)
         ).isNotNull()
-    }
-
-    @EnsureTestAppInstalledAsPrimaryDPC(key = EnsureTestAppInstalled.DEFAULT_KEY)
-    @AdditionalQueryParameters(
-        forTestApp = EnsureTestAppInstalled.DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    fun additionalQueryParameters_ensureTestAppInstalled_isRespected() {
-        assertThat(deviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
     }
 
     @Test

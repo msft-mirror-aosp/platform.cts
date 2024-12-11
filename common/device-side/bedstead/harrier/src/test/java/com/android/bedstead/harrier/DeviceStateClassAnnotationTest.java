@@ -17,7 +17,7 @@
 package com.android.bedstead.harrier;
 
 import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
-import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
+import static com.android.bedstead.nene.users.UserType.CLONE_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -26,11 +26,11 @@ import static org.testng.Assert.assertThrows;
 
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;
@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
-@EnsureHasWorkProfile
+@EnsureHasCloneProfile
 @EnsureHasNoAdditionalUser
 @RequireRunOnInitialUser
 public final class DeviceStateClassAnnotationTest extends DeviceStateTestParent {
@@ -65,13 +65,13 @@ public final class DeviceStateClassAnnotationTest extends DeviceStateTestParent 
 
     @BeforeClass
     public static void beforeClass() {
-        // We test here that ensureHasWorkProfile is processed before the test method
+        // We test here that ensureHasCloneProfile is processed before the test method
         // but ensureHasSecondaryUser is not processed
 
         assertThat(
                         TestApis.users()
                                 .findProfileOfType(
-                                        TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
+                                        TestApis.users().supportedType(CLONE_PROFILE_TYPE_NAME),
                                         TestApis.users().initial()))
                 .isNotNull();
 
@@ -100,18 +100,18 @@ public final class DeviceStateClassAnnotationTest extends DeviceStateTestParent 
     }
 
     @Test
-    public void ensureHasWorkProfileAnnotationOnClass_workProfileExists() {
+    public void ensureHasCloneProfileAnnotationOnClass_cloneProfileExists() {
         assertThat(TestApis.users().findProfileOfType(
-                TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
+                TestApis.users().supportedType(CLONE_PROFILE_TYPE_NAME),
                 TestApis.users().instrumented())
         ).isNotNull();
     }
 
     @Test
-    @EnsureHasNoWorkProfile
-    public void ensureHasNoWorkProfileAnnotation_overridesClassAnnotation() {
+    @EnsureHasNoCloneProfile
+    public void ensureHasNoCloneProfileAnnotation_overridesClassAnnotation() {
         assertThat(TestApis.users().findProfileOfType(
-                TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
+                TestApis.users().supportedType(CLONE_PROFILE_TYPE_NAME),
                 TestApis.users().instrumented())
         ).isNull();
     }

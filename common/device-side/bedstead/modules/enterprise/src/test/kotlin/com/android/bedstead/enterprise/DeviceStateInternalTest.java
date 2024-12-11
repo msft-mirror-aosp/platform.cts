@@ -14,33 +14,39 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier;
+package com.android.bedstead.enterprise;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
-import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
 import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ensureHasWorkProfile;
 import static com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntentKt.ensureNoPackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntentKt.ensurePackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntentKt.requireNoPackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntentKt.requirePackageRespondsToIntent;
+import static com.android.bedstead.nene.utils.Assert.assertThrows;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.utils.Assert.assertThrows;
+import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.Intent;
+
+import com.android.bedstead.harrier.DeviceStateTester;
+import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
