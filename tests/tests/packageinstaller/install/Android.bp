@@ -53,6 +53,7 @@ android_test {
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "platform-test-rules",
+        "TestParameterInjector",
     ],
 
     test_suites: [
@@ -104,6 +105,7 @@ android_test {
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "platform-test-rules",
+        "TestParameterInjector",
     ],
 
     test_suites: [
