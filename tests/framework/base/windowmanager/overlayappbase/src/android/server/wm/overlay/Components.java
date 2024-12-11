@@ -24,7 +24,6 @@ import android.server.wm.component.ComponentsBase;
 public class Components extends ComponentsBase {
     public interface UntrustedTouchTestService {
         ComponentName COMPONENT = component("UntrustedTouchTestService");
-        String EXTRA_DISPLAY_ID = "display_id";
     }
 
     public interface OverlayActivity {
