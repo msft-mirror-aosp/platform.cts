@@ -30,6 +30,7 @@ _BOUNDING_BOX_COLOR = (0, 255, 0)
 _BOX_MIN_SIZE_RATIO = 0.08  # 8% of the cropped image width
 _BOX_MAX_SIZE_RATIO = 0.5  # 50% of the cropped image width
 _BOX_PADDING_RATIO = 0.2
+_BOX_PADDING = 6  # 6 pixel padding to bounding box region
 _CROP_PADDING = 10
 _EXPECTED_NUM_OF_BOXES = 20  # The captured image must result in 20 detected
                              # boxes since the test scene has 20 boxes
@@ -44,6 +45,8 @@ _NUM_CLUSTERS = 8
 _K_MEANS_ITERATIONS = 10
 _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
+_DILATE_KERNEL_SIZE = (3, 3)
+_DILATE_NUM_ITERATIONS = 3
 
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
@@ -183,6 +186,8 @@ def _find_chart_bounding_region(img):
   mask = labels.flatten() == target_label
   mask = mask.reshape((img.shape[0], img.shape[1]))
   mask = mask.astype(np.uint8)
+  dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, _DILATE_KERNEL_SIZE)
+  mask = cv2.dilate(mask, dilate_kernel, iterations=_DILATE_NUM_ITERATIONS)
 
   contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
                                  cv2.CHAIN_APPROX_SIMPLE)
@@ -198,7 +203,10 @@ def _find_chart_bounding_region(img):
       area = w * h
       if area > max_area:
         max_area = area
-        max_box = (x, y, w, h)
+        max_box = (x + _BOX_PADDING,
+            y + _BOX_PADDING,
+            w - _BOX_PADDING * 2,
+            h - _BOX_PADDING * 2)
 
   return max_box
 
