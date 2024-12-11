@@ -94,3 +94,46 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.media.codec.cts.DecodeEditEncodeTest"],
 }
+
+test_module_config {
+    name: "MctsMediaCodecTestCases_cts_encodedecodetest",
+    base: "MctsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.EncodeDecodeTest"],
+}
+
+test_module_config {
+    name: "MctsMediaCodecTestCases_cts_decodeeditencodetest",
+    base: "MctsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.DecodeEditEncodeTest"],
+}
+
+test_module_config {
+    name: "MctsMediaCodecTestCases_cts_extractdecodeeditencodemuxtest",
+    base: "MctsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.ExtractDecodeEditEncodeMuxTest"],
+}
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_PresubmitNoDevice",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}
+
+test_module_config {
+    name: "MctsMediaCodecTestCases_Presubmit",
+    base: "MctsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_PlatinumTest",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

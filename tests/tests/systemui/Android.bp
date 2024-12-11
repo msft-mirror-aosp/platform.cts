@@ -58,3 +58,28 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsSystemUiTestCases_kernel-presubmit",
+    base: "CtsSystemUiTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: [
+        "android.systemui.cts.WindowInsetsBehaviorTests#tappableElements_tapSamplePoints_notExcludeViewRects_withoutAnyCancel",
+        "android.systemui.cts.WindowInsetsBehaviorTests#swipeOutsideLimit_immersiveSticky_noEventCanceled",
+        // TODO(b/238861307)
+        "android.systemui.cts.MediaOutputDialogTest#mediaOutputDialog_correctDialog",
+        // TODO(b/186201470)
+        "android.systemui.cts.LightBarTests#testLightBarIsNotAllowed_fitStatusBar",
+        "android.systemui.cts.WindowInsetsBehaviorTests#tappableElements_tapSamplePoints_excludeViewRects_withoutAnyCancel",
+        "android.systemui.cts.WindowInsetsBehaviorTests#swipeInsideLimit_systemUiVisible_noEventCanceled",
+        // TODO(b/248506610)
+        "android.systemui.cts.WindowInsetsBehaviorTests#swipeInsideLimit_immersiveSticky_noEventCanceled",
+    ],
+}
+
+test_module_config {
+    name: "CtsSystemUiTestCases_PlatinumTest",
+    base: "CtsSystemUiTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

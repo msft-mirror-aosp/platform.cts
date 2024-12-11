@@ -54,3 +54,10 @@ android_test {
         "mediaprovider_flags_java_lib",
     ],
 }
+
+test_module_config {
+    name: "CtsPhotoPickerTest_NoLarge",
+    base: "CtsPhotoPickerTest",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

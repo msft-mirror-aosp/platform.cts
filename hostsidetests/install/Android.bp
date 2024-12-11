@@ -61,3 +61,10 @@ android_test_helper_app {
     sdk_version: "test_current",
     test_suites: ["device-tests"],
 }
+
+test_module_config_host {
+    name: "CtsInstallHostTestCases_NoLarge",
+    base: "CtsInstallHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}

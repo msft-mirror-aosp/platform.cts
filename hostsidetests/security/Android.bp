@@ -93,3 +93,15 @@ java_genrule_host {
         "-f $(location :general_sepolicy.conf) " +
         "-l $(out).prebuilt_list.txt",
 }
+
+test_module_config_host {
+    name: "CtsSecurityHostTestCases_SELinuxHostTest-priv-apps-running",
+    base: "CtsSecurityHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.security.cts.SELinuxHostTest#testPermissionControllerDomain",
+        "android.security.cts.SELinuxHostTest#testNoBugreportDenials",
+        "android.security.cts.SELinuxHostTest#testGMSCoreDomain",
+        "android.security.cts.SELinuxHostTest#testVzwOmaTriggerDomain",
+    ],
+}
