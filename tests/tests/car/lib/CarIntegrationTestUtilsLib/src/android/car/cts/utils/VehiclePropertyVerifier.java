@@ -48,6 +48,7 @@ import android.car.hardware.property.CarPropertyManager.PropertyAsyncError;
 import android.car.hardware.property.CarPropertyManager.SetPropertyCallback;
 import android.car.hardware.property.CarPropertyManager.SetPropertyRequest;
 import android.car.hardware.property.CarPropertyManager.SetPropertyResult;
+import android.car.hardware.property.CarPropertyManager.SupportedValuesChangeCallback;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.MinMaxSupportedValue;
 import android.car.hardware.property.PropertyNotAvailableAndRetryException;
@@ -83,6 +84,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -133,6 +135,14 @@ public class VehiclePropertyVerifier<T> {
      */
     public static final String STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST =
             STEP_VERIFY_READ_APIS_PREFIX + ".getSupportedValuesList";
+
+    /**
+     * A step to verify {@link CarPropertyManager#registerSupportedValuesChangeCallback} and {@link
+     * CarPropertyManager#unregisterSupportedValuesChangeCallback}
+     */
+    public static final String STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE =
+            STEP_VERIFY_READ_APIS_PREFIX + ".regUnregSupportedValuesChangeCallback";
+
     /**
      * A step to verify that for ADAS properties, if the feature is disabled, the property must
      * report error state.
@@ -506,13 +516,15 @@ public class VehiclePropertyVerifier<T> {
      * Gets all verification steps.
      */
     public static ImmutableList<String> getAllSteps() {
-        return ImmutableList.of(STEP_VERIFY_PROPERTY_CONFIG,
+        return ImmutableList.of(
+                STEP_VERIFY_PROPERTY_CONFIG,
                 STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION,
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC,
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC,
                 STEP_VERIFY_READ_APIS_SUBSCRIBE,
                 STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE,
                 STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST,
+                STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE,
                 STEP_VERIFY_READ_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC,
                 STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC,
@@ -520,8 +532,7 @@ public class VehiclePropertyVerifier<T> {
                 STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE,
                 STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE,
                 STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION,
-                STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION
-            );
+                STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION);
     }
 
     /**
@@ -770,47 +781,59 @@ public class VehiclePropertyVerifier<T> {
 
         try {
             enableAdasFeatureIfAdasStateProperty();
-            runWithShellPermissionIdentity(() -> {
-                assertThat(getCarPropertyConfig(/* useCache= */ false)).isNotNull();
-                turnOnHvacPowerIfHvacPowerDependent();
-                if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC)) {
-                    verifyCarPropertyValueGetter();
-                    if (exceptedExceptionClass != null) {
-                        assertWithMessage("Expected " + sExceptionClassOnGet + " to be of type "
-                                + exceptedExceptionClass).that(sExceptionClassOnGet)
-                                .isEqualTo(exceptedExceptionClass);
-                    }
-                    return;
-                }
-                if (exceptedExceptionClass != null) {
-                    return;
-                }
+            runWithShellPermissionIdentity(
+                    () -> {
+                        assertThat(getCarPropertyConfig(/* useCache= */ false)).isNotNull();
+                        turnOnHvacPowerIfHvacPowerDependent();
+                        if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC)) {
+                            verifyCarPropertyValueGetter();
+                            if (exceptedExceptionClass != null) {
+                                assertWithMessage(
+                                                "Expected "
+                                                        + sExceptionClassOnGet
+                                                        + " to be of type "
+                                                        + exceptedExceptionClass)
+                                        .that(sExceptionClassOnGet)
+                                        .isEqualTo(exceptedExceptionClass);
+                            }
+                            return;
+                        }
+                        if (exceptedExceptionClass != null) {
+                            return;
+                        }
 
-                if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC)) {
-                    verifyGetPropertiesAsync();
-                }
+                        if (step.equals(STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC)) {
+                            verifyGetPropertiesAsync();
+                        }
 
-                if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
-                    verifyCarPropertyValueCallback();
-                }
+                        if (step.equals(STEP_VERIFY_READ_APIS_SUBSCRIBE)) {
+                            verifyCarPropertyValueCallback();
+                        }
 
-                if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
-                        && Flags.carPropertySupportedValue()) {
-                    verifyGetMinMaxSupportedValue();
-                }
+                        if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
+                                && Flags.carPropertySupportedValue()) {
+                            verifyGetMinMaxSupportedValue();
+                        }
 
-                if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
-                        && Flags.carPropertySupportedValue()) {
-                    verifyGetSupportedValuesList();
-                }
+                        if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
+                                && Flags.carPropertySupportedValue()) {
+                            verifyGetSupportedValuesList();
+                        }
 
-                if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
-                    assumeTrue("Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
-                    if (turnOffHvacPowerIfHvacPowerDependent()) {
-                        verifyGetNotAvailable();
-                    }
-                }
-            }, readPermission);
+                        if (step.equals(STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE)
+                                && Flags.carPropertySupportedValue()) {
+                            verifyRegisterUnregisterSupportedValuesChangeCallback();
+                        }
+
+                        if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
+                            assumeTrue(
+                                    "Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
+                            if (turnOffHvacPowerIfHvacPowerDependent()) {
+                                verifyGetNotAvailable();
+                            }
+                        }
+                    },
+                    readPermission);
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -3519,6 +3542,47 @@ public class VehiclePropertyVerifier<T> {
                             .that(mAllPossibleEnumValues).contains(supportedValue);
                 }
             }
+        }
+    }
+
+    private void verifyRegisterUnregisterSupportedValuesChangeCallback() {
+        // Do nothing for the callback.
+        SupportedValuesChangeCallback callback = (propertyId, areaId) -> {};
+        // This is an executor that runs inside the test thread.
+        Executor executor = (r) -> r.run();
+
+        // We are not expecting any supported values change to happen, so here we just call the
+        // the API and verify it succeed.
+        assertThat(mCarPropertyManager.registerSupportedValuesChangeCallback(mPropertyId, callback))
+                .isTrue();
+
+        mCarPropertyManager.unregisterSupportedValuesChangeCallback(mPropertyId);
+
+        assertThat(
+                        mCarPropertyManager.registerSupportedValuesChangeCallback(
+                                mPropertyId, executor, callback))
+                .isTrue();
+
+        mCarPropertyManager.unregisterSupportedValuesChangeCallback(mPropertyId, callback);
+
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        int[] areaIds = carPropertyConfig.getAreaIds();
+        for (int areaId : areaIds) {
+            assertThat(
+                            mCarPropertyManager.registerSupportedValuesChangeCallback(
+                                    mPropertyId, areaId, callback))
+                    .isTrue();
+
+            mCarPropertyManager.unregisterSupportedValuesChangeCallback(
+                    mPropertyId, areaId, callback);
+
+            assertThat(
+                            mCarPropertyManager.registerSupportedValuesChangeCallback(
+                                    mPropertyId, areaId, executor, callback))
+                    .isTrue();
+
+            mCarPropertyManager.unregisterSupportedValuesChangeCallback(
+                    mPropertyId, areaId, callback);
         }
     }
 

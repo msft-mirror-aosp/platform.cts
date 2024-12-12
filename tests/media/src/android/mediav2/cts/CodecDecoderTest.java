@@ -749,7 +749,7 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
      * <p>
      * The test is applicable for video components only.
      */
-    @CddTest(requirements = {"5.1.7/C-4-2"})
+    @CddTest(requirements = {"5.1.7/C-1-5", "5.1.7/C-4-2"})
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testDefaultOutputColorFormat() throws IOException, InterruptedException {

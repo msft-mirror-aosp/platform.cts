@@ -20,11 +20,11 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.InstrumentationRegistry
-import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.users.UserReference
+import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.ClassRule
@@ -33,7 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @EnsureHasSecondaryUser
-@RunWith(BedsteadJUnit4::class)
+@RunWith(TestParameterInjector::class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 class UpdateOwnershipEnforcementMultiUserTest : UpdateOwnershipEnforcementTestBase() {
 

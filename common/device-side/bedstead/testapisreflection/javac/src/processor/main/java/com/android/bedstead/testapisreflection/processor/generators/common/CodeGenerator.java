@@ -28,6 +28,7 @@ import static com.android.bedstead.testapis.parser.utils.TypeUtils.parameterized
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typeForString;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typePackageName;
 import static com.android.bedstead.testapis.parser.utils.TypeUtils.typeSimpleName;
+import static com.android.bedstead.testapis.parser.utils.TypeUtils.splitParameterList;
 
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 import com.android.bedstead.testapis.parser.signatures.FieldSignature;
@@ -408,15 +409,19 @@ public final class CodeGenerator {
             }
 
             if (isParameterizedType(parameterTypeName.toString())) {
-                String wrapperType =
+                String wrappedParams =
                         parameterTypeName.toString().substring(
                                 parameterTypeName.toString().indexOf("<") + 1,
-                                parameterTypeName.toString().indexOf(">"));
-                if (isNestedClass(wrapperType)) {
-                    List<String> nestedClassParts = getNestedClass(wrapperType);
-                    fileBuilder.addAliasedImport(new ClassName(
-                            typePackageName(wrapperType),
-                            nestedClassParts.get(0)), nestedClassParts.get(0));
+                                parameterTypeName.toString().lastIndexOf(">"));
+                // TODO(b/381395375): Support nested generics like `List<List<Boolean>>`.
+                List<String> params = splitParameterList(wrappedParams);
+                for (String param : params) {
+                    if (isNestedClass(param)) {
+                        List<String> nestedClassParts = getNestedClass(param);
+                        fileBuilder.addAliasedImport(new ClassName(
+                                typePackageName(param),
+                                nestedClassParts.get(0)), nestedClassParts.get(0));
+                    }
                 }
             } else if (isNestedClass(parameterTypeName.toString())) {
                 List<String> nestedClassParts = getNestedClass(parameterTypeName.toString());
@@ -491,7 +496,8 @@ public final class CodeGenerator {
 
                 method.getReturnType().setProxyType(rawType + "<" + wrappedProxyType + ">");
 
-                returnTypeName = getDeclaredType(rawType, wrappedProxyType,
+                returnTypeName = getDeclaredType(rawType,
+                        Collections.singletonList(wrappedProxyType),
                         /* returnNonParameterizedType= */ false);
             }
         }

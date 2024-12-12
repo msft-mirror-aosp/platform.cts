@@ -33,4 +33,7 @@ java_test_host {
         "cts-host-utils",
     ],
     java_resource_dirs: ["res"],
+    device_common_data: [
+        ":CtsPackageManagerPreferredActivityApp",
+    ],
 }
