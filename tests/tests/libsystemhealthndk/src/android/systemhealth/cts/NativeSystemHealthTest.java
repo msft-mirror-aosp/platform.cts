@@ -16,11 +16,16 @@
 
 package android.systemhealth.cts;
 
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
+
+import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,6 +57,20 @@ public class NativeSystemHealthTest {
         if (res != null) {
             fail(res);
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.DEVICE_POWER);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     @Test
