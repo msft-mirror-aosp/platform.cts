@@ -71,6 +71,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
@@ -108,13 +109,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     static final String ACTION_FINISH =
             "android.server.wm.ActivityTransitionTests.ACTION_FINISH";
 
-    private boolean mAnimationScaleResetRequired = false;
-    private String mInitialWindowAnimationScale;
-    private String mInitialTransitionAnimationScale;
-    private String mInitialAnimatorDurationScale;
+    private TestBuilder mTestBuilder;
 
     // We need to allow for some variation stemming from color conversions
     private static final float COLOR_VALUE_VARIANCE_TOLERANCE = 0.05f;
+
+    @Rule
+    public final DumpOnFailure dumpOnFailure = new DumpOnFailure();
 
     @ClassRule
     public static DisableImmersiveModeConfirmationRule mDisableImmersiveModeConfirmationRule =
@@ -146,11 +147,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         super.setUp();
         mWmState.setSanityCheckWithFocusedWindow(false);
         mWmState.waitForDisplayUnfrozen();
+        mTestBuilder = new TestBuilder();
     }
 
     @After
     public void tearDown() {
         mWmState.setSanityCheckWithFocusedWindow(true);
+        mTestBuilder = null;
     }
 
     private LauncherActivity startLauncherActivity() {
@@ -265,11 +268,10 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     @Test
     public void testThemeBackgroundColorShowsDuringActivityTransition() {
         final int backgroundColor = Color.WHITE;
-        final TestBounds testBounds = getTestBounds();
 
         getTestBuilder().setClass(TransitionActivityWithWhiteBackground.class)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
+                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor))
+                .runAndDoCheck();
     }
 
     /**
@@ -288,12 +290,11 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final int backgroundColor = Color.RED;
         final ActivityOptions activityOptions = ActivityOptions.makeCustomAnimation(mContext,
                 R.anim.alpha_0_with_red_backdrop, R.anim.alpha_0_with_red_backdrop);
-        final TestBounds testBounds = getTestBounds();
 
         getTestBuilder().setClass(TransitionActivityWithWhiteBackground.class)
                 .setActivityOptions(activityOptions)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
+                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor))
+                .runAndDoCheck();
     }
 
     /**
@@ -311,12 +312,11 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final ActivityOptions activityOptions = ActivityOptions.makeCustomAnimation(mContext,
                 R.anim.alpha_0_with_backdrop, R.anim.alpha_0_with_backdrop, backgroundColor
         );
-        final TestBounds testBounds = getTestBounds();
 
         getTestBuilder().setClass(TransitionActivityWithWhiteBackground.class)
                 .setActivityOptions(activityOptions)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
+                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor))
+                .runAndDoCheck();
     }
 
     /**
@@ -337,11 +337,10 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         extras.putInt(EXIT_ANIM_KEY, R.anim.alpha_0_with_backdrop);
         extras.putInt(BACKGROUND_COLOR_KEY, backgroundColor);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
-        final TestBounds testBounds = getTestBounds();
 
         getTestBuilder().setClass(CustomBackgroundTransitionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
+                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor))
+                .runAndDoCheck();
     }
 
     @Test
@@ -359,16 +358,15 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         extras.putInt(BACKGROUND_COLOR_KEY, backgroundColor);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
                 TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE, extras);
-        final TestBounds testBounds = getTestBounds();
 
         getTestBuilder().setClass(CustomBackgroundTransitionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
+                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor))
+                .runAndDoCheck();
 
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mContext.sendBroadcast(new Intent(ACTION_FINISH));
-        runAndAssertActivityTransition(
-                createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds));
+        runAndAssertActivityTransition(createAssertAppRegionOfScreenIsColor(backgroundColor),
+                new ComponentName(mContext, CustomBackgroundTransitionActivity.class));
     }
     /**
      * Checks that when an activity transition with a left edge extension is run that the animating
@@ -388,13 +386,10 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, LEFT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
-        final TestBounds testBounds = getTestBounds();
-        final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = transitionBounds.left
-                + (transitionBounds.right - transitionBounds.left) * 3 / 4;
-        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
-                .run();
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                        createAssertColorChangeXIndex(bounds -> bounds.transitionBounds.left
+                                + bounds.transitionBounds.width() * 3 / 4))
+                .runAndDoCheck();
     }
 
     /**
@@ -415,12 +410,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, TOP);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
-        final TestBounds testBounds = getTestBounds();
-        final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = (transitionBounds.left + transitionBounds.right) / 2;
-        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
-                .run();
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                createAssertColorChangeXIndex(bounds -> bounds.transitionBounds.centerX()))
+                .runAndDoCheck();
     }
 
     /**
@@ -440,13 +432,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, RIGHT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
-        final TestBounds testBounds = getTestBounds();
-        final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = transitionBounds.left
-                + (transitionBounds.right - transitionBounds.left) / 4;
-        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
-                .run();
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                createAssertColorChangeXIndex(bounds -> bounds.transitionBounds.left
+                        + (bounds.transitionBounds.width()) / 4)).runAndDoCheck();
     }
 
     /**
@@ -459,17 +447,15 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         extras.putInt(DIRECTION_KEY, RIGHT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
                 TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE, extras);
-        final TestBounds testBounds = getTestBounds();
-        final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = transitionBounds.left
-                + (transitionBounds.right - transitionBounds.left) / 4;
-        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
-                .run();
+        Function<TestBounds, Integer> xIndexCalculator = bounds ->
+                bounds.transitionBounds.left + (bounds.transitionBounds.width()) / 4;
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                createAssertColorChangeXIndex(xIndexCalculator)).runAndDoCheck();
 
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mContext.sendBroadcast(new Intent(ACTION_FINISH));
-        runAndAssertActivityTransition(createAssertColorChangeXIndex(xIndex, testBounds));
+        runAndAssertActivityTransition(createAssertColorChangeXIndex(xIndexCalculator),
+                new ComponentName(mContext, EdgeExtensionActivity.class));
     }
 
     /**
@@ -482,9 +468,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         extras.putInt(DIRECTION_KEY, RIGHT);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_ACTIVITY_TRANSITION,
                 TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE, extras);
-        final TestBounds testBounds = getTestBounds();
-        final LauncherActivity launcherActivity = startLauncherActivity();
-        launcherActivity.startActivity(null, EdgeExtensionActivity.class, extras);
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                createAssertSingleColor(Color.CYAN)).run();
 
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         final Intent update = new Intent(ACTION_UPDATE);
@@ -492,7 +477,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         update.putExtra(TRANSITION_TYPE_KEY, TRANSITION_TYPE_OPEN | TRANSITION_TYPE_CLOSE);
         mContext.sendBroadcast(update);
         mContext.sendBroadcast(new Intent(ACTION_FINISH));
-        runAndAssertActivityTransition(createAssertSingleColor(testBounds, Color.CYAN));
+        getTestBuilder().doCheck();
     }
 
     /**
@@ -514,16 +499,13 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, BOTTOM);
         addTestMethodToExtras(TEST_METHOD_OVERRIDE_PENDING_TRANSITION, 0, extras);
-        final TestBounds testBounds = getTestBounds();
-        final Rect transitionBounds = testBounds.transitionBounds;
-        final int xIndex = (transitionBounds.left + transitionBounds.right) / 2;
-        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
-                .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
-                .run();
+        getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras).setTestFunction(
+                        createAssertColorChangeXIndex(bounds -> bounds.transitionBounds.centerX()))
+                .runAndDoCheck();
     }
 
     private TestBuilder getTestBuilder() {
-        return new TestBuilder();
+        return mTestBuilder;
     }
 
     private class TestBuilder {
@@ -531,6 +513,15 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         private Bundle mExtras = Bundle.EMPTY;
         private Class<?> mKlass;
         private Function<Bitmap, AssertionResult> mTestFunction;
+        private TestBounds mTestBounds = null;
+
+        /** Only valid after run */
+        TestBounds getTestBounds() {
+            if (mTestBounds == null) {
+                throw new IllegalArgumentException("getTestBounds() cannot be called before run()");
+            }
+            return mTestBounds;
+        }
 
         public TestBuilder setActivityOptions(ActivityOptions activityOptions) {
             this.mActivityOptions = activityOptions;
@@ -552,10 +543,25 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             return this;
         }
 
+        public void runAndDoCheck() {
+            run();
+            doCheck();
+        }
+
         public void run() {
             final LauncherActivity launcherActivity = startLauncherActivity();
+            // Normalize the bounds as this test uses activity window based screenshotting, which
+            // means the validation image is already cropped.
+            mTestBounds = new TestBounds();
+            mTestBounds.transitionBounds = getTransitionAppBounds();
+            mTestBounds.transitionBounds.offsetTo(0, 0);
+            mTestBounds.rect = launcherActivity.getActivityTestableRegion();
+            mTestBounds.rect.offsetTo(0, 0);
             launcherActivity.startActivity(mActivityOptions, mKlass, mExtras);
-            runAndAssertActivityTransition(mTestFunction);
+        }
+
+        public void doCheck() {
+            runAndAssertActivityTransition(mTestFunction, new ComponentName(mContext, mKlass));
         }
     }
 
@@ -564,18 +570,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         public Rect transitionBounds;
     }
 
-    private TestBounds getTestBounds() {
-        final LauncherActivity activity = startLauncherActivity();
-        final TestBounds bounds = new TestBounds();
-        bounds.rect = activity.getActivityTestableRegion();
-        bounds.transitionBounds = getTransitionAppBounds();
-        launchHomeActivityNoWait();
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        return bounds;
-    }
-
-    private void runAndAssertActivityTransition(Function<Bitmap, AssertionResult> assertFunction) {
+    private void runAndAssertActivityTransition(Function<Bitmap, AssertionResult> assertFunction,
+            ComponentName componentName) {
         // Busy wait until we are running the transition to capture the screenshot
         // Set a limited time to wait for transition start since there can still miss the state.
         Condition.waitFor(new Condition<>("Wait for transition running", () -> {
@@ -593,8 +589,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final ArrayList<AssertionResult> failedResults = new ArrayList<>();
         int sleepDurationMilliseconds = 1;
         for (int i = 0; i < 13; i++) {
-            final AssertionResult result = assertFunction.apply(
-                    mInstrumentation.getUiAutomation().takeScreenshot());
+            Bitmap screenshot = getScreenshotByComponentName(componentName);
+            dumpOnFailure.dumpOnFailure("transition-screenshot-" + i, screenshot);
+            final AssertionResult result = assertFunction.apply(screenshot);
             if (!result.isFailure) {
                 return;
             }
@@ -608,18 +605,21 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 .toArray(String[]::new)));
     }
 
-    private boolean rectsContain(ArrayList<Rect> rect, int x, int y) {
-        for (Rect r : rect) {
-            if (r.contains(x, y)) {
-                return true;
-            }
+    private Bitmap getScreenshotByComponentName(ComponentName componentName) {
+        final WindowManagerState.Task task = mWmState.getRootTaskByActivity(componentName);
+        final Rect taskBounds = task.getBounds();
+        final Bitmap[] image = new Bitmap[1];
+        runWithShellPermission(() -> image[0] = mWm.snapshotTaskForRecents(task.getTaskId()));
+        if (image[0] == null) {
+            fail("Unable to get screenshot for component " + componentName);
         }
-        return false;
+        // Scale up because task snapshot may be captured with different scale ratio.
+        return Bitmap.createScaledBitmap(image[0], taskBounds.width(), taskBounds.height(),
+                false /* filter */);
     }
 
-    private Function<Bitmap, AssertionResult> createAssertAppRegionOfScreenIsColor(int color,
-            TestBounds testBounds) {
-        return (screen) -> getIsAppRegionOfScreenOfColorResult(screen, color, testBounds);
+    private Function<Bitmap, AssertionResult> createAssertAppRegionOfScreenIsColor(int color) {
+        return (screen) -> getIsAppRegionOfScreenOfColorResult(screen, color);
     }
 
     private static class ColorCheckResult extends AssertionResult {
@@ -650,8 +650,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         }
     }
 
-    private AssertionResult getIsAppRegionOfScreenOfColorResult(Bitmap screen, int color,
-            TestBounds testBounds) {
+    private AssertionResult getIsAppRegionOfScreenOfColorResult(Bitmap screen, int color) {
+        TestBounds testBounds = getTestBuilder().getTestBounds();
         for (int x = testBounds.rect.left; x < testBounds.rect.right; x++) {
             for (int y = testBounds.rect.top;
                     y < testBounds.rect.bottom; y++) {
@@ -731,21 +731,22 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     // We are scaling the activity in the animation so if the extension doesn't work we should
     // have a blue, then red, then black section, and if it does work we should see on a blue,
     // followed by an extended red section.
-    private Function<Bitmap, AssertionResult> createAssertColorChangeXIndex(int xIndex,
-                                                                            TestBounds testBounds) {
+    private Function<Bitmap, AssertionResult> createAssertColorChangeXIndex(Function<TestBounds,
+            Integer> xIndexCalculator) {
         return (screen) -> assertColorChangeXIndex(
-                screen, xIndex, testBounds, Color.BLUE, Color.RED);
+                screen, xIndexCalculator, Color.BLUE, Color.RED);
     }
 
     // Verify the screenshot is filled with a single color.
-    private Function<Bitmap, AssertionResult> createAssertSingleColor(
-            TestBounds testBounds, int color) {
+    private Function<Bitmap, AssertionResult> createAssertSingleColor(int color) {
         return (screen) -> assertColorChangeXIndex(
-                screen, 0, testBounds, color, color);
+                screen, (bounds) -> 0, color, color);
     }
 
-    private AssertionResult assertColorChangeXIndex(Bitmap screen, int xIndex,
-            TestBounds testBounds, int lessXColor, int largeXColor) {
+    private AssertionResult assertColorChangeXIndex(Bitmap screen,
+            Function<TestBounds, Integer> xIndexCalculator, int lessXColor, int largeXColor) {
+        TestBounds testBounds = getTestBuilder().getTestBounds();
+        int xIndex = xIndexCalculator.apply(testBounds);
         for (int x = testBounds.rect.left; x < testBounds.rect.right; x++) {
             for (int y = testBounds.rect.top;
                     y < testBounds.rect.bottom; y++) {
