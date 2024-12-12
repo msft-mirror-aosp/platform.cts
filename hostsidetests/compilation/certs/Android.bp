@@ -14,20 +14,18 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_art_mainline",
 }
 
-android_test_helper_app {
-    name: "CtsAdvancedProtectionTestApp",
+android_app_certificate {
+    name: "cts-compilation-testkey",
+    certificate: "testkey",
+}
+
+filegroup {
+    name: "cts-compilation-testkey-files",
     srcs: [
-        "src/**/*.java",
-    ],
-    sdk_version: "current",
-    defaults: [
-        "cts_defaults",
-    ],
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+        "testkey.pk8",
+        "testkey.x509.pem",
     ],
 }

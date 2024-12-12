@@ -22,6 +22,7 @@ import android.graphics.Picture;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.net.http.SslCertificate;
+import android.os.Bundle;
 import android.os.Message;
 import android.print.PrintDocumentAdapter;
 import android.util.DisplayMetrics;
@@ -163,6 +164,17 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
     public void setNetworkAvailable(final boolean available) {
         WebkitUtils.onMainThreadSync(() -> {
             mWebView.setNetworkAvailable(available);
+        });
+    }
+
+    /**
+     * Saves the state of this WebView.
+     *
+     * @see WebView#saveState
+     */
+    public WebBackForwardList saveState(Bundle outState) {
+        return WebkitUtils.onMainThreadSync(() -> {
+            return mWebView.saveState(outState);
         });
     }
 
@@ -326,6 +338,17 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
         });
     }
 
+    /**
+     * Restores the state of this WebView from the given Bundle.
+     *
+     * @see WebView#restoreState
+     */
+    public WebBackForwardList restoreState(Bundle inState) {
+        return WebkitUtils.onMainThreadSync(() -> {
+            return mWebView.restoreState(inState);
+        });
+    }
+
     public void loadUrl(final String url) {
         WebkitUtils.onMainThreadSync(() -> {
             mWebView.loadUrl(url);
@@ -344,6 +367,75 @@ public class WebViewOnUiThread extends WebViewSyncLoader {
     public void reload() {
         WebkitUtils.onMainThreadSync(() -> {
             mWebView.reload();
+        });
+    }
+
+    /**
+     * Gets whether this WebView has a back history item.
+     *
+     * @see WebView#canGoBack
+     */
+    public boolean canGoBack() {
+        return WebkitUtils.onMainThreadSync(() -> {
+            return mWebView.canGoBack();
+        });
+    }
+
+    /**
+     * Goes back in the history of this WebView.
+     *
+     * @see WebView#goBack
+     */
+    public void goBack() {
+        WebkitUtils.onMainThreadSync(() -> {
+            mWebView.goBack();
+        });
+    }
+
+    /**
+     * Gets whether this WebView has a forward history item.
+     *
+     * @see WebView#canGoForward
+     */
+    public boolean canGoForward() {
+        return WebkitUtils.onMainThreadSync(() -> {
+            return mWebView.canGoForward();
+        });
+    }
+
+    /**
+     * Goes forward in the history of this WebView.
+     *
+     * @see WebView#goForward
+     */
+    public void goForward() {
+        WebkitUtils.onMainThreadSync(() -> {
+            mWebView.goForward();
+        });
+    }
+
+    /**
+     * Gets whether the page can go back or forward the given
+     * number of steps.
+     *
+     * @see WebView#canGoBackOrForward
+     */
+    public boolean canGoBackOrForward(int steps) {
+        return WebkitUtils.onMainThreadSync(() -> {
+            return mWebView.canGoBackOrForward(steps);
+        });
+    }
+
+    /**
+     * Goes to the history item that is the number of steps away from
+     * the current item. Steps is negative if backward and positive
+     * if forward.
+     *
+     * @see WebView#goBackOrForward
+     */
+    public void goBackOrForward(int steps) {
+        WebkitUtils.onMainThreadSync(() -> {
+            mWebView.goBackOrForward(steps);
         });
     }
 

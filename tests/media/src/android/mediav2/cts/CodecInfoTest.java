@@ -313,7 +313,7 @@ public class CodecInfoTest {
      * For all the available encoders on the device, the test checks if their encoding
      * capabilities are in sync with the device's decoding capabilities.
      */
-    @CddTest(requirements = "5/C-0-3")
+    @CddTest(requirements = {"5/C-0-3"})
     @Test
     public void testDecoderAvailability() {
         Assume.assumeTrue("Test is applicable only for encoders", mCodecInfo.isEncoder());

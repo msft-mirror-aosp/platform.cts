@@ -28,7 +28,12 @@ import android.content.om.OverlayInfo;
 import android.content.om.OverlayManager;
 import android.content.om.OverlayManagerTransaction;
 import android.content.pm.PackageManager;
+import android.content.res.Flags;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -51,6 +56,9 @@ import java.util.stream.Collectors;
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not have access to OverlayManager")
 @RunWith(AndroidJUnit4.class)
 public class OverlayManagerTransactionTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Context mContext;
     private OverlayManager mOverlayManager;
     private String mOverlayName;
@@ -99,6 +107,29 @@ public class OverlayManagerTransactionTest {
 
     @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
+    public void commit_withNullOverlayable_shouldFail() {
+        final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
+        transaction.registerFabricatedOverlay(
+                mFacilitator.prepare("hello_overlay1", null /* overlayableName */));
+
+        assertThrows(IllegalArgumentException.class, () -> mOverlayManager.commit(transaction));
+    }
+
+    @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
+    public void commit_withEmptyOverlayable_shouldFail() {
+        final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
+        transaction.registerFabricatedOverlay(
+                mFacilitator.prepare("hello_overlay1", "" /* overlayableName */));
+
+        assertThrows(IllegalArgumentException.class, () -> mOverlayManager.commit(transaction));
+    }
+
+    @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
     public void commit_withNullOverlayable_onPackageWithOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
@@ -109,6 +140,7 @@ public class OverlayManagerTransactionTest {
 
     @ApiTest(apis = {"android.content.om.OverlayManager#commit"})
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
     public void commit_withEmptyOverlayable_onPackageWithOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
@@ -118,7 +150,7 @@ public class OverlayManagerTransactionTest {
     }
 
     @Test
-    public void commit_withNonExistOverlayable_onPackageWithOverlayable_shouldFail() {
+    public void commit_withNonExistOverlayable_shouldFail() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", "not_exist"));
@@ -127,7 +159,7 @@ public class OverlayManagerTransactionTest {
     }
 
     @Test
-    public void commit_withValidOverlayable_onPackageWithOverlayable_shouldSucceed() {
+    public void commit_withValidOverlayable_shouldSucceed() {
         final OverlayManagerTransaction transaction = OverlayManagerTransaction.newInstance();
         transaction.registerFabricatedOverlay(
                 mFacilitator.prepare("hello_overlay1", OVERLAYABLE_NAME));

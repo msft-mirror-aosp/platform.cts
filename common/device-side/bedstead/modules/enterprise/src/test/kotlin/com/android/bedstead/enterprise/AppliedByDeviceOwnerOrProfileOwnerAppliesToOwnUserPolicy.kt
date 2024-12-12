@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package android.security.cts.advancedprotection.testadvancedprotection;
+package com.android.bedstead.enterprise
 
-import android.app.Activity;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER
 
-public class TestActivity extends Activity {}
+@EnterprisePolicy(dpc = [APPLIED_BY_DEVICE_OWNER or APPLIED_BY_PROFILE_OWNER or APPLIES_TO_OWN_USER])
+class AppliedByDeviceOwnerOrProfileOwnerAppliesToOwnUserPolicy
