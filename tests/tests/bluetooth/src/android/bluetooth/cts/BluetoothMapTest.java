@@ -24,8 +24,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -118,7 +116,7 @@ public class BluetoothMapTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.MAP, mBluetoothMap);
@@ -130,7 +128,7 @@ public class BluetoothMapTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -142,41 +140,42 @@ public class BluetoothMapTest {
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothMap.getConnectionPolicy(null));
+        assertThat(mBluetoothMap.getConnectionPolicy(null)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(CONNECTION_POLICY_FORBIDDEN, mBluetoothMap.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothMap.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothMap.getConnectionState(null));
+        assertThat(mBluetoothMap.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothMap.getConnectionState(testDevice));
+        assertThat(mBluetoothMap.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -188,7 +187,7 @@ public class BluetoothMapTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsMapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothMap);
+        assertThat(mBluetoothMap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
