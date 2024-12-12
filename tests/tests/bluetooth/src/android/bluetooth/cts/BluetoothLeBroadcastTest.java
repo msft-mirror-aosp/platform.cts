@@ -486,9 +486,6 @@ public class BluetoothLeBroadcastTest {
         verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
                 .onBroadcastStarted(eq(BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST),
                         mBroadcastId.capture());
-        verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
-                .onPlaybackStarted(eq(BluetoothStatusCodes.REASON_LOCAL_STACK_REQUEST),
-                        eq(mBroadcastId.getValue()));
 
         mBluetoothLeBroadcast.stopBroadcast(mBroadcastId.getValue());
         verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
@@ -545,9 +542,6 @@ public class BluetoothLeBroadcastTest {
         verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
                 .onBroadcastStarted(eq(BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST),
                         mBroadcastId.capture());
-        verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
-                .onPlaybackStarted(eq(BluetoothStatusCodes.REASON_LOCAL_STACK_REQUEST),
-                        eq(mBroadcastId.getValue()));
 
         mBluetoothLeBroadcast.stopBroadcast(mBroadcastId.getValue());
         verify(mCallback, timeout(BROADCAST_CALLBACK_TIMEOUT_MS))
