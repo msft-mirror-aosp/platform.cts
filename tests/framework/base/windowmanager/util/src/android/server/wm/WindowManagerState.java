@@ -330,7 +330,7 @@ public class WindowManagerState {
                 SystemClock.sleep(500);
             }
 
-            if (android.tracing.Flags.perfettoWmDumpCts()) {
+            if (isTracingFlagEnabled("perfettoWmDumpCts")) {
                 dump = new WindowManagerTraceMonitor().captureDump();
             } else {
                 dump = executeShellCommand(DUMPSYS_WINDOW);
@@ -338,7 +338,7 @@ public class WindowManagerState {
 
             try {
                 reset();
-                if (android.tracing.Flags.perfettoWmDumpCts()) {
+                if (isTracingFlagEnabled("perfettoWmDumpCts")) {
                     parseDump(dump);
                 } else {
                     parseDumpLegacy(dump);
@@ -410,6 +410,20 @@ public class WindowManagerState {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isTracingFlagEnabled(String name) {
+        // TODO(b/215373273): replace with normal flag check. This is a temporary workaround
+        //  to avoid runtime errors like "No static method perfettoWmDumpCts()Z"
+        try {
+            java.lang.reflect.Method flag = android.tracing.Flags.class.getMethod(name);
+            boolean value = (boolean) flag.invoke(null);
+            log("Read flag " + name + ": " + value);
+            return value;
+        } catch (Exception e) {
+            logE("Failed to read flag " + name + ". Assuming disabled.");
+        }
+        return false;
     }
 
     /** Update WindowManagerState state for a newly added DisplayContent. */

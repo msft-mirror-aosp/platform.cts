@@ -47,7 +47,7 @@ ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
-JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
+JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
@@ -1583,8 +1583,36 @@ class ItsSession(object):
 
     return ret
 
-  def do_jca_capture(self, dut, log_path, flash, facing):
-    """Take a capture using JCA, modifying capture settings using the UI.
+  def do_jca_capture(
+      self, dut, log_path, flash_mode, lens_facing, zoom_ratio=1.0):
+    """Take a single capture using JCA, modifying capture settings using the UI.
+
+    This function is a convenience wrapper for tests that only need to take
+    a single capture.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+      flash_mode: str; constant describing the desired flash mode.
+        Acceptable values: 'OFF' and 'AUTO'.
+      lens_facing: str; constant describing the direction the camera lens faces.
+        Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
+      zoom_ratio: float; zoom ratio for the capture.
+    Returns:
+      A ui_interaction_utils.JcaCapture object describing the capture.
+    """
+    captures = list(
+        self.do_jca_captures_across_zoom_ratios(
+            dut, log_path, flash_mode, lens_facing, zoom_ratios=(zoom_ratio,)
+        )
+    )
+    if len(captures) != 1:
+      raise AssertionError(f'Expected 1 capture, got {len(captures)}!')
+    return captures[0]
+
+  def do_jca_captures_across_zoom_ratios(
+      self, dut, log_path, flash_mode, lens_facing, zoom_ratios=(1.0,)):
+    """Take multiple captures using JCA, modifying capture settings using UI.
 
     Selects UI elements to modify settings, and presses the capture button.
     Reads response from socket containing the capture path, and
@@ -1596,26 +1624,51 @@ class ItsSession(object):
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
-      flash: str; constant describing the desired flash mode.
+      flash_mode: str; constant describing the desired flash mode.
         Acceptable values: 'OFF' and 'AUTO'.
-      facing: str; constant describing the direction the camera lens faces.
+      lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
-    Returns:
-      The host-side path of the capture.
+      zoom_ratios: Optional[Iterable[float]]; zoom ratio for the capture.
+    Yields:
+      A ui_interaction_utils.JcaCapture object describing each capture.
     """
+    physical_camera_ids = []
     ui_interaction_utils.open_jca_viewfinder(dut, log_path)
-    ui_interaction_utils.switch_jca_camera(dut, log_path, facing)
+    ui_interaction_utils.switch_jca_camera(dut, log_path, lens_facing)
     # Bring up settings, switch flash mode, and close settings
     dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
-    if flash not in ui_interaction_utils.FLASH_MODE_TO_CLICKS:
-      raise ValueError(f'Flash mode {flash} not supported')
-    for _ in range(ui_interaction_utils.FLASH_MODE_TO_CLICKS[flash]):
+    if flash_mode not in ui_interaction_utils.FLASH_MODE_TO_CLICKS:
+      raise ValueError(f'Flash mode {flash_mode} not supported')
+    for _ in range(ui_interaction_utils.FLASH_MODE_TO_CLICKS[flash_mode]):
       dut.ui(res=ui_interaction_utils.QUICK_SET_FLASH_RESOURCE_ID).click()
     dut.take_screenshot(log_path, prefix='flash_mode_set')
     dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
-    # Take capture
-    dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
-    return self.get_and_pull_jca_capture(dut, log_path)
+    for zoom_ratio in zoom_ratios:
+      ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
+      # Get physical ID
+      physical_camera_id = int(
+          dut.ui(
+              res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
+      )
+      logging.debug('Physical camera ID: %d', physical_camera_id)
+      physical_camera_ids.append(physical_camera_id)
+      # Take capture
+      dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
+      dut.ui(
+          text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.exists(
+          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+      dut.ui(text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.gone(
+          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    dut.ui.press.back()
+    number_of_captures = 0
+    for capture_path, physical_camera_id in zip(
+        self.get_and_pull_jca_capture(dut, log_path), physical_camera_ids):
+      number_of_captures += 1
+      yield ui_interaction_utils.JcaCapture(capture_path, physical_camera_id)
+    if number_of_captures != len(zoom_ratios):
+      raise AssertionError(
+          f'Expected {len(zoom_ratios)} captures, got {number_of_captures}!'
+      )
 
   def do_jca_video_capture(self, dut, log_path, duration):
     """Take a capture using JCA using the UI.
@@ -1651,16 +1704,16 @@ class ItsSession(object):
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
-    Returns:
-      The host-side path of the capture.
+    Yields:
+      The host-side path of a capture.
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_path, capture_status = None, None
-    while not capture_path or not capture_status:
+    capture_paths, capture_status = None, None
+    while not capture_paths or not capture_status:
       data, _ = self.__read_response_from_socket()
-      if data[_TAG_STR] == JCA_CAPTURE_PATH_TAG:
-        capture_path = data[_STR_VALUE_STR]
+      if data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
+        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
       elif data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
         capture_status = data[_STR_VALUE_STR]
       else:
@@ -1669,10 +1722,12 @@ class ItsSession(object):
     if capture_status != RESULT_OK_STATUS:
       logging.error('Capture failed! Expected status %d, received %d',
                     RESULT_OK_STATUS, capture_status)
-    logging.debug('capture path: %s', capture_path)
-    _, capture_name = os.path.split(capture_path)
-    its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
-    return os.path.join(log_path, capture_name)
+    logging.debug('capture paths: %s', capture_paths)
+    for capture_path in capture_paths:
+      _, capture_name = os.path.split(capture_path)
+      its_device_utils.run(
+          f'adb -s {dut.serial} pull {capture_path} {log_path}')
+      yield os.path.join(log_path, capture_name)
 
   def do_capture_with_flash(self,
                             preview_request_start,

@@ -582,6 +582,31 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("TURN_SIGNAL_LIGHT_STATE");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.TURN_SIGNAL_SWITCH))
                 .isEqualTo("TURN_SIGNAL_SWITCH");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY))
+                .isEqualTo("INSTANTANEOUS_FUEL_ECONOMY");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY))
+                .isEqualTo("INSTANTANEOUS_EV_EFFICIENCY");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.VEHICLE_HORN_ENGAGED))
+                .isEqualTo("VEHICLE_HORN_ENGAGED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL))
+                .isEqualTo("VEHICLE_DRIVING_AUTOMATION_TARGET_LEVEL");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE))
+                .isEqualTo("ACCELERATOR_PEDAL_COMPRESSION_PERCENTAGE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.BRAKE_PEDAL_COMPRESSION_PERCENTAGE))
+                .isEqualTo("BRAKE_PEDAL_COMPRESSION_PERCENTAGE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_PAD_WEAR_PERCENTAGE))
+                .isEqualTo("BRAKE_PAD_WEAR_PERCENTAGE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW))
+                .isEqualTo("BRAKE_FLUID_LEVEL_LOW");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.VEHICLE_PASSIVE_SUSPENSION_HEIGHT))
+                .isEqualTo("VEHICLE_PASSIVE_SUSPENSION_HEIGHT");
     }
 
     /**

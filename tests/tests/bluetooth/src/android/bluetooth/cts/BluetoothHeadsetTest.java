@@ -19,12 +19,15 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.MODIFY_PHONE_STATE;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -47,7 +50,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -86,7 +88,7 @@ public class BluetoothHeadsetTest {
 
         BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
@@ -114,102 +116,100 @@ public class BluetoothHeadsetTest {
     @Test
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
-        assertTrue(mIsProfileReady);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
+        assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.HEADSET, mBluetoothHeadset);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(waitForProfileDisconnect()).isTrue();
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertEquals(mBluetoothHeadset.getConnectedDevices(), new ArrayList<BluetoothDevice>());
+        assertThat(mBluetoothHeadset.getConnectedDevices()).isEmpty();
     }
 
     @Test
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertEquals(
-                mBluetoothHeadset.getDevicesMatchingConnectionStates(
-                        new int[] {BluetoothProfile.STATE_CONNECTED}),
-                new ArrayList<BluetoothDevice>());
+        assertThat(
+                        mBluetoothHeadset.getDevicesMatchingConnectionStates(
+                                new int[] {STATE_CONNECTED}))
+                .isEmpty();
     }
 
     @Test
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(
-                mBluetoothHeadset.getConnectionState(testDevice),
-                BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mBluetoothHeadset.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     public void isAudioConnected() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertFalse(mBluetoothHeadset.isAudioConnected(testDevice));
-        assertFalse(mBluetoothHeadset.isAudioConnected(null));
+        assertThat(mBluetoothHeadset.isAudioConnected(testDevice)).isFalse();
+        assertThat(mBluetoothHeadset.isAudioConnected(null)).isFalse();
 
         // Verify the method returns false when Bluetooth is off and you supply a valid device
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.isAudioConnected(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.isAudioConnected(testDevice)).isFalse();
     }
 
     @Test
     public void isNoiseReductionSupported() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertFalse(mBluetoothHeadset.isNoiseReductionSupported(testDevice));
-        assertFalse(mBluetoothHeadset.isNoiseReductionSupported(null));
+        assertThat(mBluetoothHeadset.isNoiseReductionSupported(testDevice)).isFalse();
+        assertThat(mBluetoothHeadset.isNoiseReductionSupported(null)).isFalse();
 
         // Verify the method returns false when Bluetooth is off and you supply a valid device
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.isNoiseReductionSupported(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.isNoiseReductionSupported(testDevice)).isFalse();
     }
 
     @Test
     public void isVoiceRecognitionSupported() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertFalse(mBluetoothHeadset.isVoiceRecognitionSupported(testDevice));
-        assertFalse(mBluetoothHeadset.isVoiceRecognitionSupported(null));
+        assertThat(mBluetoothHeadset.isVoiceRecognitionSupported(testDevice)).isFalse();
+        assertThat(mBluetoothHeadset.isVoiceRecognitionSupported(null)).isFalse();
 
         // Verify the method returns false when Bluetooth is off and you supply a valid device
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.isVoiceRecognitionSupported(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.isVoiceRecognitionSupported(testDevice)).isFalse();
     }
 
     @Test
     public void sendVendorSpecificResultCode() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -217,139 +217,131 @@ public class BluetoothHeadsetTest {
                 IllegalArgumentException.class,
                 () -> mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, null, null));
 
-        assertFalse(mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, "", ""));
-        assertFalse(mBluetoothHeadset.sendVendorSpecificResultCode(null, "", ""));
+        assertThat(mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, "", "")).isFalse();
+        assertThat(mBluetoothHeadset.sendVendorSpecificResultCode(null, "", "")).isFalse();
 
         // Verify the method returns false when Bluetooth is off and you supply a valid device
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, "", ""));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.sendVendorSpecificResultCode(testDevice, "", "")).isFalse();
     }
 
     @Test
     public void connect() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothHeadset.connect(null));
+        assertThat(mBluetoothHeadset.connect(null)).isFalse();
 
         // Verify it returns false for a device that has CONNECTION_POLICY_FORBIDDEN
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, MODIFY_PHONE_STATE);
-        assertFalse(mBluetoothHeadset.connect(testDevice));
+        assertThat(mBluetoothHeadset.connect(testDevice)).isFalse();
 
         // Verify returns false if bluetooth is not enabled
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.connect(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.connect(testDevice)).isFalse();
     }
 
     @Test
     public void disconnect() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothHeadset.disconnect(null));
+        assertThat(mBluetoothHeadset.disconnect(null)).isFalse();
 
         // Verify it returns false for a device that has CONNECTION_POLICY_FORBIDDEN
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        assertFalse(mBluetoothHeadset.disconnect(testDevice));
+        assertThat(mBluetoothHeadset.disconnect(testDevice)).isFalse();
 
         // Verify returns false if bluetooth is not enabled
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.disconnect(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.disconnect(testDevice)).isFalse();
     }
 
     @Test
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothHeadset.getConnectionPolicy(null));
+        assertThat(mBluetoothHeadset.getConnectionPolicy(null))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
         // Verify returns CONNECTION_POLICY_FORBIDDEN if bluetooth is not enabled
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothHeadset.getConnectionPolicy(testDevice));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothHeadset.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothHeadset.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(mBluetoothHeadset.setConnectionPolicy(testDevice, CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(mBluetoothHeadset.setConnectionPolicy(null, CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
         // Verify returns false if bluetooth is not enabled
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(
-                mBluetoothHeadset.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test
     public void getAudioState() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
         assertThrows(NullPointerException.class, () -> mBluetoothHeadset.getAudioState(null));
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        assertEquals(
-                BluetoothHeadset.STATE_AUDIO_DISCONNECTED,
-                mBluetoothHeadset.getAudioState(testDevice));
+        assertThat(mBluetoothHeadset.getAudioState(testDevice))
+                .isEqualTo(BluetoothHeadset.STATE_AUDIO_DISCONNECTED);
     }
 
     @Test
     public void connectAudio() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertEquals(
-                BluetoothStatusCodes.ERROR_NO_ACTIVE_DEVICES, mBluetoothHeadset.connectAudio());
+        assertThat(mBluetoothHeadset.connectAudio())
+                .isEqualTo(BluetoothStatusCodes.ERROR_NO_ACTIVE_DEVICES);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertEquals(
-                BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND,
-                mBluetoothHeadset.connectAudio());
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.connectAudio())
+                .isEqualTo(BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND);
     }
 
     @Test
     public void disconnectAudio() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertEquals(
-                BluetoothStatusCodes.ERROR_NO_ACTIVE_DEVICES, mBluetoothHeadset.disconnectAudio());
+        assertThat(mBluetoothHeadset.disconnectAudio())
+                .isEqualTo(BluetoothStatusCodes.ERROR_NO_ACTIVE_DEVICES);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertEquals(
-                BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND,
-                mBluetoothHeadset.disconnectAudio());
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.disconnectAudio())
+                .isEqualTo(BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND);
     }
 
     @Test
@@ -357,10 +349,10 @@ public class BluetoothHeadsetTest {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(
                 BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, MODIFY_PHONE_STATE);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertFalse(mBluetoothHeadset.startScoUsingVirtualVoiceCall());
+        assertThat(mBluetoothHeadset.startScoUsingVirtualVoiceCall()).isFalse();
     }
 
     @Test
@@ -368,35 +360,39 @@ public class BluetoothHeadsetTest {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(
                 BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, MODIFY_PHONE_STATE);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertFalse(mBluetoothHeadset.stopScoUsingVirtualVoiceCall());
+        assertThat(mBluetoothHeadset.stopScoUsingVirtualVoiceCall()).isFalse();
     }
 
     @Test
     public void isInbandRingingEnabled() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        assertFalse(mBluetoothHeadset.isInbandRingingEnabled());
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mBluetoothHeadset.isInbandRingingEnabled()).isFalse();
     }
 
     @Test
     public void setGetAudioRouteAllowed() {
         assumeTrue(mHasBluetooth && mIsHeadsetSupported);
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothHeadset);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothHeadset).isNotNull();
 
-        assertEquals(BluetoothStatusCodes.SUCCESS, mBluetoothHeadset.setAudioRouteAllowed(true));
-        assertEquals(BluetoothStatusCodes.ALLOWED, mBluetoothHeadset.getAudioRouteAllowed());
+        assertThat(mBluetoothHeadset.setAudioRouteAllowed(true))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+        assertThat(mBluetoothHeadset.getAudioRouteAllowed())
+                .isEqualTo(BluetoothStatusCodes.ALLOWED);
 
-        assertEquals(BluetoothStatusCodes.SUCCESS, mBluetoothHeadset.setAudioRouteAllowed(false));
-        assertEquals(BluetoothStatusCodes.NOT_ALLOWED, mBluetoothHeadset.getAudioRouteAllowed());
+        assertThat(mBluetoothHeadset.setAudioRouteAllowed(false))
+                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+        assertThat(mBluetoothHeadset.getAudioRouteAllowed())
+                .isEqualTo(BluetoothStatusCodes.NOT_ALLOWED);
     }
 
     private boolean waitForProfileConnect() {

@@ -20,12 +20,10 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers.OrganizationId;
@@ -133,11 +131,15 @@ public class ScanFilterTest {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
             // Bluetooth is not supported
-            assertFalse(
-                    context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
+            assertThat(
+                            context.getPackageManager()
+                                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH))
+                    .isFalse();
         } else {
-            assertTrue(
-                    context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH));
+            assertThat(
+                            context.getPackageManager()
+                                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH))
+                    .isTrue();
             BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(DEVICE_MAC);
             mScanResult =
                     new ScanResult(
@@ -158,39 +160,39 @@ public class ScanFilterTest {
     @Test
     public void setNameFilter() {
         ScanFilter filter = mFilterBuilder.setDeviceName(LOCAL_NAME).build();
-        assertEquals(LOCAL_NAME, filter.getDeviceName());
-        assertTrue("setName filter fails", filter.matches(mScanResult));
+        assertThat(filter.getDeviceName()).isEqualTo(LOCAL_NAME);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         filter = mFilterBuilder.setDeviceName("Pem").build();
-        assertFalse("setName filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void deviceAddressFilter() {
         ScanFilter filter = mFilterBuilder.setDeviceAddress(DEVICE_MAC).build();
-        assertEquals(DEVICE_MAC, filter.getDeviceAddress());
-        assertTrue("device filter fails", filter.matches(mScanResult));
+        assertThat(filter.getDeviceAddress()).isEqualTo(DEVICE_MAC);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         filter = mFilterBuilder.setDeviceAddress("11:22:33:44:55:66").build();
-        assertFalse("device filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setServiceUuidFilter() {
         ScanFilter filter = mFilterBuilder.setServiceUuid(ParcelUuid.fromString(UUID1)).build();
-        assertEquals(UUID1, filter.getServiceUuid().toString());
-        assertTrue("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceUuid().toString()).isEqualTo(UUID1);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         filter = mFilterBuilder.setServiceUuid(ParcelUuid.fromString(UUID3)).build();
-        assertEquals(UUID3, filter.getServiceUuid().toString());
-        assertFalse("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceUuid().toString()).isEqualTo(UUID3);
+        assertThat(filter.matches(mScanResult)).isFalse();
 
         ParcelUuid mask = ParcelUuid.fromString("FFFFFFF0-FFFF-FFFF-FFFF-FFFFFFFFFFFF");
         filter = mFilterBuilder.setServiceUuid(ParcelUuid.fromString(UUID3), mask).build();
-        assertEquals(mask.toString(), filter.getServiceUuidMask().toString());
-        assertTrue("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceUuidMask().toString()).isEqualTo(mask.toString());
+        assertThat(filter.matches(mScanResult)).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -198,20 +200,20 @@ public class ScanFilterTest {
     public void setServiceSolicitationUuidFilter() {
         ScanFilter filter =
                 mFilterBuilder.setServiceSolicitationUuid(ParcelUuid.fromString(UUID1)).build();
-        assertEquals(UUID1, filter.getServiceSolicitationUuid().toString());
-        assertTrue("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceSolicitationUuid().toString()).isEqualTo(UUID1);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         filter = mFilterBuilder.setServiceSolicitationUuid(ParcelUuid.fromString(UUID2)).build();
-        assertEquals(UUID2, filter.getServiceSolicitationUuid().toString());
-        assertFalse("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceSolicitationUuid().toString()).isEqualTo(UUID2);
+        assertThat(filter.matches(mScanResult)).isFalse();
 
         ParcelUuid mask = ParcelUuid.fromString("FFFFFFF0-FFFF-FFFF-FFFF-FFFFFFFFFFFF");
         filter =
                 mFilterBuilder
                         .setServiceSolicitationUuid(ParcelUuid.fromString(UUID3), mask)
                         .build();
-        assertEquals(mask.toString(), filter.getServiceSolicitationUuidMask().toString());
-        assertTrue("uuid filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceSolicitationUuidMask().toString()).isEqualTo(mask.toString());
+        assertThat(filter.matches(mScanResult)).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -220,26 +222,26 @@ public class ScanFilterTest {
         byte[] setServiceData = new byte[] {0x50, 0x64};
         ParcelUuid serviceDataUuid = ParcelUuid.fromString(UUID2);
         ScanFilter filter = mFilterBuilder.setServiceData(serviceDataUuid, setServiceData).build();
-        assertEquals(serviceDataUuid, filter.getServiceDataUuid());
-        assertTrue("service data filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceDataUuid()).isEqualTo(serviceDataUuid);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         byte[] emptyData = new byte[0];
         filter = mFilterBuilder.setServiceData(serviceDataUuid, emptyData).build();
-        assertTrue("service data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         byte[] prefixData = new byte[] {0x50};
         filter = mFilterBuilder.setServiceData(serviceDataUuid, prefixData).build();
-        assertTrue("service data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         byte[] nonMatchData = new byte[] {0x51, 0x64};
         byte[] mask = new byte[] {(byte) 0x00, (byte) 0xFF};
         filter = mFilterBuilder.setServiceData(serviceDataUuid, nonMatchData, mask).build();
-        assertEquals(nonMatchData, filter.getServiceData());
-        assertEquals(mask, filter.getServiceDataMask());
-        assertTrue("partial service data filter fails", filter.matches(mScanResult));
+        assertThat(filter.getServiceData()).isEqualTo(nonMatchData);
+        assertThat(filter.getServiceDataMask()).isEqualTo(mask);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         filter = mFilterBuilder.setServiceData(serviceDataUuid, nonMatchData).build();
-        assertFalse("service data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -249,28 +251,28 @@ public class ScanFilterTest {
         int manufacturerId = 0xE0;
         ScanFilter filter =
                 mFilterBuilder.setManufacturerData(manufacturerId, manufacturerData).build();
-        assertEquals(manufacturerId, filter.getManufacturerId());
-        assertEquals(manufacturerData, filter.getManufacturerData());
-        assertTrue("manufacturer data filter fails", filter.matches(mScanResult));
+        assertThat(filter.getManufacturerId()).isEqualTo(manufacturerId);
+        assertThat(filter.getManufacturerData()).isEqualTo(manufacturerData);
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         byte[] emptyData = new byte[0];
         filter = mFilterBuilder.setManufacturerData(manufacturerId, emptyData).build();
-        assertTrue("manufacturer data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         byte[] prefixData = new byte[] {0x02};
         filter = mFilterBuilder.setManufacturerData(manufacturerId, prefixData).build();
-        assertTrue("manufacturer data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isTrue();
 
         // Test data mask
         byte[] nonMatchData = new byte[] {0x02, 0x14};
         filter = mFilterBuilder.setManufacturerData(manufacturerId, nonMatchData).build();
-        assertFalse("manufacturer data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
         byte[] mask = new byte[] {(byte) 0xFF, (byte) 0x00};
         filter = mFilterBuilder.setManufacturerData(manufacturerId, nonMatchData, mask).build();
-        assertEquals(manufacturerId, filter.getManufacturerId());
-        assertEquals(nonMatchData, filter.getManufacturerData());
-        assertEquals(mask, filter.getManufacturerDataMask());
-        assertTrue("partial setManufacturerData filter fails", filter.matches(mScanResult));
+        assertThat(filter.getManufacturerId()).isEqualTo(manufacturerId);
+        assertThat(filter.getManufacturerData()).isEqualTo(nonMatchData);
+        assertThat(filter.getManufacturerDataMask()).isEqualTo(mask);
+        assertThat(filter.matches(mScanResult)).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -285,19 +287,19 @@ public class ScanFilterTest {
                         .setAdvertisingDataTypeWithData(
                                 AD_TYPE_RESOLVABLE_SET_IDENTIFIER, adData, adDataMask)
                         .build();
-        assertEquals(AD_TYPE_RESOLVABLE_SET_IDENTIFIER, filter.getAdvertisingDataType());
+        assertThat(filter.getAdvertisingDataType()).isEqualTo(AD_TYPE_RESOLVABLE_SET_IDENTIFIER);
         TestUtils.assertArrayEquals(adData, filter.getAdvertisingData());
         TestUtils.assertArrayEquals(adDataMask, filter.getAdvertisingDataMask());
-        assertTrue("advertising data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isTrue();
         filter = mFilterBuilder.setAdvertisingDataTypeWithData(0x01, adData, adDataMask).build();
-        assertFalse("advertising data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
         byte[] nonMatchAdData = {0x01, 0x02, 0x04, 0x04, 0x05, 0x06};
         filter =
                 mFilterBuilder
                         .setAdvertisingDataTypeWithData(
                                 AD_TYPE_RESOLVABLE_SET_IDENTIFIER, nonMatchAdData, adDataMask)
                         .build();
-        assertFalse("advertising data filter fails", filter.matches(mScanResult));
+        assertThat(filter.matches(mScanResult)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -359,7 +361,7 @@ public class ScanFilterTest {
     @Test
     public void describeContents() {
         final int expected = 0;
-        assertEquals(expected, new ScanFilter.Builder().build().describeContents());
+        assertThat(new ScanFilter.Builder().build().describeContents()).isEqualTo(expected);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -403,10 +405,10 @@ public class ScanFilterTest {
         }
 
         final TransportBlockFilter returnedTransportBlockFilter = filter.getTransportBlockFilter();
-        assertNotNull(returnedTransportBlockFilter);
-        assertEquals(orgId, returnedTransportBlockFilter.getOrgId());
-        assertEquals(tdsFlag, returnedTransportBlockFilter.getTdsFlags());
-        assertEquals(tdsFlagMask, returnedTransportBlockFilter.getTdsFlagsMask());
+        assertThat(returnedTransportBlockFilter).isNotNull();
+        assertThat(returnedTransportBlockFilter.getOrgId()).isEqualTo(orgId);
+        assertThat(returnedTransportBlockFilter.getTdsFlags()).isEqualTo(tdsFlag);
+        assertThat(returnedTransportBlockFilter.getTdsFlagsMask()).isEqualTo(tdsFlagMask);
         assertArrayEquals(transportData, returnedTransportBlockFilter.getTransportData());
         assertArrayEquals(transportDataMask, returnedTransportBlockFilter.getTransportDataMask());
     }
@@ -416,6 +418,6 @@ public class ScanFilterTest {
         filter.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         ScanFilter filterFromParcel = ScanFilter.CREATOR.createFromParcel(parcel);
-        assertEquals(filter, filterFromParcel);
+        assertThat(filterFromParcel).isEqualTo(filter);
     }
 }

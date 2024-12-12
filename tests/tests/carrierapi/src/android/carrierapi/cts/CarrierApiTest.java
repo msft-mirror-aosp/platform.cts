@@ -164,6 +164,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final String STATUS_BYTES_REMAINING = "61";
     private static final String STATUS_WARNING_A = "62";
     private static final String STATUS_WARNING_B = "63";
+    private static final String STATUS_CHANNEL_NOT_SUPPORTED = "6881";
     private static final String STATUS_FILE_NOT_FOUND = "6a82";
     private static final String STATUS_INCORRECT_PARAMETERS = "6a86";
     private static final String STATUS_WRONG_PARAMETERS = "6b00";
@@ -1114,6 +1115,32 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             assertThat(isErrorResponse(response)).isTrue();
         } finally {
             mTelephonyManager.iccCloseLogicalChannel(logicalChannel);
+        }
+    }
+
+    @Test
+    public void testIccTransmitApduLogicalChannelWithInvalidChannel() {
+        IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
+                mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
+        final int closedCh = iccOpenLogicalChannelResponse.getChannel();
+        mTelephonyManager.iccCloseLogicalChannel(closedCh);
+
+        int[] badChannels = {
+            closedCh,  // use after close
+            -2, -1, 50, 100,  // common wrong values
+            127,  // int8_t max
+            128,  // int8_t max + 1,
+            256,  // uint8_t max + 1,
+            32768,  // int16_t max + 1,
+            65536,  // uint16_t max + 1,
+        };
+
+        for (int channel : badChannels) {
+            String response = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel, CLA_STATUS, COMMAND_STATUS, 0, 0, 0, "");
+            assertWithMessage("Invalid response when trying to open (invalid) channel " + channel)
+                    .that(response).isEqualTo(STATUS_CHANNEL_NOT_SUPPORTED);
         }
     }
 

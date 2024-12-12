@@ -19,12 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
@@ -72,26 +70,19 @@ public class BluetoothLeBroadcastSettingsTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
-            boolean isBroadcastAssistantEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -150,10 +141,11 @@ public class BluetoothLeBroadcastSettingsTest {
             builder.addSubgroupSettings(setting);
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
-        assertFalse(broadcastSettings.isPublicBroadcast());
-        assertNull(broadcastSettings.getBroadcastName());
-        assertNull(broadcastSettings.getBroadcastCode());
-        assertEquals(publicBroadcastMetadata, broadcastSettings.getPublicBroadcastMetadata());
+        assertThat(broadcastSettings.isPublicBroadcast()).isFalse();
+        assertThat(broadcastSettings.getBroadcastName()).isNull();
+        assertThat(broadcastSettings.getBroadcastCode()).isNull();
+        assertThat(broadcastSettings.getPublicBroadcastMetadata())
+                .isEqualTo(publicBroadcastMetadata);
         assertArrayEquals(
                 subgroupSettings,
                 broadcastSettings
@@ -187,10 +179,11 @@ public class BluetoothLeBroadcastSettingsTest {
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
         BluetoothLeBroadcastSettings broadcastSettingsCopy =
                 new BluetoothLeBroadcastSettings.Builder(broadcastSettings).build();
-        assertFalse(broadcastSettingsCopy.isPublicBroadcast());
-        assertEquals(TEST_BROADCAST_NAME, broadcastSettingsCopy.getBroadcastName());
-        assertNull(broadcastSettingsCopy.getBroadcastCode());
-        assertEquals(publicBroadcastMetadata, broadcastSettingsCopy.getPublicBroadcastMetadata());
+        assertThat(broadcastSettingsCopy.isPublicBroadcast()).isFalse();
+        assertThat(broadcastSettingsCopy.getBroadcastName()).isEqualTo(TEST_BROADCAST_NAME);
+        assertThat(broadcastSettingsCopy.getBroadcastCode()).isNull();
+        assertThat(broadcastSettingsCopy.getPublicBroadcastMetadata())
+                .isEqualTo(publicBroadcastMetadata);
         assertArrayEquals(
                 subgroupSettings,
                 broadcastSettingsCopy

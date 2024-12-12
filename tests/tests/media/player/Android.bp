@@ -79,3 +79,11 @@ android_test {
         "mts-media",
     ],
 }
+
+test_module_config {
+    name: "CtsMediaPlayerTestCases_Presubmit_NoDevice",
+    base: "CtsMediaPlayerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["android.platform.test.annotations.RequiresDevice"],
+}
