@@ -28,7 +28,6 @@ import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_UNKNOWN;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -104,9 +103,9 @@ public class ChannelSoundingParamsTest {
     @Test
     public void defaultParameters() {
         ChannelSoundingParams params = new ChannelSoundingParams.Builder().build();
-        assertEquals(SIGHT_TYPE_UNKNOWN, params.getSightType());
-        assertEquals(LOCATION_TYPE_UNKNOWN, params.getLocationType());
-        assertEquals(CS_SECURITY_LEVEL_ONE, params.getCsSecurityLevel());
+        assertThat(params.getSightType()).isEqualTo(SIGHT_TYPE_UNKNOWN);
+        assertThat(params.getLocationType()).isEqualTo(LOCATION_TYPE_UNKNOWN);
+        assertThat(params.getCsSecurityLevel()).isEqualTo(CS_SECURITY_LEVEL_ONE);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -115,7 +114,7 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setSightType(-1));
         ChannelSoundingParams params = builder.setSightType(SIGHT_TYPE_LINE_OF_SIGHT).build();
-        assertEquals(SIGHT_TYPE_LINE_OF_SIGHT, params.getSightType());
+        assertThat(params.getSightType()).isEqualTo(SIGHT_TYPE_LINE_OF_SIGHT);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -124,7 +123,7 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setLocationType(-1));
         ChannelSoundingParams params = builder.setLocationType(LOCATION_TYPE_OUTDOOR).build();
-        assertEquals(LOCATION_TYPE_OUTDOOR, params.getLocationType());
+        assertThat(params.getLocationType()).isEqualTo(LOCATION_TYPE_OUTDOOR);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -133,16 +132,16 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCsSecurityLevel(-1));
         ChannelSoundingParams params = builder.setCsSecurityLevel(CS_SECURITY_LEVEL_TWO).build();
-        assertEquals(CS_SECURITY_LEVEL_TWO, params.getCsSecurityLevel());
+        assertThat(params.getCsSecurityLevel()).isEqualTo(CS_SECURITY_LEVEL_TWO);
     }
 
     private void assertParamsEquals(ChannelSoundingParams p, ChannelSoundingParams other) {
         assertThat(p).isNotNull();
         assertThat(other).isNotNull();
 
-        assertEquals(p.getSightType(), other.getSightType());
-        assertEquals(p.getLocationType(), other.getLocationType());
-        assertEquals(p.getCsSecurityLevel(), other.getCsSecurityLevel());
+        assertThat(p.getSightType()).isEqualTo(other.getSightType());
+        assertThat(p.getLocationType()).isEqualTo(other.getLocationType());
+        assertThat(p.getCsSecurityLevel()).isEqualTo(other.getCsSecurityLevel());
     }
 
     private void enforceConnectAndPrivileged(ThrowingRunnable runnable) {
