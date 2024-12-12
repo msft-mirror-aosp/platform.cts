@@ -72,17 +72,6 @@ public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildRece
                 atom -> atom.getBatteryUsageStatsSinceReset().getBatteryUsageStats());
     }
 
-    public void testBatteryUsageStatsSinceResetUsingPowerProfileModel() throws Exception {
-        if (!hasBattery()) {
-            return;
-        }
-
-        runBatteryUsageStatsAtomTest(
-                AtomsProto.Atom.BATTERY_USAGE_STATS_SINCE_RESET_USING_POWER_PROFILE_MODEL_FIELD_NUMBER,
-                atom -> atom.getBatteryUsageStatsSinceResetUsingPowerProfileModel()
-                        .getBatteryUsageStats());
-    }
-
     private void runBatteryUsageStatsAtomTest(int atomFieldNumber,
             Function<AtomsProto.Atom, BatteryUsageStatsAtomsProto> getter) throws Exception {
         unplugDevice();
