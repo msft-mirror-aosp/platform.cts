@@ -740,28 +740,19 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .build();
     private static final ImmutableList<Integer> PERMISSION_READ_CAR_SEAT_BELTS_PROPERTIES =
             ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.SEAT_BELT_PRETENSIONER_DEPLOYED)
+                    .add(VehiclePropertyIds.SEAT_BELT_PRETENSIONER_DEPLOYED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_READ_VALET_MODE_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.VALET_MODE_ENABLED)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.VALET_MODE_ENABLED).build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_VALET_MODE_PROPERTIES =
-            ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.VALET_MODE_ENABLED)
-                    .build();
+            ImmutableList.<Integer>builder().add(VehiclePropertyIds.VALET_MODE_ENABLED).build();
     private static final ImmutableList<Integer> PERMISSION_READ_HEAD_UP_DISPLAY_STATUS_PROPERTIES =
             ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
+                    .add(VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_HEAD_UP_DISPLAY_PROPERTIES =
             ImmutableList.<Integer>builder()
-                    .add(
-                            VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
+                    .add(VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_IDENTIFICATION_PROPERTIES =
             ImmutableList.<Integer>builder().add(VehiclePropertyIds.INFO_VIN).build();
@@ -1606,305 +1597,304 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private static VerifierInfo[] getAllVerifierInfo() {
         return new VerifierInfo[] {
-                new VerifierInfo(getGearSelectionVerifierBuilder()),
-                new VerifierInfo(getNightModeVerifierBuilder()),
-                new VerifierInfo(getPerfVehicleSpeedVerifierBuilder()),
-                new VerifierInfo(getPerfVehicleSpeedDisplayVerifierBuilder()),
-                new VerifierInfo(getParkingBrakeOnVerifierBuilder()),
-                new VerifierInfo(getEmergencyLaneKeepAssistEnabledVerifierBuilder()),
-                new VerifierInfo(getEmergencyLaneKeepAssistStateVerifierBuilder()),
-                new VerifierInfo(getCruiseControlEnabledVerifierBuilder()),
-                new VerifierInfo(getCruiseControlTypeVerifierBuilder()),
-                new VerifierInfo(getCruiseControlStateVerifierBuilder()),
-                new VerifierInfo(getCruiseControlCommandVerifierBuilder_OnAdaptiveCruiseControl())
-                        .assumeStandardCC(false),
-                new VerifierInfo(getCruiseControlCommandVerifierBuilder_OnStandardCruiseControl())
-                        .assumeStandardCC(true),
-                new VerifierInfo(getCruiseControlTargetSpeedVerifierBuilder()),
-                new VerifierInfo(getAdaptiveCruiseControlTargetTimeGapVerifierBuilder())
-                        .assumeStandardCC(false),
-                new VerifierInfo(getAdaptiveCruiseControlTargetTimeGapVerifierBuilder())
-                        .assumeStandardCC(true)
-                        .setExceptedExceptionClass(PropertyNotAvailableException.class),
-                new VerifierInfo(
-                        getAdaptiveCruiseControlLeadVehicleMeasuredDistanceVerifierBuilder())
-                        .assumeStandardCC(false),
-                new VerifierInfo(
-                        getAdaptiveCruiseControlLeadVehicleMeasuredDistanceVerifierBuilder())
-                        .assumeStandardCC(true)
-                        .setExceptedExceptionClass(PropertyNotAvailableException.class),
-                new VerifierInfo(getHandsOnDetectionEnabledVerifierBuilder()),
-                new VerifierInfo(getHandsOnDetectionDriverStateVerifierBuilder()),
-                new VerifierInfo(getHandsOnDetectionWarningVerifierBuilder()),
-                new VerifierInfo(getDriverDrowsinessAttentionSystemEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDrowsinessAttentionStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDrowsinessAttentionWarningEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDrowsinessAttentionWarningVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDistractionSystemEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDistractionStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDistractionWarningEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getDriverDistractionWarningVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getWheelTickVerifierBuilder()),
-                new VerifierInfo(getInfoVinVerifierBuilder()),
-                new VerifierInfo(getInfoMakeVerifierBuilder()),
-                new VerifierInfo(getInfoModelVerifierBuilder()),
-                new VerifierInfo(getInfoModelYearVerifierBuilder()),
-                new VerifierInfo(getInfoFuelCapacityVerifierBuilder()),
-                new VerifierInfo(getInfoFuelTypeVerifierBuilder()),
-                new VerifierInfo(getInfoEvBatteryCapacityVerifierBuilder()),
-                new VerifierInfo(getInfoEvConnectorTypeVerifierBuilder()),
-                new VerifierInfo(getInfoFuelDoorLocationVerifierBuilder()),
-                new VerifierInfo(getInfoEvPortLocationVerifierBuilder()),
-                new VerifierInfo(getInfoMultiEvPortLocationsVerifierBuilder()),
-                new VerifierInfo(getInfoDriverSeatVerifierBuilder()),
-                new VerifierInfo(getInfoExteriorDimensionsVerifierBuilder()),
-                new VerifierInfo(getEpochTimeVerifierBuilder()),
-                new VerifierInfo(getLocationCharacterizationVerifierBuilder()),
-                new VerifierInfo(getUltrasonicsSensorPositionVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getUltrasonicsSensorOrientationVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getUltrasonicsSensorFieldOfViewVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getUltrasonicsSensorDetectionRangeVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getUltrasonicsSensorSupportedRangesVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getUltrasonicsSensorMeasuredDistanceVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getElectronicTollCollectionCardTypeVerifierBuilder()),
-                new VerifierInfo(getElectronicTollCollectionCardStatusVerifierBuilder()),
-                new VerifierInfo(getGeneralSafetyRegulationComplianceVerifierBuilder()),
-                new VerifierInfo(getEnvOutsideTemperatureVerifierBuilder()),
-                new VerifierInfo(getCurrentGearVerifierBuilder()),
-                new VerifierInfo(getParkingBrakeAutoApplyVerifierBuilder()),
-                new VerifierInfo(getIgnitionStateVerifierBuilder()),
-                new VerifierInfo(getEvBrakeRegenerationLevelVerifierBuilder()),
-                new VerifierInfo(getEvStoppingModeVerifierBuilder()),
-                new VerifierInfo(getAbsActiveVerifierBuilder()),
-                new VerifierInfo(getTractionControlActiveVerifierBuilder()),
-                new VerifierInfo(getDoorPosVerifierBuilder()),
-                new VerifierInfo(getDoorMoveVerifierBuilder()),
-                new VerifierInfo(getDoorLockVerifierBuilder()),
-                new VerifierInfo(getDoorChildLockEnabledVerifierBuilder()),
-                new VerifierInfo(getVehicleDrivingAutomationCurrentLevelVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getMirrorZPosVerifierBuilder()),
-                new VerifierInfo(getMirrorZMoveVerifierBuilder()),
-                new VerifierInfo(getMirrorYPosVerifierBuilder()),
-                new VerifierInfo(getMirrorYMoveVerifierBuilder()),
-                new VerifierInfo(getMirrorLockVerifierBuilder()),
-                new VerifierInfo(getMirrorFoldVerifierBuilder()),
-                new VerifierInfo(getMirrorAutoFoldEnabledVerifierBuilder()),
-                new VerifierInfo(getMirrorAutoTiltEnabledVerifierBuilder()),
-                new VerifierInfo(getWindowPosVerifierBuilder()),
-                new VerifierInfo(getWindowMoveVerifierBuilder()),
-                new VerifierInfo(getWindowLockVerifierBuilder()),
-                new VerifierInfo(getWindshieldWipersPeriodVerifierBuilder()),
-                new VerifierInfo(getWindshieldWipersStateVerifierBuilder()),
-                new VerifierInfo(getWindshieldWipersSwitchVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelDepthPosVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelDepthMoveVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelHeightPosVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelHeightMoveVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelTheftLockEnabledVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelLockedVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelEasyAccessEnabledVerifierBuilder()),
-                new VerifierInfo(getGloveBoxDoorPosVerifierBuilder()),
-                new VerifierInfo(getGloveBoxLockedVerifierBuilder()),
-                new VerifierInfo(getDistanceDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getFuelVolumeDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getTirePressureVerifierBuilder()),
-                new VerifierInfo(getCriticallyLowTirePressureVerifierBuilder()),
-                new VerifierInfo(getTirePressureDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getEvBatteryDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getVehicleSpeedDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getFuelConsumptionUnitsDistanceOverVolumeVerifierBuilder()),
-                new VerifierInfo(getFuelLevelVerifierBuilder()),
-                new VerifierInfo(getEvBatteryLevelVerifierBuilder()),
-                new VerifierInfo(getEvCurrentBatteryCapacityVerifierBuilder()),
-                new VerifierInfo(getEvBatteryInstantaneousChargeRateVerifierBuilder()),
-                new VerifierInfo(getRangeRemainingVerifierBuilder()),
-                new VerifierInfo(getEvBatteryAverageTemperatureVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getFuelLevelLowVerifierBuilder()),
-                new VerifierInfo(getFuelDoorOpenVerifierBuilder()),
-                new VerifierInfo(getEvChargePortOpenVerifierBuilder()),
-                new VerifierInfo(getEvChargePortConnectedVerifierBuilder()),
-                new VerifierInfo(getEvChargeCurrentDrawLimitVerifierBuilder()),
-                new VerifierInfo(getEvChargePercentLimitVerifierBuilder()),
-                new VerifierInfo(getEvChargeStateVerifierBuilder()),
-                new VerifierInfo(getEvChargeSwitchVerifierBuilder()),
-                new VerifierInfo(getEvChargeTimeRemainingVerifierBuilder()),
-                new VerifierInfo(getEvRegenerativeBrakingStateVerifierBuilder()),
-                new VerifierInfo(getPerfSteeringAngleVerifierBuilder()),
-                new VerifierInfo(getPerfRearSteeringAngleVerifierBuilder()),
-                new VerifierInfo(getEngineCoolantTempVerifierBuilder()),
-                new VerifierInfo(getEngineOilLevelVerifierBuilder()),
-                new VerifierInfo(getEngineOilTempVerifierBuilder()),
-                new VerifierInfo(getEngineRpmVerifierBuilder()),
-                new VerifierInfo(getEngineIdleAutoStopEnabledVerifierBuilder()),
-                new VerifierInfo(getImpactDetectedVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getPerfOdometerVerifierBuilder()),
-                new VerifierInfo(getTurnSignalStateVerifierBuilder()),
-                new VerifierInfo(getHeadlightsStateVerifierBuilder()),
-                new VerifierInfo(getHighBeamLightsStateVerifierBuilder()),
-                new VerifierInfo(getFogLightsStateVerifierBuilder()),
-                new VerifierInfo(getHazardLightsStateVerifierBuilder()),
-                new VerifierInfo(getFrontFogLightsStateVerifierBuilder()),
-                new VerifierInfo(getRearFogLightsStateVerifierBuilder()),
-                new VerifierInfo(getCabinLightsStateVerifierBuilder()),
-                new VerifierInfo(getReadingLightsStateVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelLightsStateVerifierBuilder()),
-                new VerifierInfo(getVehicleCurbWeightVerifierBuilder()),
-                new VerifierInfo(getHeadlightsSwitchVerifierBuilder()),
-                new VerifierInfo(getTrailerPresentVerifierBuilder()),
-                new VerifierInfo(getHighBeamLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getFogLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getHazardLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getFrontFogLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getRearFogLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getCabinLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getReadingLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getSteeringWheelLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getSeatMemorySelectVerifierBuilder()),
-                new VerifierInfo(getSeatMemorySetVerifierBuilder()),
-                new VerifierInfo(getSeatBeltBuckledVerifierBuilder()),
-                new VerifierInfo(getSeatBeltHeightPosVerifierBuilder()),
-                new VerifierInfo(getSeatBeltHeightMoveVerifierBuilder()),
-                new VerifierInfo(getSeatForeAftPosVerifierBuilder()),
-                new VerifierInfo(getSeatForeAftMoveVerifierBuilder()),
-                new VerifierInfo(getSeatBackrestAngle1PosVerifierBuilder()),
-                new VerifierInfo(getSeatBackrestAngle1MoveVerifierBuilder()),
-                new VerifierInfo(getSeatBackrestAngle2PosVerifierBuilder()),
-                new VerifierInfo(getSeatBackrestAngle2MoveVerifierBuilder()),
-                new VerifierInfo(getSeatHeightPosVerifierBuilder()),
-                new VerifierInfo(getSeatHeightMoveVerifierBuilder()),
-                new VerifierInfo(getSeatDepthPosVerifierBuilder()),
-                new VerifierInfo(getSeatDepthMoveVerifierBuilder()),
-                new VerifierInfo(getSeatTiltPosVerifierBuilder()),
-                new VerifierInfo(getSeatTiltMoveVerifierBuilder()),
-                new VerifierInfo(getSeatLumbarForeAftPosVerifierBuilder()),
-                new VerifierInfo(getSeatLumbarForeAftMoveVerifierBuilder()),
-                new VerifierInfo(getSeatLumbarSideSupportPosVerifierBuilder()),
-                new VerifierInfo(getSeatLumbarSideSupportMoveVerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestHeightPosV2VerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestHeightMoveVerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestAnglePosVerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestAngleMoveVerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestForeAftPosVerifierBuilder()),
-                new VerifierInfo(getSeatHeadrestForeAftMoveVerifierBuilder()),
-                new VerifierInfo(getSeatFootwellLightsStateVerifierBuilder()),
-                new VerifierInfo(getSeatFootwellLightsSwitchVerifierBuilder()),
-                new VerifierInfo(getSeatEasyAccessEnabledVerifierBuilder()),
-                new VerifierInfo(getSeatAirbagEnabledVerifierBuilder()),
-                new VerifierInfo(getSeatCushionSideSupportPosVerifierBuilder()),
-                new VerifierInfo(getSeatCushionSideSupportMoveVerifierBuilder()),
-                new VerifierInfo(getSeatLumberVerticalPosVerifierBuilder()),
-                new VerifierInfo(getSeatLumberVerticalMoveVerifierBuilder()),
-                new VerifierInfo(getSeatWalkInPosVerifierBuilder()),
-                new VerifierInfo(getSeatAirbagsDeployedVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getSeatBeltPretensionerDeployedVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getValetModeEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getHeadUpDisplayEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getSeatOccupancyVerifierBuilder()),
-                new VerifierInfo(getHvacDefrosterVerifierBuilder()),
-                new VerifierInfo(getHvacElectricDefrosterOnVerifierBuilder()),
-                new VerifierInfo(getHvacSideMirrorHeatVerifierBuilder()),
-                new VerifierInfo(getHvacSteeringWheelHeatVerifierBuilder()),
-                new VerifierInfo(getHvacTemperatureDisplayUnitsVerifierBuilder()),
-                new VerifierInfo(getHvacTemperatureValueSuggestionVerifierBuilder()),
-                new VerifierInfo(getHvacPowerOnVerifierBuilder()),
-                new VerifierInfo(getHvacFanSpeedVerifierBuilder()),
-                new VerifierInfo(getHvacFanDirectionAvailableVerifierBuilder()),
-                new VerifierInfo(getHvacFanDirectionVerifierBuilder()),
-                new VerifierInfo(getHvacTemperatureCurrentVerifierBuilder()),
-                new VerifierInfo(getHvacTemperatureSetVerifierBuilder()),
-                new VerifierInfo(getHvacAcOnVerifierBuilder()),
-                new VerifierInfo(getHvacMaxAcOnVerifierBuilder()),
-                new VerifierInfo(getHvacMaxDefrostOnVerifierBuilder()),
-                new VerifierInfo(getHvacRecircOnVerifierBuilder()),
-                new VerifierInfo(getHvacAutoOnVerifierBuilder()),
-                new VerifierInfo(getHvacSeatTemperatureVerifierBuilder()),
-                new VerifierInfo(getHvacActualFanSpeedRpmVerifierBuilder()),
-                new VerifierInfo(getHvacAutoRecircOnVerifierBuilder()),
-                new VerifierInfo(getHvacSeatVentilationVerifierBuilder()),
-                new VerifierInfo(getHvacDualOnVerifierBuilder()),
-                new VerifierInfo(getAutomaticEmergencyBrakingEnabledVerifierBuilder()),
-                new VerifierInfo(getAutomaticEmergencyBrakingStateVerifierBuilder()),
-                new VerifierInfo(getForwardCollisionWarningEnabledVerifierBuilder()),
-                new VerifierInfo(getForwardCollisionWarningStateVerifierBuilder()),
-                new VerifierInfo(getBlindSpotWarningEnabledVerifierBuilder()),
-                new VerifierInfo(getBlindSpotWarningStateVerifierBuilder()),
-                new VerifierInfo(getLaneDepartureWarningEnabledVerifierBuilder()),
-                new VerifierInfo(getLaneDepartureWarningStateVerifierBuilder()),
-                new VerifierInfo(getLaneKeepAssistEnabledVerifierBuilder()),
-                new VerifierInfo(getLaneKeepAssistStateVerifierBuilder()),
-                new VerifierInfo(getLaneCenteringAssistEnabledVerifierBuilder()),
-                new VerifierInfo(getLaneCenteringAssistCommandVerifierBuilder()),
-                new VerifierInfo(getLaneCenteringAssistStateVerifierBuilder()),
-                new VerifierInfo(getLowSpeedCollisionWarningEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getLowSpeedCollisionWarningStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getElectronicStabilityControlStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getElectronicStabilityControlEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getCrossTrafficMonitoringEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getCrossTrafficMonitoringWarningStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingEnabledVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(
-                        VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(
-                        VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getVehicleHornEngagedVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers
-                                .getVehicleDrivingAutomationTargetLevelVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers
-                                .getAcceleratorPedalCompressionPercentageVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers
-                                .getBrakePedalCompressionPercentageVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(
-                        VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
-                new VerifierInfo(
-                        VehiclePropertyVerifiers.getVehiclePassiveSuspensionHeightVerifierBuilder())
-                        .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(getGearSelectionVerifierBuilder()),
+            new VerifierInfo(getNightModeVerifierBuilder()),
+            new VerifierInfo(getPerfVehicleSpeedVerifierBuilder()),
+            new VerifierInfo(getPerfVehicleSpeedDisplayVerifierBuilder()),
+            new VerifierInfo(getParkingBrakeOnVerifierBuilder()),
+            new VerifierInfo(getEmergencyLaneKeepAssistEnabledVerifierBuilder()),
+            new VerifierInfo(getEmergencyLaneKeepAssistStateVerifierBuilder()),
+            new VerifierInfo(getCruiseControlEnabledVerifierBuilder()),
+            new VerifierInfo(getCruiseControlTypeVerifierBuilder()),
+            new VerifierInfo(getCruiseControlStateVerifierBuilder()),
+            new VerifierInfo(getCruiseControlCommandVerifierBuilder_OnAdaptiveCruiseControl())
+                    .assumeStandardCC(false),
+            new VerifierInfo(getCruiseControlCommandVerifierBuilder_OnStandardCruiseControl())
+                    .assumeStandardCC(true),
+            new VerifierInfo(getCruiseControlTargetSpeedVerifierBuilder()),
+            new VerifierInfo(getAdaptiveCruiseControlTargetTimeGapVerifierBuilder())
+                    .assumeStandardCC(false),
+            new VerifierInfo(getAdaptiveCruiseControlTargetTimeGapVerifierBuilder())
+                    .assumeStandardCC(true)
+                    .setExceptedExceptionClass(PropertyNotAvailableException.class),
+            new VerifierInfo(getAdaptiveCruiseControlLeadVehicleMeasuredDistanceVerifierBuilder())
+                    .assumeStandardCC(false),
+            new VerifierInfo(getAdaptiveCruiseControlLeadVehicleMeasuredDistanceVerifierBuilder())
+                    .assumeStandardCC(true)
+                    .setExceptedExceptionClass(PropertyNotAvailableException.class),
+            new VerifierInfo(getHandsOnDetectionEnabledVerifierBuilder()),
+            new VerifierInfo(getHandsOnDetectionDriverStateVerifierBuilder()),
+            new VerifierInfo(getHandsOnDetectionWarningVerifierBuilder()),
+            new VerifierInfo(getDriverDrowsinessAttentionSystemEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDrowsinessAttentionStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDrowsinessAttentionWarningEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDrowsinessAttentionWarningVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDistractionSystemEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDistractionStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDistractionWarningEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getDriverDistractionWarningVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getWheelTickVerifierBuilder()),
+            new VerifierInfo(getInfoVinVerifierBuilder()),
+            new VerifierInfo(getInfoMakeVerifierBuilder()),
+            new VerifierInfo(getInfoModelVerifierBuilder()),
+            new VerifierInfo(getInfoModelYearVerifierBuilder()),
+            new VerifierInfo(getInfoFuelCapacityVerifierBuilder()),
+            new VerifierInfo(getInfoFuelTypeVerifierBuilder()),
+            new VerifierInfo(getInfoEvBatteryCapacityVerifierBuilder()),
+            new VerifierInfo(getInfoEvConnectorTypeVerifierBuilder()),
+            new VerifierInfo(getInfoFuelDoorLocationVerifierBuilder()),
+            new VerifierInfo(getInfoEvPortLocationVerifierBuilder()),
+            new VerifierInfo(getInfoMultiEvPortLocationsVerifierBuilder()),
+            new VerifierInfo(getInfoDriverSeatVerifierBuilder()),
+            new VerifierInfo(getInfoExteriorDimensionsVerifierBuilder()),
+            new VerifierInfo(getEpochTimeVerifierBuilder()),
+            new VerifierInfo(getLocationCharacterizationVerifierBuilder()),
+            new VerifierInfo(getUltrasonicsSensorPositionVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getUltrasonicsSensorOrientationVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getUltrasonicsSensorFieldOfViewVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getUltrasonicsSensorDetectionRangeVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getUltrasonicsSensorSupportedRangesVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getUltrasonicsSensorMeasuredDistanceVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getElectronicTollCollectionCardTypeVerifierBuilder()),
+            new VerifierInfo(getElectronicTollCollectionCardStatusVerifierBuilder()),
+            new VerifierInfo(getGeneralSafetyRegulationComplianceVerifierBuilder()),
+            new VerifierInfo(getEnvOutsideTemperatureVerifierBuilder()),
+            new VerifierInfo(getCurrentGearVerifierBuilder()),
+            new VerifierInfo(getParkingBrakeAutoApplyVerifierBuilder()),
+            new VerifierInfo(getIgnitionStateVerifierBuilder()),
+            new VerifierInfo(getEvBrakeRegenerationLevelVerifierBuilder()),
+            new VerifierInfo(getEvStoppingModeVerifierBuilder()),
+            new VerifierInfo(getAbsActiveVerifierBuilder()),
+            new VerifierInfo(getTractionControlActiveVerifierBuilder()),
+            new VerifierInfo(getDoorPosVerifierBuilder()),
+            new VerifierInfo(getDoorMoveVerifierBuilder()),
+            new VerifierInfo(getDoorLockVerifierBuilder()),
+            new VerifierInfo(getDoorChildLockEnabledVerifierBuilder()),
+            new VerifierInfo(getVehicleDrivingAutomationCurrentLevelVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getMirrorZPosVerifierBuilder()),
+            new VerifierInfo(getMirrorZMoveVerifierBuilder()),
+            new VerifierInfo(getMirrorYPosVerifierBuilder()),
+            new VerifierInfo(getMirrorYMoveVerifierBuilder()),
+            new VerifierInfo(getMirrorLockVerifierBuilder()),
+            new VerifierInfo(getMirrorFoldVerifierBuilder()),
+            new VerifierInfo(getMirrorAutoFoldEnabledVerifierBuilder()),
+            new VerifierInfo(getMirrorAutoTiltEnabledVerifierBuilder()),
+            new VerifierInfo(getWindowPosVerifierBuilder()),
+            new VerifierInfo(getWindowMoveVerifierBuilder()),
+            new VerifierInfo(getWindowLockVerifierBuilder()),
+            new VerifierInfo(getWindshieldWipersPeriodVerifierBuilder()),
+            new VerifierInfo(getWindshieldWipersStateVerifierBuilder()),
+            new VerifierInfo(getWindshieldWipersSwitchVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelDepthPosVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelDepthMoveVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelHeightPosVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelHeightMoveVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelTheftLockEnabledVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelLockedVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelEasyAccessEnabledVerifierBuilder()),
+            new VerifierInfo(getGloveBoxDoorPosVerifierBuilder()),
+            new VerifierInfo(getGloveBoxLockedVerifierBuilder()),
+            new VerifierInfo(getDistanceDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getFuelVolumeDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getTirePressureVerifierBuilder()),
+            new VerifierInfo(getCriticallyLowTirePressureVerifierBuilder()),
+            new VerifierInfo(getTirePressureDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getEvBatteryDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getVehicleSpeedDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getFuelConsumptionUnitsDistanceOverVolumeVerifierBuilder()),
+            new VerifierInfo(getFuelLevelVerifierBuilder()),
+            new VerifierInfo(getEvBatteryLevelVerifierBuilder()),
+            new VerifierInfo(getEvCurrentBatteryCapacityVerifierBuilder()),
+            new VerifierInfo(getEvBatteryInstantaneousChargeRateVerifierBuilder()),
+            new VerifierInfo(getRangeRemainingVerifierBuilder()),
+            new VerifierInfo(getEvBatteryAverageTemperatureVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getFuelLevelLowVerifierBuilder()),
+            new VerifierInfo(getFuelDoorOpenVerifierBuilder()),
+            new VerifierInfo(getEvChargePortOpenVerifierBuilder()),
+            new VerifierInfo(getEvChargePortConnectedVerifierBuilder()),
+            new VerifierInfo(getEvChargeCurrentDrawLimitVerifierBuilder()),
+            new VerifierInfo(getEvChargePercentLimitVerifierBuilder()),
+            new VerifierInfo(getEvChargeStateVerifierBuilder()),
+            new VerifierInfo(getEvChargeSwitchVerifierBuilder()),
+            new VerifierInfo(getEvChargeTimeRemainingVerifierBuilder()),
+            new VerifierInfo(getEvRegenerativeBrakingStateVerifierBuilder()),
+            new VerifierInfo(getPerfSteeringAngleVerifierBuilder()),
+            new VerifierInfo(getPerfRearSteeringAngleVerifierBuilder()),
+            new VerifierInfo(getEngineCoolantTempVerifierBuilder()),
+            new VerifierInfo(getEngineOilLevelVerifierBuilder()),
+            new VerifierInfo(getEngineOilTempVerifierBuilder()),
+            new VerifierInfo(getEngineRpmVerifierBuilder()),
+            new VerifierInfo(getEngineIdleAutoStopEnabledVerifierBuilder()),
+            new VerifierInfo(getImpactDetectedVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getPerfOdometerVerifierBuilder()),
+            new VerifierInfo(getTurnSignalStateVerifierBuilder()),
+            new VerifierInfo(getHeadlightsStateVerifierBuilder()),
+            new VerifierInfo(getHighBeamLightsStateVerifierBuilder()),
+            new VerifierInfo(getFogLightsStateVerifierBuilder()),
+            new VerifierInfo(getHazardLightsStateVerifierBuilder()),
+            new VerifierInfo(getFrontFogLightsStateVerifierBuilder()),
+            new VerifierInfo(getRearFogLightsStateVerifierBuilder()),
+            new VerifierInfo(getCabinLightsStateVerifierBuilder()),
+            new VerifierInfo(getReadingLightsStateVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelLightsStateVerifierBuilder()),
+            new VerifierInfo(getVehicleCurbWeightVerifierBuilder()),
+            new VerifierInfo(getHeadlightsSwitchVerifierBuilder()),
+            new VerifierInfo(getTrailerPresentVerifierBuilder()),
+            new VerifierInfo(getHighBeamLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getFogLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getHazardLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getFrontFogLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getRearFogLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getCabinLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getReadingLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getSteeringWheelLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getSeatMemorySelectVerifierBuilder()),
+            new VerifierInfo(getSeatMemorySetVerifierBuilder()),
+            new VerifierInfo(getSeatBeltBuckledVerifierBuilder()),
+            new VerifierInfo(getSeatBeltHeightPosVerifierBuilder()),
+            new VerifierInfo(getSeatBeltHeightMoveVerifierBuilder()),
+            new VerifierInfo(getSeatForeAftPosVerifierBuilder()),
+            new VerifierInfo(getSeatForeAftMoveVerifierBuilder()),
+            new VerifierInfo(getSeatBackrestAngle1PosVerifierBuilder()),
+            new VerifierInfo(getSeatBackrestAngle1MoveVerifierBuilder()),
+            new VerifierInfo(getSeatBackrestAngle2PosVerifierBuilder()),
+            new VerifierInfo(getSeatBackrestAngle2MoveVerifierBuilder()),
+            new VerifierInfo(getSeatHeightPosVerifierBuilder()),
+            new VerifierInfo(getSeatHeightMoveVerifierBuilder()),
+            new VerifierInfo(getSeatDepthPosVerifierBuilder()),
+            new VerifierInfo(getSeatDepthMoveVerifierBuilder()),
+            new VerifierInfo(getSeatTiltPosVerifierBuilder()),
+            new VerifierInfo(getSeatTiltMoveVerifierBuilder()),
+            new VerifierInfo(getSeatLumbarForeAftPosVerifierBuilder()),
+            new VerifierInfo(getSeatLumbarForeAftMoveVerifierBuilder()),
+            new VerifierInfo(getSeatLumbarSideSupportPosVerifierBuilder()),
+            new VerifierInfo(getSeatLumbarSideSupportMoveVerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestHeightPosV2VerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestHeightMoveVerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestAnglePosVerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestAngleMoveVerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestForeAftPosVerifierBuilder()),
+            new VerifierInfo(getSeatHeadrestForeAftMoveVerifierBuilder()),
+            new VerifierInfo(getSeatFootwellLightsStateVerifierBuilder()),
+            new VerifierInfo(getSeatFootwellLightsSwitchVerifierBuilder()),
+            new VerifierInfo(getSeatEasyAccessEnabledVerifierBuilder()),
+            new VerifierInfo(getSeatAirbagEnabledVerifierBuilder()),
+            new VerifierInfo(getSeatCushionSideSupportPosVerifierBuilder()),
+            new VerifierInfo(getSeatCushionSideSupportMoveVerifierBuilder()),
+            new VerifierInfo(getSeatLumberVerticalPosVerifierBuilder()),
+            new VerifierInfo(getSeatLumberVerticalMoveVerifierBuilder()),
+            new VerifierInfo(getSeatWalkInPosVerifierBuilder()),
+            new VerifierInfo(getSeatAirbagsDeployedVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getSeatBeltPretensionerDeployedVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getValetModeEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getHeadUpDisplayEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getSeatOccupancyVerifierBuilder()),
+            new VerifierInfo(getHvacDefrosterVerifierBuilder()),
+            new VerifierInfo(getHvacElectricDefrosterOnVerifierBuilder()),
+            new VerifierInfo(getHvacSideMirrorHeatVerifierBuilder()),
+            new VerifierInfo(getHvacSteeringWheelHeatVerifierBuilder()),
+            new VerifierInfo(getHvacTemperatureDisplayUnitsVerifierBuilder()),
+            new VerifierInfo(getHvacTemperatureValueSuggestionVerifierBuilder()),
+            new VerifierInfo(getHvacPowerOnVerifierBuilder()),
+            new VerifierInfo(getHvacFanSpeedVerifierBuilder()),
+            new VerifierInfo(getHvacFanDirectionAvailableVerifierBuilder()),
+            new VerifierInfo(getHvacFanDirectionVerifierBuilder()),
+            new VerifierInfo(getHvacTemperatureCurrentVerifierBuilder()),
+            new VerifierInfo(getHvacTemperatureSetVerifierBuilder()),
+            new VerifierInfo(getHvacAcOnVerifierBuilder()),
+            new VerifierInfo(getHvacMaxAcOnVerifierBuilder()),
+            new VerifierInfo(getHvacMaxDefrostOnVerifierBuilder()),
+            new VerifierInfo(getHvacRecircOnVerifierBuilder()),
+            new VerifierInfo(getHvacAutoOnVerifierBuilder()),
+            new VerifierInfo(getHvacSeatTemperatureVerifierBuilder()),
+            new VerifierInfo(getHvacActualFanSpeedRpmVerifierBuilder()),
+            new VerifierInfo(getHvacAutoRecircOnVerifierBuilder()),
+            new VerifierInfo(getHvacSeatVentilationVerifierBuilder()),
+            new VerifierInfo(getHvacDualOnVerifierBuilder()),
+            new VerifierInfo(getAutomaticEmergencyBrakingEnabledVerifierBuilder()),
+            new VerifierInfo(getAutomaticEmergencyBrakingStateVerifierBuilder()),
+            new VerifierInfo(getForwardCollisionWarningEnabledVerifierBuilder()),
+            new VerifierInfo(getForwardCollisionWarningStateVerifierBuilder()),
+            new VerifierInfo(getBlindSpotWarningEnabledVerifierBuilder()),
+            new VerifierInfo(getBlindSpotWarningStateVerifierBuilder()),
+            new VerifierInfo(getLaneDepartureWarningEnabledVerifierBuilder()),
+            new VerifierInfo(getLaneDepartureWarningStateVerifierBuilder()),
+            new VerifierInfo(getLaneKeepAssistEnabledVerifierBuilder()),
+            new VerifierInfo(getLaneKeepAssistStateVerifierBuilder()),
+            new VerifierInfo(getLaneCenteringAssistEnabledVerifierBuilder()),
+            new VerifierInfo(getLaneCenteringAssistCommandVerifierBuilder()),
+            new VerifierInfo(getLaneCenteringAssistStateVerifierBuilder()),
+            new VerifierInfo(getLowSpeedCollisionWarningEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getLowSpeedCollisionWarningStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getElectronicStabilityControlStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getElectronicStabilityControlEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getCrossTrafficMonitoringEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getCrossTrafficMonitoringWarningStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingEnabledVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalLightStateVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getTurnSignalSwitchVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getInstantaneousFuelEconomyVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getInstantaneousEvEfficiencyVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getVehicleHornEngagedVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(
+                            VehiclePropertyVerifiers
+                                    .getVehicleDrivingAutomationTargetLevelVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(
+                            VehiclePropertyVerifiers
+                                    .getAcceleratorPedalCompressionPercentageVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(
+                            VehiclePropertyVerifiers
+                                    .getBrakePedalCompressionPercentageVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getBrakePadWearPercentageVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(VehiclePropertyVerifiers.getBrakeFluidLevelLowVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
+            new VerifierInfo(
+                            VehiclePropertyVerifiers
+                                    .getVehiclePassiveSuspensionHeightVerifierBuilder())
+                    .requireFlag(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES),
         };
     }
 
@@ -7113,8 +7103,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionControlCarSeatsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_CONTROL_CAR_SEATS_PROPERTIES,
-                Car.PERMISSION_CONTROL_CAR_SEATS);
+                PERMISSION_CONTROL_CAR_SEATS_PROPERTIES, Car.PERMISSION_CONTROL_CAR_SEATS);
     }
 
     @Test
@@ -7127,8 +7116,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testPermissionIdentificationGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
-                PERMISSION_IDENTIFICATION_PROPERTIES,
-                Car.PERMISSION_IDENTIFICATION);
+                PERMISSION_IDENTIFICATION_PROPERTIES, Car.PERMISSION_IDENTIFICATION);
     }
 
     @Test

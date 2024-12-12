@@ -16,6 +16,7 @@
 
 package com.android.bedstead.testapis.parser.utils;
 
+import com.google.common.collect.ImmutableList;
 import com.squareup.kotlinpoet.ClassName;
 import com.squareup.kotlinpoet.ParameterizedTypeName;
 import com.squareup.kotlinpoet.TypeName;
@@ -25,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
@@ -39,7 +41,8 @@ import javax.lang.model.util.Types;
  */
 public final class TypeUtils {
 
-    private TypeUtils() {}
+    private TypeUtils() {
+    }
 
     private static final Map<String, String> sJavaToKotlinDataTypesMap = new HashMap<>();
 
@@ -81,30 +84,32 @@ public final class TypeUtils {
                 String wrappedType =
                         "kotlin." + kotlinType.substring(
                                 kotlinType.indexOf("<") + 1, kotlinType.indexOf(">"));
-                return getDeclaredType(rawType, wrappedType,
+                return getDeclaredType(rawType, Collections.singletonList(wrappedType),
                         /* returnNonParameterizedType= */ false);
             }
 
             return new ClassName("kotlin", kotlinType);
         } else if (typeMirror instanceof DeclaredType) {
-            String wrappedTypeQualifiedName = typeQualifiedName(extractTypeArgument(typeMirror));
+            List<? extends TypeMirror> typeArguments = extractTypeArguments(typeMirror);
 
-            if (wrappedTypeQualifiedName != null) {
+            if (typeArguments != null) {
                 // if it is a parameterized type
-                return getDeclaredType(type, wrappedTypeQualifiedName, returnNonParameterizedType);
+                return getDeclaredType(type, typeArguments.stream().map(
+                        argumentType -> typeQualifiedName(argumentType)).collect(
+                        Collectors.toList()), returnNonParameterizedType);
             }
-
         } else if (typeMirror instanceof ArrayType) {
             return getDeclaredType(
                     /* type= */ "kotlin.Array",
-                    /* wrappedTypeQualifiedName= */ type.substring(0, type.length() - 2),
+                    /* wrappedTypeQualifiedNames= */
+                    Collections.singletonList(type.substring(0, type.length() - 2)),
                     /* returnNonParameterizedType= */ false);
         }
 
         return new ClassName(typePackageName(type), typeSimpleName(type));
     }
 
-    public static TypeName getDeclaredType(String type, String wrappedTypeQualifiedName,
+    public static TypeName getDeclaredType(String type, List<String> wrappedTypeQualifiedNames,
             boolean returnNonParameterizedType) {
         String rawTypeQualifiedName = typeQualifiedName(type);
         String rawTypePackage = typePackageName(rawTypeQualifiedName);
@@ -121,9 +126,12 @@ public final class TypeUtils {
         }
 
         return ParameterizedTypeName.get(new ClassName(rawTypePackage, rawType),
-                Collections.singletonList(
-                        new ClassName(typePackageName(wrappedTypeQualifiedName),
-                                typeSimpleName(wrappedTypeQualifiedName))));
+                wrappedTypeQualifiedNames.stream().map(
+                        wrappedTypeQualifiedName ->
+                                new ClassName(typePackageName(wrappedTypeQualifiedName),
+                                        typeSimpleName(wrappedTypeQualifiedName))
+                ).toArray(ClassName[]::new)
+        );
     }
 
     public static boolean isNestedClass(String type) {
@@ -153,41 +161,72 @@ public final class TypeUtils {
         return nestedClassParts;
     }
 
+    public static ImmutableList<String> splitParameterList(String params) {
+        List<String> parameters = new ArrayList<String>();
+        StringBuilder builder = new StringBuilder();
+        int typeDepth = 0;
+
+        for (char c : params.toCharArray()) {
+            if (c == ',' && typeDepth == 0) {
+                parameters.add(builder.toString());
+                builder.setLength(0);
+            } else {
+                if (c == '<') {
+                    typeDepth++;
+                } else if (c == '>') {
+                    typeDepth--;
+                }
+
+                builder.append(c);
+            }
+        }
+
+        parameters.add(builder.toString());
+
+        return ImmutableList.copyOf(parameters);
+    }
+
     public static TypeMirror typeForString(String typeName, Types types, Elements elements) {
-        if (typeName.equals("void")) {
-            return types.getNoType(TypeKind.VOID);
-        }
-
-        if (typeName.contains("<")) {
-            TypeElement element = elements.getTypeElement(typeName.split("<", 2)[0]);
-            TypeMirror typeArgs = typeForString(typeName.substring(
-                    typeName.indexOf("<") + 1, typeName.indexOf(">")), types, elements);
-
-            return types.getDeclaredType(element, typeArgs);
-        }
-
-        if (typeName.endsWith("[]")) {
-            return types.getArrayType(
-                    typeForString(typeName.substring(0, typeName.length() - 2), types, elements));
-        }
-
         try {
-            return types.getPrimitiveType(TypeKind.valueOf(typeName.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            // Not a primitive
-        }
+            if (typeName.equals("void")) {
+                return types.getNoType(TypeKind.VOID);
+            }
 
-        TypeElement element = elements.getTypeElement(typeName);
-        if (element == null) {
-            // It could be java.lang
-            element = elements.getTypeElement("java.lang." + typeName);
-        }
+            if (typeName.contains("<")) {
+                TypeElement element = elements.getTypeElement(typeName.split("<", 2)[0]);
+                String params = typeName.substring(typeName.indexOf("<") + 1,
+                        typeName.lastIndexOf(">"));
+                TypeMirror[] paramTypes = splitParameterList(params).stream().map(
+                        param -> typeForString(param, types, elements)).toArray(TypeMirror[]::new);
+                return types.getDeclaredType(element, paramTypes);
+            }
 
-        if (element == null) {
-            throw new IllegalStateException("Unknown type: " + typeName);
-        }
+            if (typeName.endsWith("[]")) {
+                return types.getArrayType(
+                        typeForString(typeName.substring(0, typeName.length() - 2), types,
+                                elements));
+            }
 
-        return element.asType();
+            try {
+                return types.getPrimitiveType(TypeKind.valueOf(typeName.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Not a primitive
+            }
+
+            TypeElement element = elements.getTypeElement(typeName);
+            if (element == null) {
+                // It could be java.lang
+                element = elements.getTypeElement("java.lang." + typeName);
+            }
+
+            if (element == null) {
+                throw new IllegalStateException("Unknown type: " + typeName);
+            }
+
+            return element.asType();
+        } catch (Exception e) {
+            throw new RuntimeException("TestApisReflection: failed to parse type: " + typeName, e);
+        }
     }
 
     public static String typePackageName(String type) {
@@ -240,6 +279,7 @@ public final class TypeUtils {
         // would be converted into kotlin.collections.List
         return type.split("<", 2)[0];
     }
+
     private static String typeQualifiedName(TypeMirror typeMirror) {
         if (typeMirror == null) {
             return null;
@@ -248,7 +288,7 @@ public final class TypeUtils {
         return typeQualifiedName(typeMirror.toString());
     }
 
-    private static TypeMirror extractTypeArgument(TypeMirror type) {
+    private static List<? extends TypeMirror> extractTypeArguments(TypeMirror type) {
         if (!(type instanceof DeclaredType)) {
             return null;
         }
@@ -257,7 +297,7 @@ public final class TypeUtils {
             return null;
         }
 
-        return ((DeclaredType) type).getTypeArguments().get(0);
+        return ((DeclaredType) type).getTypeArguments();
     }
 
 }
