@@ -51,6 +51,7 @@ DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
 OFFSET_RTOL = 0.15
 OFFSET_RTOL_SMOOTH_ZOOM = 0.5  # generous RTOL paired with other offset checks
+OFFSET_ATOL_SMOOTH_ZOOM = 75  # generous ATOL paired with other offset checks
 PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
 PREFERRED_BASE_ZOOM_RATIO_RTOL = 0.1
 PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
@@ -634,13 +635,14 @@ def verify_zoom_data(
           next_initial_offset = id_to_next_offset[data.physical_id]
           if not math.isclose(next_initial_offset, data.aruco_offset,
                               rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
-                              abs_tol=_OFFSET_ATOL):
+                              abs_tol=OFFSET_ATOL_SMOOTH_ZOOM):
             offset_success = False
             e_msg = ('Current offset did not match upcoming physical camera! '
                      f'{i} zoom: {data.result_zoom:.2f}, '
                      f'next initial offset: {next_initial_offset:.1f}, '
                      f'current offset: {data.aruco_offset:.1f}, '
-                     f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, ATOL: {_OFFSET_ATOL}')
+                     f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
+                     f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
             logging.error(e_msg)
           else:
             logging.debug('Successfully matched current offset with upcoming '

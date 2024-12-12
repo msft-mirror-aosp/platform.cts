@@ -29,8 +29,9 @@ aapt2 = sys.argv[1]
 frameworkRes = sys.argv[2]
 apkSigner = sys.argv[3]
 keyStore = sys.argv[4]
-genDir = sys.argv[5]
-inputFiles = sys.argv[6:]
+platformSdkVersion = sys.argv[5]
+genDir = sys.argv[6]
+inputFiles = sys.argv[7:]
 
 tempDir = f"{genDir}/temp"
 outDir = f"{genDir}/out"
@@ -77,6 +78,8 @@ for inputFile in inputFiles:
         packageName = PACKAGE_NAME_PREFIX + hashCode
         string = string.replace(">", f"\npackage=\"{packageName}\"\n>", 1)
         string = string.replace("<application", "<application\nandroid:hasCode=\"false\"\n")
+        major_version = platformSdkVersion.split(".")[0]
+        string = string.replace("platformSdkVersion", major_version)
 
         outputPath = f"{tempDir}/{hashCode}.xml"
         outputFile = open(outputPath, "w")

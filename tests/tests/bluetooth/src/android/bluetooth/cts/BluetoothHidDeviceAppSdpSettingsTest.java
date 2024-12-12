@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
 import android.test.AndroidTestCase;
 
@@ -33,11 +35,10 @@ public class BluetoothHidDeviceAppSdpSettingsTest extends AndroidTestCase {
         BluetoothHidDeviceAppSdpSettings settings =
                 new BluetoothHidDeviceAppSdpSettings(
                         name, description, provider, subclass, descriptors);
-        assertEquals(name, settings.getName());
-        assertEquals(description, settings.getDescription());
-        assertEquals(provider, settings.getProvider());
-        assertEquals(subclass, settings.getSubclass());
-        assertEquals(descriptors.length, settings.getDescriptors().length);
-        assertEquals(descriptors[0], settings.getDescriptors()[0]);
+        assertThat(settings.getName()).isEqualTo(name);
+        assertThat(settings.getDescription()).isEqualTo(description);
+        assertThat(settings.getProvider()).isEqualTo(provider);
+        assertThat(settings.getSubclass()).isEqualTo(subclass);
+        assertThat(settings.getDescriptors()).isEqualTo(descriptors);
     }
 }
