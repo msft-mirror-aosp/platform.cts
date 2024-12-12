@@ -20,7 +20,6 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.app.UiAutomation;
@@ -44,7 +43,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -143,13 +141,13 @@ public class BluetoothGattServerTest {
         mBluetoothGattServer.addService(service);
         mLatch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-        assertEquals(mBluetoothGattServer.getService(TEST_UUID), service);
+        assertThat(mBluetoothGattServer.getService(TEST_UUID)).isEqualTo(service);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getServices() {
-        assertEquals(mBluetoothGattServer.getServices(), new ArrayList<BluetoothGattService>());
+        assertThat(mBluetoothGattServer.getServices()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

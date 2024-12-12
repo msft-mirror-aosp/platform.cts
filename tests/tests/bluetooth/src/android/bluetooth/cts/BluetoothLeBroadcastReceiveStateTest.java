@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -121,15 +120,15 @@ public class BluetoothLeBroadcastReceiveStateTest {
                         TEST_NUM_SUBGROUPS,
                         Arrays.asList(TEST_BIS_SYNC_STATE),
                         Arrays.asList(TEST_SUBGROUP_METADATA));
-        assertEquals(TEST_SOURCE_ID, state.getSourceId());
-        assertEquals(TEST_SOURCE_ADDRESS_TYPE, state.getSourceAddressType());
-        assertEquals(testDevice, state.getSourceDevice());
-        assertEquals(TEST_ADVERTISER_SID, state.getSourceAdvertisingSid());
-        assertEquals(TEST_BROADCAST_ID, state.getBroadcastId());
-        assertEquals(TEST_PA_SYNC_STATE, state.getPaSyncState());
-        assertEquals(TEST_BIG_ENCRYPTION_STATE, state.getBigEncryptionState());
+        assertThat(state.getSourceId()).isEqualTo(TEST_SOURCE_ID);
+        assertThat(state.getSourceAddressType()).isEqualTo(TEST_SOURCE_ADDRESS_TYPE);
+        assertThat(state.getSourceDevice()).isEqualTo(testDevice);
+        assertThat(state.getSourceAdvertisingSid()).isEqualTo(TEST_ADVERTISER_SID);
+        assertThat(state.getBroadcastId()).isEqualTo(TEST_BROADCAST_ID);
+        assertThat(state.getPaSyncState()).isEqualTo(TEST_PA_SYNC_STATE);
+        assertThat(state.getBigEncryptionState()).isEqualTo(TEST_BIG_ENCRYPTION_STATE);
         assertThat(state.getBadCode()).isNull();
-        assertEquals(TEST_NUM_SUBGROUPS, state.getNumSubgroups());
+        assertThat(state.getNumSubgroups()).isEqualTo(TEST_NUM_SUBGROUPS);
         assertArrayEquals(TEST_BIS_SYNC_STATE, state.getBisSyncState().toArray(new Long[0]));
         assertArrayEquals(
                 TEST_SUBGROUP_METADATA,

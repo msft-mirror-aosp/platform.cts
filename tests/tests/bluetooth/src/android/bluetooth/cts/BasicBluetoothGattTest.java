@@ -18,7 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -85,7 +84,7 @@ public class BasicBluetoothGattTest {
                     mBluetoothDevice.connectGatt(
                             context, /* autoConnect= */ true, new BluetoothGattCallback() {});
         }
-        assertNotNull(mBluetoothGatt);
+        assertThat(mBluetoothGatt).isNotNull();
     }
 
     @After
