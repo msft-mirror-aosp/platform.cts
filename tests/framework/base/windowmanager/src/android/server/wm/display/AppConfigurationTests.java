@@ -360,6 +360,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     /**
      * Test that device handles consequent requested orientations and displays the activities.
      */
+    @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test
     public void testFullscreenAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
@@ -397,6 +398,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 ORIENTATION_PORTRAIT, reportedSizes.orientation);
     }
 
+    @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test
     public void testTranslucentAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
