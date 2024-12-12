@@ -15,11 +15,15 @@
  */
 package android.packageinstaller.uninstall.cts;
 
+import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.PendingIntent.FLAG_MUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
+import static android.graphics.PixelFormat.TRANSLUCENT;
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
@@ -29,6 +33,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -55,11 +60,17 @@ import android.content.pm.PackageManager.PackageInfoFlags;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -96,19 +107,23 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class ArchiveTest {
+
     private static final String LOG_TAG = ArchiveTest.class.getSimpleName();
 
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/uninstall/";
+
     private static final String ARCHIVE_APK = SAMPLE_APK_BASE
             + "CtsArchiveTestApp.apk";
     private static final String ARCHIVE_APP_PACKAGE_NAME =
             "android.packageinstaller.archive.cts.archiveapp";
+    private static final String ARCHIVE_APP_ACTIVITY_NAME =
+            ARCHIVE_APP_PACKAGE_NAME + ".MainActivity";
+
     private static final String ARCHIVE_INSTALLER_APK = SAMPLE_APK_BASE
             + "CtsArchiveInstallerApp.apk";
     private static final String ARCHIVE_INSTALLER_APP_PACKAGE_NAME =
             "android.packageinstaller.archiveinstaller.cts";
-    private static final String ARCHIVE_APP_ACTIVITY_NAME =
-            ARCHIVE_APP_PACKAGE_NAME + ".MainActivity";
+
     private static final String SYSTEM_PACKAGE_NAME = "android";
 
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
@@ -651,6 +666,70 @@ public class ArchiveTest {
             assertEquals("Success\n", SystemUtil.runShellCommand(command));
         } finally {
             uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 370958259)
+    public void overlaysAreSuppressedWhenConfirmingUnarchive() throws Exception {
+        // Install an app and archive it
+        installPackage(ARCHIVE_APK);
+        LocalIntentSender archiveSender = new LocalIntentSender();
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_APP_PACKAGE_NAME, archiveSender.getIntentSender());
+                    Intent archiveIntent = archiveSender.getResult();
+                    assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100))
+                            .isEqualTo(PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+
+        // Unarchive the app
+        LocalIntentSender unarchiveSender = new LocalIntentSender();
+        mPackageInstaller.requestUnarchive(
+                ARCHIVE_APP_PACKAGE_NAME, unarchiveSender.getIntentSender());
+        Intent unarchiveIntent = unarchiveSender.pollResult(5, TimeUnit.SECONDS);
+        assertThat(unarchiveIntent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME))
+                .isEqualTo(ARCHIVE_APP_PACKAGE_NAME);
+        assertThat(unarchiveIntent.getIntExtra(PackageInstaller.EXTRA_UNARCHIVE_STATUS, -100))
+                .isEqualTo(PackageInstaller.STATUS_PENDING_USER_ACTION);
+
+        Intent unarchiveExtraIntent =
+                unarchiveIntent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+        unarchiveExtraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+        prepareDevice();
+        mContext.startActivity(unarchiveExtraIntent);
+        mUiDevice.waitForIdle();
+
+        assertThat(waitFor(Until.findObject(By.textContains("Restore")))).isNotNull();
+
+        // Display the overlay
+        AppOpsUtils.setOpMode(mContext.getPackageName(), "SYSTEM_ALERT_WINDOW", MODE_ALLOWED);
+
+        WindowManager windowManager = mContext.getSystemService(WindowManager.class);
+        LayoutParams layoutParams =
+                new LayoutParams(
+                        MATCH_PARENT, MATCH_PARENT, TYPE_APPLICATION_OVERLAY, 0, TRANSLUCENT);
+        layoutParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL;
+
+        View[] overlay = new View[1];
+        try {
+            new Handler(Looper.getMainLooper())
+                    .post(
+                            () -> {
+                                overlay[0] =
+                                        LayoutInflater.from(mContext)
+                                                .inflate(R.layout.overlay_activity, null);
+                                windowManager.addView(overlay[0], layoutParams);
+                            });
+            assertNull(
+                    mUiDevice.wait(
+                            Until.findObject(
+                                    By.res(mContext.getPackageName(), "overlay_description")),
+                            TIMEOUT_MS));
+        } finally {
+            windowManager.removeView(overlay[0]);
         }
     }
 
