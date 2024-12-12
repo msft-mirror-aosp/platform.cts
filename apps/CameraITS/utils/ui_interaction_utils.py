@@ -44,10 +44,17 @@ CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
-FLASH_MODE_TO_CLICKS = types.MappingProxyType({
-    'OFF': 4,  # 4 clicks to cycle through low light boost mode
-    'AUTO': 2
-})
+# TODO: b/383392277 - use resource IDs instead of content descriptions.
+FLASH_MODE_ON_CONTENT_DESC = 'Flash on'
+FLASH_MODE_OFF_CONTENT_DESC = 'Flash off'
+FLASH_MODE_AUTO_CONTENT_DESC = 'Auto flash'
+FLASH_MODE_LOW_LIGHT_BOOST_CONTENT_DESC = 'Low Light Boost on'
+FLASH_MODES = (
+    FLASH_MODE_ON_CONTENT_DESC,
+    FLASH_MODE_OFF_CONTENT_DESC,
+    FLASH_MODE_AUTO_CONTENT_DESC,
+    FLASH_MODE_LOW_LIGHT_BOOST_CONTENT_DESC
+)
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
@@ -182,6 +189,50 @@ def switch_jca_camera(dut, log_path, facing):
   dut.take_screenshot(
       log_path, prefix=f"switched_to_{ui_facing_description.replace(' ', '_')}"
   )
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+
+
+def _get_current_flash_mode_desc(dut):
+  """Returns the current flash mode description from the JCA UI."""
+  dut.ui(res=QUICK_SET_FLASH_RESOURCE_ID).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS)
+  return dut.ui(res=QUICK_SET_FLASH_RESOURCE_ID).child(depth=1).description
+
+
+def set_jca_flash_mode(dut, log_path, flash_mode_desc):
+  """Interacts with JCA UI to set flash mode if necessary.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    flash_mode_desc: str; flash mode description to set.
+      Acceptable values: FLASH_MODES
+  Raises:
+    AssertionError: If JCA fails to set the desired flash mode.
+  """
+  if flash_mode_desc not in FLASH_MODES:
+    raise ValueError(
+        f'Invalid flash mode description: {flash_mode_desc}. '
+        f'Valid values: {FLASH_MODES}'
+    )
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+  current_flash_mode_desc = _get_current_flash_mode_desc(dut)
+  initial_flash_mode_desc = current_flash_mode_desc
+  logging.debug('Initial flash mode description: %s', initial_flash_mode_desc)
+  if initial_flash_mode_desc == flash_mode_desc:
+    logging.debug('Initial flash mode %s matches desired flash mode %s',
+                  initial_flash_mode_desc, flash_mode_desc)
+  else:
+    while current_flash_mode_desc != flash_mode_desc:
+      dut.ui(res=QUICK_SET_FLASH_RESOURCE_ID).click()
+      current_flash_mode_desc = _get_current_flash_mode_desc(dut)
+      if current_flash_mode_desc == initial_flash_mode_desc:
+        raise AssertionError(f'Failed to set flash mode to {flash_mode_desc}!')
+  if not dut.ui(desc=flash_mode_desc).wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    logging.debug('JCA UI dump: %s', dut.ui.dump())
+    dut.take_screenshot(log_path, prefix='cannot_set_flash_mode')
+    raise AssertionError(f'Unable to confirm {flash_mode_desc} exists in UI')
+  dut.take_screenshot(log_path, prefix='flash_mode_set')
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
