@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.UidTraffic;
 import android.os.Parcel;
 import android.test.AndroidTestCase;
@@ -40,15 +42,14 @@ public class UidTrafficTest extends AndroidTestCase {
         assertNotNull(mUidTraffic);
         UidTraffic clonedUidTraffic = mUidTraffic.clone();
         assertNotNull(clonedUidTraffic);
-        assertEquals(mUidTraffic.getUid(), clonedUidTraffic.getUid());
-        assertEquals(mUidTraffic.getRxBytes(), clonedUidTraffic.getRxBytes());
-        assertEquals(mUidTraffic.getTxBytes(), clonedUidTraffic.getTxBytes());
+        assertThat(clonedUidTraffic.getUid()).isEqualTo(mUidTraffic.getUid());
+        assertThat(clonedUidTraffic.getRxBytes()).isEqualTo(mUidTraffic.getRxBytes());
+        assertThat(clonedUidTraffic.getTxBytes()).isEqualTo(mUidTraffic.getTxBytes());
     }
 
-    public void test_UidTrafficGet() {
-        assertNotNull(mUidTraffic);
-        assertEquals(mUidTraffic.getUid(), 1000);
-        assertEquals(mUidTraffic.getRxBytes(), 2000);
-        assertEquals(mUidTraffic.getTxBytes(), 3000);
+    public void test_getMethod() {
+        assertThat(mUidTraffic.getUid()).isEqualTo(1000);
+        assertThat(mUidTraffic.getRxBytes()).isEqualTo(2000);
+        assertThat(mUidTraffic.getTxBytes()).isEqualTo(3000);
     }
 }
