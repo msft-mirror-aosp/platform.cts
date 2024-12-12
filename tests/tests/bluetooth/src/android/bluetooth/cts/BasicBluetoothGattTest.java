@@ -16,9 +16,10 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -42,7 +43,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -69,7 +69,7 @@ public class BasicBluetoothGattTest {
 
         mBluetoothAdapter = context.getSystemService(BluetoothManager.class).getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
-            assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, context));
+            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, context)).isTrue();
         }
         mBluetoothDevice = mBluetoothAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         mBluetoothGatt =
@@ -102,9 +102,7 @@ public class BasicBluetoothGattTest {
     @Test
     public void getServices() throws Exception {
         // getServices() returns an empty list if service discovery has not yet been performed.
-        List<BluetoothGattService> services = mBluetoothGatt.getServices();
-        assertNotNull(services);
-        assertTrue(services.isEmpty());
+        assertThat(mBluetoothGatt.getServices()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})

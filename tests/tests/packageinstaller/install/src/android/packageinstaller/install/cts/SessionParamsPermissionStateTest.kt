@@ -28,6 +28,7 @@ import android.content.pm.PermissionInfo
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
+import android.util.Log
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -70,111 +71,130 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun parameters() = listOf(
-            // Check that installer is allowed to explicitly grant FSI
-            Params(
-                name = "fullScreenIntentGranted",
-                finalPermissionState = mapOf(Manifest.permission.USE_FULL_SCREEN_INTENT to true)
-            ) {
-                setFinalState(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT,
-                    PERMISSION_STATE_GRANTED
-                )
-            },
-
-            // Check that installer is allowed to explicitly deny FSI
-            Params(
-                name = "fullScreenIntentDenied",
-                finalPermissionState = mapOf(Manifest.permission.USE_FULL_SCREEN_INTENT to false)
-            ) {
-                setFinalState(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT,
-                    PERMISSION_STATE_DENIED
-                )
-            },
-
-            // Check that a vanilla session automatically grants/denies FSI to an app declaring it
-            Params(
-                name = "fullScreenIntentDefault",
-                finalPermissionState = mapOf(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
-                ),
-            ) {
-                setFinalState(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT,
-                    PERMISSION_STATE_DEFAULT
-                )
-            },
-
-            // Check that the installer doesn't affect an app that doesn't declare FSI
+        fun parameters() = listOf(true, false).map { usePiaV2 ->
             listOf(
-                PERMISSION_STATE_GRANTED,
-                PERMISSION_STATE_DENIED,
-                PERMISSION_STATE_DEFAULT,
-            ).map {
+                // Check that installer is allowed to explicitly grant FSI
                 Params(
-                    name = "fullScreenIntentWithoutAppDeclaration${stateToName(it)}",
-                    success = true,
-                    testApkName = TEST_APK_NAME,
-                    finalPermissionState = mapOf(Manifest.permission.USE_FULL_SCREEN_INTENT to null)
-                ) { setFinalState(Manifest.permission.USE_FULL_SCREEN_INTENT, it) }
-            },
+                    usePiaV2 = usePiaV2,
+                    name = "fullScreenIntentGranted",
+                    finalPermissionState = mapOf(Manifest.permission.USE_FULL_SCREEN_INTENT to true)
+                ) {
+                    setFinalState(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT,
+                        PERMISSION_STATE_GRANTED
+                    )
+                },
 
-            // Check that granting/denying a real runtime permission isn't allowed
-            listOf(
-                PERMISSION_STATE_GRANTED,
-                PERMISSION_STATE_DENIED,
-            ).map {
+                // Check that installer is allowed to explicitly deny FSI
                 Params(
-                    name = "runtimePermission${stateToName(it)}",
-                    success = false,
-                ) { setFinalState(Manifest.permission.READ_CALENDAR, it) }
-            },
+                    usePiaV2 = usePiaV2,
+                    name = "fullScreenIntentDenied",
+                    finalPermissionState = mapOf(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT to false
+                    )
+                ) {
+                    setFinalState(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT,
+                        PERMISSION_STATE_DENIED
+                    )
+                },
 
-            // Check that setting a runtime permission to default is ignored (and thus succeeds)
-            Params(
-                name = "runtimePermissionDefault",
-                finalPermissionState = mapOf(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
-                    Manifest.permission.READ_CALENDAR to false,
-                ),
-            ) { setFinalState(Manifest.permission.READ_CALENDAR, PERMISSION_STATE_DEFAULT) },
-
-            // Check that setting a permission not known to the system isn't allowed
-            listOf(
-                PERMISSION_STATE_GRANTED,
-                PERMISSION_STATE_DENIED,
-            ).map {
+                // Check that a vanilla session automatically grants/denies FSI to an app
+                // declaring it
                 Params(
-                    name = "unknownPermission${stateToName(it)}",
-                    success = false,
-                ) { setFinalState(NON_EXISTENT_PERMISSION, it) }
-            },
+                    usePiaV2 = usePiaV2,
+                    name = "fullScreenIntentDefault",
+                    finalPermissionState = mapOf(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
+                    ),
+                ) {
+                    setFinalState(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT,
+                        PERMISSION_STATE_DEFAULT
+                    )
+                },
 
-            // Check that setting an unknown permission to default is ignored (and thus succeeds)
-            Params(
-                name = "unknownPermissionDefault",
-                finalPermissionState = mapOf(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
-                ),
-            ) { setFinalState(NON_EXISTENT_PERMISSION, PERMISSION_STATE_DEFAULT) },
+                // Check that the installer doesn't affect an app that doesn't declare FSI
+                listOf(
+                    PERMISSION_STATE_GRANTED,
+                    PERMISSION_STATE_DENIED,
+                    PERMISSION_STATE_DEFAULT,
+                ).map {
+                    Params(
+                        usePiaV2 = usePiaV2,
+                        name = "fullScreenIntentWithoutAppDeclaration${stateToName(it)}",
+                        success = true,
+                        testApkName = TEST_APK_NAME,
+                        finalPermissionState = mapOf(
+                            Manifest.permission.USE_FULL_SCREEN_INTENT to null
+                        )
+                    ) { setFinalState(Manifest.permission.USE_FULL_SCREEN_INTENT, it) }
+                },
 
-            // Check that setting a runtime/unknown permission with the right permission is allowed
-            Params(
-                name = "runtimePermissionGranted",
-                withInstallGrantRuntimePermissions = true,
-                finalPermissionState = mapOf(
-                    Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
-                    Manifest.permission.READ_CALENDAR to true,
-                    NON_EXISTENT_PERMISSION to null,
-                ),
-            ) {
-                setFinalState(Manifest.permission.READ_CALENDAR, PERMISSION_STATE_GRANTED)
-                    .setFinalState(NON_EXISTENT_PERMISSION, PERMISSION_STATE_GRANTED)
-            },
-        ).flatMap { if (it is Collection<*>) it else listOf(it) }
+                // Check that granting/denying a real runtime permission isn't allowed
+                listOf(
+                    PERMISSION_STATE_GRANTED,
+                    PERMISSION_STATE_DENIED,
+                ).map {
+                    Params(
+                        usePiaV2 = usePiaV2,
+                        name = "runtimePermission${stateToName(it)}",
+                        success = false,
+                    ) { setFinalState(Manifest.permission.READ_CALENDAR, it) }
+                },
+
+                // Check that setting a runtime permission to default is ignored (and thus succeeds)
+                Params(
+                    usePiaV2 = usePiaV2,
+                    name = "runtimePermissionDefault",
+                    finalPermissionState = mapOf(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
+                        Manifest.permission.READ_CALENDAR to false,
+                    ),
+                ) { setFinalState(Manifest.permission.READ_CALENDAR, PERMISSION_STATE_DEFAULT) },
+
+                // Check that setting a permission not known to the system isn't allowed
+                listOf(
+                    PERMISSION_STATE_GRANTED,
+                    PERMISSION_STATE_DENIED,
+                ).map {
+                    Params(
+                        usePiaV2 = usePiaV2,
+                        name = "unknownPermission${stateToName(it)}",
+                        success = false,
+                    ) { setFinalState(NON_EXISTENT_PERMISSION, it) }
+                },
+
+                // Check that setting an unknown permission to default is ignored
+                // (and thus succeeds)
+                Params(
+                    usePiaV2 = usePiaV2,
+                    name = "unknownPermissionDefault",
+                    finalPermissionState = mapOf(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
+                    ),
+                ) { setFinalState(NON_EXISTENT_PERMISSION, PERMISSION_STATE_DEFAULT) },
+
+                // Check that setting a runtime/unknown permission with the right permission
+                // is allowed
+                Params(
+                    usePiaV2 = usePiaV2,
+                    name = "runtimePermissionGranted",
+                    withInstallGrantRuntimePermissions = true,
+                    finalPermissionState = mapOf(
+                        Manifest.permission.USE_FULL_SCREEN_INTENT to isFsiDefaultGranted,
+                        Manifest.permission.READ_CALENDAR to true,
+                        NON_EXISTENT_PERMISSION to null,
+                    ),
+                ) {
+                    setFinalState(Manifest.permission.READ_CALENDAR, PERMISSION_STATE_GRANTED)
+                        .setFinalState(NON_EXISTENT_PERMISSION, PERMISSION_STATE_GRANTED)
+                },
+            ).flatMap { if (it is Collection<*>) it else listOf(it) }
+        }.flatten()
 
         data class Params(
+            val usePiaV2: Boolean,
             val name: String,
             var success: Boolean = true,
             val testApkName: String = FULL_SCREEN_INTENT_APK,
@@ -182,7 +202,16 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
             val finalPermissionState: Map<String, Boolean?> = emptyMap(),
             val paramsBlock: PackageInstaller.SessionParams.() -> Unit = {},
         ) {
-            override fun toString() = "${name}_${if (success) "Success" else "Failure"}"
+            override fun toString(): String {
+                val sb = StringBuilder(name + "_")
+                if (success) {
+                    sb.append("Success")
+                } else {
+                    sb.append("Failure")
+                }
+                sb.append("(usePiaV2=$usePiaV2)")
+                return sb.toString()
+            }
         }
 
         private fun stateToName(state: Int) = when (state) {
@@ -195,7 +224,7 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
         /** Cycles through all of the states to make sure only latest is kept */
         private fun PackageInstaller.SessionParams.setFinalState(
             permissionName: String,
-            state: Int
+            state: Int,
         ) = setPermissionState(permissionName, PERMISSION_STATE_GRANTED)
             .setPermissionState(permissionName, PERMISSION_STATE_DENIED)
             .setPermissionState(permissionName, PERMISSION_STATE_DEFAULT)
@@ -211,6 +240,12 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
             // Ensure that a test case expecting failure has no permission state to assert
             assertThat(params.finalPermissionState).isEmpty()
         }
+    }
+
+    @Before
+    override fun setUsePiaV2() {
+        Log.i(TAG, "Using Pia V${if (params.usePiaV2) 2 else 1}")
+        usePiaRule.setSettingValue(params.usePiaV2)
     }
 
     @Test

@@ -24,6 +24,10 @@ import static android.bluetooth.BluetoothAdapter.BT_SNOOP_LOG_MODE_FILTERED;
 import static android.bluetooth.BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL;
 import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_PUBLIC;
 import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_RANDOM;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
 
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
@@ -430,7 +434,7 @@ public class BluetoothAdapterTest {
 
         // Verify return value if Bluetooth is not enabled
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-        assertThat(mAdapter.getConnectionState()).isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mAdapter.getConnectionState()).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -543,12 +547,12 @@ public class BluetoothAdapterTest {
     public void BluetoothProfile_getConnectionStateName() {
         assumeTrue(mHasBluetooth);
 
-        assertConnectionStateName(BluetoothProfile.STATE_DISCONNECTED, "STATE_DISCONNECTED");
-        assertConnectionStateName(BluetoothProfile.STATE_CONNECTED, "STATE_CONNECTED");
-        assertConnectionStateName(BluetoothProfile.STATE_CONNECTING, "STATE_CONNECTING");
-        assertConnectionStateName(BluetoothProfile.STATE_CONNECTED, "STATE_CONNECTED");
-        assertConnectionStateName(BluetoothProfile.STATE_DISCONNECTING, "STATE_DISCONNECTING");
-        assertConnectionStateName(BluetoothProfile.STATE_DISCONNECTING + 1, "STATE_UNKNOWN");
+        assertConnectionStateName(STATE_DISCONNECTED, "STATE_DISCONNECTED");
+        assertConnectionStateName(STATE_CONNECTED, "STATE_CONNECTED");
+        assertConnectionStateName(STATE_CONNECTING, "STATE_CONNECTING");
+        assertConnectionStateName(STATE_CONNECTED, "STATE_CONNECTED");
+        assertConnectionStateName(STATE_DISCONNECTING, "STATE_DISCONNECTING");
+        assertConnectionStateName(STATE_DISCONNECTING + 1, "STATE_UNKNOWN");
     }
 
     private void assertProfileName(int profile, String name) {

@@ -38,9 +38,9 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
-import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.SystemUtil
+import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -55,7 +55,7 @@ import org.junit.runner.RunWith
  * This class tests creation of a package installer session with different params.
  */
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
-@RunWith(AndroidJUnit4::class)
+@RunWith(TestParameterInjector::class)
 @ScreenRecord
 class SessionTest : PackageInstallerTestBase() {
 

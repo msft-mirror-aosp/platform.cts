@@ -27,6 +27,9 @@ java_test_host {
         "tradefed",
     ],
     static_libs: ["trebuchet-core"],
+    device_common_data: [
+        ":CtsAtraceTestApp",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

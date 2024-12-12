@@ -404,6 +404,9 @@ public class BinderIntegrationTest extends ActivityTestsBase {
     @RequiresFlagsEnabled(FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
     @ApiTest(apis = {"android.os.IBinder#addFrozenStateChangeCallback"})
     public void testOnFrozenStateChangedCalled() throws Exception {
+        if (!android.os.Flags.binderFrozenStateChangeCallback()) {
+            return;
+        }
         final FrozenTestHelper helper = new FrozenTestHelper();
         helper.setup();
         ensureUnfrozenCallback(helper.mResults);
@@ -422,6 +425,9 @@ public class BinderIntegrationTest extends ActivityTestsBase {
         "android.os.IBinder#removeFrozenStateChangeCallback"
     })
     public void testOnFrozenStateChangedNotCalledAfterCallbackRemoved() throws Exception {
+        if (!android.os.Flags.binderFrozenStateChangeCallback()) {
+            return;
+        }
         final FrozenTestHelper helper = new FrozenTestHelper();
         helper.setup();
         ensureUnfrozenCallback(helper.mResults);
@@ -440,6 +446,9 @@ public class BinderIntegrationTest extends ActivityTestsBase {
         "android.os.IBinder#removeFrozenStateChangeCallback"
     })
     public void testOnFrozenStateChangedUsingExecutor() throws Exception {
+        if (!android.os.Flags.binderFrozenStateChangeCallback()) {
+            return;
+        }
         final FrozenTestHelper helper = new FrozenTestHelper();
         CompletableFuture<Runnable> future = new CompletableFuture<>();
         Executor capturingExecutor = r -> future.complete(r);

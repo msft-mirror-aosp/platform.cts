@@ -16,6 +16,8 @@
 
 package com.android.bedstead.testapis.parser.signatures;
 
+import static com.android.bedstead.testapis.parser.utils.TypeUtils.splitParameterList;
+
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -107,21 +109,30 @@ public final class MethodSignature {
     }
 
     public static ImmutableList<String> parameterTypes(String method) {
-        ImmutableList<String> parameterTypes = ImmutableList.of();
-        String params = method.substring(method.indexOf("(") + 1, method.indexOf(")"))
-                .replaceAll(" +", "")
-                // TODO(b/337769574): add support for var args
-                .replaceAll("[.]{3}", "");
+        try {
+            ImmutableList<String> parameterTypes = ImmutableList.of();
+            String params = method.substring(method.indexOf("(") + 1, method.indexOf(")"))
+                    .replaceAll(" +", "")
+                    // TODO(b/337769574): add support for var args
+                    .replaceAll("[.]{3}", "");
 
-        if (params.length() > 0) {
-            for (String f : FIELD_ANNOTATIONS_TO_IGNORE) {
-                params = params.replaceAll(f, "");
+            if (params.length() > 0) {
+                for (String f : FIELD_ANNOTATIONS_TO_IGNORE) {
+                    params = params.replaceAll(f, "");
+                }
+
+                parameterTypes = splitParameterList(params);
+
+                if (parameterTypes.contains("java.util.Map<android.graphics.Point")) {
+                    throw new RuntimeException("TestApisReflection: found bad point in: " + params);
+                }
             }
 
-            parameterTypes = ImmutableList.copyOf(params.split(","));
+            return parameterTypes;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "TestApisReflection: unable to parse parameter types: " + method, e);
         }
-
-        return parameterTypes;
     }
 
     private static boolean isGetterInternal(String methodName,

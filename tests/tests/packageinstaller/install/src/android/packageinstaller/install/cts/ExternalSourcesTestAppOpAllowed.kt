@@ -20,12 +20,12 @@ import android.content.Intent
 import android.platform.test.annotations.AppModeFull
 import android.provider.Settings
 import androidx.test.filters.MediumTest
-import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
+import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -35,7 +35,7 @@ import org.junit.runner.RunWith
 private const val INSTALL_CONFIRM_TEXT_ID = "install_confirm_question"
 private const val ALERT_DIALOG_TITLE_ID = "android:id/alertTitle"
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(TestParameterInjector::class)
 @MediumTest
 @AppModeFull
 class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {

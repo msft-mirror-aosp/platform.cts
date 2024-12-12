@@ -40,3 +40,19 @@ android_test {
 
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsVirtualDevicesCameraCtsTestCases_postsubmit",
+    base: "CtsVirtualDevicesCameraCtsTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: [
+        "android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability",
+        "android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]",
+        "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]",
+        "android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]",
+        "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]",
+        "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]",
+        "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]",
+        "android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture[1]",
+    ],
+}

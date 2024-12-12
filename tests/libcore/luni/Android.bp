@@ -691,3 +691,133 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["libcore.sun.util.logging"],
 }
+
+test_module_config {
+    name: "CtsLibcoreTestCases_security_and_conscrypt",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: [
+        "tests.security",
+        "com.android.org.conscrypt",
+        "libcore.java.security",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_crypto_digests",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: ["tests.com.android.org.bouncycastle.crypto.digests"],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_jce_provider",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: ["tests.com.android.org.bouncycastle.jce.provider"],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_external_conscrypt",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: [
+        "android.net.ssl",
+        "com.android.org.conscrypt",
+        "libcore.java.net",
+        "libcore.java.security",
+        "libcore.javax.net",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_com_android_icu_charset",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: [
+        "org.apache.harmony.tests.java.nio.charset",
+        "libcore.java.nio.charset",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases-libcore-presubmit-large",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    exclude_filters: [
+        "com.android.org.conscrypt.java.security.AlgorithmParameterGeneratorTestDH",
+        "com.android.org.conscrypt.java.security.KeyPairGeneratorTest",
+        "com.android.org.conscrypt.java.security.SignatureTest",
+        "com.android.org.conscrypt.javax.crypto.CipherBasicsTest",
+        "com.android.org.conscrypt.javax.net.ssl.KeyManagerFactoryTest",
+        "com.android.org.conscrypt.javax.net.ssl.SSLSocketVersionCompatibilityTest",
+        "libcore.java.lang.OldRuntimeTest",
+        "libcore.java.lang.OldThreadTest",
+        "libcore.java.lang.ref.FinalizeTest",
+        "libcore.java.math.BigIntegerTest",
+        "libcore.java.net.ConcurrentCloseTest",
+        "libcore.java.net.OldSocketTest",
+        "libcore.java.net.URLConnectionTest",
+        "libcore.java.nio.channels.DatagramChannelMulticastTest",
+        "libcore.libcore.net.NetworkSecurityPolicyTest",
+        "libcore.libcore.util.NativeAllocationRegistryTest",
+        "org.apache.harmony.logging.tests.java.util.logging.SocketHandlerTest",
+        "org.apache.harmony.tests.java.lang.ObjectTest",
+        "org.apache.harmony.tests.java.lang.ProcessManagerTest",
+        "org.apache.harmony.tests.java.math.OldBigIntegerTest",
+        "org.apache.harmony.tests.java.net.InetAddressThreadTest",
+        "org.apache.harmony.tests.java.nio.channels.DatagramChannelTest",
+        "org.apache.harmony.tests.java.util.ScannerTest",
+        "org.apache.harmony.tests.java.util.TimerTest",
+        "org.apache.harmony.tests.java.util.WeakHashMapTest",
+        "org.apache.harmony.tests.javax.net.ssl.SSLSessionTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_NoIcmp",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    exclude_filters: ["libcore.java.net.InetAddressTest#test_isReachable_by_ICMP"],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_channels_spi",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: ["org.apache.harmony.nio.tests.java.nio.channels.spi"],
+}
+
+test_module_config {
+    name: "CtsLibcoreTestCases_auth_x500",
+    base: "CtsLibcoreTestCases",
+    test_suites: [
+        "automotive-general-tests",
+        "general-tests",
+    ],
+    include_filters: ["libcore.javax.security.auth.x500"],
+}

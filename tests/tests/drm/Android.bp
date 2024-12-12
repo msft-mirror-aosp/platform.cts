@@ -39,3 +39,11 @@ android_test {
     ],
     platform_apis: true,
 }
+
+test_module_config {
+    name: "CtsDrmTestCases_kernel-presubmit",
+    base: "CtsDrmTestCases",
+    test_suites: ["general-tests"],
+    // TODO(b/244594813) # looks fixed?
+    exclude_filters: ["android.drm.cts.DRMTest#testForwardLockAccess"],
+}

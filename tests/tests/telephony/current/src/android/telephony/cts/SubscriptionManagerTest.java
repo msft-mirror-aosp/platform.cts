@@ -33,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.Nullable;
@@ -195,7 +196,7 @@ public class SubscriptionManagerTest {
         private final CountDownLatch mAvailableLatch = new CountDownLatch(1);
 
         public void waitForAvailable() throws InterruptedException {
-            assertTrue("Cellular network did not come up after 5 seconds",
+            assumeTrue("Cellular network did not come up after 5 seconds",
                     mAvailableLatch.await(5, TimeUnit.SECONDS));
         }
 
@@ -437,7 +438,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // Make ourselves the owner
         setSubPlanOwner(mSubId, mPackageName);
@@ -560,7 +561,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // TODO: Remove this check after b/176119724 is fixed.
         if (!isUnmetered5GSupported()) return;
@@ -595,7 +596,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // TODO: Remove this check after b/176119724 is fixed.
         if (!isUnmetered5GSupported()) return;

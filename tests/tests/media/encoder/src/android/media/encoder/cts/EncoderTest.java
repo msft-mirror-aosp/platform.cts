@@ -198,7 +198,7 @@ public class EncoderTest {
     // "5.1.3" is covered partially. For instance aac is not tested for 5.0 and 5.1, Opus is not
     // tested for different sample rates.
     // TODO (b/272014629): Update test accordingly
-    @CddTest(requirements = "5.1.3")
+    @CddTest(requirements = {"5.1.3"})
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testEncoders() throws FileNotFoundException {
         setUpFormat();

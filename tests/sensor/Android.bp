@@ -123,3 +123,10 @@ android_test {
 
     stl: "c++_shared",
 }
+
+test_module_config {
+    name: "CtsSensorTestCases_PlatinumTest",
+    base: "CtsSensorTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

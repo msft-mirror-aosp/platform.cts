@@ -27,12 +27,12 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
+import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import org.junit.Assert
@@ -44,7 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
-@RunWith(AndroidJUnit4::class)
+@RunWith(TestParameterInjector::class)
 @ScreenRecord
 class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
 

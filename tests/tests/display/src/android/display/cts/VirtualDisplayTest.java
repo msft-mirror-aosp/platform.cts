@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -76,6 +77,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DisplayStateManager;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.StateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
@@ -411,6 +413,8 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testCreateDisplay_nonNullSurface_powerGroupOff_displayStateIsOff() {
+        assumeScreenOffSupported();
+
         VirtualDisplay virtualDisplay = null;
         Display display = null;
         try {
@@ -731,6 +735,15 @@ public class VirtualDisplayTest {
                 });
             }
         }
+    }
+
+    private void assumeScreenOffSupported() {
+        assumeFalse(
+                "Skipping test: Automotive main display is always on",
+                FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(
+                "Skipping test: TVs may start screen saver instead of turning screen off",
+                FeatureUtil.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 
     private SimpleActivity launchTestActivityOnDisplay(int displayId) {

@@ -159,3 +159,10 @@ test_module_config_host {
     test_suites: ["general-tests"],
     include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
 }
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_NoLarge",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

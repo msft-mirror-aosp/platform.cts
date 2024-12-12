@@ -297,7 +297,7 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     /**
      * Test video decoder for seamless resolution changes.
      */
-    @CddTest(requirement = "5.3/C-1-1")
+    @CddTest(requirements = {"5.3/C-1-1"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback",
             "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DynamicColorAspects"})
     @LargeTest

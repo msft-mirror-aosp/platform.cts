@@ -730,10 +730,10 @@ public class NfcAdapterTest {
                 assertThat(ccFileInfo).isNotNull();
                 assertThat(ccFileInfo.getCcFileLength()).isGreaterThan(0);
                 assertThat(ccFileInfo.getVersion()).isGreaterThan(0);
-                assertThat(ccFileInfo.getMaxReadLength()).isGreaterThan(0);
-                assertThat(ccFileInfo.getMaxWriteLength()).isGreaterThan(0);
                 assertThat(ccFileInfo.getFileId()).isGreaterThan(5);
                 assertThat(ccFileInfo.getMaxSize()).isGreaterThan(0);
+                assertThat(ccFileInfo.isReadAllowed()).isEqualTo(true);
+                assertThat(ccFileInfo.isWriteAllowed()).isEqualTo(true);
                 assertThat(ndefNfcee.clearData()).isEqualTo(T4tNdefNfcee.CLEAR_DATA_SUCCESS);
             }
             if (Flags.nfcOverrideRecoverRoutingTable()) {

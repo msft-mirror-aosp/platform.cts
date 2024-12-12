@@ -20,6 +20,7 @@ import android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
+import android.companion.AssociationRequest.DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
 import android.platform.test.annotations.AppModeFull
 import com.android.compatibility.common.util.FeatureUtil
 import org.junit.Assume.assumeFalse
@@ -49,6 +50,7 @@ class AssociationEndToEndTest(
         assumeFalse(profile == DEVICE_PROFILE_APP_STREAMING)
         assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
         assumeFalse(profile == DEVICE_PROFILE_NEARBY_DEVICE_STREAMING)
+        assumeFalse(profile == DEVICE_PROFILE_SENSOR_DEVICE_STREAMING)
     }
 
     @Test

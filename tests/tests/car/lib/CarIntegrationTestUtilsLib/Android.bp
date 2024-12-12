@@ -35,6 +35,7 @@ java_library {
         "Nene",
     ],
     libs: [
+        "android.car",
         "android.car-test-stubs",
     ],
 }

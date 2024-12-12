@@ -33,7 +33,6 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsDeviceInfo.apk" />
         <option name="test-file-name" value="CtsSecurityTestCases.apk" />
-        <option name="test-file-name" value="CtsAdvancedProtectionTestApp.apk" />
         <option name="test-file-name" value="TestIntrusionDetectionApp.apk" />
         <option name="install-arg" value="-t" />
     </target_preparer>

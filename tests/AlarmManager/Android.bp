@@ -46,3 +46,10 @@ android_test {
     per_testcase_directory: true,
     min_sdk_version: "29",
 }
+
+test_module_config {
+    name: "CtsAlarmManagerTestCases_NoLarge",
+    base: "CtsAlarmManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

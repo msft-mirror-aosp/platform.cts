@@ -145,7 +145,6 @@ public class MediaExtractorTest {
         }
     }
 
-    @CddTest(requirement = "5.3.8")
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_APV)
     @Test
     public void testApvMediaExtractor() throws Exception {
@@ -177,7 +176,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvheDtr/Fhd30).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheDtr() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_30fps_dvhe_04.mp4");
@@ -226,7 +225,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvheSt/Fhd60).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheSt() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvhe_08.mp4");
@@ -275,7 +274,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvavSe/Fhd60).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvavSe() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvav_09.mp4");
@@ -325,7 +324,7 @@ public class MediaExtractorTest {
 
     // DolbyVisionMediaExtractor for profile-level (Dvav1 10.0/Uhd30)
     @SmallTest
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
@@ -351,7 +350,7 @@ public class MediaExtractorTest {
 
     // DolbyVisionMediaExtractor for profile-level (Dvav1 10.1/Uhd30)
     @SmallTest
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1_2() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10_2.mp4");

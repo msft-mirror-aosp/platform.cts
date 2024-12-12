@@ -17,6 +17,7 @@
 package android.server.wm;
 
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.BitmapUtils;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -31,7 +33,6 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,6 +75,8 @@ public class DumpOnFailure implements TestRule {
                 onTestSetup(description);
                 try {
                     base.evaluate();
+                } catch (AssumptionViolatedException t) {
+                    throw t;
                 } catch (Throwable t) {
                     onTestFailure(description, t);
                     throw t;
@@ -97,8 +100,8 @@ public class DumpOnFailure implements TestRule {
         final Path root = getDumpRoot(description);
         final File rootFile = root.toFile();
         if (!rootFile.exists() && !rootFile.mkdirs()) {
-            Log.e(TAG, "onTestFailure, unable to create file");
-            throw new RuntimeException("Unable to create " + root);
+            Log.e(TAG, "onTestFailure, unable to create file: " + root);
+            return;
         }
 
         for (var entry : mDumpOnFailureItems.entrySet()) {
@@ -123,8 +126,10 @@ public class DumpOnFailure implements TestRule {
 
     @NonNull
     private Path getDumpRoot(@NonNull Description description) {
-        return Paths.get("/sdcard/DumpOnFailure/", description.getClassName()
-                + "_" + description.getMethodName());
+        return new File(
+                        Environment.getExternalStorageDirectory() + "/DumpOnFailure",
+                        description.getClassName() + "_" + description.getMethodName())
+                .toPath();
     }
 
     private void cleanDir(@NonNull File dir) {
@@ -135,7 +140,7 @@ public class DumpOnFailure implements TestRule {
         for (File file : files) {
             if (!file.isDirectory()) {
                 if (!file.delete()) {
-                    throw new RuntimeException("Unable to delete " + file);
+                    Log.e(TAG, "Unable to delete " + file);
                 }
             }
         }
