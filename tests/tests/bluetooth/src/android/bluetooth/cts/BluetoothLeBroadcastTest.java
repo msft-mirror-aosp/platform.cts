@@ -20,11 +20,9 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.timeout;
@@ -63,7 +61,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -205,7 +202,7 @@ public class BluetoothLeBroadcastTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
@@ -213,14 +210,14 @@ public class BluetoothLeBroadcastTest {
         mBluetoothLeBroadcast = null;
 
         Assume.assumeTrue(mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED);
-        assertTrue(
-                "Config must be true when profile is supported",
-                TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST));
+        assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
 
-        assertTrue(
-                "Profile proxy should be accessible when profile is supported",
-                mAdapter.getProfileProxy(
-                        mContext, new ServiceListener(), BluetoothProfile.LE_AUDIO_BROADCAST));
+        assertThat(
+                        mAdapter.getProfileProxy(
+                                mContext,
+                                new ServiceListener(),
+                                BluetoothProfile.LE_AUDIO_BROADCAST))
+                .isTrue();
     }
 
     @After
@@ -237,20 +234,20 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
-        assertTrue(mIsProfileReady);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
+        assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO_BROADCAST, mBluetoothLeBroadcast);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(waitForProfileDisconnect()).isTrue();
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectedDevices() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         // Verify if asserts as Broadcaster is not connection-oriented profile
         assertThrows(
@@ -261,8 +258,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         // Verify if asserts as Broadcaster is not connection-oriented profile
         assertThrows(
@@ -273,8 +270,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         // Verify if asserts as Broadcaster is not connection-oriented profile
         assertThrows(
@@ -285,8 +282,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void registerUnregisterCallback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         Executor executor = mContext.getMainExecutor();
 
@@ -311,8 +308,8 @@ public class BluetoothLeBroadcastTest {
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         Executor executor = mContext.getMainExecutor();
         BluetoothLeBroadcast.Callback callback =
@@ -356,114 +353,9 @@ public class BluetoothLeBroadcastTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void callbackCalls() throws InterruptedException {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
-
-        BluetoothLeBroadcast.Callback callback =
-                new BluetoothLeBroadcast.Callback() {
-                    @Override
-                    public void onBroadcastStarted(int reason, int broadcastId) {
-                        mOnBroadcastStartedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastStartFailed(int reason) {
-                        mOnBroadcastStartFailedCalled = true;
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastStopped(int reason, int broadcastId) {
-                        mOnBroadcastStoppedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastStopFailed(int reason) {
-                        mOnBroadcastStopFailedCalled = true;
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onPlaybackStarted(int reason, int broadcastId) {
-                        mOnPlaybackStartedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onPlaybackStopped(int reason, int broadcastId) {
-                        mOnPlaybackStoppedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastUpdated(int reason, int broadcastId) {
-                        mOnBroadcastUpdatedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastUpdateFailed(int reason, int broadcastId) {
-                        mOnBroadcastUpdateFailedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(TEST_REASON, reason);
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onBroadcastMetadataChanged(
-                            int broadcastId, BluetoothLeBroadcastMetadata metadata) {
-                        mOnBroadcastMetadataChangedCalled = true;
-                        assertEquals(TEST_BROADCAST_ID, broadcastId);
-                        assertEquals(mTestMetadata, metadata);
-                        mCallbackCountDownLatch.countDown();
-                    }
-                };
-
-        mCallbackCountDownLatch = new CountDownLatch(9);
-        callback.onBroadcastStarted(TEST_REASON, TEST_BROADCAST_ID);
-        callback.onBroadcastStartFailed(TEST_REASON);
-        callback.onBroadcastStopped(TEST_REASON, TEST_BROADCAST_ID);
-        callback.onBroadcastStopFailed(TEST_REASON);
-        callback.onPlaybackStarted(TEST_REASON, TEST_BROADCAST_ID);
-        callback.onPlaybackStopped(TEST_REASON, TEST_BROADCAST_ID);
-        callback.onBroadcastUpdated(TEST_REASON, TEST_BROADCAST_ID);
-        callback.onBroadcastUpdateFailed(TEST_REASON, TEST_BROADCAST_ID);
-        mTestMetadata = createBroadcastMetadata();
-        callback.onBroadcastMetadataChanged(TEST_BROADCAST_ID, mTestMetadata);
-
-        // Wait for all the callback calls or 5 seconds to verify
-        mCallbackCountDownLatch.await(5, TimeUnit.SECONDS);
-        assertTrue(mOnBroadcastStartedCalled);
-        assertTrue(mOnBroadcastStartFailedCalled);
-        assertTrue(mOnBroadcastStoppedCalled);
-        assertTrue(mOnBroadcastStopFailedCalled);
-        assertTrue(mOnPlaybackStartedCalled);
-        assertTrue(mOnPlaybackStoppedCalled);
-        assertTrue(mOnBroadcastUpdatedCalled);
-        assertTrue(mOnBroadcastUpdateFailedCalled);
-        assertTrue(mOnBroadcastMetadataChangedCalled);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
-    @Test
     public void startBroadcast() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
                 new BluetoothLeAudioContentMetadata.Builder();
@@ -492,8 +384,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void startBroadcastWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
                 new BluetoothLeAudioContentMetadata.Builder();
@@ -517,8 +409,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void startBroadcastGroup() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeBroadcastSettings.Builder broadcastSettingsBuilder =
                 new BluetoothLeBroadcastSettings.Builder();
@@ -547,8 +439,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void startBroadcastGroupWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeBroadcastSettings.Builder broadcastSettingsBuilder =
                 new BluetoothLeBroadcastSettings.Builder();
@@ -574,8 +466,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void updateBroadcast() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
                 new BluetoothLeAudioContentMetadata.Builder();
@@ -592,8 +484,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void updateBroadcastWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeAudioContentMetadata.Builder contentMetadataBuilder =
                 new BluetoothLeAudioContentMetadata.Builder();
@@ -614,8 +506,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void updateBroadcastGroup() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeBroadcastSettings.Builder broadcastSettingsBuilder =
                 new BluetoothLeBroadcastSettings.Builder();
@@ -637,8 +529,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void updateBroadcastGroupWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         BluetoothLeBroadcastSettings.Builder broadcastSettingsBuilder =
                 new BluetoothLeBroadcastSettings.Builder();
@@ -664,8 +556,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void stopBroadcast() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         // Verifies that it throws exception when no callback is registered
         assertThrows(IllegalStateException.class, () -> mBluetoothLeBroadcast.stopBroadcast(1));
@@ -679,8 +571,8 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void stopBroadcastWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         mBluetoothLeBroadcast.registerCallback(mExecutor, mCallback);
 
@@ -697,17 +589,17 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void isPlaying() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertFalse(mBluetoothLeBroadcast.isPlaying(1));
+        assertThat(mBluetoothLeBroadcast.isPlaying(1)).isFalse();
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void isPlayingWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
@@ -721,19 +613,17 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getAllBroadcastMetadata() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        List<BluetoothLeBroadcastMetadata> metaList =
-                mBluetoothLeBroadcast.getAllBroadcastMetadata();
-        assertTrue(metaList.isEmpty());
+        assertThat(mBluetoothLeBroadcast.getAllBroadcastMetadata()).isEmpty();
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getAllBroadcastMetadataWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
@@ -748,17 +638,17 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumNumberOfBroadcasts() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumNumberOfBroadcasts());
+        assertThat(mBluetoothLeBroadcast.getMaximumNumberOfBroadcasts()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumNumberOfBroadcastsWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
@@ -774,17 +664,17 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumStreamsPerBroadcast() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumStreamsPerBroadcast());
+        assertThat(mBluetoothLeBroadcast.getMaximumStreamsPerBroadcast()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumStreamsPerBroadcastWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
@@ -800,17 +690,17 @@ public class BluetoothLeBroadcastTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumSubgroupsPerBroadcast() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
-        assertEquals(1, mBluetoothLeBroadcast.getMaximumSubgroupsPerBroadcast());
+        assertThat(mBluetoothLeBroadcast.getMaximumSubgroupsPerBroadcast()).isEqualTo(1);
     }
 
     @CddTest(requirements = {"3.5/C-0-9", "7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumSubgroupsPerBroadcastWithoutPrivilegedPermission() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothLeBroadcast);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothLeBroadcast).isNotNull();
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);

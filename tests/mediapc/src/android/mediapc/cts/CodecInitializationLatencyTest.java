@@ -22,6 +22,7 @@ import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
@@ -425,9 +426,10 @@ public class CodecInitializationLatencyTest {
                 format.setInteger(MediaFormat.KEY_SAMPLE_RATE, mSampleRate);
                 format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
             } else {
-                MediaCodec codec = MediaCodec.createByCodecName(mEncoderName);
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
-                        codec.getCodecInfo().getCapabilitiesForType(mMediaType);
+                                    getCodecCapabilities(mEncoderName, mMediaType);
+                assertNotNull("did not receive capabilities for encoder: " + mEncoderName
+                        + ", media type: " + mMediaType + "\n", codecCapabilities);
                 if (codecCapabilities.getVideoCapabilities().isSizeSupported(1920, 1080)) {
                     format.setInteger(MediaFormat.KEY_WIDTH, 1920);
                     format.setInteger(MediaFormat.KEY_HEIGHT, 1080);
@@ -449,7 +451,6 @@ public class CodecInitializationLatencyTest {
                     format.setInteger(MediaFormat.KEY_HEIGHT, 144);
                     format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
                 }
-                codec.release();
                 format.setInteger(MediaFormat.KEY_FRAME_RATE, mFrameRate);
                 format.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, 1.0f);
                 format.setInteger(MediaFormat.KEY_COLOR_FORMAT,

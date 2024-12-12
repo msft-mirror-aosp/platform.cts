@@ -90,7 +90,7 @@ fun RequireFactoryResetProtectionPolicySupported.logic() {
     checkFailOrSkip(
         "Requires factory reset protection policy to be supported",
         devicePolicy().isFactoryResetProtectionPolicySupported(),
-        FailureMode.FAIL
+        failureMode
     )
 }
 

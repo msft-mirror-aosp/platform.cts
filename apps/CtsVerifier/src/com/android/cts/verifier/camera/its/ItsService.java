@@ -532,7 +532,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Thread.sleep(1);
             }
 
-            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG)) {
+            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATHS_TAG)) {
                 try {
                     mSocketRunnableObj.sendResponse(ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
                             Integer.toString(intent.getIntExtra(
@@ -540,10 +540,15 @@ public class ItsService extends Service implements SensorEventListener {
                                     Activity.RESULT_CANCELED)
                             )
                     );
+                    JSONObject obj = new JSONObject();
+                    JSONArray jcaCapturePaths = new JSONArray(intent.getStringArrayListExtra(
+                            ItsTestActivity.JCA_CAPTURE_PATHS_TAG));
+                    obj.put(ItsTestActivity.JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                    Logt.i(TAG, "Sending JCA capture paths: " + obj.toString());
                     mSocketRunnableObj.sendResponse(
-                            ItsTestActivity.JCA_CAPTURE_PATH_TAG,
-                            intent.getStringExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG));
-                } catch (ItsException e) {
+                            ItsTestActivity.JCA_CAPTURE_PATHS_TAG,
+                            obj);
+                } catch (ItsException | org.json.JSONException e) {
                     Logt.e(TAG, "Error sending JCA capture path and status", e);
                 }
                 return START_STICKY;

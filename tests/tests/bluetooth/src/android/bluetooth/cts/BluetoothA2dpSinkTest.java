@@ -17,12 +17,15 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_UNKNOWN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -43,7 +46,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -81,7 +83,7 @@ public class BluetoothA2dpSinkTest {
 
         BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
@@ -109,22 +111,22 @@ public class BluetoothA2dpSinkTest {
     @Test
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
-        assertTrue(mIsProfileReady);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
+        assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.A2DP_SINK, mBluetoothA2dpSink);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(waitForProfileDisconnect()).isTrue();
+        assertThat(mIsProfileReady).isFalse();
     }
 
     @Test
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
-        assertEquals(mBluetoothA2dpSink.getConnectedDevices(), new ArrayList<BluetoothDevice>());
+        assertThat(mBluetoothA2dpSink.getConnectedDevices()).isEmpty();
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mBluetoothA2dpSink.getConnectedDevices());
@@ -133,26 +135,24 @@ public class BluetoothA2dpSinkTest {
     @Test
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
-        assertEquals(
-                mBluetoothA2dpSink.getDevicesMatchingConnectionStates(
-                        new int[] {BluetoothProfile.STATE_CONNECTED}),
-                new ArrayList<BluetoothDevice>());
+        assertThat(
+                        mBluetoothA2dpSink.getDevicesMatchingConnectionStates(
+                                new int[] {STATE_CONNECTED}))
+                .isEmpty();
     }
 
     @Test
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertEquals(
-                mBluetoothA2dpSink.getConnectionState(testDevice),
-                BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mBluetoothA2dpSink.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(
@@ -162,63 +162,58 @@ public class BluetoothA2dpSinkTest {
     @Test
     public void getConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothA2dpSink.getConnectionPolicy(null));
+        assertThat(mBluetoothA2dpSink.getConnectionPolicy(null))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
-                mBluetoothA2dpSink.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothA2dpSink.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }
 
     @Test
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(
-                mBluetoothA2dpSink.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_UNKNOWN));
-        assertFalse(
-                mBluetoothA2dpSink.setConnectionPolicy(
-                        null, BluetoothProfile.CONNECTION_POLICY_ALLOWED));
+        assertThat(mBluetoothA2dpSink.setConnectionPolicy(testDevice, CONNECTION_POLICY_UNKNOWN))
+                .isFalse();
+        assertThat(mBluetoothA2dpSink.setConnectionPolicy(null, CONNECTION_POLICY_ALLOWED))
+                .isFalse();
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(
-                mBluetoothA2dpSink.setConnectionPolicy(
-                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThat(mBluetoothA2dpSink.setConnectionPolicy(testDevice, CONNECTION_POLICY_FORBIDDEN))
+                .isFalse();
     }
 
     @Test
     public void isAudioPlaying() {
         assumeTrue(mHasBluetooth && mIsA2dpSinkSupported);
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothA2dpSink);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mBluetoothA2dpSink).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertFalse(mBluetoothA2dpSink.isAudioPlaying(null));
+        assertThat(mBluetoothA2dpSink.isAudioPlaying(null)).isFalse();
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertFalse(mBluetoothA2dpSink.isAudioPlaying(testDevice));
+        assertThat(mBluetoothA2dpSink.isAudioPlaying(testDevice)).isFalse();
     }
 
     private boolean waitForProfileConnect() {

@@ -383,8 +383,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           camera_properties_utils.zoom_ratio_range(props) and
           camera_properties_utils.logical_multi_camera(props) and
-          camera_properties_utils.ae_regions(props) and
-          camera_properties_utils.awb_regions(props))
+          camera_properties_utils.ae_regions(props))
 
       # Check the zoom range
       zoom_range = props['android.control.zoomRatioRange']
@@ -566,10 +565,11 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         ae_w_y_avgs.update({patch_color: f'{w_y_avg:.4f}'})
 
         # AWB Check : Verify that delta Cab are within the limits
-        cab_atol = _AWB_ATOL_L if patch_color == _COLOR_GRAY else _AWB_ATOL_AB
-        awb_msg = _do_awb_check(uw_patch, w_patch, cab_atol, patch_color)
-        if awb_msg:
-          failed_awb_msg.append(f'{awb_msg}\n')
+        if camera_properties_utils.awb_regions(props):
+          cab_atol = _AWB_ATOL_L if patch_color == _COLOR_GRAY else _AWB_ATOL_AB
+          awb_msg = _do_awb_check(uw_patch, w_patch, cab_atol, patch_color)
+          if awb_msg:
+            failed_awb_msg.append(f'{awb_msg}\n')
 
       # Below print statements are for logging purpose.
       # Do not replace with logging.

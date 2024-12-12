@@ -16,6 +16,10 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
+
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothQualityReport.BqrCommon;
@@ -37,7 +41,6 @@ import com.android.bluetooth.flags.Flags;
 
 import com.google.common.truth.Expect;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,106 +70,104 @@ public final class BluetoothQualityReportTest {
     private void assertBqrCommon(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR Common
         BqrCommon bqrCommon = bqr.getBqrCommon();
-        Assert.assertNotNull(bqrCommon);
-        Assert.assertEquals(bqr.getQualityReportId(), bqrp.getQualityReportId());
+        assertThat(bqrCommon).isNotNull();
+        assertThat(bqr.getQualityReportId()).isEqualTo(bqrp.getQualityReportId());
         if ((bqr.getQualityReportId() == BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR)
                 || (bqr.getQualityReportId()
                         == BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS)) {
             return;
         }
-        Assert.assertEquals(bqrp.mPacketType, bqrCommon.getPacketType());
-        Assert.assertEquals("TYPE_NULL", BqrCommon.packetTypeToString(bqrCommon.getPacketType()));
-        Assert.assertEquals(bqrp.mConnectionHandle, bqrCommon.getConnectionHandle());
-        Assert.assertTrue(
-                bqrp.mConnectionRoleCentral.equals(
-                        BqrCommon.connectionRoleToString(bqrCommon.getConnectionRole())));
-        Assert.assertEquals(bqrp.mConnectionRole, bqrCommon.getConnectionRole());
-        Assert.assertEquals(bqrp.mTxPowerLevel, bqrCommon.getTxPowerLevel());
-        Assert.assertEquals(bqrp.mRssi, bqrCommon.getRssi());
-        Assert.assertEquals(bqrp.mSnr, bqrCommon.getSnr());
-        Assert.assertEquals(bqrp.mUnusedAfhChannelCount, bqrCommon.getUnusedAfhChannelCount());
-        Assert.assertEquals(
-                bqrp.mAfhSelectUnidealChannelCount, bqrCommon.getAfhSelectUnidealChannelCount());
-        Assert.assertEquals(bqrp.mLsto, bqrCommon.getLsto());
-        Assert.assertEquals(bqrp.mPiconetClock, bqrCommon.getPiconetClock());
-        Assert.assertEquals(bqrp.mRetransmissionCount, bqrCommon.getRetransmissionCount());
-        Assert.assertEquals(bqrp.mNoRxCount, bqrCommon.getNoRxCount());
-        Assert.assertEquals(bqrp.mNakCount, bqrCommon.getNakCount());
-        Assert.assertEquals(bqrp.mLastTxAckTimestamp, bqrCommon.getLastTxAckTimestamp());
-        Assert.assertEquals(bqrp.mFlowOffCount, bqrCommon.getFlowOffCount());
-        Assert.assertEquals(bqrp.mLastFlowOnTimestamp, bqrCommon.getLastFlowOnTimestamp());
-        Assert.assertEquals(bqrp.mOverflowCount, bqrCommon.getOverflowCount());
-        Assert.assertEquals(bqrp.mUnderflowCount, bqrCommon.getUnderflowCount());
-        Assert.assertEquals(bqrp.mCalFailedItemCount, bqrCommon.getCalFailedItemCount());
+        assertThat(bqrCommon.getPacketType()).isEqualTo(bqrp.mPacketType);
+        assertThat(BqrCommon.packetTypeToString(bqrCommon.getPacketType())).isEqualTo("TYPE_NULL");
+        assertThat(bqrCommon.getConnectionHandle()).isEqualTo(bqrp.mConnectionHandle);
+        assertThat(BqrCommon.connectionRoleToString(bqrCommon.getConnectionRole()))
+                .isEqualTo(bqrp.mConnectionRoleCentral);
+        assertThat(bqrCommon.getConnectionRole()).isEqualTo(bqrp.mConnectionRole);
+        assertThat(bqrCommon.getTxPowerLevel()).isEqualTo(bqrp.mTxPowerLevel);
+        assertThat(bqrCommon.getRssi()).isEqualTo(bqrp.mRssi);
+        assertThat(bqrCommon.getSnr()).isEqualTo(bqrp.mSnr);
+        assertThat(bqrCommon.getUnusedAfhChannelCount()).isEqualTo(bqrp.mUnusedAfhChannelCount);
+        assertThat(bqrCommon.getAfhSelectUnidealChannelCount())
+                .isEqualTo(bqrp.mAfhSelectUnidealChannelCount);
+        assertThat(bqrCommon.getLsto()).isEqualTo(bqrp.mLsto);
+        assertThat(bqrCommon.getPiconetClock()).isEqualTo(bqrp.mPiconetClock);
+        assertThat(bqrCommon.getRetransmissionCount()).isEqualTo(bqrp.mRetransmissionCount);
+        assertThat(bqrCommon.getNoRxCount()).isEqualTo(bqrp.mNoRxCount);
+        assertThat(bqrCommon.getNakCount()).isEqualTo(bqrp.mNakCount);
+        assertThat(bqrCommon.getLastTxAckTimestamp()).isEqualTo(bqrp.mLastTxAckTimestamp);
+        assertThat(bqrCommon.getFlowOffCount()).isEqualTo(bqrp.mFlowOffCount);
+        assertThat(bqrCommon.getLastFlowOnTimestamp()).isEqualTo(bqrp.mLastFlowOnTimestamp);
+        assertThat(bqrCommon.getOverflowCount()).isEqualTo(bqrp.mOverflowCount);
+        assertThat(bqrCommon.getUnderflowCount()).isEqualTo(bqrp.mUnderflowCount);
+        assertThat(bqrCommon.getCalFailedItemCount()).isEqualTo(bqrp.mCalFailedItemCount);
     }
 
     private void assertBqrApproachLsto(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS LSTO
         BqrVsLsto bqrVsLsto = (BqrVsLsto) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsLsto);
-        Assert.assertEquals(
-                "Approaching LSTO",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
-        Assert.assertEquals(bqrp.mConnState & 0xFF, bqrVsLsto.getConnState());
-        Assert.assertEquals(
-                "CONN_UNPARK_ACTIVE", BqrVsLsto.connStateToString(bqrVsLsto.getConnState()));
-        Assert.assertEquals(bqrp.mBasebandStats, bqrVsLsto.getBasebandStats());
-        Assert.assertEquals(bqrp.mSlotsUsed, bqrVsLsto.getSlotsUsed());
-        Assert.assertEquals(bqrp.mCxmDenials, bqrVsLsto.getCxmDenials());
-        Assert.assertEquals(bqrp.mTxSkipped, bqrVsLsto.getTxSkipped());
-        Assert.assertEquals(bqrp.mRfLoss, bqrVsLsto.getRfLoss());
-        Assert.assertEquals(bqrp.mNativeClock, bqrVsLsto.getNativeClock());
-        Assert.assertEquals(bqrp.mLastTxAckTimestampLsto, bqrVsLsto.getLastTxAckTimestamp());
-        Assert.assertEquals(0, bqrVsLsto.describeContents());
+        assertThat(bqrVsLsto).isNotNull();
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Approaching LSTO");
+        assertThat(bqrVsLsto.getConnState()).isEqualTo(bqrp.mConnState & 0xFF);
+        assertThat(BqrVsLsto.connStateToString(bqrVsLsto.getConnState()))
+                .isEqualTo("CONN_UNPARK_ACTIVE");
+        assertThat(bqrVsLsto.getBasebandStats()).isEqualTo(bqrp.mBasebandStats);
+        assertThat(bqrVsLsto.getSlotsUsed()).isEqualTo(bqrp.mSlotsUsed);
+        assertThat(bqrVsLsto.getCxmDenials()).isEqualTo(bqrp.mCxmDenials);
+        assertThat(bqrVsLsto.getTxSkipped()).isEqualTo(bqrp.mTxSkipped);
+        assertThat(bqrVsLsto.getRfLoss()).isEqualTo(bqrp.mRfLoss);
+        assertThat(bqrVsLsto.getNativeClock()).isEqualTo(bqrp.mNativeClock);
+        assertThat(bqrVsLsto.getLastTxAckTimestamp()).isEqualTo(bqrp.mLastTxAckTimestampLsto);
+        assertThat(bqrVsLsto.describeContents()).isEqualTo(0);
     }
 
     private void assertBqrA2dpChoppy(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS A2DP Choppy
         BqrVsA2dpChoppy bqrVsA2dpChoppy = (BqrVsA2dpChoppy) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsA2dpChoppy);
-        Assert.assertEquals(
-                "A2DP choppy",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
-        Assert.assertEquals(bqrp.mArrivalTime, bqrVsA2dpChoppy.getArrivalTime());
-        Assert.assertEquals(bqrp.mScheduleTime, bqrVsA2dpChoppy.getScheduleTime());
-        Assert.assertEquals(bqrp.mGlitchCountA2dp, bqrVsA2dpChoppy.getGlitchCount());
-        Assert.assertEquals(bqrp.mTxCxmDenialsA2dp, bqrVsA2dpChoppy.getTxCxmDenials());
-        Assert.assertEquals(bqrp.mRxCxmDenialsA2dp, bqrVsA2dpChoppy.getRxCxmDenials());
-        Assert.assertEquals(bqrp.mAclTxQueueLength, bqrVsA2dpChoppy.getAclTxQueueLength());
-        Assert.assertEquals(bqrp.mLinkQuality, bqrVsA2dpChoppy.getLinkQuality());
-        Assert.assertEquals(
-                "MEDIUM", BqrVsA2dpChoppy.linkQualityToString(bqrVsA2dpChoppy.getLinkQuality()));
-        Assert.assertEquals(0, bqrVsA2dpChoppy.describeContents());
+        assertThat(bqrVsA2dpChoppy).isNotNull();
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("A2DP choppy");
+        assertThat(bqrVsA2dpChoppy.getArrivalTime()).isEqualTo(bqrp.mArrivalTime);
+        assertThat(bqrVsA2dpChoppy.getScheduleTime()).isEqualTo(bqrp.mScheduleTime);
+        assertThat(bqrVsA2dpChoppy.getGlitchCount()).isEqualTo(bqrp.mGlitchCountA2dp);
+        assertThat(bqrVsA2dpChoppy.getTxCxmDenials()).isEqualTo(bqrp.mTxCxmDenialsA2dp);
+        assertThat(bqrVsA2dpChoppy.getRxCxmDenials()).isEqualTo(bqrp.mRxCxmDenialsA2dp);
+        assertThat(bqrVsA2dpChoppy.getAclTxQueueLength()).isEqualTo(bqrp.mAclTxQueueLength);
+        assertThat(bqrVsA2dpChoppy.getLinkQuality()).isEqualTo(bqrp.mLinkQuality);
+        assertThat(BqrVsA2dpChoppy.linkQualityToString(bqrVsA2dpChoppy.getLinkQuality()))
+                .isEqualTo("MEDIUM");
+        assertThat(bqrVsA2dpChoppy.describeContents()).isEqualTo(0);
     }
 
     private void assertBqrScoChoppy(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS SCO Choppy
         BqrVsScoChoppy bqrVsScoChoppy = (BqrVsScoChoppy) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsScoChoppy);
-        Assert.assertEquals(
-                "SCO choppy",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
-        Assert.assertEquals(bqrp.mGlitchCountSco, bqrVsScoChoppy.getGlitchCount());
-        Assert.assertEquals(bqrp.mIntervalEsco, bqrVsScoChoppy.getIntervalEsco());
-        Assert.assertEquals(bqrp.mWindowEsco, bqrVsScoChoppy.getWindowEsco());
-        Assert.assertEquals(bqrp.mAirFormat, bqrVsScoChoppy.getAirFormat());
-        Assert.assertEquals(
-                "CVSD", BqrVsScoChoppy.airFormatToString(bqrVsScoChoppy.getAirFormat()));
-        Assert.assertEquals(bqrp.mInstanceCount, bqrVsScoChoppy.getInstanceCount());
-        Assert.assertEquals(bqrp.mTxCxmDenialsSco, bqrVsScoChoppy.getTxCxmDenials());
-        Assert.assertEquals(bqrp.mRxCxmDenialsSco, bqrVsScoChoppy.getRxCxmDenials());
-        Assert.assertEquals(bqrp.mTxAbortCount, bqrVsScoChoppy.getTxAbortCount());
-        Assert.assertEquals(bqrp.mLateDispatch, bqrVsScoChoppy.getLateDispatch());
-        Assert.assertEquals(bqrp.mMicIntrMiss, bqrVsScoChoppy.getMicIntrMiss());
-        Assert.assertEquals(bqrp.mLpaIntrMiss, bqrVsScoChoppy.getLpaIntrMiss());
-        Assert.assertEquals(bqrp.mSprIntrMiss, bqrVsScoChoppy.getSprIntrMiss());
-        Assert.assertEquals(bqrp.mPlcFillCount, bqrVsScoChoppy.getPlcFillCount());
-        Assert.assertEquals(bqrp.mPlcDiscardCount, bqrVsScoChoppy.getPlcDiscardCount());
-        Assert.assertEquals(bqrp.mMissedInstanceCount, bqrVsScoChoppy.getMissedInstanceCount());
-        Assert.assertEquals(bqrp.mTxRetransmitSlotCount, bqrVsScoChoppy.getTxRetransmitSlotCount());
-        Assert.assertEquals(bqrp.mRxRetransmitSlotCount, bqrVsScoChoppy.getRxRetransmitSlotCount());
-        Assert.assertEquals(bqrp.mGoodRxFrameCount, bqrVsScoChoppy.getGoodRxFrameCount());
-        Assert.assertEquals(0, bqrVsScoChoppy.describeContents());
+        assertThat(bqrVsScoChoppy).isNotNull();
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("SCO choppy");
+        assertThat(bqrVsScoChoppy.getGlitchCount()).isEqualTo(bqrp.mGlitchCountSco);
+        assertThat(bqrVsScoChoppy.getIntervalEsco()).isEqualTo(bqrp.mIntervalEsco);
+        assertThat(bqrVsScoChoppy.getWindowEsco()).isEqualTo(bqrp.mWindowEsco);
+        assertThat(bqrVsScoChoppy.getAirFormat()).isEqualTo(bqrp.mAirFormat);
+        assertThat(BqrVsScoChoppy.airFormatToString(bqrVsScoChoppy.getAirFormat()))
+                .isEqualTo("CVSD");
+        assertThat(bqrVsScoChoppy.getInstanceCount()).isEqualTo(bqrp.mInstanceCount);
+        assertThat(bqrVsScoChoppy.getTxCxmDenials()).isEqualTo(bqrp.mTxCxmDenialsSco);
+        assertThat(bqrVsScoChoppy.getRxCxmDenials()).isEqualTo(bqrp.mRxCxmDenialsSco);
+        assertThat(bqrVsScoChoppy.getTxAbortCount()).isEqualTo(bqrp.mTxAbortCount);
+        assertThat(bqrVsScoChoppy.getLateDispatch()).isEqualTo(bqrp.mLateDispatch);
+        assertThat(bqrVsScoChoppy.getMicIntrMiss()).isEqualTo(bqrp.mMicIntrMiss);
+        assertThat(bqrVsScoChoppy.getLpaIntrMiss()).isEqualTo(bqrp.mLpaIntrMiss);
+        assertThat(bqrVsScoChoppy.getSprIntrMiss()).isEqualTo(bqrp.mSprIntrMiss);
+        assertThat(bqrVsScoChoppy.getPlcFillCount()).isEqualTo(bqrp.mPlcFillCount);
+        assertThat(bqrVsScoChoppy.getPlcDiscardCount()).isEqualTo(bqrp.mPlcDiscardCount);
+        assertThat(bqrVsScoChoppy.getMissedInstanceCount()).isEqualTo(bqrp.mMissedInstanceCount);
+        assertThat(bqrVsScoChoppy.getTxRetransmitSlotCount())
+                .isEqualTo(bqrp.mTxRetransmitSlotCount);
+        assertThat(bqrVsScoChoppy.getRxRetransmitSlotCount())
+                .isEqualTo(bqrp.mRxRetransmitSlotCount);
+        assertThat(bqrVsScoChoppy.getGoodRxFrameCount()).isEqualTo(bqrp.mGoodRxFrameCount);
+        assertThat(bqrVsScoChoppy.describeContents()).isEqualTo(0);
     }
 
     private void assertBqrEnergyMonitor(BQRParameters bqrp, BluetoothQualityReport bqr) {
@@ -216,12 +217,11 @@ public final class BluetoothQualityReportTest {
     private void assertBqrConnectFail(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS Connect Fail
         BqrConnectFail bqrConnectFail = (BqrConnectFail) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrConnectFail);
-        Assert.assertEquals(
-                "Connect fail",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
-        Assert.assertEquals(bqrp.mFailReason, bqrConnectFail.getFailReason());
-        Assert.assertEquals(0, bqrConnectFail.describeContents());
+        assertThat(bqrConnectFail).isNotNull();
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Connect fail");
+        assertThat(bqrConnectFail.getFailReason()).isEqualTo(bqrp.mFailReason);
+        assertThat(bqrConnectFail.describeContents()).isEqualTo(0);
     }
 
     private void assertBqrRfStats(BQRParameters bqrp, BluetoothQualityReport bqr) {
@@ -290,12 +290,12 @@ public final class BluetoothQualityReportTest {
 
         Log.i(TAG, bqr.toString());
 
-        Assert.assertTrue(remoteAddr.equals(bqr.getRemoteAddress()));
-        Assert.assertEquals(lmpVer, bqr.getLmpVersion());
-        Assert.assertEquals(lmpSubVer, bqr.getLmpSubVersion());
-        Assert.assertEquals(manufacturerId, bqr.getManufacturerId());
-        Assert.assertTrue(remoteName.equals(bqr.getRemoteName()));
-        Assert.assertEquals(bluetoothClass, bqr.getBluetoothClass());
+        assertThat(remoteAddr).isEqualTo(bqr.getRemoteAddress());
+        assertThat(bqr.getLmpVersion()).isEqualTo(lmpVer);
+        assertThat(bqr.getLmpSubVersion()).isEqualTo(lmpSubVer);
+        assertThat(bqr.getManufacturerId()).isEqualTo(manufacturerId);
+        assertThat(remoteName).isEqualTo(bqr.getRemoteName());
+        assertThat(bqr.getBluetoothClass()).isEqualTo(bluetoothClass);
 
         assertBqrCommon(bqrp, bqr);
 
@@ -305,11 +305,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void bqrMonitor() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -325,11 +325,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void bqrApproachLsto() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -347,11 +347,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void bqrA2dpChoppy() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -369,11 +369,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void bqrScoChoppy() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -392,11 +392,11 @@ public final class BluetoothQualityReportTest {
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void bqrEnergyMonitor() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -414,11 +414,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void bqrConnectFail() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -433,38 +433,38 @@ public final class BluetoothQualityReportTest {
         assertBqrConnectFail(bqrp, bqr);
 
         BqrConnectFail bqrConnectFail = (BqrConnectFail) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrConnectFail);
+        assertThat(bqrConnectFail).isNotNull();
 
-        Assert.assertEquals(
-                "No error",
-                BqrConnectFail.connectFailIdToString(BqrConnectFail.CONNECT_FAIL_ID_NO_ERROR));
-        Assert.assertEquals(
-                "Page Timeout",
-                BqrConnectFail.connectFailIdToString(BqrConnectFail.CONNECT_FAIL_ID_PAGE_TIMEOUT));
-        Assert.assertEquals(
-                "Connection Timeout",
-                BqrConnectFail.connectFailIdToString(
-                        BqrConnectFail.CONNECT_FAIL_ID_CONNECTION_TIMEOUT));
-        Assert.assertEquals(
-                "ACL already exists",
-                BqrConnectFail.connectFailIdToString(
-                        BqrConnectFail.CONNECT_FAIL_ID_ACL_ALREADY_EXIST));
-        Assert.assertEquals(
-                "Controller busy",
-                BqrConnectFail.connectFailIdToString(
-                        BqrConnectFail.CONNECT_FAIL_ID_CONTROLLER_BUSY));
-        Assert.assertEquals("INVALID", BqrConnectFail.connectFailIdToString(0xFF));
+        assertThat(BqrConnectFail.connectFailIdToString(BqrConnectFail.CONNECT_FAIL_ID_NO_ERROR))
+                .isEqualTo("No error");
+        assertThat(
+                        BqrConnectFail.connectFailIdToString(
+                                BqrConnectFail.CONNECT_FAIL_ID_PAGE_TIMEOUT))
+                .isEqualTo("Page Timeout");
+        assertThat(
+                        BqrConnectFail.connectFailIdToString(
+                                BqrConnectFail.CONNECT_FAIL_ID_CONNECTION_TIMEOUT))
+                .isEqualTo("Connection Timeout");
+        assertThat(
+                        BqrConnectFail.connectFailIdToString(
+                                BqrConnectFail.CONNECT_FAIL_ID_ACL_ALREADY_EXIST))
+                .isEqualTo("ACL already exists");
+        assertThat(
+                        BqrConnectFail.connectFailIdToString(
+                                BqrConnectFail.CONNECT_FAIL_ID_CONTROLLER_BUSY))
+                .isEqualTo("Controller busy");
+        assertThat(BqrConnectFail.connectFailIdToString(0xFF)).isEqualTo("INVALID");
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void bqrRfStats() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -482,11 +482,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void defaultNameAddress() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
 
         BluetoothClass bluetoothClass = getBluetoothClassHelper(mRemoteCoD);
 
@@ -499,19 +499,19 @@ public final class BluetoothQualityReportTest {
                         .setBluetoothClass(bluetoothClass)
                         .build();
 
-        Assert.assertTrue(bqr.getRemoteAddress().equals(mDefaultAddress));
-        Assert.assertTrue(bqr.getRemoteName().equals(mDefaultName));
+        assertThat(bqr.getRemoteAddress()).isEqualTo(mDefaultAddress);
+        assertThat(bqr.getRemoteName()).isEqualTo(mDefaultName);
     }
 
     @Test
     public void invalidQualityReportId() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) 123);
-        Assert.assertEquals(bqrp.getQualityReportId(), 123);
+        assertThat(bqrp.getQualityReportId()).isEqualTo(123);
 
-        Assert.assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         initBqrCommon(
@@ -528,7 +528,7 @@ public final class BluetoothQualityReportTest {
     public void rawDataNull() {
         BluetoothClass bluetoothClass = getBluetoothClassHelper(mRemoteCoD);
 
-        Assert.assertThrows(
+        assertThrows(
                 NullPointerException.class,
                 () ->
                         new BluetoothQualityReport.Builder(null)
@@ -544,13 +544,13 @@ public final class BluetoothQualityReportTest {
     @Test
     public void invalidRawData() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         BluetoothClass bluetoothClass = getBluetoothClassHelper(mRemoteCoD);
 
         for (int id : BQRParameters.QualityReportId) {
             bqrp.setQualityReportId((byte) id);
-            Assert.assertEquals(bqrp.getQualityReportId(), id);
+            assertThat(bqrp.getQualityReportId()).isEqualTo(id);
 
             byte[] rawData = {0};
 
@@ -594,7 +594,7 @@ public final class BluetoothQualityReportTest {
 
             final byte[] data = rawData;
 
-            Assert.assertThrows(
+            assertThrows(
                     IllegalArgumentException.class,
                     () ->
                             new BluetoothQualityReport.Builder(data)
@@ -611,7 +611,7 @@ public final class BluetoothQualityReportTest {
     @Test
     public void readWriteBqrParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         for (int id : BQRParameters.QualityReportId) {
             if ((id == BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR)
@@ -619,7 +619,7 @@ public final class BluetoothQualityReportTest {
                 continue;
             }
             bqrp.setQualityReportId((byte) id);
-            Assert.assertEquals(bqrp.getQualityReportId(), id);
+            assertThat(bqrp.getQualityReportId()).isEqualTo(id);
 
             BluetoothQualityReport bqr =
                     initBqrCommon(
@@ -663,11 +663,11 @@ public final class BluetoothQualityReportTest {
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_BLUETOOTH_QUALITY_REPORT_V6)
     public void readWriteBqrParcelV6Flag() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         for (int id : BQRParameters.QualityReportId) {
             bqrp.setQualityReportId((byte) id);
-            Assert.assertEquals(bqrp.getQualityReportId(), id);
+            assertThat(bqrp.getQualityReportId()).isEqualTo(id);
 
             BluetoothQualityReport bqr =
                     initBqrCommon(
@@ -716,11 +716,11 @@ public final class BluetoothQualityReportTest {
     @Test
     public void readWriteBqrCommonParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -732,9 +732,8 @@ public final class BluetoothQualityReportTest {
                         mRemoteName,
                         mRemoteCoD);
 
-        Assert.assertEquals(
-                "Quality monitor",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Quality monitor");
 
         Parcel parcel = Parcel.obtain();
         bqr.getBqrCommon().writeToParcel(parcel, 0);
@@ -743,44 +742,42 @@ public final class BluetoothQualityReportTest {
         BqrCommon bqrCommonFromParcel = BqrCommon.CREATOR.createFromParcel(parcel);
 
         // BQR Common
-        Assert.assertNotNull(bqrCommonFromParcel);
-        Assert.assertEquals(bqrp.mPacketType, bqrCommonFromParcel.getPacketType());
-        Assert.assertEquals(
-                "TYPE_NULL", BqrCommon.packetTypeToString(bqrCommonFromParcel.getPacketType()));
-        Assert.assertEquals(bqrp.mConnectionHandle, bqrCommonFromParcel.getConnectionHandle());
-        Assert.assertTrue(
-                bqrp.mConnectionRoleCentral.equals(
-                        BqrCommon.connectionRoleToString(bqrCommonFromParcel.getConnectionRole())));
-        Assert.assertEquals(bqrp.mTxPowerLevel, bqrCommonFromParcel.getTxPowerLevel());
-        Assert.assertEquals(bqrp.mRssi, bqrCommonFromParcel.getRssi());
-        Assert.assertEquals(bqrp.mSnr, bqrCommonFromParcel.getSnr());
-        Assert.assertEquals(
-                bqrp.mUnusedAfhChannelCount, bqrCommonFromParcel.getUnusedAfhChannelCount());
-        Assert.assertEquals(
-                bqrp.mAfhSelectUnidealChannelCount,
-                bqrCommonFromParcel.getAfhSelectUnidealChannelCount());
-        Assert.assertEquals(bqrp.mLsto, bqrCommonFromParcel.getLsto());
-        Assert.assertEquals(bqrp.mPiconetClock, bqrCommonFromParcel.getPiconetClock());
-        Assert.assertEquals(
-                bqrp.mRetransmissionCount, bqrCommonFromParcel.getRetransmissionCount());
-        Assert.assertEquals(bqrp.mNoRxCount, bqrCommonFromParcel.getNoRxCount());
-        Assert.assertEquals(bqrp.mNakCount, bqrCommonFromParcel.getNakCount());
-        Assert.assertEquals(bqrp.mLastTxAckTimestamp, bqrCommonFromParcel.getLastTxAckTimestamp());
-        Assert.assertEquals(bqrp.mFlowOffCount, bqrCommonFromParcel.getFlowOffCount());
-        Assert.assertEquals(
-                bqrp.mLastFlowOnTimestamp, bqrCommonFromParcel.getLastFlowOnTimestamp());
-        Assert.assertEquals(bqrp.mOverflowCount, bqrCommonFromParcel.getOverflowCount());
-        Assert.assertEquals(bqrp.mUnderflowCount, bqrCommonFromParcel.getUnderflowCount());
+        assertThat(bqrCommonFromParcel).isNotNull();
+        assertThat(bqrCommonFromParcel.getPacketType()).isEqualTo(bqrp.mPacketType);
+        assertThat(BqrCommon.packetTypeToString(bqrCommonFromParcel.getPacketType()))
+                .isEqualTo("TYPE_NULL");
+        assertThat(bqrCommonFromParcel.getConnectionHandle()).isEqualTo(bqrp.mConnectionHandle);
+        assertThat(BqrCommon.connectionRoleToString(bqrCommonFromParcel.getConnectionRole()))
+                .isEqualTo(bqrp.mConnectionRoleCentral);
+        assertThat(bqrCommonFromParcel.getTxPowerLevel()).isEqualTo(bqrp.mTxPowerLevel);
+        assertThat(bqrCommonFromParcel.getRssi()).isEqualTo(bqrp.mRssi);
+        assertThat(bqrCommonFromParcel.getSnr()).isEqualTo(bqrp.mSnr);
+        assertThat(bqrCommonFromParcel.getUnusedAfhChannelCount())
+                .isEqualTo(bqrp.mUnusedAfhChannelCount);
+        assertThat(bqrCommonFromParcel.getAfhSelectUnidealChannelCount())
+                .isEqualTo(bqrp.mAfhSelectUnidealChannelCount);
+        assertThat(bqrCommonFromParcel.getLsto()).isEqualTo(bqrp.mLsto);
+        assertThat(bqrCommonFromParcel.getPiconetClock()).isEqualTo(bqrp.mPiconetClock);
+        assertThat(bqrCommonFromParcel.getRetransmissionCount())
+                .isEqualTo(bqrp.mRetransmissionCount);
+        assertThat(bqrCommonFromParcel.getNoRxCount()).isEqualTo(bqrp.mNoRxCount);
+        assertThat(bqrCommonFromParcel.getNakCount()).isEqualTo(bqrp.mNakCount);
+        assertThat(bqrCommonFromParcel.getLastTxAckTimestamp()).isEqualTo(bqrp.mLastTxAckTimestamp);
+        assertThat(bqrCommonFromParcel.getFlowOffCount()).isEqualTo(bqrp.mFlowOffCount);
+        assertThat(bqrCommonFromParcel.getLastFlowOnTimestamp())
+                .isEqualTo(bqrp.mLastFlowOnTimestamp);
+        assertThat(bqrCommonFromParcel.getOverflowCount()).isEqualTo(bqrp.mOverflowCount);
+        assertThat(bqrCommonFromParcel.getUnderflowCount()).isEqualTo(bqrp.mUnderflowCount);
     }
 
     @Test
     public void readWriteBqrVsApproachLstoParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -792,12 +789,11 @@ public final class BluetoothQualityReportTest {
                         mRemoteName,
                         mRemoteCoD);
 
-        Assert.assertEquals(
-                "Approaching LSTO",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Approaching LSTO");
 
         BqrVsLsto bqrVsLsto = (BqrVsLsto) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsLsto);
+        assertThat(bqrVsLsto).isNotNull();
         Parcel parcel = Parcel.obtain();
         bqrVsLsto.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -805,30 +801,29 @@ public final class BluetoothQualityReportTest {
         BqrVsLsto bqrVsLstoFromParcel = BqrVsLsto.CREATOR.createFromParcel(parcel);
 
         // BQR VS LSTO
-        Assert.assertNotNull(bqrVsLstoFromParcel);
-        Assert.assertEquals(bqrp.mConnState & 0xFF, bqrVsLstoFromParcel.getConnState());
-        Assert.assertEquals(
-                "CONN_UNPARK_ACTIVE",
-                BqrVsLsto.connStateToString(bqrVsLstoFromParcel.getConnState()));
-        Assert.assertEquals(bqrp.mBasebandStats, bqrVsLstoFromParcel.getBasebandStats());
-        Assert.assertEquals(bqrp.mSlotsUsed, bqrVsLstoFromParcel.getSlotsUsed());
-        Assert.assertEquals(bqrp.mCxmDenials, bqrVsLstoFromParcel.getCxmDenials());
-        Assert.assertEquals(bqrp.mTxSkipped, bqrVsLstoFromParcel.getTxSkipped());
-        Assert.assertEquals(bqrp.mRfLoss, bqrVsLstoFromParcel.getRfLoss());
-        Assert.assertEquals(bqrp.mNativeClock, bqrVsLstoFromParcel.getNativeClock());
-        Assert.assertEquals(
-                bqrp.mLastTxAckTimestampLsto, bqrVsLstoFromParcel.getLastTxAckTimestamp());
-        Assert.assertEquals(0, bqrVsLstoFromParcel.describeContents());
+        assertThat(bqrVsLstoFromParcel).isNotNull();
+        assertThat(bqrVsLstoFromParcel.getConnState()).isEqualTo(bqrp.mConnState & 0xFF);
+        assertThat(BqrVsLsto.connStateToString(bqrVsLstoFromParcel.getConnState()))
+                .isEqualTo("CONN_UNPARK_ACTIVE");
+        assertThat(bqrVsLstoFromParcel.getBasebandStats()).isEqualTo(bqrp.mBasebandStats);
+        assertThat(bqrVsLstoFromParcel.getSlotsUsed()).isEqualTo(bqrp.mSlotsUsed);
+        assertThat(bqrVsLstoFromParcel.getCxmDenials()).isEqualTo(bqrp.mCxmDenials);
+        assertThat(bqrVsLstoFromParcel.getTxSkipped()).isEqualTo(bqrp.mTxSkipped);
+        assertThat(bqrVsLstoFromParcel.getRfLoss()).isEqualTo(bqrp.mRfLoss);
+        assertThat(bqrVsLstoFromParcel.getNativeClock()).isEqualTo(bqrp.mNativeClock);
+        assertThat(bqrVsLstoFromParcel.getLastTxAckTimestamp())
+                .isEqualTo(bqrp.mLastTxAckTimestampLsto);
+        assertThat(bqrVsLstoFromParcel.describeContents()).isEqualTo(0);
     }
 
     @Test
     public void readWriteBqrVsA2dpChoppyParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
+        assertThat(bqrp.getQualityReportId())
+                .isEqualTo(BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY);
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -840,12 +835,11 @@ public final class BluetoothQualityReportTest {
                         mRemoteName,
                         mRemoteCoD);
 
-        Assert.assertEquals(
-                "A2DP choppy",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("A2DP choppy");
 
         BqrVsA2dpChoppy bqrVsA2dpChoppy = (BqrVsA2dpChoppy) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsA2dpChoppy);
+        assertThat(bqrVsA2dpChoppy).isNotNull();
         Parcel parcel = Parcel.obtain();
         bqrVsA2dpChoppy.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -854,29 +848,28 @@ public final class BluetoothQualityReportTest {
                 BqrVsA2dpChoppy.CREATOR.createFromParcel(parcel);
 
         // BQR VS A2DP Choppy
-        Assert.assertNotNull(bqrVsA2dpChoppyFromParcel);
-        Assert.assertEquals(bqrp.mArrivalTime, bqrVsA2dpChoppyFromParcel.getArrivalTime());
-        Assert.assertEquals(bqrp.mScheduleTime, bqrVsA2dpChoppyFromParcel.getScheduleTime());
-        Assert.assertEquals(bqrp.mGlitchCountA2dp, bqrVsA2dpChoppyFromParcel.getGlitchCount());
-        Assert.assertEquals(bqrp.mTxCxmDenialsA2dp, bqrVsA2dpChoppyFromParcel.getTxCxmDenials());
-        Assert.assertEquals(bqrp.mRxCxmDenialsA2dp, bqrVsA2dpChoppyFromParcel.getRxCxmDenials());
-        Assert.assertEquals(
-                bqrp.mAclTxQueueLength, bqrVsA2dpChoppyFromParcel.getAclTxQueueLength());
-        Assert.assertEquals(bqrp.mLinkQuality, bqrVsA2dpChoppyFromParcel.getLinkQuality());
-        Assert.assertEquals(
-                "MEDIUM",
-                BqrVsA2dpChoppy.linkQualityToString(bqrVsA2dpChoppyFromParcel.getLinkQuality()));
-        Assert.assertEquals(0, bqrVsA2dpChoppyFromParcel.describeContents());
+        assertThat(bqrVsA2dpChoppyFromParcel).isNotNull();
+        assertThat(bqrVsA2dpChoppyFromParcel.getArrivalTime()).isEqualTo(bqrp.mArrivalTime);
+        assertThat(bqrVsA2dpChoppyFromParcel.getScheduleTime()).isEqualTo(bqrp.mScheduleTime);
+        assertThat(bqrVsA2dpChoppyFromParcel.getGlitchCount()).isEqualTo(bqrp.mGlitchCountA2dp);
+        assertThat(bqrVsA2dpChoppyFromParcel.getTxCxmDenials()).isEqualTo(bqrp.mTxCxmDenialsA2dp);
+        assertThat(bqrVsA2dpChoppyFromParcel.getRxCxmDenials()).isEqualTo(bqrp.mRxCxmDenialsA2dp);
+        assertThat(bqrVsA2dpChoppyFromParcel.getAclTxQueueLength())
+                .isEqualTo(bqrp.mAclTxQueueLength);
+        assertThat(bqrVsA2dpChoppyFromParcel.getLinkQuality()).isEqualTo(bqrp.mLinkQuality);
+        assertThat(BqrVsA2dpChoppy.linkQualityToString(bqrVsA2dpChoppyFromParcel.getLinkQuality()))
+                .isEqualTo("MEDIUM");
+        assertThat(bqrVsA2dpChoppyFromParcel.describeContents()).isEqualTo(0);
     }
 
     @Test
     public void readWriteBqrVsScoChoppyParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY);
+        assertThat(BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY)
+                .isEqualTo(bqrp.getQualityReportId());
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -888,12 +881,11 @@ public final class BluetoothQualityReportTest {
                         mRemoteName,
                         mRemoteCoD);
 
-        Assert.assertEquals(
-                "SCO choppy",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("SCO choppy");
 
         BqrVsScoChoppy bqrVsScoChoppy = (BqrVsScoChoppy) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrVsScoChoppy);
+        assertThat(bqrVsScoChoppy).isNotNull();
         Parcel parcel = Parcel.obtain();
         bqrVsScoChoppy.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -901,42 +893,43 @@ public final class BluetoothQualityReportTest {
         BqrVsScoChoppy bqrVsScoChoppyFromParcel = BqrVsScoChoppy.CREATOR.createFromParcel(parcel);
 
         // BQR VS SCO Choppy
-        Assert.assertNotNull(bqrVsScoChoppyFromParcel);
-        Assert.assertEquals(bqrp.mGlitchCountSco, bqrVsScoChoppyFromParcel.getGlitchCount());
-        Assert.assertEquals(bqrp.mIntervalEsco, bqrVsScoChoppyFromParcel.getIntervalEsco());
-        Assert.assertEquals(bqrp.mWindowEsco, bqrVsScoChoppyFromParcel.getWindowEsco());
-        Assert.assertEquals(bqrp.mAirFormat, bqrVsScoChoppyFromParcel.getAirFormat());
-        Assert.assertEquals(
-                "CVSD", BqrVsScoChoppy.airFormatToString(bqrVsScoChoppyFromParcel.getAirFormat()));
-        Assert.assertEquals(bqrp.mInstanceCount, bqrVsScoChoppyFromParcel.getInstanceCount());
-        Assert.assertEquals(bqrp.mTxCxmDenialsSco, bqrVsScoChoppyFromParcel.getTxCxmDenials());
-        Assert.assertEquals(bqrp.mRxCxmDenialsSco, bqrVsScoChoppyFromParcel.getRxCxmDenials());
-        Assert.assertEquals(bqrp.mTxAbortCount, bqrVsScoChoppyFromParcel.getTxAbortCount());
-        Assert.assertEquals(bqrp.mLateDispatch, bqrVsScoChoppyFromParcel.getLateDispatch());
-        Assert.assertEquals(bqrp.mMicIntrMiss, bqrVsScoChoppyFromParcel.getMicIntrMiss());
-        Assert.assertEquals(bqrp.mLpaIntrMiss, bqrVsScoChoppyFromParcel.getLpaIntrMiss());
-        Assert.assertEquals(bqrp.mSprIntrMiss, bqrVsScoChoppyFromParcel.getSprIntrMiss());
-        Assert.assertEquals(bqrp.mPlcFillCount, bqrVsScoChoppyFromParcel.getPlcFillCount());
-        Assert.assertEquals(bqrp.mPlcDiscardCount, bqrVsScoChoppyFromParcel.getPlcDiscardCount());
+        assertThat(bqrVsScoChoppyFromParcel).isNotNull();
+        assertThat(bqrVsScoChoppyFromParcel.getGlitchCount()).isEqualTo(bqrp.mGlitchCountSco);
+        assertThat(bqrVsScoChoppyFromParcel.getIntervalEsco()).isEqualTo(bqrp.mIntervalEsco);
+        assertThat(bqrVsScoChoppyFromParcel.getWindowEsco()).isEqualTo(bqrp.mWindowEsco);
+        assertThat(bqrVsScoChoppyFromParcel.getAirFormat()).isEqualTo(bqrp.mAirFormat);
+        assertThat(BqrVsScoChoppy.airFormatToString(bqrVsScoChoppyFromParcel.getAirFormat()))
+                .isEqualTo("CVSD");
+        assertThat(bqrVsScoChoppyFromParcel.getInstanceCount()).isEqualTo(bqrp.mInstanceCount);
+        assertThat(bqrVsScoChoppyFromParcel.getTxCxmDenials()).isEqualTo(bqrp.mTxCxmDenialsSco);
+        assertThat(bqrVsScoChoppyFromParcel.getRxCxmDenials()).isEqualTo(bqrp.mRxCxmDenialsSco);
+        assertThat(bqrVsScoChoppyFromParcel.getTxAbortCount()).isEqualTo(bqrp.mTxAbortCount);
+        assertThat(bqrVsScoChoppyFromParcel.getLateDispatch()).isEqualTo(bqrp.mLateDispatch);
+        assertThat(bqrVsScoChoppyFromParcel.getMicIntrMiss()).isEqualTo(bqrp.mMicIntrMiss);
+        assertThat(bqrVsScoChoppyFromParcel.getLpaIntrMiss()).isEqualTo(bqrp.mLpaIntrMiss);
+        assertThat(bqrVsScoChoppyFromParcel.getSprIntrMiss()).isEqualTo(bqrp.mSprIntrMiss);
+        assertThat(bqrVsScoChoppyFromParcel.getPlcFillCount()).isEqualTo(bqrp.mPlcFillCount);
+        assertThat(bqrVsScoChoppyFromParcel.getPlcDiscardCount()).isEqualTo(bqrp.mPlcDiscardCount);
 
-        Assert.assertEquals(
-                bqrp.mMissedInstanceCount, bqrVsScoChoppyFromParcel.getMissedInstanceCount());
-        Assert.assertEquals(
-                bqrp.mTxRetransmitSlotCount, bqrVsScoChoppyFromParcel.getTxRetransmitSlotCount());
-        Assert.assertEquals(
-                bqrp.mRxRetransmitSlotCount, bqrVsScoChoppyFromParcel.getRxRetransmitSlotCount());
-        Assert.assertEquals(bqrp.mGoodRxFrameCount, bqrVsScoChoppyFromParcel.getGoodRxFrameCount());
-        Assert.assertEquals(0, bqrVsScoChoppyFromParcel.describeContents());
+        assertThat(bqrVsScoChoppyFromParcel.getMissedInstanceCount())
+                .isEqualTo(bqrp.mMissedInstanceCount);
+        assertThat(bqrVsScoChoppyFromParcel.getTxRetransmitSlotCount())
+                .isEqualTo(bqrp.mTxRetransmitSlotCount);
+        assertThat(bqrVsScoChoppyFromParcel.getRxRetransmitSlotCount())
+                .isEqualTo(bqrp.mRxRetransmitSlotCount);
+        assertThat(bqrVsScoChoppyFromParcel.getGoodRxFrameCount())
+                .isEqualTo(bqrp.mGoodRxFrameCount);
+        assertThat(bqrVsScoChoppyFromParcel.describeContents()).isEqualTo(0);
     }
 
     @Test
     public void readWriteBqrConnectFailParcel() {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL);
-        Assert.assertEquals(
-                bqrp.getQualityReportId(), BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL);
+        assertThat(BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL)
+                .isEqualTo(bqrp.getQualityReportId());
 
         BluetoothQualityReport bqr =
                 initBqrCommon(
@@ -948,12 +941,11 @@ public final class BluetoothQualityReportTest {
                         mRemoteName,
                         mRemoteCoD);
 
-        Assert.assertEquals(
-                "Connect fail",
-                BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()));
+        assertThat(BluetoothQualityReport.qualityReportIdToString(bqr.getQualityReportId()))
+                .isEqualTo("Connect fail");
 
         BqrConnectFail bqrConnectFail = (BqrConnectFail) bqr.getBqrEvent();
-        Assert.assertNotNull(bqrConnectFail);
+        assertThat(bqrConnectFail).isNotNull();
         Parcel parcel = Parcel.obtain();
         bqrConnectFail.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -961,9 +953,9 @@ public final class BluetoothQualityReportTest {
         BqrConnectFail bqrConnFailFromParcel = BqrConnectFail.CREATOR.createFromParcel(parcel);
 
         // BQR VS Connect Fail
-        Assert.assertNotNull(bqrConnFailFromParcel);
-        Assert.assertEquals(bqrp.mFailReason, bqrConnFailFromParcel.getFailReason());
-        Assert.assertEquals(0, bqrConnFailFromParcel.describeContents());
+        assertThat(bqrConnFailFromParcel).isNotNull();
+        assertThat(bqrConnFailFromParcel.getFailReason()).isEqualTo(bqrp.mFailReason);
+        assertThat(bqrConnFailFromParcel.describeContents()).isEqualTo(0);
     }
 
     /**
@@ -974,10 +966,10 @@ public final class BluetoothQualityReportTest {
      */
     public static BluetoothQualityReport getBqr(int qualityReportId) {
         BQRParameters bqrp = BQRParameters.getInstance();
-        Assert.assertNotNull(bqrp);
+        assertThat(bqrp).isNotNull();
 
         bqrp.setQualityReportId((byte) qualityReportId);
-        Assert.assertEquals(bqrp.getQualityReportId(), qualityReportId);
+        assertThat(bqrp.getQualityReportId()).isEqualTo(qualityReportId);
         BluetoothClass bluetoothClass = getBluetoothClassHelper(mRemoteCoD);
 
         BluetoothQualityReport bqr =

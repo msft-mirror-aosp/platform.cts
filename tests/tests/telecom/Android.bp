@@ -191,3 +191,10 @@ java_library {
         "androidx.test.rules",
     ],
 }
+
+test_module_config {
+    name: "CtsTelecomTestCases_PlatinumTest",
+    base: "CtsTelecomTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

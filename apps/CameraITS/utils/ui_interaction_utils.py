@@ -13,8 +13,10 @@
 # limitations under the License.
 """Utility functions for interacting with a device via the UI."""
 
+import dataclasses
 import datetime
 import logging
+import math
 import re
 import time
 import types
@@ -40,14 +42,17 @@ CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
+DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
 FLASH_MODE_TO_CLICKS = types.MappingProxyType({
-    'OFF': 3,
+    'OFF': 4,  # 4 clicks to cycle through low light boost mode
     'AUTO': 2
 })
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
+JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 JPG_FORMAT_STR = '.jpg'
+LOCATION_ON_TXT = 'Turn on'
 OK_BUTTON_TXT = 'OK'
 TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
@@ -63,9 +68,28 @@ REMOVE_CAMERA_FILES_CMD = 'rm '
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
 UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
+UI_PHYSICAL_CAMERA_RESOURCE_ID = 'PhysicalCameraIdTag'
+UI_ZOOM_RATIO_TEXT_RESOURCE_ID = 'ZoomRatioTag'
+UI_DEBUG_OVERLAY_BUTTON_RESOURCE_ID = 'DebugOverlayButton'
+UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_BUTTON_RESOURCE_ID = (
+    'DebugOverlaySetZoomRatioButton'
+)
+UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID = (
+    'DebugOverlaySetZoomRatioTextField'
+)
+UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID = (
+    'DebugOverlaySetZoomRatioSetButton'
+)
+UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
 VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
 WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
+
+
+@dataclasses.dataclass(frozen=True)
+class JcaCapture:
+  capture_path: str
+  physical_id: int
 
 
 def _find_ui_object_else_click(object_to_await, object_to_click):
@@ -159,6 +183,53 @@ def switch_jca_camera(dut, log_path, facing):
       log_path, prefix=f"switched_to_{ui_facing_description.replace(' ', '_')}"
   )
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
+
+
+def jca_ui_zoom(dut, zoom_ratio, log_path):
+  """Interacts with the debug JCA overlay UI to zoom to the desired zoom ratio.
+
+  Args:
+    dut: An Android controller device object.
+    zoom_ratio: float; zoom ratio desired. Will be rounded for compatibility.
+  Raises:
+    AssertionError: If desired zoom ratio cannot be reached.
+  """
+  zoom_ratio = round(zoom_ratio, 2)  # JCA only supports 2 decimal places
+  current_zoom_ratio_text = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
+  logging.debug('current zoom ratio text: %s', current_zoom_ratio_text)
+  current_zoom_ratio = float(current_zoom_ratio_text[:-1])  # remove `x`
+  if math.isclose(zoom_ratio, current_zoom_ratio):
+    logging.debug('Desired zoom ratio is %.2f, '
+                  'current zoom ratio is %.2f. '
+                  'No need to zoom.',
+                  zoom_ratio, current_zoom_ratio)
+    return
+  dut.ui(res=UI_DEBUG_OVERLAY_BUTTON_RESOURCE_ID).click()
+  dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_BUTTON_RESOURCE_ID).click()
+  dut.ui(
+      res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID
+  ).set_text(str(zoom_ratio))
+  dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID).click()
+  # Ensure that preview is stable by clicking the center of the screen.
+  center_x, center_y = (
+      dut.ui.info['displayWidth'] // 2,
+      dut.ui.info['displayHeight'] // 2
+  )
+  dut.ui.click(x=center_x, y=center_y)
+  time.sleep(UI_OBJECT_WAIT_TIME_SECONDS.total_seconds())
+  zoom_ratio_text_after_zoom = dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).text
+  logging.debug('zoom ratio text after zoom: %s', zoom_ratio_text_after_zoom)
+  zoom_ratio_after_zoom = float(zoom_ratio_text_after_zoom[:-1])  # remove `x`
+  if not math.isclose(zoom_ratio, zoom_ratio_after_zoom):
+    dut.take_screenshot(
+        log_path, prefix=f'failed_to_zoom_to_{zoom_ratio}'
+    )
+    raise AssertionError(
+        f'Failed to zoom to {zoom_ratio}, '
+        f'zoomed to {zoom_ratio_after_zoom} instead.'
+    )
+  logging.debug('Set zoom ratio to %.2f', zoom_ratio)
+  dut.take_screenshot(log_path, prefix=f'zoomed_to_{zoom_ratio}')
 
 
 def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
@@ -293,7 +364,8 @@ def pull_img_files(device_id, input_path, output_path):
   its_device_utils.run(pull_cmd)
 
 
-def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
+def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
+    dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH):
   """Launches the camera app and takes still capture.
 
   Args:
@@ -302,6 +374,7 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
       be used for captures.
     camera_facing: camera lens facing orientation
     log_path: str; log path to save screenshots.
+    dumpsys_path: path of the file on device to store the report
 
   Returns:
     img_path_on_dut: Path of the captured image on the device
@@ -328,6 +401,10 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
     if dut.ui(text=CANCEL_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=CANCEL_BUTTON_TXT).click.wait()
+    if dut.ui(text=LOCATION_ON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS
+    ):
+      dut.ui(text=LOCATION_ON_TXT).click.wait()
     switch_default_camera(dut, camera_facing, log_path)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
@@ -346,9 +423,11 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path):
         break
     find_file_path = (
         f'find {photo_storage_path} ! -empty -a ! -name \'.pending*\''
-        ' -a -type f -name "*.jpg" -o -name "*.jpeg"'
+        ' -a -type f -iname "*.jpg" -o -iname "*.jpeg"'
     )
-    img_path_on_dut = dut.adb.shell(find_file_path).decode('utf-8').strip()
+    img_path_on_dut = (
+        dut.adb.shell(find_file_path).decode('utf-8').strip().lower()
+    )
     logging.debug('Image path on DUT: %s', img_path_on_dut)
     if JPG_FORMAT_STR not in img_path_on_dut:
       raise AssertionError('Failed to find jpg files!')
