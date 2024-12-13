@@ -16,6 +16,10 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.NO_SCT_PROVIDED_DOMAIN;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -32,10 +36,6 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -44,19 +44,10 @@ import javax.net.ssl.HttpsURLConnection;
     Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION,
     com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
 })
-// TODO(b/383539782): replace reused test helpers & constants with common utils
 public class SctValidationNoLogListPresentTest extends BaseTestCase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    private static final String NO_SCT_PROVIDED_DOMAIN = "https://no-sct.badssl.com/";
-    private static final int HTTP_OK_RESPONSE_CODE = 200;
-
-    // Path copied from com.android.server.net.ct.Config
-    // Note: we do this to avoid a dependency on the service, which may result in
-    // testing the code in CTS instead of the device itself
-    private static final String CT_ROOT_DIRECTORY_PATH = "/data/misc/keychain/ct/";
 
     @Test
     public void testCTVerification_whenLogListAbsent_noSctDomain_failsOpen() throws IOException {
@@ -68,25 +59,5 @@ public class SctValidationNoLogListPresentTest extends BaseTestCase {
 
         assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
         urlConnection.disconnect();
-    }
-
-    /**
-     * Returns whether the CT root directory is empty or not. For simplicity, we do not check
-     * whether the correct log list file version is present.
-     */
-    private static boolean isLogListFilePresent() {
-        // TODO(b/378427150): replace with Conscrypt API once implemented
-        try {
-            Path ctRootDir = Paths.get(CT_ROOT_DIRECTORY_PATH);
-
-            try (Stream<Path> stream = Files.list(ctRootDir)) {
-                boolean hasFiles = stream.findAny().isPresent();
-                return Files.exists(ctRootDir) && Files.isDirectory(ctRootDir) && hasFiles;
-            }
-        } catch (IOException e) {
-            // NoSuchFileException is a subclass of IOException, which is why we do not
-            // specify it here in the catch statement.
-            return false;
-        }
     }
 }

@@ -16,6 +16,15 @@
 
 package android.security.net.config.cts;
 
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.CT_DIRECTORY_NAME;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.CT_PARENT_DIRECTORY_PATH;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.HTTP_OK_RESPONSE_CODE;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.NO_SCT_PROVIDED_DOMAIN;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.SCT_PROVIDED_DOMAIN;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.deleteLogList;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.downloadLogList;
+import static android.security.net.config.cts.CertificateTransparencyTestUtils.isLogListFilePresent;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -34,8 +43,6 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.ShellUtils;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -45,13 +52,9 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.cert.CertificateException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLHandshakeException;
@@ -61,7 +64,6 @@ import javax.net.ssl.SSLHandshakeException;
     Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION,
     com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
 })
-// TODO(b/383539782): replace reused test helpers & constants with common utils
 public class SctValidationLogListDownloadTest extends BaseTestCase {
 
     @Rule
@@ -75,24 +77,7 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
     private static final String TAG = "SctValidationLogListDownloadTest";
 
-    private static final String SCT_PROVIDED_DOMAIN = "https://android.com";
-    private static final String NO_SCT_PROVIDED_DOMAIN = "https://no-sct.badssl.com/";
-    private static final int HTTP_OK_RESPONSE_CODE = 200;
-
-    // Path copied from com.android.server.net.ct.Config
-    // Note: we do this to avoid a dependency on the service, which may result in
-    // testing the code in CTS instead of the device itself
-    private static final String CT_PARENT_DIRECTORY_PATH = "/data/misc/keychain/";
-    private static final String CT_DIRECTORY_NAME = "ct";
-    private static final String CT_ROOT_DIRECTORY_PATH =
-            CT_PARENT_DIRECTORY_PATH + CT_DIRECTORY_NAME;
-
-    // Path copied from com.android.server.net.ct.CertificateTransparencyJob
-    // Note: we do this to avoid a dependency on the module under test.
-    private static final String CT_JOB_INTENT_ACTION = "com.android.server.net.ct.action.JOB_START";
-
     private static class CTDirectoryFileObserver extends FileObserver {
-
         CTDirectoryFileObserver() {
             super(new File(CT_PARENT_DIRECTORY_PATH), FileObserver.CREATE);
         }
@@ -108,7 +93,7 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
     @BeforeClass
     public static void setUpClass() throws Exception {
         sFileObserver.startWatching();
-        ShellUtils.runShellCommand("am broadcast -a " + CT_JOB_INTENT_ACTION);
+        downloadLogList();
 
         // Wait until the CT directory is created
         sCountDownLatch = new CountDownLatch(1);
@@ -121,7 +106,7 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
     @AfterClass
     public static void tearDownClass() throws Exception {
-        ShellUtils.runShellCommand("rm -r " + CT_ROOT_DIRECTORY_PATH);
+        deleteLogList();
         sFileObserver.stopWatching();
     }
 
@@ -150,25 +135,5 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
 
         assertThat(expected.getCause()).isInstanceOf(CertificateException.class);
         assertTrue(expected.getMessage().contains("NOT_ENOUGH_SCTS"));
-    }
-
-    /**
-     * Returns whether the CT root directory is empty or not. For simplicity, we do not check
-     * whether the correct log list file version is present.
-     */
-    private static boolean isLogListFilePresent() {
-        // TODO(b/378427150): replace with Conscrypt API once implemented
-        try {
-            Path ctRootDir = Paths.get(CT_ROOT_DIRECTORY_PATH);
-
-            try (Stream<Path> stream = Files.list(ctRootDir)) {
-                boolean hasFiles = stream.findAny().isPresent();
-                return Files.exists(ctRootDir) && Files.isDirectory(ctRootDir) && hasFiles;
-            }
-        } catch (IOException e) {
-            // NoSuchFileException is a subclass of IOException, which is why we do not
-            // specify it here in the catch statement.
-            return false;
-        }
     }
 }
