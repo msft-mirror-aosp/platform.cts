@@ -239,7 +239,7 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
         sms.messageRef = 0;
         sms.ackPDU = "ack";
         sms.errorCode = 0;
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
             mRadioMessagingResponse.sendImsSmsResponse(rsp, sms);
         } catch (RemoteException ex) {

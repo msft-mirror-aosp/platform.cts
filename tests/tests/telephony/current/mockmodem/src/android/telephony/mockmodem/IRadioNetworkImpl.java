@@ -465,7 +465,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         Log.d(mTag, "getImsRegistrationState");
         boolean isRegistered = false;
         int ratFamily = 0;
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
             mRadioNetworkResponse.getImsRegistrationStateResponse(rsp, isRegistered, ratFamily);
         } catch (RemoteException ex) {
