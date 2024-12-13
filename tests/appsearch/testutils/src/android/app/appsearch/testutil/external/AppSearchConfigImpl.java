@@ -16,7 +16,7 @@
 
 package com.android.server.appsearch.external.localstorage;
 
-import android.annotation.NonNull;
+import org.jspecify.annotations.NonNull;
 
 /**
  * An implementation of AppSearchConfig that returns configurations based what is specified in
