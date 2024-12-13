@@ -20,7 +20,6 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -95,8 +94,8 @@ public class TransportBlockFilterTest {
         assertThat(filter.getOrgId()).isEqualTo(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT);
         assertThat(filter.getTdsFlags()).isEqualTo(TEST_TDS_FLAG);
         assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
-        assertArrayEquals(TEST_TRANSPORT_DATA, filter.getTransportData());
-        assertArrayEquals(TEST_TRANSPORT_DATA_MASK, filter.getTransportDataMask());
+        assertThat(filter.getTransportData()).isEqualTo(TEST_TRANSPORT_DATA);
+        assertThat(filter.getTransportDataMask()).isEqualTo(TEST_TRANSPORT_DATA_MASK);
         assertThat(filter.getWifiNanHash()).isNull();
         assertThat(filter.toString()).isNotNull();
     }
@@ -116,7 +115,7 @@ public class TransportBlockFilterTest {
         assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
         assertThat(filter.getTransportData()).isNull();
         assertThat(filter.getTransportDataMask()).isNull();
-        assertArrayEquals(TEST_VALID_WIFI_NAN_HASH, filter.getWifiNanHash());
+        assertThat(filter.getWifiNanHash()).isEqualTo(TEST_VALID_WIFI_NAN_HASH);
         assertThat(filter.toString()).isNotNull();
     }
 

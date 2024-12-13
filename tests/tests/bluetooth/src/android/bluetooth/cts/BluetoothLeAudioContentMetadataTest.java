@@ -21,8 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
 import android.bluetooth.BluetoothProfile;
@@ -115,7 +113,7 @@ public class BluetoothLeAudioContentMetadataTest {
                         .build();
         assertThat(contentMetadata.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
         assertThat(contentMetadata.getLanguage()).isEqualTo(TEST_LANGUAGE);
-        assertArrayEquals(TEST_METADATA_BYTES, contentMetadata.getRawMetadata());
+        assertThat(contentMetadata.getRawMetadata()).isEqualTo(TEST_METADATA_BYTES);
 
         // Verifies that the language string is stripped when generating the raw metadata
         BluetoothLeAudioContentMetadata contentMetadataStrippedLanguage =
@@ -123,8 +121,8 @@ public class BluetoothLeAudioContentMetadataTest {
                         .setProgramInfo(TEST_PROGRAM_INFO)
                         .setLanguage(TEST_LANGUAGE_WITH_WHITESPACE.toLowerCase().strip())
                         .build();
-        assertArrayEquals(
-                contentMetadata.getRawMetadata(), contentMetadataStrippedLanguage.getRawMetadata());
+        assertThat(contentMetadataStrippedLanguage.getRawMetadata())
+                .isEqualTo(contentMetadata.getRawMetadata());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -139,7 +137,7 @@ public class BluetoothLeAudioContentMetadataTest {
                 new BluetoothLeAudioContentMetadata.Builder(contentMetadata).build();
         assertThat(contentMetadataCopy.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
         assertThat(contentMetadataCopy.getLanguage()).isEqualTo(TEST_LANGUAGE);
-        assertArrayEquals(TEST_METADATA_BYTES, contentMetadataCopy.getRawMetadata());
+        assertThat(contentMetadataCopy.getRawMetadata()).isEqualTo(TEST_METADATA_BYTES);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -148,8 +146,7 @@ public class BluetoothLeAudioContentMetadataTest {
         BluetoothLeAudioContentMetadata contentMetadata =
                 BluetoothLeAudioContentMetadata.fromRawBytes(TEST_METADATA_BYTES);
         byte[] metadataBytes = contentMetadata.getRawMetadata();
-        assertThat(metadataBytes).isNotNull();
-        assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
+        assertThat(metadataBytes).isEqualTo(TEST_METADATA_BYTES);
         assertThat(contentMetadata.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
         assertThat(contentMetadata.getLanguage()).isEqualTo(TEST_LANGUAGE);
     }
