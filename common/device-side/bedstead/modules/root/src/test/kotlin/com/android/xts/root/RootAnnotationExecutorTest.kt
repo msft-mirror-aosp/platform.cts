@@ -67,6 +67,13 @@ class RootAnnotationExecutorTest {
         assertThat(deviceState.testUsesRootInstrumentation()).isFalse()
     }
 
+    @Test
+    @RequireRootInstrumentation(reason = "testing root instrumentation")
+    @RequireAdbRoot(reason = "To be picked up by btest --root")
+    fun isRunningAsRoot_true_returnsTrue() {
+        assertThat(ShellCommandUtils.isRunningAsRoot()).isTrue()
+    }
+
     companion object {
         @ClassRule @Rule @JvmField
         val deviceState = DeviceState()
