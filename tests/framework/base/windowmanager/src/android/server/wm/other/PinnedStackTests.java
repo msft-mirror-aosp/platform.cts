@@ -152,6 +152,8 @@ import android.util.Log;
 import android.util.Rational;
 import android.util.Size;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.wm.shell.Flags;
@@ -591,6 +593,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 381539546)
     public void testChangeAspectRationWhenInPipMode() {
         // Enter PiP mode with a 2:1 aspect ratio
         testEnterPipAspectRatio(2, 1);
@@ -1308,6 +1311,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 381539546)
     public void testEnterPipWithResumeWhilePausingActivityNoStop() {
         /*
          * Launch the resumeWhilePausing activity and ensure that the PiP activity did not get
