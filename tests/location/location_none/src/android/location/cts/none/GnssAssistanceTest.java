@@ -16,6 +16,8 @@
 
 package android.location.cts.none;
 
+import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -59,9 +61,13 @@ import android.location.SatelliteEphemerisTime;
 import android.location.TimeModel;
 import android.location.UtcModel;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,7 +75,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsEnabled(FLAG_GNSS_ASSISTANCE_INTERFACE)
 public class GnssAssistanceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testDescribeContents() {
