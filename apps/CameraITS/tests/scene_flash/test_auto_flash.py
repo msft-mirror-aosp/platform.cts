@@ -93,7 +93,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
           cam.do_jca_capture(
               self.dut,
               self.log_path,
-              flash_mode='OFF',
+              flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
               lens_facing=props['android.lens.facing'],
           ).capture_path
       )
@@ -118,7 +118,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
           cam.do_jca_capture(
               self.dut,
               self.log_path,
-              flash_mode='AUTO',
+              flash_mode_desc=ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
               lens_facing=props['android.lens.facing']
           ).capture_path
       )
