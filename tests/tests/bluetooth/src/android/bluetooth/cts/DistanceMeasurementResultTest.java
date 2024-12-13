@@ -25,9 +25,7 @@ import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementResult;
@@ -67,7 +65,7 @@ public class DistanceMeasurementResultTest {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
     }
@@ -105,7 +103,7 @@ public class DistanceMeasurementResultTest {
     public void setGetResultMeters() {
         DistanceMeasurementResult result =
                 new DistanceMeasurementResult.Builder(121.0, 120.0).build();
-        assertEquals(121.0, result.getResultMeters(), 0.0);
+        assertThat(result.getResultMeters()).isEqualTo(121.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -113,7 +111,7 @@ public class DistanceMeasurementResultTest {
     public void setGetErrorMeters() {
         DistanceMeasurementResult result =
                 new DistanceMeasurementResult.Builder(121.0, 120.0).build();
-        assertEquals(120.0, result.getErrorMeters(), 0.0);
+        assertThat(result.getErrorMeters()).isEqualTo(120.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -121,7 +119,7 @@ public class DistanceMeasurementResultTest {
     public void setGetAzimuthAngle() {
         DistanceMeasurementResult result =
                 new DistanceMeasurementResult.Builder(121.0, 120.0).setAzimuthAngle(60).build();
-        assertEquals(60.0, result.getAzimuthAngle(), 0.0);
+        assertThat(result.getAzimuthAngle()).isEqualTo(60.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -131,7 +129,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0)
                         .setErrorAzimuthAngle(60)
                         .build();
-        assertEquals(60.0, result.getErrorAzimuthAngle(), 0.0);
+        assertThat(result.getErrorAzimuthAngle()).isEqualTo(60.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -139,7 +137,7 @@ public class DistanceMeasurementResultTest {
     public void setGetAltitudeAngle() {
         DistanceMeasurementResult result =
                 new DistanceMeasurementResult.Builder(121.0, 120.0).setAltitudeAngle(60).build();
-        assertEquals(60.0, result.getAltitudeAngle(), 0.0);
+        assertThat(result.getAltitudeAngle()).isEqualTo(60.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -149,7 +147,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0)
                         .setErrorAltitudeAngle(60)
                         .build();
-        assertEquals(60.0, result.getErrorAltitudeAngle(), 0.0);
+        assertThat(result.getErrorAltitudeAngle()).isEqualTo(60.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -159,7 +157,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0);
         assertThrows(IllegalArgumentException.class, () -> builder.setDelaySpreadMeters(-1));
         DistanceMeasurementResult result = builder.setDelaySpreadMeters(60).build();
-        assertEquals(60.0, result.getDelaySpreadMeters(), 0.0);
+        assertThat(result.getDelaySpreadMeters()).isEqualTo(60.0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -169,7 +167,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0);
         assertThrows(IllegalArgumentException.class, () -> builder.setConfidenceLevel(101));
         DistanceMeasurementResult result = builder.setConfidenceLevel(0.5).build();
-        assertEquals(0.5, result.getConfidenceLevel(), 0.0);
+        assertThat(result.getConfidenceLevel()).isEqualTo(0.5);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -180,7 +178,7 @@ public class DistanceMeasurementResultTest {
         assertThrows(IllegalArgumentException.class, () -> builder.setDetectedAttackLevel(60));
         DistanceMeasurementResult result =
                 builder.setDetectedAttackLevel(NADM_ATTACK_IS_VERY_UNLIKELY).build();
-        assertEquals(NADM_ATTACK_IS_VERY_UNLIKELY, result.getDetectedAttackLevel());
+        assertThat(result.getDetectedAttackLevel()).isEqualTo(NADM_ATTACK_IS_VERY_UNLIKELY);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -190,7 +188,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0)
                         .setVelocityMetersPerSecond(60)
                         .build();
-        assertEquals(60.0, result.getVelocityMetersPerSecond(), 0.0);
+        assertThat(result.getVelocityMetersPerSecond()).isEqualTo(60.0);
     }
 
     @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
@@ -202,7 +200,7 @@ public class DistanceMeasurementResultTest {
                 new DistanceMeasurementResult.Builder(121.0, 120.0)
                         .setMeasurementTimestampNanos(timestamp)
                         .build();
-        assertEquals(timestamp, result.getMeasurementTimestampNanos());
+        assertThat(result.getMeasurementTimestampNanos()).isEqualTo(timestamp);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -220,13 +218,13 @@ public class DistanceMeasurementResultTest {
         parcel.setDataPosition(0);
         DistanceMeasurementResult resultFromParcel =
                 DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
-        assertEquals(result.getDelaySpreadMeters(), resultFromParcel.getDelaySpreadMeters(), 0.0);
-        assertEquals(result.getConfidenceLevel(), resultFromParcel.getConfidenceLevel(), 0.0);
-        assertEquals(result.getDetectedAttackLevel(), resultFromParcel.getDetectedAttackLevel());
-        assertEquals(
-                result.getVelocityMetersPerSecond(),
-                resultFromParcel.getVelocityMetersPerSecond(),
-                0.0);
+        assertThat(resultFromParcel.getDelaySpreadMeters())
+                .isEqualTo(result.getDelaySpreadMeters());
+        assertThat(resultFromParcel.getConfidenceLevel()).isEqualTo(result.getConfidenceLevel());
+        assertThat(resultFromParcel.getDetectedAttackLevel())
+                .isEqualTo(result.getDetectedAttackLevel());
+        assertThat(resultFromParcel.getVelocityMetersPerSecond())
+                .isEqualTo(result.getVelocityMetersPerSecond());
     }
 
     @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
@@ -243,9 +241,8 @@ public class DistanceMeasurementResultTest {
         parcel.setDataPosition(0);
         DistanceMeasurementResult resultFromParcel =
                 DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
-        assertEquals(
-                result.getMeasurementTimestampNanos(),
-                resultFromParcel.getMeasurementTimestampNanos());
+        assertThat(resultFromParcel.getMeasurementTimestampNanos())
+                .isEqualTo(result.getMeasurementTimestampNanos());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -268,11 +265,11 @@ public class DistanceMeasurementResultTest {
         assertThat(p).isNotNull();
         assertThat(other).isNotNull();
 
-        assertEquals(p.getResultMeters(), other.getResultMeters(), 0.0);
-        assertEquals(p.getErrorMeters(), other.getErrorMeters(), 0.0);
-        assertEquals(p.getAzimuthAngle(), other.getAzimuthAngle(), 0.0);
-        assertEquals(p.getErrorAzimuthAngle(), other.getErrorAzimuthAngle(), 0.0);
-        assertEquals(p.getAltitudeAngle(), other.getAltitudeAngle(), 0.0);
-        assertEquals(p.getErrorAltitudeAngle(), other.getErrorAltitudeAngle(), 0.0);
+        assertThat(p.getResultMeters()).isEqualTo(other.getResultMeters());
+        assertThat(p.getErrorMeters()).isEqualTo(other.getErrorMeters());
+        assertThat(p.getAzimuthAngle()).isEqualTo(other.getAzimuthAngle());
+        assertThat(p.getErrorAzimuthAngle()).isEqualTo(other.getErrorAzimuthAngle());
+        assertThat(p.getAltitudeAngle()).isEqualTo(other.getAltitudeAngle());
+        assertThat(p.getErrorAltitudeAngle()).isEqualTo(other.getErrorAltitudeAngle());
     }
 }

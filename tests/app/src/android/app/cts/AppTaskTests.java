@@ -71,8 +71,8 @@ public class AppTaskTests {
 
     private static final String TAG = AppTaskTests.class.getSimpleName();
 
-    private static final long TIME_SLICE_MS = 100;
-    private static final long MAX_WAIT_MS = 1500;
+    private static final long TIME_SLICE_MS = 1000;
+    private static final long WAIT_RETRIES = 5;
 
     private static final String EXTRA_KEY = "key";
     private static final String EXTRA_VALUE = "some_value";
@@ -83,7 +83,8 @@ public class AppTaskTests {
 
     @Rule
     public ActivityTestRule<MockActivity> mActivityRule =
-            new ActivityTestRule<MockActivity>(MockActivity.class) {
+            new ActivityTestRule<MockActivity>(
+                    MockActivity.class, false /* initialTouchMode */, false /* launchActivity */) {
         @Override
         public Intent getActivityIntent() {
             Intent intent = new Intent();
@@ -232,8 +233,8 @@ public class AppTaskTests {
     @Test
     public void testSetExcludeFromRecents() throws Exception {
         final Activity a1 = mActivityRule.launchActivity(null);
-        final List<ActivityManager.AppTask> appTasks = getAppTasks();
-        final ActivityManager.AppTask t1 = appTasks.get(0);
+        final ActivityManager.AppTask t1 = getAppTask(a1);
+
         t1.setExcludeFromRecents(true);
         assertTrue((t1.getTaskInfo().baseIntent.getFlags() & FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                 != 0);
@@ -299,15 +300,16 @@ public class AppTaskTests {
     }
 
     private void waitAndAssertCondition(BooleanSupplier condition, String failMsgContext) {
-        long startTime = SystemClock.elapsedRealtime();
+        long count = 0;
         while (true) {
             if (condition.getAsBoolean()) {
                 // Condition passed
                 return;
-            } else if (SystemClock.elapsedRealtime() > (startTime + MAX_WAIT_MS)) {
+            } else if (count >= (WAIT_RETRIES)) {
                 // Timed out
                 fail("Timed out waiting for: " + failMsgContext);
             } else {
+                count++;
                 SystemClock.sleep(TIME_SLICE_MS);
             }
         }

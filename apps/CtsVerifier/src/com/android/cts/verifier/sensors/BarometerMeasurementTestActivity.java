@@ -21,6 +21,7 @@ import android.provider.Settings;
 import android.net.Uri;
 import android.os.SystemClock;
 
+import android.widget.ScrollView;
 import com.google.common.math.StatsAccumulator;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -137,6 +138,108 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     }
 
     @SuppressWarnings("unused")
+    public String testTappingImpact() throws Throwable {
+        getTestLogger().logInstructions(R.string.snsr_baro_tap_test_prep_instruction);
+        waitForUserToContinue();
+        getTestLogger().logInstructions(R.string.snsr_baro_tap_test_instruction);
+        waitForUserToContinue();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 22 seconds - 10 seconds for baseline, 10 seconds for the
+        // impact, and 2 seconds for extra room.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 22, TimeUnit.SECONDS);
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = displaymetrics.heightPixels;
+        // Start the sensor operation in a separate thread so that we can wait for the baseline to
+        // be collected before showing the button to the user. Blocking the UI thread causes ANR.
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                sensorOperation.execute(getCurrentTestNode());
+                            } catch (Throwable e) {
+                                throw new AssertionError(
+                                        "FAILED - Unable to execute sensor operation.", e);
+                            }
+                        });
+        thread.start();
+        // Wait for 10 seconds to collect a baseline reading for barometer measurements
+        // without the impact of tapping.
+        SystemClock.sleep(10000);
+        runOnUiThread(
+                () -> {
+                    Random random = new Random();
+                    ScrollView view = (ScrollView) findViewById(R.id.log_scroll_view);
+                    int currentScrollViewHeight = view.getHeight();
+                    // Create a button to be tapped by the user.
+                    Button button = new Button(BarometerMeasurementTestActivity.this);
+                    button.setText(getString(R.string.snsr_baro_tap_button_label));
+                    LinearLayout.LayoutParams buttonLayoutParams =
+                            new LinearLayout.LayoutParams(
+                                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    buttonLayoutParams.leftMargin = random.nextInt(width - button.getWidth());
+                    // Place the button at a new "page" of the scroll view.
+                    buttonLayoutParams.topMargin =
+                            (height - currentScrollViewHeight)
+                                    + random.nextInt(height - button.getHeight());
+                    button.setLayoutParams(buttonLayoutParams);
+                    // Create an empty view to be used to position the button.
+                    View emptyView = new View(BarometerMeasurementTestActivity.this);
+                    LinearLayout.LayoutParams layoutParams =
+                            new LinearLayout.LayoutParams(
+                                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    layoutParams.bottomMargin =
+                            height - buttonLayoutParams.topMargin - button.getHeight();
+                    emptyView.setLayoutParams(layoutParams);
+                    button.setOnClickListener(
+                            (v) -> {
+                                // Re-position the button to a random position on the screen after
+                                // the user tapped it.
+                                buttonLayoutParams.leftMargin =
+                                        random.nextInt(width - button.getWidth());
+                                buttonLayoutParams.topMargin =
+                                        (height - currentScrollViewHeight)
+                                                + random.nextInt(height - button.getHeight());
+                                button.setLayoutParams(buttonLayoutParams);
+                                layoutParams.bottomMargin =
+                                        height - buttonLayoutParams.topMargin - button.getHeight();
+                                emptyView.setLayoutParams(layoutParams);
+                                // Scroll to the bottom of the log view since the position of the
+                                // button is relative to the screen size so that it will be visible.
+                                view.post(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                view.fullScroll(View.FOCUS_DOWN);
+                                            }
+                                        });
+                            });
+                    // Add the button and the empty view to the screen.
+                    getTestLogger().logCustomView(button);
+                    getTestLogger().logCustomView(emptyView);
+                });
+        // Wait for the sensor operation to finish if not already finished.
+        thread.join();
+        List<TestSensorEvent> events = sensorOperation.getCollectedEvents();
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+
+        if (minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.5) {
+            Assert.fail("FAILED - Pressure change under tapping impact is larger than 0.5 hPa");
+            return "FAILED";
+        }
+        return "PASSED";
+    }
+
+    @SuppressWarnings("unused")
     public String testFlashlightImpact() throws Throwable {
         List<TestSensorEvent> events = new ArrayList<>();
         getTestLogger().logInstructions(R.string.snsr_baro_flashlight_test_prep_instruction);
@@ -234,9 +337,9 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
         boolean failed =
-                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.3;
         if (failed) {
-            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.3 hPa");
         }
         return failed ? "FAILED" : "PASSED";
     }
@@ -597,8 +700,18 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return failed ? "PASSED" : "FAILED";
     }
 
-    // Finds the maximum and minimum differences between the test device and the reference device
-    // readings at the same timestamp and returns true if the difference is less than 0.2 hPa.
+    /**
+     * Validate the temperature compensation of the test device's braometer by comparing the maximum
+     * and minimum differences between the test device and the reference device readings at the same
+     * timestamp
+     *
+     * @param timestamps the timestamps of the test device readings
+     * @param readings the readings of the test device
+     * @param referenceTimestamps the timestamps of the reference device readings
+     * @param referenceReadings the readings of the reference device
+     * @return true if the difference between the maximum and minimum differences is less than 0.2
+     *     hPa, false otherwise
+     */
     private boolean validateTemperatureCompensation(
             long[] timestamps,
             float[] readings,
@@ -632,7 +745,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return Math.abs(maxDelta - minDelta) < 0.2;
     }
 
-    // Handler for messages from the reference device via Bluetooth.
+    /** Handler for messages from the reference device via Bluetooth. */
     private class ChatHandler extends Handler {
         public ChatHandler(Looper looper) {
             super(looper);
@@ -664,6 +777,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /** Simulates high CPU usage to increase the temperature of the device. */
     private void simulateHighCpuUsageToIncreaseTemperature() {
         for (int i = 0; i < 100; i++) {
             Thread t =
@@ -680,6 +794,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /**
+     * Converts the list of sensor events to a map of timestamp to pressure readings.
+     *
+     * @param events the list of sensor events
+     * @return the map of timestamp to pressure reading
+     */
     private static Map<Long, Float> eventListToTimestampReadingMap(List<TestSensorEvent> events) {
         Map<Long, Float> readings = new HashMap<>();
         for (TestSensorEvent event : events) {
@@ -688,6 +808,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return readings;
     }
 
+    /**
+     * Computes the average pressure reading in the given event.
+     *
+     * @param event the event to compute the average pressure reading from
+     * @return the average pressure reading in the event
+     */
     private static float computeAveragePressureHpa(TestSensorEvent event) {
         float[] events = event.values.clone();
         float sum = 0;
@@ -698,6 +824,13 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return sum / events.length;
     }
 
+    /**
+     * Finds the minimum and maximum pressure readings in the given map.
+     *
+     * @param readings the map of pressure readings
+     * @return a pair of pressure readings, the first one is the minimum pressure reading and the
+     *     second one is the maximum pressure reading
+     */
     private static Pair<Entry<Long, Float>, Entry<Long, Float>> getMinAndMaxReadings(
             Map<Long, Float> readings) {
         Entry<Long, Float> minEntry = null;

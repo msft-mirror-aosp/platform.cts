@@ -16,7 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.le.TransportBlock;
 import android.content.Context;
@@ -61,7 +61,7 @@ public class TransportBlockTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -73,7 +73,7 @@ public class TransportBlockTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -85,9 +85,9 @@ public class TransportBlockTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
-        assertEquals(data.totalBytes(), 5);
-        assertEquals(dataFromParcel.totalBytes(), 5);
-        assertEquals(data, dataFromParcel);
+        assertThat(data.totalBytes()).isEqualTo(5);
+        assertThat(dataFromParcel.totalBytes()).isEqualTo(5);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -99,14 +99,14 @@ public class TransportBlockTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
-        assertEquals(data.getOrgId(), 1);
-        assertEquals(dataFromParcel.getOrgId(), 1);
-        assertEquals(data.getTdsFlags(), 3);
-        assertEquals(dataFromParcel.getTdsFlags(), 3);
-        assertEquals(data.getTransportDataLength(), 2);
-        assertEquals(dataFromParcel.getTransportDataLength(), 2);
+        assertThat(data.getOrgId()).isEqualTo(1);
+        assertThat(dataFromParcel.getOrgId()).isEqualTo(1);
+        assertThat(data.getTdsFlags()).isEqualTo(3);
+        assertThat(dataFromParcel.getTdsFlags()).isEqualTo(3);
+        assertThat(data.getTransportDataLength()).isEqualTo(2);
+        assertThat(dataFromParcel.getTransportDataLength()).isEqualTo(2);
         TestUtils.assertArrayEquals(data.getTransportData(), dataFromParcel.getTransportData());
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -119,6 +119,6 @@ public class TransportBlockTest {
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
         TestUtils.assertArrayEquals(data.toByteArray(), dataFromParcel.toByteArray());
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 }

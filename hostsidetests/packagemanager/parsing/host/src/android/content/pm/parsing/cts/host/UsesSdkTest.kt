@@ -252,12 +252,12 @@ class UsesSdkTest : BaseHostJUnit4Test() {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
-    fun minSdkVersionMinorVersionImplicitlySetTo0() {
+    fun minSdkVersion_onlyMinorVersionIsLargerThanPlatformMinorVersion_installSuccessfully() {
         // language=XML
         @AndroidManifestXml
         val xml = """
             <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-                <uses-sdk android:minSdkVersionFull="35"/>
+                <uses-sdk android:minSdkVersionFull="33.9999"/>
                 <application/>
             </manifest>
         """
@@ -267,12 +267,12 @@ class UsesSdkTest : BaseHostJUnit4Test() {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
-    fun minSdkVersionMinorVersionSetTo0() {
+    fun minSdkVersion_minorVersionIsImplicitZero_installSuccessfully() {
         // language=XML
         @AndroidManifestXml
         val xml = """
             <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-                <uses-sdk android:minSdkVersionFull="35.0"/>
+                <uses-sdk android:minSdkVersionFull="platformSdkVersion"/>
                 <application/>
             </manifest>
         """
@@ -282,18 +282,32 @@ class UsesSdkTest : BaseHostJUnit4Test() {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
-    fun minSdkVersionMinorVersionSetTo1() {
+    fun minSdkVersion_minorVersionIsZero_installSuccessfully() {
         // language=XML
         @AndroidManifestXml
         val xml = """
             <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-                <uses-sdk android:minSdkVersionFull="35.1"/>
+                <uses-sdk android:minSdkVersionFull="platformSdkVersion.0"/>
                 <application/>
             </manifest>
         """
         val result = ApkGenerator.install(device, xml, tempFolder)
-        assertThat(result.error)
-          .contains("Requires newer sdk version 35.1 (current version is 35.0)")
+        assertThat(result.error).isEmpty()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    fun minSdkVersion_minorVersionIsLargerThanPlatformVersion_installFailed() {
+        // language=XML
+        @AndroidManifestXml
+        val xml = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-sdk android:minSdkVersionFull="platformSdkVersion.9999"/>
+                <application/>
+            </manifest>
+        """
+        val result = ApkGenerator.install(device, xml, tempFolder)
+        assertThat(result.error).contains("Requires newer sdk version")
     }
 
     private fun assertSdks(
