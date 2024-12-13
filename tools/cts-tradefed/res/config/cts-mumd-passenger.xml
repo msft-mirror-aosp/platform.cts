@@ -347,6 +347,14 @@
     <option name="compatibility:include-filter" value="CtsWrapWrapDebugTestCases" />
     <option name="compatibility:include-filter" value="CtsWrapWrapNoDebugTestCases" />
     <option name="compatibility:include-filter" value="DownloadManagerInstallerTest" />
+    <option name="compatibility:include-filter" value="MctsMediaDrmFrameworkTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaExtractorTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaMiscTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaMuxerTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaParserTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaPlayerTestCases" />
+    <option name="compatibility:include-filter" value="MctsMediaTranscodingTestCases" />
+    <option name="compatibility:include-filter" value="MctsTextClassifierTestCases" />
     <option name="compatibility:include-filter" value="ResourceObserverNativeTest" />
     <option name="compatibility:include-filter" value="SdkSandboxManagerDisabledTests" />
     <option name="compatibility:include-filter" value="SdkSandboxManagerTests" />
