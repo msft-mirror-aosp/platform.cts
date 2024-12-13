@@ -38,6 +38,7 @@ android_test {
         "junit-params",
         "flag-junit",
         "hwui_flags_java_lib",
+        "surfaceflinger_flags_java_lib",
     ],
     jni_libs: ["libctsuirendering_jni"],
 
