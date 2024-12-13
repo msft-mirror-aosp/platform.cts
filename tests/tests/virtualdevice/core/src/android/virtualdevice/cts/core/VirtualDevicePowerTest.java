@@ -375,6 +375,8 @@ public class VirtualDevicePowerTest {
     @RequiresFlagsEnabled(
             {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
     public void customBrightness_dimTimeoutTriggersCallback() {
+        assumeScreenOffSupported();
+
         createVirtualDeviceAndDisplay(
                 new VirtualDeviceParams.Builder()
                         // Dim after 2s, sleep after 4s.

@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Flags;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -29,10 +30,12 @@ import android.os.Message;
 import android.os.MessageQueue;
 import android.os.TestLooperManager;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.ravenwood.RavenwoodRule;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,12 +49,17 @@ import java.util.concurrent.TimeUnit;
 public class TestLooperManagerTest {
     private static final String TAG = "TestLooperManagerTest";
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testMainThread() throws Exception {
         doTest(Looper.getMainLooper());
     }
 
     @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testCustomThread() throws Exception {
         final HandlerThread thread = new HandlerThread(TAG);
         thread.start();
@@ -72,10 +80,10 @@ public class TestLooperManagerTest {
             latch.countDown();
         });
         assertTrue(tlm.hasMessages(handler, null, 42));
-        final Long firstWhen = tlm.peekWhen();
-        assertNotNull(firstWhen);
         assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
 
+        final Long firstWhen = tlm.peekWhen();
+        assertNotNull(firstWhen);
         final Message first = tlm.next();
         assertEquals(42, first.what);
         assertNull(first.getCallback());

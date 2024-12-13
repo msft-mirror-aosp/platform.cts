@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanResult;
@@ -72,9 +70,9 @@ public class ScanResultTest {
         parcel.setDataPosition(0);
         ScanResult resultFromParcel = ScanResult.CREATOR.createFromParcel(parcel);
 
-        assertEquals(RSSI, resultFromParcel.getRssi());
-        assertEquals(TIMESTAMP_NANOS, resultFromParcel.getTimestampNanos());
-        assertEquals(device, resultFromParcel.getDevice());
+        assertThat(resultFromParcel.getRssi()).isEqualTo(RSSI);
+        assertThat(resultFromParcel.getTimestampNanos()).isEqualTo(TIMESTAMP_NANOS);
+        assertThat(resultFromParcel.getDevice()).isEqualTo(device);
         TestUtils.assertArrayEquals(SCAN_RECORD, resultFromParcel.getScanRecord().getBytes());
     }
 
@@ -87,7 +85,7 @@ public class ScanResultTest {
         ScanResult result =
                 new ScanResult(
                         device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI, TIMESTAMP_NANOS);
-        assertEquals(0, result.describeContents());
+        assertThat(result.describeContents()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -116,16 +114,16 @@ public class ScanResultTest {
                         periodicAdvertisingInterval,
                         null,
                         timestampNanos);
-        assertEquals(result.getDevice(), device);
+        assertThat(result.getDevice()).isEqualTo(device);
         assertThat(result.getScanRecord()).isNull();
-        assertEquals(result.getRssi(), rssi);
-        assertEquals(result.getTimestampNanos(), timestampNanos);
-        assertEquals(result.getDataStatus(), 0x01);
-        assertEquals(result.getPrimaryPhy(), primaryPhy);
-        assertEquals(result.getSecondaryPhy(), secondaryPhy);
-        assertEquals(result.getAdvertisingSid(), advertisingSid);
-        assertEquals(result.getTxPower(), txPower);
-        assertEquals(result.getPeriodicAdvertisingInterval(), periodicAdvertisingInterval);
+        assertThat(result.getRssi()).isEqualTo(rssi);
+        assertThat(result.getTimestampNanos()).isEqualTo(timestampNanos);
+        assertThat(result.getDataStatus()).isEqualTo(0x01);
+        assertThat(result.getPrimaryPhy()).isEqualTo(primaryPhy);
+        assertThat(result.getSecondaryPhy()).isEqualTo(secondaryPhy);
+        assertThat(result.getAdvertisingSid()).isEqualTo(advertisingSid);
+        assertThat(result.getTxPower()).isEqualTo(txPower);
+        assertThat(result.getPeriodicAdvertisingInterval()).isEqualTo(periodicAdvertisingInterval);
 
         // specific value of event type for isLegacy and isConnectable to be true
         ScanResult result2 =
