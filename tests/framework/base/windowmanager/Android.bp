@@ -96,6 +96,7 @@ java_defaults {
         "cts",
         "general-tests",
         "sts",
+        "automotive-general-tests",
     ],
 
     sdk_version: "test_current",
