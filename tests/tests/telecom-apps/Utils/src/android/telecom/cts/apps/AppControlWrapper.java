@@ -356,4 +356,18 @@ public class AppControlWrapper {
            handleRemoteException(e, "removeNotificationForCall");
         }
     }
+
+    /** fetches the foreground service delegation state for a particular (app, handle) combo */
+    public boolean isForegroundServiceDelegationActive(PhoneAccountHandle handle)
+            throws RemoteException {
+        try {
+            BooleanTransaction transactionResult =
+                    mBinder.isForegroundServiceDelegationActive(handle);
+            maybeFailTest(transactionResult);
+            return transactionResult.getBoolResult();
+        } catch (RemoteException e) {
+            handleRemoteException(e, "isForegroundServiceDelegationActive");
+        }
+        return false;
+    }
 }
