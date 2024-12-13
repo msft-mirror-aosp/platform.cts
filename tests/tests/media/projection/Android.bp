@@ -57,4 +57,7 @@ android_test {
     ],
     min_sdk_version: "33",
     target_sdk_version: "33",
+    data: [
+        ":CtsMediaProjectionTestCasesHelperApp",
+    ],
 }
