@@ -18,7 +18,7 @@ package android.provider.cts.contacts;
 
 import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
 
-import static com.android.providers.contacts.flags.Flags.FLAG_CP2_ACCOUNT_MOVE_FLAG;
+import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG;
 import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -241,7 +241,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithNoLocalContacts() throws Exception {
         // create a contact with a non-local account
         insertRawContact(OTHER_ACCOUNT);
@@ -251,8 +252,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts() throws Exception {
         // create contact with null/local account
         insertRawContact(null);
@@ -265,8 +267,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts_flagsOff() throws Exception {
         // create contact with null/local account
         insertRawContact(null);
@@ -276,8 +278,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount() throws Exception {
         // create contact with null/local account
         long rawContactId1 = insertRawContact(null);
@@ -303,8 +306,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount_flagsOff() throws Exception {
         // create contact with null/local account
         long rawContactId1 = insertRawContact(null);
@@ -325,8 +328,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
@@ -341,8 +345,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts_flagsOff() throws Exception {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
@@ -354,8 +358,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
         // create contact with null/local account
         long rawContactId = insertRawContact(
@@ -376,8 +381,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount_flagsOff() throws Exception {
         // create contact with null/local account
         long rawContactId = insertRawContact(
@@ -413,21 +418,24 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToLocalDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofLocal());
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToNotSetDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofNotSet());
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToSimDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofSim(

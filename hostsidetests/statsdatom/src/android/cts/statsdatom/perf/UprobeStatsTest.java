@@ -123,6 +123,17 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
                                 + "ActivityManagerService$LocalService."
                                 + "updateDeviceIdleTempAllowlist"
                                 + "(int[], int, boolean, long, int, int, java.lang.String, int)")
+                            .setFullyQualifiedClassName(
+                                "com.android.server.am.ActivityManagerService$LocalService")
+                            .setMethodName("updateDeviceIdleTempAllowlist")
+                            .addFullyQualifiedParameters("int[]")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("boolean")
+                            .addFullyQualifiedParameters("long")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("java.lang.String")
+                            .addFullyQualifiedParameters("int")
                             .build()
                         )
                     .addBpfMaps("map_ProcessManagement_update_device_idle_temp_allowlist_records")
