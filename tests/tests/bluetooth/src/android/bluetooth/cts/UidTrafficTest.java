@@ -20,34 +20,43 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.UidTraffic;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
-public class UidTrafficTest extends AndroidTestCase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
-    UidTraffic mUidTraffic;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class UidTrafficTest {
+
+    private UidTraffic mUidTraffic;
+
+    @Before
+    public void setUp() {
         final Parcel uidTrafficParcel = Parcel.obtain();
         uidTrafficParcel.writeInt(1000);
         uidTrafficParcel.writeLong(2000);
         uidTrafficParcel.writeLong(3000);
         uidTrafficParcel.setDataPosition(0);
         mUidTraffic = UidTraffic.CREATOR.createFromParcel(uidTrafficParcel);
+        assertThat(mUidTraffic).isNotNull();
         uidTrafficParcel.recycle();
     }
 
-    public void test_UidTrafficClone() {
-        assertNotNull(mUidTraffic);
+    @Test
+    public void cloneMethod() {
         UidTraffic clonedUidTraffic = mUidTraffic.clone();
-        assertNotNull(clonedUidTraffic);
+        assertThat(clonedUidTraffic).isNotNull();
         assertThat(clonedUidTraffic.getUid()).isEqualTo(mUidTraffic.getUid());
         assertThat(clonedUidTraffic.getRxBytes()).isEqualTo(mUidTraffic.getRxBytes());
         assertThat(clonedUidTraffic.getTxBytes()).isEqualTo(mUidTraffic.getTxBytes());
     }
 
-    public void test_getMethod() {
+    @Test
+    public void getMethod() {
         assertThat(mUidTraffic.getUid()).isEqualTo(1000);
         assertThat(mUidTraffic.getRxBytes()).isEqualTo(2000);
         assertThat(mUidTraffic.getTxBytes()).isEqualTo(3000);

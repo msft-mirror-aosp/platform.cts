@@ -21,7 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -131,8 +130,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         assertThat(subgroup.getCodecSpecificConfig()).isEqualTo(codecMetadata);
         assertThat(subgroup.getContentMetadata()).isEqualTo(contentMetadata);
         assertThat(subgroup.hasChannelPreference()).isTrue();
-        assertArrayEquals(
-                TEST_CHANNELS, subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
+        assertThat(subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]))
+                .isEqualTo(TEST_CHANNELS);
         builder.clearChannel();
         // builder expect at least one channel
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -167,9 +166,8 @@ public class BluetoothLeBroadcastSubgroupTest {
         assertThat(subgroupCopy.getCodecSpecificConfig()).isEqualTo(codecMetadata);
         assertThat(subgroupCopy.getContentMetadata()).isEqualTo(contentMetadata);
         assertThat(subgroupCopy.hasChannelPreference()).isTrue();
-        assertArrayEquals(
-                TEST_CHANNELS,
-                subgroupCopy.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
+        assertThat(subgroupCopy.getChannels().toArray(new BluetoothLeBroadcastChannel[0]))
+                .isEqualTo(TEST_CHANNELS);
         builder.clearChannel();
         // builder expect at least one channel
         assertThrows(IllegalArgumentException.class, builder::build);
