@@ -24,7 +24,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.cardemulation.CardEmulation;
 
 public class WalletRoleBroadcastReceiver extends BroadcastReceiver
-        implements CardEmulation.NfcEventListener {
+        implements CardEmulation.NfcEventCallback {
     Context mContext;
 
     @Override
@@ -35,11 +35,10 @@ public class WalletRoleBroadcastReceiver extends BroadcastReceiver
         String action = intent.getAction();
         switch (action) {
             case "com.cts.RegisterEventListener":
-                cardEmulation.registerNfcEventListener(
-                        context.getMainExecutor(), this);
+                cardEmulation.registerNfcEventCallback(context.getMainExecutor(), this);
                 break;
             case "com.cts.UnregisterEventListener":
-                cardEmulation.unregisterNfcEventListener(this);
+                cardEmulation.unregisterNfcEventCallback(this);
                 break;
         }
     }
