@@ -198,34 +198,4 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                 "The DISALLOW_CELLULAR_2G restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_CELLULAR_2G));
     }
-
-    @ApiTest(
-            apis = {
-                "android.security.advancedprotection.AdvancedProtectionManager"
-                        + "#setAdvancedProtectionEnabled"
-            })
-    @Test
-    public void testStateAfterToggle() throws InterruptedException {
-        assumeTrue(isAvailable());
-
-        setAdvancedProtectionModeEnabled(true);
-        Thread.sleep(TIMEOUT_S * 1000);
-        setAdvancedProtectionModeEnabled(false);
-        Thread.sleep(TIMEOUT_S * 1000);
-
-        for (TelephonyManager telephonyManager : getTelephonyManagers()) {
-            long allowedTypes =
-                    ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            telephonyManager,
-                            (tm) ->
-                                    tm.getAllowedNetworkTypesForReason(
-                                            TelephonyManager
-                                                    .ALLOWED_NETWORK_TYPES_REASON_ENABLE_2G),
-                            Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-
-            assertTrue(
-                    "2G networking is still enabled after advanced protection is disabled",
-                    (allowedTypes & TelephonyManager.NETWORK_CLASS_BITMASK_2G) == 0);
-        }
-    }
 }

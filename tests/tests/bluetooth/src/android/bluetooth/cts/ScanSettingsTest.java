@@ -16,7 +16,8 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.ScanSettings;
@@ -49,12 +50,12 @@ public class ScanSettingsTest {
     @Test
     public void defaultSettings() {
         ScanSettings settings = new ScanSettings.Builder().build();
-        assertEquals(ScanSettings.CALLBACK_TYPE_ALL_MATCHES, settings.getCallbackType());
-        assertEquals(ScanSettings.SCAN_MODE_LOW_POWER, settings.getScanMode());
-        assertEquals(0, settings.getScanResultType());
-        assertEquals(0, settings.getReportDelayMillis());
-        assertEquals(true, settings.getLegacy());
-        assertEquals(ScanSettings.PHY_LE_ALL_SUPPORTED, settings.getPhy());
+        assertThat(settings.getCallbackType()).isEqualTo(ScanSettings.CALLBACK_TYPE_ALL_MATCHES);
+        assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_LOW_POWER);
+        assertThat(settings.getScanResultType()).isEqualTo(0);
+        assertThat(settings.getReportDelayMillis()).isEqualTo(0);
+        assertThat(settings.getLegacy()).isTrue();
+        assertThat(settings.getPhy()).isEqualTo(ScanSettings.PHY_LE_ALL_SUPPORTED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -131,12 +132,13 @@ public class ScanSettingsTest {
                         .setPhy(0xCAFE)
                         .build();
 
-        assertEquals(ScanSettings.SCAN_MODE_BALANCED, settings.getScanMode());
-        assertEquals(cbType, settings.getCallbackType());
-        assertEquals(ScanSettings.SCAN_RESULT_TYPE_ABBREVIATED, settings.getScanResultType());
-        assertEquals(0xDEAD, settings.getReportDelayMillis());
-        assertEquals(false, settings.getLegacy());
-        assertEquals(0xCAFE, settings.getPhy());
+        assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_BALANCED);
+        assertThat(settings.getCallbackType()).isEqualTo(cbType);
+        assertThat(settings.getScanResultType())
+                .isEqualTo(ScanSettings.SCAN_RESULT_TYPE_ABBREVIATED);
+        assertThat(settings.getReportDelayMillis()).isEqualTo(0xDEAD);
+        assertThat(settings.getLegacy()).isFalse();
+        assertThat(settings.getPhy()).isEqualTo(0xCAFE);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -144,7 +146,7 @@ public class ScanSettingsTest {
     @Test
     public void describeContents() {
         ScanSettings settings = new ScanSettings.Builder().build();
-        assertEquals(0, settings.describeContents());
+        assertThat(settings.describeContents()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -163,7 +165,7 @@ public class ScanSettingsTest {
         settings.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         ScanSettings settingsFromParcel = ScanSettings.CREATOR.createFromParcel(parcel);
-        assertEquals(reportDelayMillis, settingsFromParcel.getReportDelayMillis());
-        assertEquals(ScanSettings.SCAN_MODE_LOW_LATENCY, settings.getScanMode());
+        assertThat(settingsFromParcel.getReportDelayMillis()).isEqualTo(reportDelayMillis);
+        assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_LOW_LATENCY);
     }
 }
