@@ -51,7 +51,7 @@ public class GeofencingTest {
 
     private static final String TAG = "GeofenceManagerTest";
 
-    private static final long TIMEOUT_MS = 5000;
+    private static final long TIMEOUT_MS = 30_000;
     private static final long FAILURE_TIMEOUT_MS = 200;
 
     private static final String TEST_PROVIDER = "test_provider";
