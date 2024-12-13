@@ -89,6 +89,7 @@ java_defaults {
         "ui-trace-collector",
         "flag-junit",
         "com_android_wm_shell_flags_lib",
+        "surfaceflinger_flags_java_lib",
     ],
 
     test_suites: [
