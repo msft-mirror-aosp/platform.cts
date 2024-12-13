@@ -27,8 +27,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -164,7 +162,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void closeProfileProxy() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(
@@ -177,7 +175,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void addSource() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
@@ -251,7 +249,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void getAllSources() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
@@ -273,15 +271,14 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void setConnectionPolicy() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
 
         // Verify that it returns unknown for an unknown test device
-        assertEquals(
-                CONNECTION_POLICY_UNKNOWN,
-                mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_UNKNOWN);
 
         // Verify that it returns true even for an unknown test device
         assertThat(
@@ -290,22 +287,22 @@ public class BluetoothLeBroadcastAssistantTest {
                 .isTrue();
 
         // Verify that it returns the same value we set before
-        assertEquals(
-                CONNECTION_POLICY_ALLOWED,
-                mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionPolicy(testDevice))
+                .isEqualTo(CONNECTION_POLICY_ALLOWED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getMaximumSourceCapacity() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
 
         // Verifies that it returns 0 for an unknown test device
-        assertEquals(mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(testDevice), 0);
+        assertThat(mBluetoothLeBroadcastAssistant.getMaximumSourceCapacity(testDevice))
+                .isEqualTo(0);
 
         // Verifies that it throws exception when input is null
         assertThrows(
@@ -320,7 +317,7 @@ public class BluetoothLeBroadcastAssistantTest {
         int testSourceId = 1;
 
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
@@ -349,7 +346,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void isSearchInProgress() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         // Verify that it returns false when search is not in progress
         assertThat(mBluetoothLeBroadcastAssistant.isSearchInProgress()).isFalse();
@@ -359,7 +356,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void modifySource() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_ADDRESS_1, BluetoothDevice.ADDRESS_TYPE_RANDOM);
@@ -413,7 +410,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void registerCallback() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         Executor executor = mContext.getMainExecutor();
         BluetoothLeBroadcastAssistant.Callback callback =
@@ -496,7 +493,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void startSearchingForSources() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         // Verifies that it throws exception when no callback is registered
         assertThrows(
@@ -536,7 +533,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void getConnectedDevices() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         // Verify returns empty list if no broadcast assistant device is connected
         assertThat(mBluetoothLeBroadcastAssistant.getConnectedDevices()).isEmpty();
@@ -553,7 +550,7 @@ public class BluetoothLeBroadcastAssistantTest {
         int[] states = {STATE_CONNECTED};
 
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         // Verify returns empty list if no broadcast assistant device is connected
         assertThat(mBluetoothLeBroadcastAssistant.getDevicesMatchingConnectionStates(states))
@@ -575,7 +572,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @Test
     public void getConnectionState() {
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothLeBroadcastAssistant);
+        assertThat(mBluetoothLeBroadcastAssistant).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -587,8 +584,8 @@ public class BluetoothLeBroadcastAssistantTest {
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(
-                STATE_DISCONNECTED, mBluetoothLeBroadcastAssistant.getConnectionState(testDevice));
+        assertThat(mBluetoothLeBroadcastAssistant.getConnectionState(testDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     private boolean waitForProfileConnect() {

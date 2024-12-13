@@ -32,7 +32,6 @@ import static com.android.bluetooth.flags.Flags.FLAG_DIRECTED_ADVERTISING_API;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -102,8 +101,8 @@ public class AdvertisingSetParametersTest {
                     AdvertisingSetParameters.CREATOR.createFromParcel(parcel);
             assertThat(paramsFromParcel.isDirected()).isTrue();
             assertThat(paramsFromParcel.isHighDutyCycle()).isTrue();
-            assertEquals(paramsFromParcel.getPeerAddress(), "00:01:02:03:04:05");
-            assertEquals(paramsFromParcel.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
+            assertThat(paramsFromParcel.getPeerAddress()).isEqualTo("00:01:02:03:04:05");
+            assertThat(paramsFromParcel.getPeerAddressType()).isEqualTo(ADDRESS_TYPE_RANDOM);
         } finally {
             parcel.recycle();
         }
@@ -120,10 +119,10 @@ public class AdvertisingSetParametersTest {
         assertThat(params.isLegacy()).isFalse();
         assertThat(params.isAnonymous()).isFalse();
         assertThat(params.includeTxPower()).isFalse();
-        assertEquals(PHY_LE_1M, params.getPrimaryPhy());
-        assertEquals(PHY_LE_1M, params.getSecondaryPhy());
-        assertEquals(INTERVAL_LOW, params.getInterval());
-        assertEquals(TX_POWER_MEDIUM, params.getTxPowerLevel());
+        assertThat(params.getPrimaryPhy()).isEqualTo(PHY_LE_1M);
+        assertThat(params.getSecondaryPhy()).isEqualTo(PHY_LE_1M);
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_LOW);
+        assertThat(params.getTxPowerLevel()).isEqualTo(TX_POWER_MEDIUM);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -180,7 +179,7 @@ public class AdvertisingSetParametersTest {
     public void setPrimaryPhyWithLE1M() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setPrimaryPhy(PHY_LE_1M).build();
-        assertEquals(PHY_LE_1M, params.getPrimaryPhy());
+        assertThat(params.getPrimaryPhy()).isEqualTo(PHY_LE_1M);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -188,7 +187,7 @@ public class AdvertisingSetParametersTest {
     public void setPrimaryPhyWithLECoded() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setPrimaryPhy(PHY_LE_CODED).build();
-        assertEquals(PHY_LE_CODED, params.getPrimaryPhy());
+        assertThat(params.getPrimaryPhy()).isEqualTo(PHY_LE_CODED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -207,7 +206,7 @@ public class AdvertisingSetParametersTest {
     public void setSecondaryPhyWithLE1M() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_1M).build();
-        assertEquals(PHY_LE_1M, params.getSecondaryPhy());
+        assertThat(params.getSecondaryPhy()).isEqualTo(PHY_LE_1M);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -215,7 +214,7 @@ public class AdvertisingSetParametersTest {
     public void setSecondaryPhyWithLE2M() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_2M).build();
-        assertEquals(PHY_LE_2M, params.getSecondaryPhy());
+        assertThat(params.getSecondaryPhy()).isEqualTo(PHY_LE_2M);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -223,7 +222,7 @@ public class AdvertisingSetParametersTest {
     public void setSecondaryPhyWithLECoded() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setSecondaryPhy(PHY_LE_CODED).build();
-        assertEquals(PHY_LE_CODED, params.getSecondaryPhy());
+        assertThat(params.getSecondaryPhy()).isEqualTo(PHY_LE_CODED);
     }
 
     @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
@@ -259,7 +258,7 @@ public class AdvertisingSetParametersTest {
     public void setPeerAddress() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setPeerAddress("00:01:02:03:04:05").build();
-        assertEquals(params.getPeerAddress(), "00:01:02:03:04:05");
+        assertThat(params.getPeerAddress()).isEqualTo("00:01:02:03:04:05");
     }
 
     @RequiresFlagsEnabled(FLAG_DIRECTED_ADVERTISING_API)
@@ -270,7 +269,7 @@ public class AdvertisingSetParametersTest {
                 new AdvertisingSetParameters.Builder()
                         .setPeerAddressType(ADDRESS_TYPE_RANDOM)
                         .build();
-        assertEquals(params.getPeerAddressType(), ADDRESS_TYPE_RANDOM);
+        assertThat(params.getPeerAddressType()).isEqualTo(ADDRESS_TYPE_RANDOM);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -289,7 +288,7 @@ public class AdvertisingSetParametersTest {
     public void interval() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setInterval(INTERVAL_MEDIUM).build();
-        assertEquals(INTERVAL_MEDIUM, params.getInterval());
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_MEDIUM);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -308,7 +307,7 @@ public class AdvertisingSetParametersTest {
     public void txPowerLevel() {
         AdvertisingSetParameters params =
                 new AdvertisingSetParameters.Builder().setTxPowerLevel(TX_POWER_MEDIUM).build();
-        assertEquals(TX_POWER_MEDIUM, params.getTxPowerLevel());
+        assertThat(params.getTxPowerLevel()).isEqualTo(TX_POWER_MEDIUM);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -323,22 +322,22 @@ public class AdvertisingSetParametersTest {
     @Test
     public void describeContents() {
         AdvertisingSetParameters params = new AdvertisingSetParameters.Builder().build();
-        assertEquals(0, params.describeContents());
+        assertThat(params.describeContents()).isEqualTo(0);
     }
 
     private void assertParamsEquals(AdvertisingSetParameters p, AdvertisingSetParameters other) {
         assertThat(p).isNotNull();
         assertThat(other).isNotNull();
 
-        assertEquals(p.isConnectable(), other.isConnectable());
-        assertEquals(p.isDiscoverable(), other.isDiscoverable());
-        assertEquals(p.isScannable(), other.isScannable());
-        assertEquals(p.isLegacy(), other.isLegacy());
-        assertEquals(p.isAnonymous(), other.isAnonymous());
-        assertEquals(p.includeTxPower(), other.includeTxPower());
-        assertEquals(p.getPrimaryPhy(), other.getPrimaryPhy());
-        assertEquals(p.getSecondaryPhy(), other.getSecondaryPhy());
-        assertEquals(p.getInterval(), other.getInterval());
-        assertEquals(p.getTxPowerLevel(), other.getTxPowerLevel());
+        assertThat(p.isConnectable()).isEqualTo(other.isConnectable());
+        assertThat(p.isDiscoverable()).isEqualTo(other.isDiscoverable());
+        assertThat(p.isScannable()).isEqualTo(other.isScannable());
+        assertThat(p.isLegacy()).isEqualTo(other.isLegacy());
+        assertThat(p.isAnonymous()).isEqualTo(other.isAnonymous());
+        assertThat(p.includeTxPower()).isEqualTo(other.includeTxPower());
+        assertThat(p.getPrimaryPhy()).isEqualTo(other.getPrimaryPhy());
+        assertThat(p.getSecondaryPhy()).isEqualTo(other.getSecondaryPhy());
+        assertThat(p.getInterval()).isEqualTo(other.getInterval());
+        assertThat(p.getTxPowerLevel()).isEqualTo(other.getTxPowerLevel());
     }
 }

@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.le.ScanRecord;
 import android.os.ParcelUuid;
 
@@ -107,7 +105,7 @@ public class ScanRecordTest {
         byte[] scanRecord = concat(partialScanRecord, tdsDataLength, tdsData);
 
         ScanRecord data = TestUtils.parseScanRecord(scanRecord);
-        assertEquals(0x1a, data.getAdvertiseFlags());
+        assertThat(data.getAdvertiseFlags()).isEqualTo(0x1a);
         ParcelUuid uuid1 = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid2 = ParcelUuid.fromString("0000110B-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid3 = ParcelUuid.fromString("0000110C-0000-1000-8000-00805F9B34FB");
@@ -123,8 +121,8 @@ public class ScanRecordTest {
 
         TestUtils.assertArrayEquals(data.getTransportDiscoveryData().toByteArray(), tdsData);
 
-        assertEquals("Ped", data.getDeviceName());
-        assertEquals(-20, data.getTxPowerLevel());
+        assertThat(data.getDeviceName()).isEqualTo("Ped");
+        assertThat(data.getTxPowerLevel()).isEqualTo(-20);
 
         assertThat(data.getManufacturerSpecificData().get(0x00E0)).isNotNull();
 

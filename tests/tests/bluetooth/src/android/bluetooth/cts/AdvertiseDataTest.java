@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.TransportBlock;
 import android.bluetooth.le.TransportDiscoveryData;
@@ -68,10 +66,10 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         assertThat(dataFromParcel.getIncludeDeviceName()).isFalse();
         assertThat(dataFromParcel.getIncludeTxPowerLevel()).isFalse();
-        assertEquals(0, dataFromParcel.getManufacturerSpecificData().size());
+        assertThat(dataFromParcel.getManufacturerSpecificData().size()).isEqualTo(0);
         assertThat(dataFromParcel.getServiceData()).isEmpty();
         assertThat(dataFromParcel.getServiceUuids()).isEmpty();
     }
@@ -85,7 +83,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         assertThat(dataFromParcel.getIncludeDeviceName()).isTrue();
         assertThat(dataFromParcel.getServiceUuids()).isEmpty();
     }
@@ -105,7 +103,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         TestUtils.assertArrayEquals(
                 new byte[0], dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
@@ -125,7 +123,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getServiceData().get(uuid));
     }
 
@@ -146,7 +144,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         assertThat(dataFromParcel.getServiceUuids()).contains(uuid);
         assertThat(dataFromParcel.getServiceUuids()).contains(uuid2);
     }
@@ -156,7 +154,7 @@ public class AdvertiseDataTest {
     @Test
     public void serviceSolicitationUuids() {
         AdvertiseData emptyData = mAdvertiseDataBuilder.build();
-        assertEquals(0, emptyData.getServiceSolicitationUuids().size());
+        assertThat(emptyData.getServiceSolicitationUuids()).isEmpty();
 
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
@@ -171,7 +169,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         assertThat(dataFromParcel.getServiceSolicitationUuids()).contains(uuid);
         assertThat(dataFromParcel.getServiceSolicitationUuids()).contains(uuid2);
     }
@@ -197,7 +195,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         TestUtils.assertArrayEquals(
                 manufacturerData, dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
@@ -217,7 +215,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
         TestUtils.assertArrayEquals(serviceData, dataFromParcel.getServiceData().get(uuid));
     }
 
@@ -240,42 +238,41 @@ public class AdvertiseDataTest {
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
 
-        assertEquals(
-                discoveryData.getTransportDataType(),
-                dataFromParcel.getTransportDiscoveryData().get(0).getTransportDataType());
+        assertThat(dataFromParcel.getTransportDiscoveryData().get(0).getTransportDataType())
+                .isEqualTo(discoveryData.getTransportDataType());
 
-        assertEquals(
-                discoveryData.getTransportBlocks().get(0).getOrgId(),
-                dataFromParcel
-                        .getTransportDiscoveryData()
-                        .get(0)
-                        .getTransportBlocks()
-                        .get(0)
-                        .getOrgId());
+        assertThat(
+                        dataFromParcel
+                                .getTransportDiscoveryData()
+                                .get(0)
+                                .getTransportBlocks()
+                                .get(0)
+                                .getOrgId())
+                .isEqualTo(discoveryData.getTransportBlocks().get(0).getOrgId());
 
-        assertEquals(
-                discoveryData.getTransportBlocks().get(0).getTdsFlags(),
-                dataFromParcel
-                        .getTransportDiscoveryData()
-                        .get(0)
-                        .getTransportBlocks()
-                        .get(0)
-                        .getTdsFlags());
+        assertThat(
+                        dataFromParcel
+                                .getTransportDiscoveryData()
+                                .get(0)
+                                .getTransportBlocks()
+                                .get(0)
+                                .getTdsFlags())
+                .isEqualTo(discoveryData.getTransportBlocks().get(0).getTdsFlags());
 
-        assertEquals(
-                discoveryData.getTransportBlocks().get(0).totalBytes(),
-                dataFromParcel
-                        .getTransportDiscoveryData()
-                        .get(0)
-                        .getTransportBlocks()
-                        .get(0)
-                        .totalBytes());
+        assertThat(
+                        dataFromParcel
+                                .getTransportDiscoveryData()
+                                .get(0)
+                                .getTransportBlocks()
+                                .get(0)
+                                .totalBytes())
+                .isEqualTo(discoveryData.getTransportBlocks().get(0).totalBytes());
 
         TestUtils.assertArrayEquals(
                 discoveryData.toByteArray(),
                 dataFromParcel.getTransportDiscoveryData().get(0).toByteArray());
 
-        assertEquals(data, dataFromParcel);
+        assertThat(dataFromParcel).isEqualTo(data);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -287,7 +284,7 @@ public class AdvertiseDataTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseData dataFromParcel = AdvertiseData.CREATOR.createFromParcel(parcel);
-        assertEquals(dataFromParcel.getIncludeTxPowerLevel(), true);
+        assertThat(dataFromParcel.getIncludeTxPowerLevel()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -295,6 +292,6 @@ public class AdvertiseDataTest {
     @Test
     public void describeContents() {
         AdvertiseData data = new AdvertiseData.Builder().build();
-        assertEquals(0, data.describeContents());
+        assertThat(data.describeContents()).isEqualTo(0);
     }
 }

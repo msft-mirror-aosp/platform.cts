@@ -18,8 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.bluetooth.BluetoothLeAudioCodecStatus;
 import android.os.Parcel;
@@ -141,7 +139,7 @@ public class BluetoothLeAudioCodecStatusTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void describeContents() {
-        assertEquals(0, LE_CODEC_STATUS.describeContents());
+        assertThat(LE_CODEC_STATUS.describeContents()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

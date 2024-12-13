@@ -700,8 +700,18 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return failed ? "PASSED" : "FAILED";
     }
 
-    // Finds the maximum and minimum differences between the test device and the reference device
-    // readings at the same timestamp and returns true if the difference is less than 0.2 hPa.
+    /**
+     * Validate the temperature compensation of the test device's braometer by comparing the maximum
+     * and minimum differences between the test device and the reference device readings at the same
+     * timestamp
+     *
+     * @param timestamps the timestamps of the test device readings
+     * @param readings the readings of the test device
+     * @param referenceTimestamps the timestamps of the reference device readings
+     * @param referenceReadings the readings of the reference device
+     * @return true if the difference between the maximum and minimum differences is less than 0.2
+     *     hPa, false otherwise
+     */
     private boolean validateTemperatureCompensation(
             long[] timestamps,
             float[] readings,
@@ -735,7 +745,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return Math.abs(maxDelta - minDelta) < 0.2;
     }
 
-    // Handler for messages from the reference device via Bluetooth.
+    /** Handler for messages from the reference device via Bluetooth. */
     private class ChatHandler extends Handler {
         public ChatHandler(Looper looper) {
             super(looper);
@@ -767,6 +777,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /** Simulates high CPU usage to increase the temperature of the device. */
     private void simulateHighCpuUsageToIncreaseTemperature() {
         for (int i = 0; i < 100; i++) {
             Thread t =
@@ -783,6 +794,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /**
+     * Converts the list of sensor events to a map of timestamp to pressure readings.
+     *
+     * @param events the list of sensor events
+     * @return the map of timestamp to pressure reading
+     */
     private static Map<Long, Float> eventListToTimestampReadingMap(List<TestSensorEvent> events) {
         Map<Long, Float> readings = new HashMap<>();
         for (TestSensorEvent event : events) {
@@ -791,6 +808,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return readings;
     }
 
+    /**
+     * Computes the average pressure reading in the given event.
+     *
+     * @param event the event to compute the average pressure reading from
+     * @return the average pressure reading in the event
+     */
     private static float computeAveragePressureHpa(TestSensorEvent event) {
         float[] events = event.values.clone();
         float sum = 0;
@@ -801,6 +824,13 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return sum / events.length;
     }
 
+    /**
+     * Finds the minimum and maximum pressure readings in the given map.
+     *
+     * @param readings the map of pressure readings
+     * @return a pair of pressure readings, the first one is the minimum pressure reading and the
+     *     second one is the maximum pressure reading
+     */
     private static Pair<Entry<Long, Float>, Entry<Long, Float>> getMinAndMaxReadings(
             Map<Long, Float> readings) {
         Entry<Long, Float> minEntry = null;

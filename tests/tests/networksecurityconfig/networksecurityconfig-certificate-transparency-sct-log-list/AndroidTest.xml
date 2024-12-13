@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Config for NetSecConfigCertificateTransparencySctTestCases test cases">
+<configuration description="Config for NetSecConfigCertificateTransparencySctLogListTestCases test cases">
     <option name="config-descriptor:metadata" key="component" value="security" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
@@ -22,9 +22,14 @@
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="NetSecConfigCertificateTransparencySctTestCases.apk" />
+        <option name="test-file-name" value="NetSecConfigCertificateTransparencySctLogListTestCases.apk" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="chmod 775 /data/misc/keychain" />
+        <option name="run-command" value="rm -rf /data/misc/keychain/ct" />
+        <option name="teardown-command" value="chmod 771 /data/misc/keychain" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
-        <option name="package" value="android.security.net.config.cts.NetSecConfigCertificateTransparencySctTestCases" />
+        <option name="package" value="android.security.net.config.cts.NetSecConfigCertificateTransparencySctLogListTestCases" />
     </test>
 </configuration>

@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothHidDeviceAppQosSettings;
 import android.test.AndroidTestCase;
 
@@ -46,12 +48,14 @@ public class BluetoothHidDeviceAppQosSettingsTest extends AndroidTestCase {
     }
 
     public void test_allMethods() {
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getServiceType(), TEST_SERVICE_TYPE);
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getLatency(), TEST_LATENCY);
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getTokenRate(), TEST_TOKEN_RATE);
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getPeakBandwidth(), TEST_PEAK_BANDWIDTH);
-        assertEquals(mBluetoothHidDeviceAppQosSettings.getDelayVariation(), TEST_DELAY_VARIATION);
-        assertEquals(
-                mBluetoothHidDeviceAppQosSettings.getTokenBucketSize(), TEST_TOKEN_BUCKET_SIZE);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getServiceType()).isEqualTo(TEST_SERVICE_TYPE);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getLatency()).isEqualTo(TEST_LATENCY);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getTokenRate()).isEqualTo(TEST_TOKEN_RATE);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getPeakBandwidth())
+                .isEqualTo(TEST_PEAK_BANDWIDTH);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getDelayVariation())
+                .isEqualTo(TEST_DELAY_VARIATION);
+        assertThat(mBluetoothHidDeviceAppQosSettings.getTokenBucketSize())
+                .isEqualTo(TEST_TOKEN_BUCKET_SIZE);
     }
 }

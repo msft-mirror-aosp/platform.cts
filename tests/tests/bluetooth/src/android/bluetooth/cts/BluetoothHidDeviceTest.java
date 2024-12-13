@@ -25,8 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
@@ -49,7 +47,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -116,7 +113,7 @@ public class BluetoothHidDeviceTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.HID_DEVICE, mBluetoothHidDevice);
@@ -128,12 +125,12 @@ public class BluetoothHidDeviceTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
-        assertEquals(
-                new ArrayList<BluetoothDevice>(),
-                mBluetoothHidDevice.getDevicesMatchingConnectionStates(
-                        new int[] {STATE_CONNECTED}));
+        assertThat(
+                        mBluetoothHidDevice.getDevicesMatchingConnectionStates(
+                                new int[] {STATE_CONNECTED}))
+                .isEmpty();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -145,24 +142,25 @@ public class BluetoothHidDeviceTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns STATE_DISCONNECTED when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(null));
+        assertThat(mBluetoothHidDevice.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothHidDevice.getConnectionState(testDevice));
+        assertThat(mBluetoothHidDevice.getConnectionState(testDevice))
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     public void connect() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -175,7 +173,7 @@ public class BluetoothHidDeviceTest {
     public void disconnect() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -188,7 +186,7 @@ public class BluetoothHidDeviceTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -200,7 +198,7 @@ public class BluetoothHidDeviceTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsHidSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothHidDevice);
+        assertThat(mBluetoothHidDevice).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 

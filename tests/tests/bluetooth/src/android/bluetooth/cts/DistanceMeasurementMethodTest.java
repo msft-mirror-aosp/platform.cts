@@ -24,8 +24,6 @@ import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.DistanceMeasurementMethod;
 import android.content.Context;
@@ -111,7 +109,7 @@ public class DistanceMeasurementMethodTest {
             parcel.setDataPosition(0);
             DistanceMeasurementMethod methodFromParcel =
                     DistanceMeasurementMethod.CREATOR.createFromParcel(parcel);
-            assertEquals(method.getMethodId(), methodFromParcel.getMethodId());
+            assertThat(methodFromParcel.getMethodId()).isEqualTo(method.getMethodId());
         } finally {
             parcel.recycle();
         }
@@ -124,8 +122,8 @@ public class DistanceMeasurementMethodTest {
                 new DistanceMeasurementMethod.Builder(
                                 DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .build();
-        assertEquals(
-                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI, method.getId(), 0.0);
+        assertThat(method.getId())
+                .isEqualTo(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI);
     }
 
     @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
@@ -136,8 +134,8 @@ public class DistanceMeasurementMethodTest {
                 new DistanceMeasurementMethod.Builder(
                                 DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .build();
-        assertEquals(
-                DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI, method.getMethodId());
+        assertThat(method.getMethodId())
+                .isEqualTo(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -148,7 +146,7 @@ public class DistanceMeasurementMethodTest {
                                 DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .setAzimuthAngleSupported(true)
                         .build();
-        assertEquals(true, method.isAzimuthAngleSupported());
+        assertThat(method.isAzimuthAngleSupported()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -159,7 +157,7 @@ public class DistanceMeasurementMethodTest {
                                 DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .setAltitudeAngleSupported(true)
                         .build();
-        assertEquals(true, method.isAltitudeAngleSupported());
+        assertThat(method.isAltitudeAngleSupported()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -170,17 +168,17 @@ public class DistanceMeasurementMethodTest {
                                 DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                         .setAltitudeAngleSupported(true)
                         .build();
-        assertEquals(
-                Objects.hash(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI),
-                method.hashCode());
+        assertThat(method.hashCode())
+                .isEqualTo(
+                        Objects.hash(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI));
     }
 
     private void assertMethodEquals(DistanceMeasurementMethod p, DistanceMeasurementMethod other) {
         assertThat(p).isNotNull();
         assertThat(other).isNotNull();
 
-        assertEquals(p.getId(), other.getId(), 0.0);
-        assertEquals(p.isAzimuthAngleSupported(), other.isAzimuthAngleSupported());
-        assertEquals(p.isAltitudeAngleSupported(), other.isAltitudeAngleSupported());
+        assertThat(p.getId()).isEqualTo(other.getId());
+        assertThat(p.isAzimuthAngleSupported()).isEqualTo(other.isAzimuthAngleSupported());
+        assertThat(p.isAltitudeAngleSupported()).isEqualTo(other.isAltitudeAngleSupported());
     }
 }

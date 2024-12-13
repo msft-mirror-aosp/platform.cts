@@ -21,8 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
 import android.bluetooth.BluetoothLeBroadcastSubgroupSettings;
@@ -99,8 +97,8 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
                         .setContentMetadata(contentMetadata);
 
         BluetoothLeBroadcastSubgroupSettings settings = builder.build();
-        assertEquals(TEST_QUALITY, settings.getPreferredQuality());
-        assertEquals(contentMetadata, settings.getContentMetadata());
+        assertThat(settings.getPreferredQuality()).isEqualTo(TEST_QUALITY);
+        assertThat(settings.getContentMetadata()).isEqualTo(contentMetadata);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -118,7 +116,7 @@ public class BluetoothLeBroadcastSubgroupSettingsTest {
         BluetoothLeBroadcastSubgroupSettings settings = builder.build();
         BluetoothLeBroadcastSubgroupSettings settingsCopy =
                 new BluetoothLeBroadcastSubgroupSettings.Builder(settings).build();
-        assertEquals(TEST_QUALITY, settingsCopy.getPreferredQuality());
-        assertEquals(contentMetadata, settingsCopy.getContentMetadata());
+        assertThat(settingsCopy.getPreferredQuality()).isEqualTo(TEST_QUALITY);
+        assertThat(settingsCopy.getContentMetadata()).isEqualTo(contentMetadata);
     }
 }

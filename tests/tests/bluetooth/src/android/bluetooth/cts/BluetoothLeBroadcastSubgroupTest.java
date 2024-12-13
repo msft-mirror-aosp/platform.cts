@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -128,9 +127,9 @@ public class BluetoothLeBroadcastSubgroupTest {
             builder.addChannel(channel);
         }
         BluetoothLeBroadcastSubgroup subgroup = builder.build();
-        assertEquals(TEST_CODEC_ID, subgroup.getCodecId());
-        assertEquals(codecMetadata, subgroup.getCodecSpecificConfig());
-        assertEquals(contentMetadata, subgroup.getContentMetadata());
+        assertThat(subgroup.getCodecId()).isEqualTo(TEST_CODEC_ID);
+        assertThat(subgroup.getCodecSpecificConfig()).isEqualTo(codecMetadata);
+        assertThat(subgroup.getContentMetadata()).isEqualTo(contentMetadata);
         assertThat(subgroup.hasChannelPreference()).isTrue();
         assertArrayEquals(
                 TEST_CHANNELS, subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
@@ -164,9 +163,9 @@ public class BluetoothLeBroadcastSubgroupTest {
         BluetoothLeBroadcastSubgroup subgroup = builder.build();
         BluetoothLeBroadcastSubgroup subgroupCopy =
                 new BluetoothLeBroadcastSubgroup.Builder(subgroup).build();
-        assertEquals(TEST_CODEC_ID, subgroupCopy.getCodecId());
-        assertEquals(codecMetadata, subgroupCopy.getCodecSpecificConfig());
-        assertEquals(contentMetadata, subgroupCopy.getContentMetadata());
+        assertThat(subgroupCopy.getCodecId()).isEqualTo(TEST_CODEC_ID);
+        assertThat(subgroupCopy.getCodecSpecificConfig()).isEqualTo(codecMetadata);
+        assertThat(subgroupCopy.getContentMetadata()).isEqualTo(contentMetadata);
         assertThat(subgroupCopy.hasChannelPreference()).isTrue();
         assertArrayEquals(
                 TEST_CHANNELS,

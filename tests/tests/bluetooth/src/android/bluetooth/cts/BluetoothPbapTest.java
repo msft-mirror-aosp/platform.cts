@@ -25,8 +25,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -116,7 +114,7 @@ public class BluetoothPbapTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsPbapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbap);
+        assertThat(mBluetoothPbap).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.PBAP, mBluetoothPbap);
@@ -128,7 +126,7 @@ public class BluetoothPbapTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsPbapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbap);
+        assertThat(mBluetoothPbap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -140,24 +138,24 @@ public class BluetoothPbapTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsPbapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbap);
+        assertThat(mBluetoothPbap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothPbap.getConnectionState(null));
+        assertThat(mBluetoothPbap.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothPbap.getConnectionState(testDevice));
+        assertThat(mBluetoothPbap.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsPbapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbap);
+        assertThat(mBluetoothPbap).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -169,7 +167,7 @@ public class BluetoothPbapTest {
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsPbapSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPbap);
+        assertThat(mBluetoothPbap).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 

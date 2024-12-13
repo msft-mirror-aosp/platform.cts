@@ -26,6 +26,7 @@ import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.compatibility.common.util.NonApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
@@ -39,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -86,7 +88,6 @@ public class DisplayWakeReportedStatsTests extends BaseHostJUnit4Test implements
     public void testDisplayWakeReportedFromWakeKey() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithWakeKey");
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         assertWakeup(WAKE_REASON_WAKE_KEY, SYSTEM_UID);
     }
 
@@ -116,8 +117,18 @@ public class DisplayWakeReportedStatsTests extends BaseHostJUnit4Test implements
 
     private void assertWakeup(int reason, int uid) throws Exception {
         // Assert one DisplayWakeReported event has been collected.
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data.size()).isEqualTo(1);
+        final List<StatsLog.EventMetricData> data = new ArrayList<>();
+        PollingCheck.check(
+                "EventMetricData should have 1 entry",
+                /* timeout= */ 5500,
+                () -> {
+                    data.addAll(ReportUtils.getEventMetricDataList(getDevice()));
+                    if (data.isEmpty()) {
+                        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+                    }
+                    return data.size() == 1;
+                });
+
         AtomsProto.DisplayWakeReported displayWakeReported =
                 data.get(0).getAtom().getDisplayWakeReported();
         assertThat(displayWakeReported.getWakeUpReason()).isEqualTo(reason);

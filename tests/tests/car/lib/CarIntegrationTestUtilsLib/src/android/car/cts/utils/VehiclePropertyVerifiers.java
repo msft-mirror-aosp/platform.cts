@@ -345,7 +345,7 @@ public class VehiclePropertyVerifiers {
                         .addReadPermission(Car.PERMISSION_CONTROL_CAR_SEATS);
 
         return Flags.vehicleProperty25q23pPermissions()
-                ? verifierBuilder.addReadPermission(Car.PERMISSION_MILEAGE_3P)
+                ? verifierBuilder.addReadPermission(Car.PERMISSION_READ_CAR_SEATS)
                 : verifierBuilder;
     }
 

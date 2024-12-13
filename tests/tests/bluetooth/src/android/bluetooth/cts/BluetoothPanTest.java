@@ -26,8 +26,6 @@ import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BluetoothAdapter;
@@ -115,7 +113,7 @@ public class BluetoothPanTest {
     public void closeProfileProxy() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
         assertThat(mIsProfileReady).isTrue();
 
         mAdapter.closeProfileProxy(BluetoothProfile.PAN, mBluetoothPan);
@@ -127,7 +125,7 @@ public class BluetoothPanTest {
     public void getConnectedDevices() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -139,7 +137,7 @@ public class BluetoothPanTest {
     public void getDevicesMatchingConnectionStates() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
@@ -151,24 +149,24 @@ public class BluetoothPanTest {
     public void getConnectionState() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns false when invalid input is given
-        assertEquals(STATE_DISCONNECTED, mBluetoothPan.getConnectionState(null));
+        assertThat(mBluetoothPan.getConnectionState(null)).isEqualTo(STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertEquals(STATE_DISCONNECTED, mBluetoothPan.getConnectionState(testDevice));
+        assertThat(mBluetoothPan.getConnectionState(testDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     public void setConnectionPolicy() {
         assumeTrue(mHasBluetooth && mIsPanSupported);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
@@ -190,7 +188,7 @@ public class BluetoothPanTest {
         TestUtils.adoptPermissionAsShellUid(
                 BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, TETHER_PRIVILEGED);
         assertThat(waitForProfileConnect()).isTrue();
-        assertNotNull(mBluetoothPan);
+        assertThat(mBluetoothPan).isNotNull();
 
         assertThat(mBluetoothPan.isTetheringOn()).isFalse();
         mBluetoothPan.setBluetoothTethering(true);

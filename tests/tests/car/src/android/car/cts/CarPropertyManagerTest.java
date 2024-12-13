@@ -762,7 +762,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             ImmutableList.<Integer>builder()
                     .add(
                             VehiclePropertyIds.INSTANTANEOUS_FUEL_ECONOMY,
-                            VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY)
+                            VehiclePropertyIds.INSTANTANEOUS_EV_EFFICIENCY,
+                            VehiclePropertyIds.PERF_ODOMETER)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_READ_STEERING_STATE_PROPERTIES =
             ImmutableList.<Integer>builder()

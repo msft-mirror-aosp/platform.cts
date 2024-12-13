@@ -23,7 +23,6 @@ import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOU
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -119,7 +118,7 @@ public class DistanceMeasurementManagerTest {
         CancellationSignal signal =
                 mDistanceMeasurementManager.startMeasurementSession(
                         params, mContext.getMainExecutor(), mTestcallback);
-        assertNotNull(signal);
+        assertThat(signal).isNotNull();
         signal.cancel();
     }
 
@@ -128,7 +127,7 @@ public class DistanceMeasurementManagerTest {
     @Test
     public void getSupportedMethods() {
         List<DistanceMeasurementMethod> list = mDistanceMeasurementManager.getSupportedMethods();
-        assertNotNull(list);
+        assertThat(list).isNotNull();
 
         if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
             assertThat(list)

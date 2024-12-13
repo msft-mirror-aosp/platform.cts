@@ -45,6 +45,7 @@ import javax.net.ssl.HttpsURLConnection;
     Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION,
     com.android.org.conscrypt.flags.Flags.FLAG_CERTIFICATE_TRANSPARENCY_PLATFORM
 })
+// TODO(b/383539782): replace reused test helpers & constants with common utils
 public class LogListVerificationTest extends BaseTestCase {
 
     @Rule

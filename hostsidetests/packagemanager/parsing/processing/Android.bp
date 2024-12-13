@@ -49,11 +49,22 @@ filegroup {
     visibility: ["//cts/hostsidetests/packagemanager/parsing:__subpackages__"],
 }
 
+genrule {
+    name: "CtsPackageManagerParsingApkGetPlatformSDKVersion",
+    out: ["CtsPackageManagerParsingApkGetPlatformSDKVersion.txt"],
+    product_variables: {
+        platform_sdk_version: {
+            cmd: "echo %d > $(out)",
+        },
+    },
+}
+
 genrule_defaults {
     name: "CtsPackageManagerParsingApkGenerator",
     tool_files: [
         ":CtsPackageManagerApkGeneratorSrc",
         ":CtsPackageManagerApkGeneratorJks",
+        ":CtsPackageManagerParsingApkGetPlatformSDKVersion",
         ":frameworks-res-CtsPackageManagerParsingApkGenerator",
     ],
     tools: [
@@ -65,5 +76,6 @@ genrule_defaults {
         "\"$(location :frameworks-res-CtsPackageManagerParsingApkGenerator)\" " +
         "\"$(location apksigner)\" " +
         "\"$(location :CtsPackageManagerApkGeneratorJks)\" " +
+        "\"$$(cat $(location :CtsPackageManagerParsingApkGetPlatformSDKVersion))\" " +
         "\"$(genDir)\" $(in) && $(location soong_zip) -o $(out) -L 0 -C $(genDir)/out -D $(genDir)/out",
 }

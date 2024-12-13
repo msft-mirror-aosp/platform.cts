@@ -18,6 +18,7 @@ package android.nfc.cts;
 
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 
+import android.annotation.Nullable;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -77,6 +78,10 @@ public final class NfcUtils {
     }
 
     static boolean disableNfc(NfcAdapter nfcAdapter, Context context) {
+        return disableNfc(nfcAdapter, context, null);
+    }
+
+    static boolean disableNfc(NfcAdapter nfcAdapter, Context context, @Nullable Boolean persist) {
         try {
             if (!nfcAdapter.isEnabled()) {
                 return true;
@@ -105,9 +110,13 @@ public final class NfcUtils {
                     handler);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
-            if (!nfcAdapter.disable()) {
-                return false;
+            boolean result = false;
+            if (persist != null) {
+                result = nfcAdapter.disable(persist);
+            } else {
+                result = nfcAdapter.disable();
             }
+            if (!result) return false;
             countDownLatch.await(2000, TimeUnit.MILLISECONDS);
             return state.get() == NfcAdapter.STATE_OFF;
         } catch (Exception e) {

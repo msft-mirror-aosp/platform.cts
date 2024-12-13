@@ -18,7 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.PeriodicAdvertisingParameters;
@@ -70,7 +69,7 @@ public class PeriodicAdvertisingParametersTest {
     public void defaultParameters() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
         assertThat(params.getIncludeTxPower()).isFalse();
-        assertEquals(INTERVAL_MAX, params.getInterval());
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_MAX);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -103,14 +102,14 @@ public class PeriodicAdvertisingParametersTest {
     public void interval() {
         PeriodicAdvertisingParameters params =
                 new PeriodicAdvertisingParameters.Builder().setInterval(INTERVAL_MIN).build();
-        assertEquals(INTERVAL_MIN, params.getInterval());
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_MIN);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void describeContents() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
-        assertEquals(0, params.describeContents());
+        assertThat(params.describeContents()).isEqualTo(0);
     }
 
     private void assertParamsEquals(
@@ -118,7 +117,7 @@ public class PeriodicAdvertisingParametersTest {
         assertThat(p).isNotNull();
         assertThat(other).isNotNull();
 
-        assertEquals(p.getIncludeTxPower(), other.getIncludeTxPower());
-        assertEquals(p.getInterval(), other.getInterval());
+        assertThat(other.getIncludeTxPower()).isEqualTo(p.getIncludeTxPower());
+        assertThat(other.getInterval()).isEqualTo(p.getInterval());
     }
 }

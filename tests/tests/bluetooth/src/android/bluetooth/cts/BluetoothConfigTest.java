@@ -20,8 +20,8 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -103,7 +103,7 @@ public class BluetoothConfigTest {
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         final List<Integer> pList = mAdapter.getSupportedProfiles();
-        int wrong_config_in_list =
+        int wrong_config =
                 checkIsProfileEnabledInList(BluetoothProfile.A2DP, pList)
                         + checkIsProfileEnabledInList(BluetoothProfile.A2DP_SINK, pList)
                         + checkIsProfileEnabledInList(BluetoothProfile.AVRCP_CONTROLLER, pList)
@@ -128,10 +128,10 @@ public class BluetoothConfigTest {
                         + checkIsProfileEnabledInList(BluetoothProfile.SAP, pList)
                         + checkIsProfileEnabledInList(BluetoothProfile.VOLUME_CONTROL, pList);
 
-        assertEquals(
-                "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
-                0,
-                wrong_config_in_list);
+        assertWithMessage(
+                        "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.")
+                .that(wrong_config)
+                .isEqualTo(0);
     }
 
     private int checkIsProfileEnabled(int profile, int adapterSupport) {
@@ -166,10 +166,10 @@ public class BluetoothConfigTest {
                                 BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT,
                                 mAdapter.isLeAudioBroadcastAssistantSupported());
 
-        assertEquals(
-                "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.",
-                0,
-                wrong_config);
+        assertWithMessage(
+                        "Config does not match adapter hardware support. CHECK THE PREVIOUS LOGS.")
+                .that(wrong_config)
+                .isEqualTo(0);
     }
 
     @Test

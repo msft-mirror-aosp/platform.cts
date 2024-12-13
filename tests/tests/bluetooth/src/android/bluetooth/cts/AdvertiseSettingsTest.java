@@ -18,7 +18,6 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.AdvertiseSettings;
@@ -52,9 +51,10 @@ public class AdvertiseSettingsTest {
     @Test
     public void defaultSettings() {
         AdvertiseSettings settings = new AdvertiseSettings.Builder().build();
-        assertEquals(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER, settings.getMode());
-        assertEquals(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settings.getTxPowerLevel());
-        assertEquals(0, settings.getTimeout());
+        assertThat(settings.getMode()).isEqualTo(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER);
+        assertThat(settings.getTxPowerLevel())
+                .isEqualTo(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM);
+        assertThat(settings.getTimeout()).isEqualTo(0);
         assertThat(settings.isConnectable()).isTrue();
     }
 
@@ -63,7 +63,7 @@ public class AdvertiseSettingsTest {
     @Test
     public void describeContents() {
         AdvertiseSettings settings = new AdvertiseSettings.Builder().build();
-        assertEquals(0, settings.describeContents());
+        assertThat(settings.describeContents()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -84,13 +84,15 @@ public class AdvertiseSettingsTest {
         settings.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         AdvertiseSettings settingsFromParcel = AdvertiseSettings.CREATOR.createFromParcel(parcel);
-        assertEquals(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY, settingsFromParcel.getMode());
-        assertEquals(
-                AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settingsFromParcel.getTxPowerLevel());
-        assertEquals(timeoutMillis, settingsFromParcel.getTimeout());
+        assertThat(settingsFromParcel.getMode())
+                .isEqualTo(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY);
+        assertThat(settingsFromParcel.getTxPowerLevel())
+                .isEqualTo(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM);
+        assertThat(settingsFromParcel.getTimeout()).isEqualTo(timeoutMillis);
         assertThat(settings.isConnectable()).isFalse();
         assertThat(settings.isDiscoverable()).isFalse();
-        assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT, settings.getOwnAddressType());
+        assertThat(settings.getOwnAddressType())
+                .isEqualTo(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

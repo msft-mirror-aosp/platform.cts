@@ -19,7 +19,7 @@ package {
 }
 
 android_test {
-    name: "NetSecConfigCertificateTransparencySctTestCases",
+    name: "NetSecConfigCertificateTransparencySctNoLogListTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
         "ctstestrunner-axt",

@@ -19,12 +19,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.compatibility.common.tradefed.targetprep.ApkInstaller;
 import com.android.tradefed.build.FolderBuildInfo;
 import com.android.tradefed.config.ConfigurationDescriptor;
 import com.android.tradefed.config.ConfigurationException;
 import com.android.tradefed.config.ConfigurationFactory;
 import com.android.tradefed.config.IConfiguration;
+import com.android.tradefed.config.IDeviceConfiguration;
 import com.android.tradefed.invoker.ExecutionFiles.FilesKey;
+import com.android.tradefed.targetprep.ITargetPreparer;
+import com.android.tradefed.targetprep.RootTargetPreparer;
 import com.android.tradefed.invoker.InvocationContext;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.suite.ITestSuite;
@@ -223,6 +227,19 @@ public class CtsConfigLoadingTest {
                                     + "'<option name=\"test-suite-tag\" value=\"%s\" />'",
                             config.getName(), suiteName),
                     cd.getSuiteTags().contains(suiteName));
+            // Prevent any RootTargetPreparer in CTS as it's not expected to work
+            // https://source.android.com/docs/compatibility/cts/development#writing-cts-tests
+            for (IDeviceConfiguration dConfig : c.getDeviceConfig()) {
+                // Ensure we do not actively apply root in CTS
+                for (ITargetPreparer prep : dConfig.getTargetPreparers()) {
+                    if (prep.getClass().isAssignableFrom(RootTargetPreparer.class) &&
+                            ((RootTargetPreparer) prep).shouldForceRoot()
+                            && ((RootTargetPreparer) prep).shouldThrowOnFailure()) {
+                        throw new ConfigurationException(
+                                String.format("%s: Usage of root in CTS is forbidden.", config));
+                    }
+                }
+            }
 
             // Ensure options have been set
             c.validateOptions();
