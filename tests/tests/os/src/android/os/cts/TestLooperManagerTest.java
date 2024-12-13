@@ -72,10 +72,10 @@ public class TestLooperManagerTest {
             latch.countDown();
         });
         assertTrue(tlm.hasMessages(handler, null, 42));
-        final Long firstWhen = tlm.peekWhen();
-        assertNotNull(firstWhen);
         assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
 
+        final Long firstWhen = tlm.peekWhen();
+        assertNotNull(firstWhen);
         final Message first = tlm.next();
         assertEquals(42, first.what);
         assertNull(first.getCallback());

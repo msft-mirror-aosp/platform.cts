@@ -28,7 +28,6 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
-
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -206,7 +205,7 @@ public class MediaRoute2InfoTest {
         MediaRoute2Info routeInfo =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
                         .addFeature(TEST_ROUTE_TYPE_0)
-                        .setPackageName(creatorPackageName)
+                        .setProviderPackageName(creatorPackageName)
                         .setVisibilityRestricted(Set.of())
                         .build();
         assertThat(routeInfo.isVisibleTo(creatorPackageName)).isEqualTo(true);
@@ -218,7 +217,7 @@ public class MediaRoute2InfoTest {
         MediaRoute2Info routeInfo =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
                         .addFeature(TEST_ROUTE_TYPE_0)
-                        .setPackageName(creatorPackageName)
+                        .setProviderPackageName(creatorPackageName)
                         .setVisibilityRestricted(TEST_ALLOWED_PACKAGES)
                         .build();
         assertThat(routeInfo.isVisibleTo("com.android.settings")).isEqualTo(true);
@@ -361,7 +360,7 @@ public class MediaRoute2InfoTest {
                         .setVolume(TEST_VOLUME)
                         .setDeduplicationIds(TEST_DEDUPLICATION_IDS)
                         .setExtras(extras)
-                        .setPackageName(
+                        .setProviderPackageName(
                                 ApplicationProvider.getApplicationContext().getPackageName())
                         .setVisibilityRestricted(TEST_ALLOWED_PACKAGES)
                         .setRequiredPermissions(TEST_REQUIRED_PERMISSIONS)
