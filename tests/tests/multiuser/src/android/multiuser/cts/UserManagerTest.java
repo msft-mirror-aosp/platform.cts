@@ -23,6 +23,7 @@ import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.MODIFY_QUIET_MODE;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
+import static android.multiuser.cts.TestingUtils.assumeTvNotSupported;
 import static android.multiuser.cts.TestingUtils.getBooleanProperty;
 import static android.multiuser.cts.TestingUtils.getContextForOtherUser;
 import static android.multiuser.cts.TestingUtils.getContextForUser;
@@ -1147,6 +1148,8 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @EnsurePasswordNotSet(forUser = ANY)
     public void testSwitchFromNonCredentialToCredentialUser() {
+        assumeTvNotSupported();
+
         UserReference initialUser = sDeviceState.initialUser();
         UserReference additionalUser = additionalUser(sDeviceState);
 

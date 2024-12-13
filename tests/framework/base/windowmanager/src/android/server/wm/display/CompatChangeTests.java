@@ -820,6 +820,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      */
     @RequiresFlagsEnabled(Flags.FLAG_UNIVERSAL_RESIZABLE_BY_DEFAULT)
     @EnableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
+    @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test
     public void testUnrestrictedResizability() {
         assumeTrue("Skipping test: not large screen", isTablet());

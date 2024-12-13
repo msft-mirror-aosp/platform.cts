@@ -16,7 +16,7 @@
  * limitations under the License.
  -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="android.security.net.config.cts.NetSecConfigCertificateTransparencySctTestCases">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="android.security.net.config.cts.NetSecConfigCertificateTransparencySctLogListTestCases">
     <application android:networkSecurityConfig="@xml/network_security_config">
         <uses-library android:name="android.test.runner"/>
         <uses-library android:name="org.apache.http.legacy" />
@@ -24,6 +24,6 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner" android:targetPackage="android.security.net.config.cts.NetSecConfigCertificateTransparencySctTestCases" android:label="SCT validation tests for certificate transparency">
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner" android:targetPackage="android.security.net.config.cts.NetSecConfigCertificateTransparencySctLogListTestCases" android:label="SCT validation tests for certificate transparency when a log list is downloaded">
     </instrumentation>
 </manifest>
