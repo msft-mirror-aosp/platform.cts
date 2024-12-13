@@ -21,7 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -146,11 +145,11 @@ public class BluetoothLeBroadcastSettingsTest {
         assertThat(broadcastSettings.getBroadcastCode()).isNull();
         assertThat(broadcastSettings.getPublicBroadcastMetadata())
                 .isEqualTo(publicBroadcastMetadata);
-        assertArrayEquals(
-                subgroupSettings,
-                broadcastSettings
-                        .getSubgroupSettings()
-                        .toArray(new BluetoothLeBroadcastSubgroupSettings[0]));
+        assertThat(
+                        broadcastSettings
+                                .getSubgroupSettings()
+                                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]))
+                .isEqualTo(subgroupSettings);
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -184,11 +183,11 @@ public class BluetoothLeBroadcastSettingsTest {
         assertThat(broadcastSettingsCopy.getBroadcastCode()).isNull();
         assertThat(broadcastSettingsCopy.getPublicBroadcastMetadata())
                 .isEqualTo(publicBroadcastMetadata);
-        assertArrayEquals(
-                subgroupSettings,
-                broadcastSettingsCopy
-                        .getSubgroupSettings()
-                        .toArray(new BluetoothLeBroadcastSubgroupSettings[0]));
+        assertThat(
+                        broadcastSettingsCopy
+                                .getSubgroupSettings()
+                                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]))
+                .isEqualTo(subgroupSettings);
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
