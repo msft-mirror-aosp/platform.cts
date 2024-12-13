@@ -756,7 +756,7 @@ public final class Packages {
 
     /** Dump the packages state. */
     public String dump() {
-        return ShellCommand.builder("dumpsys packages").validate((s) -> !s.isEmpty())
+        return ShellCommand.builder("dumpsys package").validate((s) -> !s.isEmpty())
                 .executeOrThrowNeneException("Error dumping packages state");
     }
 
