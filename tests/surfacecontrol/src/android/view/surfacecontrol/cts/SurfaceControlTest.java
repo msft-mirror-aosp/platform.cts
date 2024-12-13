@@ -2252,6 +2252,58 @@ public class SurfaceControlTest {
                 getStableHdrSdrRatio(display) > targetHeadroom);
     }
 
+    @Test
+    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
+    public void testSurfaceTransaction_throttlesHlgBrightness() throws Throwable {
+        mActivity.awaitReadyState();
+        Display display = mActivity.getDisplay();
+        assumeTrue(display.isHdrSdrRatioAvailable());
+
+        AtomicReference<SurfaceControl> surfaceControlContainer = new AtomicReference<>();
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                SurfaceControl surfaceControl = createFromWindow(holder);
+                                surfaceControlContainer.set(surfaceControl);
+                                int dataspace = DataSpace.DATASPACE_BT2020_HLG;
+                                HardwareBuffer buffer =
+                                        getSolidBuffer(
+                                                DEFAULT_LAYOUT_WIDTH,
+                                                DEFAULT_LAYOUT_HEIGHT,
+                                                Color.WHITE);
+                                SurfaceControl.Transaction txn =
+                                        new SurfaceControl.Transaction()
+                                                .setBuffer(surfaceControl, buffer)
+                                                .setDataSpace(surfaceControl, dataspace);
+                                txn.apply();
+                            }
+                        },
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+        try {
+            assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Assert.fail("interrupted");
+        }
+
+        // Sample a few brightnesses
+        float[] screenBrightnesses = {0.01f, 1.0f, 0.75f, 0.5f, 0.25f, -1f};
+
+        for (float brightness : screenBrightnesses) {
+            mActivity.getWindow().getAttributes().screenBrightness = 0.01f;
+            // Wait for the screenBrightness to be picked up by VRI
+            WidgetTestUtils.runOnMainAndDrawSync(mActivity.getParentFrameLayout(), () -> {});
+            float headroom = getStableHdrSdrRatio(display);
+            assertTrue(
+                    "Headroom is too high for HLG at brightness: " + brightness, headroom < 4.927f);
+        }
+    }
+
     private static final class DefaultDataSpaceParameters {
         private final int mPixelFormat;
         private final byte[] mColor;

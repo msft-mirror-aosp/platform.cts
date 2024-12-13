@@ -58,6 +58,7 @@ android_test {
         "hwui_flags_java_lib",
         "ui-trace-collector",
         "collector-device-lib",
+        "surfaceflinger_flags_java_lib",
     ],
 
     jni_libs: [
