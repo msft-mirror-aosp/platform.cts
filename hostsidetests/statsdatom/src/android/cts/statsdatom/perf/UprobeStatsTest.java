@@ -70,6 +70,7 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
     private static final int METRIC_ID = 8;
     private static final int ALERT_ID = 29754810;
     private static final int SUBSCRIPTION_ID = 29796753;
+    private static final int PROBING_DURATION_SECS = 10;
 
     private IBuildInfo mCtsBuild;
     private ExtensionRegistry mRegistry;
@@ -138,7 +139,7 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
                         )
                     .addBpfMaps("map_ProcessManagement_update_device_idle_temp_allowlist_records")
                     .setTargetProcessName("system_server")
-                    .setDurationSeconds(10)
+                    .setDurationSeconds(PROBING_DURATION_SECS)
                     .setStatsdLoggingConfig(
                             UprobestatsConfig.Task.StatsdLoggingConfig.newBuilder()
                                     .setAtomId(940)
@@ -214,6 +215,15 @@ public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceive
                     throw new RuntimeException(e);
                 }
             }, 20, TimeUnit.SECONDS);
+
+            // Ensure that the uprobestats process terminates.
+            waitForCondition(() -> {
+                try {
+                    return getDevice().executeShellCommand("pidof uprobestats").length() == 0;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, PROBING_DURATION_SECS + AtomTestUtils.WAIT_TIME_LONG / 1000, TimeUnit.SECONDS);
         }
     }
 
