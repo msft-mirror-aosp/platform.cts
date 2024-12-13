@@ -1163,6 +1163,38 @@
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testChooserActivityLaunchedFromPersonalProfileWithSelectedWorkTab"/>
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSecondaryLockscreen"/>
   <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.PowerManager_ThermalTest#testThermalHeadroomCallback"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testAugmentedAutoFill_hasPreviousRequestViewFocused_requestAutofill"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testServiceLifecycle"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testAugmentedAutoFill_hasPreviousRequestViewNotFocused_requestAutofill"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testContextCommitted_noSaveUi_whileFieldsMatchedDatasets"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testContextCommitted_noSaveUi_whileDelaySave"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testDatasetSelected_twoResponses"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testAuthenticationSelected_withDifferentLastFocusedIdForShownAndSelection"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.FillEventHistoryTest#testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds_noDataset"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineAugmentedLoginActivityTest#testSwitchInputMethod_mainServiceDisabled"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineFillEventHistoryTest#testNoEvents_whenServiceReturnsFailure"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.FieldsClassificationTest#testHit_mergeUserData_manyDetectableFields"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.FieldsClassificationTest#testHit_CreditCardAlgorithm"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.FieldsClassificationTest#testHit_sameValueForMultipleCategories"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.FieldsClassificationTest#testHit_manyUserData_oneDetectableField_bestMatchIsFirst"/>
+  <option name="compatibility:exclude-filter" value="CtsContactsProviderTestCases android.autofillservice.cts.servicebehavior.FieldsClassificationTest#testHit_usePackageUserData"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecondaryLockscreen"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsConfigured_isSet[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsDisabled_isSet[IncludeRunOnProfileOwnerPrimaryUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsConfigured_isSet[IncludeRunOnFinancedDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsDisabled_isSet[IncludeRunOnFinancedDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsConfigured_isSet[IncludeRunOnParentOfProfileOwnerUsingParentInstance]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsDisabled_isSet[IncludeRunOnParentOfProfileOwnerUsingParentInstance]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsConfigured_isSet[IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsConfigured_isSet[IncludeRunOnProfileOwnerPrimaryUser]"/>
+  <option name="compatibility:exclude-filter" value=" android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsDisabled_isSet[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.InputMethodServiceTest#testOnShouldVerifyKeyEvent"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateTransferredNetworkBytes"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.EnhancedConfirmationManagerTest#grantDialogBlocksRestrictedGroupsThenRequestsUnrestrictedGroupsDespiteOutOfOrderRequest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testCoarsePermissionIsGranted"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionSplitTest#testBodySensorSplitOnTToV"/>
+  <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testMultiSelectionWithLongPressAndTaps"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
