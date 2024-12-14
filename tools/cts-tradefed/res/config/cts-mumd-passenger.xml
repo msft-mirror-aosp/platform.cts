@@ -302,6 +302,7 @@
     <option name="compatibility:include-filter" value="CtsWrapNoWrapTestCases" />
     <option name="compatibility:include-filter" value="CtsWrapWrapDebugTestCases" />
     <option name="compatibility:include-filter" value="CtsWrapWrapNoDebugTestCases" />
+    <option name="compatibility:include-filter" value="DownloadManagerInstallerTest" />
     <option name="compatibility:include-filter" value="MctsMediaDrmFrameworkTestCases" />
     <option name="compatibility:include-filter" value="MctsMediaExtractorTestCases" />
     <option name="compatibility:include-filter" value="MctsMediaMiscTestCases" />
