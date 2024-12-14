@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.annotation.NonNull;
 import android.app.admin.PreferentialNetworkServiceConfig;
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -43,14 +44,15 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.util.Range;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.policies.PreferentialNetworkService;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.testutils.RecorderCallback.CallbackEntry;
 import com.android.testutils.TestableNetworkCallback;
 import com.android.testutils.TestableNetworkOfferCallback;
 
@@ -163,16 +165,30 @@ public final class PreferentialNetworkServiceTest {
         try {
             // Enable PreferentialNetworkService, verify the provider sees the enterprise
             // slice request.
-            // But the network callback received nothing since it should automatically fallback to
+            // But the network callback received nothing but miscellaneous network callbacks
+            // since it should automatically fallback to
             // default request if there is no enterprise slice.
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(true);
             offerCallback.expectOnNetworkNeeded(mEnterpriseNcFilter);
-            defaultCallback.assertNoCallback(NO_CALLBACK_TIMEOUT_MS);
+            assertNoCallbackExceptCapOrLpChange(defaultCallback);
         } finally {
             sCm.unregisterNetworkCallback(defaultCallback);
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
             sCm.unregisterNetworkProvider(provider);
         }
+    }
+
+    /**
+     * The networks used in this test are real networks and as such they can see seemingly random
+     * updates of their capabilities or link properties as conditions change, e.g. the network loses
+     * validation or IPv4 shows up. Many tests should simply treat these callbacks as spurious.
+     */
+    private void assertNoCallbackExceptCapOrLpChange(@NonNull final TestableNetworkCallback cb) {
+        cb.assertNoCallback(
+                NO_CALLBACK_TIMEOUT_MS,
+                c ->
+                        !(c instanceof CallbackEntry.CapabilitiesChanged
+                                || c instanceof CallbackEntry.LinkPropertiesChanged));
     }
 
     /**
@@ -199,11 +215,11 @@ public final class PreferentialNetworkServiceTest {
 
         try {
             // Disable PreferentialNetworkService, verify the provider cannot see the enterprise
-            // slice request. And the network callback received nothing since there is no any
-            // change.
+            // slice request. And the network callback received nothing but miscellaneous
+            // network callbacks since there is no any change.
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
             offerCallback.assertNoCallback();  // Still unneeded.
-            defaultCallback.assertNoCallback(NO_CALLBACK_TIMEOUT_MS);
+            assertNoCallbackExceptCapOrLpChange(defaultCallback);
         } finally {
             sCm.unregisterNetworkCallback(defaultCallback);
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
@@ -243,7 +259,7 @@ public final class PreferentialNetworkServiceTest {
             // fallback.
             dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(blockConfig));
-            defaultCallback.expect(TestableNetworkCallback.CallbackEntry.LOST, DEFAULT_TIMEOUT_MS);
+            defaultCallback.eventuallyExpect(CallbackEntry.LOST, DEFAULT_TIMEOUT_MS);
 
             // Verify the application cannot access default network  since it is
             // a non-enterprise network.

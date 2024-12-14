@@ -217,7 +217,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               is_stabilized = (
                   stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW
               )
-              skip_test = its_session_utils.check_and_update_features_tested(
+              skip_test = its_session_utils.check_features_passed(
                   features_tested, hlg10, is_stabilized)
               if skip_test:
                 continue
@@ -324,6 +324,9 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: failed! '
                     'Check test_log.DEBUG for errors')
                 test_failures.append(failure_msg)
+
+              its_session_utils.mark_features_passed(
+                  features_tested, hlg10, is_stabilized)
 
       if test_failures:
         raise AssertionError(test_failures)
