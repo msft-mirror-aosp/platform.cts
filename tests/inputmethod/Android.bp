@@ -43,6 +43,7 @@ android_test {
         "testng",
         "kotlin-test",
         "cts-wm-util",
+        "sts-device-util",
         "cts_window-extensions",
         "statsdprotonano",
         "android.view.inputmethod.flags-aconfig-java",

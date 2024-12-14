@@ -21,6 +21,7 @@ package {
 android_library {
     name: "cts-camera-performance-tests",
 
+    min_sdk_version: "34",
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",

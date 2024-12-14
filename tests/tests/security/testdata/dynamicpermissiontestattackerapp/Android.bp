@@ -20,4 +20,15 @@ android_test_helper_app {
         "src/**/*.aidl",
         "src/**/*.kt",
     ],
+
+    min_sdk_version: "31",
+    target_sdk_version: "31",
+}
+
+filegroup {
+    name: "dynamic-permission-service",
+    srcs: [
+        "src/android/security/cts/dynamicpermissiontestattackerapp/IDynamicPermissionService.aidl",
+        "src/android/security/cts/dynamicpermissiontestattackerapp/DynamicPermissionService.kt",
+    ],
 }

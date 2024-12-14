@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.enterprise.annotations;
+package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.harrier.HarrierRule
-import com.android.bedstead.harrier.UserType.INITIAL_USER;
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
-import com.android.bedstead.nene.types.OptionalBoolean.ANY;
-import com.android.bedstead.nene.types.OptionalBoolean.FALSE;
-
-import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.UserType.INITIAL_USER
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
-import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.queryable.annotations.Query;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
+import com.android.bedstead.nene.types.OptionalBoolean
+import com.android.bedstead.nene.types.OptionalBoolean.ANY
+import com.android.bedstead.nene.types.OptionalBoolean.FALSE
+import com.android.queryable.annotations.Query
 import com.google.auto.value.AutoAnnotation
-
 
 /**
  * Mark that a test method should run on a user which has a work profile.
@@ -64,9 +62,9 @@ import com.google.auto.value.AutoAnnotation
  */
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.TYPE)
 @Retention(AnnotationRetention.RUNTIME)
-@EnsureHasProfileAnnotation(value = "android.os.usertype.profile.MANAGED", hasProfileOwner = true)
 @RequireFeature("android.software.managed_users")
 @EnsureHasNoDeviceOwner // TODO: This should only apply on Android R+
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 annotation class EnsureHasWorkProfile(
     val forUser: UserType = INITIAL_USER,
     val installInstrumentedApp: OptionalBoolean = ANY,
@@ -78,7 +76,11 @@ annotation class EnsureHasWorkProfile(
     val switchedToParentUser: OptionalBoolean = ANY,
     val isQuietModeEnabled: OptionalBoolean = FALSE,
     val priority: Int = ENSURE_HAS_WORK_PROFILE_PRIORITY
-)
+) {
+    companion object {
+        const val PROFILE_TYPE = "android.os.usertype.profile.MANAGED"
+    }
+}
 
 const val ENSURE_HAS_WORK_PROFILE_PRIORITY = REQUIRE_RUN_ON_PRECEDENCE - 1
 

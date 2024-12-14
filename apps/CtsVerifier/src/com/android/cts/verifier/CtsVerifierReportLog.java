@@ -321,4 +321,15 @@ public class CtsVerifierReportLog extends ReportLog {
             Log.e(TAG, LOG_ERROR_STR + " (JSONArray) ", e);
         }
     }
+
+    /**
+     * Adds a JSONObject metric to the report.
+     */
+    public void addValue(String message, JSONObject value) {
+        try {
+            mCurrentJson.put(message, value);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR + " (JSONObject) ", e);
+        }
+    }
 }

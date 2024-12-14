@@ -38,6 +38,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
@@ -67,6 +68,8 @@ import java.util.function.BooleanSupplier;
 @FlakyTest(detail = "Can be promoted to pre-submit once confirmed stable.")
 @RunWith(AndroidJUnit4.class)
 public class AppTaskTests {
+
+    private static final String TAG = AppTaskTests.class.getSimpleName();
 
     private static final long TIME_SLICE_MS = 100;
     private static final long MAX_WAIT_MS = 1500;
@@ -284,7 +287,12 @@ public class AppTaskTests {
     private void removeAllAppTasks() {
         final List<ActivityManager.AppTask> appTasks = getAppTasks();
         for (ActivityManager.AppTask task : appTasks) {
-            task.finishAndRemoveTask();
+            try {
+                task.finishAndRemoveTask();
+            } catch (IllegalArgumentException e) {
+                // There may be a timing issue that the task is removing.
+                Log.w(TAG, "Task=" + task + " does not exist.");
+            }
         }
         waitAndAssertCondition(() -> getAppTasks().isEmpty(),
                 "Expected no app tasks after all removed");

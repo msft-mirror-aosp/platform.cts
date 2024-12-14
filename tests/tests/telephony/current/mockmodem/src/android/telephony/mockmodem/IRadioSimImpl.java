@@ -18,6 +18,7 @@ package android.telephony.mockmodem;
 
 import static android.telephony.mockmodem.MockSimService.COMMAND_GET_RESPONSE;
 import static android.telephony.mockmodem.MockSimService.COMMAND_READ_BINARY;
+import static android.telephony.mockmodem.MockSimService.COMMAND_SELECT;
 import static android.telephony.mockmodem.MockSimService.EF_GID1;
 import static android.telephony.mockmodem.MockSimService.EF_ICCID;
 
@@ -26,7 +27,6 @@ import android.hardware.radio.RadioIndicationType;
 import android.hardware.radio.RadioResponseInfo;
 import android.hardware.radio.sim.CardStatus;
 import android.hardware.radio.sim.Carrier;
-import android.hardware.radio.sim.CarrierInfo;
 import android.hardware.radio.sim.CarrierRestrictions;
 import android.hardware.radio.sim.IRadioSim;
 import android.hardware.radio.sim.IRadioSimIndication;
@@ -37,14 +37,21 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
-import android.service.carrier.CarrierIdentifier;
 import android.telephony.mockmodem.MockModemConfigBase.SimInfoChangedResult;
 import android.telephony.mockmodem.MockSimService.SimAppData;
+import android.telephony.mockmodem.MockSimService.SimIoData;
+import android.text.TextUtils;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.flags.Flags;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class IRadioSimImpl extends IRadioSim.Stub {
     private static final String TAG = "MRSIM";
@@ -61,6 +68,20 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     static final int EVENT_SIM_CARD_STATUS_CHANGED = 1;
     static final int EVENT_SIM_APP_DATA_CHANGED = 2;
     static final int EVENT_SIM_INFO_CHANGED = 3;
+    // Event indicates the pre-configured SIM IO through logical channel has changed
+    static final int EVENT_SIM_IO_DATA_CHANGED = 4;
+
+    // Fixed logical channel number used for SIM IO to indicate no concurrent support at present
+    private static final int LOGICAL_CHANNEL_ID = 1;
+    // AID for applet that opens THE logical channel. Empty if no applet opened the logical channel
+    @GuardedBy("mCurrentAidLock")
+    private String mCurrentAid = "";
+    // Lock to present the concurrent access for the mCurrentAid
+    private final Object mCurrentAidLock = new Object();
+    // File id for the last successful SELECT(0xA4) instruction
+    private String mLastSelectedFileid = "";
+    // Cache of the AID => SimIoData map from MockSimService
+    private Map<String, List<SimIoData>> mSimIoMap = new HashMap<>();
 
     // ***** Cache of modem attributes/status
     private CardStatus mCardStatus;
@@ -96,6 +117,10 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         // Register events
         mMockModemConfigInterface.registerForSimInfoChanged(
                 mSubId, mHandler, EVENT_SIM_INFO_CHANGED, null);
+
+        // Register SIM IO data change events
+        mMockModemConfigInterface.registerForSimIoDataChanged(mSubId, mHandler,
+                EVENT_SIM_IO_DATA_CHANGED, null);
     }
 
     /** Handler class to handle callbacks */
@@ -153,6 +178,13 @@ public class IRadioSimImpl extends IRadioSim.Stub {
                             }
                         } else {
                             Log.e(mTag, msg.what + " failure. Exception: " + ar.exception);
+                        }
+                        break;
+                    case EVENT_SIM_IO_DATA_CHANGED:
+                        ar = (AsyncResult) msg.obj;
+                        if (ar != null && ar.exception == null) {
+                            mSimIoMap = (Map<String, List<SimIoData>>) ar.result;
+                            Log.d(mTag, "Receive EVENT_SIM_IO_DATA_CHANGED: " + mSimIoMap);
                         }
                         break;
                 }
@@ -244,30 +276,6 @@ public class IRadioSimImpl extends IRadioSim.Stub {
             carriers.allowedCarriers = new Carrier[0];
         } else {
             carriers.allowedCarriers = mCarrierList;
-            Log.d(mTag, "getAllowedCarriers InterfaceVersion = " +getInterfaceVersion());
-            if (getInterfaceVersion() >=3 && mCarrierList.length > 0) {
-                carriers.allowedCarrierInfoList = new CarrierInfo[mCarrierList.length];
-                for (int count = 0; count < mCarrierList.length; count++) {
-                    String spn = null;
-                    String imsi = null;
-                    String gid1 = null;
-                    String gid2 = null;
-                    if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.GID1) {
-                        gid1 = mCarrierList[count].matchData;
-                    } else if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.GID2) {
-                        gid2 = mCarrierList[count].matchData;
-                    } else if (mCarrierList[count].matchType
-                            == CarrierIdentifier.MatchType.IMSI_PREFIX) {
-                        imsi = mCarrierList[count].matchData;
-                    } else if (mCarrierList[count].matchType == CarrierIdentifier.MatchType.SPN) {
-                        spn = mCarrierList[count].matchData;
-                    }
-                    android.hardware.radio.sim.CarrierInfo carrierInfo = getCarrierInfo(
-                            mCarrierList[count].mcc, mCarrierList[count].mnc, spn, gid1, gid2, imsi,
-                            null, null, null);
-                    carriers.allowedCarrierInfoList[count] = carrierInfo;
-                }
-            }
         }
         carriers.excludedCarriers = new Carrier[0];
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
@@ -455,9 +463,15 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     @Override
     public void iccCloseLogicalChannel(int serial, int channelId) {
         Log.d(mTag, "iccCloseLogicalChannel");
-        // TODO: cache value
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        int error = RadioError.REQUEST_NOT_SUPPORTED;
+        if (channelId > 0) {
+            error = RadioError.NONE;
+            synchronized (mCurrentAidLock) {
+                mCurrentAid = "";
+            }
+        }
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, error);
         try {
             mRadioSimResponse.iccCloseLogicalChannelResponse(rsp);
         } catch (RemoteException ex) {
@@ -633,17 +647,77 @@ public class IRadioSimImpl extends IRadioSim.Stub {
 
     @Override
     public void iccOpenLogicalChannel(int serial, String aid, int p2) {
-        Log.d(mTag, "iccOpenLogicalChannel");
-        // TODO: cache value
-        int channelId = 0;
-        byte[] selectResponse = new byte[0];
+        Log.d(mTag, "iccOpenLogicalChannel with aid=" + aid + ", p2=" + p2);
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        byte[] selectResponse = new byte[0];
+        int channelId = 0;
+        int error = RadioError.REQUEST_NOT_SUPPORTED;
+
+        synchronized (mCurrentAidLock) {
+            if (!TextUtils.isEmpty(mCurrentAid)) {
+                error = RadioError.NO_SUCH_ELEMENT;
+                Log.e(mTag, "LOGIC_CHANNEL in use by " + mCurrentAid);
+            } else if (!isAidWithLogicalChannelSupported(aid)) {
+                Log.e(mTag, "AID is not supported: " + aid);
+            } else {
+                mCurrentAid = aid;
+                error = RadioError.NONE;
+                channelId = LOGICAL_CHANNEL_ID;
+                Log.d(mTag, "LOGIC_CHANNEL open for " + aid);
+            }
+        }
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, error);
         try {
             mRadioSimResponse.iccOpenLogicalChannelResponse(rsp, channelId, selectResponse);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to iccOpenLogicalChannel from AIDL. Exception" + ex);
         }
+    }
+
+    private boolean isAidWithLogicalChannelSupported(String aid) {
+        Log.d(mTag, "Supported AIDs: " + mSimIoMap.keySet());
+        return mSimIoMap != null && mSimIoMap.containsKey(aid);
+    }
+
+    private Set<String> getSupportedFileIds(String aid) {
+        Set<String> supportedAids = new HashSet<>();
+        if (mSimIoMap != null) {
+            List<SimIoData> simIoData = mSimIoMap.get(aid);
+            if (simIoData != null) {
+                for (SimIoData sid : simIoData) {
+                    supportedAids.add(sid.mFileId);
+                }
+                // empty fileId is also a valid fileid
+                supportedAids.add("");
+            }
+        }
+        return supportedAids;
+    }
+
+    private SimIoData getSimIoData(String fileid, String command) {
+        if (TextUtils.isEmpty(fileid)) {
+            fileid = mLastSelectedFileid;
+        }
+        if (mSimIoMap != null) {
+
+            List<SimIoData> simIoData;
+            synchronized (mCurrentAidLock) {
+                simIoData = mSimIoMap.get(mCurrentAid);
+            }
+            if (simIoData != null) {
+                for (SimIoData sid : simIoData) {
+                    if (fileid.equals(sid.mFileId) && command.equals(sid.mCommand)) {
+                        return sid;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private String hexIntegerToString(int hexValue) {
+        return "0x" + Integer.toHexString(hexValue);
     }
 
     @Override
@@ -665,14 +739,38 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     @Override
     public void iccTransmitApduLogicalChannel(
             int serial, android.hardware.radio.sim.SimApdu message) {
-        Log.d(mTag, "iccTransmitApduLogicalChannel");
-        // TODO: cache value
+        int channel = message.sessionId;
+        int cmd = message.instruction;
+        String fileid = message.data;
+        Log.d(mTag, "iccTransmitApduLogicalChannel, channel=" + channel + ", cmd="
+                + Integer.toHexString(cmd) + ", fileid=" + fileid);
+        int error = RadioError.GENERIC_FAILURE;
         android.hardware.radio.sim.IccIoResult iccIoResult =
                 new android.hardware.radio.sim.IccIoResult();
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        final boolean isFileidSupported;
+        synchronized (mCurrentAidLock) {
+            isFileidSupported = getSupportedFileIds(mCurrentAid).contains(fileid);
+        }
+        if (channel > 0 && isFileidSupported) {
+            SimIoData simIoData = getSimIoData(fileid, hexIntegerToString(cmd));
+            if (simIoData != null) {
+                Log.d(mTag, "Found SimIoData: " + simIoData);
+                error = RadioError.NONE;
+                iccIoResult.sw1 = Integer.parseInt(simIoData.mSw1.substring(2), 16);
+                iccIoResult.sw2 = Integer.parseInt(simIoData.mSw2.substring(2), 16);
+                iccIoResult.simResponse = simIoData.mResponse;
+
+                if (cmd == COMMAND_SELECT) {
+                    mLastSelectedFileid = fileid;
+                    Log.d(mTag, "Fileid SELECTEed: " + fileid);
+                }
+            }
+        }
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, error);
         try {
-            mRadioSimResponse.iccTransmitApduBasicChannelResponse(rsp, iccIoResult);
+            mRadioSimResponse.iccTransmitApduLogicalChannelResponse(rsp, iccIoResult);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to iccTransmitApduLogicalChannel from AIDL. Exception" + ex);
         }
@@ -1106,22 +1204,5 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         Log.d(mTag, "updateCarrierRestrictionRules");
         mCarrierRestrictionRules = carrierRestrictionRules;
         mMultiSimPolicy = multiSimPolicy;
-    }
-
-    private android.hardware.radio.sim.CarrierInfo getCarrierInfo(String mcc, String mnc,
-            String spn, String gid1, String gid2, String imsi,
-            List<android.hardware.radio.sim.Plmn> ehplmn, String iccid, String impi) {
-        android.hardware.radio.sim.CarrierInfo carrierInfo =
-                new android.hardware.radio.sim.CarrierInfo();
-        carrierInfo.mcc = mcc;
-        carrierInfo.mnc = mnc;
-        carrierInfo.spn = spn;
-        carrierInfo.gid1 = gid1;
-        carrierInfo.gid2 = gid2;
-        carrierInfo.imsiPrefix = imsi;
-        carrierInfo.ehplmn = ehplmn;
-        carrierInfo.iccid = iccid;
-        carrierInfo.impi = impi;
-        return carrierInfo;
     }
 }

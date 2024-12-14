@@ -33,7 +33,6 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -43,7 +42,6 @@ import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -165,8 +163,14 @@ public final class FrameRateOverrideTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
-            // This is a hack for android15 only, where Display.Mode#isSynthetic is not
-            // a @TestApi. Instead, we just pick the higest refresh rate mode and test against it.
+            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
+            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
+            // in the test setup, this is not communicated and thus not handled.
+            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
 
@@ -175,12 +179,6 @@ public final class FrameRateOverrideTest {
                         < MIN_SUPPORTED_FRAME_RATE_HZ + REFRESH_RATE_TOLERANCE) {
                     continue;
                 }
-
-                if (!modesWithSameResolution.isEmpty()
-                        && modesWithSameResolution.get(0).getRefreshRate() > mode.getRefreshRate()) {
-                    continue;
-                }
-                modesWithSameResolution.clear();
                 modesWithSameResolution.add(mode);
                 Log.i(TAG, "Mode added: " + mode.toString());
             }

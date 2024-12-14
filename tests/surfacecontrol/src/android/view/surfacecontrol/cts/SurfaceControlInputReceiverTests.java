@@ -24,6 +24,7 @@ import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTopWithZ;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
@@ -71,6 +72,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
@@ -155,9 +157,12 @@ public class SurfaceControlInputReceiverTests {
                     });
 
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
+            // Since the bbq SurfaceControl with Input is on top, looking for the second top layer
+            // by the expected composition order.
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
+                    waitForWindowOnTopWithZ(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                            /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords, mDisplayId);
@@ -288,7 +293,8 @@ public class SurfaceControlInputReceiverTests {
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
+                    waitForWindowOnTopWithZ(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                            /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords, mDisplayId);
@@ -338,7 +344,7 @@ public class SurfaceControlInputReceiverTests {
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
 
-            assertMotionEventInWindow(embeddedMotionEvent,  centerCoordRelativeToWindow);
+            assertMotionEventInWindow(embeddedMotionEvent, centerCoordRelativeToWindow);
         } finally {
             helper.tearDown();
         }
@@ -353,7 +359,7 @@ public class SurfaceControlInputReceiverTests {
         // bounds should be obtained instead of off-setting which is needed to tap at right place.
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
         assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(coordRelativeToWindow)));
+                withCoords(coordRelativeToWindow, InputEventMatchersKt.EPSILON)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)

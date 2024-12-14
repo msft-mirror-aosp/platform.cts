@@ -45,12 +45,15 @@ import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
@@ -165,6 +168,30 @@ public class OnDeviceIntelligenceManagerTest {
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
+    @Test
+    @SkipSetupAndTeardown
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void cannotBindToIsolatedComputeAppEvenFromSamePackage() {
+        assertThrows(
+                "Cannot bind to isolated_compute_app process from same package",
+                SecurityException.class,
+                () -> getInstrumentation().getContext().bindService(
+                        new Intent().setComponent(new ComponentName(CTS_PACKAGE_NAME,
+                                CtsIsolatedInferenceService.class.getCanonicalName())),
+                        new ServiceConnection() {
+                            @Override
+                            public void onServiceConnected(ComponentName name,
+                                    IBinder service) {
+                                Log.i(TAG, "Service connected");
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {
+                                Log.i(TAG, "Service disconnected");
+                            }
+                        },
+                        Context.BIND_AUTO_CREATE));
+    }
 
 //=====================Tests for Access Denied without Permission on all Manager Methods=========
 
@@ -873,7 +900,8 @@ public class OnDeviceIntelligenceManagerTest {
     public void canAccessFilesInIsolated() throws Exception {
         int[] requestTypes =
                 new int[]{REQUEST_TYPE_GET_FILE_FROM_MAP, REQUEST_TYPE_GET_FILE_FROM_STREAM,
-                        REQUEST_TYPE_GET_FILE_FROM_PFD, REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
+                        REQUEST_TYPE_GET_FILE_FROM_PFD,
+                        REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
         for (int requestType : requestTypes) {
             sendRequestToReadTestFile(requestType);
         }

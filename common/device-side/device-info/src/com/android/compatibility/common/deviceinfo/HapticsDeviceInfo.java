@@ -164,6 +164,8 @@ public final class HapticsDeviceInfo extends DeviceInfo {
                 "config_hapticChannelMaxVibrationAmplitude");
         collectConfigArraySize(store, "ringtone_effect_uris_array_size",
                 "config_ringtoneEffectUris");
+        collectConfigBoolean(store, "keyboard_vibration_settings_supported",
+                "config_keyboardVibrationSettingsSupported");
         store.endGroup();
     }
 
@@ -193,6 +195,16 @@ public final class HapticsDeviceInfo extends DeviceInfo {
         int resId = res.getIdentifier(configName, "array", "android");
         try {
             store.addResult(resultName, res.getStringArray(resId).length);
+        } catch (Resources.NotFoundException e) {
+        }
+    }
+
+    private void collectConfigBoolean(DeviceInfoStore store, String resultName, String configName)
+            throws Exception {
+        Resources res = getContext().getResources();
+        int resId = res.getIdentifier(configName, "bool", "android");
+        try {
+            store.addResult(resultName, res.getBoolean(resId));
         } catch (Resources.NotFoundException e) {
         }
     }

@@ -74,6 +74,10 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.debug_mode = self.user_params['debug_mode'] == 'True'
     if self.user_params.get('scene'):
       self.scene = self.user_params['scene']
+    if self.user_params.get('log_feature_combo_support'):
+      self.log_feature_combo_support = (
+          self.user_params['log_feature_combo_support'] == 'True'
+      )
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:
@@ -236,8 +240,8 @@ class ItsBaseTest(base_test.BaseTestClass):
         'settings get system screen_brightness')
     if int(actual_brightness) != int(brightness_level):
       raise AssertionError('Brightness was not set as expected! '
-                           'Requested brightness: {brightness_level}, '
-                           'Actual brightness: {actual_brightness}')
+                           f'Requested brightness: {brightness_level}, '
+                           f'Actual brightness: {actual_brightness}')
 
   def turn_off_tablet(self):
     """Turns off tablet, raising AssertionError if tablet is not found."""

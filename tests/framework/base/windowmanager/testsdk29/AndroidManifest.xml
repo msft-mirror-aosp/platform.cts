@@ -30,7 +30,10 @@
 
         <activity
             android:name="android.server.wm.insets.ForceRelayoutTestBase$TestActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:keepScreenOn="true" />
     </application>
 
     <instrumentation

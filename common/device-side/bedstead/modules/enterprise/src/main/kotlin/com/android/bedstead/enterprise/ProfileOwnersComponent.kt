@@ -21,7 +21,12 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.AccountsComponent
+import com.android.bedstead.harrier.components.TestAppsComponent
+import com.android.bedstead.multiuser.UserRestrictionsComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
@@ -40,9 +45,12 @@ import com.android.bedstead.testapp.TestAppQueryBuilder
  */
 class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val enterpriseComponent: EnterpriseComponent by locator
+    private val testAppsComponent: TestAppsComponent by locator
+    private val userRestrictionsComponent: UserRestrictionsComponent by locator
+    private val accountsComponent: AccountsComponent by locator
     private val profileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
     private val changedProfileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
 
@@ -55,7 +63,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
      * See [EnsureHasNoProfileOwner]
      */
     fun ensureHasNoProfileOwner(userType: UserType) {
-        ensureHasNoProfileOwner(deviceState.resolveUserTypeToUser(userType))
+        ensureHasNoProfileOwner(userTypeResolver.toUser(userType))
     }
 
     /**
@@ -65,7 +73,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
         // TODO(scottjonathan): Should support non-remotedpc profile owner
         //  (default to remotedpc)
         annotation.apply {
-            val user: UserReference = deviceState.resolveUserTypeToUser(onUser)
+            val user: UserReference = userTypeResolver.toUser(onUser)
             ensureHasProfileOwner(
                 user,
                 isPrimary,
@@ -80,19 +88,18 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     /**
      * See [EnsureHasProfileOwner]
      */
-    @JvmOverloads
     fun ensureHasProfileOwner(
         user: UserReference,
-        isPrimary: Boolean,
-        useParentInstance: Boolean,
-        affiliationIds: Set<String>?,
-        key: String?,
-        dpcQuery: TestAppQueryBuilder,
+        isPrimary: Boolean = false,
+        useParentInstance: Boolean = false,
+        affiliationIds: Set<String>? = emptySet(),
+        key: String? = EnsureTestAppInstalled.DEFAULT_KEY,
+        dpcQuery: TestAppQueryBuilder = TestAppProvider().query(),
         resolvedDpcTestApp: TestApp? = null
     ) {
         var dpcQueryMutable = dpcQuery
         dpcQueryMutable.applyAnnotation(
-            deviceState.mAdditionalQueryParameters.getOrDefault(key, null)
+            testAppsComponent.additionalQueryParameters.getOrDefault(key, null)
         )
         if (dpcQueryMutable.isEmptyQuery) {
             dpcQueryMutable = TestAppProvider()
@@ -114,7 +121,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             profileOwners[user] = currentProfileOwner
         } else {
             if (user.parent() != null) {
-                deviceState.ensureDoesNotHaveUserRestriction(
+                userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
                     CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE,
                     user.parent()
                 )
@@ -122,9 +129,9 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             if (!changedProfileOwners.containsKey(user)) {
                 changedProfileOwners[user] = currentProfileOwner
             }
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 user,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
             if (resolvedDpcTestApp != null) {
@@ -137,16 +144,16 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             }
         }
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 user,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
         } else {
             // Prior to U this incorrectly checked the system user
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 UserType.SYSTEM_USER,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
         }
@@ -160,7 +167,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             }
         }
         if (affiliationIds != null) {
-            val profileOwner: RemoteDpc = deviceState.profileOwner(user)
+            val profileOwner: RemoteDpc = profileOwner(user)
             profileOwner.devicePolicyManager()
                     .setAffiliationIds(profileOwner.componentName(), affiliationIds)
         }
@@ -194,6 +201,20 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     /**
      * See [DeviceState.profileOwner]
      */
+    fun profileOwner(): RemoteDpc {
+        return profileOwner(UserType.INSTRUMENTED_USER)
+    }
+
+    /**
+     * See [DeviceState.profileOwner]
+     */
+    fun profileOwner(onUser: UserType): RemoteDpc {
+        return profileOwner(userTypeResolver.toUser(onUser))
+    }
+
+    /**
+     * See [DeviceState.profileOwner]
+     */
     fun profileOwner(onUser: UserReference): RemoteDpc {
         check(profileOwners.containsKey(onUser)) {
             ("No Harrier-managed profile owner. This method should " +
@@ -205,10 +226,5 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
                     " You must use Nene to query for this profile owner.")
         }
         return RemoteDpc.forDevicePolicyController(profileOwner)
-    }
-
-    override fun releaseResources() {
-        profileOwners.clear()
-        changedProfileOwners.clear()
     }
 }

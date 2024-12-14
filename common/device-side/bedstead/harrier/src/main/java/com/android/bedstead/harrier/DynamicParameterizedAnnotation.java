@@ -26,6 +26,7 @@ import java.util.Objects;
  */
 public final class DynamicParameterizedAnnotation implements Annotation {
     private final String mName;
+    @SuppressWarnings("ImmutableAnnotationChecker")
     private final Annotation[] mAnnotations;
 
     DynamicParameterizedAnnotation(String name, Annotation[] annotations) {

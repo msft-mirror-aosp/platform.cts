@@ -51,8 +51,7 @@ import java.util.function.DoubleUnaryOperator;
 public class ColorSpaceTest {
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // Column-major RGB->XYZ transform matrix for the sRGB color space
     private static final float[] SRGB_TO_XYZ = {
