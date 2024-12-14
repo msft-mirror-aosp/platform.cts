@@ -17,9 +17,11 @@ package com.android.bedstead.multiuser
 
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.DeviceState.INSTALL_INSTRUMENTED_APP
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.OtherUser
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport
@@ -34,8 +36,11 @@ import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNon
 import com.android.bedstead.harrier.annotations.RequireUserSupported
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
+import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation
+import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation
 import com.android.bedstead.harrier.annotations.meta.EnsureHasUserAnnotation
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
@@ -45,12 +50,13 @@ import com.android.bedstead.nene.types.OptionalBoolean
 class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
     private val usersComponent: UsersComponent by locator
+    private val userRestrictions: UserRestrictionsComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
-            is EnsureCanAddUser -> usersComponent.ensureCanAddUser(number, failureMode)
-            is RequireUserSupported -> usersComponent.requireUserSupported(value, failureMode)
-            is EnsureHasNoUserAnnotation -> usersComponent.ensureHasNoUser(userType = value)
+            is EnsureCanAddUser -> logic()
+            is RequireUserSupported -> logic()
+            is EnsureHasNoUserAnnotation -> logic(usersComponent)
 
             is RequireRunOnAdditionalUser -> usersComponent.requireRunOnAdditionalUser(
                 switchedToUser
@@ -75,6 +81,9 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
             is RequireNotVisibleBackgroundUsersOnDefaultDisplay -> logic()
             is RequireRunOnVisibleBackgroundNonProfileUser -> logic()
             is RequireRunNotOnVisibleBackgroundNonProfileUser -> logic()
+            is EnsureHasUserRestriction -> userRestrictions.ensureHasUserRestriction(value, onUser)
+            is EnsureDoesNotHaveUserRestriction ->
+                userRestrictions.ensureDoesNotHaveUserRestriction(value, onUser)
             else -> applyAnnotationUsingReflection(annotation)
         }
     }
@@ -83,6 +92,9 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
         val annotationType = annotation.annotationClass.java
         annotationType.applyEnsureHasUserAnnotation(annotation)
         annotationType.applyRequireRunOnUserAnnotation(annotation)
+        annotationType.applyRequireRunOnProfileAnnotation(annotation)
+        annotationType.applyEnsureHasProfileAnnotation(annotation)
+        annotationType.applyEnsureHasNoProfileAnnotation(annotation)
     }
 
     private fun Class<out Annotation>.applyEnsureHasUserAnnotation(annotation: Annotation) {
@@ -104,13 +116,57 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
         }
     }
 
+    private fun Class<out Annotation>.applyRequireRunOnProfileAnnotation(annotation: Annotation) {
+        getAnnotation(RequireRunOnProfileAnnotation::class.java)?.let { requireRunOnProfile ->
+            usersComponent.requireRunOnProfileWithNoProfileOwner(
+                userType = requireRunOnProfile.value,
+                installInstrumentedAppInParent(annotation),
+                switchedToParentUser(annotation)
+            )
+        }
+    }
+
+    private fun Class<out Annotation>.applyEnsureHasProfileAnnotation(annotation: Annotation) {
+        getAnnotation(EnsureHasProfileAnnotation::class.java)?.let { ensureHasProfile ->
+            usersComponent.ensureHasProfileWithNoProfileOwner(
+                profileType = ensureHasProfile.value,
+                installInstrumentedApp(annotation),
+                forUser(annotation),
+                switchedToParentUser(annotation),
+                isQuietModeEnabled(annotation)
+            )
+        }
+    }
+
+    private fun Class<out Annotation>.applyEnsureHasNoProfileAnnotation(annotation: Annotation) {
+        getAnnotation(EnsureHasNoProfileAnnotation::class.java)?.let { ensureHasNoProfile ->
+            usersComponent.ensureHasNoProfile(
+                profileType = ensureHasNoProfile.value,
+                forUser(annotation)
+            )
+        }
+    }
+
     private fun Class<out Annotation>.installInstrumentedApp(annotation: Annotation) =
-        getMethod(INSTALL_INSTRUMENTED_APP).invoke(annotation) as OptionalBoolean
+        getMethod("installInstrumentedApp").invoke(annotation) as OptionalBoolean
+
+    private fun Class<out Annotation>.installInstrumentedAppInParent(annotation: Annotation) =
+        getMethod("installInstrumentedAppInParent").invoke(annotation) as OptionalBoolean
+
+    private fun Class<out Annotation>.switchedToParentUser(annotation: Annotation) =
+        getMethod("switchedToParentUser").invoke(annotation) as OptionalBoolean
 
     private fun Class<out Annotation>.switchedToUser(annotation: Annotation) =
-        getMethod(SWITCHED_TO_USER).invoke(annotation) as OptionalBoolean
+        getMethod("switchedToUser").invoke(annotation) as OptionalBoolean
 
-    companion object {
-        private const val SWITCHED_TO_USER = "switchedToUser"
+    private fun Class<out Annotation>.forUser(annotation: Annotation) =
+        getMethod("forUser").invoke(annotation) as UserType
+
+    private fun Class<out Annotation>.isQuietModeEnabled(annotation: Annotation): OptionalBoolean {
+        return try {
+            getMethod("isQuietModeEnabled").invoke(annotation) as OptionalBoolean
+        } catch (ignored: ReflectiveOperationException) {
+            return OptionalBoolean.ANY
+        }
     }
 }

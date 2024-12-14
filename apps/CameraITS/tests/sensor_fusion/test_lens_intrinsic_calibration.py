@@ -18,9 +18,8 @@ import math
 import numpy as np
 import os
 
+from matplotlib import pyplot as plt
 from mobly import test_runner
-from matplotlib import pylab
-import matplotlib.pyplot
 
 import its_base_test
 import camera_properties_utils
@@ -79,14 +78,14 @@ def plot_principal_points(principal_points_dist, start_frame,
     plot_name_stem: str; name of the plot
   """
 
-  pylab.figure(video_quality)
+  plt.figure(video_quality)
   frames = range(start_frame, len(principal_points_dist)+start_frame)
-  pylab.title(f'Lens Intrinsics vs frame {video_quality}')
-  pylab.plot(frames, principal_points_dist, '-ro', label='dist')
-  pylab.xlabel('Frame #')
-  pylab.ylabel('Principal points in pixels')
-  matplotlib.pyplot.savefig(f'{plot_name_stem}.png')
-  pylab.close(video_quality)
+  plt.title(f'Lens Intrinsics vs frame {video_quality}')
+  plt.plot(frames, principal_points_dist, '-ro', label='dist')
+  plt.xlabel('Frame #')
+  plt.ylabel('Principal points in pixels')
+  plt.savefig(f'{plot_name_stem}.png')
+  plt.close(video_quality)
 
 
 def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):

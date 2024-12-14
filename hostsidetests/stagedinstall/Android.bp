@@ -287,7 +287,9 @@ prebuilt_apex {
         arm64: {
             src: "testdata/apex/arm/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
         },
-        // TODO(oyalcin): Enable riscv64 tests after successfully dropping the prebuilts.
+        riscv64: {
+            src: "testdata/apex/riscv64/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
         x86: {
             src: "testdata/apex/x86/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
         },

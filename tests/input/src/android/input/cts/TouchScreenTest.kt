@@ -19,12 +19,6 @@ package android.input.cts
 import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.hardware.input.InputManager
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,6 +27,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_HEIGHT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_WIDTH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_0
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_180
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_270
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_90
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -60,7 +61,7 @@ class TouchScreenTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {
@@ -193,9 +194,9 @@ class TouchScreenTest {
             verifyTapsOnFourCorners(
                 arrayOf(
                     Point(0, 0),
-                    Point(WIDTH - 1, 0),
-                    Point(WIDTH - 1, HEIGHT - 1),
-                    Point(0, HEIGHT - 1),
+                    Point(DEFAULT_WIDTH - 1, 0),
+                    Point(DEFAULT_WIDTH - 1, DEFAULT_HEIGHT - 1),
+                    Point(0, DEFAULT_HEIGHT - 1),
                 )
             )
         }
@@ -206,10 +207,10 @@ class TouchScreenTest {
         virtualDisplayRule.runInDisplayOrientation(ORIENTATION_90) {
             verifyTapsOnFourCorners(
                 arrayOf(
-                    Point(0, WIDTH - 1),
+                    Point(0, DEFAULT_WIDTH - 1),
                     Point(0, 0),
-                    Point(HEIGHT - 1, 0),
-                    Point(HEIGHT - 1, WIDTH - 1),
+                    Point(DEFAULT_HEIGHT - 1, 0),
+                    Point(DEFAULT_HEIGHT - 1, DEFAULT_WIDTH - 1),
                 )
             )
         }
@@ -220,10 +221,10 @@ class TouchScreenTest {
         virtualDisplayRule.runInDisplayOrientation(ORIENTATION_180) {
             verifyTapsOnFourCorners(
                 arrayOf(
-                    Point(WIDTH - 1, HEIGHT - 1),
-                    Point(0, HEIGHT - 1),
+                    Point(DEFAULT_WIDTH - 1, DEFAULT_HEIGHT - 1),
+                    Point(0, DEFAULT_HEIGHT - 1),
                     Point(0, 0),
-                    Point(WIDTH - 1, 0),
+                    Point(DEFAULT_WIDTH - 1, 0),
                 )
             )
         }
@@ -234,9 +235,9 @@ class TouchScreenTest {
         virtualDisplayRule.runInDisplayOrientation(ORIENTATION_270) {
             verifyTapsOnFourCorners(
                 arrayOf(
-                    Point(HEIGHT - 1, 0),
-                    Point(HEIGHT - 1, WIDTH - 1),
-                    Point(0, WIDTH - 1),
+                    Point(DEFAULT_HEIGHT - 1, 0),
+                    Point(DEFAULT_HEIGHT - 1, DEFAULT_WIDTH - 1),
+                    Point(0, DEFAULT_WIDTH - 1),
                     Point(0, 0),
                 )
             )
@@ -301,9 +302,9 @@ class TouchScreenTest {
         // The four corners of the touchscreen: lt, rt, rb, lb
         val CORNERS = arrayOf(
             Point(0, 0),
-            Point(WIDTH - 1, 0),
-            Point(WIDTH - 1, HEIGHT - 1),
-            Point(0, HEIGHT - 1),
+            Point(DEFAULT_WIDTH - 1, 0),
+            Point(DEFAULT_WIDTH - 1, DEFAULT_HEIGHT - 1),
+            Point(0, DEFAULT_HEIGHT - 1),
         )
     }
 }

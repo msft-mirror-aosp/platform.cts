@@ -16,15 +16,20 @@ import argparse
 from pathlib import Path
 import subprocess
 import queue
-from src.library.main.proto.testapp_protos_pb2 import TestAppIndex, AndroidApp, UsesSdk,\
+try:
+    from src.library.main.proto.testapp_protos_pb2 import TestAppIndex, AndroidApp, UsesSdk,\
     Permission, Activity, ActivityAlias, IntentFilter, Service, Metadata, Receiver
+except ImportError:
+    from google3.third_party.java.bedstead.testapp.src.library.main.proto.testapp_protos_pb2\
+    import TestAppIndex, AndroidApp, UsesSdk,\
+        Permission, Activity, ActivityAlias, IntentFilter, Service, Metadata, Receiver
 
 ELEMENT = "E"
 ATTRIBUTE = "A"
 
 def main():
-    args_parser = argparse.ArgumentParser(description='Generate index for test apps')
-    args_parser.add_argument('--directory', help='Directory containing test apps')
+    args_parser = argparse.ArgumentParser(description='Generate index for test apps and resources')
+    args_parser.add_argument('--directory', help='Directory containing raw resources')
     args_parser.add_argument('--aapt2', help='The path to aapt2')
     args = args_parser.parse_args()
 
@@ -36,7 +41,7 @@ def main():
     for file_name in file_names:
         aapt2_command = [
             args.aapt2, 'd', 'xmltree', '--file', 'AndroidManifest.xml', args.directory + "/" + file_name]
-        index.apps.append(parse(str(subprocess.check_output(aapt2_command)), file_name))
+        index.apps.append(parse(str(subprocess.check_output(aapt2_command)), args.directory, file_name, args.aapt2))
 
     with open(args.directory + "/index.txt", "wb") as fd:
         fd.write(index.SerializeToString())
@@ -121,7 +126,7 @@ def augment(element):
 
     return Element(name, attributes, children)
 
-def parse(manifest_content, file_name):
+def parse(manifest_content, raw_dir, file_name, aapt2):
     manifest_content = manifest_content.split("\\n")
     # strip namespaces as not important for our uses
     # Also strip the last line which is a quotation mark because of the way it's imported
@@ -224,9 +229,12 @@ def parse_intent_filter_category(intent_filter_element, intent_filter):
 
 def parse_services(application_element, android_app):
     for service_element in find_elements(application_element.children, "service"):
+        parse_metadata(service_element, android_app)
+
         service = Service()
         service.name = service_element.attributes["name"]
         parse_intent_filters(service_element, service)
+        parse_metadata(service_element, service)
         android_app.services.append(service)
 
 def parse_metadata(application_element, android_app):
@@ -237,6 +245,8 @@ def parse_metadata(application_element, android_app):
         if "value" in meta_data_element.attributes:
             # This forces every value into a string
             metadata.value = meta_data_element.attributes["value"]
+        if "resource" in meta_data_element.attributes:
+            metadata.resource = meta_data_element.attributes["resource"]
 
         android_app.metadata.append(metadata)
 

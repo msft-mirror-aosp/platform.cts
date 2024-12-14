@@ -624,16 +624,14 @@ public class StaticMetadata {
     }
 
     public Boolean isManualFlashStrengthControlSupported() {
-        if (Flags.cameraManualFlashStrengthControl()) {
-            Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
-            Boolean hasFlash = getValueFromKeyNonNull(key);
-            Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
-            Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
-            Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
-            Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
-            if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
-                return true;
-            }
+        Key<Boolean> key = CameraCharacteristics.FLASH_INFO_AVAILABLE;
+        Boolean hasFlash = getValueFromKeyNonNull(key);
+        Key<Integer> singleMaxLevelKey = CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL;
+        Integer singleMaxLevel = getValueFromKeyNonNull(singleMaxLevelKey);
+        Key<Integer> torchMaxLevelKey = CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL;
+        Integer torchMaxLevel = getValueFromKeyNonNull(torchMaxLevelKey);
+        if (hasFlash && (singleMaxLevel > 1) && (torchMaxLevel > 1)) {
+            return true;
         }
         return false;
     }

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.alarmmanager.alarmtestapp.cts.TestAlarmReceiver;
 import android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler;
 import android.alarmmanager.alarmtestapp.cts.common.FgsTester;
@@ -33,6 +34,7 @@ import android.alarmmanager.alarmtestapp.cts.common.RequestReceiver;
 import android.alarmmanager.util.AlarmManagerDeviceConfigHelper;
 import android.alarmmanager.util.Utils;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.AppOpsManager;
 import android.content.BroadcastReceiver;
@@ -143,6 +145,14 @@ public class ExactAlarmsTest {
                 .with("allow_while_idle_window", ALLOW_WHILE_IDLE_WINDOW)
                 .with("allow_while_idle_compat_window", ALLOW_WHILE_IDLE_COMPAT_WINDOW)
                 .commitAndAwaitPropagation();
+    }
+
+    @Before
+    public void resetAppErrors() {
+        // This helps make the test resilient to any crashes in any of the helper apps.
+        final ActivityManager activityManager = sContext.getSystemService(ActivityManager.class);
+        SystemUtil.runWithShellPermissionIdentity(() -> activityManager.resetAppErrors(),
+                Manifest.permission.RESET_APP_ERRORS);
     }
 
     @Before

@@ -47,19 +47,30 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
 import android.photopicker.cts.util.PhotoPickerComponentUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
+import android.system.Os;
+import android.system.OsConstants;
 
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -76,6 +87,9 @@ import java.util.Map;
  */
 @RunWith(Parameterized.class)
 public class PhotoPickerTest extends PhotoPickerBaseTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Parameter(0)
     public String mAction;
@@ -128,6 +142,85 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         assertPickerUriFormat(mAction, uri, mContext.getUserId());
         assertPersistedGrant(uri, mContext.getContentResolver());
         assertRedactedReadOnlyAccess(uri);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile() throws Exception {
+        final int itemCount = 1;
+        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
+
+        final Intent intent = new Intent(mAction);
+        launchPhotoPickerForIntent(intent);
+
+        final UiObject item = findItemList(itemCount).get(0);
+        clickAndWait(sDevice, item);
+
+        final Uri uri = mActivity.getResult().data.getData();
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (ParcelFileDescriptor pfd1 = mContext.getContentResolver()
+                .openFileDescriptor(uri, "r", cg)) {
+            try (ParcelFileDescriptor pfd2 = MediaStore
+                    .openFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+
+                long end1 = Os.lseek(pfd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(pfd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile() throws Exception {
+        final int itemCount = 1;
+        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
+
+        final Intent intent = new Intent(mAction);
+        launchPhotoPickerForIntent(intent);
+
+        final UiObject item = findItemList(itemCount).get(0);
+        clickAndWait(sDevice, item);
+
+        final Uri uri = mActivity.getResult().data.getData();
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openAssetFileDescriptor(uri, "r", cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore
+                    .openAssetFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenTypedAssetFile() throws Exception {
+        final int itemCount = 1;
+        mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
+
+        final Intent intent = new Intent(mAction);
+        launchPhotoPickerForIntent(intent);
+
+        final UiObject item = findItemList(itemCount).get(0);
+        clickAndWait(sDevice, item);
+
+        final Uri uri = mActivity.getResult().data.getData();
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openTypedAssetFileDescriptor(uri, "*/*", null, cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore.openTypedAssetFileDescriptor(
+                    mContext.getContentResolver(), uri, "*/*", null, cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
     }
 
     @Test

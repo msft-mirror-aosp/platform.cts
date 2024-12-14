@@ -22,7 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNotNull;
 
-import android.annotation.NonNull;
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.hardware.camera2.CameraAccessException;
@@ -34,6 +33,7 @@ import android.os.ConditionVariable;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 

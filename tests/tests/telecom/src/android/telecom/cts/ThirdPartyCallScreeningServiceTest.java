@@ -194,12 +194,13 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         addIncomingAndVerifyBlocked(false /* addContact */);
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndNoContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
 
-        revokeReadContactPermission();
         verifyPermission(false);
         // Tell the test app to block the call.
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
@@ -221,12 +222,13 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         addIncomingAndVerifyBlocked(true /* addContact */);
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndHasContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
-        revokeReadContactPermission();
         verifyPermission(false);
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
                 true /* shouldRejectCall */, false /* shouldSilenceCall */,
@@ -245,13 +247,13 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         assertTrue(mCallScreeningControl.waitForBind());
     }
 
+    // b/355720464
     @FlakyTest
     public void testNoPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
 
-        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(false /* addContact */);
         assertTrue(mCallScreeningControl.waitForBind());
@@ -268,12 +270,13 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         assertTrue(mCallScreeningControl.waitForBind());
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndHasContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
-        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(true /* addCountact */);
         assertFalse(mCallScreeningControl.waitForBind());
@@ -290,7 +293,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testAllowCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !hasTelephonyFeature(mContext)) {
             return;
         }
 

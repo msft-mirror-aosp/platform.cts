@@ -34,6 +34,7 @@ import android.companion.CompanionDeviceManager.REASON_USER_REJECTED
 import android.companion.CompanionDeviceManager.RESULT_DISCOVERY_TIMEOUT
 import android.companion.CompanionDeviceManager.RESULT_USER_REJECTED
 import android.companion.DeviceFilter
+import android.companion.Flags
 import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.DEVICE_PROFILES
 import android.companion.cts.common.DEVICE_PROFILE_TO_NAME
@@ -42,6 +43,7 @@ import android.companion.cts.common.RecordingCallback
 import android.companion.cts.common.RecordingCallback.OnAssociationCreated
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
 import android.companion.cts.common.RecordingCallback.OnFailure
+import android.companion.cts.common.RecordingCallback.OnFailureCode
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.TestBase
 import android.companion.cts.common.assertEmpty
@@ -58,6 +60,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -75,6 +78,7 @@ open class UiAutomationTestBase(
     }
 
     val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
+
     // CDM discovery requires bluetooth is enabled, enable the location if it was disabled.
     var bluetoothWasEnabled: Boolean = false
     protected val confirmationUi = CompanionDeviceManagerUi(uiDevice)
@@ -171,22 +175,38 @@ open class UiAutomationTestBase(
         // Check callback invocations: There should be 0 invocation before any actions are made.
         assertEmpty(callback.invocations)
 
-        callback.assertInvokedByActions {
-            cancelAction()
-        }
-        // Check callback invocations: there should have been exactly 1 invocation of the
-        // onFailure() method.
         val expectedError = if (userRejected) REASON_USER_REJECTED else REASON_CANCELED
-        assertContentEquals(
-            actual = callback.invocations,
-            expected = listOf(OnFailure(expectedError))
-        )
+        val expectedResultCode = if (userRejected) RESULT_USER_REJECTED else RESULT_CANCELED
+
+        if (Flags.associationFailureCode()) {
+            // Check callback invocations: there should have been exactly 2 invocation of the
+            // onFailure(CharSequence) and onFailure(Int) method.
+            callback.assertInvokedByActions (minOccurrences = 2) {
+                cancelAction()
+            }
+
+            assertTrue {
+                callback.invocations.contains(OnFailure(expectedError)) &&
+                        callback.invocations.contains(
+                            OnFailureCode(expectedResultCode, expectedError))
+            }
+        } else {
+            // Check callback invocations: there should have been exactly 1 invocation of the
+            // onFailure() method.
+            callback.assertInvokedByActions {
+                cancelAction()
+            }
+            assertContentEquals(
+                actual = callback.invocations,
+                expected = listOf(OnFailure(expectedError))
+            )
+        }
+
         // Wait until the Confirmation UI goes away.
         confirmationUi.waitUntilGone()
 
         // Check the result code delivered via onActivityResult()
         val (resultCode: Int, _) = CompanionActivity.waitForActivityResult()
-        val expectedResultCode = if (userRejected) RESULT_USER_REJECTED else RESULT_CANCELED
         assertEquals(actual = resultCode, expected = expectedResultCode)
         // Make sure no Associations were created.
         assertEmpty(cdm.myAssociations)
@@ -197,8 +217,14 @@ open class UiAutomationTestBase(
         // there's a chance CDM UI is disappeared before waitUntilVisible
         // is called.
         setSystemPropertyDuration(2.seconds, SYS_PROP_DEBUG_DISCOVERY_TIMEOUT)
+        var minOccurrences: Int
+        if (Flags.associationFailureCode()) {
+            minOccurrences = 2
+        } else {
+            minOccurrences = 1
+        }
 
-        callback.assertInvokedByActions(2.seconds) {
+        callback.assertInvokedByActions(timeout = 2.seconds, minOccurrences = minOccurrences) {
             // Make sure no device will match the request
             sendRequestAndLaunchConfirmation(
                 singleDevice = singleDevice,
@@ -206,12 +232,18 @@ open class UiAutomationTestBase(
             )
         }
 
-        // Check callback invocations: there should have been exactly 1 invocation of the
-        // onFailure() method.
-        assertContentEquals(
-            actual = callback.invocations,
-            expected = listOf(OnFailure(REASON_DISCOVERY_TIMEOUT))
-        )
+        if (Flags.associationFailureCode()) {
+            assertTrue {
+                callback.invocations.contains(OnFailure(REASON_DISCOVERY_TIMEOUT)) &&
+                        callback.invocations.contains(
+                            OnFailureCode(RESULT_DISCOVERY_TIMEOUT, REASON_DISCOVERY_TIMEOUT))
+            }
+        } else {
+            assertContentEquals(
+                actual = callback.invocations,
+                expected = listOf(OnFailure(REASON_DISCOVERY_TIMEOUT))
+            )
+        }
 
         // Wait until the Confirmation UI goes away.
         confirmationUi.waitUntilGone()
@@ -268,7 +300,8 @@ open class UiAutomationTestBase(
         assertNotNull(data)
         val associationFromActivityResult: AssociationInfo? = data.getParcelableExtra(
                 CompanionDeviceManager.EXTRA_ASSOCIATION,
-                AssociationInfo::class.java)
+                AssociationInfo::class.java
+        )
         assertNotNull(associationFromActivityResult)
         // Check that the association reported back via the callback same as the association
         // delivered via onActivityResult().
@@ -287,8 +320,10 @@ open class UiAutomationTestBase(
         ).firstNotNullOf { it }
         assertNotNull(deviceData)
         val deviceMacAddress = BluetoothDeviceFilterUtils.getDeviceMacAddress(deviceData)
-        assertEquals(actual = MacAddress.fromString(deviceMacAddress),
-                expected = associationFromCallback.deviceMacAddress)
+        assertEquals(
+            actual = MacAddress.fromString(deviceMacAddress),
+            expected = associationFromCallback.deviceMacAddress
+        )
 
         // Make sure getMyAssociations() returns the same association we received via the callback
         // as well as in onActivityResult()
@@ -374,7 +409,8 @@ open class UiAutomationTestBase(
             }
 
     private fun restoreDiscoveryTimeout() = setSystemPropertyDuration(
-        ZERO, SYS_PROP_DEBUG_DISCOVERY_TIMEOUT
+        ZERO,
+        SYS_PROP_DEBUG_DISCOVERY_TIMEOUT
     )
 
     fun enableBluetoothIfNeeded() {
@@ -412,9 +448,11 @@ open class UiAutomationTestBase(
         /** List of (profile, permission, name) tuples that represent all supported profiles. */
         private fun supportedProfiles(): Collection<Array<String?>> = DEVICE_PROFILES.map {
             profile ->
-            arrayOf(profile,
-                    DEVICE_PROFILE_TO_PERMISSION[profile]!!,
-                    DEVICE_PROFILE_TO_NAME[profile]!!)
+            arrayOf(
+                profile,
+                DEVICE_PROFILE_TO_PERMISSION[profile]!!,
+                DEVICE_PROFILE_TO_NAME[profile]!!
+            )
         }
 
         private val UNMATCHABLE_BT_FILTER = BluetoothDeviceFilter.Builder()

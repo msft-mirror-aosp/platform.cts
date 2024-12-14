@@ -19,6 +19,7 @@ import android.os.Build.VERSION
 import android.util.Log
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.AnnotationExecutorUtil
+import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.TestApis.permissions
@@ -31,7 +32,7 @@ import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 
-class PermissionsAnnotationExecutor : AnnotationExecutor {
+class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
 
     private var permissionContext: PermissionContextImpl? = null
 

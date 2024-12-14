@@ -26,6 +26,7 @@ import android.content.res.cts.config.activity.ApplyOverrideConfigHandleOrientat
 import android.content.res.cts.config.activity.CreateConfigBaseContextActivity
 import android.content.res.cts.config.activity.CreateConfigInflaterContextActivity
 import android.content.res.cts.config.activity.OverrideConfigBaseActivity
+import android.platform.test.ravenwood.RavenwoodRule
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,12 +38,15 @@ import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.Rule
 import org.junit.Test
 
 /**
  * Tests how [Configuration] overrides affect the value of resources in an [Activity].
  */
 class OverrideConfigTest {
+    @Rule
+    val mRavenwoodRule = RavenwoodRule.Builder().build()
 
     companion object {
         private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()

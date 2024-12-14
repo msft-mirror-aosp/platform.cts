@@ -101,7 +101,9 @@ public class WindowManagerState {
     public static final String STATE_INITIALIZING = "INITIALIZING";
     public static final String STATE_STARTED = "STARTED";
     public static final String STATE_RESUMED = "RESUMED";
+    public static final String STATE_PAUSING = "PAUSING";
     public static final String STATE_PAUSED = "PAUSED";
+    public static final String STATE_STOPPING = "STOPPING";
     public static final String STATE_STOPPED = "STOPPED";
     public static final String STATE_DESTROYED = "DESTROYED";
     public static final String TRANSIT_ACTIVITY_OPEN = "TRANSIT_ACTIVITY_OPEN";
@@ -489,11 +491,6 @@ public class WindowManagerState {
         mWindowFramesValid = false;
     }
 
-    /** Returns the focused app on the provided display. */
-    public String getFocusedAppOnDisplay(int displayId) {
-        return getDisplay(displayId).mFocusedApp;
-    }
-
     public String getFocusedApp() {
         return mFocusedApp;
     }
@@ -604,10 +601,6 @@ public class WindowManagerState {
         return null;
     }
 
-    int getFocusedTaskIdOnDisplay(int displayId) {
-        return getDisplay(displayId).mFocusedRootTaskId;
-    }
-
     public int getFocusedTaskId() {
         return mTopFocusedTaskId;
     }
@@ -620,11 +613,6 @@ public class WindowManagerState {
     public int getFocusedRootTaskWindowingMode() {
         final Task rootTask = getRootTask(mTopFocusedTaskId);
         return rootTask != null ? rootTask.getWindowingMode() : WINDOWING_MODE_UNDEFINED;
-    }
-
-    /** Returns the focused activity on the specified display. */
-    public String getFocusedActivityOnDisplay(int displayId) {
-        return getDisplay(displayId).mResumedActivity;
     }
 
     public String getFocusedActivity() {
@@ -849,15 +837,6 @@ public class WindowManagerState {
 
     public boolean isTaskDisplayAreaIgnoringOrientationRequest(ComponentName activityName) {
         return getTaskDisplayArea(activityName).isIgnoringOrientationRequest();
-    }
-
-    public boolean containsStartedActivities() {
-        for (Task rootTask : mRootTasks) {
-            final Activity activity = rootTask.getActivity(
-                    (a) -> !a.state.equals(STATE_STOPPED) && !a.state.equals(STATE_DESTROYED));
-            if (activity != null) return true;
-        }
-        return false;
     }
 
     public boolean hasActivityState(ComponentName activityName, String activityState) {

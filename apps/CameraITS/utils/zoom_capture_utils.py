@@ -19,8 +19,11 @@ import dataclasses
 import logging
 import math
 import cv2
+from matplotlib import animation
+from matplotlib import ticker
 import matplotlib.pyplot as plt
 import numpy
+from PIL import Image
 
 import camera_properties_utils
 import capture_request_utils
@@ -33,21 +36,24 @@ _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-_DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
 _MIN_CIRCLE_PTS = 25
 _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
 _OFFSET_ATOL = 10  # number of pixels
+_OFFSET_PLOT_FPS = 2
+_OFFSET_PLOT_INTERVAL = 400  # delay between frames in milliseconds.
 _OFFSET_RTOL_MIN_FD = 0.30
 _RADIUS_RTOL_MIN_FD = 0.15
-OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
-RADIUS_RTOL = 0.10
-ZOOM_MIN_THRESH = 2.0
-ZOOM_MAX_THRESH = 10.0
-ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
-PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
-PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
+
+DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
+OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
+PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
+PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
+RADIUS_RTOL = 0.10
+ZOOM_MAX_THRESH = 10.0
+ZOOM_MIN_THRESH = 2.0
+ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 
 
 @dataclasses.dataclass
@@ -120,7 +126,7 @@ def find_center_circle(
     img, img_name, size, zoom_ratio, min_zoom_ratio,
     expected_color=_CIRCLE_COLOR, circle_ar_rtol=_CIRCLE_AR_RTOL,
     circlish_rtol=_CIRCLISH_RTOL, min_circle_pts=_MIN_CIRCLE_PTS,
-    fov_ratio=_DEFAULT_FOV_RATIO, debug=False, draw_color=_CV2_RED,
+    fov_ratio=DEFAULT_FOV_RATIO, debug=False, draw_color=_CV2_RED,
     write_img=True):
   """Find circle closest to image center for scene with multiple circles.
 
@@ -178,8 +184,7 @@ def find_center_circle(
   # write copy of image for debug purposes
   if debug:
     img_copy_name = img_name.split('.')[0] + '_copy.jpg'
-    image_processing_utils.write_image(numpy.expand_dims(
-        (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
+    Image.fromarray((img_bw).astype(numpy.uint8)).save(img_copy_name)
 
   # check contours and find the best circle candidates
   circles = []
@@ -276,7 +281,8 @@ def preview_zoom_data_to_string(test_data):
   return ', '.join(output)
 
 
-def verify_zoom_results(test_data, size, z_max, z_min):
+def verify_zoom_results(
+    test_data, size, z_max, z_min, offset_plot_name_stem=None):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -289,6 +295,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     size: array; the width and height of the images
     z_max: float; the maximum zoom ratio being tested
     z_min: float; the minimum zoom ratio being tested
+    offset_plot_name_stem: Optional[str]; log path and name of the offset plot
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -314,10 +321,12 @@ def verify_zoom_results(test_data, size, z_max, z_min):
              f'THRESH: {zoom_max_thresh + ZOOM_RTOL}')
     logging.error(e_msg)
 
-  return test_success and verify_zoom_data(test_data, size)
+  return test_success and verify_zoom_data(
+      test_data, size, offset_plot_name_stem=offset_plot_name_stem)
 
 
-def verify_zoom_data(test_data, size, plot_name_stem=None):
+def verify_zoom_data(
+    test_data, size, plot_name_stem=None, offset_plot_name_stem=None):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -328,7 +337,8 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
   Args:
     test_data: Iterable[ZoomTestData]
     size: array; the width and height of the images
-    plot_name_stem: str; log path and name of the plot
+    plot_name_stem: Optional[str]; log path and name of the plot
+    offset_plot_name_stem: Optional[str]; log path and name of the offset plot
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -357,14 +367,20 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
     radius_tols = []
     max_rel_variation = None
     max_rel_variation_zoom = None
+  offset_x_values = []
+  offset_y_values = []
+  hypots = []
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
     logging.debug('Zoom: %.2f, fl: %.2f', data.result_zoom, data.focal_length)
-    offset_xy = [(data.circle[0] - size[0] // 2),
-                 (data.circle[1] - size[1] // 2)]
+    offset_x, offset_y = (
+        data.circle[0] - size[0] // 2, data.circle[1] - size[1] // 2
+    )
+    offset_x_values.append(offset_x)
+    offset_y_values.append(offset_y)
     logging.debug('Circle r: %.1f, center offset x, y: %d, %d',
-                  data.circle[2], offset_xy[0], offset_xy[1])
+                  data.circle[2], offset_x, offset_y)
     z_ratio = data.result_zoom / z_0
 
     # check relative size against zoom[0]
@@ -398,18 +414,19 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
 
     # check relative offset against init vals w/ no focal length change
     # set init values for first capture or change in physical cam focal length
+    offset_hypot = math.hypot(offset_x, offset_y)
+    hypots.append(offset_hypot)
     if i == 0 or test_data[i-1].focal_length != data.focal_length:
       z_init = float(data.result_zoom)
-      offset_hypot_init = math.hypot(offset_xy[0], offset_xy[1])
+      offset_hypot_init = offset_hypot
       logging.debug('offset_hypot_init: %.3f', offset_hypot_init)
       d_msg = (f'-- init {i} zoom: {data.result_zoom:.2f}, '
                f'offset init: {offset_hypot_init:.1f}, '
-               f'offset rel: {math.hypot(offset_xy[0], offset_xy[1]):.1f}, '
                f'zoom: {z_ratio:.1f} ')
       logging.debug(d_msg)
     else:  # check
       z_ratio = data.result_zoom / z_init
-      offset_hypot_rel = math.hypot(offset_xy[0], offset_xy[1]) / z_ratio
+      offset_hypot_rel = offset_hypot / z_ratio
       logging.debug('offset_hypot_rel: %.3f', offset_hypot_rel)
 
       rel_tol = data.offset_tol
@@ -426,7 +443,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
         d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {offset_hypot_init:.1f}, '
                  f'offset rel: {offset_hypot_rel:.1f}, '
-                 f'offset dist: {math.hypot(offset_xy[0], offset_xy[1]):.1f}, '
+                 f'offset dist: {offset_hypot:.1f}, '
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.debug(d_msg)
@@ -449,6 +466,15 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
                    f'{plot_name_stem}_variations.png', 'Zoom Variation')
     plot_variation(frame_numbers, rel_variations, radius_tols,
                    f'{plot_name_stem}_relative.png', 'Relative Variation')
+
+  if offset_plot_name_stem:
+    plot_offset_trajectory(
+        [d.result_zoom for d in test_data],
+        offset_x_values,
+        offset_y_values,
+        hypots,
+        f'{offset_plot_name_stem}_offset_trajectory.gif'  # GIF animation
+    )
 
   return test_success
 
@@ -567,3 +593,48 @@ def plot_variation(frame_numbers, variations, tolerances, plot_name, ylabel):
   plt.savefig(plot_name)
   plt.close()
 
+
+def plot_offset_trajectory(
+    zooms, x_offsets, y_offsets, hypots, plot_name):
+  """Plot an animation describing offset drift for each zoom ratio.
+
+  Args:
+    zooms: Iterable[float]; zoom ratios corresponding to each offset.
+    x_offsets: Iterable[float]; x-axis offsets.
+    y_offsets: Iterable[float]; y-axis offsets.
+    hypots: Iterable[float]; offset hypotenuses (distances from image center).
+    plot_name: Plot name with path to save the plot.
+  """
+  fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True)
+  fig.suptitle('Zoom Offset Trajectory')
+  scatter = ax1.scatter([], [], c='blue', marker='o')
+  line, = ax1.plot([], [], c='blue', linestyle='dashed')
+
+  # Preset axes limits, since data is added frame by frame (no initial data).
+  ax1.set_xlim(min(x_offsets), max(x_offsets), auto=True)
+  ax1.set_ylim(min(y_offsets), max(y_offsets), auto=True)
+
+  ax1.set_title('Offset (x, y) by Zoom Ratio')
+  ax1.set_xlabel('x')
+  ax1.set_ylabel('y')
+
+  # Function to animate each frame. Each frame corresponds to a capture/zoom.
+  def animate(i):
+    scatter.set_offsets((x_offsets[i], y_offsets[i]))
+    line.set_data(x_offsets[:i+1], y_offsets[:i+1])
+    ax1.set_title(f'Zoom: {zooms[i]:.3f}')
+    return scatter, line
+
+  ani = animation.FuncAnimation(
+      fig, animate, repeat=True, frames=len(hypots),
+      interval=_OFFSET_PLOT_INTERVAL
+  )
+
+  ax2.xaxis.set_major_locator(ticker.MultipleLocator(1))  # ticker every 1.0x.
+  ax2.plot(zooms, hypots, '-bo')
+  ax2.set_title('Offset Distance vs. Zoom Ratio')
+  ax2.set_xlabel('Zoom Ratio')
+  ax2.set_ylabel('Offset (pixels)')
+
+  writer = animation.PillowWriter(fps=_OFFSET_PLOT_FPS)
+  ani.save(plot_name, writer=writer)

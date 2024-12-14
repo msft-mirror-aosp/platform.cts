@@ -19,7 +19,7 @@ package {
 
 android_test {
     name: "CtsVirtualDevicesAppLaunchTestCases",
-
+    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
     target_sdk_version: "35",

@@ -357,8 +357,12 @@ public class AccessibilityNodeInfoTest {
         info.setTraversalAfter(new View(getContext()));
         info.setMinDurationBetweenContentChanges(Duration.ofMillis(200));
 
-        // Populate 3 fields
+        // Populate 4 fields
         info.setLabeledBy(new View(getContext()));
+        if (Flags.supportMultipleLabeledby()) {
+            info.addLabeledBy(new View(getContext()));
+            info.addLabeledBy(new View(getContext()));
+        }
         info.setLabelFor(new View(getContext()));
         populateTouchDelegateTargetMap(info);
 

@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.ArraySet;
 import android.util.Log;
@@ -52,7 +51,6 @@ public class ColorTest {
     public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Resources.class)
     public void resourceColor() {
         int[][] colors = {
                 { 0xff000000, android.R.color.background_dark  },

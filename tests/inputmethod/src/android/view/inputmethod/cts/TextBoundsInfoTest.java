@@ -29,8 +29,8 @@ import android.text.SegmentFinder;
 import android.view.inputmethod.TextBoundsInfo;
 import android.view.inputmethod.TextBoundsInfoResult;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 

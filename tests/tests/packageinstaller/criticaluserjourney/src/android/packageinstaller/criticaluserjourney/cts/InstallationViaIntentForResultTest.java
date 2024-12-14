@@ -17,6 +17,7 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -24,11 +25,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for PackageInstaller CUJs via startActivityForResult.
+ * Tests for PackageInstaller CUJs via startActivityForResult with ACTION_INSTALL_PACKAGE.
  */
 @RunWith(AndroidJUnit4.class)
+@PlatinumTest(focusArea = "pm")
 @AppModeFull
-public class InstallationViaIntentForResultTest extends PackageInstallerCujTestBase {
+public class InstallationViaIntentForResultTest extends InstallationTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {
