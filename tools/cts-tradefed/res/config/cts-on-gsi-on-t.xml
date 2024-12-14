@@ -71,4 +71,7 @@
     <!-- b/361205166 -->
     <option name="compatibility:exclude-filter" value="CtsVideoTestCases android.video.cts.VideoEncoderDecoderTest" />
 
+    <!-- b/377770233 -->
+    <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandIncrementalTest#testInstallWithIdSigStreamPerUidTimeoutsIncompleteData" />
+
 </configuration>
