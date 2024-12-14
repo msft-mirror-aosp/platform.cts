@@ -38,8 +38,8 @@ import android.platform.test.annotations.Presubmit;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -60,11 +60,14 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 public class AccessibilitySystemActionTest {
     // intent actions to trigger system action callbacks
-    private final static String INTENT_ACTION_SYSTEM_ACTION_CALLBACK_OVERRIDE_BACK = "android.accessibility.cts.end2endtests.action.system_action_callback_override_back";
-    private final static String INTENT_ACTION_SYSTEM_ACTION_CALLBACK_NEW = "android.accessibility.cts.end2endtests.action.system_action_callback_new";
+    private static final String INTENT_ACTION_SYSTEM_ACTION_CALLBACK_OVERRIDE_BACK =
+            "android.accessibility.cts.end2endtests.action.system_action_callback_override_back";
+    private static final String INTENT_ACTION_SYSTEM_ACTION_CALLBACK_NEW =
+            "android.accessibility.cts.end2endtests.action.system_action_callback_new";
 
     private final static int NEW_ACTION_ID = 111;
-    private final static String MANAGE_ACCESSIBILITY_PERMISSION = "android.permission.MANAGE_ACCESSIBILITY";
+    private static final String MANAGE_ACCESSIBILITY_PERMISSION =
+            "android.permission.MANAGE_ACCESSIBILITY";
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
