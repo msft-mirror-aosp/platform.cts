@@ -19,14 +19,19 @@ package android.bluetooth.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 /** Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}. */
-public class BluetoothHidDeviceAppSdpSettingsTest extends AndroidTestCase {
-    @SmallTest
-    public void testGetters() {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BluetoothHidDeviceAppSdpSettingsTest {
+    @Test
+    public void getters() {
         String name = "test-name";
         String description = "test-description";
         String provider = "test-provider";

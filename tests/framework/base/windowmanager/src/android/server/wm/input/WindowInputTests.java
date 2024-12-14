@@ -24,8 +24,8 @@ import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
-import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
 import static android.server.wm.app.Components.OverlayTestService.EXTRA_DISPLAY_ID_PARAM;
+import static android.server.wm.app.Components.OverlayTestService.EXTRA_LAYOUT_PARAMS;
 import static android.server.wm.input.WindowUntrustedTouchTest.MIN_POSITIVE_OPACITY;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -200,10 +200,20 @@ public class WindowInputTests {
 
         mInstrumentation.waitForIdleSync();
         final String windowName = lp.getTitle().toString();
-        waitForWindowOnTop(windowName);
+        if (com.android.graphics.surfaceflinger.flags.Flags.skipInvisibleWindowsInInput()
+                && lp.alpha == 0) {
+            // Zero opacity window should not be included in the window list.
+            assertTrue(
+                    "Timed out waiting for window to be excluded; window: '" + windowName + "'",
+                    CtsWindowInfoUtils.waitForWindowInvisible(windowName, WINDOW_WAIT_TIMEOUT));
+        } else {
+            waitForWindowOnTop(windowName);
+        }
         return () -> {
             mActivity.stopService(intent);
-            waitForWindowRemoved(windowName);
+            assertTrue(
+                    "Timed out waiting for window to be removed; window: '" + windowName + "'",
+                    CtsWindowInfoUtils.waitForWindowInvisible(windowName, WINDOW_WAIT_TIMEOUT));
         };
     }
 
@@ -764,13 +774,6 @@ public class WindowInputTests {
         assertTrue("Timed out waiting for window to be on top; window: '" + name + "'",
                 CtsWindowInfoUtils.waitForWindowOnTop(WINDOW_WAIT_TIMEOUT,
                         windowInfo -> windowInfo.name.contains(name)));
-    }
-
-    private void waitForWindowRemoved(String name) throws InterruptedException {
-        assertTrue("Timed out waiting for window to be removed; window: '" + name + "'",
-                CtsWindowInfoUtils.waitForWindowInfos(
-                        windows -> windows.stream().noneMatch(window -> window.name.contains(name)),
-                        WINDOW_WAIT_TIMEOUT));
     }
 
     public static class TestActivity extends Activity {

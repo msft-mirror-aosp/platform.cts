@@ -1584,7 +1584,7 @@ class ItsSession(object):
     return ret
 
   def do_jca_capture(
-      self, dut, log_path, flash_mode, lens_facing, zoom_ratio=1.0):
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0):
     """Take a single capture using JCA, modifying capture settings using the UI.
 
     This function is a convenience wrapper for tests that only need to take
@@ -1593,8 +1593,8 @@ class ItsSession(object):
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
-      flash_mode: str; constant describing the desired flash mode.
-        Acceptable values: 'OFF' and 'AUTO'.
+      flash_mode_desc: str; constant describing the desired flash mode.
+        Acceptable values: ui_interaction_utils.FLASH_MODES
       lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
       zoom_ratio: float; zoom ratio for the capture.
@@ -1603,7 +1603,8 @@ class ItsSession(object):
     """
     captures = list(
         self.do_jca_captures_across_zoom_ratios(
-            dut, log_path, flash_mode, lens_facing, zoom_ratios=(zoom_ratio,)
+            dut, log_path, flash_mode_desc, lens_facing,
+            zoom_ratios=(zoom_ratio,)
         )
     )
     if len(captures) != 1:
@@ -1611,7 +1612,7 @@ class ItsSession(object):
     return captures[0]
 
   def do_jca_captures_across_zoom_ratios(
-      self, dut, log_path, flash_mode, lens_facing, zoom_ratios=(1.0,)):
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratios=(1.0,)):
     """Take multiple captures using JCA, modifying capture settings using UI.
 
     Selects UI elements to modify settings, and presses the capture button.
@@ -1624,8 +1625,8 @@ class ItsSession(object):
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
-      flash_mode: str; constant describing the desired flash mode.
-        Acceptable values: 'OFF' and 'AUTO'.
+      flash_mode_desc: str; constant describing the desired flash mode.
+        Acceptable values: ui_interaction_utils.FLASH_MODES
       lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
       zoom_ratios: Optional[Iterable[float]]; zoom ratio for the capture.
@@ -1635,14 +1636,7 @@ class ItsSession(object):
     physical_camera_ids = []
     ui_interaction_utils.open_jca_viewfinder(dut, log_path)
     ui_interaction_utils.switch_jca_camera(dut, log_path, lens_facing)
-    # Bring up settings, switch flash mode, and close settings
-    dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
-    if flash_mode not in ui_interaction_utils.FLASH_MODE_TO_CLICKS:
-      raise ValueError(f'Flash mode {flash_mode} not supported')
-    for _ in range(ui_interaction_utils.FLASH_MODE_TO_CLICKS[flash_mode]):
-      dut.ui(res=ui_interaction_utils.QUICK_SET_FLASH_RESOURCE_ID).click()
-    dut.take_screenshot(log_path, prefix='flash_mode_set')
-    dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
+    ui_interaction_utils.set_jca_flash_mode(dut, log_path, flash_mode_desc)
     for zoom_ratio in zoom_ratios:
       ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
       # Get physical ID

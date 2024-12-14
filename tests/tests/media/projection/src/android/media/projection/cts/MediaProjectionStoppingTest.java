@@ -20,39 +20,31 @@ import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.display.VirtualDisplay;
 import android.media.ImageReader;
 import android.media.cts.MediaProjectionActivity;
 import android.media.projection.MediaProjection;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.OutcomeReceiver;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
-import android.telecom.CallAttributes;
-import android.telecom.CallControl;
-import android.telecom.CallControlCallback;
-import android.telecom.CallEventCallback;
-import android.telecom.CallException;
-import android.telecom.ConnectionService;
-import android.telecom.DisconnectCause;
-import android.telecom.PhoneAccount;
-import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Surface;
 
@@ -67,11 +59,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Test {@link MediaProjection} stopping behavior.
@@ -85,12 +77,8 @@ public class MediaProjectionStoppingTest {
     private static final int RECORDING_WIDTH = 500;
     private static final int RECORDING_HEIGHT = 700;
     private static final int RECORDING_DENSITY = 200;
-
-    @Mock
-    private CallControlCallback mCallControlCallback;
-
-    @Mock
-    private CallEventCallback mCallEventCallback;
+    private static final String CALL_HELPER_START_CALL = "start_call";
+    private static final String CALL_HELPER_STOP_CALL = "stop_call";
 
     @Rule
     public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -108,22 +96,20 @@ public class MediaProjectionStoppingTest {
     private int mTimeoutMs;
     private LockScreenSession mLockScreenSession;
     private TelecomManager mTelecomManager;
-    private PhoneAccountHandle mPhoneAccountHandle;
-    private PhoneAccount mPhoneAccount;
-    private CallControl mCallControl;
-    private OutcomeReceiver<CallControl, CallException> mOutcomeReceiver;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        runWithShellPermissionIdentity(() -> {
-            mContext.getPackageManager().revokeRuntimePermission(
-                    mContext.getPackageName(),
-                    android.Manifest.permission.SYSTEM_ALERT_WINDOW,
-                    new UserHandle(mContext.getUserId()));
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    mContext.getPackageManager()
+                            .revokeRuntimePermission(
+                                    mContext.getPackageName(),
+                                    Manifest.permission.SYSTEM_ALERT_WINDOW,
+                                    new UserHandle(mContext.getUserId()));
+                });
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
 
         mTelecomManager = mContext.getSystemService(TelecomManager.class);
@@ -139,13 +125,17 @@ public class MediaProjectionStoppingTest {
                 mMediaProjection.unregisterCallback(mCallback);
                 mCallback = null;
             }
+            cleanupVirtualDisplay();
             mMediaProjection.stop();
             mMediaProjection = null;
         }
         mLockScreenSession.close();
+        mActivityRule.finishActivity();
     }
 
     @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_MEDIA_PROJECTION_KEYGUARD_RESTRICTIONS)
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionStopsOnKeyguard() throws Exception {
         startMediaProjection();
@@ -172,6 +162,8 @@ public class MediaProjectionStoppingTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_MEDIA_PROJECTION_KEYGUARD_RESTRICTIONS)
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionWithoutDisplayDoesNotStopOnKeyguard() throws Exception {
         startMediaProjection();
@@ -254,6 +246,63 @@ public class MediaProjectionStoppingTest {
                 .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS)).isTrue();
     }
 
+    private void startPhoneCall() {
+        runWithShellPermissionIdentity(
+                () -> {
+                    CountDownLatch latch = new CountDownLatch(1);
+                    mContext.getSystemService(TelephonyManager.class)
+                            .registerTelephonyCallback(
+                                    mContext.getMainExecutor(),
+                                    new TestCallStateListener(
+                                            state -> {
+                                                runWithShellPermissionIdentity(
+                                                        () -> {
+                                                            if (mTelecomManager.isInCall()) {
+                                                                latch.countDown();
+                                                            }
+                                                        });
+                                            }));
+                    mContext.startActivity(getCallHelperIntent(CALL_HELPER_START_CALL));
+
+                    assertWithMessage("Call was not started after timeout")
+                            .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
+                            .isTrue();
+                });
+    }
+
+    private void endPhoneCall() {
+        runWithShellPermissionIdentity(
+                () -> {
+                    CountDownLatch latch = new CountDownLatch(1);
+                    mContext.getSystemService(TelephonyManager.class)
+                            .registerTelephonyCallback(
+                                    mContext.getMainExecutor(),
+                                    new TestCallStateListener(
+                                            state -> {
+                                                runWithShellPermissionIdentity(
+                                                        () -> {
+                                                            if (!mTelecomManager.isInCall()) {
+                                                                latch.countDown();
+                                                            }
+                                                        });
+                                            }));
+                    mContext.startActivity(getCallHelperIntent(CALL_HELPER_STOP_CALL));
+
+                    assertWithMessage("Call was not ended after timeout")
+                            .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
+                            .isTrue();
+                });
+    }
+
+    private Intent getCallHelperIntent(String action) {
+        return new Intent(action)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .setComponent(
+                        new ComponentName(
+                                "android.media.projection.cts.helper",
+                                "android.media.projection.cts.helper.CallHelperActivity"));
+    }
+
     private void startMediaProjection() throws Exception {
         mActivityRule.launchActivity(null);
         mActivity = mActivityRule.getActivity();
@@ -295,49 +344,17 @@ public class MediaProjectionStoppingTest {
         }
     }
 
-    private void startPhoneCall() throws InterruptedException {
-        mPhoneAccountHandle = new PhoneAccountHandle(
-                new ComponentName(mContext, PhoneConnectionService.class),
-                "test_phone_account_handle");
-        mPhoneAccount = new PhoneAccount.Builder(mPhoneAccountHandle,
-                "test_phone_account").setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED).build();
-        mTelecomManager.registerPhoneAccount(mPhoneAccount);
-        CallAttributes attributes = new CallAttributes.Builder(mPhoneAccountHandle,
-                CallAttributes.DIRECTION_INCOMING, "a call!",
-                Uri.parse("tel:555-5555")).build();
+    private static final class TestCallStateListener extends TelephonyCallback
+            implements TelephonyCallback.CallStateListener {
+        private final Consumer<Integer> mCallStateConsumer;
 
-        CountDownLatch latch = new CountDownLatch(1);
-        mOutcomeReceiver = new OutcomeReceiver<CallControl, CallException>() {
-            @Override
-            public void onResult(CallControl result) {
-                mCallControl = result;
-                latch.countDown();
-            }
-        };
-        mTelecomManager.addCall(attributes, mContext.getMainExecutor(), mOutcomeReceiver,
-                mCallControlCallback, mCallEventCallback);
-
-        assertWithMessage("Call was not registered correctly.").that(
-                latch.await(mTimeoutMs, TimeUnit.MILLISECONDS)).isTrue();
-
-        mCallControl.answer(CallAttributes.AUDIO_CALL, mContext.getMainExecutor(), result -> {
-        });
-        assertThat(mTelecomManager.isInCall()).isTrue();
-    }
-
-    private void endPhoneCall() {
-        if (mCallControl != null) {
-            mCallControl.disconnect(new DisconnectCause(DisconnectCause.LOCAL),
-                    mContext.getMainExecutor(), result -> {
-                    });
+        private TestCallStateListener(Consumer<Integer> callStateConsumer) {
+            mCallStateConsumer = callStateConsumer;
         }
-        if (mPhoneAccountHandle != null) {
-            mTelecomManager.unregisterPhoneAccount(mPhoneAccountHandle);
-            mPhoneAccountHandle = null;
-            mPhoneAccount = null;
-        }
-    }
 
-    private static final class PhoneConnectionService extends ConnectionService {
+        @Override
+        public void onCallStateChanged(int state) {
+            mCallStateConsumer.accept(state);
+        }
     }
 }

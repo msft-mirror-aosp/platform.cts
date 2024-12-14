@@ -41,13 +41,13 @@ import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
-import static android.security.keymaster.KeymasterDefs.KM_TAG_PURPOSE;
 import static android.security.keymaster.KeymasterDefs.KM_TAG_ALGORITHM;
-import static android.security.keymaster.KeymasterDefs.KM_TAG_KEY_SIZE;
 import static android.security.keymaster.KeymasterDefs.KM_TAG_BLOCK_MODE;
 import static android.security.keymaster.KeymasterDefs.KM_TAG_DIGEST;
-import static android.security.keymaster.KeymasterDefs.KM_TAG_PADDING;
+import static android.security.keymaster.KeymasterDefs.KM_TAG_KEY_SIZE;
 import static android.security.keymaster.KeymasterDefs.KM_TAG_NO_AUTH_REQUIRED;
+import static android.security.keymaster.KeymasterDefs.KM_TAG_PADDING;
+import static android.security.keymaster.KeymasterDefs.KM_TAG_PURPOSE;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -201,13 +201,14 @@ public class ImportWrappedKeyTest {
 
         KeyStoreException exception = null;
         try {
-            importWrappedKey(wrapKey(
-                    genKeyPair(WRAPPING_KEY_ALIAS, isStrongBox).getPublic(),
-                    keyMaterial,
-                    mask,
-                    KM_KEY_FORMAT_RAW,
-                    makeAesAuthList(keyMaterial.length * 8),
-                    false /* incorrect wrapping required*/));
+            importWrappedKey(
+                    wrapKey(
+                            genKeyPair(WRAPPING_KEY_ALIAS, isStrongBox).getPublic(),
+                            keyMaterial,
+                            mask,
+                            KM_KEY_FORMAT_RAW,
+                            makeAesAuthList(keyMaterial.length * 8),
+                            /* correctWrappingRequired= */ false));
         } catch (SecureKeyImportUnavailableException e) {
             assumeNoException("Can only test if secure key import is available", e);
         } catch (KeyStoreException e) {
@@ -487,7 +488,9 @@ public class ImportWrappedKeyTest {
         random.nextBytes(aesKeyBytes);
 
         // Encrypt ephemeral keys
-        OAEPParameterSpec spec = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT);
+        OAEPParameterSpec spec =
+                new OAEPParameterSpec(
+                        "SHA-256", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT);
         Cipher pkCipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
         if (correctWrappingRequired) {
             pkCipher.init(Cipher.ENCRYPT_MODE, publicKey, spec);

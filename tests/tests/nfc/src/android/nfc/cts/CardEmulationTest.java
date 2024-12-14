@@ -467,8 +467,7 @@ public class CardEmulationTest {
                 });
     }
 
-    class EventPollLoopReceiver extends PollLoopReceiver
-            implements CardEmulation.NfcEventListener {
+    class EventPollLoopReceiver extends PollLoopReceiver implements CardEmulation.NfcEventCallback {
         static final int OBSERVE_MODE = 1;
         static final int PREFERRED_SERVICE = 2;
         static final int AID_CONFLICT_OCCURRED = 3;
@@ -502,7 +501,7 @@ public class CardEmulationTest {
             ExecutorService pool = Executors.newFixedThreadPool(2);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-            cardEmulation.registerNfcEventListener(pool, this);
+            cardEmulation.registerNfcEventCallback(pool, this);
 
             if (shouldBroadcastToRemoteEventListener) {
                 broadcastToRemoteEventListener();
@@ -543,7 +542,7 @@ public class CardEmulationTest {
         void cleanup() {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-            cardEmulation.unregisterNfcEventListener(this);
+            cardEmulation.unregisterNfcEventCallback(this);
             final Intent intent = new Intent();
             intent.setAction("com.cts.UnregisterEventListener");
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);

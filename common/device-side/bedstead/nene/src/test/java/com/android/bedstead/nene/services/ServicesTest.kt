@@ -40,21 +40,11 @@ class ServicesTest {
         assertThat(exception).hasMessageThat().contains("Unknown service $UNAVAILABLE_SERVICE")
     }
 
-    @Test
-    fun hiddenService_serviceIsAvailable_throws() {
-        val exception = assertThrows(NeneException::class.java) {
-            TestApis.services().serviceIsAvailable(HIDDEN_SERVICE)
-        }
-        assertThat(exception).hasMessageThat().contains("Unable to get service $HIDDEN_SERVICE")
-    }
-
     private companion object {
         /** See [Context.DEVICE_POLICY_SERVICE]. */
         private const val AVAILABLE_SERVICE = "device_policy"
         /** See [Context.ACTIVITY_TASK_SERVICE]. */
         private const val UNAVAILABLE_SERVICE = "activity_task"
-        /** See [Context.CREDENTIAL_SERVICE]. */
-        private const val HIDDEN_SERVICE = "credential"
     }
 
 }

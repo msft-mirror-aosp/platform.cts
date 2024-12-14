@@ -256,10 +256,12 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene2_d",
             "scene2_e",
             "scene2_f",
+            "scene2_g",
             "scene3",
             "scene4",
             "scene5",
             "scene6",
+            "scene6_tele",
             "scene7",
             "scene8",
             "scene9",
@@ -277,6 +279,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene1_2",
             "scene2_a",
             "scene4",
+            "scene6_tele",
             "scene_video",
             "sensor_fusion");
 

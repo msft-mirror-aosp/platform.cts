@@ -332,6 +332,23 @@ public class CtsWindowInfoUtils {
     }
 
     /**
+     * Waits for a window to become invisible.
+     *
+     * @param name A name associated with the target window we are waiting for.
+     * @param timeout The amount of time to wait for the window to be invisible.
+     * @return {@code true} if the window becomes invisible within the timeout period, {@code false}
+     *     otherwise.
+     * @throws InterruptedException If the thread is interrupted while waiting for the window
+     *     information.
+     */
+    public static boolean waitForWindowInvisible(@NonNull String name, @NonNull Duration timeout)
+            throws InterruptedException {
+        return CtsWindowInfoUtils.waitForWindowInfos(
+                windows -> windows.stream().noneMatch(window -> window.name.contains(name)),
+                timeout);
+    }
+
+    /**
      * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(Duration, Supplier)}. Adopts
      * required permissions and waits at least five seconds before timing out.
      *

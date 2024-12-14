@@ -161,8 +161,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final double CONFIDENCE_THRESHOLD_AMBIENT = 0.6;
     private static final double CONFIDENCE_THRESHOLD_WIRED = 0.6;
 
+
+
     public static final double LATENCY_NOT_MEASURED = 0.0;
-    public static final double LATENCY_BASIC = 250.0; // chaned from 300 in CDD 15 for VIC
+    public static final double LATENCY_BASIC = 200.0; // Was 300 in CDD 14 for UDC
+                                                      // Was 250 in CDD 15 for VIC
     public static final double LATENCY_PRO_AUDIO_AT_LEAST_ONE = 25.0;
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;

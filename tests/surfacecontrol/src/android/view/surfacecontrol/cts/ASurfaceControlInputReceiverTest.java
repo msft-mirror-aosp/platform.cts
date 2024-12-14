@@ -48,6 +48,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -544,4 +545,13 @@ public class ASurfaceControlInputReceiverTest {
         }
     }
 
+    @Test
+    //TODO b/368251173 - annotate as @BackportedFixTest
+    public void debuggable() {
+        // Setting the test application as debuggable to enable checkjni which will identify
+        // JNI calls with incorrect signatures.
+        // See https://developer.android.com/training/articles/perf-jni#extended-checking
+        assertTrue("android:debuggable of the <application> tag",
+                (mActivity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
+    }
 }

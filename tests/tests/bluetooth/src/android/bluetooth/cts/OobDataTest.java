@@ -16,8 +16,6 @@
 
 package android.bluetooth.cts;
 
-import static android.bluetooth.cts.TestUtils.assertArrayEquals;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -116,15 +114,15 @@ public class OobDataTest {
                 new OobData.ClassicBuilder(confirmationHash, length, address);
         OobData defaultClassicOobData = classicBuilder.build();
 
-        assertArrayEquals(confirmationHash, defaultClassicOobData.getConfirmationHash());
-        assertArrayEquals(length, defaultClassicOobData.getClassicLength());
-        assertArrayEquals(address, defaultClassicOobData.getDeviceAddressWithType());
-        assertArrayEquals(defaultRandomizerHash, defaultClassicOobData.getRandomizerHash());
-        assertArrayEquals(defaultClassOfDevice, defaultClassicOobData.getClassOfDevice());
-        assertArrayEquals(defaultDeviceName, defaultClassicOobData.getDeviceName());
+        assertThat(defaultClassicOobData.getConfirmationHash()).isEqualTo(confirmationHash);
+        assertThat(defaultClassicOobData.getClassicLength()).isEqualTo(length);
+        assertThat(defaultClassicOobData.getDeviceAddressWithType()).isEqualTo(address);
+        assertThat(defaultClassicOobData.getRandomizerHash()).isEqualTo(defaultRandomizerHash);
+        assertThat(defaultClassicOobData.getClassOfDevice()).isEqualTo(defaultClassOfDevice);
+        assertThat(defaultClassicOobData.getDeviceName()).isEqualTo(defaultDeviceName);
         assertThat(defaultClassicOobData.getLeDeviceRole()).isEqualTo(-1);
-        assertArrayEquals(defaultLeTemporaryKey, defaultClassicOobData.getLeTemporaryKey());
-        assertArrayEquals(defaultLeAppearance, defaultClassicOobData.getLeAppearance());
+        assertThat(defaultClassicOobData.getLeTemporaryKey()).isEqualTo(defaultLeTemporaryKey);
+        assertThat(defaultClassicOobData.getLeAppearance()).isEqualTo(defaultLeAppearance);
         assertThat(defaultClassicOobData.getLeFlags())
                 .isEqualTo(OobData.LE_FLAG_LIMITED_DISCOVERY_MODE);
 
@@ -158,9 +156,9 @@ public class OobDataTest {
                 .setRandomizerHash(randomizerHash);
         OobData classicData = classicBuilder.build();
 
-        assertArrayEquals(randomizerHash, classicData.getRandomizerHash());
-        assertArrayEquals(classOfDevice, classicData.getClassOfDevice());
-        assertArrayEquals(deviceName, classicData.getDeviceName());
+        assertThat(classicData.getRandomizerHash()).isEqualTo(randomizerHash);
+        assertThat(classicData.getClassOfDevice()).isEqualTo(classOfDevice);
+        assertThat(classicData.getDeviceName()).isEqualTo(deviceName);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -236,16 +234,16 @@ public class OobDataTest {
                         confirmationHash, address, OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY);
         OobData defaultLeOobData = leBuilder.build();
 
-        assertArrayEquals(confirmationHash, defaultLeOobData.getConfirmationHash());
-        assertArrayEquals(address, defaultLeOobData.getDeviceAddressWithType());
+        assertThat(defaultLeOobData.getConfirmationHash()).isEqualTo(confirmationHash);
+        assertThat(defaultLeOobData.getDeviceAddressWithType()).isEqualTo(address);
         assertThat(defaultLeOobData.getLeDeviceRole())
                 .isEqualTo(OobData.LE_DEVICE_ROLE_PERIPHERAL_ONLY);
-        assertArrayEquals(defaultClassicLength, defaultLeOobData.getClassicLength());
-        assertArrayEquals(defaultRandomizerHash, defaultLeOobData.getRandomizerHash());
-        assertArrayEquals(defaultClassOfDevice, defaultLeOobData.getClassOfDevice());
-        assertArrayEquals(defaultDeviceName, defaultLeOobData.getDeviceName());
-        assertArrayEquals(defaultLeTemporaryKey, defaultLeOobData.getLeTemporaryKey());
-        assertArrayEquals(defaultLeAppearance, defaultLeOobData.getLeAppearance());
+        assertThat(defaultLeOobData.getClassicLength()).isEqualTo(defaultClassicLength);
+        assertThat(defaultLeOobData.getRandomizerHash()).isEqualTo(defaultRandomizerHash);
+        assertThat(defaultLeOobData.getClassOfDevice()).isEqualTo(defaultClassOfDevice);
+        assertThat(defaultLeOobData.getDeviceName()).isEqualTo(defaultDeviceName);
+        assertThat(defaultLeOobData.getLeTemporaryKey()).isEqualTo(defaultLeTemporaryKey);
+        assertThat(defaultLeOobData.getLeAppearance()).isEqualTo(defaultLeAppearance);
         assertThat(defaultLeOobData.getLeFlags()).isEqualTo(OobData.LE_FLAG_GENERAL_DISCOVERY_MODE);
 
         // Test setting optional classic OobData fields and verifying values set properly
@@ -297,9 +295,9 @@ public class OobDataTest {
                 .setLeFlags(OobData.LE_FLAG_BREDR_NOT_SUPPORTED);
         OobData leData = leBuilder.build();
 
-        assertArrayEquals(deviceName, leData.getDeviceName());
-        assertArrayEquals(randomizerHash, leData.getRandomizerHash());
-        assertArrayEquals(leTemporaryKey, leData.getLeTemporaryKey());
+        assertThat(leData.getDeviceName()).isEqualTo(deviceName);
+        assertThat(leData.getRandomizerHash()).isEqualTo(randomizerHash);
+        assertThat(leData.getLeTemporaryKey()).isEqualTo(leTemporaryKey);
         assertThat(leData.getLeFlags()).isEqualTo(OobData.LE_FLAG_BREDR_NOT_SUPPORTED);
     }
 

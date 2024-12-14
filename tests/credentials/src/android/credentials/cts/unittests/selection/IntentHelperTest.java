@@ -48,6 +48,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ResultReceiver;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -98,7 +99,7 @@ public class IntentHelperTest {
     public void testExtractCancelUiRequest() {
         boolean shouldShowCancellationUi = true;
         Intent intent = IntentFactory.createCancelUiIntent(mContext, TOKEN,
-                shouldShowCancellationUi, PACKAGE_NAME, /* userId = */ 0);
+                shouldShowCancellationUi, PACKAGE_NAME, UserHandle.myUserId());
 
         CancelSelectionRequest cancelUiRequestExtracted = IntentHelper.extractCancelUiRequest(
                 intent);
@@ -128,7 +129,7 @@ public class IntentHelperTest {
         );
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null), /* userId = */ 0);
+                new ArrayList<>(), new ResultReceiver(null), UserHandle.myUserId());
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 
@@ -158,7 +159,7 @@ public class IntentHelperTest {
                 /*isShowAllOptionsRequested=*/ false);
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null), /* userId = */ 0);
+                new ArrayList<>(), new ResultReceiver(null), UserHandle.myUserId());
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 

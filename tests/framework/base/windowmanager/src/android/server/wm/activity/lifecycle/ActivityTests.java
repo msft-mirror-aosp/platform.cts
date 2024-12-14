@@ -252,14 +252,27 @@ public class ActivityTests extends ActivityLifecycleClientTestBase {
         final Activity differentAffinityActivity = new Launcher(DifferentAffinityActivity.class)
                 .setOptions(activityOptions)
                 .launch();
-        waitAndAssertActivityStates(state(differentAffinityActivity, ON_RESUME),
-                state(firstActivity, ON_STOP));
+
+        // Different form factors may force tasks to be non-overlapping multi-window mode
+        // (e.g. in freeform windowing mode) instead of fullscreen, which could
+        // have multiple activities in RESUMED state.
+        final boolean isInNonOverlappingMultiWindowMode =
+                isNonOverlappingMultiWindowMode(differentAffinityActivity);
+        if (isInNonOverlappingMultiWindowMode) {
+            waitAndAssertActivityStates(state(differentAffinityActivity, ON_RESUME),
+                    state(firstActivity, ON_RESUME));
+        } else {
+            waitAndAssertActivityStates(state(differentAffinityActivity, ON_RESUME),
+                    state(firstActivity, ON_STOP));
+        }
 
         getTransitionLog().clear();
         differentAffinityActivity.finishAffinity();
         waitAndAssertActivityStates(state(DifferentAffinityActivity.class, ON_DESTROY));
-        assertSequence(FirstActivity.class, getTransitionLog(),
-                Arrays.asList(ON_RESTART, ON_START, ON_RESUME), "finishAffinity");
+        if (!isInNonOverlappingMultiWindowMode) {
+            assertSequence(FirstActivity.class, getTransitionLog(),
+                    Arrays.asList(ON_RESTART, ON_START, ON_RESUME), "finishAffinity");
+        }
     }
 
     /**
@@ -278,12 +291,25 @@ public class ActivityTests extends ActivityLifecycleClientTestBase {
                 .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
                 .setOptions(activityOptions)
                 .launch();
-        waitAndAssertActivityStates(state(secondActivity, ON_RESUME),
-                state(firstActivity, ON_STOP));
+
+        // Different form factors may force tasks to be non-overlapping multi-window mode
+        // (e.g. in freeform windowing mode) instead of fullscreen, which could
+        // have multiple activities in RESUMED state.
+        final boolean isInNonOverlappingMultiWindowMode =
+                isNonOverlappingMultiWindowMode(secondActivity);
+        if (isInNonOverlappingMultiWindowMode) {
+            waitAndAssertActivityStates(state(secondActivity, ON_RESUME),
+                    state(firstActivity, ON_RESUME));
+        } else {
+            waitAndAssertActivityStates(state(secondActivity, ON_RESUME),
+                    state(firstActivity, ON_STOP));
+        }
 
         getTransitionLog().clear();
         secondActivity.finishAffinity();
-        waitAndAssertActivityStates(state(SecondActivity.class, ON_DESTROY),
-                state(firstActivity, ON_RESUME));
+        waitAndAssertActivityStates(state(SecondActivity.class, ON_DESTROY));
+        if (!isInNonOverlappingMultiWindowMode) {
+            waitAndAssertActivityStates(state(firstActivity, ON_RESUME));
+        }
     }
 }

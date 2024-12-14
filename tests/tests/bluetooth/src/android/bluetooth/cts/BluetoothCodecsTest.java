@@ -20,11 +20,18 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
-import android.test.AndroidTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
-public class BluetoothCodecsTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BluetoothCodecsTest {
     private static final String TAG = BluetoothCodecsTest.class.getSimpleName();
 
     // Codec configs: A and B are same; C is different
@@ -255,7 +262,8 @@ public class BluetoothCodecsTest extends AndroidTestCase {
                     .setCodecsSelectableCapabilities(SELECTABLE_CAPABILITY_C)
                     .build();
 
-    public void test_BluetoothCodecStatusBuilder() {
+    @Test
+    public void bluetoothCodecStatusBuilder() {
         BluetoothCodecStatus builderConfig =
                 new BluetoothCodecStatus.Builder()
                         .setCodecConfig(config_A)
@@ -269,7 +277,8 @@ public class BluetoothCodecsTest extends AndroidTestCase {
                 .isEqualTo(SELECTABLE_CAPABILITY_C);
     }
 
-    public void test_BluetoothCodecConfigBuilder() {
+    @Test
+    public void bluetoothCodecConfigBuilder() {
         BluetoothCodecConfig builder =
                 new BluetoothCodecConfig.Builder()
                         .setCodecType(config_A.getCodecType())
@@ -287,7 +296,8 @@ public class BluetoothCodecsTest extends AndroidTestCase {
         assertThat(builder.isMandatoryCodec()).isTrue();
     }
 
-    public void test_BluetoothCodecConfigExtendedBuilder() {
+    @Test
+    public void bluetoothCodecConfigExtendedBuilder() {
         // Test that setExtendedCodecType has the same effect
         // as setCodecType.
         BluetoothCodecConfig builder =
@@ -307,13 +317,15 @@ public class BluetoothCodecsTest extends AndroidTestCase {
         assertThat(builder.isMandatoryCodec()).isTrue();
     }
 
-    public void test_GetCodecConfig() {
+    @Test
+    public void getCodecConfig() {
         assertThat(bcs_A.getCodecConfig()).isEqualTo(config_A);
         assertThat(bcs_A.getCodecConfig()).isEqualTo(config_B);
         assertThat(bcs_A.getCodecConfig()).isNotEqualTo(config_C);
     }
 
-    public void test_CodecsCapabilities() {
+    @Test
+    public void codecsCapabilities() {
         assertThat(bcs_A.getCodecsLocalCapabilities()).isEqualTo(LOCAL_CAPABILITY_A);
         assertThat(bcs_A.getCodecsLocalCapabilities()).isEqualTo(LOCAL_CAPABILITY_B);
         assertThat(bcs_A.getCodecsLocalCapabilities()).isNotEqualTo(LOCAL_CAPABILITY_C);
@@ -323,7 +335,8 @@ public class BluetoothCodecsTest extends AndroidTestCase {
         assertThat(bcs_A.getCodecsSelectableCapabilities()).isNotEqualTo(SELECTABLE_CAPABILITY_C);
     }
 
-    public void test_IsCodecConfigSelectable() {
+    @Test
+    public void isCodecConfigSelectable() {
         assertThat(bcs_A.isCodecConfigSelectable(null)).isFalse();
         assertThat(bcs_A.isCodecConfigSelectable(selectable_capability1_C)).isTrue();
         assertThat(bcs_A.isCodecConfigSelectable(selectable_capability2_C)).isTrue();

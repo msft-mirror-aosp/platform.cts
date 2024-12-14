@@ -102,7 +102,7 @@ public class MainlineFeaturesImpl implements Features {
 
             // Features which are supported on Baklava+ devices only.
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
-                return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
+                return isAtLeastBaklava();
         }
         throw new IllegalArgumentException("Unhandled Features string: " + feature);
     }
@@ -110,5 +110,10 @@ public class MainlineFeaturesImpl implements Features {
     @Override
     public int getMaxIndexedProperties() {
         return 64;
+    }
+
+     private static boolean isAtLeastBaklava() {
+        return Build.VERSION.SDK_INT >= 36
+                || (Build.VERSION.SDK_INT == 35 && Build.VERSION.CODENAME.equals("Baklava"));
     }
 }

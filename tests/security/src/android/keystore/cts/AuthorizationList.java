@@ -42,6 +42,7 @@ import java.security.cert.CertificateParsingException;
 import java.text.DateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 
@@ -142,6 +143,7 @@ public class AuthorizationList {
     private static final int KM_TAG_VENDOR_PATCHLEVEL = KM_UINT | 718;
     private static final int KM_TAG_BOOT_PATCHLEVEL = KM_UINT | 719;
     private static final int KM_TAG_ATTESTATION_ID_SECOND_IMEI = KM_BYTES | 723;
+    private static final int KM_TAG_MODULE_HASH = KM_BYTES | 724;
 
     // Map for converting padding values to strings
     private static final ImmutableMap<Integer, String> paddingMap = ImmutableMap
@@ -213,6 +215,7 @@ public class AuthorizationList {
     private boolean userPresenceRequired;
     private boolean confirmationRequired;
     private String mSecondImei;
+    private byte[] mModuleHash;
 
     public AuthorizationList(ASN1Encodable sequence, int attestationVersion) throws CertificateParsingException {
         this(sequence, attestationVersion, true);
@@ -359,6 +362,9 @@ public class AuthorizationList {
                     break;
                 case KM_TAG_ATTESTATION_ID_SECOND_IMEI & KEYMASTER_TAG_TYPE_MASK:
                     mSecondImei = getStringFromAsn1Value(value);
+                    break;
+                case KM_TAG_MODULE_HASH & KEYMASTER_TAG_TYPE_MASK:
+                    mModuleHash = Asn1Utils.getByteArrayFromAsn1(value);
                     break;
             }
         }
@@ -744,27 +750,27 @@ public class AuthorizationList {
 
     public String getSerialNumber() {
         return serialNumber;
-    };
+    }
 
     public String getImei() {
         return imei;
-    };
+    }
 
     public String getMeid() {
         return meid;
-    };
+    }
 
     public String getProduct() {
         return product;
-    };
+    }
 
     public String getManufacturer() {
         return manufacturer;
-    };
+    }
 
     public String getModel() {
         return model;
-    };
+    }
 
     public boolean isUserPresenceRequired() {
         return userPresenceRequired;
@@ -776,7 +782,11 @@ public class AuthorizationList {
 
     public String getSecondImei() {
         return mSecondImei;
-    };
+    }
+
+    public byte[] getModuleHash() {
+        return mModuleHash;
+    }
 
     static int eatSecurityLevelToKeymasterSecurityLevel(int eatSecurityLevel) {
         switch(eatSecurityLevel) {
@@ -913,6 +923,19 @@ public class AuthorizationList {
         }
         if (device != null) {
             s.append("\nDevice type: ").append(device);
+        }
+        if (product != null) {
+            s.append("\nProduct: ").append(product);
+        }
+        if (manufacturer != null) {
+            s.append("\nManufacturer: ").append(manufacturer);
+        }
+        if (model != null) {
+            s.append("\nModel: ").append(model);
+        }
+        if (mModuleHash != null) {
+            HexFormat hexFormat = HexFormat.of();
+            s.append("\nModule Hash: ").append(hexFormat.formatHex(mModuleHash));
         }
         return s.toString();
     }

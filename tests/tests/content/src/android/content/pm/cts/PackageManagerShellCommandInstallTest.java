@@ -16,11 +16,12 @@
 
 package android.content.pm.cts;
 
+import static android.app.role.RoleManager.ROLE_SYSTEM_DEPENDENCY_INSTALLER;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.pm.Checksum.TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256;
 import static android.content.pm.Checksum.TYPE_WHOLE_MERKLE_ROOT_4K_SHA256;
-import static android.content.pm.Flags.FLAG_SDK_LIB_INDEPENDENCE;
 import static android.content.pm.Flags.FLAG_SDK_DEPENDENCY_INSTALLER;
+import static android.content.pm.Flags.FLAG_SDK_LIB_INDEPENDENCE;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_INCREMENTAL;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_NONE;
 import static android.content.pm.PackageInstaller.DATA_LOADER_TYPE_STREAMING;
@@ -215,9 +216,6 @@ public class PackageManagerShellCommandInstallTest {
             "HelloInstallerAppAbsentUpdated.apk";
 
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
-
-    private static final String ROLE_SYSTEM_DEPENDENCY_INSTALLER =
-            "android.app.role.SYSTEM_DEPENDENCY_INSTALLER";
 
     static final long DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS = 3 * 1000;
     static final long VERIFICATION_BROADCAST_RECEIVED_TIMEOUT_MS = 10 * 1000;

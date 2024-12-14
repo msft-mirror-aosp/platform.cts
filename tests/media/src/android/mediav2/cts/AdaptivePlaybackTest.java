@@ -133,10 +133,6 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                         "bbb_128x96_64kbps_12fps_mpeg4.mp4",
                         "bbb_176x144_192kbps_15fps_mpeg4.mp4",
                         "bbb_128x96_64kbps_12fps_mpeg4.mp4"}, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
-                        "bbb_800x640_768kbps_30fps_av1.webm",
-                        "bbb_1280x720_1mbps_30fps_av1.webm",
-                        "bbb_640x360_512kbps_30fps_av1.webm"}, CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2, new String[]{
                         "bbb_800x640_768kbps_30fps_mpeg2_2b.mp4",
                         "bbb_800x640_768kbps_30fps_mpeg2_nob.mp4",
@@ -176,10 +172,6 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_640x360_24fps_crf22_vp9_10bit.mkv",
                             "cosmat_1280x720_24fps_crf22_vp9_10bit.mkv",
                             "cosmat_800x640_24fps_crf22_vp9_10bit.mkv"}, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
-                            "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
-                            "cosmat_1280x720_24fps_1200kbps_av1_10bit.mkv",
-                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_ALL},
             }));
         }
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,

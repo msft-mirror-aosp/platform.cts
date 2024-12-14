@@ -34,6 +34,7 @@ import android.media.ImageWriter;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.uirendering.cts.R;
 import android.uirendering.cts.bitmapverifiers.ColorVerifier;
 import android.uirendering.cts.bitmapverifiers.RectVerifier;
@@ -995,6 +996,47 @@ public class SurfaceViewTests extends ActivityTestBase {
                         getStableHdrSdrRatio(display) <= (newRatio + 0.01));
             }
 
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
+    public void surfaceViewThrottlesHLGHeadroom() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        DrawCallback callback =
+                makeHardwareBufferRendererCallback(Color.GREEN, DataSpace.DATASPACE_BT2020_HLG);
+        callback.setFence(latch);
+
+        SurfaceViewHolder initializer = new SurfaceViewHolder(callback);
+
+        DrawActivity activity = getActivity();
+
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, initializer, true, false);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            waitForScreenshottable();
+
+            SurfaceView surfaceView = initializer.getSurfaceView();
+            Display display = activity.getDisplay();
+
+            Assume.assumeTrue(display.isHdrSdrRatioAvailable());
+
+            // Sample a few brightnesses
+            float[] screenBrightnesses = {0.01f, 1.0f, 0.75f, 0.5f, 0.25f, -1f};
+
+            for (float brightness : screenBrightnesses) {
+                activity.getWindow().getAttributes().screenBrightness = 0.01f;
+                // Wait for the screenBrightness to be picked up by VRI
+                WidgetTestUtils.runOnMainAndDrawSync(surfaceView, () -> {});
+                float headroom = getStableHdrSdrRatio(display);
+                assertTrue(
+                        "Headroom is too high for HLG at brightness: " + brightness,
+                        headroom < 4.927f);
+            }
         } finally {
             activity.reset();
         }

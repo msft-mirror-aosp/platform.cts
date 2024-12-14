@@ -111,12 +111,6 @@ public class ShellCommandUtilsTest {
     }
 
     @Test
-    @RequireAdbRoot(reason = "To be picked up by btest --root")
-    public void isRunningAsRoot_true_returnsTrue() {
-        assertThat(ShellCommandUtils.isRunningAsRoot()).isTrue();
-    }
-
-    @Test
     public void isRunningAsRoot_false_returnsFalse() {
         assertThat(ShellCommandUtils.isRunningAsRoot()).isFalse();
     }

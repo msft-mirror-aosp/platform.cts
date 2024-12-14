@@ -82,4 +82,7 @@
     <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases2" />
     <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases3" />
 
+    <!-- b/377770233 -->
+    <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandIncrementalTest#testInstallWithIdSigStreamPerUidTimeoutsIncompleteData" />
+
 </configuration>

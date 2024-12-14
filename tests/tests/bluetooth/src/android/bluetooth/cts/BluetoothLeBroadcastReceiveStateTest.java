@@ -21,8 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
@@ -45,7 +43,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
@@ -61,8 +58,6 @@ public class BluetoothLeBroadcastReceiveStateTest {
     private static final int TEST_BIG_ENCRYPTION_STATE =
             BluetoothLeBroadcastReceiveState.BIG_ENCRYPTION_STATE_NOT_ENCRYPTED;
     private static final int TEST_NUM_SUBGROUPS = 1;
-    private static final Long[] TEST_BIS_SYNC_STATE = {1L};
-    private static final BluetoothLeAudioContentMetadata[] TEST_SUBGROUP_METADATA = {null};
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
@@ -105,6 +100,8 @@ public class BluetoothLeBroadcastReceiveStateTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
     public void createBroadcastReceiveState() {
+        final Long bisSyncState = 1L;
+        final BluetoothLeAudioContentMetadata contentMetadata = null;
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, TEST_SOURCE_ADDRESS_TYPE);
         BluetoothLeBroadcastReceiveState state =
@@ -118,8 +115,8 @@ public class BluetoothLeBroadcastReceiveStateTest {
                         TEST_BIG_ENCRYPTION_STATE,
                         null /* badCode */,
                         TEST_NUM_SUBGROUPS,
-                        Arrays.asList(TEST_BIS_SYNC_STATE),
-                        Arrays.asList(TEST_SUBGROUP_METADATA));
+                        List.of(bisSyncState),
+                        List.of(contentMetadata));
         assertThat(state.getSourceId()).isEqualTo(TEST_SOURCE_ID);
         assertThat(state.getSourceAddressType()).isEqualTo(TEST_SOURCE_ADDRESS_TYPE);
         assertThat(state.getSourceDevice()).isEqualTo(testDevice);
@@ -129,10 +126,8 @@ public class BluetoothLeBroadcastReceiveStateTest {
         assertThat(state.getBigEncryptionState()).isEqualTo(TEST_BIG_ENCRYPTION_STATE);
         assertThat(state.getBadCode()).isNull();
         assertThat(state.getNumSubgroups()).isEqualTo(TEST_NUM_SUBGROUPS);
-        assertArrayEquals(TEST_BIS_SYNC_STATE, state.getBisSyncState().toArray(new Long[0]));
-        assertArrayEquals(
-                TEST_SUBGROUP_METADATA,
-                state.getSubgroupMetadata().toArray(new BluetoothLeAudioContentMetadata[0]));
+        assertThat(state.getBisSyncState()).containsExactly(bisSyncState);
+        assertThat(state.getSubgroupMetadata()).containsExactly(contentMetadata);
     }
 
     static BluetoothLeBroadcastReceiveState createBroadcastReceiveStateForTest(

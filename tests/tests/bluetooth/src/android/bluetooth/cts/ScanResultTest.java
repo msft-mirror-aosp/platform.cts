@@ -73,7 +73,7 @@ public class ScanResultTest {
         assertThat(resultFromParcel.getRssi()).isEqualTo(RSSI);
         assertThat(resultFromParcel.getTimestampNanos()).isEqualTo(TIMESTAMP_NANOS);
         assertThat(resultFromParcel.getDevice()).isEqualTo(device);
-        TestUtils.assertArrayEquals(SCAN_RECORD, resultFromParcel.getScanRecord().getBytes());
+        assertThat(resultFromParcel.getScanRecord().getBytes()).isEqualTo(SCAN_RECORD);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
