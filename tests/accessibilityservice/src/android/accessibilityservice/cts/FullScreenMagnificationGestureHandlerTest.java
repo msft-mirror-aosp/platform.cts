@@ -18,6 +18,8 @@ package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.AsyncUtils.waitOn;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
@@ -53,7 +55,6 @@ import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
 import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
-import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.pm.PackageManager;
@@ -71,9 +72,10 @@ import android.view.WindowMetrics;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
@@ -126,8 +128,8 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     private final Object mZoomLock = new Object();
 
-    private ActivityTestRule<GestureDispatchActivity> mActivityRule =
-            new ActivityTestRule<>(GestureDispatchActivity.class);
+    private ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
+            new ActivityScenarioRule<>(GestureDispatchActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
             mServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -149,6 +151,7 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     @Before
     public void setUp() throws Exception {
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
         mIsGestureNavigationMode = new GestureNavSwitchHelper().isGestureMode();
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         PackageManager pm = mInstrumentation.getContext().getPackageManager();
@@ -204,25 +207,35 @@ public class FullScreenMagnificationGestureHandlerTest {
                     }
                 });
 
-        Activity activity = mActivityRule.getActivity();
-        TextView view = activity.findViewById(R.id.full_screen_text_view);
-        mInstrumentation.runOnMainSync(() -> {
-            WindowMetrics windowMetrics =
-                    activity.getWindow().getWindowManager().getCurrentWindowMetrics();
-            Rect windowBounds = windowMetrics.getBounds();
-            WindowInsets insets = windowMetrics.getWindowInsets();
-            Insets navBarInsets = insets.getInsetsIgnoringVisibility(
-                    WindowInsets.Type.navigationBars());
-            int navBarCenterY = windowBounds.bottom - (navBarInsets.bottom / 2);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            TextView view = activity.findViewById(R.id.full_screen_text_view);
+                            WindowMetrics windowMetrics =
+                                    activity.getWindow()
+                                            .getWindowManager()
+                                            .getCurrentWindowMetrics();
+                            Rect windowBounds = windowMetrics.getBounds();
+                            WindowInsets insets = windowMetrics.getWindowInsets();
+                            Insets navBarInsets =
+                                    insets.getInsetsIgnoringVisibility(
+                                            WindowInsets.Type.navigationBars());
+                            int navBarCenterY = windowBounds.bottom - (navBarInsets.bottom / 2);
 
-            view.setOnTouchListener(mTouchListener);
-            int[] xy = new int[2];
-            view.getLocationOnScreen(xy);
-            mNavigationBarTapLocation = new PointF(xy[0] + view.getWidth() / 2, navBarCenterY);
-            mTapLocation = new PointF(xy[0] + view.getWidth() / 2, xy[1] + view.getHeight() / 2);
-            mTapLocation2 = add(mTapLocation, 31, 29);
-            mPan = view.getWidth() / 4;
-        });
+                            view.setOnTouchListener(mTouchListener);
+                            int[] xy = new int[2];
+                            view.getLocationOnScreen(xy);
+                            mNavigationBarTapLocation =
+                                    new PointF(xy[0] + view.getWidth() / 2, navBarCenterY);
+                            mTapLocation =
+                                    new PointF(
+                                            xy[0] + view.getWidth() / 2,
+                                            xy[1] + view.getHeight() / 2);
+                            mTapLocation2 = add(mTapLocation, 31, 29);
+                            mPan = view.getWidth() / 4;
+                        });
     }
 
     @After

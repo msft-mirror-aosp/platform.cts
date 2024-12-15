@@ -14,7 +14,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_ARG_LENGTH;
@@ -67,10 +66,10 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.TestUtils;
@@ -105,8 +104,8 @@ public class AccessibilityTextActionTest {
 
     private AccessibilityTextTraversalActivity mActivity;
 
-    private ActivityTestRule<AccessibilityTextTraversalActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityTextTraversalActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityTextTraversalActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -124,8 +123,7 @@ public class AccessibilityTextActionTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         mClickableSpanCalled.set(false);
     }
 
