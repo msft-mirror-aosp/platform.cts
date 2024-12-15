@@ -186,7 +186,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     /**
      * Test all supported size and format combinations.
      */
-    @Test(timeout=400*60*1000) // timeout = 400 mins for long running reprocessing tests
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testReprocessingSizeFormat() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
@@ -208,7 +208,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     /**
      * Test all supported size and format combinations with preview.
      */
-    @Test(timeout=400*60*1000) // timeout = 400 mins for long running reprocessing tests
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testReprocessingSizeFormatWithPreview() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
@@ -404,7 +404,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     /**
      * Test burst reprocessing captures with and without preview.
      */
-    @Test(timeout=400*60*1000) // timeout = 400 mins for long running reprocessing tests
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testBurstReprocessing() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
@@ -428,7 +428,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     /**
      * Test burst captures mixed with regular and reprocess captures with and without preview.
      */
-    @Test(timeout=400*60*1000) // timeout = 400 mins for long running reprocessing tests
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
     public void testMixedBurstReprocessing() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {

@@ -45,7 +45,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -226,7 +225,6 @@ public class BluetoothHeadsetClientTest {
     }
 
     @Test
-    @Ignore("b/373918345")
     public void createNetworkServiceStateFromParcel() {
         assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
         String testDeviceAddr = "00:11:22:AA:BB:CC";
