@@ -162,3 +162,14 @@ test_module_config_host {
     test_suites: ["general-tests"],
     include_filters: ["android.cts.statsdatom.performancehintmanager"],
 }
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases-kernel-presubmit-brightness",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.cts.statsdatom.display.DisplayBrightnessChangedStatsTests",
+        "android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness",
+        "android.cts.statsdatom.display.DisplayWakeReportedStatsTests",
+    ],
+}

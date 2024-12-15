@@ -84,3 +84,10 @@ test_module_config {
         "android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest",
     ],
 }
+
+test_module_config {
+    name: "CtsVoiceInteractionTestCases_NoHotwordDetectionStressTest",
+    base: "CtsVoiceInteractionTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.voiceinteraction.cts.HotwordDetectionServiceStressTest"],
+}

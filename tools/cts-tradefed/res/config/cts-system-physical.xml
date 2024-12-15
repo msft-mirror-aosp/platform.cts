@@ -998,6 +998,15 @@
   <option name="compatibility:include-filter" value="CtsWindowManagerDeviceAnimations android.server.wm.animations.KeepScreenOnTests#testKeepScreenOn_activityOnVirtualDisplayNotForeground_screenTurnsOff"/>
   <option name="compatibility:include-filter" value="CtsWindowManagerDeviceDisplay android.server.wm.display.DisplayHashManagerTest#testGenerateDisplayHash_BoundsOutOfView"/>
   <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard"/>
+  <option name="compatibility:include-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testOther"/>
+  <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testGetHistoricalPackageOpsForegroundAccessInMemoryBucket"/>
+  <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_ContactsTest#testQueryVisibleContacts"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testResolverActivityLaunchedFromPersonalProfileWithSelectedWorkTab"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testResolverActivityLaunchedFromWorkProfileWithSelectedPersonalTab"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testTrustAgentInfo"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testChooserActivityLaunchedFromPersonalProfileWithSelectedWorkTab"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSecondaryLockscreen"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PowerManager_ThermalTest#testThermalHeadroomCallback"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />

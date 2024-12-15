@@ -18,12 +18,10 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers.OrganizationId;
@@ -64,7 +62,7 @@ public class TransportBlockFilterTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
     }
 
     @After
@@ -78,12 +76,12 @@ public class TransportBlockFilterTest {
     public void emptyTransportBlockFilterFromBuilder() {
         TransportBlockFilter filter =
                 new TransportBlockFilter.Builder(OrganizationId.BLUETOOTH_SIG).build();
-        assertEquals(OrganizationId.BLUETOOTH_SIG, filter.getOrgId());
-        assertEquals(0, filter.getTdsFlags());
-        assertEquals(0, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
+        assertThat(filter.getOrgId()).isEqualTo(OrganizationId.BLUETOOTH_SIG);
+        assertThat(filter.getTdsFlags()).isEqualTo(0);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(0);
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
+        assertThat(filter.getWifiNanHash()).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -94,13 +92,13 @@ public class TransportBlockFilterTest {
                         .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
                         .setTransportData(TEST_TRANSPORT_DATA, TEST_TRANSPORT_DATA_MASK)
                         .build();
-        assertEquals(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT, filter.getOrgId());
-        assertEquals(TEST_TDS_FLAG, filter.getTdsFlags());
-        assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
+        assertThat(filter.getOrgId()).isEqualTo(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT);
+        assertThat(filter.getTdsFlags()).isEqualTo(TEST_TDS_FLAG);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
         assertArrayEquals(TEST_TRANSPORT_DATA, filter.getTransportData());
         assertArrayEquals(TEST_TRANSPORT_DATA_MASK, filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
-        assertNotNull(filter.toString());
+        assertThat(filter.getWifiNanHash()).isNull();
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -112,13 +110,14 @@ public class TransportBlockFilterTest {
                         .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
                         .setWifiNanHash(TEST_VALID_WIFI_NAN_HASH)
                         .build();
-        assertEquals(OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING, filter.getOrgId());
-        assertEquals(TEST_TDS_FLAG, filter.getTdsFlags());
-        assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
+        assertThat(filter.getOrgId())
+                .isEqualTo(OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING);
+        assertThat(filter.getTdsFlags()).isEqualTo(TEST_TDS_FLAG);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
         assertArrayEquals(TEST_VALID_WIFI_NAN_HASH, filter.getWifiNanHash());
-        assertNotNull(filter.toString());
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

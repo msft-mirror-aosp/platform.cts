@@ -57,7 +57,7 @@ _ZOOM_TOL = 0.1
 # TODO: b/370841141 - Remove usage of VIDEO_PREVIEW_QUALITY_SIZE.
 #                     Create and use get_supported_video_sizes instead of
 #                     get_supported_video_qualities.
-VIDEO_PREVIEW_QUALITY_SIZE = {
+_VIDEO_PREVIEW_QUALITY_SIZE = {
     # 'HIGH' and 'LOW' not included as they are DUT-dependent
     '4KDC': '4096x2160',
     '2160P': '3840x2160',
@@ -98,9 +98,9 @@ def get_largest_video_size(cam, camera_id):
   logging.debug('Quality keys: %s', quality_keys)
 
   supported_video_sizes = [
-      VIDEO_PREVIEW_QUALITY_SIZE[key]
+      _VIDEO_PREVIEW_QUALITY_SIZE[key]
       for key in quality_keys
-      if key in VIDEO_PREVIEW_QUALITY_SIZE
+      if key in _VIDEO_PREVIEW_QUALITY_SIZE
   ]
   logging.debug('Supported video sizes: %s', supported_video_sizes)
 
@@ -111,7 +111,7 @@ def get_largest_video_size(cam, camera_id):
   max_size = max(supported_video_sizes, key=size_to_area)
 
   logging.debug('Largest video size: %s', max_size)
-  return (max_size, size_to_area(max_size))
+  return size_to_area(max_size)
 
 
 def get_chart_coverage(image, corners):
@@ -530,7 +530,7 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the {_VALID_CONTROLLERS} controller for {_NAME}.')
 
-      _, largest_area = (get_largest_video_size(cam, self.camera_id))
+      largest_area = get_largest_video_size(cam, self.camera_id)
 
       # Determine preview size
       try:

@@ -82,6 +82,7 @@ java_test_host {
         ":CtsPackageInstallerApp",
         ":CtsPermissionApp",
         ":CtsProfileOwnerApp",
+        ":CtsSimpleApp",
         ":CtsSimplePreMApp",
         ":CtsTransferOwnerIncomingApp",
         ":CtsTransferOwnerOutgoingApp",
@@ -158,4 +159,11 @@ test_module_config_host {
     base: "CtsDevicePolicyManagerTestCases",
     test_suites: ["general-tests"],
     include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_NoLarge",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

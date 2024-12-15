@@ -16,6 +16,8 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.bluetooth.BluetoothClass;
 import android.os.Parcel;
 import android.test.AndroidTestCase;
@@ -53,45 +55,45 @@ public class BluetoothClassTest extends AndroidTestCase {
 
     @SmallTest
     public void testHasService() {
-        assertTrue(mBluetoothClassService.hasService(BluetoothClass.Service.NETWORKING));
-        assertFalse(mBluetoothClassService.hasService(BluetoothClass.Service.TELEPHONY));
+        assertThat(mBluetoothClassService.hasService(BluetoothClass.Service.NETWORKING)).isTrue();
+        assertThat(mBluetoothClassService.hasService(BluetoothClass.Service.TELEPHONY)).isFalse();
     }
 
     @SmallTest
     public void testGetMajorDeviceClass() {
-        assertEquals(
-                mBluetoothClassHeadphones.getMajorDeviceClass(),
-                BluetoothClass.Device.Major.AUDIO_VIDEO);
-        assertEquals(mBluetoothClassPhone.getMajorDeviceClass(), BluetoothClass.Device.Major.PHONE);
+        assertThat(mBluetoothClassHeadphones.getMajorDeviceClass())
+                .isEqualTo(BluetoothClass.Device.Major.AUDIO_VIDEO);
+        assertThat(mBluetoothClassPhone.getMajorDeviceClass())
+                .isEqualTo(BluetoothClass.Device.Major.PHONE);
     }
 
     @SmallTest
     public void testGetDeviceClass() {
-        assertEquals(
-                mBluetoothClassHeadphones.getDeviceClass(),
-                BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
-        assertEquals(
-                mBluetoothClassPhone.getDeviceClass(), BluetoothClass.Device.PHONE_UNCATEGORIZED);
+        assertThat(mBluetoothClassHeadphones.getDeviceClass())
+                .isEqualTo(BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
+        assertThat(mBluetoothClassPhone.getDeviceClass())
+                .isEqualTo(BluetoothClass.Device.PHONE_UNCATEGORIZED);
     }
 
     @SmallTest
     public void testGetClassOfDevice() {
-        assertEquals(
-                mBluetoothClassHeadphones.getDeviceClass(),
-                BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
-        assertEquals(mBluetoothClassPhone.getMajorDeviceClass(), BluetoothClass.Device.Major.PHONE);
+        assertThat(mBluetoothClassHeadphones.getDeviceClass())
+                .isEqualTo(BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES);
+        assertThat(mBluetoothClassPhone.getMajorDeviceClass())
+                .isEqualTo(BluetoothClass.Device.Major.PHONE);
     }
 
     @SmallTest
     public void testDoesClassMatch() {
-        assertTrue(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_A2DP));
-        assertFalse(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_HEADSET));
+        assertThat(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_A2DP)).isTrue();
+        assertThat(mBluetoothClassHeadphones.doesClassMatch(BluetoothClass.PROFILE_HEADSET))
+                .isFalse();
 
-        assertTrue(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_OPP));
-        assertFalse(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_HEADSET));
+        assertThat(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_OPP)).isTrue();
+        assertThat(mBluetoothClassPhone.doesClassMatch(BluetoothClass.PROFILE_HEADSET)).isFalse();
 
-        assertTrue(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_PANU));
-        assertFalse(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_OPP));
+        assertThat(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_PANU)).isTrue();
+        assertThat(mBluetoothClassService.doesClassMatch(BluetoothClass.PROFILE_OPP)).isFalse();
     }
 
     @SmallTest

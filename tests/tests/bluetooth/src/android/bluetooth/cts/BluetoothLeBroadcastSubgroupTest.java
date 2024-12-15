@@ -19,10 +19,10 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
@@ -81,26 +81,19 @@ public class BluetoothLeBroadcastSubgroupTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
-            boolean isBroadcastAssistantEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue(
-                    "Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -134,10 +127,10 @@ public class BluetoothLeBroadcastSubgroupTest {
             builder.addChannel(channel);
         }
         BluetoothLeBroadcastSubgroup subgroup = builder.build();
-        assertEquals(TEST_CODEC_ID, subgroup.getCodecId());
-        assertEquals(codecMetadata, subgroup.getCodecSpecificConfig());
-        assertEquals(contentMetadata, subgroup.getContentMetadata());
-        assertTrue(subgroup.hasChannelPreference());
+        assertThat(subgroup.getCodecId()).isEqualTo(TEST_CODEC_ID);
+        assertThat(subgroup.getCodecSpecificConfig()).isEqualTo(codecMetadata);
+        assertThat(subgroup.getContentMetadata()).isEqualTo(contentMetadata);
+        assertThat(subgroup.hasChannelPreference()).isTrue();
         assertArrayEquals(
                 TEST_CHANNELS, subgroup.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));
         builder.clearChannel();
@@ -170,10 +163,10 @@ public class BluetoothLeBroadcastSubgroupTest {
         BluetoothLeBroadcastSubgroup subgroup = builder.build();
         BluetoothLeBroadcastSubgroup subgroupCopy =
                 new BluetoothLeBroadcastSubgroup.Builder(subgroup).build();
-        assertEquals(TEST_CODEC_ID, subgroupCopy.getCodecId());
-        assertEquals(codecMetadata, subgroupCopy.getCodecSpecificConfig());
-        assertEquals(contentMetadata, subgroupCopy.getContentMetadata());
-        assertTrue(subgroupCopy.hasChannelPreference());
+        assertThat(subgroupCopy.getCodecId()).isEqualTo(TEST_CODEC_ID);
+        assertThat(subgroupCopy.getCodecSpecificConfig()).isEqualTo(codecMetadata);
+        assertThat(subgroupCopy.getContentMetadata()).isEqualTo(contentMetadata);
+        assertThat(subgroupCopy.hasChannelPreference()).isTrue();
         assertArrayEquals(
                 TEST_CHANNELS,
                 subgroupCopy.getChannels().toArray(new BluetoothLeBroadcastChannel[0]));

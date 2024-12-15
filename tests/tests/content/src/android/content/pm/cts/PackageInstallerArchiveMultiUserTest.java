@@ -62,6 +62,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,6 +76,7 @@ import java.util.concurrent.TimeUnit;
 @AppModeNonSdkSandbox
 @EnsureHasWorkProfile
 @RunWith(AndroidJUnit4.class)
+@Ignore("Disable archive feature for multi-user b/379962833")
 public class PackageInstallerArchiveMultiUserTest {
     private static final String PACKAGE_NAME = "android.content.cts.mocklauncherapp";
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";

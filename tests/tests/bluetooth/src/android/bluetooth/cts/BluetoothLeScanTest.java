@@ -16,7 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
@@ -97,7 +97,7 @@ public class BluetoothLeScanTest {
                 (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = manager.getAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
-            assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
+            assertThat(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext)).isTrue();
         }
         mScanner = mBluetoothAdapter.getBluetoothLeScanner();
         mLocationOn = TestUtils.isLocationOn(mContext);
@@ -132,7 +132,7 @@ public class BluetoothLeScanTest {
         Collection<ScanResult> scanResults = scan();
         long scanEndMillis = SystemClock.elapsedRealtime();
         Log.d(TAG, "scan result size:" + scanResults.size());
-        assertTrue("Scan results shouldn't be empty", !scanResults.isEmpty());
+        assertThat(scanResults).isNotEmpty();
         verifyTimestamp(scanResults, scanStartMillis, scanEndMillis);
     }
 
@@ -166,7 +166,7 @@ public class BluetoothLeScanTest {
         TestUtils.sleep(SCAN_STOP_TIMEOUT);
         Collection<ScanResult> scanResults = filterLeScanCallback.getScanResults();
         for (ScanResult result : scanResults) {
-            assertTrue(filter.matches(result));
+            assertThat(filter.matches(result)).isTrue();
         }
     }
 
@@ -186,9 +186,7 @@ public class BluetoothLeScanTest {
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
         TestUtils.sleep(SCAN_STOP_TIMEOUT);
-        Collection<ScanResult> scanResults = filterLeScanCallback.getScanResults();
-        Log.d(TAG, "scan result size " + scanResults.size());
-        assertTrue("scan results should not be empty", !scanResults.isEmpty());
+        assertThat(filterLeScanCallback.getScanResults()).isNotEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -209,16 +207,14 @@ public class BluetoothLeScanTest {
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
         TestUtils.sleep(SCAN_STOP_TIMEOUT);
-        Collection<ScanResult> scanResults = filterLeScanCallback.getScanResults();
-        Log.d(TAG, "scan result size " + scanResults.size());
-        assertTrue("scan results should not be empty", !scanResults.isEmpty());
+        assertThat(filterLeScanCallback.getScanResults()).isNotEmpty();
     }
 
     // Create a scan filter based on the nearby beacon with highest signal strength.
     private ScanFilter createScanFilter() {
         // Get a list of nearby beacons.
         List<ScanResult> scanResults = new ArrayList<>(scan());
-        assertTrue("Scan results shouldn't be empty", !scanResults.isEmpty());
+        assertThat(scanResults).isNotEmpty();
         // Find the beacon with strongest signal strength, which is the target device for filter
         // scan.
         Collections.sort(scanResults, new RssiComparator());
@@ -263,18 +259,13 @@ public class BluetoothLeScanTest {
                         .setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC)
                         .build();
         BleScanCallback emptyScanCallback = new BleScanCallback();
-        assertTrue(
-                "opportunistic scan shouldn't have scan results",
-                emptyScanCallback.getScanResults().isEmpty());
+        assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
         // No scans are really started with opportunistic scans only.
         mScanner.startScan(
                 Collections.<ScanFilter>emptyList(), opportunisticScanSettings, emptyScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
-        Log.d(TAG, "result: " + emptyScanCallback.getScanResults());
-        assertTrue(
-                "opportunistic scan shouldn't have scan results",
-                emptyScanCallback.getScanResults().isEmpty());
+        assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
         BleScanCallback regularScanCallback = new BleScanCallback();
         ScanSettings regularScanSettings =
@@ -289,9 +280,7 @@ public class BluetoothLeScanTest {
         mScanner.startScan(filters, regularScanSettings, regularScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         // With normal BLE scan client, opportunistic scan client will get scan results.
-        assertTrue(
-                "opportunistic scan results shouldn't be empty",
-                !emptyScanCallback.getScanResults().isEmpty());
+        assertThat(emptyScanCallback.getScanResults()).isNotEmpty();
 
         // No more scan results for opportunistic scan clients once the normal BLE scan clients
         // stops.
@@ -300,9 +289,7 @@ public class BluetoothLeScanTest {
         TestUtils.sleep(SCAN_STOP_TIMEOUT);
         emptyScanCallback.clear();
         TestUtils.sleep(SCAN_DURATION_MILLIS);
-        assertTrue(
-                "opportunistic scan shouldn't have scan results",
-                emptyScanCallback.getScanResults().isEmpty());
+        assertThat(emptyScanCallback.getScanResults()).isEmpty();
     }
 
     /** Test case for BLE Batch scan. */
@@ -334,7 +321,7 @@ public class BluetoothLeScanTest {
             // Nothing to do.
             Log.e(TAG, "interrupted!");
         }
-        assertTrue(!results.isEmpty());
+        assertThat(results).isNotEmpty();
         long scanEndMillis = SystemClock.elapsedRealtime();
         mScanner.stopScan(batchScanCallback);
         verifyTimestamp(results, 0, scanEndMillis);
@@ -361,7 +348,7 @@ public class BluetoothLeScanTest {
         mScanner.startScan(null, null, pi);
         boolean gotResults = latch.await(20, TimeUnit.SECONDS);
         mScanner.stopScan(pi);
-        assertTrue("Scan results not received", gotResults);
+        assertThat(gotResults).isTrue();
     }
 
     /** Test case for starting a scan with a PendingIntent. */
@@ -398,7 +385,7 @@ public class BluetoothLeScanTest {
         mScanner.startScan(filters, batchScanSettings, pi);
         boolean gotResults = latch.await(20, TimeUnit.SECONDS);
         mScanner.stopScan(pi);
-        assertTrue("Scan results not received", gotResults);
+        assertThat(gotResults).isTrue();
     }
 
     // Verify timestamp of all scan results are within [scanStartMillis, scanEndMillis].
@@ -406,12 +393,8 @@ public class BluetoothLeScanTest {
             Collection<ScanResult> results, long scanStartMillis, long scanEndMillis) {
         for (ScanResult result : results) {
             long timestampMillis = TimeUnit.NANOSECONDS.toMillis(result.getTimestampNanos());
-            assertTrue(
-                    "Invalid timestamp: " + timestampMillis + " should be >= " + scanStartMillis,
-                    timestampMillis >= scanStartMillis);
-            assertTrue(
-                    "Invalid timestamp: " + timestampMillis + " should be <= " + scanEndMillis,
-                    timestampMillis <= scanEndMillis);
+            assertThat(timestampMillis).isAtLeast(scanStartMillis);
+            assertThat(timestampMillis).isAtMost(scanEndMillis);
         }
     }
 
