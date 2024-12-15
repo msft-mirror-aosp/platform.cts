@@ -62,3 +62,10 @@ android_test {
     min_sdk_version: "29",
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsVibratorTestCases_NoLarge",
+    base: "CtsVibratorTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

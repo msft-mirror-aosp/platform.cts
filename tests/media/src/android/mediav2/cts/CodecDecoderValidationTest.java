@@ -173,10 +173,11 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, -1, -1, 130, 130, CODEC_ANY},
 
                 // video test vectors covering cdd requirements
-                // @CddTest(requirement="5.3.1/C-1-1")
+                // @CddTest(requirements = {"5.3.1/C-1-1", "2.3.2/5.3.1/T-1-1"})
                 {MEDIA_TYPE_MPEG2, new String[]{"bbb_1920x1080_30fps_mpeg2_main_high.mp4"}, null,
                         -1.0f, -1L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
+                // @CddTest(requirements = {"2.3.2/5.3.1/T-1-2"})
                 {MEDIA_TYPE_MPEG2,
                         new String[]{"bbb_1920x1080_60fps_mpeg2_interlaced_main_high.mp4"}, null,
                         -1.0f, -1L, -1, -1, 1920, 1080,
@@ -207,12 +208,16 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         -1.0f, 4290313980L, -1, -1, 1280, 720, CODEC_ALL},
                 {MEDIA_TYPE_AVC, new String[]{"bbb_1280x720_30fps_avc_main_l31.mp4"}, null, -1.0f,
                         3895426718L, -1, -1, 1280, 720, CODEC_ALL},
+
+                // @CddTest(requirements = {"2.3.2/5.3.4/T-1-1"})
                 {MEDIA_TYPE_AVC, new String[]{"bbb_1920x1080_60fps_avc_baseline_l31.mp4"},
                         null, -1.0f, 3610967164L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
+                // @CddTest(requirements = {"2.3.2/5.3.4/T-1-2"})
                 {MEDIA_TYPE_AVC, new String[]{"bbb_1920x1080_60fps_avc_main_l31.mp4"}, null, -1.0f,
                         968877471L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
+                // @CddTest(requirements = {"2.3.2/5.3.4/T-1-3"})
                 {MEDIA_TYPE_AVC, new String[]{"bbb_1920x1080_60fps_avc_high_l42.mp4"}, null, -1.0f,
                         3420541750L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
@@ -222,9 +227,12 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         40958220L, -1, -1, 352, 288, CODEC_ALL},
                 {MEDIA_TYPE_HEVC, new String[]{"bbb_720x480_30fps_hevc_main_l3.mp4"}, null, -1.0f,
                         3167173427L, -1, -1, 720, 480, CODEC_ALL},
+
+                // @CddTest(requirements = {"2.3.2/5.3.5/T-1-1"})
                 {MEDIA_TYPE_HEVC, new String[]{"bbb_1920x1080_60fps_hevc_main_l41.mp4"}, null,
                         -1.0f, 694223139L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
+                // @CddTest(requirements = {"2.3.2/5.3.5/T-2-1"})
                 {MEDIA_TYPE_HEVC, new String[]{"bbb_3840x2160_60fps_hevc_main10_l5.mp4"}, null,
                         -1.0f, 3762286888L, -1, -1, 3840, 2160,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
@@ -234,6 +242,8 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         434981332L, -1, -1, 320, 180, CODEC_ALL},
                 {MEDIA_TYPE_VP8, new String[]{"bbb_640x360_512kbps_30fps_vp8.webm"}, null, -1.0f,
                         1625674868L, -1, -1, 640, 360, CODEC_ALL},
+
+                // @CddTest(requirements = {"2.3.2/5.3.6/T-1-1"})
                 {MEDIA_TYPE_VP8, new String[]{"bbb_1920x1080_60fps_vp8.webm"}, null, -1.0f,
                         1890868351L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_ANY : CODEC_OPTIONAL},
@@ -243,9 +253,12 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         2746035687L, -1, -1, 320, 180, CODEC_ALL},
                 {MEDIA_TYPE_VP9, new String[]{"bbb_640x360_512kbps_30fps_vp9.webm"}, null, -1.0f,
                         2974952943L, -1, -1, 640, 360, CODEC_ALL},
+
+                // @CddTest(requirements = {"2.3.2/5.3.7/T-1-1"})
                 {MEDIA_TYPE_VP9, new String[]{"bbb_1920x1080_60fps_vp9_profile0.webm"}, null, -1.0f,
                         3443986074L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
+                // @CddTest(requirements = {"2.3.2/5.3.7/T-2-1"})
                 {MEDIA_TYPE_VP9, new String[]{"bbb_3840x2160_60fps_vp9_profile0.webm"}, null, -1.0f,
                         2669556628L, -1, -1, 3840, 2160,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
@@ -720,7 +733,7 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                     // @CddTest(requirements={"5.3.5/C-1-2", "5.3.5/C-2-1"})
                     {MEDIA_TYPE_HEVC, new String[]{"bbb_3840x2160_30fps_hevc_main_l50.mp4"}, null,
                             -1.0f, 2312004815L, -1, -1, 3840, 2160, CODEC_ANY},
-                    // @CddTest(requirements={"5.3.7/C-2-1", "5.3.7/C-3-1"})
+                    // @CddTest(requirements={"5.3.7/C-3-1"})
                     {MEDIA_TYPE_VP9, new String[]{"bbb_3840x2160_30fps_vp9.mkv"}, null, -1.0f,
                             279585450L, -1, -1, 3840, 2160, CODEC_ANY},
                     // @CddTest(requirements={"5.3.9/C-2-2"})
@@ -797,7 +810,9 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
             "5.3.3/C-1-1", "5.3.4/C-1-1", "5.3.4/C-1-2", "5.3.4/C-2-1", "5.3.4/C-2-2",
             "5.3.5/C-1-1", "5.3.5/C-1-2", "5.3.5/C-2-1", "5.3.6/C-1-1", "5.3.6/C-2-1",
             "5.3.6/C-2-2", "5.3.7/C-1-1", "5.3.7/C-2-1", "5.3.7/C-3-1", "5.3.9/C-1-1",
-            "5.3.9/C-2-1", "5.3.9/C-2-2"})
+            "5.3.9/C-2-1", "5.3.9/C-2-2", "2.3.2/5.3.1/T-1-1", "2.3.2/5.3.1/T-1-2",
+            "2.3.2/5.3.4/T-1-1", "2.3.2/5.3.4/T-1-2", "2.3.2/5.3.4/T-1-3", "2.3.2/5.3.5/T-1-1",
+            "2.3.2/5.3.5/T-2-1", "2.3.2/5.3.6/T-1-1", "2.3.2/5.3.7/T-1-1", "2.3.2/5.3.7/T-2-1"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testDecodeAndValidate() throws IOException, InterruptedException {

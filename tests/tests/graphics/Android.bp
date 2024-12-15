@@ -99,3 +99,27 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.graphics.cts.VulkanPreTransformTest"],
 }
+
+test_module_config {
+    name: "CtsGraphicsTestCases-presubmit",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+
+    // TODO(b/242858942): periodically re-enable tests on case-by-case basis when they're fixed.
+    exclude_filters: [
+        // Broken very frequently; provides little value for our presubmit
+        "android.graphics.cts.ColorTest#resourceColor",
+        "android.graphics.cts.FrameRateOverrideTest#testAppBackpressure",
+    ],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases-minus-gsi-flakes",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    // flaky on mixed gsi builds
+    exclude_filters: [
+        "android.graphics.cts.AnimatorLeakTest#testPauseResume",
+        "android.graphics.cts.CameraGpuTest#testCameraImageCaptureAndRendering",
+    ],
+}

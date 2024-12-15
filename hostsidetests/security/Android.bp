@@ -50,6 +50,7 @@ java_test_host {
     ],
     device_common_data: [
         ":CtsZipValidateApp",
+        ":CtsDeviceInfo",
         ":CtsDynamicCodeLoadingApp",
     ],
     // These two host cc_library_* modules cannot be wrapped as java_resources directly into
@@ -92,4 +93,16 @@ java_genrule_host {
         "-f $(location sepolicy_tests) " +
         "-f $(location :general_sepolicy.conf) " +
         "-l $(out).prebuilt_list.txt",
+}
+
+test_module_config_host {
+    name: "CtsSecurityHostTestCases_SELinuxHostTest-priv-apps-running",
+    base: "CtsSecurityHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.security.cts.SELinuxHostTest#testPermissionControllerDomain",
+        "android.security.cts.SELinuxHostTest#testNoBugreportDenials",
+        "android.security.cts.SELinuxHostTest#testGMSCoreDomain",
+        "android.security.cts.SELinuxHostTest#testVzwOmaTriggerDomain",
+    ],
 }

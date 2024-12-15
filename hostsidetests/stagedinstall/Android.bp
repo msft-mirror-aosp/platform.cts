@@ -690,3 +690,10 @@ genrule {
         "$(location soong_zip) -o $(out) -C $(genDir)/deapexer -D $(genDir)/deapexer",
     out: ["deapexer.zip"],
 }
+
+test_module_config_host {
+    name: "CtsStagedInstallHostTestCases_NoLarge",
+    base: "CtsStagedInstallHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}

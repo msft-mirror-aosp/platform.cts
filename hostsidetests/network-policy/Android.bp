@@ -56,3 +56,13 @@ test_module_config_host {
         "com.android.cts.netpolicy.HostsideRestrictBackgroundNetworkTests#testMeteredNetworkAccess_expeditedJob",
     ],
 }
+
+test_module_config_host {
+    name: "CtsHostsideNetworkPolicyTests_NoRequiresDevice",
+    base: "CtsHostsideNetworkPolicyTests",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.RequiresDevice",
+        "androidx.test.filters.RequiresDevice",
+    ],
+}
