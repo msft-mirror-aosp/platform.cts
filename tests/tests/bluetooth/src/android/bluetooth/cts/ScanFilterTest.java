@@ -30,6 +30,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.TransportBlockFilter;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -145,6 +146,7 @@ public class ScanFilterTest {
                             device, TestUtils.parseScanRecord(scanRecord), -10, 1397545200000000L);
             mFilterBuilder = new ScanFilter.Builder();
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_PRIVILEGED);
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         }
     }
 
