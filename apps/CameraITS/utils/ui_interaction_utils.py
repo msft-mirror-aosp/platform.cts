@@ -490,6 +490,13 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
   return img_path_on_dut
 
 
+def restart_cts_verifier(dut, package_name):
+  """Sends ADB commands to restart CtsVerifier app."""
+  # Set correct intent flags so that JCA finishes successfully (b/353830655)
+  force_stop_app(dut, package_name)
+  dut.adb.shell('am start -n com.android.cts.verifier/.CtsVerifierActivity')
+
+
 def force_stop_app(dut, pkg_name):
   """Force stops an app with given pkg_name.
 
