@@ -1598,18 +1598,17 @@ public class ListViewTest {
     }
 
     private void showOnlyStretch() throws Throwable {
-        mActivityRule.runOnUiThread(() -> {
-            ViewGroup parent = (ViewGroup) mListViewStretch.getParent();
-            for (int i = 0; i < parent.getChildCount(); i++) {
-                View child = parent.getChildAt(i);
-                if (child != mListViewStretch) {
-                    child.setVisibility(View.GONE);
-                }
-            }
-            mListViewStretch.setAdapter(mAdapterColors);
-            mListViewStretch.setDivider(null);
-            mListViewStretch.setDividerHeight(0);
-        });
+        mActivityRule.runOnUiThread(
+                () -> {
+                    ViewGroup parent = (ViewGroup) mListViewStretch.getParent();
+                    for (int i = 0; i < parent.getChildCount(); i++) {
+                        View child = parent.getChildAt(i);
+                        child.setVisibility((child == mListViewStretch) ? View.VISIBLE : View.GONE);
+                    }
+                    mListViewStretch.setAdapter(mAdapterColors);
+                    mListViewStretch.setDivider(null);
+                    mListViewStretch.setDividerHeight(0);
+                });
         // Give it an opportunity to finish layout.
         CountDownLatch latch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> {
