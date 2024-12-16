@@ -88,6 +88,7 @@ class AppHibernationIntegrationTest {
         const val HIBERNATION_ENABLED_KEY = "app_hibernation_enabled"
 
         const val CMD_KILL = "am kill %s"
+        const val MAX_SWIPES = 10
 
         @JvmStatic
         @BeforeClass
@@ -359,6 +360,7 @@ class AppHibernationIntegrationTest {
                     assertTrue("No scrollable exists on screen", scrollableExists)
                 }
                 while (!toggleFound && scrollableExists) {
+                    scrollableObject.scrollToEnd(MAX_SWIPES)
                     toggleFound = scrollableObject.scrollTextIntoView(title) ||
                         UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
                     scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
