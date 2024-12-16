@@ -86,6 +86,7 @@ class AppHibernationIntegrationTest {
         const val HIBERNATION_ENABLED_KEY = "app_hibernation_enabled"
 
         const val CMD_KILL = "am kill %s"
+        const val MAX_SWIPES = 10
 
         @JvmStatic
         @BeforeClass
@@ -348,6 +349,7 @@ class AppHibernationIntegrationTest {
             var i = 0
             var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
             while (!toggleFound && scrollableObject.waitForExists(WAIT_TIME_MS)) {
+                scrollableObject.scrollToEnd(MAX_SWIPES)
                 // The following line should work for both handhold and car Settings.
                 toggleFound =
                     scrollableObject.scrollTextIntoView(title) ||
