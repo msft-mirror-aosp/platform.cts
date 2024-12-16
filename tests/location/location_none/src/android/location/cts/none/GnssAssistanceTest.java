@@ -19,6 +19,7 @@ package android.location.cts.none;
 import static android.location.flags.Flags.FLAG_GNSS_ASSISTANCE_INTERFACE;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.location.BeidouAssistance;
@@ -161,7 +162,7 @@ public class GnssAssistanceTest {
         assertEquals(1, satelliteEphemerisList.size());
         GpsSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
 
-        assertEquals(1, satelliteEphemeris.getPrn());
+        assertEquals(1, satelliteEphemeris.getSvid());
 
         GpsL2Params gpsL2Params = satelliteEphemeris.getGpsL2Params();
         assertEquals(0, gpsL2Params.getL2Code());
@@ -230,7 +231,7 @@ public class GnssAssistanceTest {
         assertEquals(1, satelliteEphemerisList.size());
         QzssSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
 
-        assertEquals(194, satelliteEphemeris.getPrn());
+        assertEquals(194, satelliteEphemeris.getSvid());
 
         GpsL2Params gpsL2Params = satelliteEphemeris.getGpsL2Params();
         assertEquals(0, gpsL2Params.getL2Code());
@@ -271,8 +272,9 @@ public class GnssAssistanceTest {
         List<GlonassSatelliteAlmanac> satelliteAlmanacList = almanac.getSatelliteAlmanacs();
         GlonassSatelliteAlmanac satelliteAlmanac = satelliteAlmanacList.get(0);
         assertEquals(1, satelliteAlmanac.getSlotNumber());
-        assertEquals(0, satelliteAlmanac.getSvHealth());
-        assertEquals(1, satelliteAlmanac.getFreqChannel());
+        assertEquals(
+                GlonassSatelliteEphemeris.HEALTH_STATUS_HEALTHY, satelliteAlmanac.getHealthState());
+        assertEquals(1, satelliteAlmanac.getFrequencyChannelNumber());
         assertEqualsWithDelta(-1.9e-5, satelliteAlmanac.getTau());
         assertEqualsWithDelta(0.299, satelliteAlmanac.getTLambda());
         assertEqualsWithDelta(0.0, satelliteAlmanac.getLambda());
@@ -281,6 +283,8 @@ public class GnssAssistanceTest {
         assertEqualsWithDelta(-6.10e-4, satelliteAlmanac.getDeltaTDot());
         assertEqualsWithDelta(4.21e-4, satelliteAlmanac.getEccentricity());
         assertEqualsWithDelta(0.16, satelliteAlmanac.getOmega());
+        assertEqualsWithDelta(100, satelliteAlmanac.getCalendarDayNumber());
+        assertTrue(satelliteAlmanac.isGlonassM());
 
         // verify utc model
         assertTrue(verifyTestUtcModel(glonassAssistance.getUtcModel()));
@@ -293,15 +297,22 @@ public class GnssAssistanceTest {
         assertEquals(1, satelliteEphemerisList.size());
         GlonassSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
         assertEquals(1, satelliteEphemeris.getSlotNumber());
-        assertEquals(0, satelliteEphemeris.getHealthState());
+        assertEquals(
+                GlonassSatelliteEphemeris.HEALTH_STATUS_HEALTHY,
+                satelliteEphemeris.getHealthState());
         assertEqualsWithDelta(459030.0, satelliteEphemeris.getFrameTimeSeconds());
         assertEquals(0, satelliteEphemeris.getAgeInDays());
+        assertEquals(30, satelliteEphemeris.getUpdateIntervalMinutes());
+        assertFalse(satelliteEphemeris.isUpdateIntervalOdd());
+        assertTrue(satelliteEphemeris.isGlonassM());
         GlonassSatelliteClockModel satelliteClockModel =
                 satelliteEphemeris.getSatelliteClockModel();
         assertTrue(verifyTestTimeOfClockSeconds(satelliteClockModel.getTimeOfClockSeconds()));
         assertEqualsWithDelta(-2.11e-5, satelliteClockModel.getClockBias());
         assertEqualsWithDelta(0.0, satelliteClockModel.getFrequencyBias());
-        assertEquals(-1, satelliteClockModel.getFrequencyNumber());
+        assertEquals(-1, satelliteClockModel.getFrequencyChannelNumber());
+        assertTrue(satelliteClockModel.isGroupDelayDiffSecondsAvailable());
+        assertEqualsWithDelta(0.0, satelliteClockModel.getGroupDelayDiffSeconds());
         GlonassSatelliteOrbitModel satelliteOrbitModel =
                 satelliteEphemeris.getSatelliteOrbitModel();
         assertEqualsWithDelta(-21248.51806641, satelliteOrbitModel.getX());
@@ -325,7 +336,7 @@ public class GnssAssistanceTest {
         assertEquals(1831066775042L, almanac.getIssueDateMillis());
         assertEquals(2, almanac.getWeekNumber());
         assertEquals(463200, almanac.getToaSeconds());
-        assertEquals(4, almanac.getIod());
+        assertEquals(4, almanac.getIoda());
         List<GnssSatelliteAlmanac> satelliteAlmanacList = almanac.getGnssSatelliteAlmanacs();
         assertEquals(1, satelliteAlmanacList.size());
         GnssSatelliteAlmanac gnssSatelliteAlmanac = satelliteAlmanacList.get(0);
@@ -355,7 +366,7 @@ public class GnssAssistanceTest {
                 galileoAssistance.getSatelliteEphemeris();
         assertEquals(1, satelliteEphemerisList.size());
         GalileoSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
-        assertEquals(1, satelliteEphemeris.getSatelliteCodeNumber());
+        assertEquals(1, satelliteEphemeris.getSvid());
         List<GalileoSatelliteClockModel> satelliteClockModelList =
                 satelliteEphemeris.getSatelliteClockModels();
         assertEquals(1, satelliteClockModelList.size());
@@ -370,12 +381,15 @@ public class GnssAssistanceTest {
                 GalileoSatelliteClockModel.TYPE_FNAV, satelliteClockModel.getSatelliteClockType());
         assertTrue(verifyTestKeplerianOrbitModel(satelliteEphemeris.getSatelliteOrbitModel()));
         GalileoSvHealth satelliteHealth = satelliteEphemeris.getSatelliteHealth();
-        assertEquals(0, satelliteHealth.getDataValidityStatusE1b());
-        assertEquals(0, satelliteHealth.getSignalHealthStatusE1b());
-        assertEquals(0, satelliteHealth.getDataValidityStatusE5a());
-        assertEquals(0, satelliteHealth.getSignalHealthStatusE5a());
-        assertEquals(0, satelliteHealth.getDataValidityStatusE5b());
-        assertEquals(0, satelliteHealth.getSignalHealthStatusE5b());
+        assertEquals(
+                GalileoSvHealth.DATA_STATUS_DATA_VALID, satelliteHealth.getDataValidityStatusE1b());
+        assertEquals(GalileoSvHealth.HEALTH_STATUS_OK, satelliteHealth.getSignalHealthStatusE1b());
+        assertEquals(
+                GalileoSvHealth.DATA_STATUS_DATA_VALID, satelliteHealth.getDataValidityStatusE5a());
+        assertEquals(GalileoSvHealth.HEALTH_STATUS_OK, satelliteHealth.getSignalHealthStatusE5a());
+        assertEquals(
+                GalileoSvHealth.DATA_STATUS_DATA_VALID, satelliteHealth.getDataValidityStatusE5b());
+        assertEquals(GalileoSvHealth.HEALTH_STATUS_OK, satelliteHealth.getSignalHealthStatusE5b());
 
         // verify real time integrity model list
         assertTrue(
@@ -420,7 +434,7 @@ public class GnssAssistanceTest {
                 beidouAssistance.getSatelliteEphemeris();
         assertEquals(1, satelliteEphemerisList.size());
         BeidouSatelliteEphemeris satelliteEphemeris = satelliteEphemerisList.get(0);
-        assertEquals(1, satelliteEphemeris.getPrn());
+        assertEquals(1, satelliteEphemeris.getSvid());
         assertTrue(verifyTestKeplerianOrbitModel(satelliteEphemeris.getSatelliteOrbitModel()));
         BeidouSatelliteClockModel satelliteClockModel = satelliteEphemeris.getSatelliteClockModel();
         assertTrue(verifyTestTimeOfClockSeconds(satelliteClockModel.getTimeOfClockSeconds()));
@@ -606,7 +620,7 @@ public class GnssAssistanceTest {
 
         return new GnssAlmanac.Builder()
                 .setIssueDateMillis(1831066775042L)
-                .setIod(4)
+                .setIoda(4)
                 .setWeekNumber(2)
                 .setToaSeconds(463200)
                 .setGnssSatelliteAlmanacs(gnssSatelliteAlmanacList)
@@ -624,12 +638,12 @@ public class GnssAssistanceTest {
                         .build();
         final GalileoSvHealth satelliteHealth =
                 new GalileoSvHealth.Builder()
-                        .setDataValidityStatusE1b(0)
-                        .setSignalHealthStatusE1b(0)
-                        .setDataValidityStatusE5a(0)
-                        .setSignalHealthStatusE5a(0)
-                        .setDataValidityStatusE5b(0)
-                        .setSignalHealthStatusE5b(0)
+                        .setDataValidityStatusE1b(GalileoSvHealth.DATA_STATUS_DATA_VALID)
+                        .setSignalHealthStatusE1b(GalileoSvHealth.HEALTH_STATUS_OK)
+                        .setDataValidityStatusE5a(GalileoSvHealth.DATA_STATUS_DATA_VALID)
+                        .setSignalHealthStatusE5a(GalileoSvHealth.HEALTH_STATUS_OK)
+                        .setDataValidityStatusE5b(GalileoSvHealth.DATA_STATUS_DATA_VALID)
+                        .setSignalHealthStatusE5b(GalileoSvHealth.HEALTH_STATUS_OK)
                         .build();
         satelliteClockModelList.add(
                 new GalileoSatelliteClockModel.Builder()
@@ -643,7 +657,7 @@ public class GnssAssistanceTest {
                         .build());
         satelliteEphemerisList.add(
                 new GalileoSatelliteEphemeris.Builder()
-                        .setSatelliteCodeNumber(1)
+                        .setSvid(1)
                         .setSatelliteClockModels(satelliteClockModelList)
                         .setSatelliteOrbitModel(getTestKeplerianOrbitModel())
                         .setSatelliteHealth(satelliteHealth)
@@ -666,8 +680,8 @@ public class GnssAssistanceTest {
         satelliteAlmanacList.add(
                 new GlonassSatelliteAlmanac.Builder()
                         .setSlotNumber(1)
-                        .setSvHealth(0)
-                        .setFreqChannel(1)
+                        .setHealthState(GlonassSatelliteEphemeris.HEALTH_STATUS_HEALTHY)
+                        .setFrequencyChannelNumber(1)
                         .setTau(-1.9e-5)
                         .setTLambda(0.299)
                         .setLambda(0.0)
@@ -676,6 +690,8 @@ public class GnssAssistanceTest {
                         .setDeltaTDot(-6.10e-4)
                         .setEccentricity(4.21e-4)
                         .setOmega(0.16)
+                        .setCalendarDayNumber(100)
+                        .setGlonassM(true)
                         .build());
         return new GlonassAlmanac(1831066775042L, satelliteAlmanacList);
     }
@@ -687,7 +703,9 @@ public class GnssAssistanceTest {
                         .setTimeOfClockSeconds(getTestTimeOfClockSeconds())
                         .setClockBias(-2.11e-5)
                         .setFrequencyBias(0.0)
-                        .setFrequencyNumber(-1)
+                        .setFrequencyChannelNumber(-1)
+                        .setGroupDelayDiffSeconds(0.0)
+                        .setGroupDelayDiffSecondsAvailable(true)
                         .build();
         final GlonassSatelliteOrbitModel satelliteOrbitModel =
                 new GlonassSatelliteOrbitModel.Builder()
@@ -704,9 +722,12 @@ public class GnssAssistanceTest {
         final GlonassSatelliteEphemeris satelliteEphemeris =
                 new GlonassSatelliteEphemeris.Builder()
                         .setSlotNumber(1)
-                        .setHealthState(0)
+                        .setHealthState(GlonassSatelliteEphemeris.HEALTH_STATUS_HEALTHY)
                         .setFrameTimeSeconds(459030.0)
                         .setAgeInDays(0)
+                        .setUpdateIntervalMinutes(30)
+                        .setUpdateIntervalOdd(false)
+                        .setGlonassM(true)
                         .setSatelliteClockModel(satelliteClockModel)
                         .setSatelliteOrbitModel(satelliteOrbitModel)
                         .build();
@@ -758,7 +779,7 @@ public class GnssAssistanceTest {
 
         satelliteEphemerisList.add(
                 new GpsSatelliteEphemeris.Builder()
-                        .setPrn(1)
+                        .setSvid(1)
                         .setGpsL2Params(gpsL2Params)
                         .setSatelliteClockModel(satelliteClockModel)
                         .setSatelliteOrbitModel(getTestKeplerianOrbitModel())
@@ -864,7 +885,7 @@ public class GnssAssistanceTest {
                         .build();
         satelliteEphemerisList.add(
                 new BeidouSatelliteEphemeris.Builder()
-                        .setPrn(1)
+                        .setSvid(1)
                         .setSatelliteClockModel(satelliteClockModel)
                         .setSatelliteOrbitModel(getTestKeplerianOrbitModel())
                         .setSatelliteHealth(beidouSatelliteHealth)
@@ -940,7 +961,7 @@ public class GnssAssistanceTest {
 
         satelliteEphemerisList.add(
                 new QzssSatelliteEphemeris.Builder()
-                        .setPrn(194)
+                        .setSvid(194)
                         .setGpsL2Params(gpsL2Params)
                         .setSatelliteClockModel(satelliteClockModel)
                         .setSatelliteOrbitModel(getTestKeplerianOrbitModel())
