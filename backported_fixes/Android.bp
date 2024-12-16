@@ -36,10 +36,22 @@ java_library {
     static_libs: [
         "cts_backported_fixes_annotation",
         "cts_backported_fixes_ids",
+        "cts_backported_fixes_resolver",
         "junit",
     ],
     sdk_version: "test_current",
+}
 
+// TODO b/382721475 - use androidx libarary when available.
+java_library {
+    name: "cts_backported_fixes_resolver",
+    srcs: [
+        "src/com/android/cts/backportedfixes/resolver/*.kt",
+    ],
+    static_libs: [
+        "android.os.flags-aconfig-java",
+    ],
+    sdk_version: "test_current",
 }
 
 java_library {
