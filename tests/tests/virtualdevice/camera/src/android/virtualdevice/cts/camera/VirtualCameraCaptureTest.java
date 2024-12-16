@@ -174,7 +174,7 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    public void virtualCamera_inputBuffer_doesntBlock() throws Exception {
+    public void captureImage_inputBufferDoesNotBlock() throws Exception {
         try (VirtualCamera virtualCamera = createVirtualCamera()) {
             String cameraId = getVirtualCameraId(virtualCamera);
 
@@ -202,7 +202,7 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    public void virtualCamera_captureImage_succeeds(String format) throws Exception {
+    public void captureImage_withInput_succeeds(String format) throws Exception {
         int outputPixelFormat = toFormat(format);
 
         try (VirtualCamera virtualCamera = createVirtualCamera()) {
@@ -223,7 +223,7 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    public void virtualCamera_captureWithNoInput_fails(String format) throws Exception {
+    public void captureImage_withoutInput_fails(String format) throws Exception {
         int outputPixelFormat = toFormat(format);
 
         VirtualCamera virtualCamera = createVirtualCamera();
@@ -248,7 +248,7 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    public void virtualCamera_block_until_first_frame() throws Exception {
+    public void captureImage_blocksUntilFirstFrame() throws Exception {
         int width = 460;
         int height = 260;
         VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888, 30);
@@ -302,7 +302,7 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    public void virtualCamera_captureDownscaled_succeeds(String format) throws Exception {
+    public void captureDownscaledImage_succeeds(String format) throws Exception {
         int outputPixelFormat = toFormat(format);
         int halfWidth = CAMERA_WIDTH / 2;
         int halfHeight = CAMERA_HEIGHT / 2;
@@ -328,7 +328,7 @@ public class VirtualCameraCaptureTest {
      * camera is similar to the output of the image reader.
      */
     @Test
-    public void virtualCamera_renderFromMediaCodec() throws Exception {
+    public void captureImage_withMediaCodec_hasOutputSimilarToImageReader() throws Exception {
         // This must match the test video size to avoid down scaling the bitmap for the comparison
         // and limit at best the diff value.
         int width = 1280;
@@ -355,10 +355,10 @@ public class VirtualCameraCaptureTest {
 
     /**
      * Test that when the input of virtual camera comes from an ImageReader, the output of virtual
-     * camera is similar to a golden file generated on a pixel device.
+     * camera is similar to a golden file generated on a real device.
      */
     @Test
-    public void virtualCamera_renderFromMediaCodec_golden_from_pixel() throws Exception {
+    public void captureImage_withMediaCodec_hasOutputSimilarToGolden() throws Exception {
         int width = 460;
         int height = 260;
         double maxImageDiff = 20;
@@ -388,7 +388,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
-    public void virtualCamera_captureWithTimestamp_disabled_imageWriter() throws Exception {
+    public void captureImage_withoutCustomTimestamp_withImageWriter() throws Exception {
         int width = 460;
         int height = 260;
         long renderedTimestamp = 1;
@@ -427,7 +427,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
-    public void virtualCamera_captureWithTimestamp_imageWriter() throws Exception {
+    public void captureImage_withCustomTimestamp_withImageWriter() throws Exception {
         int width = 460;
         int height = 260;
         long renderedTimestamp = 123456L;
@@ -460,7 +460,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
-    public void virtualCamera_captureWithTimestamp_imageWriter_multipleImages() throws Exception {
+    public void captureMultipleImages_withCustomTimestamp_withImageWriter() throws Exception {
         int width = 460;
         int height = 260;
         long renderedTimestampNanos = 123456L;
@@ -497,12 +497,11 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
-    public void virtualCamera_captureWithTimestamp_mediaCodec() throws Exception {
+    public void captureMultipleImages_withCustomTimestamp_withMediaCodec() throws Exception {
         int width = 1280;
         int height = 720;
         long renderTimestamp = 100L;
         int fps = 5; // Low FPS to keep up with our codec
-
         SteadyTimestampCodec steadyTimestampCodec = new SteadyTimestampCodec(width, height,
                 renderTimestamp);
 
