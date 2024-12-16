@@ -19,7 +19,6 @@ import logging
 import math
 import re
 import time
-import types
 import xml.etree.ElementTree as et
 
 import camera_properties_utils
@@ -44,6 +43,8 @@ CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
+EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
+
 # TODO: b/383392277 - use resource IDs instead of content descriptions.
 FLASH_MODE_ON_CONTENT_DESC = 'Flash on'
 FLASH_MODE_OFF_CONTENT_DESC = 'Flash off'
@@ -72,6 +73,7 @@ RATIO_TO_UI_DESCRIPTION = {
     '9 to 16 aspect ratio': 'QuickSettingsRatio9:16Button'
 }
 REMOVE_CAMERA_FILES_CMD = 'rm '
+THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
 UI_OBJECT_WAIT_TIME_SECONDS = datetime.timedelta(seconds=3)
@@ -242,6 +244,7 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
   Args:
     dut: An Android controller device object.
     zoom_ratio: float; zoom ratio desired. Will be rounded for compatibility.
+    log_path: str; log path to save screenshots.
   Raises:
     AssertionError: If desired zoom ratio cannot be reached.
   """
@@ -416,7 +419,7 @@ def pull_img_files(device_id, input_path, output_path):
 
 
 def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
-    dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH):
+                            dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH):
   """Launches the camera app and takes still capture.
 
   Args:
@@ -512,3 +515,46 @@ def default_camera_app_dut_setup(device_id, pkg_name):
   for path in CAMERA_FILES_PATHS:
     its_device_utils.run_adb_shell_command(
         device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
+
+
+def launch_jca_and_capture(dut, log_path, camera_facing):
+  """Launches the jetpack camera app and takes still capture.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    camera_facing: camera lens facing orientation
+  Returns:
+    img_path_on_dut: Path of the captured image on the device
+  """
+  device_id = dut.serial
+  remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
+  its_device_utils.run_adb_shell_command(device_id, remove_command)
+  try:
+    logging.debug('Launching JCA app')
+    launch_cmd = (f'monkey -p {JETPACK_CAMERA_APP_PACKAGE_NAME} '
+                  '-c android.intent.category.LAUNCHER 1')
+    its_device_utils.run_adb_shell_command(device_id, launch_cmd)
+    switch_jca_camera(dut, log_path, camera_facing)
+    change_jca_aspect_ratio(dut, log_path,
+                            aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
+    if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS
+    ):
+      dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
+    time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    img_path_on_dut = (
+        dut.adb.shell(
+            "find {} ! -empty -a ! -name '.pending*' -a -type f".format(
+                EMULATED_STORAGE_PATH
+            )
+        )
+        .decode('utf-8')
+        .strip()
+    )
+    logging.debug('Image path on DUT: %s', img_path_on_dut)
+    if JPG_FORMAT_STR not in img_path_on_dut:
+      raise AssertionError('Failed to find jpg files!')
+  finally:
+    force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
+  return img_path_on_dut
