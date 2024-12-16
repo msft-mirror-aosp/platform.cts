@@ -221,11 +221,11 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             all_aruco_corners.append([corner[0] for corner in corners])
             all_aruco_ids.append([id[0] for id in ids])
             images.append(cv2.cvtColor(video_img, cv2.COLOR_RGB2BGR))
+            # Focal length and physical ID are not used in this test.
             video_test_data[i] = zoom_capture_utils.ZoomTestData(
                 result_zoom=result_zoom,
                 radius_tol=_RADIUS_RTOL,
                 offset_tol=_OFFSET_TOL,
-                focal_length=cap_fl
             )
             logging.debug('Recorded video name: %s', video_file_name)
 
@@ -283,11 +283,11 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             all_aruco_corners.append([corner[0] for corner in corners])
             all_aruco_ids.append([id[0] for id in ids])
             images.append(cv2.cvtColor(preview_img, cv2.COLOR_RGB2BGR))
+            # Focal length and physical ID are not used in this test.
             preview_test_data[i] = zoom_capture_utils.ZoomTestData(
                 result_zoom=z,
                 radius_tol=_RADIUS_RTOL,
                 offset_tol=_OFFSET_TOL,
-                focal_length=cap_fl
             )
       # Find ArUco markers in all captures and update test data
       zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(

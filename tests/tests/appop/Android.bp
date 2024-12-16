@@ -60,7 +60,7 @@ android_test {
         "flag-junit",
         "android.permission.flags-aconfig-java",
         "CtsVirtualDeviceCommonLib",
-        "Harrier",
+        "bedstead",
     ],
 
     jni_libs: [

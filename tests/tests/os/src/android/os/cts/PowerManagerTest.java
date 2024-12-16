@@ -20,18 +20,24 @@ import static android.os.Flags.batterySaverSupportedCheckApi;
 
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Flags;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings.Global;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
@@ -39,12 +45,15 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.time.Duration;
 
 @AppModeFull(reason = "Instant Apps don't have the WRITE_SECURE_SETTINGS permission "
         + "required in tearDown for Global#putInt")
-public class PowerManagerTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class PowerManagerTest {
     private static final String TAG = "PowerManagerTest";
     public static final long TIME = 3000;
     public static final int MORE_TIME = 300;
@@ -62,8 +71,9 @@ public class PowerManagerTest extends AndroidTestCase {
      * 2 Force the device to go to sleep
      * 3 User activity happened
      */
+    @Test
     public void testPowerManager() throws InterruptedException {
-        PowerManager pm = (PowerManager)getContext().getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
 
         WakeLock wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, TAG);
         wl.acquire(TIME);
@@ -77,6 +87,10 @@ public class PowerManagerTest extends AndroidTestCase {
         } catch (SecurityException e) {
             // expected
         }
+    }
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @Before
@@ -105,6 +119,7 @@ public class PowerManagerTest extends AndroidTestCase {
         });
     }
 
+    @Test
     public void testPowerManager_getPowerSaveMode() {
         PowerManager manager = BatteryUtils.getPowerManager();
         if (batterySaverSupportedCheckApi() && !manager.isBatterySaverSupported()) {
@@ -128,6 +143,7 @@ public class PowerManagerTest extends AndroidTestCase {
         });
     }
 
+    @Test
     public void testPowerManager_setDynamicPowerSavings() {
         PowerManager manager = BatteryUtils.getPowerManager();
         if (batterySaverSupportedCheckApi() && !manager.isBatterySaverSupported()) {
@@ -151,6 +167,7 @@ public class PowerManagerTest extends AndroidTestCase {
     }
 
     @LargeTest
+    @Test
     public void testPowerManager_batteryDischargePrediction() throws Exception {
         final PowerManager manager = BatteryUtils.getPowerManager();
         if (batterySaverSupportedCheckApi() && !manager.isBatterySaverSupported()) {

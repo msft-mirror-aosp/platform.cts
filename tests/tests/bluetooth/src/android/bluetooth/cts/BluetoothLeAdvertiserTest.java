@@ -21,10 +21,15 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.le.AdvertisingSetCallback.ADVERTISE_SUCCESS;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNotNull;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -49,11 +54,9 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothLeAdvertiserTest {
@@ -72,11 +75,11 @@ public class BluetoothLeAdvertiserTest {
     private BluetoothManager mManager;
     private BluetoothAdapter mAdapter;
     private BluetoothLeAdvertiser mAdvertiser;
-    private TestAdvertisingSetCallback mCallback;
-
+    @Mock private AdvertisingSetCallback mCallback;
 
     @Before
     public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
@@ -86,19 +89,15 @@ public class BluetoothLeAdvertiserTest {
 
         mManager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = mManager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         mAdvertiser = mAdapter.getBluetoothLeAdvertiser();
-        mCallback = new TestAdvertisingSetCallback();
     }
 
     @After
     public void tearDown() throws Exception {
         if (mAdvertiser != null) {
             mAdvertiser.stopAdvertisingSet(mCallback);
-            assertTrue(mCallback.mAdvertisingSetStoppedLatch.await(TIMEOUT_MS,
-                    TimeUnit.MILLISECONDS));
-            mAdvertiser = null;
-            mAdapter = null;
+            verify(mCallback, timeout(TIMEOUT_MS)).onAdvertisingSetStopped(any());
         }
 
         if (mUiAutomation != null) {
@@ -109,32 +108,42 @@ public class BluetoothLeAdvertiserTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startAdvertisingSetWithCallbackAndHandler() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                mCallback, new Handler(Looper.getMainLooper()));
-        assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
-        assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
-        assertNotNull(mCallback.mAdvertisingSet);
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(isNotNull(), anyInt(), eq(ADVERTISE_SUCCESS));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startAdvertisingSetWithDurationAndCallback() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                0, 0, mCallback);
-        assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
-        assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
-        assertNotNull(mCallback.mAdvertisingSet);
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS, null, null, null, null, 0, 0, mCallback);
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(isNotNull(), anyInt(), eq(ADVERTISE_SUCCESS));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void startAdvertisingSetWithDurationCallbackAndHandler()
-            throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null,
-                0, 0, mCallback, new Handler(Looper.getMainLooper()));
-        assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
-        assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
-        assertNotNull(mCallback.mAdvertisingSet);
+    public void startAdvertisingSetWithDurationCallbackAndHandler() throws InterruptedException {
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(isNotNull(), anyInt(), eq(ADVERTISE_SUCCESS));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -144,70 +153,57 @@ public class BluetoothLeAdvertiserTest {
         BluetoothGattServer gattServer =
                 mManager.openGattServer(mContext, new BluetoothGattServerCallback() {});
 
-        assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
-                () -> mAdvertiser.startAdvertisingSet(ADVERTISING_SET_USING_NRPA_PARAMETERS, null, null,
-                                null, null, 0, 0, gattServer, mCallback,
+        assertThrows(
+                "No BLUETOOTH_PRIVILEGED permission",
+                SecurityException.class,
+                () ->
+                        mAdvertiser.startAdvertisingSet(
+                                ADVERTISING_SET_USING_NRPA_PARAMETERS,
+                                null,
+                                null,
+                                null,
+                                null,
+                                0,
+                                0,
+                                gattServer,
+                                mCallback,
                                 new Handler(Looper.getMainLooper())));
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_PRIVILEGED);
 
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_USING_NRPA_PARAMETERS, null, null,
-                null, null, 0, 0, gattServer, mCallback,
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_USING_NRPA_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                gattServer,
+                mCallback,
                 new Handler(Looper.getMainLooper()));
-        assertTrue(mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
-        assertEquals(ADVERTISE_SUCCESS, mCallback.mAdvertisingSetStartedStatus.get());
-        assertNotNull(mCallback.mAdvertisingSet);
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(isNotNull(), anyInt(), eq(ADVERTISE_SUCCESS));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getAdvertisingSetId() throws InterruptedException {
-        mAdvertiser.startAdvertisingSet(ADVERTISING_SET_PARAMETERS, null, null, null, null, 0, 0,
-                mCallback, new Handler(Looper.getMainLooper()));
-        mCallback.mAdvertisingSetStartedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        mAdvertiser.startAdvertisingSet(
+                ADVERTISING_SET_PARAMETERS,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                mCallback,
+                new Handler(Looper.getMainLooper()));
+        ArgumentCaptor<AdvertisingSet> captor = ArgumentCaptor.forClass(AdvertisingSet.class);
 
-        assertNotNull(mCallback.mAdvertisingSet);
-        assertTrue(mCallback.mAdvertisingSet.get().getAdvertiserId() >= 0);
-    }
+        verify(mCallback, timeout(TIMEOUT_MS))
+                .onAdvertisingSetStarted(captor.capture(), anyInt(), eq(ADVERTISE_SUCCESS));
 
-    private static class TestAdvertisingSetCallback extends AdvertisingSetCallback {
-        public CountDownLatch mAdvertisingSetStartedLatch = new CountDownLatch(1);
-        public CountDownLatch mAdvertisingEnabledLatch = new CountDownLatch(1);
-        public CountDownLatch mAdvertisingDisabledLatch = new CountDownLatch(1);
-        public CountDownLatch mAdvertisingSetStoppedLatch = new CountDownLatch(1);
-
-        public AtomicInteger mAdvertisingSetStartedStatus = new AtomicInteger();
-        public AtomicInteger mAdvertisingEnabledStatus = new AtomicInteger();
-        public AtomicInteger mAdvertisingDisabledStatus = new AtomicInteger();
-
-        public AtomicReference<AdvertisingSet> mAdvertisingSet = new AtomicReference();
-
-        @Override
-        public void onAdvertisingSetStarted(AdvertisingSet advertisingSet, int txPower,
-                int status) {
-            super.onAdvertisingSetStarted(advertisingSet, txPower, status);
-            mAdvertisingSetStartedStatus.set(status);
-            mAdvertisingSet.set(advertisingSet);
-            mAdvertisingSetStartedLatch.countDown();
-        }
-
-        @Override
-        public void onAdvertisingEnabled(AdvertisingSet advertisingSet, boolean enable,
-                int status) {
-            super.onAdvertisingEnabled(advertisingSet, enable, status);
-            if (enable) {
-                mAdvertisingEnabledStatus.set(status);
-                mAdvertisingEnabledLatch.countDown();
-            } else {
-                mAdvertisingDisabledStatus.set(status);
-                mAdvertisingDisabledLatch.countDown();
-            }
-        }
-
-        @Override
-        public void onAdvertisingSetStopped(AdvertisingSet advertisingSet) {
-            super.onAdvertisingSetStopped(advertisingSet);
-            mAdvertisingSetStoppedLatch.countDown();
-        }
+        assertThat(captor.getValue().getAdvertiserId()).isAtLeast(0);
     }
 }

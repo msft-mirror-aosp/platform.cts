@@ -525,7 +525,7 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
      * The OpenGL fragment shader reads the frame buffers as external textures and renders to
      * a pbuffer. The output RGB values are read and compared against the expected values.
      */
-    @CddTest(requirements = "5.12/C-7-4")
+    @CddTest(requirements = {"5.12/C-7-4"})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_RANGE",
             "android.media.MediaFormat#KEY_COLOR_STANDARD",
             "android.media.MediaFormat#KEY_COLOR_TRANSFER"})

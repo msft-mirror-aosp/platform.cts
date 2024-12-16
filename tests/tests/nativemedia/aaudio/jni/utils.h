@@ -136,14 +136,6 @@ class OutputStreamBuilderHelper : public StreamBuilderHelper {
     const int32_t kBufferCapacityFrames = 2000;
 };
 
-#define LIB_AAUDIO_NAME          "libaaudio.so"
-#define FUNCTION_IS_MMAP         "AAudioStream_isMMapUsed"
-#define FUNCTION_SET_MMAP_POLICY "AAudio_setMMapPolicy"
-#define FUNCTION_GET_MMAP_POLICY "AAudio_getMMapPolicy"
-
-/**
- * Call some AAudio test routines that are not part of the normal API.
- */
 class AAudioExtensions {
 public:
     AAudioExtensions();
@@ -161,28 +153,17 @@ public:
         return getIntegerProperty("aaudio.mmap_policy", AAUDIO_UNSPECIFIED);
     }
 
-    aaudio_policy_t getMMapPolicy() {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_getMMapPolicy();
-    }
+    aaudio_policy_t getMMapPolicy() { return AAudio_getMMapPolicy(); }
 
-    int32_t setMMapPolicy(aaudio_policy_t policy) {
-        if (!mFunctionsLoaded) return -1;
-        return mAAudio_setMMapPolicy(policy);
-    }
+    int32_t setMMapPolicy(aaudio_policy_t policy) { return AAudio_setMMapPolicy(policy); }
 
-    bool isMMapUsed(AAudioStream *aaudioStream) {
-        if (!mFunctionsLoaded) return false;
-        return mAAudioStream_isMMap(aaudioStream);
-    }
+    bool isMMapUsed(AAudioStream* aaudioStream) { return AAudioStream_isMMapUsed(aaudioStream); }
 
     int32_t setMMapEnabled(bool enabled) {
         return setMMapPolicy(enabled ? AAUDIO_POLICY_AUTO : AAUDIO_POLICY_NEVER);
     }
 
-    bool isMMapEnabled() {
-        return isPolicyEnabled(mAAudio_getMMapPolicy());
-    }
+    bool isMMapEnabled() { return isPolicyEnabled(AAudio_getMMapPolicy()); }
 
     bool isMMapSupported() const {
         return mMMapSupported;
@@ -205,19 +186,6 @@ public:
 private:
 
     static int getIntegerProperty(const char *name, int defaultValue);
-
-    /**
-     * Load some AAudio test functions.
-     * This should only be called once from the constructor.
-     * @return true if it succeeds
-     */
-    bool loadLibrary();
-
-    bool      mFunctionsLoaded = false;
-    void     *mLibHandle = nullptr;
-    bool    (*mAAudioStream_isMMap)(AAudioStream *stream) = nullptr;
-    int32_t (*mAAudio_setMMapPolicy)(aaudio_policy_t policy) = nullptr;
-    aaudio_policy_t (*mAAudio_getMMapPolicy)() = nullptr;
 
     const bool   mMMapSupported;
     const bool   mMMapExclusiveSupported;

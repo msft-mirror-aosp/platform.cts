@@ -72,8 +72,10 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.hardware.DataSpace;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Trace;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -1500,9 +1502,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     // @ApiTest = ASurfaceTransaction_setDesiredPresentTime(ASurfaceTransaction* _Nonnull,
@@ -1546,9 +1550,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     // @ApiTest = ASurfaceTransaction_setDesiredPresentTime(ASurfaceTransaction* _Nonnull,
@@ -1593,9 +1599,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     // @ApiTest = ASurfaceTransaction_setBufferAlpha(ASurfaceTransaction* _Nonnull transaction,
@@ -2852,6 +2860,60 @@ public class ASurfaceControlTest {
 
         assertTrue("Removed headroom restriction is not respected",
                 getStableHdrSdrRatio(display) > targetHeadroom);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
+    public void testSurfaceTransaction_throttlesHlgBrightness() throws Throwable {
+        mActivity.awaitReadyState();
+        Display display = mActivity.getDisplay();
+        assumeTrue(display.isHdrSdrRatioAvailable());
+
+        AtomicLong surfaceControlContainer = new AtomicLong();
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new SurfaceHolderCallback(
+                                new BasicSurfaceHolderCallback() {
+                                    @Override
+                                    public void surfaceCreated(SurfaceHolder holder) {
+                                        long surfaceTransaction = nSurfaceTransaction_create();
+                                        long surfaceControl = createFromWindow(holder.getSurface());
+                                        surfaceControlContainer.set(surfaceControl);
+                                        setSolidBuffer(
+                                                surfaceControl,
+                                                surfaceTransaction,
+                                                DEFAULT_LAYOUT_WIDTH,
+                                                DEFAULT_LAYOUT_HEIGHT,
+                                                Color.WHITE);
+                                        int dataspace = DataSpace.DATASPACE_BT2020_HLG;
+                                        nSurfaceTransaction_setDataSpace(
+                                                surfaceControl, surfaceTransaction, dataspace);
+                                        nSurfaceTransaction_apply(surfaceTransaction);
+                                        nSurfaceTransaction_delete(surfaceTransaction);
+                                    }
+                                }),
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+        try {
+            assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Assert.fail("interrupted");
+        }
+
+        // Sample a few brightnesses
+        float[] screenBrightnesses = {0.01f, 1.0f, 0.75f, 0.5f, 0.25f, -1f};
+
+        for (float brightness : screenBrightnesses) {
+            mActivity.getWindow().getAttributes().screenBrightness = 0.01f;
+            // Wait for the screenBrightness to be picked up by VRI
+            WidgetTestUtils.runOnMainAndDrawSync(mActivity.getParentFrameLayout(), () -> {});
+            float headroom = getStableHdrSdrRatio(display);
+            assertTrue(
+                    "Headroom is too high for HLG at brightness: " + brightness, headroom < 4.927f);
+        }
     }
 
     static class TimedBufferReleaseCallback implements

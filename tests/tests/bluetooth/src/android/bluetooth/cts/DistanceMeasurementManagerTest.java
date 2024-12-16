@@ -19,9 +19,11 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
+import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -45,6 +47,8 @@ import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
+import com.google.common.truth.Correspondence;
+
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -53,10 +57,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementManagerTest {
+    private static final Correspondence<DistanceMeasurementMethod, Integer> METHOD_ID_EQUALS =
+            Correspondence.from(
+                    (DistanceMeasurementMethod method, Integer methodId) ->
+                            method.getMethodId() == methodId,
+                    "is equal to");
+
     private Context mContext;
     private BluetoothAdapter mAdapter;
     private BluetoothDevice mDevice;
@@ -64,18 +73,17 @@ public class DistanceMeasurementManagerTest {
 
     private DistanceMeasurementSession.Callback mTestcallback =
             new DistanceMeasurementSession.Callback() {
-        public void onStarted(DistanceMeasurementSession session) {}
+                public void onStarted(DistanceMeasurementSession session) {}
 
-        public void onStartFail(int reason) {}
+                public void onStartFail(int reason) {}
 
-        public void onStopped(DistanceMeasurementSession session, int reason) {}
+                public void onStopped(DistanceMeasurementSession session, int reason) {}
 
-        public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
-    };
+                public void onResult(BluetoothDevice device, DistanceMeasurementResult result) {}
+            };
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -85,7 +93,7 @@ public class DistanceMeasurementManagerTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
         mDistanceMeasurementManager = mAdapter.getDistanceMeasurementManager();
@@ -102,21 +110,31 @@ public class DistanceMeasurementManagerTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void startMeasurementSession() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDurationSeconds(15)
-                .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
-                .build();
-        CancellationSignal signal = mDistanceMeasurementManager.startMeasurementSession(params,
-                mContext.getMainExecutor(), mTestcallback);
-        assertNotNull(signal);
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setDurationSeconds(15)
+                        .setFrequency(DistanceMeasurementParams.REPORT_FREQUENCY_LOW)
+                        .build();
+        CancellationSignal signal =
+                mDistanceMeasurementManager.startMeasurementSession(
+                        params, mContext.getMainExecutor(), mTestcallback);
+        assertThat(signal).isNotNull();
         signal.cancel();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getSupportedMethods() {
         List<DistanceMeasurementMethod> list = mDistanceMeasurementManager.getSupportedMethods();
-        assertNotNull(list);
+        assertThat(list).isNotNull();
+
+        if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+            assertThat(list)
+                    .comparingElementsUsing(METHOD_ID_EQUALS)
+                    .contains(
+                            DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_CHANNEL_SOUNDING);
+        }
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -124,7 +142,8 @@ public class DistanceMeasurementManagerTest {
     public void getChannelSoundingMaxSupportedSecurityLevel() {
         int securityLevel =
                 mDistanceMeasurementManager.getChannelSoundingMaxSupportedSecurityLevel(mDevice);
-        assertTrue(isValidSecurityLevel(securityLevel));
+        assertThat(securityLevel).isAtLeast(ChannelSoundingParams.CS_SECURITY_LEVEL_UNKNOWN);
+        assertThat(securityLevel).isAtMost(ChannelSoundingParams.CS_SECURITY_LEVEL_FOUR);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -132,22 +151,23 @@ public class DistanceMeasurementManagerTest {
     public void getLocalChannelSoundingMaxSupportedSecurityLevel() {
         int securityLevel =
                 mDistanceMeasurementManager.getLocalChannelSoundingMaxSupportedSecurityLevel();
-        assertTrue(isValidSecurityLevel(securityLevel));
-    }
-
-    private boolean isValidSecurityLevel(int securityLevel) {
-        return (securityLevel >= ChannelSoundingParams.CS_SECURITY_LEVEL_UNKNOWN
-                && securityLevel <= ChannelSoundingParams.CS_SECURITY_LEVEL_FOUR);
+        assertThat(securityLevel).isAtLeast(ChannelSoundingParams.CS_SECURITY_LEVEL_UNKNOWN);
+        assertThat(securityLevel).isAtMost(ChannelSoundingParams.CS_SECURITY_LEVEL_FOUR);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getChannelSoundingSupportedSecurityLevels() {
-        Set<Integer> securityLevels =
-                mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
-        assertNotNull(securityLevels);
-        // TODO(b/378926246): check the CS availability.
-        // assertTrue(securityLevels.size() > 0);
+        if (mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+            assertThat(mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels())
+                    .isNotEmpty();
+        } else {
+            assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> {
+                        mDistanceMeasurementManager.getChannelSoundingSupportedSecurityLevels();
+                    });
+        }
     }
 }

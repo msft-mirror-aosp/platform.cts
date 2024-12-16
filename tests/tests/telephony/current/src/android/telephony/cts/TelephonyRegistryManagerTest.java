@@ -946,7 +946,7 @@ public class TelephonyRegistryManagerTest {
         }
 
         @Override
-        public void onCarrierRoamingNtnAvailableServicesChanged(List<Integer> services) {
+        public void onCarrierRoamingNtnAvailableServicesChanged(int[] services) {
             mAvailableServicesQueue.offer(services);
         }
 

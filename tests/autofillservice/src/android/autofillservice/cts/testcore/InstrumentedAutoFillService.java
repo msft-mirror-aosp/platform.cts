@@ -196,6 +196,12 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     @Override
+    public void onSessionDestroyed(@Nullable FillEventHistory history) {
+        Log.v(TAG, "onSessionDestroyed() called");
+        mHandler.post(() -> sReplier.addLastFillEventHistory(history));
+    }
+
+    @Override
     public void onConnected() {
         Log.v(TAG, "onConnected");
         if (mConnected && FAIL_ON_INVALID_CONNECTION_STATE) {
@@ -372,7 +378,6 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     public static void resetStaticState() {
-        sInstance.set(null);
         sConnected.set(false);
         sServiceLabel = SERVICE_CLASS;
         sSavedDatasetsInfoReplier = null;
@@ -492,6 +497,9 @@ public class InstrumentedAutoFillService extends AutofillService {
         private boolean mReportUnhandledFillRequest = true;
         private boolean mReportUnhandledSaveRequest = true;
 
+        private @Nullable FillEventHistory mFillEventHistory = null;
+        private int mSessionDestroyedCount = 0;
+
         private Replier() {
         }
 
@@ -575,6 +583,31 @@ public class InstrumentedAutoFillService extends AutofillService {
                 throw new RetryableException(FILL_TIMEOUT, "onFillRequest() not called");
             }
             return request;
+        }
+
+        /**
+         * Gets the last FillEventHistory that was return as part of onSessionDestroyed(), for easy
+         * assertion
+         */
+        public @Nullable FillEventHistory getLastFillEventHistory() {
+            return mFillEventHistory;
+        }
+
+        /**
+         * Used by InstrumentedAutofillService to add the last FillEventHistory returned by
+         * onSessionDestroyed()
+         */
+        public void addLastFillEventHistory(@Nullable FillEventHistory history) {
+            mFillEventHistory = history;
+            mSessionDestroyedCount += 1;
+        }
+
+        /**
+         *
+         * @return the amount of onSessionDestroyed() calls the service has received.
+         */
+        public int getSessionDestroyedCount() {
+            return mSessionDestroyedCount;
         }
 
         /**
@@ -674,6 +707,8 @@ public class InstrumentedAutoFillService extends AutofillService {
             mAcceptedPackageName = null;
             mReportUnhandledFillRequest = true;
             mReportUnhandledSaveRequest = true;
+            mFillEventHistory = null;
+            mSessionDestroyedCount = 0;
         }
 
         private void onFillRequest(List<FillContext> contexts, List<String> hints, Bundle data,
@@ -823,6 +858,7 @@ public class InstrumentedAutoFillService extends AutofillService {
             pw.print("mAcceptedPackageName: "); pw.println(mAcceptedPackageName);
             pw.print("mReportUnhandledFillRequest: "); pw.println(mReportUnhandledSaveRequest);
             pw.print("mIdMode: "); pw.println(mIdMode);
+            pw.print("mFillEventHistory: "); pw.println(mFillEventHistory);
         }
     }
 }

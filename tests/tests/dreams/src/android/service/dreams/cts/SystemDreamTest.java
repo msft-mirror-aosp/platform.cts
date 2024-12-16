@@ -186,8 +186,8 @@ public class SystemDreamTest extends ActivityManagerTestBase {
     private void assertDreamShown(DreamShownReceiver receiver) {
         try {
             assertThat(receiver.waitUntilShown()).isTrue();
-            waitAndAssertTopResumedActivity(DREAM_ACTIVITY, Display.DEFAULT_DISPLAY,
-                    "Dream activity not resumed");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    DREAM_ACTIVITY, Display.DEFAULT_DISPLAY, "Dream activity not resumed");
         } finally {
             mContext.unregisterReceiver(receiver);
         }

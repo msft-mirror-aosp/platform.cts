@@ -54,6 +54,7 @@ import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportUsageRequest;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SearchResult;
+import android.app.appsearch.SearchResults;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SearchSuggestionResult;
@@ -62,11 +63,10 @@ import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.StorageInfo;
 import android.app.appsearch.exceptions.AppSearchException;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.util.DocumentIdUtil;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArrayMap;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -83,6 +83,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,8 +106,7 @@ public abstract class AppSearchSessionCtsTestBase {
     private static final int ACTION_TYPE_IMPRESSION = 3;
     private static final int ACTION_TYPE_DISMISS = 4;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public final RuleChain mRuleChain = AppSearchTestUtils.createCommonTestRules();
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 
@@ -11904,13 +11904,12 @@ public abstract class AppSearchSessionCtsTestBase {
                         .setListFilterQueryLanguageEnabled(true)
                         .addEmbeddingParameters(searchEmbedding)
                         .build();
+        SearchResultsShim results =
+                mDb1.search("semanticSearch(getEmbeddingParameter(0), -1, 1)", searchSpec);
         UnsupportedOperationException exception =
                 assertThrows(
                         UnsupportedOperationException.class,
-                        () ->
-                                mDb1.search(
-                                        "semanticSearch(getEmbeddingParameter(0), -1, 1)",
-                                        searchSpec));
+                        () -> results.getNextPageAsync().get());
         assertThat(exception)
                 .hasMessageThat()
                 .contains(

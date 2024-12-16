@@ -182,17 +182,20 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         Log.d(TAG, "Finding view by id: " + id);
 
         UiObject2 view = findViewByIdInternal(id);
-        if (view != null) {
-            return view;
+
+        // Scroll the parent view to find the view if needed.
+        if (view == null) {
+            UiObject2 parentView;
+            boolean canScrollAgain = false;
+            do {
+                // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
+                parentView = mDevice.findObject(By.scrollable(true));
+                canScrollAgain =
+                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                view = findViewByIdInternal(id);
+            } while (view == null && canScrollAgain);
         }
 
-        UiObject2 parentView = mDevice.findObject(By.scrollable(true));
-        if (parentView != null) {
-            parentView.scroll(Direction.DOWN, 1.0f, 1000);
-            do {
-                view = findViewByIdInternal(id);
-            } while (view == null && parentView.scroll(Direction.DOWN, 1.0f, 1000));
-        }
         return view;
     }
 
@@ -201,17 +204,20 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         Log.d(TAG, "Finding view by text: " + text);
 
         UiObject2 view = findViewByTextInternal(text);
-        if (view != null) {
-            return view;
+
+        // Scroll the parent view to find the view if needed.
+        if (view == null) {
+            UiObject2 parentView;
+            boolean canScrollAgain = false;
+            do {
+                // Re-find the scrollable parent view to avoid StaleObjectException (b/381001383)
+                parentView = mDevice.findObject(By.scrollable(true));
+                canScrollAgain =
+                        parentView != null && parentView.scroll(Direction.DOWN, 1.0f, 1000);
+                view = findViewByTextInternal(text);
+            } while (view == null && canScrollAgain);
         }
 
-        UiObject2 parentView = mDevice.findObject(By.scrollable(true));
-        if (parentView != null) {
-            parentView.scroll(Direction.DOWN, 1.0f, 1000);
-            do {
-                view = findViewByTextInternal(text);
-            } while (view == null && parentView.scroll(Direction.DOWN, 1.0f, 1000));
-        }
         return view;
     }
 

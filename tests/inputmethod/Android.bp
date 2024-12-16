@@ -50,7 +50,7 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",

@@ -16,9 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.le.ScanRecord;
 import android.os.ParcelUuid;
@@ -28,7 +26,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.internal.util.ArrayUtils;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -36,8 +33,8 @@ import org.junit.runner.RunWith;
 
 /**
  * Unit test cases for {@link ScanRecord}.
- * <p>
- * To run this test, use adb shell am instrument -e class 'android.bluetooth.ScanRecordTest' -w
+ *
+ * <p>To run this test, use adb shell am instrument -e class 'android.bluetooth.ScanRecordTest' -w
  * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 @RunWith(AndroidJUnit4.class)
@@ -47,62 +44,124 @@ public class ScanRecordTest {
     @SmallTest
     @Test
     public void parser() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
 
-        byte[] partialScanRecord = new byte[] {
-                0x02, 0x01, 0x1a, // advertising flags
-                0x05, 0x02, 0x0b, 0x11, 0x0a, 0x11, // 16 bit service uuids
-                0x04, 0x09, 0x50, 0x65, 0x64, // name
-                0x02, 0x0A, (byte) 0xec, // tx power level
-                0x05, 0x16, 0x0b, 0x11, 0x50, 0x64, // service data
-                0x05, (byte) 0xff, (byte) 0xe0, 0x00, 0x02, 0x15, // manufacturer specific data
-                0x05, 0x14, 0x0c, 0x11, 0x0d, 0x11, // 16 bit service solicitation uuids
-                0x03, 0x50, 0x01, 0x02, // an unknown data type won't cause trouble
-        };
+        byte[] partialScanRecord =
+                new byte[] {
+                    0x02,
+                    0x01,
+                    0x1a, // advertising flags
+                    0x05,
+                    0x02,
+                    0x0b,
+                    0x11,
+                    0x0a,
+                    0x11, // 16 bit service uuids
+                    0x04,
+                    0x09,
+                    0x50,
+                    0x65,
+                    0x64, // name
+                    0x02,
+                    0x0A,
+                    (byte) 0xec, // tx power level
+                    0x05,
+                    0x16,
+                    0x0b,
+                    0x11,
+                    0x50,
+                    0x64, // service data
+                    0x05,
+                    (byte) 0xff,
+                    (byte) 0xe0,
+                    0x00,
+                    0x02,
+                    0x15, // manufacturer specific data
+                    0x05,
+                    0x14,
+                    0x0c,
+                    0x11,
+                    0x0d,
+                    0x11, // 16 bit service solicitation uuids
+                    0x03,
+                    0x50,
+                    0x01,
+                    0x02, // an unknown data type won't cause trouble
+                };
 
-        final byte[] tdsData = new byte[] {
-            ScanRecord.DATA_TYPE_TRANSPORT_DISCOVERY_DATA, 0x42, 0x43, 0x02 /* len */, 0x08, 0x09
-        };
-        final byte[] tdsDataLengh = new byte[] { (byte) tdsData.length };
+        final byte[] tdsData =
+                new byte[] {
+                    ScanRecord.DATA_TYPE_TRANSPORT_DISCOVERY_DATA,
+                    0x42,
+                    0x43,
+                    0x02 /* len */,
+                    0x08,
+                    0x09
+                };
+        final byte[] tdsDataLength = new byte[] {(byte) tdsData.length};
 
-        byte[] scanRecord = ArrayUtils.concat(partialScanRecord, tdsDataLengh, tdsData);
+        byte[] scanRecord = concat(partialScanRecord, tdsDataLength, tdsData);
 
         ScanRecord data = TestUtils.parseScanRecord(scanRecord);
-        assertEquals(0x1a, data.getAdvertiseFlags());
+        assertThat(data.getAdvertiseFlags()).isEqualTo(0x1a);
         ParcelUuid uuid1 = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid2 = ParcelUuid.fromString("0000110B-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid3 = ParcelUuid.fromString("0000110C-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid4 = ParcelUuid.fromString("0000110D-0000-1000-8000-00805F9B34FB");
-        assertTrue(data.getServiceUuids().contains(uuid1));
-        assertTrue(data.getServiceUuids().contains(uuid2));
-        assertFalse(data.getServiceUuids().contains(uuid3));
-        assertFalse(data.getServiceUuids().contains(uuid4));
-        assertFalse(data.getServiceSolicitationUuids().contains(uuid1));
-        assertFalse(data.getServiceSolicitationUuids().contains(uuid2));
-        assertTrue(data.getServiceSolicitationUuids().contains(uuid3));
-        assertTrue(data.getServiceSolicitationUuids().contains(uuid4));
+        assertThat(data.getServiceUuids()).contains(uuid1);
+        assertThat(data.getServiceUuids()).contains(uuid2);
+        assertThat(data.getServiceUuids()).doesNotContain(uuid3);
+        assertThat(data.getServiceUuids()).doesNotContain(uuid4);
+        assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid1);
+        assertThat(data.getServiceSolicitationUuids()).doesNotContain(uuid2);
+        assertThat(data.getServiceSolicitationUuids()).contains(uuid3);
+        assertThat(data.getServiceSolicitationUuids()).contains(uuid4);
 
-        TestUtils.assertArrayEquals(data.getTransportDiscoveryData().toByteArray(), tdsData);
+        assertThat(data.getTransportDiscoveryData().toByteArray()).isEqualTo(tdsData);
 
-        assertEquals("Ped", data.getDeviceName());
-        assertEquals(-20, data.getTxPowerLevel());
+        assertThat(data.getDeviceName()).isEqualTo("Ped");
+        assertThat(data.getTxPowerLevel()).isEqualTo(-20);
 
-        assertTrue(data.getManufacturerSpecificData().get(0x00E0) != null);
+        assertThat(data.getManufacturerSpecificData().get(0x00E0)).isNotNull();
 
-        final byte[] manufacturerData = new byte[] {
-                0x02, 0x15 };
-        TestUtils.assertArrayEquals(manufacturerData,
-                data.getManufacturerSpecificData().get(0x00E0));
-        TestUtils.assertArrayEquals(manufacturerData, data.getManufacturerSpecificData(0x00E0));
+        final byte[] manufacturerData = new byte[] {0x02, 0x15};
+        assertThat(data.getManufacturerSpecificData().get(0x00E0)).isEqualTo(manufacturerData);
+        assertThat(data.getManufacturerSpecificData(0x00E0)).isEqualTo(manufacturerData);
 
-        assertTrue(data.getServiceData().containsKey(uuid2));
-        final byte[] serviceData = new byte[] {
-                0x50, 0x64 };
-        TestUtils.assertArrayEquals(serviceData, data.getServiceData().get(uuid2));
-        TestUtils.assertArrayEquals(serviceData, data.getServiceData(uuid2));
+        assertThat(data.getServiceData()).containsKey(uuid2);
+        final byte[] serviceData = new byte[] {0x50, 0x64};
+        assertThat(data.getServiceData().get(uuid2)).isEqualTo(serviceData);
+        assertThat(data.getServiceData(uuid2)).isEqualTo(serviceData);
 
         final byte[] adData = new byte[] {0x01, 0x02};
-        TestUtils.assertArrayEquals(adData, data.getAdvertisingDataMap().get(0x50));
+        assertThat(data.getAdvertisingDataMap().get(0x50)).isEqualTo(adData);
+    }
+
+    /**
+     * Copied from frameworks/base/core/java/com/android/internal/util/ArrayUtils.java
+     *
+     * <p>Returns the concatenation of the given byte arrays. Null arrays are treated as empty.
+     */
+    private static byte[] concat(byte[]... arrays) {
+        if (arrays == null) {
+            return new byte[0];
+        }
+        int totalLength = 0;
+        for (byte[] a : arrays) {
+            if (a != null) {
+                totalLength += a.length;
+            }
+        }
+        final byte[] result = new byte[totalLength];
+        int pos = 0;
+        for (byte[] a : arrays) {
+            if (a != null) {
+                System.arraycopy(a, 0, result, pos, a.length);
+                pos += a.length;
+            }
+        }
+        return result;
     }
 }

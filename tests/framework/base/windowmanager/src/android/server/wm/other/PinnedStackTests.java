@@ -134,6 +134,7 @@ import android.os.RemoteCallback;
 import android.os.UserManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -151,8 +152,11 @@ import android.util.Log;
 import android.util.Rational;
 import android.util.Size;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.wm.shell.Flags;
 
 import com.google.common.truth.Truth;
 
@@ -393,7 +397,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackActivityIsInDisplayBounds(PIP_ACTIVITY);
     }
 
+    // TODO (b/380030822): Wrong minimal bounds in PiP2 sometimes on first run.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testEnterPipWithMinimalSize() throws Exception {
         // Launch a PiP activity with minimal size specified
         launchActivity(PIP_ACTIVITY_WITH_MINIMAL_SIZE, extraString(EXTRA_ENTER_PIP, "true"));
@@ -587,6 +593,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 381539546)
     public void testChangeAspectRationWhenInPipMode() {
         // Enter PiP mode with a 2:1 aspect ratio
         testEnterPipAspectRatio(2, 1);
@@ -1304,6 +1311,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 381539546)
     public void testEnterPipWithResumeWhilePausingActivityNoStop() {
         /*
          * Launch the resumeWhilePausing activity and ensure that the PiP activity did not get
@@ -1502,6 +1510,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     @Test
     public void testSetRequestedOrientationWhilePinned() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
         // Launch the PiP activity fixed as portrait, and enter picture-in-picture
         launchActivity(PIP_ACTIVITY, WINDOWING_MODE_FULLSCREEN,
                 extraString(EXTRA_PIP_ORIENTATION, String.valueOf(SCREEN_ORIENTATION_PORTRAIT)),

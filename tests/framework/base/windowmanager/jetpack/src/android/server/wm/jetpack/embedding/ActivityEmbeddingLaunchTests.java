@@ -71,8 +71,9 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
      */
     @Test
     public void testSplitWithPrimaryActivity() throws InterruptedException {
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
 
         // Only the primary activity can be in a split with another activity
         final Predicate<Pair<Activity, Activity>> activityActivityPredicate =
@@ -129,7 +130,8 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
     @Test
     public void testPrimaryActivityLaunchToSideClearTop() {
         Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
 
         SplitPairRule splitPairRule = createWildcardSplitPairRule(true /* shouldClearTop */);
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
@@ -173,7 +175,8 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
         Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         Activity nextPrimaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
                 TestActivityWithId.class, splitPairRule,
                 "initialSecondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
@@ -255,7 +258,8 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
 
         // Launch two activities into a split
         Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
@@ -297,7 +301,8 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
 
         // Launch two activities into a split
         Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
                 TestActivityWithId2.class, splitPairRule,
                 "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
@@ -324,7 +329,8 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
     @Test
     public void testSecondaryActivityLaunchAbove() throws InterruptedException {
         final Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
 
         // Build a rule that will only allow to split with the primary activity.
         final Predicate<Pair<Activity, Intent>> activityIntentPredicate =

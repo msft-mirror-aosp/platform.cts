@@ -1811,6 +1811,28 @@ public final class Helper {
     }
 
     /**
+     * Enable fill dialog improvements
+     */
+    public static void enableFillDialogImprovements(@NonNull Context context) {
+        enableFillDialogFeature(context);
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog");
+        setDeviceConfig(deviceConfigStateManager, "true");
+    }
+
+    /**
+     * Disable fill dialog improvements
+     */
+    public static void disableFillDialogImprovements(@NonNull Context context) {
+        disableFillDialogFeature(context);
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "improve_fill_dialog");
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
      * Enable PCC Detection Feature Hints
      */
     public static void enablePccDetectionFeature(@NonNull Context context, String...types) {
@@ -1853,6 +1875,24 @@ public final class Helper {
                 new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS);
         setDeviceConfig(deviceConfigStateManager, hints);
+    }
+
+    /**
+     * Disable relayout fix
+     */
+    public static void disableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "false");
+    }
+
+    /**
+     * Enable relayout fix
+     */
+    public static void enableRelayoutFix(@NonNull Context context) {
+        DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                context, DeviceConfig.NAMESPACE_AUTOFILL, "enable_relayout");
+        setDeviceConfig(deviceConfigStateManager, "true");
     }
 
     public static void setDeviceConfig(@NonNull DeviceConfigStateManager deviceConfigStateManager,

@@ -103,6 +103,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
@@ -159,6 +160,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
+
+    @Rule public final DebugInputRule debugInputRule = new DebugInputRule();
 
     @Before
     public void setup() {
@@ -1541,11 +1544,12 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Inject stylus handwriting event on an editor and verify stylus source is detected with
-     * {@link InputMethodService#onUpdateEditorToolType(int)} on next startInput().
+     * Inject stylus handwriting event on an editor and verify stylus source is detected with {@link
+     * InputMethodService#onUpdateEditorToolType(int)} on next startInput().
      */
     @Test
     @FlakyTest
+    @DebugInputRule.DebugInput(bug = 380535703)
     public void testOnViewClicked_withStylusHandwriting() throws Exception {
         int displayId;
         String initialUserRotation = null;

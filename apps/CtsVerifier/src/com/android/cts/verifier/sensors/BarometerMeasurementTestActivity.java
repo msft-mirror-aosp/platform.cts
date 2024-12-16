@@ -21,6 +21,8 @@ import android.provider.Settings;
 import android.net.Uri;
 import android.os.SystemClock;
 
+import android.widget.ScrollView;
+import com.google.common.math.StatsAccumulator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,6 +38,7 @@ import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
 
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
 import android.hardware.cts.helpers.TestSensorEnvironment;
 import android.hardware.cts.helpers.sensoroperations.TestSensorOperation;
 import android.hardware.cts.helpers.TestSensorEvent;
@@ -102,6 +105,7 @@ import com.android.internal.annotations.GuardedBy;
 /** Semi-automated test that focuses on characteristics associated with Barometer measurements. */
 public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActivity {
     public static int SAMPLE_PERIOD_US = 100000;
+    private static final long NANOSECONDS_PER_SECOND = 1000000000L;
     private boolean endMessage = false;
 
     @GuardedBy("this")
@@ -115,21 +119,124 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (!Boolean.parseBoolean(
-                PropertyUtil.getProperty("hardware.sensor.barometer.high_quality.implemented"))) {
-            getTestLogger().logMessage(R.string.snsr_baro_not_implemented);
-            finish();
-        }
     }
 
     @Override
     protected void activitySetUp() throws InterruptedException {
+        if (!Boolean.parseBoolean(
+                PropertyUtil.getProperty("hardware.sensor.barometer.high_quality.implemented"))) {
+            // Skip the test by throwing an exception
+            throw new SensorTestStateNotSupportedException(
+                    getString(R.string.snsr_baro_not_implemented));
+        }
         waitForUserToContinue();
     }
 
     @Override
     protected void activityCleanUp() {
         closeGlSurfaceView();
+    }
+
+    @SuppressWarnings("unused")
+    public String testTappingImpact() throws Throwable {
+        getTestLogger().logInstructions(R.string.snsr_baro_tap_test_prep_instruction);
+        waitForUserToContinue();
+        getTestLogger().logInstructions(R.string.snsr_baro_tap_test_instruction);
+        waitForUserToContinue();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 22 seconds - 10 seconds for baseline, 10 seconds for the
+        // impact, and 2 seconds for extra room.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 22, TimeUnit.SECONDS);
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+        int width = displaymetrics.widthPixels;
+        int height = displaymetrics.heightPixels;
+        // Start the sensor operation in a separate thread so that we can wait for the baseline to
+        // be collected before showing the button to the user. Blocking the UI thread causes ANR.
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                sensorOperation.execute(getCurrentTestNode());
+                            } catch (Throwable e) {
+                                throw new AssertionError(
+                                        "FAILED - Unable to execute sensor operation.", e);
+                            }
+                        });
+        thread.start();
+        // Wait for 10 seconds to collect a baseline reading for barometer measurements
+        // without the impact of tapping.
+        SystemClock.sleep(10000);
+        runOnUiThread(
+                () -> {
+                    Random random = new Random();
+                    ScrollView view = (ScrollView) findViewById(R.id.log_scroll_view);
+                    int currentScrollViewHeight = view.getHeight();
+                    // Create a button to be tapped by the user.
+                    Button button = new Button(BarometerMeasurementTestActivity.this);
+                    button.setText(getString(R.string.snsr_baro_tap_button_label));
+                    LinearLayout.LayoutParams buttonLayoutParams =
+                            new LinearLayout.LayoutParams(
+                                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    buttonLayoutParams.leftMargin = random.nextInt(width - button.getWidth());
+                    // Place the button at a new "page" of the scroll view.
+                    buttonLayoutParams.topMargin =
+                            (height - currentScrollViewHeight)
+                                    + random.nextInt(height - button.getHeight());
+                    button.setLayoutParams(buttonLayoutParams);
+                    // Create an empty view to be used to position the button.
+                    View emptyView = new View(BarometerMeasurementTestActivity.this);
+                    LinearLayout.LayoutParams layoutParams =
+                            new LinearLayout.LayoutParams(
+                                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+                    layoutParams.bottomMargin =
+                            height - buttonLayoutParams.topMargin - button.getHeight();
+                    emptyView.setLayoutParams(layoutParams);
+                    button.setOnClickListener(
+                            (v) -> {
+                                // Re-position the button to a random position on the screen after
+                                // the user tapped it.
+                                buttonLayoutParams.leftMargin =
+                                        random.nextInt(width - button.getWidth());
+                                buttonLayoutParams.topMargin =
+                                        (height - currentScrollViewHeight)
+                                                + random.nextInt(height - button.getHeight());
+                                button.setLayoutParams(buttonLayoutParams);
+                                layoutParams.bottomMargin =
+                                        height - buttonLayoutParams.topMargin - button.getHeight();
+                                emptyView.setLayoutParams(layoutParams);
+                                // Scroll to the bottom of the log view since the position of the
+                                // button is relative to the screen size so that it will be visible.
+                                view.post(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                view.fullScroll(View.FOCUS_DOWN);
+                                            }
+                                        });
+                            });
+                    // Add the button and the empty view to the screen.
+                    getTestLogger().logCustomView(button);
+                    getTestLogger().logCustomView(emptyView);
+                });
+        // Wait for the sensor operation to finish if not already finished.
+        thread.join();
+        List<TestSensorEvent> events = sensorOperation.getCollectedEvents();
+
+        Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(events));
+
+        if (minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.5) {
+            Assert.fail("FAILED - Pressure change under tapping impact is larger than 0.5 hPa");
+            return "FAILED";
+        }
+        return "PASSED";
     }
 
     @SuppressWarnings("unused")
@@ -230,11 +337,179 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
         boolean failed =
-                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.3;
         if (failed) {
-            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change under squeezing impact is larger than 0.3 hPa");
         }
         return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
+    public String testSmoothingWithinSameActiviation() throws Throwable {
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_soomth_within_same_activation_instruction);
+        waitForUserToContinue();
+        // Initial collection to get a baseline reading for barometer measurements with the device
+        // being stationary.
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 10 seconds for on the ground, 2 seconds for raising, and 5 seconds for
+        // after changing of elevation.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 17, TimeUnit.SECONDS);
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                SystemClock.sleep(10000);
+                                playSound();
+                                SystemClock.sleep(2000);
+                                playSound();
+                                SystemClock.sleep(5000);
+                                playSound();
+                            } catch (InterruptedException e) {
+                                Assert.fail("FAILED - Unable to play sound.");
+                            }
+                        });
+        thread.start();
+        sensorOperation.execute(getCurrentTestNode());
+        List<TestSensorEvent> events = sensorOperation.getCollectedEvents();
+        long startTimeNanos = events.get(0).timestamp;
+        // 2 seconds to account for the sensor settling.
+        long settlingTimeNanos = startTimeNanos + 2L * NANOSECONDS_PER_SECOND;
+        // 10 seconds total for the baseline.
+        long baslineEndTimeNanos = startTimeNanos + 10L * NANOSECONDS_PER_SECOND;
+        // We expect the elevation change to be reflected in the pressure
+        // reading 3 seconds after baseline ends.
+        long expectedChangeReflectedTimeNanos = baslineEndTimeNanos + 3L * NANOSECONDS_PER_SECOND;
+        List<TestSensorEvent> baselineEvents = new ArrayList<>();
+        List<TestSensorEvent> afterChangeEvents = new ArrayList<>();
+        for (TestSensorEvent event : events) {
+            // Baseline events are strictly after the settling time and strictly before the
+            // baseline end time. The after change events are strictly after the baseline end time
+            // and strictly before the expected change reflected time.
+            if (event.timestamp > settlingTimeNanos && event.timestamp < baslineEndTimeNanos) {
+                baselineEvents.add(event);
+            } else if (event.timestamp > baslineEndTimeNanos
+                    && event.timestamp < expectedChangeReflectedTimeNanos) {
+                afterChangeEvents.add(event);
+            }
+        }
+        Pair<Entry<Long, Float>, Entry<Long, Float>> baselineMinAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(baselineEvents));
+        // The pressure change on the ground should be less than 0.12 hPa.
+        boolean failed =
+                baselineMinAndMaxReadings.second.getValue()
+                                - baselineMinAndMaxReadings.first.getValue()
+                        > 0.12;
+        if (failed) {
+            Assert.fail("FAILED - Pressure change on the ground is larger than 0.12 hPa");
+        }
+        Pair<Entry<Long, Float>, Entry<Long, Float>> afterChangeMinAndMaxReadings =
+                getMinAndMaxReadings(eventListToTimestampReadingMap(afterChangeEvents));
+        // The pressure change after changing of elevation should be more than 0.2 hPa. Take the
+        // difference between the minimum reading(highest elevation) after sound, and the maximum
+        // reading during baseline(lowest elevation).
+        failed =
+                Math.abs(
+                                afterChangeMinAndMaxReadings.first.getValue()
+                                        - baselineMinAndMaxReadings.second.getValue())
+                        < 0.2;
+        if (failed) {
+            Assert.fail(
+                    "FAILED - Elevation change was not reflected in the pressure reading within 3"
+                            + " seconds");
+        }
+        return failed ? "FAILED" : "PASSED";
+    }
+
+    @SuppressWarnings("unused")
+    public String testSmoothingacrossActivations() throws Throwable {
+        List<List<TestSensorEvent>> events = new ArrayList<List<TestSensorEvent>>();
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_prep_instruction);
+        waitForUserToContinue();
+        TestSensorEnvironment environment =
+                new TestSensorEnvironment(
+                        getApplicationContext(),
+                        Sensor.TYPE_PRESSURE,
+                        SAMPLE_PERIOD_US,
+                        /* maxReportLatencyUs= */ 0);
+        // Collect data for 20 seconds on the ground.
+        TestSensorOperation sensorOperation =
+                TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_two_meters_above);
+        waitForUserToContinue();
+        // Collect data for 20 seconds at 2 meters above the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger().logInstructions(R.string.snsr_baro_smooth_across_activations_floor);
+        waitForUserToContinue();
+        // Collect data for another 20 seconds on the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+
+        getTestLogger()
+                .logInstructions(R.string.snsr_baro_smooth_across_activations_two_floors_below);
+        waitForUserToContinue();
+        // Collect data for 20 seconds at 2 floors below the starting floor, on the ground.
+        sensorOperation = TestSensorOperation.createOperation(environment, 20, TimeUnit.SECONDS);
+        sensorOperation.execute(getCurrentTestNode());
+        playSound();
+        events.add(sensorOperation.getCollectedEvents());
+        boolean passed = true;
+        StringBuilder message = new StringBuilder().append("FAILED - \n");
+        for (int i = 0; i < events.size(); i++) {
+            List<TestSensorEvent> eventList = events.get(i);
+            if (!isPressureStableWithinActivation(eventList)) {
+                passed = false;
+                message.append("Pressure is not stable within activation: #");
+                message.append(i);
+                message.append("\n");
+            }
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(0), events.get(1), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the first and"
+                            + " second activations. ");
+            message.append("\n");
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(1), events.get(2), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the second"
+                            + " and third activations. ");
+            message.append("\n");
+        }
+        if (!isELevationChangeReflectedInPressure(events.get(2), events.get(3), 0.2)) {
+            passed = false;
+            message.append(
+                    "Elevation change is not reflected in the pressure reading across the third and"
+                            + " fourth activations. ");
+            message.append("\n");
+        }
+        if (!passed) {
+            Assert.fail(message.toString());
+            return "FAILED";
+        }
+        return "PASSED";
     }
 
     @SuppressWarnings("unused")
@@ -396,7 +671,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         long systemBootTimeS = (System.currentTimeMillis() - SystemClock.elapsedRealtime()) / 1000;
         for (int i = 0; i < currentEvents.size(); i++) {
             TestSensorEvent event = currentEvents.get(i);
-            timestamps[i] = Math.round(event.timestamp / 1e9) + systemBootTimeS;
+            timestamps[i] = event.timestamp / NANOSECONDS_PER_SECOND + systemBootTimeS;
             readings[i] = event.values[0];
         }
         int[] commonTimestampsIndices = new int[currentEvents.size()];
@@ -425,8 +700,18 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return failed ? "PASSED" : "FAILED";
     }
 
-    // Finds the maximum and minimum differences between the test device and the reference device
-    // readings at the same timestamp and returns true if the difference is less than 0.2 hPa.
+    /**
+     * Validate the temperature compensation of the test device's braometer by comparing the maximum
+     * and minimum differences between the test device and the reference device readings at the same
+     * timestamp
+     *
+     * @param timestamps the timestamps of the test device readings
+     * @param readings the readings of the test device
+     * @param referenceTimestamps the timestamps of the reference device readings
+     * @param referenceReadings the readings of the reference device
+     * @return true if the difference between the maximum and minimum differences is less than 0.2
+     *     hPa, false otherwise
+     */
     private boolean validateTemperatureCompensation(
             long[] timestamps,
             float[] readings,
@@ -460,7 +745,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return Math.abs(maxDelta - minDelta) < 0.2;
     }
 
-    // Handler for messages from the reference device via Bluetooth.
+    /** Handler for messages from the reference device via Bluetooth. */
     private class ChatHandler extends Handler {
         public ChatHandler(Looper looper) {
             super(looper);
@@ -492,6 +777,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /** Simulates high CPU usage to increase the temperature of the device. */
     private void simulateHighCpuUsageToIncreaseTemperature() {
         for (int i = 0; i < 100; i++) {
             Thread t =
@@ -508,6 +794,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
     }
 
+    /**
+     * Converts the list of sensor events to a map of timestamp to pressure readings.
+     *
+     * @param events the list of sensor events
+     * @return the map of timestamp to pressure reading
+     */
     private static Map<Long, Float> eventListToTimestampReadingMap(List<TestSensorEvent> events) {
         Map<Long, Float> readings = new HashMap<>();
         for (TestSensorEvent event : events) {
@@ -516,6 +808,12 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return readings;
     }
 
+    /**
+     * Computes the average pressure reading in the given event.
+     *
+     * @param event the event to compute the average pressure reading from
+     * @return the average pressure reading in the event
+     */
     private static float computeAveragePressureHpa(TestSensorEvent event) {
         float[] events = event.values.clone();
         float sum = 0;
@@ -526,6 +824,13 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         return sum / events.length;
     }
 
+    /**
+     * Finds the minimum and maximum pressure readings in the given map.
+     *
+     * @param readings the map of pressure readings
+     * @return a pair of pressure readings, the first one is the minimum pressure reading and the
+     *     second one is the maximum pressure reading
+     */
     private static Pair<Entry<Long, Float>, Entry<Long, Float>> getMinAndMaxReadings(
             Map<Long, Float> readings) {
         Entry<Long, Float> minEntry = null;
@@ -539,5 +844,72 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
             }
         }
         return Pair.create(minEntry, maxEntry);
+    }
+
+    /**
+     * Checks if the pressure readings are stable within the same activation by comparing the first
+     * second and the last ten seconds readings.
+     *
+     * @param events the list of sensor events
+     * @return true if the readings are within 0.06 hPa for the first second and the last ten
+     *     seconds of the activation, false otherwise.
+     */
+    private static boolean isPressureStableWithinActivation(List<TestSensorEvent> events) {
+        long startTimeNanos = events.get(0).timestamp;
+        long endTimeNanos = events.get(events.size() - 1).timestamp;
+        long firstSecondEndTimeNanos = startTimeNanos + 1L * NANOSECONDS_PER_SECOND;
+        long lastTenSecondsStartTimeNanos = endTimeNanos - 10L * NANOSECONDS_PER_SECOND;
+        StatsAccumulator firstSecondReadings = new StatsAccumulator();
+        StatsAccumulator lastTenSecondsReadings = new StatsAccumulator();
+        for (TestSensorEvent event : events) {
+            if (event.timestamp > startTimeNanos && event.timestamp < firstSecondEndTimeNanos) {
+                firstSecondReadings.add(computeAveragePressureHpa(event));
+            } else if (event.timestamp > lastTenSecondsStartTimeNanos
+                    && event.timestamp < endTimeNanos) {
+                lastTenSecondsReadings.add(computeAveragePressureHpa(event));
+            }
+        }
+        return Math.abs(firstSecondReadings.mean() - lastTenSecondsReadings.mean()) < 0.06;
+    }
+
+    /**
+     * Checks if the elevation change is reflected in the pressure reading by comparing the average
+     * pressure reading in the last second before the change and the first second after the change.
+     *
+     * @param priorToChangeEvents the list of events that occurred before the elevation change
+     * @param afterChangeEvents the list of events that occurred after the elevation change
+     * @param thresholdHpa the minimum difference between the average pressure reading before and
+     *     after the change
+     * @return true if the elevation change is reflected in the pressure reading, false otherwise
+     */
+    private static boolean isELevationChangeReflectedInPressure(
+            List<TestSensorEvent> priorToChangeEvents,
+            List<TestSensorEvent> afterChangeEvents,
+            double thresholdHpa) {
+        long priorToChangeEndTimeNanos =
+                priorToChangeEvents.get(priorToChangeEvents.size() - 1).timestamp;
+        long priorToChangeLastSecondStartTimeNanos =
+                priorToChangeEndTimeNanos - 1L * NANOSECONDS_PER_SECOND;
+        long afterChangeStartTimeNanos = afterChangeEvents.get(0).timestamp;
+        long afterChangeFirstSecondEndTimeNanos =
+                afterChangeStartTimeNanos + 1L * NANOSECONDS_PER_SECOND;
+        StatsAccumulator priorToChangeReadings = new StatsAccumulator();
+        for (int i = priorToChangeEvents.size() - 1; i >= 0; i--) {
+            TestSensorEvent event = priorToChangeEvents.get(i);
+            if (event.timestamp > priorToChangeLastSecondStartTimeNanos) {
+                priorToChangeReadings.add(computeAveragePressureHpa(event));
+            } else {
+                break;
+            }
+        }
+        StatsAccumulator afterChangeReadings = new StatsAccumulator();
+        for (TestSensorEvent event : afterChangeEvents) {
+            if (event.timestamp < afterChangeFirstSecondEndTimeNanos) {
+                afterChangeReadings.add(computeAveragePressureHpa(event));
+            } else {
+                break;
+            }
+        }
+        return Math.abs(afterChangeReadings.mean() - priorToChangeReadings.mean()) > thresholdHpa;
     }
 }

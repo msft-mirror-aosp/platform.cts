@@ -73,9 +73,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(true));
         }
 
-        // Check whether Usd is supported or not
-        mUsdManager = (UsdManager) getContext().getSystemService(Context.WIFI_USD_SERVICE);
-        assertNotNull("Usd Manager", mUsdManager);
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+            // Check whether Usd is supported or not
+            if (mWifiManager.isUsdPublisherSupported() || mWifiManager.isUsdSubscriberSupported()) {
+                mUsdManager = (UsdManager) getContext().getSystemService(Context.WIFI_USD_SERVICE);
+                assertNotNull("Usd Manager", mUsdManager);
+            }
+        }
     }
 
     @Override
@@ -96,10 +101,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     public void testCharacteristics() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
-            assertNotNull(mUsdManager);
-            if (!mUsdManager.isSubscriberSupported()) {
+            if (!(mWifiManager.isUsdPublisherSupported()
+                    || mWifiManager.isUsdSubscriberSupported())) {
                 return;
             }
+            assertNotNull(mUsdManager);
             Characteristics characteristics = mUsdManager.getCharacteristics();
             assertNotNull(characteristics);
             assertEquals("Service Name Length", characteristics.getMaxServiceNameLength(), 255);
@@ -190,7 +196,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test USD publish
      */
-    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdPublisherSupported",
             "android.net.wifi.usd.UsdManager#publish",
             "android.net.wifi.usd.PublishSession#cancel",
             "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
@@ -198,11 +204,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     public void testPublish() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
-            assertNotNull(mUsdManager);
-            // Check whether publisher is supported or not
-            if (!mUsdManager.isPublisherSupported()) {
+            if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
+            assertNotNull(mUsdManager);
             // Check whether publish is available or not
             if (!mUsdManager.isPublisherAvailable()) {
                 return;
@@ -231,7 +236,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test USD publish with operating frequencies
      */
-    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdPublisherSupported",
             "android.net.wifi.usd.UsdManager.PublishConfig.Builder#setOperatingFrequenciesMhz",
             "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
             "android.net.wifi.usd.UsdManager#publish",
@@ -241,11 +246,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     public void testPublishWithOperatingFrequencies() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
-            assertNotNull(mUsdManager);
-            // Check whether publisher is supported or not
-            if (!mUsdManager.isPublisherSupported()) {
+            if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
+            assertNotNull(mUsdManager);
             // Check whether publish is available or not
             if (!mUsdManager.isPublisherAvailable()) {
                 return;
@@ -342,7 +346,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test USD subscribe
      */
-    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdSubscriberSupported",
             "android.net.wifi.usd.UsdManager#subscribe",
             "android.net.wifi.usd.SubscribeSession#cancel",
             "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
@@ -350,11 +354,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     public void testSubscribe() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
-            assertNotNull(mUsdManager);
-            // Check whether USD is supported or not
-            if (!mUsdManager.isSubscriberSupported()) {
+            if (!mWifiManager.isUsdSubscriberSupported()) {
                 return;
             }
+            assertNotNull(mUsdManager);
             // Check whether subscribe is available or not
             if (!mUsdManager.isSubscriberAvailable()) {
                 return;
@@ -382,7 +385,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     /**
      * Test USD subscribe with operating frequencies
      */
-    @ApiTest(apis = {"android.net.wifi.usd.UsdManager#isUsdSupported",
+    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdSubscriberSupported",
             "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#setOperatingFrequenciesMhz",
             "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#getOperatingFrequenciesMhz",
             "android.net.wifi.usd.UsdManager#subscribe",
@@ -392,11 +395,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     public void testSubscribeWithOperatingFrequencies() {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
-            assertNotNull(mUsdManager);
-            // Check whether USD is supported or not
-            if (!mUsdManager.isSubscriberSupported()) {
+            if (!mWifiManager.isUsdSubscriberSupported()) {
                 return;
             }
+            assertNotNull(mUsdManager);
             // Check whether subscribe is available or not
             if (!mUsdManager.isSubscriberAvailable()) {
                 return;

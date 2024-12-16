@@ -1442,6 +1442,85 @@ public class NotificationTest {
         assertNotEquals(0, (notification.flags & FLAG_PROMOTED_ONGOING));
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
+                .setColor(Color.WHITE)
+                .setColorized(true)
+                .setOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_notOngoing() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
+                .setColor(Color.WHITE)
+                .setColorized(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_wrongStyle() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.InboxStyle())
+                .setContentTitle("TITLE")
+                .setColor(Color.WHITE)
+                .setColorized(true)
+                .setOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_notColorized() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
+                .setColor(Color.WHITE)
+                .setOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_noTitle() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle())
+                .setColor(Color.WHITE)
+                .setColorized(true)
+                .setOngoing(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testHasPromotableCharacteristics_groupSummary() {
+        Notification n = new Notification.Builder(mContext, "test")
+                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setStyle(new Notification.BigTextStyle().setBigContentTitle("BIG"))
+                .setColor(Color.WHITE)
+                .setColorized(true)
+                .setOngoing(true)
+                .setGroup("someGroup")
+                .setGroupSummary(true)
+                .build();
+        assertThat(n.hasPromotableCharacteristics()).isFalse();
+    }
+
     private static void assertMessageEquals(
             Notification.MessagingStyle.Message expected,
             Notification.MessagingStyle.Message actual) {

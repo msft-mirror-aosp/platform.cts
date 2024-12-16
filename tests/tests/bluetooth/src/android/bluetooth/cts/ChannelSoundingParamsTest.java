@@ -21,15 +21,14 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static android.bluetooth.le.ChannelSoundingParams.CS_SECURITY_LEVEL_ONE;
 import static android.bluetooth.le.ChannelSoundingParams.CS_SECURITY_LEVEL_TWO;
-import static android.bluetooth.le.ChannelSoundingParams.LOCATION_TYPE_UNKNOWN;
 import static android.bluetooth.le.ChannelSoundingParams.LOCATION_TYPE_OUTDOOR;
-import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_UNKNOWN;
+import static android.bluetooth.le.ChannelSoundingParams.LOCATION_TYPE_UNKNOWN;
 import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_LINE_OF_SIGHT;
+import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_UNKNOWN;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ChannelSoundingParams;
@@ -58,8 +57,7 @@ public class ChannelSoundingParamsTest {
     private BluetoothAdapter mAdapter;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -68,7 +66,7 @@ public class ChannelSoundingParamsTest {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         enforceConnectAndPrivileged(() -> mAdapter.isDistanceMeasurementSupported());
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
@@ -85,11 +83,12 @@ public class ChannelSoundingParamsTest {
     public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
-            ChannelSoundingParams params = new ChannelSoundingParams.Builder()
-                    .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
-                    .setLocationType(LOCATION_TYPE_OUTDOOR)
-                    .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
-                    .build();
+            ChannelSoundingParams params =
+                    new ChannelSoundingParams.Builder()
+                            .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                            .setLocationType(LOCATION_TYPE_OUTDOOR)
+                            .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
+                            .build();
             params.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             ChannelSoundingParams paramsFromParcel =
@@ -104,9 +103,9 @@ public class ChannelSoundingParamsTest {
     @Test
     public void defaultParameters() {
         ChannelSoundingParams params = new ChannelSoundingParams.Builder().build();
-        assertEquals(SIGHT_TYPE_UNKNOWN, params.getSightType());
-        assertEquals(LOCATION_TYPE_UNKNOWN, params.getLocationType());
-        assertEquals(CS_SECURITY_LEVEL_ONE, params.getCsSecurityLevel());
+        assertThat(params.getSightType()).isEqualTo(SIGHT_TYPE_UNKNOWN);
+        assertThat(params.getLocationType()).isEqualTo(LOCATION_TYPE_UNKNOWN);
+        assertThat(params.getCsSecurityLevel()).isEqualTo(CS_SECURITY_LEVEL_ONE);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -115,7 +114,7 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setSightType(-1));
         ChannelSoundingParams params = builder.setSightType(SIGHT_TYPE_LINE_OF_SIGHT).build();
-        assertEquals(SIGHT_TYPE_LINE_OF_SIGHT, params.getSightType());
+        assertThat(params.getSightType()).isEqualTo(SIGHT_TYPE_LINE_OF_SIGHT);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -124,7 +123,7 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setLocationType(-1));
         ChannelSoundingParams params = builder.setLocationType(LOCATION_TYPE_OUTDOOR).build();
-        assertEquals(LOCATION_TYPE_OUTDOOR, params.getLocationType());
+        assertThat(params.getLocationType()).isEqualTo(LOCATION_TYPE_OUTDOOR);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -133,21 +132,16 @@ public class ChannelSoundingParamsTest {
         ChannelSoundingParams.Builder builder = new ChannelSoundingParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCsSecurityLevel(-1));
         ChannelSoundingParams params = builder.setCsSecurityLevel(CS_SECURITY_LEVEL_TWO).build();
-        assertEquals(CS_SECURITY_LEVEL_TWO, params.getCsSecurityLevel());
+        assertThat(params.getCsSecurityLevel()).isEqualTo(CS_SECURITY_LEVEL_TWO);
     }
 
     private void assertParamsEquals(ChannelSoundingParams p, ChannelSoundingParams other) {
-        if (p == null && other == null) {
-            return;
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
-
-        assertEquals(p.getSightType(), other.getSightType());
-        assertEquals(p.getLocationType(), other.getLocationType());
-        assertEquals(p.getCsSecurityLevel(), other.getCsSecurityLevel());
+        assertThat(p.getSightType()).isEqualTo(other.getSightType());
+        assertThat(p.getLocationType()).isEqualTo(other.getLocationType());
+        assertThat(p.getCsSecurityLevel()).isEqualTo(other.getCsSecurityLevel());
     }
 
     private void enforceConnectAndPrivileged(ThrowingRunnable runnable) {

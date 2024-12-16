@@ -16,10 +16,9 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.PeriodicAdvertisingParameters;
 import android.os.Parcel;
@@ -43,8 +42,9 @@ public class PeriodicAdvertisingParametersTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getContext()));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -68,8 +68,8 @@ public class PeriodicAdvertisingParametersTest {
     @Test
     public void defaultParameters() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
-        assertFalse(params.getIncludeTxPower());
-        assertEquals(INTERVAL_MAX, params.getInterval());
+        assertThat(params.getIncludeTxPower()).isFalse();
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_MAX);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -77,21 +77,24 @@ public class PeriodicAdvertisingParametersTest {
     public void includeTxPower() {
         PeriodicAdvertisingParameters params =
                 new PeriodicAdvertisingParameters.Builder().setIncludeTxPower(true).build();
-        assertTrue(params.getIncludeTxPower());
+        assertThat(params.getIncludeTxPower()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void intervalWithInvalidValues() {
-        int[] invalidValues = { INTERVAL_MIN - 1, INTERVAL_MAX + 1 };
-        for (int i = 0; i < invalidValues.length; i++) {
-            try {
-                new PeriodicAdvertisingParameters.Builder().setInterval(invalidValues[i]).build();
-                fail();
-            } catch (IllegalArgumentException e) {
-                // expected
-            }
-        }
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new PeriodicAdvertisingParameters.Builder()
+                                .setInterval(INTERVAL_MIN - 1)
+                                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new PeriodicAdvertisingParameters.Builder()
+                                .setInterval(INTERVAL_MAX + 1)
+                                .build());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -99,27 +102,22 @@ public class PeriodicAdvertisingParametersTest {
     public void interval() {
         PeriodicAdvertisingParameters params =
                 new PeriodicAdvertisingParameters.Builder().setInterval(INTERVAL_MIN).build();
-        assertEquals(INTERVAL_MIN, params.getInterval());
+        assertThat(params.getInterval()).isEqualTo(INTERVAL_MIN);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void describeContents() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
-        assertEquals(0, params.describeContents());
+        assertThat(params.describeContents()).isEqualTo(0);
     }
 
-    private void assertParamsEquals(PeriodicAdvertisingParameters p,
-            PeriodicAdvertisingParameters other) {
-        if (p == null && other == null) {
-            return;
-        }
+    private void assertParamsEquals(
+            PeriodicAdvertisingParameters p, PeriodicAdvertisingParameters other) {
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
-
-        assertEquals(p.getIncludeTxPower(), other.getIncludeTxPower());
-        assertEquals(p.getInterval(), other.getInterval());
+        assertThat(other.getIncludeTxPower()).isEqualTo(p.getIncludeTxPower());
+        assertThat(other.getInterval()).isEqualTo(p.getInterval());
     }
 }

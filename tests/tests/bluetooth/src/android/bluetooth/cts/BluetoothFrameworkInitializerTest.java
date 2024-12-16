@@ -16,50 +16,47 @@
 
 package android.bluetooth.cts;
 
-import static com.google.common.truth.Truth.assertThat;
-
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import android.bluetooth.BluetoothFrameworkInitializer;
 import android.os.BluetoothServiceManager;
-import android.test.AndroidTestCase;
 
-import java.util.function.Consumer;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
-public class BluetoothFrameworkInitializerTest extends AndroidTestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BluetoothFrameworkInitializerTest {
 
     /**
      * BluetoothFrameworkInitializer.registerServiceWrappers() should only be called by
      * SystemServiceRegistry during boot up when Bluetooth is first initialized. Calling this API at
      * any other time should throw an exception.
      */
-    public void test_RegisterServiceWrappers_failsWhenCalledOutsideOfSystemServiceRegistry() {
-        assertThrows(IllegalStateException.class,
+    @Test
+    public void registerServiceWrappers_failsWhenCalledOutsideOfSystemServiceRegistry() {
+        assertThrows(
+                IllegalStateException.class,
                 () -> BluetoothFrameworkInitializer.registerServiceWrappers());
     }
 
-    public void test_SetBluetoothServiceManager() {
-        assertThrows(IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.setBluetoothServiceManager(
-                    mock(BluetoothServiceManager.class)));
+    @Test
+    public void setBluetoothServiceManager() {
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        BluetoothFrameworkInitializer.setBluetoothServiceManager(
+                                mock(BluetoothServiceManager.class)));
     }
 
-    public void test_SetBinderCallsStatsInitializer() {
-        assertThrows(IllegalStateException.class,
-                () -> BluetoothFrameworkInitializer.setBinderCallsStatsInitializer(new Consumer() {
-                        @Override
-                        public void accept(Object o) {
-                        }
-                }));
-    }
-
-    // org.junit.Assume.assertThrows is not available until JUnit 4.13
-    private static void assertThrows(Class<? extends Exception> exceptionClass, Runnable r) {
-        try {
-            r.run();
-            fail("Expected " + exceptionClass + " to be thrown.");
-        } catch (Exception exception) {
-            assertThat(exception).isInstanceOf(exceptionClass);
-        }
+    @Test
+    public void setBinderCallsStatsInitializer() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> BluetoothFrameworkInitializer.setBinderCallsStatsInitializer((ctx) -> {}));
     }
 }

@@ -63,6 +63,7 @@ android.net.wifi.WifiManager.SuggestionConnectionStatusListener
 android.net.wifi.WifiManager.SuggestionUserApprovalStatusListener
 android.net.wifi.WifiManager.WifiLock
 android.net.wifi.WifiManager.WpsCallback
+android.net.wifi.WifiManager.WifiStateChangedListener
 android.os.CancellationSignal
 android.os.IBinder
 android.os.Looper
@@ -72,6 +73,7 @@ android.transition.Scene
 android.transition.TransitionManager
 android.util.Dumpable
 android.util.Size
+android.util.SparseArray
 android.view.ActionMode
 android.view.ContextMenu
 android.view.Display

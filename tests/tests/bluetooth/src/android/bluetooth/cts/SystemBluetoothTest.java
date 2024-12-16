@@ -176,8 +176,6 @@ public class SystemBluetoothTest {
         } finally {
             if (recoverOffState) {
                 TestUtils.disableLocation(mContext);
-                mUiAutomation.revokeRuntimePermission(
-                        "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
         }
     }

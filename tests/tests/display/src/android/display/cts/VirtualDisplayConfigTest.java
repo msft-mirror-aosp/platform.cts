@@ -53,6 +53,7 @@ public class VirtualDisplayConfigTest {
     private static final int DENSITY = DisplayMetrics.DENSITY_MEDIUM;
     private static final float REQUESTED_REFRESH_RATE = 30.0f;
     private static final float DEFAULT_BRIGHTNESS = 0.03f;
+    private static final float DIM_BRIGHTNESS = 0.02f;
     private static final int FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
             | DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE;
 
@@ -91,6 +92,7 @@ public class VirtualDisplayConfigTest {
         }
         if (isDeviceAwareDisplayPowerEnabled) {
             builder.setDefaultBrightness(DEFAULT_BRIGHTNESS);
+            builder.setDimBrightness(DIM_BRIGHTNESS);
         }
         final VirtualDisplayConfig originalConfig = builder.build();
 
@@ -111,6 +113,7 @@ public class VirtualDisplayConfigTest {
         }
         if (isDeviceAwareDisplayPowerEnabled) {
             assertThat(originalConfig.getDefaultBrightness()).isEqualTo(DEFAULT_BRIGHTNESS);
+            assertThat(originalConfig.getDimBrightness()).isEqualTo(DIM_BRIGHTNESS);
         }
 
         final Parcel parcel = Parcel.obtain();
@@ -220,6 +223,37 @@ public class VirtualDisplayConfigTest {
         assertThrows(IllegalArgumentException.class, () -> {
             new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
                     .setDefaultBrightness(1.1f);
+        });
+    }
+
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void virtualDisplayConfig_invalidDimBrightness_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(-0.1f);
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(1.1f);
+        });
+    }
+
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void virtualDisplayConfig_dimBrightnessGreaterThanDefault_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(0.1f)
+                    .build();
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                    .setDimBrightness(0.5f)
+                    .setDefaultBrightness(0.3f)
+                    .build();
         });
     }
 }

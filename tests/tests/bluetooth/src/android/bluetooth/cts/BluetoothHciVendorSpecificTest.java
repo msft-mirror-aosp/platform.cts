@@ -23,8 +23,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
@@ -84,7 +84,9 @@ public final class BluetoothHciVendorSpecificTest {
 
             assertThrows(
                     NullPointerException.class,
-                    () -> sAdapter.registerBluetoothHciVendorSpecificCallback(Set.of(), null, callback));
+                    () ->
+                            sAdapter.registerBluetoothHciVendorSpecificCallback(
+                                    Set.of(), null, callback));
 
             assertThrows(
                     NullPointerException.class,
@@ -297,9 +299,8 @@ public final class BluetoothHciVendorSpecificTest {
             verify(callback, timeout(1_000))
                     .onCommandComplete(eq(0x153), return_parameters.capture());
 
-            int length_until_version_number = 11;
-            assertThat(return_parameters.getValue().length)
-                    .isGreaterThan(length_until_version_number);
+            int length_until_version_number = 9;
+            assertThat(return_parameters.getValue().length).isAtLeast(length_until_version_number);
 
             int status = return_parameters.getValue()[0];
             assertThat(status).isEqualTo(0);

@@ -81,6 +81,7 @@ java_defaults {
         "cts-wm-shared",
         "platform-compat-test-rules",
         "cts_window_jetpack_utils",
+        "com.android.hardware.input-aconfig-java",
         "com.android.window.flags.window-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.app.flags-aconfig-java",
@@ -88,12 +89,14 @@ java_defaults {
         "ui-trace-collector",
         "flag-junit",
         "com_android_wm_shell_flags_lib",
+        "surfaceflinger_flags_java_lib",
     ],
 
     test_suites: [
         "cts",
         "general-tests",
         "sts",
+        "automotive-general-tests",
     ],
 
     sdk_version: "test_current",

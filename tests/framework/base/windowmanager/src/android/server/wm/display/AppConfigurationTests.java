@@ -360,6 +360,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     /**
      * Test that device handles consequent requested orientations and displays the activities.
      */
+    @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test
     public void testFullscreenAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
@@ -397,6 +398,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 ORIENTATION_PORTRAIT, reportedSizes.orientation);
     }
 
+    @ApiTest(apis = {"android.app.Activity#setRequestedOrientation"})
     @Test
     public void testTranslucentAppOrientationRequests() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
@@ -764,7 +766,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 baseDisplayMetricsSession.getDisplayMetrics();
         final int configMaxUiWidth = mContext.getResources().getInteger(Resources.getSystem()
                 .getIdentifier("config_maxUiWidth", "integer", "android"));
-        if (configMaxUiWidth == 0) {
+        final boolean notMaxWidthConstrained =
+                configMaxUiWidth == 0 || overrideSize.getWidth() <= configMaxUiWidth;
+        if (notMaxWidthConstrained) {
             assertEquals(overrideSize, changedBaseDisplayMetrics.getSize());
         } else {
             // If there is a maximum width constraint, check if the size of the base display has
@@ -775,15 +779,35 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         // Check that the DisplayMetrics-related config of the base display context has changed
         Context baseDisplayContext = baseContextSupplier.apply(activity);
-        assertNotEquals("Base display context orientation must be changed",
-                origBaseDisplayOrientation,
-                baseDisplayContext.getResources().getConfiguration().orientation);
-        assertNotEquals("Base display context width must be changed",
-                origBaseDisplaySize.getWidth(),
-                baseDisplayContext.getResources().getConfiguration().screenWidthDp);
-        assertNotEquals("Base display context height must be changed",
+        if (notMaxWidthConstrained) {
+            assertNotEquals(
+                    "Base display context width must be changed",
+                    origBaseDisplaySize.getWidth(),
+                    baseDisplayContext
+                            .getResources()
+                            .getConfiguration()
+                            .windowConfiguration
+                            .getBounds()
+                            .width());
+        } else {
+            assertEquals(
+                    configMaxUiWidth,
+                    baseDisplayContext
+                            .getResources()
+                            .getConfiguration()
+                            .windowConfiguration
+                            .getBounds()
+                            .width());
+        }
+        assertNotEquals(
+                "Base display context height must be changed",
                 origBaseDisplaySize.getHeight(),
-                baseDisplayContext.getResources().getConfiguration().screenHeightDp);
+                baseDisplayContext
+                        .getResources()
+                        .getConfiguration()
+                        .windowConfiguration
+                        .getBounds()
+                        .height());
 
         // Check that the DisplayMetrics-related config of the simulated display context is not
         // changed when base base display context has changed

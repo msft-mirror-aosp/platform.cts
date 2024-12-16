@@ -116,6 +116,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "OVERRIDE_RESPECT_REQUESTED_ORIENTATION",
             "OVERRIDE_SANDBOX_VIEW_BOUNDS_APIS",
             "OVERRIDE_ENABLE_INSETS_DECOUPLED_CONFIGURATION",
+            "OVERRIDE_HANDLE_ABANDONED_JOBS",
             "DEFAULT_RESCIND_BAL_FG_PRIVILEGES_BOUND_SERVICE",
             "DEFAULT_RESCIND_BAL_PRIVILEGES_FROM_PENDING_INTENT_SENDER",
             "RETURN_DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY",
@@ -145,8 +146,11 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
      */
     public void testOnlyAllowedlistedChangesAreOverridable() throws Exception {
         for (Change c : getOnDeviceCompatConfig()) {
-            // Skip changeIDs with EnabledSince more than platform sdk version
-            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)) {
+            String codename = getDevice().getProperty("ro.build.version.codename");
+            // Skip changeIDs with @EnabledSince more than platform sdk version.
+            // For release builds also skip @Disabled.
+            if (c.overridable && getDevice().checkApiLevelAgainstNextRelease(c.sinceSdk)
+                    && !(codename.equals("REL") && c.sinceSdk == -1)) {
                 assertWithMessage("Please contact compat-team@google.com for approval")
                         .that(OVERRIDABLE_CHANGES).contains(c.changeName);
             }

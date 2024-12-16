@@ -72,7 +72,6 @@ import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -592,27 +591,6 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
-    public void testSetWindowModeConfig_hasMagnificationOverlay() throws TimeoutException {
-        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
-
-        final MagnificationController controller = mService.getMagnificationController();
-        final MagnificationConfig config = new MagnificationConfig.Builder()
-                .setMode(MAGNIFICATION_MODE_WINDOW)
-                .setScale(2.0f)
-                .build();
-
-        try {
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> controller.setMagnificationConfig(config, false),
-                    event -> isMagnificationOverlayExisting(), 5000);
-        } finally {
-            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testSetWindowModeConfig_hasAccessibilityOverlay() throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
 
@@ -632,32 +610,6 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
-    public void testServiceConnectionDisconnected_hasNoMagnificationOverlay()
-            throws TimeoutException {
-        Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));
-
-        final MagnificationController controller = mService.getMagnificationController();
-        final MagnificationConfig config = new MagnificationConfig.Builder()
-                .setMode(MAGNIFICATION_MODE_WINDOW)
-                .setScale(2.0f)
-                .build();
-
-        try {
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> controller.setMagnificationConfig(config, false),
-                    event -> isMagnificationOverlayExisting(), 5000);
-
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> mService.runOnServiceSync(() -> mService.disableSelfAndRemove()),
-                    event -> !isMagnificationOverlayExisting(), 5000);
-        } finally {
-            mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.systemui.Flags.FLAG_CREATE_WINDOWLESS_WINDOW_MAGNIFIER)
     public void testServiceConnectionDisconnected_hasNoAccessibilityOverlay()
             throws TimeoutException {
         Assume.assumeTrue(isWindowModeSupported(mInstrumentation.getContext()));

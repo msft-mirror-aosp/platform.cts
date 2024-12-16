@@ -32,7 +32,7 @@ android_test {
         "android.app.flags-aconfig-java",
         "flag-junit",
         "notification_flags_lib",
-        "Harrier",
+        "bedstead",
     ],
     libs: [
         "android.test.runner.stubs.test",

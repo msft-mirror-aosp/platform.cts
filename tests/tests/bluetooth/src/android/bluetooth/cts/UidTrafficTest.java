@@ -16,41 +16,49 @@
 
 package android.bluetooth.cts;
 
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.UidTraffic;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 
-public class UidTrafficTest extends AndroidTestCase {
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    UidTraffic mUidTraffic;
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class UidTrafficTest {
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    private UidTraffic mUidTraffic;
+
+    @Before
+    public void setUp() {
         final Parcel uidTrafficParcel = Parcel.obtain();
         uidTrafficParcel.writeInt(1000);
         uidTrafficParcel.writeLong(2000);
         uidTrafficParcel.writeLong(3000);
         uidTrafficParcel.setDataPosition(0);
         mUidTraffic = UidTraffic.CREATOR.createFromParcel(uidTrafficParcel);
+        assertThat(mUidTraffic).isNotNull();
         uidTrafficParcel.recycle();
     }
 
-    public void test_UidTrafficClone() {
-        assertNotNull(mUidTraffic);
+    @Test
+    public void cloneMethod() {
         UidTraffic clonedUidTraffic = mUidTraffic.clone();
-        assertNotNull(clonedUidTraffic);
-        assertEquals(mUidTraffic.getUid(), clonedUidTraffic.getUid());
-        assertEquals(mUidTraffic.getRxBytes(), clonedUidTraffic.getRxBytes());
-        assertEquals(mUidTraffic.getTxBytes(), clonedUidTraffic.getTxBytes());
+        assertThat(clonedUidTraffic).isNotNull();
+        assertThat(clonedUidTraffic.getUid()).isEqualTo(mUidTraffic.getUid());
+        assertThat(clonedUidTraffic.getRxBytes()).isEqualTo(mUidTraffic.getRxBytes());
+        assertThat(clonedUidTraffic.getTxBytes()).isEqualTo(mUidTraffic.getTxBytes());
     }
 
-    public void test_UidTrafficGet() {
-        assertNotNull(mUidTraffic);
-        assertEquals(mUidTraffic.getUid(), 1000);
-        assertEquals(mUidTraffic.getRxBytes(), 2000);
-        assertEquals(mUidTraffic.getTxBytes(), 3000);
+    @Test
+    public void getMethod() {
+        assertThat(mUidTraffic.getUid()).isEqualTo(1000);
+        assertThat(mUidTraffic.getRxBytes()).isEqualTo(2000);
+        assertThat(mUidTraffic.getTxBytes()).isEqualTo(3000);
     }
 }

@@ -73,7 +73,6 @@ import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.telephony.satellite.SystemSelectionSpecifier;
 import android.text.TextUtils;
-import android.util.IntArray;
 import android.util.Log;
 import android.util.Pair;
 import android.uwb.UwbManager;
@@ -92,6 +91,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SatelliteManagerTestBase {
@@ -922,11 +922,11 @@ public class SatelliteManagerTestBase {
         }
 
         public boolean waitUntilSatelliteAccessConfigurationChangedEvent(
-                int expectedNumberOfEvents) {
+                int expectedNumberOfEvents, long timeOutMilliSec) {
             logd("waitUntilSatelliteAccessConfigurationChangedEvent");
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
-                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(TIMEOUT,
+                    if (!mSatelliteAccessConfigurationChangedSemaphore.tryAcquire(timeOutMilliSec,
                             TimeUnit.MILLISECONDS)) {
                         loge("Timeout to receive "
                                 + "waitUntilSatelliteAccessConfigurationChangedEvent");
@@ -1897,6 +1897,39 @@ public class SatelliteManagerTestBase {
         return new Pair<>(selectedSatelliteSubscriptionId.get(), callback.get());
     }
 
+    protected static Pair<CharSequence, Integer> requestSatelliteDisplayName() {
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(CharSequence result) {
+                        logd("requestSatelliteDisplayName.onResult: result=" +
+                                result);
+                        displayNameForSubscription.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("requestSatelliteDisplayName.onError: onError="
+                                + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSatelliteDisplayName(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(displayNameForSubscription.get(), errorCode.get());
+    }
+
     protected static Pair<Boolean, Integer> provisionSatellite(List<SatelliteSubscriberInfo> list) {
         final AtomicReference<Boolean> requestResult = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
@@ -2093,29 +2126,20 @@ public class SatelliteManagerTestBase {
                             earfcnRange.getEndEarfcn())).boxed().forEach(expectedEarfcnList::add);
         }
 
-        IntArray actualBands = actualSystemSelectionSpecifier.getBands();
-        List<Integer> actualBandList =  IntStream.range(0, actualBands.size())
-                .map(actualBands::get)
-                .boxed()
-                .toList();
+        List<Integer> actualBandList = Arrays.stream(actualSystemSelectionSpecifier.getBands())
+                .boxed().collect(Collectors.toList());
 
-        IntArray actualEarfcns = actualSystemSelectionSpecifier.getEarfcns();
-        List<Integer> actualEarfcnList =  IntStream.range(0, actualEarfcns.size())
-                .map(actualEarfcns::get)
-                .boxed()
-                .toList();
+        List<Integer> actualEarfcnList = Arrays.stream(actualSystemSelectionSpecifier.getEarfcns())
+                .boxed().collect(Collectors.toList());
 
         SatelliteInfo[] expectedSatelliteInfoArray =
                 expectedConfiguration.getSatelliteInfos().toArray(new SatelliteInfo[0]);
         SatelliteInfo[] actualSatelliteInfoArray =
-                actualSystemSelectionSpecifier.getSatelliteInfos();
+                actualSystemSelectionSpecifier.getSatelliteInfos().toArray(new SatelliteInfo[0]);
 
         List<Integer> expectedTagIdList = expectedConfiguration.getTagIds();
-        IntArray actualTagIdArray = actualSystemSelectionSpecifier.getTagIds();
-        List<Integer> actualTagIdList =  IntStream.range(0, actualTagIdArray.size())
-                .map(actualTagIdArray::get)
-                .boxed()
-                .toList();
+        List<Integer> actualTagIdList = Arrays.stream(actualSystemSelectionSpecifier.getTagIds())
+                .boxed().collect(Collectors.toList());
 
         assertEquals(expectedBandList, actualBandList);
         assertEquals(expectedEarfcnList, actualEarfcnList);

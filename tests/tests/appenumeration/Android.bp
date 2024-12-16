@@ -32,7 +32,7 @@ android_test {
         "hamcrest-library",
         "CtsAppEnumerationTestLib",
         "cts-install-lib",
-        "Harrier",
+        "bedstead",
         "android.security.flags-aconfig-java-host",
     ],
 

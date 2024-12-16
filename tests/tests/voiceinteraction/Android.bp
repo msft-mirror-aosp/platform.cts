@@ -31,8 +31,7 @@ android_test {
         "platform-compat-test-rules",
         "android.app.wearable.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
-        "Harrier",
-        "Nene",
+        "bedstead-enterprise",
         "ActivityContext",
         "TestApp",
         "android.multiuser.flags-aconfig-java",
@@ -83,4 +82,11 @@ test_module_config {
         "android.voiceinteraction.cts.HotwordDetectionServiceBasicTest",
         "android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest",
     ],
+}
+
+test_module_config {
+    name: "CtsVoiceInteractionTestCases_NoHotwordDetectionStressTest",
+    base: "CtsVoiceInteractionTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.voiceinteraction.cts.HotwordDetectionServiceStressTest"],
 }

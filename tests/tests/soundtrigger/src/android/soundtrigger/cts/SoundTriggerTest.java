@@ -112,7 +112,7 @@ public class SoundTriggerTest {
     private static RecognitionConfig createTestRecognitionConfig() {
         return new RecognitionConfig.Builder()
                 .setCaptureRequested(true)
-                .setAllowMultipleTriggers(true)
+                .setMultipleTriggersAllowed(true)
                 .setKeyphrases(TEST_KEYPHRASE_RECOGNITION_EXTRAS)
                 .setData(TEST_RECOGNITION_CONFIG_DATA)
                 .setAudioCapabilities(1)
@@ -183,7 +183,7 @@ public class SoundTriggerTest {
     private static void verifyRecognitionConfigMatchesTestParams(
             RecognitionConfig recognitionConfig) {
         assertThat(recognitionConfig.isCaptureRequested()).isTrue();
-        assertThat(recognitionConfig.isAllowMultipleTriggers()).isTrue();
+        assertThat(recognitionConfig.isMultipleTriggersAllowed()).isTrue();
         assertThat(recognitionConfig.getKeyphrases()).isEqualTo(TEST_KEYPHRASE_RECOGNITION_EXTRAS);
         assertThat(recognitionConfig.getData())
                 .asList()
@@ -296,7 +296,7 @@ public class SoundTriggerTest {
     public void testRecognitionConfigBuilderDefaultValues() {
         RecognitionConfig recognitionConfig = new RecognitionConfig.Builder().build();
         assertThat(recognitionConfig.isCaptureRequested()).isFalse();
-        assertThat(recognitionConfig.isAllowMultipleTriggers()).isFalse();
+        assertThat(recognitionConfig.isMultipleTriggersAllowed()).isFalse();
         assertThat(recognitionConfig.getKeyphrases()).isNotNull();
         assertThat(recognitionConfig.getKeyphrases()).isEmpty();
         assertThat(recognitionConfig.getData()).isNotNull();

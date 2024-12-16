@@ -17,7 +17,6 @@
 package com.google.snippet.bluetooth;
 
 import static android.bluetooth.BluetoothDevice.BOND_BONDED;
-import static android.bluetooth.BluetoothDevice.BOND_NONE;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -34,7 +33,6 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.ParcelUuid;
 import android.util.Log;
@@ -165,30 +163,6 @@ public final class BluetoothGattMultiDevicesClient {
         return true;
     }
 
-    private class BroadcastReceiverImpl extends BroadcastReceiver {
-        private final int mWaitForBondState;
-        private final CountDownLatch mBondingBlocker;
-
-        BroadcastReceiverImpl(int waitForBondState, CountDownLatch bondingBlocker) {
-            mWaitForBondState = waitForBondState;
-            mBondingBlocker = bondingBlocker;
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "onReceive: " + intent.getAction());
-            if (intent.getAction().equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
-                int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 0);
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.i(TAG, "onReceive: bondState=" + bondState);
-                if (device.equals(mServer) && bondState == mWaitForBondState
-                        && mBondingBlocker != null) {
-                    mBondingBlocker.countDown();
-                }
-            }
-        }
-    };
-
     public BluetoothDevice createBondOob(String uuid, OobData oobData) {
         if (connect(uuid) == null) {
             Log.e(TAG, "Failed to connect with server");
@@ -209,13 +183,11 @@ public final class BluetoothGattMultiDevicesClient {
         // Bond with the peer (this will block until the bond is complete)
         CountDownLatch bondingBlocker = new CountDownLatch(1);
         IntentFilter bondIntentFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        BroadcastReceiverImpl bondBroadcastReceiver =
-                new BroadcastReceiverImpl(BOND_BONDED, bondingBlocker);
+        BroadcastReceiver bondBroadcastReceiver =
+                new Utils.BondStateBroadcastReceiverImpl(BOND_BONDED, mServer, bondingBlocker);
         mContext.registerReceiver(bondBroadcastReceiver, bondIntentFilter);
-        Utils.adoptShellPermission(); // This is needed to use the OOB bonding API
         if (!mServer.createBondOutOfBand(TRANSPORT_LE, oobData, null)) {
             Log.e(TAG, "createBondOob: Failed to trigger bonding");
-            Utils.dropShellPermission();
             return null;
         }
         boolean timeout = false;
@@ -226,7 +198,6 @@ public final class BluetoothGattMultiDevicesClient {
             timeout = true;
         }
         mContext.unregisterReceiver(bondBroadcastReceiver);
-        Utils.dropShellPermission();
         if (timeout) {
             Log.e(TAG, "Did not bond with server");
             return null;
@@ -234,35 +205,4 @@ public final class BluetoothGattMultiDevicesClient {
         return mServer;
     }
 
-    public boolean removeBond(String uuid) {
-        if (!containsService(uuid)) {
-            Log.e(TAG, "Connected server does not contain the service with UUID: " + uuid);
-            return false;
-        }
-        CountDownLatch bondingBlocker = new CountDownLatch(1);
-        IntentFilter bondIntentFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        BroadcastReceiverImpl bondBroadcastReceiver =
-                new BroadcastReceiverImpl(BOND_NONE, bondingBlocker);
-        mContext.registerReceiver(bondBroadcastReceiver, bondIntentFilter);
-        Utils.adoptShellPermission(); // This is needed to reomoving the bond
-        if (!mServer.removeBond()) {
-            Log.e(TAG, "Failed to remove bond");
-            Utils.dropShellPermission();
-            return false;
-        }
-        boolean timeout = false;
-        try {
-            timeout = !bondingBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);
-        } catch (InterruptedException e) {
-            Log.e(TAG, "Failed to wait for bond removal", e);
-            timeout = true;
-        }
-        mContext.unregisterReceiver(bondBroadcastReceiver);
-        Utils.dropShellPermission();
-        if (timeout) {
-            Log.e(TAG, "Did not remove bond with server");
-            return false;
-        }
-        return true;
-    }
 }

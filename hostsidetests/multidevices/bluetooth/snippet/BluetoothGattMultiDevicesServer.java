@@ -138,7 +138,6 @@ public final class BluetoothGattMultiDevicesServer {
 
     public OobData generateLocalOObData() {
         CountDownLatch oobLatch = new CountDownLatch(1);
-        Utils.adoptShellPermission();
         mBluetoothAdapter.generateLocalOobData(
                 TRANSPORT_LE,
                 Executors.newSingleThreadExecutor(),
@@ -154,7 +153,6 @@ public final class BluetoothGattMultiDevicesServer {
             Log.e(TAG, "Did not generate local oob data");
             return null;
         }
-        Utils.dropShellPermission();
         return mOobData;
     }
 

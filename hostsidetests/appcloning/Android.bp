@@ -105,3 +105,20 @@ java_test_host {
         ":CtsIntentRedirectionTestApp",
     ],
 }
+
+test_module_config_host {
+    name: "CtsAppCloningHostTest_NoLarge",
+    base: "CtsAppCloningHostTest",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}
+
+test_module_config_host {
+    name: "CtsAppCloningHostTest_WithLargeAndFlaky",
+    base: "CtsAppCloningHostTest",
+    test_suites: ["general-tests"],
+    include_annotations: [
+        "android.platform.test.annotations.LargeTest",
+        "android.platform.test.annotations.FlakyTest",
+    ],
+}

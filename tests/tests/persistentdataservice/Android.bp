@@ -22,7 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "ctstestrunner-axt",
-        "Harrier",
+        "bedstead",
         "truth",
     ],
     libs: ["android.test.base.stubs.test"],

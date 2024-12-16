@@ -139,17 +139,13 @@ public class NfcAdapterTest {
     @Test
     public void testDisableWithNoParams() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.disable();
-        Assert.assertTrue(result);
-        result = adapter.enable();
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
     }
 
     @Test
     public void testDisableWithParam() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.disable(true);
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
     }
 
     @Test
@@ -169,8 +165,8 @@ public class NfcAdapterTest {
     @Test
     public void testEnable() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = getDefaultAdapter();
-        boolean result = adapter.enable();
-        Assert.assertTrue(result);
+        Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext, true));
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
     }
 
     @Test
@@ -730,10 +726,10 @@ public class NfcAdapterTest {
                 assertThat(ccFileInfo).isNotNull();
                 assertThat(ccFileInfo.getCcFileLength()).isGreaterThan(0);
                 assertThat(ccFileInfo.getVersion()).isGreaterThan(0);
-                assertThat(ccFileInfo.getMaxReadLength()).isGreaterThan(0);
-                assertThat(ccFileInfo.getMaxWriteLength()).isGreaterThan(0);
                 assertThat(ccFileInfo.getFileId()).isGreaterThan(5);
                 assertThat(ccFileInfo.getMaxSize()).isGreaterThan(0);
+                assertThat(ccFileInfo.isReadAllowed()).isEqualTo(true);
+                assertThat(ccFileInfo.isWriteAllowed()).isEqualTo(true);
                 assertThat(ndefNfcee.clearData()).isEqualTo(T4tNdefNfcee.CLEAR_DATA_SUCCESS);
             }
             if (Flags.nfcOverrideRecoverRoutingTable()) {
@@ -744,6 +740,7 @@ public class NfcAdapterTest {
             List<NfcRoutingTableEntry> entries = nfcOemExtension.getRoutingTable();
             assertThat(entries).isNotNull();
             entries.getFirst().getType();
+            entries.getFirst().getRouteType();
             nfcOemExtension.forceRoutingTableCommit();
             assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
                     nfcOemExtension.getMaxPausePollingTimeoutMills());
@@ -1066,7 +1063,7 @@ public class NfcAdapterTest {
     @RequiresFlagsEnabled(Flags.FLAG_NFC_CHECK_TAG_INTENT_PREFERENCE)
     public void testIsTagIntentAllowed() throws NoSuchFieldException, RemoteException {
         when(mService.isTagIntentAllowed(anyString(), anyInt())).thenReturn(true);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAllowed();
         Assert.assertTrue(result);
     }
@@ -1076,7 +1073,7 @@ public class NfcAdapterTest {
     public void testIsTagIntentAppPreferenceSupported() throws NoSuchFieldException,
              RemoteException {
         when(mService.isTagIntentAppPreferenceSupported()).thenReturn(true);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAppPreferenceSupported();
         Assert.assertTrue(result);
     }
@@ -1086,7 +1083,7 @@ public class NfcAdapterTest {
     public void testIsTagIntentAllowedWhenNotSupported() throws NoSuchFieldException,
              RemoteException {
         when(mService.isTagIntentAppPreferenceSupported()).thenReturn(false);
-        NfcAdapter adapter = getDefaultAdapter();
+        NfcAdapter adapter = createMockedInstance();
         boolean result = adapter.isTagIntentAllowed();
         Assert.assertTrue(result);
     }

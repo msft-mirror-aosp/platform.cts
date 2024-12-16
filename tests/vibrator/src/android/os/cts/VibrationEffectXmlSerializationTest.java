@@ -25,9 +25,10 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
-import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
+import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -139,6 +140,223 @@ public class VibrationEffectXmlSerializationTest {
         VibrationXmlSerializer.serialize(effect, writer);
         // Parse serialized effect
         assertSuccessfulParse(writer.toString(), effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @Parameters(method = "getRepeatingVibrationsInfo")
+    public void testSerializeValidRepeatingVibrationEffects(VibrationEffect preamble,
+            VibrationEffect repeating, String expectedXml) throws Exception {
+        VibrationEffect effect;
+        if (preamble != null) {
+            effect = VibrationEffect.createRepeatingEffect(preamble, repeating);
+        } else {
+            effect = VibrationEffect.createRepeatingEffect(repeating);
+        }
+        StringWriter writer = new StringWriter();
+        VibrationXmlSerializer.serialize(effect, writer);
+        assertSameXml(expectedXml, writer.toString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @Parameters(method = "getRepeatingVibrationsInfo")
+    @SuppressWarnings("unused") // Unused serialization argument to reuse parameters for round trip
+    public void testParseSerializeRepeatingEffectsRoundTrip(VibrationEffect preamble,
+            VibrationEffect repeating, String expectedXml) throws Exception {
+        VibrationEffect effect;
+        if (preamble != null) {
+            effect = VibrationEffect.createRepeatingEffect(preamble, repeating);
+        } else {
+            effect = VibrationEffect.createRepeatingEffect(repeating);
+        }
+        StringWriter writer = new StringWriter();
+        // Serialize effect
+        VibrationXmlSerializer.serialize(effect, writer);
+        // Parse serialized effect
+        assertSuccessfulParse(writer.toString(), effect);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    @Parameters(method = "getRepeatingVibrationsInfo")
+    @SuppressWarnings("unused") // Unused serialization argument to reuse parameters for parsing
+    public void testParseRepeatingEffects_withFeatureFlagDisabled_fails(VibrationEffect preamble,
+            VibrationEffect repeating, String xml) throws Exception {
+        assertFailedParse(xml);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseRepeatingWaveformEffect_allSucceed() throws Exception {
+        VibrationEffect preamble = VibrationEffect.createWaveform(new long[]{123, 456, 789, 0},
+                new int[]{254, 1, 255, 0}, /* repeat= */ -1);
+        VibrationEffect repeating = VibrationEffect.createWaveform(new long[]{123, 456, 789, 0},
+                new int[]{254, 1, 255, 0}, /* repeat= */ -1);
+        VibrationEffect effect = VibrationEffect.createRepeatingEffect(preamble, repeating);
+
+        String xml = """
+                <vibration-effect>
+                    <repeating-effect>
+                        <preamble>
+                            <waveform-entry durationMs="123" amplitude="254"/>
+                            <waveform-entry durationMs="456" amplitude="1"/>
+                            <waveform-entry durationMs="789" amplitude="255"/>
+                            <waveform-entry durationMs="0" amplitude="0"/>
+                        </preamble>
+                        <repeating>
+                            <waveform-entry durationMs="123" amplitude="254"/>
+                            <waveform-entry durationMs="456" amplitude="1"/>
+                            <waveform-entry durationMs="789" amplitude="255"/>
+                            <waveform-entry durationMs="0" amplitude="0"/>
+                        </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """;
+
+        // Parse serialized effect
+        assertSuccessfulParse(xml, effect);
+
+        repeating = VibrationEffect.createWaveform(new long[]{123, 456, 789, 0},
+                new int[]{254, 1, 255, 0}, /* repeat= */ -1);
+        effect = VibrationEffect.createRepeatingEffect(repeating);
+
+        xml = """
+                <vibration-effect>
+                    <repeating-effect>
+                        <repeating>
+                            <waveform-entry durationMs="123" amplitude="254"/>
+                            <waveform-entry durationMs="456" amplitude="1"/>
+                            <waveform-entry durationMs="789" amplitude="255"/>
+                            <waveform-entry durationMs="0" amplitude="0"/>
+                        </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """;
+
+        // Parse serialized effect
+        assertSuccessfulParse(xml, effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseInvalidRepeatingEffects_fails() throws Exception {
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <waveform-entry durationMs="123" amplitude="254"/>
+                    </preamble>
+                    <repeating>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <predefined-effect name="tick"/>
+                    <predefined-effect name="click"/>
+                    </preamble>
+                    <repeating>
+                    <waveform-entry durationMs="123" amplitude="254"/>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <waveform-entry durationMs="123" amplitude="254"/>
+                    </preamble>
+                    <repeating>
+                    <predefined-effect name="tick"/>
+                    <predefined-effect name="click"/>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <waveform-envelope-effect>
+                        <control-point amplitude="0.5" frequency="300" durationMs="150"/>
+                    </waveform-envelope-effect>
+                    </preamble>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <waveform-effect>
+                        <waveform-entry durationMs="10" amplitude="default"/>
+                    </waveform-effect>
+                    </preamble>
+                    <repeating>
+                    <predefined-effect name="tick"/>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <predefined-effect name="tick"/>
+                    </preamble>
+                    <repeating>
+                    <waveform-effect>
+                        <waveform-entry durationMs="10" amplitude="default"/>
+                    </waveform-effect>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <repeating>
+                    <waveform-entry durationMs="10" amplitude="default"/>
+                    <primitive-effect name="tick" scale="0.2497" />
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <preamble>
+                    <waveform-entry durationMs="10" amplitude="default"/>
+                    <primitive-effect name="tick" scale="0.2497" />
+                    </preamble>
+                    <repeating>
+                    <predefined-effect name="tick"/>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
+
+        assertFailedParse("""
+                <vibration-effect>
+                    <repeating-effect>
+                    <repeating>
+                    <waveform-entry durationMs="0" amplitude="default"/>
+                    </repeating>
+                    </repeating-effect>
+                </vibration-effect>
+                """);
     }
 
     @Test
@@ -898,6 +1116,239 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseWaveformEnvelopeEffect_isSuccessful() throws Exception {
+        VibrationEffect effect = new VibrationEffect.WaveformEnvelopeBuilder()
+                .setInitialFrequencyHz(20)
+                .addControlPoint(0.2f, 80f, 10)
+                .addControlPoint(0.5f, 150f, 10)
+                .build();
+
+        String xml = """
+                <vibration-effect>
+                    <waveform-envelope-effect initialFrequencyHz="20.0">
+                        <control-point amplitude="0.2" frequencyHz="80.0" durationMs="10" />
+                        <control-point amplitude="0.5" frequencyHz="150.0" durationMs="10" />
+                    </waveform-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertSuccessfulParse(xml, effect);
+
+        effect = new VibrationEffect.WaveformEnvelopeBuilder()
+                .addControlPoint(0.2f, 80f, 10)
+                .addControlPoint(0.5f, 150f, 10)
+                .build();
+
+        xml = """
+                <vibration-effect>
+                    <waveform-envelope-effect>
+                        <control-point amplitude="0.2" frequencyHz="80.0" durationMs="10" />
+                        <control-point amplitude="0.5" frequencyHz="150.0" durationMs="10" />
+                    </waveform-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertSuccessfulParse(xml, effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseInvalidWaveformEnvelopeEffect_fails() {
+        assertFailedParse("<vibration-effect><waveform-envelope-effect/></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><waveform-envelope-effect> \n "
+                        + "</waveform-envelope-effect></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><waveform-envelope-effect>invalid</waveform-envelope-effect"
+                        + "></vibration-effect>");
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <waveform-envelope-effect>
+                            <control-point />
+                            </waveform-envelope-effect>
+                        </vibration-effect>
+                        """);
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <waveform-envelope-effect>
+                            <control-point amplitude="-1" frequencyHz="80" durationMs="10"/>
+                            </waveform-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <waveform-envelope-effect>
+                            <control-point amplitude="0.2" frequencyHz="0" durationMs="10"/>
+                            </waveform-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <waveform-envelope-effect>
+                            <control-point amplitude="0.2" frequencyHz="80" durationMs="0" />
+                            </waveform-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseWaveformEnvelopeEffect_withFeatureFlagDisabled_fails() throws Exception {
+        String xml = """
+                <vibration-effect>
+                    <waveform-envelope-effect initialFrequencyHz="20.0">
+                        <control-point amplitude="0.2" frequencyHz="80.0" durationMs="10" />
+                        <control-point amplitude="0.5" frequencyHz="150.0" durationMs="10" />
+                    </waveform-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertFailedParse(xml);
+
+        xml = """
+                <vibration-effect>
+                    <waveform-envelope-effect>
+                        <control-point amplitude="0.2" frequencyHz="80.0" durationMs="10" />
+                        <control-point amplitude="0.5" frequencyHz="150.0" durationMs="10" />
+                    </waveform-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertFailedParse(xml);
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseBasicEnvelopeEffect_isSuccessful() throws Exception {
+        VibrationEffect effect = new VibrationEffect.BasicEnvelopeBuilder()
+                .setInitialSharpness(0.3f)
+                .addControlPoint(0.2f, 0.5f, 100)
+                .addControlPoint(0f, 0.5f, 100)
+                .build();
+
+        String xml = """
+                <vibration-effect>
+                    <basic-envelope-effect initialSharpness="0.3">
+                        <control-point intensity="0.2" sharpness="0.5" durationMs="100" />
+                        <control-point intensity="0.0" sharpness="0.5" durationMs="100" />
+                    </basic-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertSuccessfulParse(xml, effect);
+
+        effect = new VibrationEffect.BasicEnvelopeBuilder()
+                .addControlPoint(0.2f, 0.5f, 100)
+                .addControlPoint(0f, 0.5f, 100)
+                .build();
+
+        xml = """
+                <vibration-effect>
+                    <basic-envelope-effect>
+                        <control-point intensity="0.2" sharpness="0.5" durationMs="100" />
+                        <control-point intensity="0.0" sharpness="0.5" durationMs="100" />
+                    </basic-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertSuccessfulParse(xml, effect);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseInvalidBasicEnvelopeEffect_fails() {
+        assertFailedParse("<vibration-effect><basic-envelope-effect/></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><basic-envelope-effect> \n "
+                        + "</basic-envelope-effect></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><basic-envelope-effect>invalid</basic-envelope-effect"
+                        + "></vibration-effect>");
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <basic-envelope-effect>
+                            <control-point />
+                            </basic-envelope-effect>
+                        </vibration-effect>
+                        """);
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <basic-envelope-effect>
+                            <control-point intensity="-1.0" sharpness="0.8" durationMs="10" />
+                            <control-point intensity="0.0" sharpness="0.8" durationMs="10" />
+                            </basic-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <basic-envelope-effect>
+                            <control-point intensity="0.2" sharpness="-1" durationMs="10" />
+                            <control-point intensity="0.0" sharpness="0.8" durationMs="10" />
+                            </basic-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <basic-envelope-effect>
+                            <control-point intensity="0.2" sharpness="0.8" durationMs="0" />
+                            <control-point intensity="0.0" sharpness="0.8" durationMs="100" />
+                            </basic-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+        assertFailedParse(
+                """
+                        <vibration-effect>
+                            <basic-envelope-effect>
+                            <control-point intensity="0.2" sharpness="0.8" durationMs="100" />
+                            </basic-envelope-effect>
+                        </vibration-effect>
+                        """
+        );
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testParseBasicEnvelopeEffect_withFeatureFlagDisabled_fails() throws Exception {
+        String xml = """
+                <vibration-effect>
+                    <basic-envelope-effect initialSharpness="0.3">
+                        <control-point intensity="0.2" sharpness="0.5" durationMs="100" />
+                        <control-point intensity="0.0" sharpness="0.5" durationMs="100" />
+                    </basic-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertFailedParse(xml);
+
+        xml = """
+                <vibration-effect>
+                    <basic-envelope-effect>
+                        <control-point intensity="0.2" sharpness="0.5" durationMs="100" />
+                        <control-point intensity="0.0" sharpness="0.5" durationMs="100" />
+                    </basic-envelope-effect>
+                </vibration-effect>
+                """;
+
+        assertFailedParse(xml);
+    }
+
+    @Test
     @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testParseVendorEffect_withFeatureFlagEnabled_isSuccessful() throws Exception {
         PersistableBundle vendorData = new PersistableBundle();
@@ -1078,19 +1529,6 @@ public class VibrationEffectXmlSerializationTest {
                                 .compose(),
                         writer));
         assertThat(writer.toString()).isEmpty();
-
-        // Composition with repeating primitive segments
-        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
-                () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.startComposition()
-                                .repeatEffectIndefinitely(
-                                        VibrationEffect.startComposition()
-                                                .addPrimitive(PRIMITIVE_CLICK)
-                                                .addPrimitive(PRIMITIVE_TICK, 1f, /* delay= */ 100)
-                                                .compose())
-                                .compose(),
-                        writer));
-        assertThat(writer.toString()).isEmpty();
     }
 
     @SuppressWarnings("unused") // Used in tests with @Parameters
@@ -1156,6 +1594,151 @@ public class VibrationEffectXmlSerializationTest {
                         </vibration-select>
                         """
                 }
+        };
+    }
+
+    @SuppressWarnings("unused") // Used in tests with @Parameters
+    private Object[] getRepeatingVibrationsInfo() {
+        return new Object[]{
+                new Object[]{
+                        /*preamble=*/ new VibrationEffect.WaveformEnvelopeBuilder()
+                        .addControlPoint(0.1f, 50f, 10)
+                        .build(),
+                        /*repeating=*/ new VibrationEffect.WaveformEnvelopeBuilder()
+                        .setInitialFrequencyHz(70f)
+                        .addControlPoint(0.3f, 80f, 25)
+                        .build(),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                        <repeating-effect>
+                            <preamble>
+                                <waveform-envelope-effect>
+                                <control-point amplitude="0.1" frequencyHz="50.0" durationMs="10"/>
+                                </waveform-envelope-effect>
+                            </preamble>
+                            <repeating>
+                                <waveform-envelope-effect initialFrequencyHz="70.0">
+                                <control-point amplitude="0.3" frequencyHz="80.0" durationMs="25"/>
+                                </waveform-envelope-effect>
+                            </repeating>
+                        </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
+                new Object[]{
+                        /*preamble=*/ null,
+                        /*repeating=*/ new VibrationEffect.WaveformEnvelopeBuilder()
+                        .setInitialFrequencyHz(70f)
+                        .addControlPoint(0.3f, 80f, 25)
+                        .build(),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                            <repeating-effect>
+                                <repeating>
+                                <waveform-envelope-effect initialFrequencyHz="70.0">
+                                <control-point amplitude="0.3" frequencyHz="80.0" durationMs="25"/>
+                                </waveform-envelope-effect>
+                                </repeating>
+                            </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
+                new Object[]{
+                        /*preamble=*/ new VibrationEffect.BasicEnvelopeBuilder()
+                        .addControlPoint(0.1f, 0.1f, 10)
+                        .addControlPoint(0.0f, 0.2f, 20)
+                        .build(),
+                        /*repeating=*/ new VibrationEffect.BasicEnvelopeBuilder()
+                        .setInitialSharpness(0.3f)
+                        .addControlPoint(0.0f, 0.7f, 35)
+                        .build(),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                        <repeating-effect>
+                            <preamble>
+                                <basic-envelope-effect>
+                                <control-point intensity="0.1" sharpness="0.1" durationMs="10" />
+                                <control-point intensity="0.0" sharpness="0.2" durationMs="20" />
+                                </basic-envelope-effect>
+                            </preamble>
+                            <repeating>
+                                <basic-envelope-effect initialSharpness="0.3">
+                                <control-point intensity="0.0" sharpness="0.7" durationMs="35" />
+                                </basic-envelope-effect>
+                            </repeating>
+                        </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
+                new Object[]{
+                        /*preamble=*/ VibrationEffect.startComposition()
+                        .addPrimitive(PRIMITIVE_CLICK)
+                        .addPrimitive(PRIMITIVE_TICK, 0.2497f)
+                        .addPrimitive(PRIMITIVE_LOW_TICK, 1f, 356)
+                        .addPrimitive(PRIMITIVE_SPIN, 0.6364f, 7)
+                        .compose(),
+                        /*repeating=*/ VibrationEffect.startComposition()
+                        .addPrimitive(PRIMITIVE_CLICK)
+                        .addPrimitive(PRIMITIVE_TICK, 0.2497f)
+                        .addPrimitive(PRIMITIVE_LOW_TICK, 1f, 356)
+                        .addPrimitive(PRIMITIVE_SPIN, 0.6364f, 7)
+                        .compose(),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                            <repeating-effect>
+                                <preamble>
+                                    <primitive-effect name="click" />
+                                    <primitive-effect name="tick" scale="0.2497" />
+                                    <primitive-effect name="low_tick" delayMs="356" />
+                                    <primitive-effect name="spin" scale="0.6364" delayMs="7" />
+                                </preamble>
+                                <repeating>
+                                    <primitive-effect name="click" />
+                                    <primitive-effect name="tick" scale="0.2497" />
+                                    <primitive-effect name="low_tick" delayMs="356" />
+                                    <primitive-effect name="spin" scale="0.6364" delayMs="7" />
+                                </repeating>
+                            </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
+                new Object[]{
+                        /*preamble=*/ null,
+                        /*repeating=*/ VibrationEffect.startComposition()
+                        .addPrimitive(PRIMITIVE_CLICK)
+                        .addPrimitive(PRIMITIVE_TICK, 0.2497f)
+                        .addPrimitive(PRIMITIVE_LOW_TICK, 1f, 356)
+                        .addPrimitive(PRIMITIVE_SPIN, 0.6364f, 7)
+                        .compose(),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                            <repeating-effect>
+                                <repeating>
+                                    <primitive-effect name="click" />
+                                    <primitive-effect name="tick" scale="0.2497" />
+                                    <primitive-effect name="low_tick" delayMs="356" />
+                                    <primitive-effect name="spin" scale="0.6364" delayMs="7" />
+                                </repeating>
+                            </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
+                new Object[]{
+                        /*preamble=*/ VibrationEffect.get(VibrationEffect.EFFECT_TICK),
+                        /*repeating=*/ VibrationEffect.get(EFFECT_CLICK),
+                        /*expectedXml=*/ """
+                        <vibration-effect>
+                            <repeating-effect>
+                                <preamble>
+                                    <predefined-effect name="tick"/>
+                                </preamble>
+                                <repeating>
+                                    <predefined-effect name="click"/>
+                                </repeating>
+                            </repeating-effect>
+                        </vibration-effect>
+                        """
+                },
         };
     }
 

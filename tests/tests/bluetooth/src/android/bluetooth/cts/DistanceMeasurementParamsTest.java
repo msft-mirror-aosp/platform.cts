@@ -26,9 +26,7 @@ import static android.bluetooth.le.DistanceMeasurementMethod.DISTANCE_MEASUREMEN
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -60,8 +58,7 @@ public class DistanceMeasurementParamsTest {
     private BluetoothDevice mDevice;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -70,7 +67,7 @@ public class DistanceMeasurementParamsTest {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
 
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
 
@@ -88,8 +85,8 @@ public class DistanceMeasurementParamsTest {
     public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
-            DistanceMeasurementParams params = new DistanceMeasurementParams
-                    .Builder(mDevice).build();
+            DistanceMeasurementParams params =
+                    new DistanceMeasurementParams.Builder(mDevice).build();
             params.writeToParcel(parcel, 0);
             parcel.setDataPosition(0);
             DistanceMeasurementParams paramsFromParcel =
@@ -104,41 +101,45 @@ public class DistanceMeasurementParamsTest {
     @Test
     public void defaultParameters() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice).build();
-        assertEquals(DistanceMeasurementParams.getDefaultDurationSeconds(),
-                params.getDurationSeconds());
-        assertEquals(REPORT_FREQUENCY_LOW, params.getFrequency());
-        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
+        assertThat(params.getDurationSeconds())
+                .isEqualTo(DistanceMeasurementParams.getDefaultDurationSeconds());
+        assertThat(params.getFrequency()).isEqualTo(REPORT_FREQUENCY_LOW);
+        assertThat(params.getMethodId()).isEqualTo(DISTANCE_MEASUREMENT_METHOD_RSSI);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetDevice() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice).build();
-        assertEquals(mDevice, params.getDevice());
+        assertThat(params.getDevice()).isEqualTo(mDevice);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetDurationSeconds() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDurationSeconds(120).build();
-        assertEquals(120, params.getDurationSeconds());
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice).setDurationSeconds(120).build();
+        assertThat(params.getDurationSeconds()).isEqualTo(120);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetFrequency() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setFrequency(REPORT_FREQUENCY_HIGH).build();
-        assertEquals(REPORT_FREQUENCY_HIGH, params.getFrequency());
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setFrequency(REPORT_FREQUENCY_HIGH)
+                        .build();
+        assertThat(params.getFrequency()).isEqualTo(REPORT_FREQUENCY_HIGH);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setGetMethodId() {
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setMethodId(DISTANCE_MEASUREMENT_METHOD_RSSI).build();
-        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setMethodId(DISTANCE_MEASUREMENT_METHOD_RSSI)
+                        .build();
+        assertThat(params.getMethodId()).isEqualTo(DISTANCE_MEASUREMENT_METHOD_RSSI);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -146,45 +147,45 @@ public class DistanceMeasurementParamsTest {
     public void setGetChannelSoundingParams() {
         ChannelSoundingParams csParams =
                 new ChannelSoundingParams.Builder().setSightType(SIGHT_TYPE_LINE_OF_SIGHT).build();
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setChannelSoundingParams(csParams).build();
-        assertEquals(csParams, params.getChannelSoundingParams());
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setChannelSoundingParams(csParams)
+                        .build();
+        assertThat(params.getChannelSoundingParams()).isEqualTo(csParams);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void readWriteParcelForCs() {
         Parcel parcel = Parcel.obtain();
-        ChannelSoundingParams csParams = new ChannelSoundingParams.Builder()
-                .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
-                .setLocationType(LOCATION_TYPE_OUTDOOR)
-                .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
-                .build();
-        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setChannelSoundingParams(csParams)
-                .build();
+        ChannelSoundingParams csParams =
+                new ChannelSoundingParams.Builder()
+                        .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                        .setLocationType(LOCATION_TYPE_OUTDOOR)
+                        .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
+                        .build();
+        DistanceMeasurementParams params =
+                new DistanceMeasurementParams.Builder(mDevice)
+                        .setChannelSoundingParams(csParams)
+                        .build();
         params.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         DistanceMeasurementParams paramsFromParcel =
                 DistanceMeasurementParams.CREATOR.createFromParcel(parcel);
         ChannelSoundingParams csParamsFromParcel = paramsFromParcel.getChannelSoundingParams();
-        assertEquals(csParams.getSightType(), csParamsFromParcel.getSightType());
-        assertEquals(csParams.getLocationType(), csParamsFromParcel.getLocationType());
-        assertEquals(csParams.getCsSecurityLevel(), csParamsFromParcel.getCsSecurityLevel());
+        assertThat(csParamsFromParcel.getSightType()).isEqualTo(csParams.getSightType());
+        assertThat(csParamsFromParcel.getLocationType()).isEqualTo(csParams.getLocationType());
+        assertThat(csParamsFromParcel.getCsSecurityLevel())
+                .isEqualTo(csParams.getCsSecurityLevel());
     }
 
     private void assertParamsEquals(DistanceMeasurementParams p, DistanceMeasurementParams other) {
-        if (p == null && other == null) {
-            return;
-        }
+        assertThat(p).isNotNull();
+        assertThat(other).isNotNull();
 
-        if (p == null || other == null) {
-            fail("Cannot compare null with non-null value: p=" + p + ", other=" + other);
-        }
-
-        assertEquals(p.getDevice(), other.getDevice());
-        assertEquals(p.getDurationSeconds(), other.getDurationSeconds());
-        assertEquals(p.getFrequency(), other.getFrequency());
-        assertEquals(p.getMethodId(), other.getMethodId());
+        assertThat(other.getDevice()).isEqualTo(p.getDevice());
+        assertThat(other.getDurationSeconds()).isEqualTo(p.getDurationSeconds());
+        assertThat(other.getFrequency()).isEqualTo(p.getFrequency());
+        assertThat(other.getMethodId()).isEqualTo(p.getMethodId());
     }
 }

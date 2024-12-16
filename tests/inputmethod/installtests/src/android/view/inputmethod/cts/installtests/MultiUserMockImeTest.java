@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.pm.InstantAppInfo;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.inputmethod.cts.installtests.common.ShellCommandUtils;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
@@ -76,6 +77,8 @@ public final class MultiUserMockImeTest {
     private static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
     /** Tag for the second EditText. */
     private static final String SECOND_EDIT_TEXT_TAG = "second-EditText";
+
+    private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
     @After
     public void tearDown() {
@@ -210,6 +213,8 @@ public final class MultiUserMockImeTest {
                     profileUser.remove();
 
                     TestApis.device().wakeUp();
+                    // Wait for lock screen to be visible and focused before unlocking.
+                    mWmState.waitForNonActivityWindowFocused();
                     TestApis.device().unlock();
 
                     expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()),

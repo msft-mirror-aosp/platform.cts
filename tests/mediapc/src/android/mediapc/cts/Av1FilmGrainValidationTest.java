@@ -60,7 +60,7 @@ public class Av1FilmGrainValidationTest {
      */
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-14"})
     public void testAv1FilmGrainRequirement() {
         int width = 1920;
         int height = 1080;
