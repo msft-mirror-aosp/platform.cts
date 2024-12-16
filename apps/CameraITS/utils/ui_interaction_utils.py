@@ -42,6 +42,7 @@ CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
+DEFAULT_JCA_UI_DUMPSYS_PATH = '/sdcard/jca-ui-dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
 EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
 
@@ -460,9 +461,12 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     ):
       dut.ui(text=LOCATION_ON_TXT).click.wait()
     switch_default_camera(dut, camera_facing, log_path)
+    take_dumpsys_report(dut, dumpsys_path)
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
+    # pull the dumpsys output
+    dut.adb.pull([dumpsys_path, log_path])
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     img_path_on_dut = ''
     photo_storage_path = ''
@@ -538,11 +542,15 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
     switch_jca_camera(dut, log_path, camera_facing)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
+    # Take dumpsys before capturing the image
+    take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    # pull the dumpsys output
+    dut.adb.pull([DEFAULT_JCA_UI_DUMPSYS_PATH, log_path])
     img_path_on_dut = (
         dut.adb.shell(
             "find {} ! -empty -a ! -name '.pending*' -a -type f".format(
@@ -558,3 +566,13 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
   finally:
     force_stop_app(dut, JETPACK_CAMERA_APP_PACKAGE_NAME)
   return img_path_on_dut
+
+
+def take_dumpsys_report(dut, file_path):
+  """Takes dumpsys report of camera service and stores the report in the file.
+
+  Args:
+    dut: An Android controller device object.
+    file_path: Path of the file on device to store the report.
+  """
+  dut.adb.shell(['dumpsys', 'media.camera', '>', file_path])
