@@ -64,6 +64,7 @@ import java.util.Set;
 @AppModeFull(reason = "Service-specific test")
 public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
+
     @Test
     public void testContextCommitted_whenServiceDidntDoAnything() throws Exception {
         enableService();
