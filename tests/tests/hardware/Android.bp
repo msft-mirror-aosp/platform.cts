@@ -79,6 +79,7 @@ android_test {
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
         "android.media.codec-aconfig-java",
+        "hwui_flags_java_lib",
         "ui-trace-collector",
         "collector-device-lib",
     ],
