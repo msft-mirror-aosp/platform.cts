@@ -1007,6 +1007,12 @@
   <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testChooserActivityLaunchedFromPersonalProfileWithSelectedWorkTab"/>
   <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSecondaryLockscreen"/>
   <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PowerManager_ThermalTest#testThermalHeadroomCallback"/>
+  <option name="compatibility:include-filter" value="CtsOsHostTestCases android.os.cts.MemcgV2HostTests#testCanActivateMemcgV2Cgroup"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionSplitTest#testBodySensorSplit32OnTToV"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNullAndRealPermission"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNullPermissionRequest"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PhotoPickerPermissionTest#testNonImplicitAutomaticallyShowsPickerWhenUserFixed"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest22#testNoRuntimePrompt"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />
