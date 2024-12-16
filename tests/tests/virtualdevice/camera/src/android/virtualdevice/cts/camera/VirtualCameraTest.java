@@ -171,7 +171,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void virtualCamera_getConfig_returnsCorrectConfig() {
+    public void getConfig_returnsCorrectConfig() {
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
         VirtualCameraConfig config = virtualCamera.getConfig();
@@ -180,7 +180,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void defaultContext_virtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
+    public void defaultContext_withVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -194,7 +194,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_noVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
+    public void vdContext_withoutVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
         setupVirtualDeviceCameraManager();
 
         verify(mMockVdContextCameraAvailabilityCallback, after(TIMEOUT_MILLIS).never())
@@ -204,7 +204,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualFrontCamera_triggersCameraAvailabilityCallbacks() {
+    public void vdContext_withVirtualFrontCamera_triggersCameraAvailabilityCallbacks() {
         setupVirtualDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -217,7 +217,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualBackCamera_triggersCameraAvailabilityCallbacks() {
+    public void vdContext_withVirtualBackCamera_triggersCameraAvailabilityCallbacks() {
         VirtualCamera virtualCamera = createVirtualCamera(LENS_FACING_BACK);
         setupVirtualDeviceCameraManager();
 
@@ -230,7 +230,8 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void defaultContext_virtualCamera_notPresentInListOfCameras() throws Exception {
+    public void getCameraIdList_withDefaultContext_withVirtualCamera_doesNotIncludeVirtualCamera()
+        throws Exception {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -239,14 +240,15 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_withoutVirtualCamera_noCamerasPresent() throws Exception {
+    public void getCameraIdList_withVdContext_withoutVirtualCamera_returnsEmptyList() throws Exception {
         setupVirtualDeviceCameraManager();
 
         assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList()).isEmpty();
     }
 
     @Test
-    public void vdContext_virtualFrontCamera_presentInListOfCameras() throws Exception {
+    public void getCameraIdList_withVdContext_withVirtualFrontCamera_includesOnlyVirtualCamera()
+        throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -255,7 +257,8 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualBackCamera_presentInListOfCameras() throws Exception {
+    public void getCameraIdList_withVdContext_withVirtualBackCamera_includesOnlyVirtualCamera()
+        throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(LENS_FACING_BACK);
 
@@ -291,7 +294,7 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllSensorOrientations")
     @Test
-    public void vdContext_virtualCamera_hasCorrectOrientation(int sensorOrientation)
+    public void virtualCamera_hasCorrectOrientation(int sensorOrientation)
             throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCameraWithSensorOrientation(sensorOrientation);
@@ -300,7 +303,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_hasCorrectMinFrameDuration() throws Exception {
+    public void virtualCamera_hasCorrectMinFrameDuration() throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -309,7 +312,7 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    public void vdContext_virtualCamera_hasCorrectLensFacing(int lensFacing) throws Exception {
+    public void virtualCamera_hasCorrectLensFacing(int lensFacing) throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(lensFacing);
 
@@ -337,7 +340,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_openCamera_triggersOnOpenedCallback() throws Exception {
+    public void vdContext_withVirtualCamera_openCamera_triggersOnOpenedCallback() throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -349,7 +352,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_close_triggersOnDisconnectedCallback() throws Exception {
+    public void vdContext_withVirtualCamera_close_triggersOnDisconnectedCallback() throws Exception {
         setupVirtualDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -362,7 +365,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_cameraDeviceClose_triggersOnClosedCallback()
+    public void vdContext_withVirtualCamera_cameraDeviceClose_triggersOnClosedCallback()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -379,7 +382,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void defaultContext_virtualCamera_openCamera_throwsException() {
+    public void defaultContext_withVirtualCamera_openCamera_throwsException() {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -389,7 +392,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_configureSessionForSupportedFormat_succeeds()
+    public void vdContext_withVirtualCamera_configureSessionForSupportedFormat_succeeds()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -398,7 +401,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_virtualCamera_configureSessionForUnsupportedFormat_fails()
+    public void vdContext_withVirtualCamera_configureSessionForUnsupportedFormat_fails()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -463,7 +466,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void vdContext_legacyCameraPreview_withVirtualCamera() throws Exception {
+    public void vdContext_legacyCameraPreview_withVirtualCamera_succeeds() throws Exception {
         createFrontVirtualCamera();
 
         Context vdContext = getApplicationContext().createDeviceContext(
@@ -512,7 +515,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void getConcurrentCameraIds_singleVirtualCamera_returnsEmpty() throws Exception {
+    public void getConcurrentCameraIds_withSingleVirtualCamera_returnsEmpty() throws Exception {
         createFrontVirtualCamera();
         setupVirtualDeviceCameraManager();
 
@@ -521,7 +524,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void getConcurrentCameraIds_multipleVirtualCameras_returnsEmpty() throws Exception {
+    public void getConcurrentCameraIds_withMultipleVirtualCameras_returnsEmpty() throws Exception {
         createFrontVirtualCamera();
         createVirtualCamera(LENS_FACING_BACK);
         setupVirtualDeviceCameraManager();
@@ -531,7 +534,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void isConcurrentSessionConfigurationSupported_virtualCamera_returnsFalse()
+    public void isConcurrentSessionConfigurationSupported_withVirtualCamera_returnsFalse()
             throws Exception {
         createFrontVirtualCamera();
         createVirtualCamera(LENS_FACING_BACK);
