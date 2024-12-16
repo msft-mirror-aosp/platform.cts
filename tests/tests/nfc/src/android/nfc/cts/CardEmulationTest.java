@@ -2506,6 +2506,30 @@ public class CardEmulationTest {
         instance.getDefaultNfcSubscriptionId(); // This may not be set on all OEM devices.
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_APDU_SERVICE_INFO_CONSTRUCTOR)
+    @Test
+    public void testApduServiceInfoConstructor() {
+        ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
+        List<String> ndefNfceeAid = new ArrayList<String>();
+        AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
+        ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
+        ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
+        ArrayList<AidGroup> ndefNfceeAidDynamicGroups = new ArrayList<>();
+        ApduServiceInfo apduServiceINfo =
+                new ApduServiceInfo(
+                        ndefNfceeAppInfo,
+                        false,
+                        "test service",
+                        ndefNfceeAidStaticGroups,
+                        ndefNfceeAidDynamicGroups,
+                        false,
+                        0,
+                        0,
+                        "test service",
+                        "test",
+                        "test");
+    }
+
     private void assumeObserveModeSupported(@NonNull NfcAdapter adapter) {
         assumeTrue("Observe mode must be supported", adapter.isObserveModeSupported());
     }
