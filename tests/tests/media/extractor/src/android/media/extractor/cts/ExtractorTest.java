@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.media.extractor.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.hasDecoder;
+import static android.mediav2.common.cts.CodecTestBase.isExtractorFormatSimilar;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +31,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaDataSource;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.cts.TestMediaDataSource;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.net.Uri;
@@ -76,67 +78,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.zip.CRC32;
-
-class TestMediaDataSource extends MediaDataSource {
-    private static final String LOG_TAG = TestMediaDataSource.class.getSimpleName();
-    private static final boolean ENABLE_LOGS = false;
-    private byte[] mData;
-    private boolean mFatalGetSize;
-    private boolean mFatalReadAt;
-    private boolean mIsClosed = false;
-
-    static TestMediaDataSource fromString(String inpPath, boolean failSize, boolean failRead)
-            throws IOException {
-        try (FileInputStream fInp = new FileInputStream(inpPath)) {
-            int size = (int) new File(inpPath).length();
-            byte[] data = new byte[size];
-            fInp.read(data, 0, size);
-            return new TestMediaDataSource(data, failSize, failRead);
-        }
-    }
-
-    private TestMediaDataSource(byte[] data, boolean fatalGetSize, boolean fatalReadAt) {
-        mData = data;
-        mFatalGetSize = fatalGetSize;
-        mFatalReadAt = fatalReadAt;
-    }
-
-    @Override
-    public synchronized int readAt(long srcOffset, byte[] buffer, int dstOffset, int size)
-            throws IOException {
-        if (mFatalReadAt) {
-            throw new IOException("malformed media data source");
-        }
-        if (srcOffset >= mData.length) {
-            return -1;
-        }
-        if (srcOffset + size > mData.length) {
-            size = mData.length - (int) srcOffset;
-        }
-        System.arraycopy(mData, (int) srcOffset, buffer, dstOffset, size);
-        return size;
-    }
-
-    @Override
-    public synchronized long getSize() throws IOException {
-        if (mFatalGetSize) {
-            throw new IOException("malformed media data source");
-        }
-        if (ENABLE_LOGS) {
-            Log.v(LOG_TAG, "getSize: " + mData.length);
-        }
-        return mData.length;
-    }
-
-    @Override
-    public synchronized void close() {
-        mIsClosed = true;
-    }
-
-    public boolean isClosed() {
-        return mIsClosed;
-    }
-}
 
 @RunWith(Enclosed.class)
 public class ExtractorTest {
@@ -226,62 +167,6 @@ public class ExtractorTest {
                 refSample.flags >= 0 && refSample.size >= 0 && refSample.presentationTimeUs >= 0;
     }
 
-    static boolean isCSDIdentical(MediaFormat refFormat, MediaFormat testFormat) {
-        String mediaType = refFormat.getString(MediaFormat.KEY_MIME);
-        for (int i = 0; ; i++) {
-            String csdKey = "csd-" + i;
-            boolean refHasCSD = refFormat.containsKey(csdKey);
-            boolean testHasCSD = testFormat.containsKey(csdKey);
-            if (refHasCSD != testHasCSD) {
-                if (ENABLE_LOGS) {
-                    Log.w(LOG_TAG, "error, ref fmt has CSD: " + refHasCSD + " test fmt has CSD: " +
-                            testHasCSD);
-                }
-                return false;
-            }
-            if (refHasCSD) {
-                Log.v(LOG_TAG, mediaType + " has " + csdKey);
-                ByteBuffer r = refFormat.getByteBuffer(csdKey);
-                ByteBuffer t = testFormat.getByteBuffer(csdKey);
-                if (!r.equals(t)) {
-                    if (ENABLE_LOGS) {
-                        Log.w(LOG_TAG, "ref CSD and test CSD buffers are not identical");
-                    }
-                    return false;
-                }
-            } else break;
-        }
-        return true;
-    }
-
-    static boolean isFormatSimilar(MediaFormat refFormat, MediaFormat testFormat) {
-        String refMediaType = refFormat.getString(MediaFormat.KEY_MIME);
-        String testMediaType = testFormat.getString(MediaFormat.KEY_MIME);
-
-        if (!refMediaType.equals(testMediaType)) return false;
-        if (refFormat.getLong(MediaFormat.KEY_DURATION) !=
-                    testFormat.getLong(MediaFormat.KEY_DURATION)) {
-            Log.w(LOG_TAG, "Duration mismatches ref / test = " +
-                                   refFormat.getLong(MediaFormat.KEY_DURATION) + " / " +
-                                   testFormat.getLong(MediaFormat.KEY_DURATION));
-            // TODO (b/163477410)(b/163478168)
-//            return false;
-        }
-        if (!isCSDIdentical(refFormat, testFormat)) return false;
-        if (refMediaType.startsWith("audio/")) {
-            if (refFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT) !=
-                        testFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)) return false;
-            if (refFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE) !=
-                        testFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)) return false;
-        } else if (refMediaType.startsWith("video/")) {
-            if (refFormat.getInteger(MediaFormat.KEY_WIDTH) !=
-                        testFormat.getInteger(MediaFormat.KEY_WIDTH)) return false;
-            if (refFormat.getInteger(MediaFormat.KEY_HEIGHT) !=
-                        testFormat.getInteger(MediaFormat.KEY_HEIGHT)) return false;
-        }
-        return true;
-    }
-
     private static boolean isMediaSimilar(MediaExtractor refExtractor, MediaExtractor testExtractor,
             String mediaType, int sampleLimit) {
         ByteBuffer refBuffer = ByteBuffer.allocate(MAX_SAMPLE_SIZE);
@@ -296,7 +181,7 @@ public class ExtractorTest {
             }
             for (int testTrackID = 0; testTrackID < testExtractor.getTrackCount(); testTrackID++) {
                 MediaFormat testFormat = testExtractor.getTrackFormat(testTrackID);
-                if (!isFormatSimilar(refFormat, testFormat)) {
+                if (!isExtractorFormatSimilar(refFormat, testFormat)) {
                     continue;
                 }
                 refExtractor.selectTrack(refTrackID);
@@ -505,7 +390,7 @@ public class ExtractorTest {
         private MediaExtractor mRefExtractor;
 
         static {
-            System.loadLibrary("ctsmediav2extractor_jni");
+            System.loadLibrary("ctsmediaextractor_jni");
         }
 
         @Before
@@ -684,7 +569,7 @@ public class ExtractorTest {
         @Test
         public void testContextUri() throws IOException {
             Context context = InstrumentationRegistry.getInstrumentation().getContext();
-            String path = "android.resource://android.mediav2.cts/" + RES_STRING;
+            String path = "android.resource://android.media.extractor.cts/" + RES_STRING;
             MediaExtractor testExtractor = new MediaExtractor();
             testExtractor.setDataSource(context, Uri.parse(path), null);
             assertTrue(testExtractor.getCachedDuration() < 0);
@@ -778,7 +663,7 @@ public class ExtractorTest {
         private String mMediaType;
 
         static {
-            System.loadLibrary("ctsmediav2extractor_jni");
+            System.loadLibrary("ctsmediaextractor_jni");
         }
 
         @Rule
