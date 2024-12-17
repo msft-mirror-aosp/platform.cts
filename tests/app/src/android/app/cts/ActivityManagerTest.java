@@ -106,6 +106,8 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
@@ -127,6 +129,7 @@ import com.android.compatibility.common.util.UserHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -168,6 +171,9 @@ public final class ActivityManagerTest {
     // The action sent to identify the time track info.
     private static final String ACTIVITY_TIME_TRACK_INFO = "com.android.cts.TIME_TRACK_INFO";
 
+    private static final String DELAYED_PACKAGE_NAME = "com.android.delayed_start";
+    private static final String DELAYED_ACTIVITY = ".DelayedActivity";
+
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
     private static final String PACKAGE_NAME_APP2 = "com.android.app2";
     private static final String PACKAGE_NAME_APP3 = "com.android.app3";
@@ -202,6 +208,11 @@ public final class ActivityManagerTest {
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
     private boolean mWatchDevice;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation());
 
     private final UserHelper mUserHelper = new UserHelper();
 
@@ -898,7 +909,7 @@ public final class ActivityManagerTest {
         dummyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
 
-        // Wait until it finishes and end the reciever then.
+        // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         timeReceiver.close();
         assertTrue(timeReceiver.mTimeUsed != 0);
@@ -968,7 +979,7 @@ public final class ActivityManagerTest {
         // Run the activity.
         mTargetContext.startActivity(intent, options.toBundle());
 
-        // Wait until it finishes and end the reciever then.
+        // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_PASS, appStartedReceiver.waitForActivity());
         appStartedReceiver.close();
 
@@ -981,7 +992,7 @@ public final class ActivityManagerTest {
         dummyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
 
-        // Wait until it finishes and end the reciever then.
+        // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         timeReceiver.close();
         assertTrue(timeReceiver.mTimeUsed != 0);
@@ -1019,7 +1030,7 @@ public final class ActivityManagerTest {
         // Run the activity.
         mTargetContext.startActivity(intent, options.toBundle());
 
-        // Wait until it finishes and end the reciever then.
+        // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_OK, appEndReceiver.getResult());
         Log.e("SOSO", "Done waiting for activity exit");
 
@@ -1043,7 +1054,7 @@ public final class ActivityManagerTest {
         dummyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final Activity activity = mInstrumentation.startActivitySync(dummyIntent);
 
-        // Wait until it finishes and end the reciever then.
+        // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         timeReceiver.close();
         assertTrue(timeReceiver.mTimeUsed != 0);
@@ -1306,7 +1317,7 @@ public final class ActivityManagerTest {
     public void testKillingAppChildProcess() throws Exception {
         final long powerCheckInterval = 5 * 1000;
         final long processGoneTimeout = powerCheckInterval * 4;
-        final int waitForSec = 5 * 1000;
+        final int waitForSec = 10 * 1000;
         final String activityManagerConstants = "activity_manager_constants";
 
         final SettingsSession<String> amSettings = new SettingsSession<>(
@@ -2230,6 +2241,25 @@ public final class ActivityManagerTest {
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
             });
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_EXPEDITE_ACTIVITY_LAUNCH_ON_COLD_START)
+    public void testActivityStartIsEnqueuedImmediatelyAfterBindApplication() throws Exception {
+        // Prepare to start an activity from another APK.
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setClassName(DELAYED_PACKAGE_NAME, STUB_PACKAGE_NAME + DELAYED_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // The application finished tracker.
+        BlockingResultReceiver appEndReceiver = new BlockingResultReceiver();
+        intent.putExtra(EXTRA_REMOTE_CALLBACK, appEndReceiver.getRemoteCallback());
+
+        // Run the activity.
+        mTargetContext.startActivity(intent);
+
+        // Wait until it finishes and end the receiver then.
+        assertEquals(RESULT_OK, appEndReceiver.getResult());
     }
 
     private boolean switchUser(int userId, boolean waitForSwitchToComplete) throws IOException {

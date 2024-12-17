@@ -16,11 +16,13 @@
 
 package android.autofillservice.cts.inline;
 
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 
 import android.autofillservice.cts.commontests.DatasetFilteringTest;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
+import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 
 import org.junit.rules.TestRule;
 
@@ -43,5 +45,6 @@ public class DatasetFilteringInlineTest extends DatasetFilteringTest {
     @Override
     protected void enableService() {
         Helper.enableAutofillService(SERVICE_NAME);
+        InstrumentedAutoFillService.setAutofillServiceClass(SERVICE_CLASS);
     }
 }

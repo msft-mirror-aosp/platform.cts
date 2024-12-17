@@ -27,6 +27,7 @@ import static android.view.contentcapture.ContentCaptureEvent.TYPE_VIEW_TEXT_CHA
 import static android.view.contentcapture.ContentCaptureEvent.TYPE_VIEW_TREE_APPEARED;
 import static android.view.contentcapture.ContentCaptureEvent.TYPE_VIEW_TREE_APPEARING;
 import static android.view.contentcapture.ContentCaptureEvent.TYPE_WINDOW_BOUNDS_CHANGED;
+import static android.view.contentcapture.ContentCaptureEvent.TYPE_SESSION_FLUSH;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -632,6 +633,9 @@ final class Assertions {
                 break;
             case TYPE_WINDOW_BOUNDS_CHANGED:
                 string = "WINDOW_BOUNDS";
+                break;
+            case TYPE_SESSION_FLUSH:
+                string = "SESSION_FLUSH";
                 break;
             default:
                 return "UNKNOWN-" + type;

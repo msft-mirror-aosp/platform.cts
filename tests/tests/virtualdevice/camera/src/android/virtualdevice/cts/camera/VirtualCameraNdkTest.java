@@ -108,7 +108,7 @@ public class VirtualCameraNdkTest {
     }
 
     @Test
-    public void getCameraIds_defaultDevice() throws Exception {
+    public void getCameraIds_onDefaultDevice_returnsDefaultCameras() throws Exception {
         CameraManager cameraManager = mContext.getSystemService(CameraManager.class);
 
         String[] defaultDeviceCameras = cameraManager.getCameraIdListNoLazy();
@@ -128,7 +128,7 @@ public class VirtualCameraNdkTest {
     }
 
     @Test
-    public void getCameraIds_virtualDevice() throws Exception {
+    public void getCameraIds_onVirtualDevice_returnsOnlyVirtualCamera() throws Exception {
         CameraManager cameraManager = mContext
                 .createDeviceContext(mVirtualDevice.getDeviceId())
                 .getSystemService(CameraManager.class);
@@ -148,7 +148,7 @@ public class VirtualCameraNdkTest {
     }
 
     @Test
-    public void availabilityCallbacks_virtualDevice() {
+    public void availabilityCallbacks_onVirtualDevice_triggeredOnlyForVirtualCamera() {
         NativeCameraTestActivity activity = mRule.startActivityOnDisplaySync(
                 mVirtualDisplay, NativeCameraTestActivity.class);
         NativeCameraManager nativeCameraManager = activity.getNativeCameraManager();
@@ -165,7 +165,7 @@ public class VirtualCameraNdkTest {
     }
 
     @Test
-    public void availabilityCallbacks_defaultDevice() throws Exception {
+    public void availabilityCallbacks_onDefaultDevice_triggeredOnlyForDefaultCameras() throws Exception {
         String[] defaultCameraIds = mContext.getSystemService(
                 CameraManager.class).getCameraIdListNoLazy();
         NativeCameraTestActivity activity = mRule.startActivityOnDisplaySync(

@@ -26,6 +26,7 @@ import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResour
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.autofillservice.cts.testcore.Timeouts.MOCK_IME_TIMEOUT_MS;
 import static android.view.View.AUTOFILL_HINT_USERNAME;
@@ -81,6 +82,7 @@ public class InlineLoginActivityTest extends LoginActivityCommonTestCase {
     @Override
     protected void enableService() {
         Helper.enableAutofillService(SERVICE_NAME);
+        InstrumentedAutoFillService.setAutofillServiceClass(SERVICE_CLASS);
     }
 
     public InlineLoginActivityTest() {
