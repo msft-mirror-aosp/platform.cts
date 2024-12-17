@@ -69,34 +69,39 @@ public class IntrusionDetectionEventTest {
 
     @Test
     public void testGetters_returnCorrectSecurityEvent() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(securityEvent);
+        IntrusionDetectionEvent event =
+                IntrusionDetectionEvent.createForSecurityEvent(securityEvent);
 
         assertEquals(securityEvent, event.getSecurityEvent());
     }
 
     @Test
     public void testGetters_returnCorrectDnsEvent() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(dnsEvent);
+        IntrusionDetectionEvent event = IntrusionDetectionEvent.createForDnsEvent(dnsEvent);
+
         assertEquals(dnsEvent, event.getDnsEvent());
     }
 
     @Test
     public void testGetters_returnCorrectConnectEvent() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(connectEvent);
+        IntrusionDetectionEvent event = IntrusionDetectionEvent.createForConnectEvent(connectEvent);
+
         assertEquals(connectEvent, event.getConnectEvent());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetSecurityEvent_wrongType_throwsException() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(dnsEvent);
+        IntrusionDetectionEvent event = IntrusionDetectionEvent.createForDnsEvent(dnsEvent);
         event.getSecurityEvent();
     }
 
     @Test
     public void getType_returnsCorrectTypes() {
-        IntrusionDetectionEvent event1 = new IntrusionDetectionEvent(securityEvent);
-        IntrusionDetectionEvent event2 = new IntrusionDetectionEvent(dnsEvent);
-        IntrusionDetectionEvent event3 = new IntrusionDetectionEvent(connectEvent);
+        IntrusionDetectionEvent event1 =
+                IntrusionDetectionEvent.createForSecurityEvent(securityEvent);
+        IntrusionDetectionEvent event2 = IntrusionDetectionEvent.createForDnsEvent(dnsEvent);
+        IntrusionDetectionEvent event3 =
+                IntrusionDetectionEvent.createForConnectEvent(connectEvent);
 
         assertEquals(IntrusionDetectionEvent.SECURITY_EVENT, event1.getType());
         assertEquals(IntrusionDetectionEvent.NETWORK_EVENT_DNS, event2.getType());
@@ -105,13 +110,15 @@ public class IntrusionDetectionEventTest {
 
     @Test
     public void testDescribeContents_returnsZero() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(securityEvent);
+        IntrusionDetectionEvent event =
+                IntrusionDetectionEvent.createForSecurityEvent(securityEvent);
         assertEquals(0, event.describeContents());
     }
 
     @Test
     public void testToString_returnsExpectedFormat() {
-        IntrusionDetectionEvent event = new IntrusionDetectionEvent(securityEvent);
+        IntrusionDetectionEvent event =
+                IntrusionDetectionEvent.createForSecurityEvent(securityEvent);
         String expectedString = "IntrusionDetectionEvent{mType=0}";
         assertEquals(expectedString, event.toString());
     }
