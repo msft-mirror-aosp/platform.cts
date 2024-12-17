@@ -42,13 +42,13 @@ fun String.toHumanReadableClassName(): String {
     return this.replace('/', '.')
 }
 
-/** Convert the class name from jvm format. */
+/** Convert method params from jvm format. */
 fun String.toHumanReadableDesc(): String {
     val params = ArrayList<String>()
     Type.getArgumentTypes(this).forEach {
         params.add(it.className.replace("\\$", "."))
     }
-    return params.joinToString(",")
+    return params.joinToString(", ")
 }
 
 /** Extract the class name from a .class file. */
