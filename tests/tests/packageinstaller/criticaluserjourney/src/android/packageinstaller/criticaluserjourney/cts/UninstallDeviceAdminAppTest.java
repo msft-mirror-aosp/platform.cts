@@ -27,12 +27,13 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.uiautomator.By;
 
+import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts;
 import com.android.bedstead.harrier.annotations.NotificationsTest;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.notifications.Notification;
@@ -47,11 +48,10 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 
-/**
- * Tests for PackageInstaller CUJs to uninstall a device admin app.
- */
+/** Tests for PackageInstaller CUJs to uninstall a device admin app. */
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull
+@RequireRunOnSystemUser
 @EnsureHasNoDeviceOwner
 @EnsureHasNoAccounts(onUser = UserType.ANY)
 public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
