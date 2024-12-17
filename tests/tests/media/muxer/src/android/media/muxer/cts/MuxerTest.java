@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.media.muxer.cts;
 
 import static android.mediav2.common.cts.MuxerUtils.isMediaTypeContainerPairValid;
+import static android.mediav2.common.cts.CodecTestBase.isExtractorFormatSimilar;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -304,7 +305,7 @@ class MuxerTestHelper {
                 MediaFormat thatFormat = that.mFormat.get(j);
                 String thatMediaType = thatFormat.getString(MediaFormat.KEY_MIME);
                 if (thisMediaType != null && thisMediaType.equals(thatMediaType)) {
-                    if (!ExtractorTest.isFormatSimilar(thisFormat, thatFormat)) continue;
+                    if (!isExtractorFormatSimilar(thisFormat, thatFormat)) continue;
                     if (mBufferInfo.get(i).size() == that.mBufferInfo.get(j).size()) {
                         long tolerance = thisMediaType.startsWith("video/") ? STTS_TOLERANCE_US : 0;
                         int k = 0;
@@ -413,7 +414,7 @@ public class MuxerTest {
         private static final int CURRENT_ROTATION = 180;
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         @Before
@@ -722,7 +723,7 @@ public class MuxerTest {
         private String mOutPath;
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         @Before
@@ -864,7 +865,7 @@ public class MuxerTest {
         private String mOutPath;
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         @Before
@@ -982,7 +983,7 @@ public class MuxerTest {
         private int mTrackCount;
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         @Before
@@ -1077,7 +1078,7 @@ public class MuxerTest {
         private String mOutPath;
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         public TestSimpleMux(String mediaType, String srcFile, String testName) {
