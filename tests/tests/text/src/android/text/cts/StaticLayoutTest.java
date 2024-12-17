@@ -1769,4 +1769,21 @@ public class StaticLayoutTest {
                 .setTextDirection(TextDirectionHeuristics.RTL)
                 .build();
     }
+
+    @Test
+    public void testConsistentLineBreak() {
+        // Three Latin letters + two Arabic letters
+        String testString = "\u0041\u004F\u0044\u05DE\u05E1";
+        TextPaint paint = new TextPaint();
+        paint.setTextSize(100); // make 1em = 100px
+
+        float width = Layout.getDesiredWidth(testString, paint);
+        int widthConstraint = (int) Math.ceil(width);
+        StaticLayout layout =
+                StaticLayout.Builder.obtain(
+                                testString, 0, testString.length(), paint, widthConstraint)
+                        .build();
+
+        assertEquals(1, layout.getLineCount());
+    }
 }
