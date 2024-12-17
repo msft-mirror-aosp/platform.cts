@@ -181,8 +181,9 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   return recording_obj
 
 
-def verify_preview_stabilization(recording_obj, gyro_events,
-                                 test_name, log_path, facing, zoom_ratio=None):
+def verify_preview_stabilization(recording_obj, gyro_events, test_name,
+                                 log_path, facing, zoom_ratio=None,
+                                 stabilization_mode=True):
   """Verify the returned recording is properly stabilized.
 
   Args:
@@ -192,6 +193,7 @@ def verify_preview_stabilization(recording_obj, gyro_events,
     log_path: Path for the log file.
     facing: Facing of the camera device.
     zoom_ratio: Static zoom ratio. None if default zoom.
+    stabilization_mode: boolean; Whether stabilization mode is ON.
 
   Returns:
     A dictionary containing the maximum gyro angle, the maximum camera angle,
@@ -223,14 +225,15 @@ def verify_preview_stabilization(recording_obj, gyro_events,
   else:
     zoom_ratio_suffix = '1'
   file_name_stem = (
-      f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x')
+      f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x'
+      f'_stabilization={stabilization_mode}')
   cam_rots = sensor_fusion_utils.get_cam_rotations(
       frames[_START_FRAME:],
       facing,
       frame_h,
       file_name_stem,
       _START_FRAME,
-      stabilized_video=True
+      stabilized_video=stabilization_mode
   )
   sensor_fusion_utils.plot_camera_rotations(cam_rots, _START_FRAME,
                                             video_size, file_name_stem)
@@ -239,12 +242,16 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   # Extract gyro rotations
   sensor_fusion_utils.plot_gyro_events(
-      gyro_events, f'{test_name}_{video_size}_{zoom_ratio_suffix}x',
-      log_path)
+      gyro_events,
+      f'{test_name}_{video_size}_{zoom_ratio_suffix}x'
+      f'_stabilization={stabilization_mode}',
+      log_path
+  )
   gyro_rots = sensor_fusion_utils.conv_acceleration_to_movement(
       gyro_events, _VIDEO_DELAY_TIME)
   max_gyro_angle = sensor_fusion_utils.calc_max_rotation_angle(
       gyro_rots, 'Gyro')
+  logging.debug('Stabilization mode: %s', stabilization_mode)
   logging.debug(
       'Max deflection (degrees) %s: video: %.3f, gyro: %.3f ratio: %.4f',
       video_size, max_camera_angle, max_gyro_angle,
@@ -264,14 +271,26 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   failure_msg = None
   if max_camera_angle >= max_gyro_angle * preview_stabilization_factor:
-    failure_msg = (
-        f'{video_size} preview not stabilized enough! '
-        f'Max preview angle:  {max_camera_angle:.3f}, '
-        f'Max gyro angle: {max_gyro_angle:.3f}, '
-        f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
-        f'THRESH: {preview_stabilization_factor}.')
-  # Delete saved frames if the format is a PASS
+    # Fail if stabilization mode is on
+    if stabilization_mode:
+      failure_msg = (
+          f'{video_size} preview not stabilized enough! '
+          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'Max gyro angle: {max_gyro_angle:.3f}, '
+          f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
+          f'THRESH: {preview_stabilization_factor}.')
   else:
+    # Fail if stabilization mode is off
+    if not stabilization_mode:
+      failure_msg = (
+          f'{video_size} preview is stabilized when testing stabilization=OFF! '
+          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'Max gyro angle: {max_gyro_angle:.3f}, '
+          f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
+          f'THRESH: {preview_stabilization_factor}.')
+
+  # Delete saved frames if the format is a PASS
+  if not failure_msg:
     for file in file_list:
       try:
         os.remove(os.path.join(log_path, file))
