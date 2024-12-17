@@ -22,6 +22,8 @@ import android.content.Context;
 import android.os.PowerManager;
 import android.util.Log;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -63,6 +65,19 @@ public class CtsAppTestUtils {
         // Force app to go idle now
         String cmd = "am make-uid-idle " + packageName;
         return executeShellCmd(instrumentation, cmd);
+    }
+
+    public static void unstopApp(String packageName, int userId) throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final String cmd = String.format("cmd package unstop --user %d %s", userId, packageName);
+        executeShellCmd(instrumentation, cmd);
+    }
+
+    public static void clearBadProcess(String processName, int userId) throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final String cmd =
+                String.format("cmd activity clear-bad-process --user %d %s", userId, processName);
+        executeShellCmd(instrumentation, cmd);
     }
 
     /**
