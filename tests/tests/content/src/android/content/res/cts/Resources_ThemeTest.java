@@ -35,7 +35,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
@@ -46,7 +45,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -56,9 +54,6 @@ import java.util.Locale;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class Resources_ThemeTest {
-    @Rule
-    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
-
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }

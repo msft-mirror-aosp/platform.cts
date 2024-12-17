@@ -16,7 +16,10 @@
 
 package android.devicepolicy.cts;
 
+import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CAMERA;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_CAMERA;
 
@@ -26,15 +29,18 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.os.UserManager;
+
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
 import com.android.bedstead.harrier.policies.UserRestrictions;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
@@ -355,6 +361,7 @@ public final class UserRestrictionsTest {
         }
     }
 
+    // TODO: this test isn't run - it lacks Test annotations.
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#addUserRestriction"})
     @RequireRootInstrumentation(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_CAMERA)
@@ -373,6 +380,23 @@ public final class UserRestrictionsTest {
                 // expected if dpc is no longer active
             }
         }
+    }
+
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasDevicePolicyManagerRoleHolder
+    public void addUserRestriction_setByDmrh() throws Exception {
+        var um = TestApis.context().instrumentedContext().getSystemService(UserManager.class);
+
+        dpmRoleHolder(sDeviceState).devicePolicyManager()
+                .addUserRestriction(null, DISALLOW_MODIFY_ACCOUNTS);
+
+        assertThat(um.hasUserRestriction(DISALLOW_MODIFY_ACCOUNTS)).isTrue();
+
+        dpmRoleHolder(sDeviceState).devicePolicyManager()
+                .clearUserRestriction(null, DISALLOW_MODIFY_ACCOUNTS);
+
+        assertThat(um.hasUserRestriction(DISALLOW_MODIFY_ACCOUNTS)).isFalse();
     }
 
     @PolicyAppliesTest(policy = UserRestrictions.class)

@@ -23,11 +23,17 @@ import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTING;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
+import static android.content.pm.PackageManager.FEATURE_TELEVISION;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -41,26 +47,23 @@ import android.bluetooth.BluetoothHearingAid;
 import android.bluetooth.BluetoothHearingAid.AdvertisementServiceData;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
-import android.bluetooth.test_utils.EnableBluetoothRule;
 import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Parcel;
+import android.sysprop.BluetoothProperties;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -75,27 +78,12 @@ import java.util.List;
 public class HearingAidProfileTest {
     private static final String TAG = HearingAidProfileTest.class.getSimpleName();
 
-    @ClassRule public static final EnableBluetoothRule sEnableBluetooth = new EnableBluetoothRule();
-
-    @Rule
-    public final AdoptShellPermissionsRule mPermissionRule =
-            new AdoptShellPermissionsRule(sUiAutomation, BLUETOOTH_CONNECT);
-
-    private static final BluetoothAdapter sBluetoothAdapter = BlockingBluetoothAdapter.getAdapter();
-    private static final Context sContext =
-            InstrumentationRegistry.getInstrumentation().getContext();
-    private static final UiAutomation sUiAutomation =
-            InstrumentationRegistry.getInstrumentation().getUiAutomation();
+    @Mock private BluetoothProfile.ServiceListener mListener;
 
     private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
     private static final Duration WAIT_FOR_INTENT_TIMEOUT = Duration.ofSeconds(1);
-    private static final BluetoothDevice sFakeDevice =
-            sBluetoothAdapter.getRemoteDevice("42:11:22:AA:BB:CC");
-
     private static List<Integer> sValidConnectionStates =
             List.of(STATE_CONNECTING, STATE_CONNECTED, STATE_DISCONNECTED, STATE_DISCONNECTING);
-
-    private BluetoothHearingAid mService;
 
     private static final AdvertisementServiceData sAdvertisementData;
 
@@ -107,31 +95,52 @@ public class HearingAidProfileTest {
         sAdvertisementData = AdvertisementServiceData.CREATOR.createFromParcel(parcel);
     }
 
-    @Mock BluetoothProfile.ServiceListener mServiceListener;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothDevice mDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final UiAutomation mUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+    private BluetoothHearingAid mService;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        Assume.assumeTrue(TestUtils.isBleSupported(sContext));
-        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HEARING_AID));
 
-        assertThat(
-                        sBluetoothAdapter.getProfileProxy(
-                                sContext, mServiceListener, BluetoothProfile.HEARING_AID))
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE));
+        boolean isAshaEnabledByDefault =
+                !(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE)
+                        || mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH)
+                        || mContext.getPackageManager().hasSystemFeature(FEATURE_TELEVISION)
+                        || mContext.getPackageManager().hasSystemFeature(FEATURE_LEANBACK));
+        assumeTrue(
+                BluetoothProperties.isProfileAshaCentralEnabled().orElse(isAshaEnabledByDefault));
+
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+
+        assertThat(mAdapter.getProfileProxy(mContext, mListener, BluetoothProfile.HEARING_AID))
                 .isTrue();
 
         ArgumentCaptor<BluetoothProfile> captor = ArgumentCaptor.forClass(BluetoothProfile.class);
-        verify(mServiceListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceConnected(eq(BluetoothProfile.HEARING_AID), captor.capture());
         mService = (BluetoothHearingAid) captor.getValue();
         assertThat(mService).isNotNull();
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+    }
+
+    @After
+    public void tearDown() {
+        mAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        sBluetoothAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
-        verify(mServiceListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+        mAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.HEARING_AID));
     }
 
@@ -140,7 +149,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getConnectionState() {
-        assertThat(mService.getConnectionState(sFakeDevice)).isEqualTo(STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     /**
@@ -160,7 +169,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceSide() {
-        assertThat(mService.getDeviceSide(sFakeDevice)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
+        assertThat(mService.getDeviceSide(mDevice)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
     }
 
     /** Basic test case to make sure that a fictional device is unknown mode. */
@@ -168,7 +177,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceMode() {
-        assertThat(mService.getDeviceMode(sFakeDevice)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
+        assertThat(mService.getDeviceMode(mDevice)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
     }
 
     /**
@@ -180,10 +189,10 @@ public class HearingAidProfileTest {
     @Test
     public void getAdvertisementServiceData() {
         Permissions.enforceEachPermissions(
-                () -> mService.getAdvertisementServiceData(sFakeDevice),
+                () -> mService.getAdvertisementServiceData(mDevice),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN));
         try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
-            assertThat(mService.getAdvertisementServiceData(sFakeDevice)).isNull();
+            assertThat(mService.getAdvertisementServiceData(mDevice)).isNull();
         }
     }
 
@@ -297,10 +306,10 @@ public class HearingAidProfileTest {
                         sValidConnectionStates.stream().mapToInt(Integer::intValue).toArray());
 
         int numDevices = bondedDeviceList.size();
-        Assume.assumeTrue(numDevices > 0);
+        assumeTrue(numDevices > 0);
 
         BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
-        sContext.registerReceiver(
+        mContext.registerReceiver(
                 mockReceiver,
                 new IntentFilter(BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED));
         ArgumentCaptor<Intent> captor = ArgumentCaptor.forClass(Intent.class);
@@ -311,7 +320,7 @@ public class HearingAidProfileTest {
             verify(mockReceiver, timeout(WAIT_FOR_INTENT_TIMEOUT.toMillis()).times(numDevices))
                     .onReceive(any(), captor.capture());
         } finally {
-            sContext.unregisterReceiver(mockReceiver);
+            mContext.unregisterReceiver(mockReceiver);
         }
 
         for (Intent intent : captor.getAllValues()) {

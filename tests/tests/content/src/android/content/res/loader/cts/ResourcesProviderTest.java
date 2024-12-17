@@ -44,7 +44,6 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TypedValue;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -61,9 +60,6 @@ import java.io.IOException;
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not have access to OverlayManager.")
 @DisabledOnRavenwood(blockedBy = OverlayManager.class)
 public class ResourcesProviderTest {
-    @Rule
-    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
-
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 

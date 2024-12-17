@@ -233,6 +233,187 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         assertShownAndSelectedHaveSameFocusedId(events.get(2), events.get(3));
     }
 
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed"
+    })
+    public void test_multipleEventHistory_switchTwoSessions() throws Exception {
+
+        enableService();
+
+        // Launch activity A
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "A"))
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .build());
+
+        // Trigger autofill and IME on activity A.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        waitUntilConnected();
+        sReplier.getNextFillRequest();
+
+        // No onSessionDestroyed() called yet
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(0);
+
+        // Launch activity B
+        mActivity.startActivity(new Intent(mActivity, CheckoutActivity.class));
+        mUiBot.assertShownByRelativeId(ID_CC_NUMBER);
+
+        // Trigger autofill on activity B
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "B"))
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_CC_NUMBER, "4815162342")
+                                        .setPresentation("datasetB", isInlineMode())
+                                        .build())
+                        .build());
+        mUiBot.focusByRelativeId(ID_CC_NUMBER);
+        sReplier.getNextFillRequest();
+        mUiBot.selectByText("Buy it");
+
+        // Now switch back to A...
+        final AtomicBoolean focusOnA = new AtomicBoolean();
+        int retries = 0;
+        do {
+            assertWithMessage("Did not go back to LoginActivity - did it die?")
+                    .that(retries < 10)
+                    .isTrue();
+            // Dismiss all Autofill UI until back to LoginActivity
+            // Do this in a loop because Inline/Dropdown have different number of UIs to dismiss
+            mUiBot.pressBack(); // dismiss task
+            mActivity.syncRunOnUiThread(() -> focusOnA.set(mActivity.hasWindowFocus()));
+            retries += 1;
+        } while (!focusOnA.get());
+
+        // Verify fill shown for Activity B
+        int presentationType = isInlineMode() ? UI_TYPE_INLINE : UI_TYPE_MENU;
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+
+            // Verify fill shown for Activity B
+            final FillEventHistory historyB = sReplier.getLastFillEventHistory();
+
+            final List<Event> events = historyB.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_DATASETS_SHOWN,
+                    event -> {
+                        assertFillEventForDatasetShown(event, "activity", "B", presentationType);
+                    },
+                    events);
+        }
+
+        // Set response for back to activity A
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "A"))
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .build());
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // ...and trigger save
+        // Set credentials...
+        mActivity.onUsername((v) -> v.setText(",."));
+        mActivity.onPassword((v) -> v.setText("malkovich"));
+        final String actualMessage = mActivity.tapLogin();
+        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
+        sReplier.getNextSaveRequest();
+        mUiBot.pressHome();
+        mUiBot.waitForIdleSync();
+
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
+
+        // // Finally, make sure history is right for activity A
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(2);
+
+            // Verify events for Activity A
+            final FillEventHistory historyA = sReplier.getLastFillEventHistory();
+
+            final List<Event> events = historyA.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_VIEW_REQUESTED_AUTOFILL,
+                    event -> {
+                        assertFillEventForViewEntered(event);
+                    },
+                    events);
+
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_SAVE_SHOWN,
+                    event -> {
+                        assertFillEventForSaveShown(event, NULL_DATASET_ID, "activity", "A");
+                    },
+                    events);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed"
+    })
+    public void test_multipleEventHistory_oneSession() throws Exception {
+        enableService();
+
+        // Set up first partition with an anonymous dataset
+        Bundle clientState1 = new Bundle();
+        clientState1.putCharSequence("clientStateKey", "Value1");
+
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "username")
+                                        .setPresentation("dataset1", isInlineMode())
+                                        .build())
+                        .setExtras(clientState1)
+                        .build());
+        mActivity.expectAutoFill("username");
+
+        // Trigger autofill and IME.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        waitUntilConnected();
+        sReplier.getNextFillRequest();
+        mUiBot.selectDataset("dataset1");
+        mUiBot.waitForIdle();
+        mActivity.assertAutoFilled();
+
+        int presentationType = isInlineMode() ? UI_TYPE_INLINE : UI_TYPE_MENU;
+
+        mActivity.syncRunOnUiThread(() -> mActivity.finish());
+        waitUntilDisconnected();
+        mUiBot.pressHome();
+
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+            assertThat(sReplier.getLastFillEventHistory()).isNotNull();
+
+            // Verify fill selection
+            final FillEventHistory selection = sReplier.getLastFillEventHistory();
+            final List<Event> events = selection.getEvents();
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_DATASETS_SHOWN,
+                    event -> {
+                        assertFillEventForDatasetShown(
+                                event, "clientStateKey", "Value1", presentationType);
+                    },
+                    events);
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_DATASET_SELECTED,
+                    event -> {
+                        assertFillEventForDatasetSelected(
+                                event, null, "clientStateKey", "Value1", presentationType);
+                    },
+                    events);
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled("android.service.autofill.autofill_session_destroyed")
     public void test_onSessionDestroyed() throws Exception {
         enableService();

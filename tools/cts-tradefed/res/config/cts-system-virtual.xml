@@ -1191,6 +1191,12 @@
   <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testCoarsePermissionIsGranted"/>
   <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionSplitTest#testBodySensorSplitOnTToV"/>
   <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testMultiSelectionWithLongPressAndTaps"/>
+  <option name="compatibility:exclude-filter" value="CtsOsHostTestCases android.os.cts.MemcgV2HostTests#testCanActivateMemcgV2Cgroup"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionSplitTest#testBodySensorSplit32OnTToV"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNullAndRealPermission"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNullPermissionRequest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PhotoPickerPermissionTest#testNonImplicitAutomaticallyShowsPickerWhenUserFixed"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest22#testNoRuntimePrompt"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />

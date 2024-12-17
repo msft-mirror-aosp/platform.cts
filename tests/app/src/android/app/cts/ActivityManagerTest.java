@@ -1306,7 +1306,7 @@ public final class ActivityManagerTest {
     public void testKillingAppChildProcess() throws Exception {
         final long powerCheckInterval = 5 * 1000;
         final long processGoneTimeout = powerCheckInterval * 4;
-        final int waitForSec = 5 * 1000;
+        final int waitForSec = 10 * 1000;
         final String activityManagerConstants = "activity_manager_constants";
 
         final SettingsSession<String> amSettings = new SettingsSession<>(

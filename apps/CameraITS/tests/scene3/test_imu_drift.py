@@ -28,7 +28,7 @@ import imu_processing_utils
 import its_session_utils
 import video_processing_utils
 
-_ADV_FEATURE_GYRO_DRIFT_ATOL = 1  # deg/min
+_ADV_FEATURE_GYRO_DRIFT_ATOL = 0.1  # deg/min
 _RAD_TO_DEG = 180/math.pi
 _GYRO_DRIFT_ATOL = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro accumulated drift
 _GYRO_MEAN_THRESH = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro mean drift

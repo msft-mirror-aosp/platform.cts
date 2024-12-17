@@ -378,7 +378,6 @@ public class InstrumentedAutoFillService extends AutofillService {
     }
 
     public static void resetStaticState() {
-        sInstance.set(null);
         sConnected.set(false);
         sServiceLabel = SERVICE_CLASS;
         sSavedDatasetsInfoReplier = null;

@@ -48,7 +48,6 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -60,7 +59,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -74,15 +72,9 @@ import java.util.stream.IntStream;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ResourcesTest {
-    @Rule
-    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
 
     private Context getContext() {
-        if (RavenwoodRule.isOnRavenwood()) {
-            return mRavenwoodRule.getContext();
-        } else {
-            return InstrumentationRegistry.getInstrumentation().getTargetContext();
-        }
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
     private static final String STRING = "string";

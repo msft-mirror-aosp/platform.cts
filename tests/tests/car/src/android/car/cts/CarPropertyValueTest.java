@@ -18,8 +18,13 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.car.Car;
 import android.car.VehicleAreaType;
+import android.car.builtin.os.BuildHelper;
 import android.car.cts.utils.ShellPermissionUtils;
 import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
@@ -166,6 +171,28 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
     public void testGetValue() {
         for (CarPropertyValue propertyValue : mCarPropertyValues) {
             Assert.assertNotNull(propertyValue.getValue());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
+    public void testIsPropertyIdHardwarePropId() {
+        assumeTrue(BuildHelper.isDebuggableBuild());
+        for (CarPropertyValue propertyValue : mCarPropertyValues) {
+            assertThat(propertyValue.isPropertyIdSimulationPropId()).isFalse();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
+    public void testIsPropertyIdHardwarePropId_userBuild() {
+        assumeFalse(BuildHelper.isDebuggableBuild());
+        for (CarPropertyValue propertyValue : mCarPropertyValues) {
+            IllegalStateException thrown =
+                    assertThrows(
+                            IllegalStateException.class,
+                            () -> propertyValue.isPropertyIdSimulationPropId());
+            assertThat(thrown).hasMessageThat().contains("Build is not eng or user-debug");
         }
     }
 }

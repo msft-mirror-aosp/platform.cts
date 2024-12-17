@@ -212,4 +212,8 @@
          android:label="CTS tests of android.os">
     </instrumentation>
 
+    <queries>
+         <package android:name="com.android.modulemetadata" />
+         <package android:name="com.android.webview" />
+    </queries>
 </manifest>

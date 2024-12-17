@@ -110,6 +110,24 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       )
       os.rename(default_path, default_capture_path)
 
+      # Take JCA capture with UI
+      jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
+          self.dut,
+          self.log_path,
+          camera_facing=props['android.lens.facing']
+      )
+      ui_interaction_utils.pull_img_files(
+          device_id, jca_capture_path, self.log_path
+      )
+      img_name = pathlib.Path(jca_capture_path).name
+      jca_path = os.path.join(self.log_path, img_name)
+      logging.debug('JCA capture img name: %s', img_name)
+      jca_capture_path = pathlib.Path(jca_path)
+      jca_capture_path = jca_capture_path.with_name(
+          f'{jca_capture_path.stem}_jca{jca_capture_path.suffix}'
+      )
+      os.rename(jca_path, jca_capture_path)
+
 
 if __name__ == '__main__':
   test_runner.main()

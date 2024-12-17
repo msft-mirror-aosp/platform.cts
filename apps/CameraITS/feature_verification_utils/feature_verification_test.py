@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for feature_combination_info_pb2."""
+"""Unit tests for feature_combination_info_pb2."""
 
 import unittest
 
 import feature_combination_info_pb2
 
+
 class FeatureVerificationUtilsTests(unittest.TestCase):
 
-  #TODO: b/356934871 - add unit test for the library
+  # TODO: b/356934871 - add unit test for the library
   def test_give_me_a_name(self):
     pass
 

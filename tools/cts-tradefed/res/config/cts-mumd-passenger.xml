@@ -21,7 +21,6 @@
 
     <!-- Tests included in this subplan -->
     <option name="compatibility:include-filter" value="CtsAccelerationTestCases" />
-    <option name="compatibility:include-filter" value="CtsAccelerationTestCases" />
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases" />
@@ -143,7 +142,6 @@
     <option name="compatibility:include-filter" value="CtsLibcoreLegacy22TestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreOkHttpTestCases" />
-    <option name="compatibility:include-filter" value="CtsLibcoreOkHttpTestCases (duplicate)" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreWycheproofBCTestCases" />
     <option name="compatibility:include-filter" value="CtsLibcoreWycheproofConscryptTestCases" />
