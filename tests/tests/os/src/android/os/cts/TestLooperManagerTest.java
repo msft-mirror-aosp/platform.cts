@@ -66,6 +66,19 @@ public class TestLooperManagerTest {
         doTest(thread.getLooper());
     }
 
+    @Test
+    public void testOnMainThread() {
+        InstrumentationRegistry.getInstrumentation()
+                .runOnMainSync(
+                        () -> {
+                            try {
+                                doTest(Looper.myLooper());
+                            } catch (Exception e) {
+                                throw new RuntimeException("Unhandled exception", e);
+                            }
+                        });
+    }
+
     private void doTest(Looper looper) throws Exception {
         final TestLooperManager tlm =
                 InstrumentationRegistry.getInstrumentation().acquireLooperManager(looper);
