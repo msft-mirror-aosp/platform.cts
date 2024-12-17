@@ -863,15 +863,15 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
 
     private void logFileDetails(File file) {
         if (file == null) {
-            CLog.d(LOG_TAG, "File is null");
+            CLog.d(LOG_TAG + ": File is null");
             return;
         }
-        CLog.d(LOG_TAG, "File absolute path: " + file.getAbsolutePath());
-        CLog.d(LOG_TAG, "File exists: " + file.exists());
-        CLog.d(LOG_TAG, "File size: " + bytesToString(file.length()));
-        CLog.d(LOG_TAG, "File size: " + file.length() + " bytes");
-        CLog.d(LOG_TAG, "File can read: " + file.canRead());
-        CLog.d(LOG_TAG, "File free space: " + bytesToString(file.getFreeSpace()));
+        CLog.d(LOG_TAG + ": File absolute path: " + file.getAbsolutePath());
+        CLog.d(LOG_TAG + ": File exists: " + file.exists());
+        CLog.d(LOG_TAG + ": File size: " + bytesToString(file.length()));
+        CLog.d(LOG_TAG + ": File size: " + file.length() + " bytes");
+        CLog.d(LOG_TAG + ": File can read: " + file.canRead());
+        CLog.d(LOG_TAG + ": File free space: " + bytesToString(file.getFreeSpace()));
     }
 
     /**
