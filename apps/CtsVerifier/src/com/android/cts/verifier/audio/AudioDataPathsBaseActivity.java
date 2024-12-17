@@ -1487,10 +1487,11 @@ public abstract class AudioDataPathsBaseActivity
             }
             formatter.closeParagraph();
 
-            formatter.openParagraph();
-            formatter.appendText("Test Canceled: " + mTestCanceledByUser);
-
             if (mTestCanceledByUser) {
+                formatter.openParagraph();
+                formatter.appendText("Test Canceled");
+                formatter.appendBreak();
+
                 formatter.openBold()
                         .appendText("Please run the test sequence to completion.")
                         .closeBold()
@@ -1503,7 +1504,7 @@ public abstract class AudioDataPathsBaseActivity
             boolean passEnabled = passBtnEnabled();
             getPassButton().setEnabled(passEnabled);
 
-            if (passEnabled) {
+            if (passEnabled && numFailures != 0) {
                 formatter.appendText("Although not all test modules passed, "
                         + "for this OS version you may press the ");
                 formatter.openBold();
@@ -1514,12 +1515,12 @@ public abstract class AudioDataPathsBaseActivity
                 formatter.appendText("Note: In future versions, "
                         + "ALL test modules will be required to pass.");
                 formatter.appendBreak();
-                formatter.appendText("Note: Press the ");
-                formatter.openBold();
-                formatter.appendText("PASS");
-                formatter.closeBold();
-                formatter.appendText(" button below to complete the test.");
             }
+            formatter.appendText("Press the ");
+            formatter.openBold();
+            formatter.appendText("PASS");
+            formatter.closeBold();
+            formatter.appendText(" button below to complete the test.");
             formatter.closeParagraph();
 
             formatter.closeDocument();
