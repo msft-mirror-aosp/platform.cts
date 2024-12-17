@@ -23,10 +23,13 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
 
+import static junit.framework.Assert.assertFalse;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
@@ -99,7 +102,6 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     private Integer mWindowAreaStatus;
     @WindowAreaSessionState
     private Integer mWindowAreaSessionState;
-    private int mRearDisplayState;
     private long mRearDisplayAddress;
 
     private final Context mInstrumentationContext = getInstrumentation().getTargetContext();
@@ -132,12 +134,8 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 (WindowAreaComponent) mWindowManagerJetpackTestRule.getExtensionComponent();
         mSupportedDeviceStates = mDeviceStateManager.getSupportedDeviceStates();
         assumeTrue(mSupportedDeviceStates.size() > 1);
-        // TODO(b/236022708) Move rear display state to device state config file
-        mRearDisplayState = getInstrumentation().getTargetContext().getResources()
-                .getInteger(Resources.getSystem()
-                        .getIdentifier("config_deviceStateRearDisplay", "integer", "android"));
         mRearDisplayAddress = getRearDisplayAddress();
-        assumeTrue(mRearDisplayState != INVALID_DEVICE_STATE);
+        assumeTrue(hasRearDisplayState(mSupportedDeviceStates));
         mDeviceStateManager.registerCallback(Runnable::run, this);
         mWindowAreaComponent.addRearDisplayStatusListener(mStatusListener);
         unlockDeviceIfNeeded();
@@ -173,7 +171,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             "androidx.window.extensions.area.WindowAreaComponent#removeRearDisplayStatusListener"})
     @Test
     public void testRearDisplayStatusListeners() throws Throwable {
-        Set<Integer> requestedStates = new HashSet<>();
+        final Set<Integer> requestedStates = new HashSet<>();
         while (requestedStates.size() != mSupportedDeviceStates.size()) {
             int newState = determineNewState(mCurrentDeviceState.getIdentifier(),
                     mSupportedDeviceStates, requestedStates);
@@ -186,7 +184,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == newState);
                 // If the state does not put the device into the rear display configuration,
                 // then the listener should receive the STATUS_AVAILABLE value.
-                if (!isRearDisplayActive(mCurrentDeviceState.getIdentifier())) {
+                if (!isRearDisplayState(mCurrentDeviceState)) {
                     waitAndAssert(
                             () -> mWindowAreaStatus == WindowAreaComponent.STATUS_AVAILABLE);
                 } else {
@@ -214,7 +212,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @Test
     public void testStartAndEndRearDisplaySession() throws Throwable {
         assumeTrue(mWindowAreaStatus == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayState);
+        assumeFalse(isRearDisplayState(mCurrentDeviceState));
 
         // Get initial window metrics to determine if the activity is moved, it's returned
         // back to the initial configuration when feature is ended.
@@ -227,7 +225,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         waitAndAssert(() -> isActivityVisible(mActivity));
         waitAndAssert(() -> mWindowAreaSessionState != null
                 && mWindowAreaSessionState == WindowAreaComponent.SESSION_STATE_ACTIVE);
-        assertEquals(mCurrentDeviceState.getIdentifier(), mRearDisplayState);
+        assertTrue(isRearDisplayState(mCurrentDeviceState));
         assertEquals(WindowAreaComponent.STATUS_ACTIVE, (int) mWindowAreaStatus);
 
         WindowMetrics rearDisplayWindowMetrics =
@@ -247,7 +245,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 mActivity.getWindowManager().getCurrentWindowMetrics().getBounds()));
         // Cancelling rear display mode should cancel the override, so verifying that the
         // device state is no longer the rear display state.
-        assertNotEquals(mCurrentDeviceState.getIdentifier(), mRearDisplayState);
+        assertFalse(isRearDisplayState(mCurrentDeviceState));
         assertEquals(WindowAreaComponent.SESSION_STATE_INACTIVE, (int) mWindowAreaSessionState);
 
         // If the rear display window metrics did not match the initial window metrics, verifying
@@ -275,7 +273,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @Test
     public void testEndRearDisplaySession_noActiveSession() {
         assumeTrue(mWindowAreaStatus != WindowAreaComponent.STATUS_ACTIVE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayState);
+        assumeFalse(isRearDisplayState(mCurrentDeviceState));
 
         mWindowAreaComponent.endRearDisplaySession();
     }
@@ -308,12 +306,12 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             return expectedMetrics.equals(originalMetrics);
         });
 
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayState);
+        waitAndAssert(() -> isRearDisplayState(mCurrentDeviceState));
 
         mActivity.getDisplay().getRealMetrics(expectedMetrics);
         DeviceStateUtils.runWithControlDeviceStatePermission(() ->
                 mWindowAreaComponent.endRearDisplaySession());
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() != mRearDisplayState);
+        waitAndAssert(() -> !isRearDisplayState(mCurrentDeviceState));
 
         DisplayMetrics actualMetrics = mWindowAreaComponent.getRearDisplayMetrics();
 
@@ -350,7 +348,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             mActivity.getDisplay().getRealMetrics(currentMetrics);
             return originalMetricsApi.equals(currentMetrics);
         });
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayState);
+        waitAndAssert(() -> isRearDisplayState(mCurrentDeviceState));
         assertTrue(isActivityVisible(mActivity));
 
         WindowMetrics windowMetrics = mActivity.getWindowManager().getCurrentWindowMetrics();
@@ -413,14 +411,19 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     }
 
     /**
-     * Helper method to determine if a rear display session is currently active by checking
-     * if the current device configuration matches that of rear display. This would be true
-     * if there is a device override currently active (base state != current state) and the current
-     * state is that which corresponds to {@code mRearDisplayState}
-     * @return {@code true} if the device is in rear display mode and {@code false} if not
+     * @return {@code true} if the state is a rear device state.
      */
-    private boolean isRearDisplayActive(int currentDeviceState) {
-        return currentDeviceState == mRearDisplayState;
+    private boolean isRearDisplayState(@NonNull DeviceState deviceState) {
+        return deviceState.hasProperty(DeviceState.PROPERTY_FEATURE_REAR_DISPLAY);
+    }
+
+    private boolean hasRearDisplayState(@NonNull List<DeviceState> supportedStates) {
+        for (DeviceState state : supportedStates) {
+            if (isRearDisplayState(state)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void resetActivityConfigurationChangeValues(@NonNull TestRearDisplayActivity activity) {
