@@ -23,7 +23,6 @@ import time
 import numpy as np
 
 import its_session_utils
-import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
 
@@ -212,10 +211,9 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   logging.debug('Number of frames %d', len(file_list))
   for file in file_list:
-    img = image_processing_utils.convert_image_to_numpy_array(
-        os.path.join(log_path, file)
-    )
-    frames.append(img / 255)
+    img_bgr = cv2.imread(os.path.join(log_path, file))
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    frames.append(img_rgb / 255)
   frame_h, frame_w, _ = frames[0].shape
   logging.debug('Frame size %d x %d', frame_w, frame_h)
 

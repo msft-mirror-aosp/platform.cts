@@ -17,8 +17,7 @@ import logging
 import math
 import os
 
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -72,13 +71,13 @@ def define_3axis_plot(x, y, z, t, plot_name):
     t: list of time values for x, y, z data
     plot_name: str name of plot and figure
   """
-  pylab.figure(plot_name)
-  pylab.plot(t, x, 'r.', label='x', alpha=0.5, clip_on=False)
-  pylab.plot(t, y, 'g.', label='y', alpha=0.5, clip_on=False)
-  pylab.plot(t, z, 'b.', label='z', alpha=0.5, clip_on=False)
-  pylab.xlabel('Time (seconds)')
-  pylab.title(plot_name)
-  pylab.legend()
+  plt.figure(plot_name)
+  plt.plot(t, x, 'r.', label='x', alpha=0.5, clip_on=False)
+  plt.plot(t, y, 'g.', label='y', alpha=0.5, clip_on=False)
+  plt.plot(t, z, 'b.', label='z', alpha=0.5, clip_on=False)
+  plt.xlabel('Time (seconds)')
+  plt.title(plot_name)
+  plt.legend()
 
 
 def plot_rotation_vector_data(x, y, z, t, log_path):
@@ -95,10 +94,10 @@ def plot_rotation_vector_data(x, y, z, t, log_path):
   # plot RV data
   plot_name = f'{_NAME}_rotation_vector'
   define_3axis_plot(x, y, z, t, plot_name)
-  pylab.ylabel('RV (degrees)')
-  pylab.ylim([-180, 180])
-  pylab.yticks([-180, -135, -90, -45, 0, 45, 90, 135, 180])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('RV (degrees)')
+  plt.ylim([-180, 180])
+  plt.yticks([-180, -135, -90, -45, 0, 45, 90, 135, 180])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
   # find drift per sample and min/max
   x_drift = imu_processing_utils.calc_rv_drift(x)
@@ -116,10 +115,10 @@ def plot_rotation_vector_data(x, y, z, t, log_path):
   # plot RV drift
   plot_name = f'{_NAME}_rotation_vector_drift'
   define_3axis_plot(x_drift, y_drift, z_drift, t, plot_name)
-  pylab.ylabel('RV drift (degrees)')
-  pylab.ylim([min([x_drift_min, y_drift_min, z_drift_min, -_RV_DRIFT_THRESH]),
-              max([x_drift_max, y_drift_max, z_drift_max, _RV_DRIFT_THRESH])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('RV drift (degrees)')
+  plt.ylim([min([x_drift_min, y_drift_min, z_drift_min, -_RV_DRIFT_THRESH]),
+            max([x_drift_max, y_drift_max, z_drift_max, _RV_DRIFT_THRESH])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
 
 def plot_raw_gyro_data(x, y, z, t, log_path):
@@ -135,10 +134,10 @@ def plot_raw_gyro_data(x, y, z, t, log_path):
 
   plot_name = f'{_NAME}_gyro_raw'
   define_3axis_plot(x, y, z, t, plot_name)
-  pylab.ylabel('Gyro raw output (degrees)')
-  pylab.ylim([min([np.amin(x), np.amin(y), np.amin(z), -_GYRO_MEAN_THRESH]),
-              max([np.amax(x), np.amax(y), np.amax(x), _GYRO_MEAN_THRESH])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('Gyro raw output (degrees)')
+  plt.ylim([min([np.amin(x), np.amin(y), np.amin(z), -_GYRO_MEAN_THRESH]),
+            max([np.amax(x), np.amax(y), np.amax(x), _GYRO_MEAN_THRESH])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
 
 def do_riemann_sums(x, y, z, t, log_path):
@@ -178,10 +177,10 @@ def do_riemann_sums(x, y, z, t, log_path):
   # plot accumulated gyro drift
   plot_name = f'{_NAME}_gyro_drift'
   define_3axis_plot(x_sums, y_sums, z_sums, t, plot_name)
-  pylab.ylabel('Drift (degrees)')
-  pylab.ylim([min([x_min, y_min, z_min, -_GYRO_DRIFT_ATOL]),
-              max([x_max, y_max, z_max, _GYRO_DRIFT_ATOL])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('Drift (degrees)')
+  plt.ylim([min([x_min, y_min, z_min, -_GYRO_DRIFT_ATOL]),
+            max([x_max, y_max, z_max, _GYRO_DRIFT_ATOL])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
   return x_max-x_min, y_max-y_min, z_max-z_min
 
@@ -227,11 +226,12 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # get largest common preview/video size pylint: disable=line-too-long
-      preview_size = video_processing_utils.get_largest_common_preview_video_size(
-          cam, self.camera_id
+      # get largest size from get_preview_video_sizes_union
+      preview_size = (
+          video_processing_utils.get_preview_video_sizes_union(
+              cam, self.camera_id).largest_size
       )
-      logging.debug('Tested preview resolution: %s', preview_size)
+      logging.debug('Testing preview resolution: %s', preview_size)
 
       # start collecting IMU events
       logging.debug('Collecting IMU events')

@@ -22,7 +22,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -31,6 +30,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.TransportBlockFilter;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -146,6 +146,7 @@ public class ScanFilterTest {
                             device, TestUtils.parseScanRecord(scanRecord), -10, 1397545200000000L);
             mFilterBuilder = new ScanFilter.Builder();
             TestUtils.adoptPermissionAsShellUid(BLUETOOTH_PRIVILEGED);
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         }
     }
 
@@ -288,8 +289,8 @@ public class ScanFilterTest {
                                 AD_TYPE_RESOLVABLE_SET_IDENTIFIER, adData, adDataMask)
                         .build();
         assertThat(filter.getAdvertisingDataType()).isEqualTo(AD_TYPE_RESOLVABLE_SET_IDENTIFIER);
-        TestUtils.assertArrayEquals(adData, filter.getAdvertisingData());
-        TestUtils.assertArrayEquals(adDataMask, filter.getAdvertisingDataMask());
+        assertThat(filter.getAdvertisingData()).isEqualTo(adData);
+        assertThat(filter.getAdvertisingDataMask()).isEqualTo(adDataMask);
         assertThat(filter.matches(mScanResult)).isTrue();
         filter = mFilterBuilder.setAdvertisingDataTypeWithData(0x01, adData, adDataMask).build();
         assertThat(filter.matches(mScanResult)).isFalse();
@@ -409,8 +410,9 @@ public class ScanFilterTest {
         assertThat(returnedTransportBlockFilter.getOrgId()).isEqualTo(orgId);
         assertThat(returnedTransportBlockFilter.getTdsFlags()).isEqualTo(tdsFlag);
         assertThat(returnedTransportBlockFilter.getTdsFlagsMask()).isEqualTo(tdsFlagMask);
-        assertArrayEquals(transportData, returnedTransportBlockFilter.getTransportData());
-        assertArrayEquals(transportDataMask, returnedTransportBlockFilter.getTransportDataMask());
+        assertThat(returnedTransportBlockFilter.getTransportData()).isEqualTo(transportData);
+        assertThat(returnedTransportBlockFilter.getTransportDataMask())
+                .isEqualTo(transportDataMask);
     }
 
     private void testReadWriteParcelForFilter(ScanFilter filter) {

@@ -26,6 +26,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.VoicemailContract;
 import android.provider.VoicemailContract.Status;
 import android.provider.VoicemailContract.Voicemails;
@@ -42,6 +43,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * CTS tests for voicemail provider accessed through {@link VoicemailContract}.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to voicemail provider.")
 public class VoicemailContractTest extends InstrumentationTestCase {
 
     private static final String TAG = "VoicemailContractTest";

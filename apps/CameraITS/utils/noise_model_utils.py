@@ -22,8 +22,7 @@ from typing import Any, Dict, List, Tuple
 import warnings
 import capture_request_utils
 import image_processing_utils
-from matplotlib import pylab
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 import noise_model_constants
 import numpy as np
 import scipy.stats
@@ -798,6 +797,6 @@ def create_stats_figure(
 
   with warnings.catch_warnings():
     warnings.simplefilter('ignore', UserWarning)
-    pylab.tight_layout()
+    plt.tight_layout()
 
   return fig, subplots

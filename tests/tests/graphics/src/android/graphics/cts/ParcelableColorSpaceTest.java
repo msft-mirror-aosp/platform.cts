@@ -28,18 +28,24 @@ import android.graphics.Bitmap;
 import android.graphics.ColorSpace;
 import android.graphics.ParcelableColorSpace;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.filters.SmallTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
 public class ParcelableColorSpaceTest {
+
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder().build();
 
     public Object[] getNamedColorSpaces() {
         ColorSpace.Named[] names = ColorSpace.Named.values();
@@ -127,6 +133,7 @@ public class ParcelableColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Bitmap.class)
     public void testIsColorSpaceContainer() {
         ColorSpace colorSpace = ColorSpace.get(ColorSpace.Named.BT2020);
         ParcelableColorSpace parcelableColorSpace = new ParcelableColorSpace(colorSpace);

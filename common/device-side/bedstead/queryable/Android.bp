@@ -28,6 +28,7 @@ android_library {
     ],
     static_libs: [
         "androidx.test.ext.junit",
+        "NeneCommonAndroid",
         "QueryableCommonAndroid",
     ],
     manifest: "src/main/AndroidManifest.xml",

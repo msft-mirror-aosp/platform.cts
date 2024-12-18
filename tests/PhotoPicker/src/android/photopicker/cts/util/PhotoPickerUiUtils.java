@@ -21,8 +21,10 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.text.format.DateUtils;
 
 import androidx.annotation.NonNull;
+import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
@@ -40,9 +42,11 @@ public class PhotoPickerUiUtils {
 
     public static final String REGEX_PACKAGE_NAME =
             "com(.google)?.android.providers.media(.module)?";
+    private static final String MEDIA_ITEM_CONTENT_DESCRIPTION = "Media";
 
     /**
      * Get the list of items from the photo grid list.
+     *
      * @param itemCount if the itemCount is -1, return all matching items. Otherwise, return the
      *                  item list that its size is not greater than the itemCount.
      * @throws Exception
@@ -73,6 +77,13 @@ public class PhotoPickerUiUtils {
             }
         }
         return itemList;
+    }
+
+    /** Find a media item to perform click events*/
+    public static UiObject getMediaItem(UiDevice device) throws Exception {
+        UiSelector mediaItemSelector =
+                new UiSelector().descriptionMatches(MEDIA_ITEM_CONTENT_DESCRIPTION);
+        return device.findObject(mediaItemSelector);
     }
 
     public static UiObject findPreviewAddButton() {
@@ -109,7 +120,17 @@ public class PhotoPickerUiUtils {
         return new UiObject(new UiSelector().textContains("Cloud media app"));
     }
 
-    public static UiObject getOverflowMenuObject(UiDevice uiDevice)  {
+    /**
+     * Retrieves the UI object representing the overflow menu.
+     *
+     * <p>This method first verifies that the overflow menu exists on the screen. If present,
+     * it returns a {@link UiObject} that can be used to interact with the overflow menu.</p>
+     *
+     * @param uiDevice The {@link UiDevice} instance to use for interacting with the UI.
+     * @return The {@link UiObject} representing the overflow menu,
+     * or {@code null} if it's not found.
+     */
+    public static UiObject getOverflowMenuObject(UiDevice uiDevice) {
         // Wait for overflow menu to appear.
         verifyOverflowMenuExists(uiDevice);
         return new UiObject(new UiSelector().description("More options"));
@@ -173,8 +194,8 @@ public class PhotoPickerUiUtils {
         // id/settings_activity_root is the root layout in activity_photo_picker_settings.xml
         assertWithMessage("Timed out waiting for settings activity to appear")
                 .that(new UiObject(new UiSelector()
-                .resourceIdMatches(REGEX_PACKAGE_NAME + ":id/settings_activity_root"))
-                .waitForExists(TIMEOUT))
+                        .resourceIdMatches(REGEX_PACKAGE_NAME + ":id/settings_activity_root"))
+                        .waitForExists(TIMEOUT))
                 .isTrue();
     }
 
@@ -199,5 +220,49 @@ public class PhotoPickerUiUtils {
      */
     public static UiObject findObject(@NonNull String resourceId, UiDevice device) {
         return device.findObject(new UiSelector().resourceIdMatches(resourceId));
+    }
+
+    /**
+     * Asserts that a UI object with the specified resource ID exists within the given timeout.
+     *
+     * @param resourceId The resource ID of the UI object to find.
+     * @param device     The {@link UiDevice} instance to use for searching the UI.
+     */
+    public static void assertUiObjectExistsWithId(@NonNull String resourceId, UiDevice device) {
+        assertWithMessage("Couldn't find Ui object with resource Id " + resourceId)
+                .that(findObject(resourceId, device).waitForExists(TIMEOUT)).isTrue();
+    }
+
+    /**
+     * Finds a UI object with the specified resource ID and performs a click action on it.
+     *
+     * @param resourceId The resource ID of the UI object to find and click.
+     * @param device     The {@link UiDevice} instance to use for searching the UI.
+     * @throws Exception if an error occurs during the process of finding or clicking the object.
+     */
+    public static void findAndClickUiObjectWithId(@NonNull String resourceId, UiDevice device)
+            throws Exception {
+        clickAndWait(device, findObject(resourceId, device));
+    }
+
+    /**
+     * Finds a UI element using UI Automator (UiObject) that matches the provided text.
+     *
+     * @param text   The text to match. This can be a regular expression.
+     * @param device The {@link UiDevice} instance to use for searching.
+     */
+    public static UiObject getUiObjectMatchingText(@NonNull String text, UiDevice device) {
+        return device.findObject(new UiSelector().textMatches(text));
+    }
+
+    /**
+     * Finds a UI element using UI Automator (UiObject2) that matches the provided
+     * content description.
+     *
+     * @param text   The content description to match.
+     * @param device The {@link UiDevice} instance to use for searching.
+     */
+    public static UiObject2 getUiObjectMatchingDescription(@NonNull String text, UiDevice device) {
+        return device.findObject(By.desc(text));
     }
 }

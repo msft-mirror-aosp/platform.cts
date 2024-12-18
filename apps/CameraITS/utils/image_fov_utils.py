@@ -240,7 +240,7 @@ def find_fov_reference(cam, req, props, raw_bool, ref_img_name_stem):
     logging.debug('Using JPEG for reference')
     fmt_type = 'JPEG'
     ref_fov = {}
-    fmt = capture_request_utils.get_largest_jpeg_format(props)
+    fmt = capture_request_utils.get_largest_format('jpeg', props)
     cap = cam.do_capture(req, fmt)
     logging.debug('Captured JPEG %dx%d', cap['width'], cap['height'])
     img = image_processing_utils.convert_capture_to_rgb_image(cap, props)

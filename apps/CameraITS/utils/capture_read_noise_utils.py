@@ -23,8 +23,7 @@ import capture_request_utils
 import error_util
 import image_processing_utils
 import its_session_utils
-from matplotlib import pylab
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from matplotlib.ticker import NullLocator
 from matplotlib.ticker import ScalarFormatter
 import noise_model_constants
@@ -179,7 +178,7 @@ def plot_read_noise_data(read_noise_data, iso_low, iso_high, file_path,
     subplot.yaxis.set_major_formatter(ScalarFormatter())
 
     subplot.legend()
-    pylab.tight_layout()
+    plt.tight_layout()
 
   fig.savefig(file_path, dpi=_FIG_DPI)
 

@@ -16,6 +16,8 @@
 
 package com.android.bedstead.testapp;
 
+import static com.android.bedstead.performanceanalyzer.PerformanceAnalyzer.analyzeThat;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -29,6 +31,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -319,5 +322,17 @@ public final class TestAppTest {
         try (TestAppInstance t = testApp.install()) {
             // Intentionally empty
         }
+    }
+
+    @PerformanceTest
+    public void install_runsMultipleTimes_finishesIn_3seconds() {
+        TestApp testApp = sDeviceState.testApps().any();
+
+        assertThat(
+                analyzeThat(testApp::install)
+                        .cleanUpUsing(testApp::uninstall)
+                        .runsNumberOfTimes(15)
+                        .finishesIn(3000)
+        ).isTrue();
     }
 }

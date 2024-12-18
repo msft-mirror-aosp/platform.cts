@@ -36,12 +36,12 @@ import android.content.pm.PackageManager;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.DefaultDialerApplication;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -98,7 +98,7 @@ public final class DefaultDialerApplicationTest {
 
             assertThat(getDefaultDialerPackage()).isEqualTo(dialerApp.packageName());
         } finally {
-            setDefaultDialerApplication(mDpm, previousDialerAppName);
+            resetDefaultDialerApplication(mDpm, previousDialerAppName);
         }
     }
 
@@ -116,7 +116,7 @@ public final class DefaultDialerApplicationTest {
             // Make sure the default dialer in the test user is unchanged.
             assertThat(getDefaultDialerPackage()).isEqualTo(previousDialerAppInTest);
         } finally {
-            setDefaultDialerApplication(mDpm, previousDialerAppInDpc);
+            resetDefaultDialerApplication(mDpm, previousDialerAppInDpc);
         }
     }
 
@@ -134,7 +134,7 @@ public final class DefaultDialerApplicationTest {
             assertThat(e).hasCauseThat().isInstanceOf(IllegalArgumentException.class);
             assertThat(getDefaultDialerPackage()).isEqualTo(previousDialerAppName);
         } finally {
-            setDefaultDialerApplication(mDpm, previousDialerAppName);
+            resetDefaultDialerApplication(mDpm, previousDialerAppName);
         }
     }
 
@@ -152,12 +152,19 @@ public final class DefaultDialerApplicationTest {
 
             assertThat(getDefaultDialerPackage()).isEqualTo(previousDialerAppName);
         } finally {
-            setDefaultDialerApplication(mDpm, previousDialerAppName);
+            resetDefaultDialerApplication(mDpm, previousDialerAppName);
         }
     }
 
     private String getDefaultDialerPackage() {
         return sContext.getSystemService(TelecomManager.class).getDefaultDialerPackage();
+    }
+
+    private void resetDefaultDialerApplication(RemoteDevicePolicyManager dpm, String packageName) {
+        if (packageName == null || packageName.isEmpty()) {
+            return;
+        }
+        setDefaultDialerApplication(dpm, packageName);
     }
 
     private void setDefaultDialerApplication(RemoteDevicePolicyManager dpm, String packageName) {

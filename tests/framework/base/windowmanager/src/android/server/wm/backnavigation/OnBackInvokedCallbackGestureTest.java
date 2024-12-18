@@ -166,6 +166,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
+        assertTrue(mActivity.mOnUserInteractionCalled);
 
         TouchHelper.injectKeyActionUp(KeyEvent.KEYCODE_BACK,
                 /* downTime = */ downTime,
@@ -189,6 +190,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
                 /* cancelled = */ true,
                 /* sync = */ true);
 
+        assertTrue(mActivity.mOnUserInteractionCalled);
         assertInvoked(mTracker.mCancelLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);

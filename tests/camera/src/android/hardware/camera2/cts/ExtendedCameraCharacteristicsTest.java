@@ -3062,7 +3062,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Check manual flash control capability
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MANUAL_FLASH_STRENGTH_CONTROL)
     public void testManualFlashStrengthControlCharacteristics() throws Exception {
         String[] allCameraIds = getAllCameraIds();
         for (int i = 0; i < allCameraIds.length; i++) {

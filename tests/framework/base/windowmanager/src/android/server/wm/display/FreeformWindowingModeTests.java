@@ -40,6 +40,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.app.Components;
 import android.view.Display;
 
 import org.junit.Test;
@@ -63,13 +64,15 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     @Test
     public void testFreeformWindowManagementSupport() {
-        int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId;
         if (supportsMultiDisplay()) {
             displayId = createManagedVirtualDisplaySession()
                     .setSimulateDisplay(true)
                     .setSimulationDisplaySize(1920 /* width */, 1080 /* height */)
                     .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
                     .createDisplay().mId;
+        } else {
+            displayId = Display.DEFAULT_DISPLAY;
         }
         launchActivityOnDisplay(FREEFORM_ACTIVITY, WINDOWING_MODE_FREEFORM, displayId);
 
@@ -87,8 +90,9 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         mWmState.assertVisibility(TEST_ACTIVITY, true);
         mWmState.assertFocusedActivity(
                 TEST_ACTIVITY + " must be focused Activity", TEST_ACTIVITY);
-        assertEquals(new Rect(0, 0, TEST_TASK_SIZE, TEST_TASK_SIZE),
-                mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds());
+        final Rect testActivitySize = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
+        assertEquals(TEST_TASK_SIZE, testActivitySize.width());
+        assertEquals(TEST_TASK_SIZE, testActivitySize.height());
     }
 
     @Test
@@ -164,7 +168,7 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
     public void testMultiWindowFullscreenRequest() throws Exception {
         assumeTrue("Only test on device guaranteed with a freeform display",
                 supportsFreeform() && hasDeviceFeature(FEATURE_PC));
-        int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = Display.DEFAULT_DISPLAY;
         launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, displayId);
         mWmState.computeState(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
 
@@ -184,7 +188,7 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
     public void testMultiWindowFullscreenRequestRejection() throws Exception {
         assumeTrue("Only test on device guaranteed with a freeform display",
                 supportsFreeform() && hasDeviceFeature(FEATURE_PC));
-        int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = Display.DEFAULT_DISPLAY;
         launchActivityOnDisplay(
                 MULTI_WINDOW_FULLSCREEN_ACTIVITY, WINDOWING_MODE_FULLSCREEN, displayId);
         mWmState.computeState(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
@@ -200,7 +204,7 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
     public void testMultiWindowFullscreenOnNonPcDevice() throws Exception {
         assumeTrue("Only test on non-PC device",
                 !supportsFreeform() || !hasDeviceFeature(FEATURE_PC));
-        int displayId = Display.DEFAULT_DISPLAY;
+        final int displayId = Display.DEFAULT_DISPLAY;
         launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, displayId);
 
         // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
@@ -217,7 +221,7 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         }
 
         if (supportsFreeform()) {
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_STANDARD);
+            stopTestPackage(Components.getPackageName());
             mWmState.waitAndAssertActivityRemoved(MULTI_WINDOW_FULLSCREEN_ACTIVITY);
             launchActivityOnDisplay(MULTI_WINDOW_FULLSCREEN_ACTIVITY, WINDOWING_MODE_FREEFORM,
                     displayId);
@@ -231,14 +235,14 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
 
     private boolean waitForEnterFullscreen(ComponentName activityName) {
         return mWmState.waitForWithAmState(wmState -> {
-            Task task = wmState.getTaskByActivity(activityName);
+            final Task task = wmState.getTaskByActivity(activityName);
             return task != null && task.getWindowingMode() == WINDOWING_MODE_FULLSCREEN;
         }, "checking task windowing mode");
     }
 
     private boolean waitForExitFullscreen(ComponentName activityName) {
         return mWmState.waitForWithAmState(wmState -> {
-            Task task = wmState.getTaskByActivity(activityName);
+            final Task task = wmState.getTaskByActivity(activityName);
             return task != null && task.getWindowingMode() != WINDOWING_MODE_FULLSCREEN;
         }, "checking task windowing mode");
     }

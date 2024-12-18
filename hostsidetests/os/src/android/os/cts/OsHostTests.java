@@ -111,19 +111,25 @@ public class OsHostTests extends DeviceTestCase implements IBuildReceiver, IAbiR
 
         mDevice.clearLogcat();
         mDevice.executeShellCommand(START_FG_SERVICE_COMMAND);
-        RunUtil.getDefault().sleep(2500);
 
+        int maxRetries = 5;
         String pid = null;
-        try (InputStreamSource logSource = mDevice.getLogcat()) {
-            InputStreamReader streamReader = new InputStreamReader(logSource.createInputStream());
-            BufferedReader logReader = new BufferedReader(streamReader);
+        while (pid == null && maxRetries > 0) {
+            RunUtil.getDefault().sleep(1000);
+            maxRetries--;
 
-            String line;
-            while ((line = logReader.readLine()) != null) {
-                Matcher matcher = pattern.matcher(line);
-                if (matcher.find()) {
-                    pid = matcher.group(1);
-                    break;
+            try (InputStreamSource logSource = mDevice.getLogcat()) {
+                InputStreamReader streamReader =
+                        new InputStreamReader(logSource.createInputStream());
+                BufferedReader logReader = new BufferedReader(streamReader);
+
+                String line;
+                while ((line = logReader.readLine()) != null) {
+                    Matcher matcher = pattern.matcher(line);
+                    if (matcher.find()) {
+                        pid = matcher.group(1);
+                        break;
+                    }
                 }
             }
         }
