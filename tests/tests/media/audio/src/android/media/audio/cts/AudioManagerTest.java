@@ -72,6 +72,7 @@ import android.content.res.Resources;
 import android.media.AudioAttributes;
 import android.media.AudioDescriptor;
 import android.media.AudioDeviceAttributes;
+import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioHalVersionInfo;
@@ -87,6 +88,7 @@ import android.media.audiopolicy.AudioProductStrategy;
 import android.media.audiopolicy.AudioVolumeGroup;
 import android.media.cts.Utils;
 import android.os.Build;
+import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
@@ -107,6 +109,7 @@ import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.UserSettings.Namespace;
 import com.android.internal.annotations.GuardedBy;
 import com.android.media.mediatestutils.CancelAllFuturesRule;
@@ -205,6 +208,8 @@ public class AudioManagerTest {
     private boolean mDoNotCheckUnmute;
     private boolean mAppsBypassingDnd;
 
+    private UserHelper mUserHelper;
+
     @ClassRule
     public static final SettingsStateKeeperRule mSurroundSoundFormatsSettingsKeeper =
             new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
@@ -246,6 +251,8 @@ public class AudioManagerTest {
             // volume SDK APIs are no-ops
             mSkipAutoVolumeTests = true;
         }
+
+        mUserHelper = new UserHelper(mContext);
 
         // TODO (b/294941969) pull out volume/ringer/zen state setting/resetting into test rule
         // Store the original volumes that that they can be recovered in tearDown().
@@ -334,6 +341,8 @@ public class AudioManagerTest {
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
     @Test
     public void testMicrophoneMute() throws Exception {
+        assumeFalse("Microphone is not supported on a visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         mAudioManager.setMicrophoneMute(true);
         assertTrue(mAudioManager.isMicrophoneMute());
         mAudioManager.setMicrophoneMute(false);
@@ -343,6 +352,8 @@ public class AudioManagerTest {
     @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_SETTINGS")
     @Test
     public void testMicrophoneMuteIntent() throws Exception {
+        assumeFalse("Microphone is not supported on a visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         assumeFalse(mDoNotCheckUnmute);
 
         final boolean initialMicMute = mAudioManager.isMicrophoneMute();
@@ -2831,6 +2842,158 @@ public class AudioManagerTest {
             mAudioManager.unregisterVolumeGroupCallback(vgCbReceiver);
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    // A helper class to let the test wait for AudioDeviceCallback functions to be called. The test
+    // should call expectDevicesAdded/Removed to mark the interested events, then call
+    // waitForDevicesAdded/Removed to block the thread and wait. Calling waitForDevicesAdded/Removed
+    // will clear the interested events so that the test can call expectDevicesAdded/Removed again.
+    private static class AudioDeviceCallbackHelper extends AudioDeviceCallback {
+        MyBlockingRunnableListener mOnDevicesAdded;
+        MyBlockingRunnableListener mOnDevicesRemoved;
+
+        @Override
+        public void onAudioDevicesAdded(AudioDeviceInfo[] devices) {
+            if (mOnDevicesAdded != null) {
+                mOnDevicesAdded.onSomeEventThatsExpected();
+            }
+        }
+
+        @Override
+        public void onAudioDevicesRemoved(AudioDeviceInfo[] devices) {
+            if (mOnDevicesRemoved != null) {
+                mOnDevicesRemoved.onSomeEventThatsExpected();
+            }
+        }
+
+        void expectDevicesAdded() {
+            mOnDevicesAdded = new MyBlockingRunnableListener();
+        }
+
+        void expectDevicesRemoved() {
+            mOnDevicesRemoved = new MyBlockingRunnableListener();
+        }
+
+        void waitForDevicesAdded() {
+            mOnDevicesAdded.waitForExpectedEvent(TIME_TO_WAIT_CALLBACK_MS);
+            mOnDevicesAdded = null;
+        }
+
+        void waitForDevicesRemoved() {
+            mOnDevicesRemoved.waitForExpectedEvent(TIME_TO_WAIT_CALLBACK_MS);
+            mOnDevicesRemoved = null;
+        }
+    }
+
+    @AppModeFull(reason = "Instant apps cannot hold android.permission.MODIFY_AUDIO_ROUTING")
+    @Test
+    public void testSetWiredDeviceConnectionState() {
+        final AudioDeviceAttributes ada =
+                new AudioDeviceAttributes(
+                        AudioDeviceAttributes.ROLE_OUTPUT,
+                        AudioDeviceInfo.TYPE_IP,
+                        "1.2.3.4",
+                        "TestDeviceName",
+                        new ArrayList<>(),
+                        new ArrayList<>());
+
+        // Calling the API without permission should fail.
+        try {
+            mAudioManager.setWiredDeviceConnectionState(
+                    ada, AudioManager.DEVICE_CONNECTION_STATE_DISCONNECTED);
+            fail("setWiredDeviceConnectionState must fail due to no permission");
+        } catch (SecurityException e) {
+        }
+
+        // The following test uses the attachable audio device that is already connected to the DUT,
+        // because connecting a non exist audio device may cause failures at the HAL layer.
+        final AudioDeviceAttributes device = findDetachableOutputDevice();
+        if (device == null) {
+            Log.i(
+                    TAG,
+                    "Can't find suitable output device, skip the"
+                        + " testSetWiredDeviceConnectionState");
+            return;
+        }
+
+        HandlerThread workerThread = new HandlerThread("worker");
+
+        AudioDeviceCallbackHelper callbackHelper = new AudioDeviceCallbackHelper();
+
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
+
+            workerThread.start();
+
+            // Consume the first onAudioDevicesAdded callback.
+            callbackHelper.expectDevicesAdded();
+            mAudioManager.registerAudioDeviceCallback(
+                    callbackHelper, workerThread.getThreadHandler());
+            callbackHelper.waitForDevicesAdded();
+
+            // Test disconnect device.
+            callbackHelper.expectDevicesRemoved();
+            mAudioManager.setWiredDeviceConnectionState(
+                    device, AudioManager.DEVICE_CONNECTION_STATE_DISCONNECTED);
+            callbackHelper.waitForDevicesRemoved();
+
+            assertFalse(
+                    Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+                            .stream()
+                            .anyMatch(d -> d.getType() == device.getType()));
+
+            // Test connect device.
+            callbackHelper.expectDevicesAdded();
+            mAudioManager.setWiredDeviceConnectionState(
+                    device, AudioManager.DEVICE_CONNECTION_STATE_CONNECTED);
+            callbackHelper.waitForDevicesAdded();
+
+            assertTrue(
+                    Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+                            .stream()
+                            .anyMatch(d -> d.getType() == device.getType()));
+
+        } finally {
+            mAudioManager.unregisterAudioDeviceCallback(callbackHelper);
+            workerThread.quit();
+
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private AudioDeviceAttributes findDetachableOutputDevice() {
+        Set<Integer> supportedTypes =
+                mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
+
+        AudioDeviceInfo[] attachedDevices =
+                mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+        HashSet<Integer> attachedTypes = new HashSet<>();
+        for (AudioDeviceInfo attachedDevice : attachedDevices) {
+            attachedTypes.add(attachedDevice.getType());
+        }
+
+        for (int deviceType :
+                new int[] {
+                    AudioDeviceInfo.TYPE_HDMI,
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                }) {
+            if (!supportedTypes.contains(deviceType) || !attachedTypes.contains(deviceType)) {
+                continue;
+            }
+
+            return new AudioDeviceAttributes(
+                    AudioDeviceAttributes.ROLE_OUTPUT,
+                    deviceType,
+                    "",
+                    "TestDeviceName",
+                    new ArrayList<>(),
+                    new ArrayList<>());
+        }
+
+        return null;
     }
 
     private void waitForMixerAttrChanged(ListenableFuture<Void> future)

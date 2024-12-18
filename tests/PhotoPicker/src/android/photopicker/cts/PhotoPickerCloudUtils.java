@@ -17,6 +17,7 @@
 package android.photopicker.cts;
 
 import static android.Manifest.permission.READ_DEVICE_CONFIG;
+import static android.Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG;
 import static android.Manifest.permission.WRITE_DEVICE_CONFIG;
 import static android.photopicker.cts.PhotoPickerBaseTest.INVALID_CLOUD_PROVIDER;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
@@ -42,6 +43,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.modules.utils.build.SdkLevel;
 
 import java.io.IOException;
@@ -233,19 +236,18 @@ public class PhotoPickerCloudUtils {
 
     private static void writeDeviceConfigProp(@NonNull String namespace, @NonNull String name,
             @NonNull String value) {
-        getUiAutomation().adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG);
-
-        try {
+        try (PermissionContext p = TestApis.permissions()
+                .withPermissionOnVersionAtLeast(35, WRITE_ALLOWLISTED_DEVICE_CONFIG)
+                .withPermissionOnVersionAtMost(35, WRITE_DEVICE_CONFIG)) {
             DeviceConfig.setProperty(namespace, name, value,
                     /* makeDefault*/ false);
-        } finally {
-            getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
     private static void deleteDeviceConfigProp(@NonNull String namespace, @NonNull String name) {
-        try {
-            getUiAutomation().adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG);
+        try (PermissionContext p = TestApis.permissions()
+                .withPermissionOnVersionAtLeast(35, WRITE_ALLOWLISTED_DEVICE_CONFIG)
+                .withPermissionOnVersionAtMost(35, WRITE_DEVICE_CONFIG)) {
             if (SdkLevel.isAtLeastU()) {
                 DeviceConfig.deleteProperty(namespace, name);
             } else {
@@ -260,8 +262,6 @@ public class PhotoPickerCloudUtils {
                             namespace, name), e);
                 }
             }
-        } finally {
-            getUiAutomation().dropShellPermissionIdentity();
         }
     }
 

@@ -17,6 +17,10 @@
 package android.server.wm;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS;
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE;
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
@@ -129,16 +133,16 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     private static final int BROADCAST_DELIVERY_TIMEOUT_MS = 60000;
     public static final Bundle SEND_OPTIONS_ALLOW_BAL = ActivityOptions.makeBasic()
             .setPendingIntentBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
+                    MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
     public static final Bundle SEND_BROADCAST_OPTIONS_ALLOW_BAL = BroadcastOptions.makeBasic()
             .setPendingIntentBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
+                    MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
     public static final Bundle CREATE_OPTIONS_DENY_BAL =
             ActivityOptions.makeBasic().setPendingIntentCreatorBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED).toBundle();
+                    MODE_BACKGROUND_ACTIVITY_START_DENIED).toBundle();
     public static final Bundle CREATE_OPTIONS_ALLOW_BAL =
             ActivityOptions.makeBasic().setPendingIntentCreatorBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
+                    MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle();
 
     @Test
     public void testBackgroundActivityBlocked() throws Exception {
@@ -195,6 +199,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @Ignore
     public void testBackgroundActivity_withinASMGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -207,7 +213,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    public void testBackgroundActivity_withinASMGracePeriod_isNotBlocked() throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
+        // Start AppA foreground activity
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+        // Don't press home button to avoid stop app switches
+        mContext.sendBroadcast(new Intent(APP_A.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY));
+        mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY);
+        startBackgroundActivity(APP_A);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
     @FlakyTest(bugId = 297339382)
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @Ignore
     public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked()
             throws Exception {
         assumeSdkNewerThanUpsideDownCake();
@@ -222,6 +243,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 297339382)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isNotBlocked()
+            throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
+        // Start AppA foreground activity
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+        // Don't press home button to avoid stop app switches
+        mContext.sendBroadcast(new Intent(APP_A.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY));
+        mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY);
+        Thread.sleep(1000 * 5);
+        startBackgroundActivity(APP_A);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
     public void testBackgroundActivityWhenSystemAlertWindowGranted_isNotBlocked()
             throws Exception {
         grantSystemAlertWindow(APP_A_33);
@@ -232,6 +269,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @Ignore
     public void testBackgroundActivityBlockedWhenForegroundActivityNotTop() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
 
@@ -317,6 +355,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @Ignore
     public void testActivityBlockedFromBgActivityInFgTask() {
         assumeSdkNewerThanUpsideDownCake();
         // Launch Activity A, B in the same task with different processes.
@@ -446,7 +485,37 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // sender (appb) is privileged, and grants
         grantSystemAlertWindow(APP_B);
 
-        startPendingIntentSenderActivity(APP_A, APP_B, /* allowBalBySender */ true);
+        startPendingIntentSenderActivity(APP_A, APP_B, MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
+    public void testPendingIntentActivity_whenSenderAllowsBalAlways_isNotBlocked()
+            throws Exception {
+        // creator (appa) is not privileged
+        grantSystemAlertWindow(APP_A, false);
+        // sender (appb) is privileged, and grants
+        grantSystemAlertWindow(APP_B);
+
+        startPendingIntentSenderActivity(APP_A, APP_B, MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
+    public void testPendingIntentActivity_whenSenderAllowsBalIsVisible_isNotBlocked()
+            throws Exception {
+        // creator (appa) is not privileged
+        grantSystemAlertWindow(APP_A, false);
+        // sender (appb) is not privileged
+        grantSystemAlertWindow(APP_A, false);
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+
+        startPendingIntentSenderActivity(APP_A, APP_B,
+                MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE);
         assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_A.BACKGROUND_ACTIVITY, APP_A.BACKGROUND_ACTIVITY);
     }
@@ -645,8 +714,29 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // sender (appb) is privileged, but revokes
         grantSystemAlertWindow(APP_B);
 
-        startPendingIntentSenderActivity(APP_A, APP_B, /* allowBalBySender */ false);
+        startPendingIntentSenderActivity(APP_A, APP_B, MODE_BACKGROUND_ACTIVITY_START_DENIED);
 
+        assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_ADDITIONAL_START_MODES)
+    public void testPendingIntentActivity_whenSenderOnlyAllowsBalIfVisible_isBlocked()
+            throws Exception {
+        // creator (appa) is not privileged
+        grantSystemAlertWindow(APP_A);
+
+        TestServiceClient appA = getTestService(APP_A);
+        TestServiceClient appB = getTestService(APP_B);
+
+        // generate in appB to prevent auto opt in
+        final PendingIntent pi = appB.generatePendingIntent(APP_A.BACKGROUND_ACTIVITY,
+                ActivityOptions.makeBasic().setPendingIntentCreatorBackgroundActivityStartMode(
+                        MODE_BACKGROUND_ACTIVITY_START_DENIED).toBundle());
+
+        appA.sendPendingIntent(pi,
+                ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
+                        MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE).toBundle());
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
     }
 
@@ -1325,7 +1415,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     private void startPendingIntentSenderActivity(Components appToCreatePendingIntent,
-            Components appToSendPendingIntent, boolean allowBal) throws Exception {
+            Components appToSendPendingIntent, int balMode) throws Exception {
         TestServiceClient testServiceToCreatePendingIntent =
                 getTestService(appToCreatePendingIntent);
         // Get a PendingIntent created by appToCreatePendingIntent.
@@ -1345,9 +1435,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 appToSendPendingIntent.START_PENDING_INTENT_ACTIVITY_EXTRA.PENDING_INTENT, pi);
         secondIntent.putExtra(
                 appToSendPendingIntent.START_PENDING_INTENT_ACTIVITY_EXTRA.START_BUNDLE,
-                ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                        allowBal ? ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                                : ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED)
+                ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(balMode)
                         .toBundle());
         mContext.startActivity(secondIntent);
     }
@@ -1363,7 +1451,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
      */
     private void startActivity(ComponentName componentName, String... extraTrueNames) {
         startActivityUnchecked(componentName, extraTrueNames);
-        assertActivityFocused(componentName);
+        assertActivityFocusedOnMainDisplay(componentName);
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -24,11 +26,11 @@ import android.app.admin.RemoteDevicePolicyManager;
 import android.content.ComponentName;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.SupportMessage;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
@@ -36,7 +38,6 @@ import com.android.bedstead.remotedpc.RemotePolicyManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -64,7 +65,7 @@ public final class SupportMessageTest {
 
     @Before
     public void setUp() {
-        RemotePolicyManager dpc = sDeviceState.dpc();
+        RemotePolicyManager dpc = dpc(sDeviceState);
         mAdmin = dpc.componentName();
         mDevicePolicyManager = dpc.devicePolicyManager();
     }
@@ -108,7 +109,6 @@ public final class SupportMessageTest {
 
     @PolicyAppliesTest(policy = SupportMessage.class)
     @Postsubmit(reason = "new test")
-    @Ignore("b/278717644")
     public void setLongSupportMessage_nullText_clearsOldText() {
         mDevicePolicyManager.setLongSupportMessage(mAdmin, VALID_LONG_MSG);
         mDevicePolicyManager.setLongSupportMessage(mAdmin, /* charSequence= */ null);
@@ -118,7 +118,6 @@ public final class SupportMessageTest {
 
     @PolicyAppliesTest(policy = SupportMessage.class)
     @Postsubmit(reason = "new test")
-    @Ignore("b/278717644")
     public void setShortSupportMessage_nullText_clearsOldText() {
         mDevicePolicyManager.setShortSupportMessage(mAdmin, VALID_SHORT_MSG);
         mDevicePolicyManager.setShortSupportMessage(mAdmin, /* charSequence= */ null);

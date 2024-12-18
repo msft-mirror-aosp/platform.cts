@@ -26,6 +26,7 @@ android_test {
     compile_multilib: "both",
     static_libs: [
         "android.content.pm.flags-aconfig-java",
+        "androidx.recyclerview_recyclerview",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -65,4 +66,11 @@ android_test {
         ":CtsAutoRevokeRApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsHibernationTestCases_cts_apphibernationintegrationtest",
+    base: "CtsHibernationTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hibernation.cts.AppHibernationIntegrationTest"],
 }

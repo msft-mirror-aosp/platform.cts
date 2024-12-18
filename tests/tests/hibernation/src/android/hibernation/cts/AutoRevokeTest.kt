@@ -167,7 +167,7 @@ class AutoRevokeTest {
 
     @After
     fun cleanUp() {
-        goHome()
+        goBack()
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
@@ -691,6 +691,7 @@ class AutoRevokeTest {
                 .addFlags(FLAG_ACTIVITY_CLEAR_TASK))
 
         waitForIdle()
+        scrollToLabel("Permissions")
 
         click("Permissions")
     }

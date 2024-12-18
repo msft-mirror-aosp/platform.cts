@@ -34,6 +34,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Process;
 import android.os.SystemClock;
 import android.permission.PermissionManager;
@@ -151,8 +152,7 @@ public class LightBarTests extends LightBarTestBase {
         runInNotificationSession(() -> {
             final LightBarActivity activity = mActivityRule.getActivity();
             activity.runOnUiThread(() -> {
-                activity.getWindow().setStatusBarColor(LIGHT_BG_COLOR);
-                activity.getWindow().setNavigationBarColor(LIGHT_BG_COLOR);
+                activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
 
                 activity.setLightStatusBarLegacy(true);
                 activity.setLightNavigationBarLegacy(true);
@@ -179,8 +179,7 @@ public class LightBarTests extends LightBarTestBase {
         runInNotificationSession(() -> {
             final LightBarActivity activity = mActivityRule.getActivity();
             activity.runOnUiThread(() -> {
-                activity.getWindow().setStatusBarColor(LIGHT_BG_COLOR);
-                activity.getWindow().setNavigationBarColor(LIGHT_BG_COLOR);
+                activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
 
                 activity.setLightStatusBarAppearance(false);
                 activity.setLightNavigationBarAppearance(false);
@@ -218,20 +217,6 @@ public class LightBarTests extends LightBarTestBase {
     }
 
     @Test
-    public void testNavigationBarDivider() throws Throwable {
-        assumeHasColoredNavigationBar(mActivityRule);
-
-        mActivityRule.runOnUiThread(() -> {
-            mActivityRule.getActivity().getWindow().setNavigationBarColor(Color.RED);
-            mActivityRule.getActivity().getWindow().setNavigationBarDividerColor(Color.WHITE);
-        });
-        Thread.sleep(WAIT_TIME);
-
-        checkNavigationBarDivider(mActivityRule.getActivity(), Color.WHITE, Color.RED,
-                mTestName.getMethodName());
-    }
-
-    @Test
     @AppModeFull // Instant apps cannot create notifications
     public void testLightBarIsNotAllowed_fitStatusBar() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
@@ -248,8 +233,7 @@ public class LightBarTests extends LightBarTestBase {
                 attrs.width = metrics.getBounds().width() - insets.left - insets.right;
                 attrs.height = metrics.getBounds().height() - insets.top - insets.bottom;
                 activity.getWindow().setAttributes(attrs);
-                activity.getWindow().setStatusBarColor(Color.BLACK);
-                activity.getWindow().setNavigationBarColor(Color.BLACK);
+                activity.getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
                 activity.setLightStatusBarAppearance(true);
                 activity.setLightNavigationBarAppearance(true);
             });
@@ -350,8 +334,7 @@ public class LightBarTests extends LightBarTestBase {
     private void requestLightBars(final int background) {
         final LightBarActivity activity = mActivityRule.getActivity();
         activity.runOnUiThread(() -> {
-            activity.getWindow().setStatusBarColor(background);
-            activity.getWindow().setNavigationBarColor(background);
+            activity.getWindow().setBackgroundDrawable(new ColorDrawable(background));
             activity.setLightStatusBarLegacy(true);
             activity.setLightNavigationBarLegacy(true);
         });

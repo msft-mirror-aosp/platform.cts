@@ -28,12 +28,14 @@ import android.media.AudioTrack;
 import android.media.MediaFormat;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.media.audio.Flags;
 import android.media.audio.cts.R;
 import android.media.cts.DeviceUtils;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
@@ -440,7 +442,7 @@ public class RoutingTest extends AndroidTestCase {
         }
     }
 
-    public void test_audioTrack_getRoutedDevice() throws Exception {
+    private void testAudioTrackGetRoutedDevice(boolean enableRoutedDeviceIdsFlag) throws Exception {
         if (!DeviceUtils.hasOutputDevice(mAudioManager)) {
             Log.i(TAG, "No output devices. Test skipped");
             return; // nothing to test here
@@ -468,14 +470,24 @@ public class RoutingTest extends AndroidTestCase {
         Thread fillerThread = new Thread(filler);
         fillerThread.start();
 
-        assertHasNonNullRoutedDevice(audioTrack);
+        assertHasNonNullRoutedDevice(audioTrack, enableRoutedDeviceIdsFlag);
 
         filler.stop();
         audioTrack.stop();
         audioTrack.release();
     }
 
-    private void assertHasNonNullRoutedDevice(AudioRouting router) throws Exception {
+    public void test_audioTrack_getRoutedDevice() throws Exception {
+        testAudioTrackGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    public void test_audioTrack_getRoutedDevices() throws Exception {
+        testAudioTrackGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    private void assertHasNonNullRoutedDevice(AudioRouting router,
+                                              boolean enableRoutedDeviceIdsFlag) throws Exception {
         AudioDeviceInfo routedDevice = null;
         // Give a chance for playback or recording to start so routing can be established
         final long timeouts[] = { 100, 200, 300, 500, 1000};
@@ -490,6 +502,11 @@ public class RoutingTest extends AndroidTestCase {
             }
         } while (routedDevice == null && attempt < timeouts.length);
         assertNotNull(routedDevice); // we probably can't say anything more than this
+        if (enableRoutedDeviceIdsFlag) {
+            List<AudioDeviceInfo> audioDeviceInfos = router.getRoutedDevices();
+            assertTrue(audioDeviceInfos.size() > 0);
+            assertEquals(audioDeviceInfos.get(0), routedDevice);
+        }
     }
 
     private class AudioRecordPuller implements Runnable {
@@ -517,7 +534,8 @@ public class RoutingTest extends AndroidTestCase {
         }
     }
 
-    public void test_audioRecord_getRoutedDevice() throws Exception {
+    private void testAudioRecordGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
+            throws Exception {
         if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
             return;
         }
@@ -547,11 +565,20 @@ public class RoutingTest extends AndroidTestCase {
         Thread pullerThread = new Thread(puller);
         pullerThread.start();
 
-        assertHasNonNullRoutedDevice(audioRecord);
+        assertHasNonNullRoutedDevice(audioRecord, enableRoutedDeviceIdsFlag);
 
         puller.stop();
         audioRecord.stop();
         audioRecord.release();
+    }
+
+    public void test_audioRecord_getRoutedDevice() throws Exception {
+        testAudioRecordGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    public void test_audioRecord_getRoutedDevices() throws Exception {
+        testAudioRecordGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
 
     static class AudioRoutingListener implements AudioRouting.OnRoutingChangedListener
@@ -658,7 +685,8 @@ public class RoutingTest extends AndroidTestCase {
         mediaPlayer.release();
     }
 
-    public void test_mediaPlayer_getRoutedDevice() throws Exception {
+    private void testMediaPlayerGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
+            throws Exception {
         if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
             // Can't do it so skip this test
             return;
@@ -667,10 +695,19 @@ public class RoutingTest extends AndroidTestCase {
         MediaPlayer mediaPlayer = allocMediaPlayer();
         assertTrue(mediaPlayer.isPlaying());
 
-        assertHasNonNullRoutedDevice(mediaPlayer);
+        assertHasNonNullRoutedDevice(mediaPlayer, enableRoutedDeviceIdsFlag);
 
         mediaPlayer.stop();
         mediaPlayer.release();
+    }
+
+    public void test_mediaPlayer_getRoutedDevice() throws Exception {
+        testMediaPlayerGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    public void test_mediaPlayer_getRoutedDevices() throws Exception {
+        testMediaPlayerGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
 
     public void test_MediaPlayer_RoutingListener() {
@@ -863,7 +900,8 @@ public class RoutingTest extends AndroidTestCase {
         mediaRecorder.release();
     }
 
-    public void test_mediaRecorder_getRoutedDeviceId() throws Exception {
+    private void testMediaRecorderGetRoutedDevice(boolean enableRoutedDeviceIdsFlag)
+            throws Exception {
         if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
             || !MediaUtils.hasEncoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
             MediaUtils.skipTest("no audio codecs or microphone");
@@ -874,10 +912,26 @@ public class RoutingTest extends AndroidTestCase {
 
         AudioDeviceInfo routedDevice = mediaRecorder.getRoutedDevice();
         assertNotNull(routedDevice); // we probably can't say anything more than this
+
+        if (enableRoutedDeviceIdsFlag) {
+            List<AudioDeviceInfo> audioDeviceInfos = mediaRecorder.getRoutedDevices();
+            assertTrue(audioDeviceInfos.size() > 0);
+            assertEquals(routedDevice, audioDeviceInfos.get(0));
+        }
+
         Thread.sleep(RECORD_TIME_MS);
 
         mediaRecorder.stop();
         mediaRecorder.release();
+    }
+
+    public void test_mediaRecorder_getRoutedDevice() throws Exception {
+        testMediaRecorderGetRoutedDevice(false /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    public void test_mediaRecorder_getRoutedDevices() throws Exception {
+        testMediaRecorderGetRoutedDevice(true /*enableRoutedDeviceIdsFlag*/);
     }
 
     public void test_mediaRecorder_RoutingListener() throws Exception {

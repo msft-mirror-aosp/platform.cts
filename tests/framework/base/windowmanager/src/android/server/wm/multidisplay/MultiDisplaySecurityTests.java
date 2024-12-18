@@ -38,7 +38,6 @@ import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_RECEIV
 import static android.server.wm.second.Components.SECOND_NO_EMBEDDING_ACTIVITY;
 import static android.server.wm.second.Components.SecondActivity.EXTRA_DISPLAY_ACCESS_CHECK;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_HIDE;
@@ -473,26 +472,26 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 VIRTUAL_DISPLAY_ACTIVITY);
         final int defaultDisplayFocusedTaskId = mWmState.getFocusedTaskId();
         Task frontRootTask = mWmState.getRootTask(defaultDisplayFocusedTaskId);
-        assertEquals("Top root task must remain on primary display",
-                DEFAULT_DISPLAY, frontRootTask.mDisplayId);
+        assertEquals("Top root task must remain on main display assigned to the user",
+                getMainDisplayId(), frontRootTask.mDisplayId);
 
         // Launch activity on new secondary display.
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
         waitAndAssertActivityStateOnDisplay(TEST_ACTIVITY, STATE_RESUMED, newDisplay.mId,
                 "Test activity must be on secondary display");
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, VIRTUAL_DISPLAY_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), VIRTUAL_DISPLAY_ACTIVITY),
                 pair(newDisplay.mId, TEST_ACTIVITY));
 
         // Launch other activity with different uid and check it is launched on dynamic task on
         // secondary display.
         final String startCmd = "am start -n " + getActivityName(SECOND_ACTIVITY)
-                + " --display " + newDisplay.mId;
+                + " --display " + newDisplay.mId + " --user " + mContext.getUserId();
         executeShellCommand(startCmd);
 
         waitAndAssertActivityStateOnDisplay(SECOND_ACTIVITY, STATE_RESUMED, newDisplay.mId,
                 "Second activity must be on newly launched app");
-        assertBothDisplaysHaveResumedActivities(pair(DEFAULT_DISPLAY, VIRTUAL_DISPLAY_ACTIVITY),
+        assertBothDisplaysHaveResumedActivities(pair(getMainDisplayId(), VIRTUAL_DISPLAY_ACTIVITY),
                 pair(newDisplay.mId, SECOND_ACTIVITY));
     }
 
@@ -506,10 +505,10 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
 
         // Launch activity with different uid on secondary display.
         final String startCmd = "am start -n " + getActivityName(SECOND_ACTIVITY)
-                + " --display " + newDisplay.mId;
+                + " --display " + newDisplay.mId + " --user " + mContext.getUserId();
         executeShellCommand(startCmd);
 
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
 
         // Launch another activity with third different uid from app on secondary display and
@@ -521,7 +520,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 .setTargetActivity(THIRD_ACTIVITY)
                 .execute();
 
-        waitAndAssertTopResumedActivity(THIRD_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(THIRD_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
     }
 
@@ -548,7 +547,7 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
         // Launch an activity from a different UID into the first activity's task.
         getLaunchActivityBuilder().setTargetActivity(SECOND_ACTIVITY).execute();
 
-        waitAndAssertTopResumedActivity(SECOND_ACTIVITY, newDisplay.mId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, newDisplay.mId,
                 "Top activity must be the newly launched one");
         frontTask = mWmState.getRootTask(frontRootTaskId);
         assertEquals("Secondary display must contain 1 task", 1,
@@ -568,8 +567,8 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
                 VIRTUAL_DISPLAY_ACTIVITY);
         final int defaultDisplayFocusedRootTaskId = mWmState.getFocusedTaskId();
         Task frontRootTask = mWmState.getRootTask(defaultDisplayFocusedRootTaskId);
-        assertEquals("Top root task must remain on primary display",
-                DEFAULT_DISPLAY, frontRootTask.mDisplayId);
+        assertEquals("Top root task must remain on main display assigned to the user",
+                getMainDisplayId(), frontRootTask.mDisplayId);
 
         // Launch activity on new secondary display.
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);

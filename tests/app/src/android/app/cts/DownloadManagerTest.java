@@ -56,9 +56,13 @@ import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -71,6 +75,9 @@ import java.io.OutputStream;
 
 @RunWith(AndroidJUnit4.class)
 public class DownloadManagerTest extends DownloadManagerTestBase {
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String DOWNLOAD_STORAGE_PROVIDER_AUTHORITY =
             "com.android.providers.downloads.documents";
     @FlakyTest
@@ -721,6 +728,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         }
     }
 
+    // TODO(b/374851711): remove the annotation once DocumentsUI supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test uses DocumentsUI package to"
+            + " check downloaded file. On Automotive OS, the DocumentsUI does not support visible"
+            + " background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
     @Test
     public void testDownload_onMediaStoreDownloadsDeleted() throws Exception {
         assumeDocumentsUiAvailableOnFormFactor();

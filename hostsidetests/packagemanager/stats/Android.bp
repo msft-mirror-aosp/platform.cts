@@ -37,7 +37,7 @@ java_defaults {
         "flag-junit-host",
         "android.content.pm.flags-aconfig-java-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomEmptyApp",
         ":CtsStatsdAtomEmptyAppV2",
         ":CtsStatsdAtomEmptyApp2",
@@ -83,4 +83,24 @@ test_module_config_host {
     base: "CtsPackageManagerStatsHostTestCases",
     test_suites: ["general-tests"],
     include_filters: ["com.android.cts.packagemanager.stats.host.PackageInstallerV2StatsTests"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: [
+        "androidx.test.filters.LargeTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_NoLargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.LargeTest",
+        "androidx.test.filters.LargeTest",
+    ],
 }

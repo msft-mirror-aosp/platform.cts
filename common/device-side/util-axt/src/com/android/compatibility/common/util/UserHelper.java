@@ -30,8 +30,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
-
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -58,17 +57,19 @@ public final class UserHelper {
     private final int mDisplayId;
 
     /**
-     * Creates a helper using {@link InstrumentationRegistry#getTargetContext()}.
+     * Creates a helper using the application context from the target context (falling back to the
+     * target context itself when it doesn't have an application context).
      */
     public UserHelper() {
-        this(InstrumentationRegistry.getTargetContext());
+        this(getApplicationContext());
     }
 
     /**
      * Creates a helper for the given context.
      */
     public UserHelper(Context context) {
-        mUser = Objects.requireNonNull(context).getUser();
+        mUser = Objects.requireNonNull(context, "Context on UserHelper constructor cannot be null")
+                .getUser();
         UserManager userManager = context.getSystemService(UserManager.class);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -256,5 +257,16 @@ public final class UserHelper {
                 + ", isVisibleBackgroundUser=" + mIsVisibleBackgroundUser
                 + ", isVisibleBackgroundUsersSupported" + mVisibleBackgroundUsersSupported
                 + "]";
+    }
+
+    private static Context getApplicationContext() {
+        Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Context appContext = targetContext.getApplicationContext();
+        if (appContext == null) {
+            Log.w(TAG, "getApplicationContext(): target context (" + targetContext
+                    + ") doesn't have an application context; returning it instead");
+            return targetContext;
+        }
+        return appContext;
     }
 }

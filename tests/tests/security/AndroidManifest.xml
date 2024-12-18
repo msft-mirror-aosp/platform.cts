@@ -34,6 +34,10 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.OBSERVE_SENSOR_PRIVACY"/>
+    <uses-permission android:name="android.permission.MANAGE_SENSOR_PRIVACY"/>
+    <uses-permission android:name="android.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE"/>
 
     <!-- For FileIntegrityManager -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
@@ -146,6 +150,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.security.cts.CVE_2021_0472.PocActivity" />
+
         <activity android:name="android.security.cts.CVE_2021_0327.IntroActivity"
              android:exported="true">
             <intent-filter>
@@ -230,8 +236,6 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name="android.security.cts.ActivityManagerTest$ActivityOptionsActivity" />
-        <activity android:name="android.security.cts.ActivityManagerTest$BaseActivity" />
         <activity android:name="android.security.cts.ActivityManagerTest$WaitEnterAnimActivity" />
 
         <activity android:name="android.security.cts.PackageInstallerTest$BackgroundLaunchActivity"
@@ -343,6 +347,9 @@
         </service>
 
         <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
+
+        <service android:name="android.security.cts.CVE_2024_34734.PocService"
+          android:foregroundServiceType="microphone" />
 
     </application>
 

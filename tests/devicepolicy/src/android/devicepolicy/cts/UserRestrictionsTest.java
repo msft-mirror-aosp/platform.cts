@@ -16,6 +16,10 @@
 
 package android.devicepolicy.cts;
 
+import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
+
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CAMERA;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_CAMERA;
 
@@ -25,17 +29,21 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.os.UserManager;
+
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
 import com.android.bedstead.harrier.policies.UserRestrictions;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
@@ -177,8 +185,8 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void getUserRestrictions_allDefaultUserRestrictions_returnFalse(
             @AllUserRestrictions String restriction) {
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                .getUserRestrictions(sDeviceState.dpc().componentName())
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                .getUserRestrictions(dpc(sDeviceState).componentName())
                 .getBoolean(restriction))
                 .isFalse();
     }
@@ -187,21 +195,21 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void getUserRestrictions_containsAddedRestriction(
             @AllDpcAllowedUserRestrictions String restriction) {
-        boolean hasRestrictionOriginally = sDeviceState.dpc()
+        boolean hasRestrictionOriginally = dpc(sDeviceState)
                 .userManager().hasUserRestriction(restriction);
 
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .getUserRestrictions(sDeviceState.dpc().componentName())
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getUserRestrictions(dpc(sDeviceState).componentName())
                     .getBoolean(restriction))
                     .isTrue();
         } finally {
             if (!hasRestrictionOriginally) {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             }
         }
     }
@@ -210,18 +218,18 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void hasUserRestriction_containsAddedRestriction(
             @AllDpcAllowedUserRestrictions String restriction) {
-        boolean hasRestrictionOriginally = sDeviceState.dpc()
+        boolean hasRestrictionOriginally = dpc(sDeviceState)
                 .userManager().hasUserRestriction(restriction);
 
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            assertThat(sDeviceState.dpc().userManager().hasUserRestriction(restriction)).isTrue();
+            assertThat(dpc(sDeviceState).userManager().hasUserRestriction(restriction)).isTrue();
         } finally {
             if (!hasRestrictionOriginally) {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             }
         }
     }
@@ -231,25 +239,25 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void hasUserRestriction_clearUserRestriction_restrictionIsRemoved(
             @AllDpcAllowedUserRestrictions String restriction) {
-        boolean hasRestrictionOriginally = sDeviceState.dpc()
+        boolean hasRestrictionOriginally = dpc(sDeviceState)
                 .userManager().hasUserRestriction(restriction);
 
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            assertThat(sDeviceState.dpc().userManager().hasUserRestriction(restriction))
+            assertThat(dpc(sDeviceState).userManager().hasUserRestriction(restriction))
                     .isFalse();
         } finally {
             if (hasRestrictionOriginally) {
-                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             } else {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             }
         }
     }
@@ -258,15 +266,15 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void clearDefaultUserRestriction_restrictionIsNotRemoved(
             @DefaultSecondaryUserRestrictions String restriction) {
-        boolean hasRestrictionOriginally = sDeviceState.dpc()
+        boolean hasRestrictionOriginally = dpc(sDeviceState)
                 .userManager().hasUserRestriction(restriction);
 
         try {
             assumeTrue(hasRestrictionOriginally);
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            assertThat(sDeviceState.dpc().userManager().hasUserRestriction(restriction))
+            assertThat(dpc(sDeviceState).userManager().hasUserRestriction(restriction))
                     .isTrue();
         } catch (SecurityException e) {
             // expect an exception for restrictions that cannot be set by a profile owner
@@ -275,8 +283,8 @@ public final class UserRestrictionsTest {
         } finally {
             if (hasRestrictionOriginally) {
                 try {
-                    sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                            sDeviceState.dpc().componentName(), restriction);
+                    dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                            dpc(sDeviceState).componentName(), restriction);
                 } catch (SecurityException e) {
                     // expect an exception for restrictions that cannot be set by a profile owner
                 }
@@ -288,27 +296,27 @@ public final class UserRestrictionsTest {
     @Postsubmit(reason = "new test")
     public void getUserRestriction_clearUserRestriction_restrictionIsRemoved(
             @AllDpcAllowedUserRestrictions String restriction) {
-        boolean hasRestrictionOriginally = sDeviceState.dpc()
+        boolean hasRestrictionOriginally = dpc(sDeviceState)
                 .userManager().hasUserRestriction(restriction);
 
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .getUserRestrictions(sDeviceState.dpc().componentName())
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .getUserRestrictions(dpc(sDeviceState).componentName())
                     .getBoolean(restriction))
                     .isFalse();
         } finally {
             if (hasRestrictionOriginally) {
-                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             } else {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             }
         }
     }
@@ -316,7 +324,7 @@ public final class UserRestrictionsTest {
     @CannotSetPolicyTest(
             policy = com.android.bedstead.harrier.policies.DeviceOwnerOnlyUserRestrictions.class)
     @Postsubmit(reason = "new test")
-    @com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode(
+    @RequireNotHeadlessSystemUserMode(
             reason = "Since ag/I94c63d0492034af39608c3d81700f71e89e37d0e we special case main user "
                     + "which is not taken care of in tests currently")
     public void addUserRestriction_deviceOwnerOnlyRestriction_throwsSecurityException(
@@ -325,13 +333,13 @@ public final class UserRestrictionsTest {
 
         try {
             assertThrows(SecurityException.class, () -> {
-                sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             });
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), restriction);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), restriction);
             } catch (SecurityException e) {
                 // Expected exception if the dpc is not able to change user restrictions
             }
@@ -344,46 +352,64 @@ public final class UserRestrictionsTest {
         try (BlockingBroadcastReceiver broadcastReceiver =
                      sDeviceState.registerBroadcastReceiver(
                              CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
             broadcastReceiver.awaitForBroadcastOrFail();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
         }
     }
 
+    // TODO: this test isn't run - it lacks Test annotations.
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#addUserRestriction"})
     @RequireRootInstrumentation(reason = "MANAGE_DEVICE_POLICY_CAMERA permission")
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_CAMERA)
     public void addUserRestriction_setByPermission_appRemoved_notEnforced() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CAMERA);
-            sDeviceState.dpc().uninstall();
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CAMERA);
+            dpc(sDeviceState).uninstall();
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CAMERA)).isFalse();
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CAMERA);
+                dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CAMERA);
             } catch (Exception e) {
                 // expected if dpc is no longer active
             }
         }
     }
 
+    @Test
+    @Postsubmit(reason = "new test")
+    @EnsureHasDevicePolicyManagerRoleHolder
+    public void addUserRestriction_setByDmrh() throws Exception {
+        var um = TestApis.context().instrumentedContext().getSystemService(UserManager.class);
+
+        dpmRoleHolder(sDeviceState).devicePolicyManager()
+                .addUserRestriction(null, DISALLOW_MODIFY_ACCOUNTS);
+
+        assertThat(um.hasUserRestriction(DISALLOW_MODIFY_ACCOUNTS)).isTrue();
+
+        dpmRoleHolder(sDeviceState).devicePolicyManager()
+                .clearUserRestriction(null, DISALLOW_MODIFY_ACCOUNTS);
+
+        assertThat(um.hasUserRestriction(DISALLOW_MODIFY_ACCOUNTS)).isFalse();
+    }
+
     @PolicyAppliesTest(policy = UserRestrictions.class)
     @Postsubmit(reason = "new test")
     public void clearUserRestriction_sendsBroadcastToReceiversInUser() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
         try (BlockingBroadcastReceiver broadcastReceiver =
                      sDeviceState.registerBroadcastReceiver(
                              CommonUserRestrictions.ACTION_USER_RESTRICTIONS_CHANGED)) {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), ANY_USER_RESTRICTION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), ANY_USER_RESTRICTION);
             broadcastReceiver.awaitForBroadcastOrFail();
         }
     }

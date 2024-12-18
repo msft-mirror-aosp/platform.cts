@@ -28,7 +28,7 @@ import static android.server.wm.insets.DisplayCutoutTests.TestDef.Which.DISPATCH
 import static android.server.wm.insets.DisplayCutoutTests.TestDef.Which.ROOT;
 import static android.util.DisplayMetrics.DENSITY_DEFAULT;
 import static android.view.Display.DEFAULT_DISPLAY;
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
@@ -69,10 +69,9 @@ import android.server.wm.WindowManagerStateHelper;
 import android.util.Size;
 import android.view.DisplayCutout;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsets.Type;
+import android.view.WindowManager;
 
 import androidx.test.rule.ActivityTestRule;
 
@@ -605,16 +604,16 @@ public class DisplayCutoutTests {
 
     private Rect getSafeRect(TestActivity a, DisplayCutout cutout) {
         final Rect safeRect = safeInsets(cutout);
-        safeRect.bottom = getOnMainSync(() -> a.getDecorView().getHeight()) - safeRect.bottom;
-        safeRect.right = getOnMainSync(() -> a.getDecorView().getWidth()) - safeRect.right;
+        safeRect.bottom = getOnMainSync(() -> a.getView().getHeight()) - safeRect.bottom;
+        safeRect.right = getOnMainSync(() -> a.getView().getWidth()) - safeRect.right;
         return safeRect;
     }
 
     private Rect getAppBounds(TestActivity a) {
         final Rect appBounds = new Rect();
         runOnMainSync(() -> {
-            appBounds.right = a.getDecorView().getWidth();
-            appBounds.bottom = a.getDecorView().getHeight();
+            appBounds.right = a.getView().getWidth();
+            appBounds.bottom = a.getView().getHeight();
         });
         return appBounds;
     }
@@ -698,45 +697,41 @@ public class DisplayCutoutTests {
 
         static final String EXTRA_CUTOUT_MODE = "extra.cutout_mode";
         static final String EXTRA_ORIENTATION = "extra.orientation";
+        private View mView = null;
         private WindowInsets mDispatchedInsets;
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+            getWindow().getDecorView().getWindowInsetsController().hide(
+                    WindowInsets.Type.systemBars());
+            final WindowManager.LayoutParams attrs = new WindowManager.LayoutParams();
+            attrs.setFitInsetsTypes(0);
+            attrs.setFitInsetsSides(0);
+            attrs.flags = FLAG_NOT_FOCUSABLE;
             if (getIntent() != null) {
+                attrs.layoutInDisplayCutoutMode = getIntent().getIntExtra(
+                        EXTRA_CUTOUT_MODE, LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT);
                 setRequestedOrientation(getIntent().getIntExtra(
                         EXTRA_ORIENTATION, SCREEN_ORIENTATION_UNSPECIFIED));
             }
-            View view = new View(this);
-            view.setLayoutParams(new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
+            final View view = getView();
             view.setOnApplyWindowInsetsListener((v, insets) -> mDispatchedInsets = insets);
-            setContentView(view);
-            // Because the PhoneWindow.java will set the CutoutMode
-            // So we have to set the CutoutMode after the setContentView method
-            if (getIntent() != null) {
-                int mode = getIntent().getIntExtra(EXTRA_CUTOUT_MODE,
-                        LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT);
-                getWindow().getAttributes().layoutInDisplayCutoutMode = mode;
-            }
+
+            // Use a non-PhoneWindow view to test display cutout, because PhoneWindow might
+            // overwrite layoutInDisplayCutoutMode to LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS.
+            getWindowManager().addView(view, attrs);
         }
 
-        @Override
-        public void onWindowFocusChanged(boolean hasFocus) {
-            if (hasFocus) {
-                getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        View getView() {
+            if (mView == null) {
+                mView = new View(this);
             }
-        }
-
-        View getDecorView() {
-            return getWindow().getDecorView();
+            return mView;
         }
 
         WindowInsets getRootInsets() {
-            return getWindow().getDecorView().getRootWindowInsets();
+            return getView().getRootWindowInsets();
         }
 
         WindowInsets getDispatchedInsets() {

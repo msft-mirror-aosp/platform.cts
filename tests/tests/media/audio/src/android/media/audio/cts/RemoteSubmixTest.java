@@ -187,9 +187,13 @@ public class RemoteSubmixTest {
         try {
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), getInstrumentation(), true);
+            // Since some streams are aliased, need to do a first pass of capturing
+            // the current values before doing a pass which applies muting.
             for (Map.Entry<Integer, String> map : mStreamNames.entrySet()) {
                 // Get current device stream volume level
                 mStreamVolume.put(map.getKey(), mAudioManager.getStreamVolume(map.getKey()));
+            }
+            for (Map.Entry<Integer, String> map : mStreamNames.entrySet()) {
                 // Mute device streams
                 mAudioManager.adjustStreamVolume(
                         map.getKey(), AudioManager.ADJUST_MUTE, 0 /*no flag used*/);

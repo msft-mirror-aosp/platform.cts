@@ -36,12 +36,13 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
-import java.util.regex.Pattern;
+
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
@@ -130,7 +131,6 @@ public class TapjackingTest {
     }
 
     @Test
-    @Ignore("b/322018861")
     public void testTapsWhenNotObscured() throws Exception {
         Log.i(LOG_TAG, "launchPackageInstaller");
         launchPackageInstaller();

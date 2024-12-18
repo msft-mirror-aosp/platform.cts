@@ -37,8 +37,8 @@ android_test_helper_app {
         "overlay-app-utils",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     test_suites: [
         "cts",

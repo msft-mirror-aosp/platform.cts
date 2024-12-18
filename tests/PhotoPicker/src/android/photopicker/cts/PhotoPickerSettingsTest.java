@@ -50,7 +50,7 @@ import androidx.test.uiautomator.UiObject;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;

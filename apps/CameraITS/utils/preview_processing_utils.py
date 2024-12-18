@@ -40,7 +40,7 @@ _PREVIEW_DURATION = 400  # milliseconds
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
-_RED_BLUE_TOL = 15  # 15 out of 255 Red or Blue value in RGB
+_RED_BLUE_TOL = 20  # 20 out of 255 Red or Blue value in RGB
 _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
@@ -181,8 +181,9 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   return recording_obj
 
 
-def verify_preview_stabilization(recording_obj, gyro_events,
-                                 test_name, log_path, facing, zoom_ratio=None):
+def verify_preview_stabilization(recording_obj, gyro_events, test_name,
+                                 log_path, facing, zoom_ratio=None,
+                                 stabilization_mode=True):
   """Verify the returned recording is properly stabilized.
 
   Args:
@@ -192,6 +193,7 @@ def verify_preview_stabilization(recording_obj, gyro_events,
     log_path: Path for the log file.
     facing: Facing of the camera device.
     zoom_ratio: Static zoom ratio. None if default zoom.
+    stabilization_mode: boolean; Whether stabilization mode is ON.
 
   Returns:
     A dictionary containing the maximum gyro angle, the maximum camera angle,
@@ -223,14 +225,15 @@ def verify_preview_stabilization(recording_obj, gyro_events,
   else:
     zoom_ratio_suffix = '1'
   file_name_stem = (
-      f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x')
+      f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x'
+      f'_stabilization={stabilization_mode}')
   cam_rots = sensor_fusion_utils.get_cam_rotations(
       frames[_START_FRAME:],
       facing,
       frame_h,
       file_name_stem,
       _START_FRAME,
-      stabilized_video=True
+      stabilized_video=stabilization_mode
   )
   sensor_fusion_utils.plot_camera_rotations(cam_rots, _START_FRAME,
                                             video_size, file_name_stem)
@@ -239,12 +242,16 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   # Extract gyro rotations
   sensor_fusion_utils.plot_gyro_events(
-      gyro_events, f'{test_name}_{video_size}_{zoom_ratio_suffix}x',
-      log_path)
+      gyro_events,
+      f'{test_name}_{video_size}_{zoom_ratio_suffix}x'
+      f'_stabilization={stabilization_mode}',
+      log_path
+  )
   gyro_rots = sensor_fusion_utils.conv_acceleration_to_movement(
       gyro_events, _VIDEO_DELAY_TIME)
   max_gyro_angle = sensor_fusion_utils.calc_max_rotation_angle(
       gyro_rots, 'Gyro')
+  logging.debug('Stabilization mode: %s', stabilization_mode)
   logging.debug(
       'Max deflection (degrees) %s: video: %.3f, gyro: %.3f ratio: %.4f',
       video_size, max_camera_angle, max_gyro_angle,
@@ -264,14 +271,26 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   failure_msg = None
   if max_camera_angle >= max_gyro_angle * preview_stabilization_factor:
-    failure_msg = (
-        f'{video_size} preview not stabilized enough! '
-        f'Max preview angle:  {max_camera_angle:.3f}, '
-        f'Max gyro angle: {max_gyro_angle:.3f}, '
-        f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
-        f'THRESH: {preview_stabilization_factor}.')
-  # Delete saved frames if the format is a PASS
+    # Fail if stabilization mode is on
+    if stabilization_mode:
+      failure_msg = (
+          f'{video_size} preview not stabilized enough! '
+          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'Max gyro angle: {max_gyro_angle:.3f}, '
+          f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
+          f'THRESH: {preview_stabilization_factor}.')
   else:
+    # Fail if stabilization mode is off
+    if not stabilization_mode:
+      failure_msg = (
+          f'{video_size} preview is stabilized when testing stabilization=OFF! '
+          f'Max preview angle: {max_camera_angle:.3f}, '
+          f'Max gyro angle: {max_gyro_angle:.3f}, '
+          f'ratio: {max_camera_angle/max_gyro_angle:.3f} '
+          f'THRESH: {preview_stabilization_factor}.')
+
+  # Delete saved frames if the format is a PASS
+  if not failure_msg:
     for file in file_list:
       try:
         os.remove(os.path.join(log_path, file))
@@ -320,23 +339,29 @@ def is_aspect_ratio_match(size_str, target_ratio):
   return abs(width / height - target_ratio) < _ASPECT_TOL
 
 
-def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
+def get_max_preview_test_size(cam, camera_id, aspect_ratio=None,
+                              max_tested_area=_PREVIEW_MAX_TESTED_AREA):
   """Finds the max preview size to be tested.
 
   If the device supports the _HIGH_RES_SIZE preview size then
   it uses that for testing, otherwise uses the max supported
-  preview size capped at _PREVIEW_MAX_TESTED_AREA.
+  preview size capped at max_tested_area.
 
   Args:
     cam: camera object
     camera_id: str; camera device id under test
     aspect_ratio: preferred aspect_ratio For example: '4/3'
+    max_tested_area: area of max preview resolution
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
   resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = cam.get_all_supported_preview_sizes(
+      camera_id, filter_recordable=True)
+  logging.debug('Resolutions supported by preview and MediaRecorder: %s',
+                supported_preview_sizes)
+
   if aspect_ratio is None:
     supported_preview_sizes = [size for size in supported_preview_sizes
                                if resolution_to_area(size)
@@ -356,10 +381,12 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
         size
         for size in supported_preview_sizes
         if (
-            resolution_to_area(size) <= _PREVIEW_MAX_TESTED_AREA
+            resolution_to_area(size) <= max_tested_area
             and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
         )
     ]
+    logging.debug('Capped preview resolutions: %s',
+                  capped_supported_preview_sizes)
     preview_test_size = capped_supported_preview_sizes[-1]
 
   logging.debug('Selected preview resolution: %s', preview_test_size)

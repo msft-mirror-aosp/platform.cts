@@ -35,6 +35,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.MetricsActivity;
+import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.WindowManagerState.TaskFragment;
 import android.server.wm.WindowManagerTestBase;
@@ -286,5 +287,28 @@ public class TaskFragmentOrganizerTest extends TaskFragmentOrganizerTestBase {
         // must be resumed.
         embeddedActivity.finish();
         waitAndAssertResumedActivity(mOwnerActivityName, "Activity must be resumed");
+    }
+
+    /**
+     * Verifies the default dim area of an embedded TaskFragment is within the TaskFragment bounds.
+     */
+    @Test
+    public void testDimArea_onTaskFragment() {
+        final Rect taskBounds = mOwnerActivity.getResources().getConfiguration()
+                .windowConfiguration.getBounds();
+        final Rect taskFragmentBounds = new Rect(taskBounds.left, taskBounds.top,
+                taskBounds.right / 2, taskBounds.bottom);
+
+        // Start an embedded dialog activity on a TaskFragment
+        final ComponentName dialogActivity = new ComponentName(mContext, DialogActivity.class);
+        createTaskFragment(dialogActivity, taskFragmentBounds);
+        mWmState.waitForActivityState(dialogActivity, STATE_RESUMED);
+
+        // The dim bounds should be the same as the TaskFragment bounds.
+        final WindowManagerState.WindowState windowState = mWmState.getWindowState(dialogActivity);
+        assertThat(windowState.getDimBounds()).isEqualTo(taskFragmentBounds);
+    }
+
+    public static class DialogActivity extends FocusableActivity {
     }
 }

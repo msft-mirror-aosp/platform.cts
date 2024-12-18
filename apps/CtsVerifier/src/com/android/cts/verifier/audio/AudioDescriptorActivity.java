@@ -205,7 +205,9 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         AudioDeviceInfo[] deviceInfos = mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL);
         for (AudioDeviceInfo deviceInfo : deviceInfos) {
             Log.i(TAG, "  " + deviceInfo.getProductName() + " type:" + deviceInfo.getType());
-            if (deviceInfo.isSink() && deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI) {
+            if (deviceInfo.isSink() && (deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI ||
+                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_ARC ||
+                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_EARC)) {
                 mHDMIDeviceInfo = deviceInfo;
                 break;
             }

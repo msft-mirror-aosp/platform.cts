@@ -32,18 +32,15 @@ import android.text.Layout;
 import android.text.SegmentFinder;
 import android.view.inputmethod.TextBoundsInfo;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class TextBoundsInfoMethodTest {
+public final class TextBoundsInfoMethodTest {
     // In this test, we assume that:
     //   * all characters' height is 20f.
     //   * space character width is 5f.

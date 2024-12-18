@@ -376,7 +376,8 @@ public class InputDeviceSensorManagerTest {
         assertNotNull(mInputManager);
 
         mUinputDevice = new UinputDevice(
-                mInstrumentation, InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand());
+                mInstrumentation, InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand(),
+                null /* display */);
         mSensorManager = getSensorManager(mUinputDevice.getVendorId(),
                 mUinputDevice.getProductId());
         assertNotNull(mSensorManager);

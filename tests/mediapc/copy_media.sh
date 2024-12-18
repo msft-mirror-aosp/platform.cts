@@ -17,7 +17,7 @@
 ## script to install media performance class test files manually
 
 adbOptions=" "
-resLabel=CtsMediaPerformanceClassTestCases-3.2
+resLabel=CtsMediaPerformanceClassTestCases-3.3
 srcDir="/tmp/$resLabel"
 tgtDir="/sdcard/test"
 usage="Usage: $0 [-h] [-s serial]"

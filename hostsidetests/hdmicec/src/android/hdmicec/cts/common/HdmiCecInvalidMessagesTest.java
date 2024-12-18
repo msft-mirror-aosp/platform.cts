@@ -80,7 +80,7 @@ public final class HdmiCecInvalidMessagesTest extends BaseHdmiCecCtsTest {
     }
 
     private int getUnusedPhysicalAddress(int usedValue) {
-        return (usedValue == 0x2000) ? 0x3000 : 0x2000;
+        return (usedValue == 0x1000) ? 0x1300 : 0x1000;
     }
 
     private void reportPhysicalAddress(LogicalAddress logicalAddress, int physicalAddress,

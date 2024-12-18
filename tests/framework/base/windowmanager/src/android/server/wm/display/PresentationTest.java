@@ -138,9 +138,9 @@ public class PresentationTest extends MultiDisplayTestBase {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(Components.PresentationActivity.KEY_DISPLAY_ID, displayId);
         mContext.startActivity(intent);
-        waitAndAssertTopResumedActivity(
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
                 Components.PRESENTATION_ACTIVITY,
-                Display.DEFAULT_DISPLAY,
+                getMainDisplayId(),
                 "Launched activity must be on top");
     }
 }

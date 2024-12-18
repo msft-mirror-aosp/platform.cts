@@ -30,12 +30,12 @@ import android.media.MediaFormat;
 import android.media.cts.MediaTestBase;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -51,12 +51,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.zip.Adler32;
 
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class NativeDecoderTest extends MediaTestBase {
@@ -147,6 +144,52 @@ public class NativeDecoderTest extends MediaTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaExtractor#setDataSource",
+            "android.media.MediaExtractor#getTrackCount",
+            "android.media.MediaExtractor#getTrackFormat",
+            "android.media.MediaExtractor#selectTrack",
+            "android.media.MediaExtractor#getSampleTrackIndex",
+            "android.media.MediaExtractor#readSampleData",
+            "android.media.MediaExtractor#getSampleTime",
+            "android.media.MediaExtractor#advance",
+            "android.media.MediaCodec#createDecoderByType",
+            "android.media.MediaCodec#configure",
+            "android.media.MediaCodec#start",
+            "android.media.MediaCodec#getInputBuffers",
+            "android.media.MediaCodec#getOutputBuffers",
+            "android.media.MediaCodec#dequeueInputBuffer",
+            "android.media.MediaCodec#queueInputBuffer",
+            "android.media.MediaCodec#dequeueOutputBuffer",
+            "android.media.MediaCodec#releaseOutputBuffer",
+            "android.media.MediaCodec#getOutputFormat",
+            "android.media.MediaCodec#stop",
+            "android.media.MediaCodec#release",
+            "android.media.MediaCodec.Callback#onInputBufferAvailable",
+            "android.media.MediaCodec.Callback#onOutputBufferAvailable",
+            //"AMediaExtractor_setDataSourceFd",
+            //"AMediaExtractor_getTrackCount",
+            //"AMediaExtractor_getTrackFormat",
+            //"AMediaExtractor_selectTrack",
+            //"AMediaExtractor_getSampleTrackIndex",
+            //"AMediaExtractor_readSampleData",
+            //"AMediaExtractor_getSampleTime",
+            //"AMediaExtractor_advance",
+            //"AMediaCodec_createDecoderByType",
+            //"AMediaCodec_configure",
+            //"AMediaCodec_start",
+            //"AMediaCodec_getInputBuffer",
+            //"AMediaCodec_getOutputBuffer",
+            //"AMediaCodec_dequeueInputBuffer",
+            //"AMediaCodec_queueInputBuffer",
+            //"AMediaCodec_dequeueOutputBuffer",
+            //"AMediaCodec_releaseOutputBuffer",
+            //"AMediaCodec_getOutputFormat",
+            //"AMediaCodec_stop",
+            //"AMediaExtractor_release",
+            //"AMediaCodec_release",
+            //"AMediaCodecOnAsyncInputAvailable",
+            //"AMediaCodecOnAsyncOutputAvailable"
+            })
     @Test
     public void testDataSourceWithCallback() throws Exception {
         int testsRun = testDecoder(

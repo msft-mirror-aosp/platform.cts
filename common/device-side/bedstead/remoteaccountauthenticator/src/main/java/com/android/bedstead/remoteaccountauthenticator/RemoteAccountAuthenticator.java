@@ -19,6 +19,7 @@ package com.android.bedstead.remoteaccountauthenticator;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountBuilder;
@@ -52,6 +53,9 @@ public final class RemoteAccountAuthenticator extends TestAppInstance {
             "com.android.RemoteAccountAuthenticator";
 
     private static final TestAppProvider sTestAppProvider = new TestAppProvider();
+
+    private static final String LOG_TAG = "RemoteAccountAuthenticator";
+
     public static final TestApp REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP = sTestAppProvider.query()
             .wherePackageName().isEqualTo(REMOTE_ACCOUNT_AUTHENTICATOR_PACKAGE_NAME)
             .get();
@@ -130,7 +134,21 @@ public final class RemoteAccountAuthenticator extends TestAppInstance {
                     /* handler= */ null
             ).getResult();
         } catch (AuthenticatorException | IOException | OperationCanceledException e) {
-            throw new NeneException("Error removing account " + account, e);
+            // b/368257328 refers to a case where we see that AccountManager#removeAccount
+            // throws an OperationCanceledException since the RemoteAccountAuthenticator
+            // package was removed. If the package was removed, this would mean the account
+            // is removed as well, making this action successful.
+
+            boolean removed = Arrays.stream(accountManager().getAccounts())
+                    .noneMatch(a -> a.equals(account.account()));
+            if (removed) {
+                Log.e(LOG_TAG, "Error removing account " + account + ". The error is not "
+                        + "thrown in this case because although there was an exception, upon "
+                        + "checking we see that the account has already been removed due to an "
+                        + "earlier operation.", e);
+            } else {
+                throw new NeneException("Error removing account " + account, e);
+            }
         }
     }
 

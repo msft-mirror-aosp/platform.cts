@@ -52,10 +52,13 @@ import android.content.AutofillOptions;
 import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.SaveInfo;
 import android.text.InputType;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
+import android.view.flags.Flags;
 
 import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
@@ -146,6 +149,20 @@ public class VirtualContainerActivityTest
                 .isEnabled()).isTrue();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
+    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOn_BoundsSet()
+                throws Exception {
+        autofillTest(false);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_CALCULATE_BOUNDS_IN_PARENT_FROM_BOUNDS_IN_SCREEN)
+    public void testAutofill_calculateBoundsInParentFromBoundsInScreenFlagOff_BoundsSet()
+                throws Exception {
+        autofillTest(false);
+    }
+
     /**
      * Focus to username and expect window event
      */
@@ -212,6 +229,10 @@ public class VirtualContainerActivityTest
         final ViewNode passwordLabel = findNodeByResourceId(request.structure, ID_PASSWORD_LABEL);
         final ViewNode password = findNodeByResourceId(request.structure, ID_PASSWORD);
 
+        // Check bounds are set correctly
+        assertThat(request.structure.getWindowNodeCount()).isEqualTo(1);
+        assertBoundsSet(request.structure.getWindowNodeAt(0).getRootViewNode());
+
         assertUrlBarIsSanitized(urlBar);
         assertTextIsSanitized(username);
         assertTextIsSanitized(password);
@@ -265,6 +286,23 @@ public class VirtualContainerActivityTest
 
         // Check the results.
         mActivity.assertAutoFilled();
+    }
+
+    private void assertBoundsSet(ViewNode viewNode) {
+        String idEntry = viewNode.getIdEntry();
+        // Values come from
+        // tests/autofillservice/res/layout/virtual_container_activity.xml
+        // The left and top values come from the margin
+        if (idEntry != null && idEntry.equals("text_view_child")) {
+            assertThat(viewNode.getLeft()).isEqualTo(10);
+            assertThat(viewNode.getTop()).isEqualTo(10);
+            assertThat(viewNode.getWidth()).isEqualTo(50);
+            assertThat(viewNode.getHeight()).isEqualTo(60);
+        }
+        // Recursively search for the ViewNode
+        for (int i = 0; i < viewNode.getChildCount(); ++i) {
+            assertBoundsSet(viewNode.getChildAt(i));
+        }
     }
 
     @Test
@@ -578,11 +616,18 @@ public class VirtualContainerActivityTest
         // Trigger auto-fill.
         focusToUsernameExpectNoWindowEvent();
         sReplier.getNextFillRequest();
-
         // Fill in some stuff
         mActivity.mUsername.setText("foo");
+
+        // Add a delay to prevent fill request triggers when focusing on
+        // password field
+        mUiBot.waitForIdleSync();
+
         focusToPasswordExpectNoWindowEvent();
         mActivity.mPassword.setText("bar");
+
+        // Add a delay to prevent save trigger happens too fast
+        mUiBot.waitForIdleSync();
 
         // Trigger save.
         switch (commitType) {

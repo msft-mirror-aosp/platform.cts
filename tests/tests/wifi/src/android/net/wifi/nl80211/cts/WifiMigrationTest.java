@@ -17,21 +17,22 @@
 package android.net.wifi.nl80211.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.content.Context;
 import android.net.wifi.WifiMigration;
 import android.net.wifi.flags.Flags;
-import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerExecutor;
+import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -40,11 +41,26 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
+
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class WifiMigrationTest {
     private static final String TEST_SSID_UNQUOTED = "testSsid1";
+    private static final int TEST_WAIT_DURATION_MS = 10_000;
+
     private Context mContext;
+    private HandlerThread mHandlerThread = new HandlerThread("WifiMigrationTest");
+    private Executor mExecutor;
+    {
+        mHandlerThread.start();
+        mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
+    }
+
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -154,18 +170,25 @@ public class WifiMigrationTest {
     /**
      * Test that {@link WifiMigration#migrateLegacyKeystoreToWifiBlobstore()}
      * can be called successfully.
-     *
-     * TODO: Update @SdkSuppress once a version code >V is available
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION_READ_ONLY)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
-            codeName = "VanillaIceCream")
-    public void testMigrateLegacyKeystoreToWifiBlobstore() {
-        try {
-            WifiMigration.migrateLegacyKeystoreToWifiBlobstore();
-        } catch (Exception e) {
-            fail();
+    public void testMigrateLegacyKeystoreToWifiBlobstore() throws Exception {
+        AtomicInteger statusCode = new AtomicInteger(-1);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        class StatusCodeConsumer implements IntConsumer {
+            @Override
+            public void accept(int status) {
+                statusCode.set(status);
+                latch.countDown();
+            }
         }
+
+        WifiMigration.migrateLegacyKeystoreToWifiBlobstore(mExecutor, new StatusCodeConsumer());
+
+        // Wait until the status code arrives or the time expires
+        latch.await(TEST_WAIT_DURATION_MS, TimeUnit.MILLISECONDS);
+        assertNotEquals(-1, statusCode.get());
     }
 }

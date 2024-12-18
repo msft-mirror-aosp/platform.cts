@@ -620,7 +620,7 @@ public class ImageWriterTest extends Camera2AndroidTestCase {
 
     private void validateOpaqueImage(Image image, String msg, Size imageSize,
             CaptureResult result) {
-        assertNotNull("Opaque image Capture result should not be null", result != null);
+        assertNotNull("Opaque image Capture result should not be null", result);
         mCollector.expectImageProperties(msg + "Opaque ", image, CAMERA_PRIVATE_FORMAT,
                 imageSize, result.get(CaptureResult.SENSOR_TIMESTAMP));
         mCollector.expectTrue(msg + "Opaque image number planes should be zero",

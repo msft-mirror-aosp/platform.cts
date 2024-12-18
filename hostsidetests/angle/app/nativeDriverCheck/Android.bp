@@ -22,11 +22,6 @@ android_test_helper_app {
     srcs: [
         "src/**/*.java",
     ],
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     compile_multilib: "both",
     static_libs: [
         "ctstestrunner-axt",

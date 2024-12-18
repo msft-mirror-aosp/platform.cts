@@ -73,8 +73,8 @@ android_test {
 
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
@@ -91,7 +91,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "android.hardware.biometrics.flags-aconfig-java",
         "flag-junit",
-        "Harrier",
+        "bedstead",
         "truth",
     ],
 

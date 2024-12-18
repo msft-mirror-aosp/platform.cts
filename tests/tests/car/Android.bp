@@ -29,6 +29,7 @@ android_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "android-support-v4",
+        "bluetooth-test-util-lib",
         "car-integration-test-utils-lib",
         "compatibility-device-util-axt",
         "truth",
@@ -38,7 +39,8 @@ android_test {
         "hamcrest-library",
         "platform-test-annotations",
         "flag-junit",
-        "Harrier",
+        "bedstead",
+        "TestParameterInjector",
     ],
     libs: [
         "android.test.base.stubs.test",
@@ -49,6 +51,7 @@ android_test {
         ":cartelemetryservice-proto-srcs",
         ":rotary-service-proto-source",
         ":car-service-dump-proto-srcs",
+        ":native-dump-proto-srcs",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -58,8 +61,6 @@ android_test {
         "automotive-general-tests",
     ],
     sdk_version: "test_current",
-    min_sdk_version: "33", //CTS tests needs to run upto N-2 version to support mainline
-    target_sdk_version: "34",
     per_testcase_directory: true,
     certificate: ":cts-testkey1",
     data: [

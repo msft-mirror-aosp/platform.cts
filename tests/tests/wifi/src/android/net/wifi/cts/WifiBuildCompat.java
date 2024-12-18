@@ -75,4 +75,9 @@ public class WifiBuildCompat {
         return ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)
                 || getWifiApexVersionCode(ctx) >= WIFI_APEX_BASE_VERSION_CODE_FOR_S;
     }
+
+    public static boolean isAtLeastB() {
+        return Build.VERSION.CODENAME.equals("Baklava")
+                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
+    }
 }

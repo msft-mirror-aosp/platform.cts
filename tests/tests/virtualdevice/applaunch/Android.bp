@@ -29,6 +29,7 @@ android_test {
 
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "CtsDefaultCameraAccessTestBaseLib",
     ],
 
     srcs: [
@@ -44,4 +45,11 @@ android_test {
         ":CtsVirtualDeviceStreamedTestApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsVirtualDevicesAppLaunchTestCases_applaunch_virtualdevicepermissiontest",
+    base: "CtsVirtualDevicesAppLaunchTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest"],
 }

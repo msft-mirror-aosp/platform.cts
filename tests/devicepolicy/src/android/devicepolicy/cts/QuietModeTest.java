@@ -22,8 +22,11 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.devicepolicy.cts.utils.TestArtifactUtils.dumpWindowHierarchy;
 import static android.os.UserManager.QUIET_MODE_DISABLE_ONLY_IF_CREDENTIAL_NOT_REQUIRED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -42,21 +45,21 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.queryable.info.ActivityInfo;
 import com.android.queryable.queries.Query;
 
@@ -80,7 +83,7 @@ public class QuietModeTest {
     public static final DeviceState sDeviceState = new DeviceState();
     private static final Context sContext = TestApis.context().instrumentedContext();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities()
             .contains(activity().where().exported().isTrue())
             .get();
@@ -93,7 +96,7 @@ public class QuietModeTest {
                                     .where().actions().contains(Intent.ACTION_MAIN)
                                     .where().categories().contains(Intent.CATEGORY_HOME));
     private static final TestApp sTestAppWithLauncherActivity =
-            sDeviceState.testApps().query()
+            testApps(sDeviceState).query()
                     .whereActivities().contains(sMainActivityQuery)
                     .get();
     private static final String PASSWORD = "12345678";
@@ -103,7 +106,7 @@ public class QuietModeTest {
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void startActivityInQuietProfile_quietModeDialogShown() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         String titleText = sContext.getString(R.string.test_string_1);
         try (TestAppInstance instance = sTestApp.install(workProfile)) {
             // Override "Turn on work apps" dialog title to avoid depending on a particular string.
@@ -138,7 +141,7 @@ public class QuietModeTest {
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     @Test
     public void quietMode_profileStopped() throws Exception {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
 
         workProfile.setQuietMode(true);
         try {
@@ -147,7 +150,7 @@ public class QuietModeTest {
                     .errorOnFail().await();
 
             // The DPC shouldn't be suspended.
-            assertThat(sDeviceState.dpc().testApp().pkg().isSuspended(workProfile)).isFalse();
+            assertThat(dpc(sDeviceState).testApp().pkg().isSuspended(workProfile)).isFalse();
         } finally {
             workProfile.setQuietMode(false);
         }
@@ -161,7 +164,7 @@ public class QuietModeTest {
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install()) {
             assertThrows(SecurityException.class,
                     () -> testAppInstance.userManager().requestQuietModeEnabled(true,
-                            sDeviceState.workProfile().userHandle()));
+                            workProfile(sDeviceState).userHandle()));
         }
     }
 
@@ -170,7 +173,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerIsNotDefaultLauncher_throwsSecurityException() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install()) {
             runTestAppInForeground(testAppInstance);
 
@@ -188,7 +191,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerIsForegroundLauncher_success() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
             RoleContext r = setTestAppAsForegroundDefaultLauncher(testAppInstance)) {
 
@@ -206,7 +209,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_callerHasModifyQuietModePermission_success() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
              PermissionContext p = testAppInstance.permissions().withPermission(
                      MODIFY_QUIET_MODE)) {
@@ -225,7 +228,7 @@ public class QuietModeTest {
     @EnsureHasPermission(MODIFY_QUIET_MODE)
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_true_managedProfileUnavailableBroadcastSent() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(
                 sContext, ACTION_MANAGED_PROFILE_UNAVAILABLE).register()) {
             workProfile.setQuietMode(true);
@@ -244,7 +247,7 @@ public class QuietModeTest {
     @EnsureHasPermission(MODIFY_QUIET_MODE)
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_false_managedProfileAvailableBroadcastSent() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         workProfile.setQuietMode(true);
         try (BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(
                 sContext, ACTION_MANAGED_PROFILE_AVAILABLE).register()) {
@@ -263,7 +266,7 @@ public class QuietModeTest {
     @EnsureHasWorkProfile
     @Postsubmit(reason = "new test")
     public void requestQuietModeEnabled_false_credentialsSet_isNotDisabled() {
-        UserReference workProfile = sDeviceState.workProfile();
+        UserReference workProfile = workProfile(sDeviceState);
         try (TestAppInstance testAppInstance = sTestAppWithLauncherActivity.install();
             RoleContext r = setTestAppAsForegroundDefaultLauncher(testAppInstance)) {
             workProfile.setPassword(PASSWORD);

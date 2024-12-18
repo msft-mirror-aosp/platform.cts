@@ -28,7 +28,8 @@ import com.android.bedstead.harrier.annotations.BeforeClass
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.workProfile
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.packages.Packages
 import com.android.bedstead.nene.users.UserReference

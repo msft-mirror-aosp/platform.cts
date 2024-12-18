@@ -36,6 +36,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.quickaccesswallet.NoPermissionQuickAccessWalletService;
 import android.quickaccesswallet.QuickAccessWalletActivity;
@@ -43,10 +46,12 @@ import android.quickaccesswallet.QuickAccessWalletDelegateTargetActivityService;
 import android.quickaccesswallet.QuickAccessWalletSettingsActivity;
 import android.quickaccesswallet.TestHostApduService;
 import android.quickaccesswallet.TestQuickAccessWalletService;
+import android.service.quickaccesswallet.Flags;
 import android.service.quickaccesswallet.GetWalletCardsError;
 import android.service.quickaccesswallet.GetWalletCardsRequest;
 import android.service.quickaccesswallet.GetWalletCardsResponse;
 import android.service.quickaccesswallet.QuickAccessWalletClient;
+import android.service.quickaccesswallet.QuickAccessWalletClient.GesturePendingIntentCallback;
 import android.service.quickaccesswallet.QuickAccessWalletClient.WalletPendingIntentCallback;
 import android.service.quickaccesswallet.QuickAccessWalletClient.WalletServiceEventListener;
 import android.service.quickaccesswallet.QuickAccessWalletService;
@@ -64,6 +69,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -96,6 +102,10 @@ public class QuickAccessWalletClientTest {
     private final UserSettings mUserSettings = new UserSettings(mContext);
 
     private String mDefaultPaymentApp;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -203,6 +213,56 @@ public class QuickAccessWalletClientTest {
         client.getWalletPendingIntent(mContext.getMainExecutor(), testPendingIntentListener);
         testPendingIntentListener.await(3, TimeUnit.SECONDS);
         assertThat(testPendingIntentListener.mPendingIntent).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
+    public void testGetGestureTargetActivityPendingIntent_serviceWithOverride_notNull_ableToSend()
+            throws Exception {
+        setServiceState(
+                QuickAccessWalletDelegateTargetActivityService.class,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
+        setServiceState(
+                TestQuickAccessWalletService.class,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+
+        QuickAccessWalletClient client = QuickAccessWalletClient.create(mContext);
+
+        TestPendingIntentListener testPendingIntentListener = new TestPendingIntentListener();
+
+        client.getGestureTargetActivityPendingIntent(
+                mContext.getMainExecutor(), testPendingIntentListener);
+        testPendingIntentListener.await(3, TimeUnit.SECONDS);
+        assertThat(testPendingIntentListener.mGesturePendingIntent).isNotNull();
+
+        TestPendingIntentSentListener intentSentListener = new TestPendingIntentSentListener();
+
+        testPendingIntentListener.mGesturePendingIntent.send(
+                0, intentSentListener, new Handler(Looper.getMainLooper()));
+
+        intentSentListener.await(3, TimeUnit.SECONDS);
+
+        String targetActivityPackage = "android.sample.quickaccesswallet.app";
+        String targetActivityComponent =
+                targetActivityPackage + ".QuickAccessWalletDelegateTargetActivity";
+
+        assertThat(intentSentListener.mIntent).isNotNull();
+        assertThat(intentSentListener.mIntent.getComponent())
+                .isEqualTo(new ComponentName(targetActivityPackage, targetActivityComponent));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
+    public void testGetGestureTargetActivityPendingIntent_serviceWithNoOverride_isNull()
+            throws Exception {
+        QuickAccessWalletClient client = QuickAccessWalletClient.create(mContext);
+
+        TestPendingIntentListener testPendingIntentListener = new TestPendingIntentListener();
+
+        client.getGestureTargetActivityPendingIntent(
+                mContext.getMainExecutor(), testPendingIntentListener);
+        testPendingIntentListener.await(3, TimeUnit.SECONDS);
+        assertThat(testPendingIntentListener.mGesturePendingIntent).isNull();
     }
 
     @Test
@@ -594,14 +654,22 @@ public class QuickAccessWalletClientTest {
         }
     }
 
-    private static class TestPendingIntentListener implements WalletPendingIntentCallback {
+    private static class TestPendingIntentListener
+            implements WalletPendingIntentCallback, GesturePendingIntentCallback {
 
         private PendingIntent mPendingIntent;
+        private PendingIntent mGesturePendingIntent;
         private final CountDownLatch mLatch = new CountDownLatch(1);
 
         @Override
         public void onWalletPendingIntentRetrieved(@Nullable PendingIntent walletPendingIntent) {
             mPendingIntent = walletPendingIntent;
+            mLatch.countDown();
+        }
+
+        @Override
+        public void onGesturePendingIntentRetrieved(@Nullable PendingIntent walletPendingIntent) {
+            mGesturePendingIntent = walletPendingIntent;
             mLatch.countDown();
         }
 

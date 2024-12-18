@@ -33,6 +33,16 @@ interface ICommandReceiver {
         in String namespace, in String id, in List<Bundle> packageBundles,
         in List<Bundle> permissionBundles, in Bundle publicAclPackage);
 
+    boolean writeGloballySearchableBlobVisibleToConfig(in String packageName,
+        in String databaseName, in String namespace, in byte[] data, in List<Bundle> packageBundles,
+        in List<Bundle> permissionBundles, in Bundle publicAclPackage);
+
+    boolean writeGloballyNotSearchableBlob(in String packageName,
+        in String databaseName, in String namespace, in byte[] data);
+
+    boolean removeBlob(in String packageName, in String databaseName, in String namespace,
+        in byte[] data);
+
     boolean indexNotGloballySearchableDocument(in String databaseName, in String namespace,
         in String id);
 

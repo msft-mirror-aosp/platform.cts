@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -25,20 +26,20 @@ import static org.junit.Assert.assertThrows;
 import android.content.ComponentName;
 import android.os.UserManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.policies.DisallowAddPrivateProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoPrivateProfile;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -100,15 +101,15 @@ public final class PrivateProfileTest {
     @Test
     @PolicyAppliesTest(policy = DisallowAddPrivateProfile.class)
     public void addUserRestriction_restrictionApplies() {
-        ComponentName admin = sDeviceState.dpc().componentName();
+        ComponentName admin = dpc(sDeviceState).componentName();
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(admin,
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(admin,
                     DISALLOW_ADD_PRIVATE_PROFILE);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_ADD_PRIVATE_PROFILE)).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(admin,
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(admin,
                     DISALLOW_ADD_PRIVATE_PROFILE);
         }
     }

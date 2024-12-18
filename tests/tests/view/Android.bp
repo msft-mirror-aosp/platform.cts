@@ -43,6 +43,7 @@ android_test {
         "ctstestrunner-axt",
         "cts-input-lib",
         "cts-hardware-lib",
+        "cts-display-lib",
         "junit-params",
         "mockito-target-minus-junit4",
         "platform-test-annotations",
@@ -53,10 +54,13 @@ android_test {
         "flag-junit",
         "android.view.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.hardware.input-aconfig-java",
         "com.android.input.flags-aconfig-java",
         "ui-trace-collector",
         "collector-device-lib",
         "hwui_flags_java_lib",
+        "framework_graphics_flags_java_lib",
+        "bedstead",
     ],
 
     jni_libs: [
@@ -79,6 +83,8 @@ test_module_config {
     include_filters: ["android.view.cts.SurfaceOOMTest"],
 }
 
+// Instrumentation tests don't allow mixing package and Class
+// names in include filters, so we pull out the package here.
 test_module_config {
     name: "CtsViewTestCases_cts_input",
     base: "CtsViewTestCases",
@@ -87,17 +93,17 @@ test_module_config {
 }
 
 test_module_config {
-    name: "CtsViewTestCases_",
+    name: "CtsViewTestCases_input_related",
     base: "CtsViewTestCases",
     test_suites: ["general-tests"],
     include_filters: [
-        "android.view.cts.MotionEventTest",
         "android.view.cts.HoverTest",
-        "android.view.cts.ViewTest",
+        "android.view.cts.MotionEventTest",
         "android.view.cts.PointerCaptureTest",
-        "android.view.cts.ViewUnbufferedTest",
         "android.view.cts.TooltipTest",
-        "android.view.cts.VerifyInputEventTest",
         "android.view.cts.TouchDelegateTest",
+        "android.view.cts.VerifyInputEventTest",
+        "android.view.cts.ViewTest",
+        "android.view.cts.ViewUnbufferedTest",
     ],
 }

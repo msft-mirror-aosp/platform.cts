@@ -46,6 +46,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -96,6 +97,7 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
     private static final int KEYBOARD_HEIGHT_INCREASE = 100;
 
     @Test
+    @FlakyTest(bugId = 347370074, detail = "will be fixed after the refactor")
     public void testChangeSizeWhileControlling() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),

@@ -22,7 +22,6 @@ import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT;
-import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.EXTRA_FINISH_IN_ON_RESUME;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.EXTRA_SKIP_TOP_RESUMED_STATE;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_ACTIVITY_RESULT;
@@ -53,7 +52,6 @@ import static android.server.wm.activity.lifecycle.TransitionVerifier.getLaunchS
 import static android.server.wm.activity.lifecycle.TransitionVerifier.getRelaunchSequence;
 import static android.server.wm.activity.lifecycle.TransitionVerifier.transition;
 import static android.server.wm.app.Components.PipActivity.EXTRA_ENTER_PIP;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -483,7 +481,7 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
 
         // Press HOME and verify the lifecycle
         getTransitionLog().clear();
-        pressHomeButton();
+        launchHomeActivityNoWait();
         waitAndAssertActivityStates(state(topActivity, ON_STOP));
 
         assertResumeToStopSequence(CallbackTrackingActivity.class, getTransitionLog());
@@ -689,66 +687,71 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     @Test
     public void testTopPositionLaunchedBehindLockScreen() throws Exception {
         assumeTrue(supportsSecureLock());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            new Launcher(CallbackTrackingActivity.class)
+            new Launcher(activityClass)
                     .setExpectedState(ON_STOP)
                     .setNoInstance()
                     .launch();
             TransitionVerifier.assertLaunchAndStopSequence(
-                    CallbackTrackingActivity.class, getTransitionLog(), true /* onTop */);
+                    activityClass, getTransitionLog(), true /* onTop */);
 
             getTransitionLog().clear();
         }
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class, getTransitionLog());
-            waitAndAssertActivityCurrentState(CallbackTrackingActivity.class,
-                    ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(
-                    state(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class, getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
     @Test
     public void testTopPositionRemovedBehindLockScreen() throws Exception {
         assumeTrue(supportsSecureLock());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
-        final Activity activity = launchActivityAndWait(CallbackTrackingActivity.class);
+        final Class<NoRelaunchCallbackTrackingActivity> activityClass =
+                NoRelaunchCallbackTrackingActivity.class;
+        launchActivityAndWait(activityClass);
 
         getTransitionLog().clear();
         try (LockScreenSession lockScreenSession =
                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.setLockCredential().gotoKeyguard();
 
-            waitAndAssertActivityStates(state(activity, ON_STOP));
-            assertResumeToStopSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_STOP));
+            assertResumeToStopSequence(activityClass, getTransitionLog());
 
             getTransitionLog().clear();
         }
 
         // Lock screen removed - activity should be on top now
         if (isCar()) {
-            assertStopToResumeSubSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
-            waitAndAssertActivityCurrentState(activity.getClass(), ON_TOP_POSITION_GAINED);
+            assertStopToResumeSubSequence(activityClass, getTransitionLog());
+            waitAndAssertActivityCurrentState(activityClass, ON_TOP_POSITION_GAINED);
         } else {
-            waitAndAssertActivityStates(state(activity, ON_TOP_POSITION_GAINED));
-            assertStopToResumeSequence(CallbackTrackingActivity.class,
-                    getTransitionLog());
+            waitAndAssertActivityStates(state(activityClass, ON_TOP_POSITION_GAINED));
+            assertStopToResumeSequence(activityClass, getTransitionLog());
         }
     }
 
     @Test
     public void testTopPositionLaunchedOnTopOfLockScreen() throws Exception {
         assumeTrue(supportsSecureLock());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final Activity showWhenLockedActivity;
         try (LockScreenSession lockScreenSession =
@@ -789,14 +792,15 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
 
         // Launch activity on default display.
         final ActivityOptions launchOptions = ActivityOptions.makeBasic();
-        launchOptions.setLaunchDisplayId(DEFAULT_DISPLAY);
+        launchOptions.setLaunchDisplayId(getMainDisplayId());
         new Launcher(CallbackTrackingActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
         waitAndAssertActivityTransitions(CallbackTrackingActivity.class,
                 getLaunchSequence(CallbackTrackingActivity.class), "launch");
 
@@ -812,8 +816,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                     .setFlags(FLAG_ACTIVITY_NEW_TASK)
                     .setOptions(launchOptions)
                     .launch();
-            waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                    newDisplay.mId, "Activity launched on secondary display must be focused");
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    getComponentName(SingleTopActivity.class), newDisplay.mId,
+                    "Activity launched on secondary display must be focused");
 
             waitAndAssertActivityTransitions(SingleTopActivity.class,
                     getLaunchSequence(SingleTopActivity.class), "launch");
@@ -840,14 +845,15 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
 
         // Launch activity on default display.
         final ActivityOptions launchOptions = ActivityOptions.makeBasic();
-        launchOptions.setLaunchDisplayId(DEFAULT_DISPLAY);
+        launchOptions.setLaunchDisplayId(getMainDisplayId());
         new Launcher(CallbackTrackingActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -861,8 +867,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
 
         getTransitionLog().clear();
 
@@ -925,7 +932,7 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         // Launch activity on default display, which will be slow to release top position.
         getTransitionLog().clear();
         final ActivityOptions launchOptions = ActivityOptions.makeBasic();
-        launchOptions.setLaunchDisplayId(DEFAULT_DISPLAY);
+        launchOptions.setLaunchDisplayId(getMainDisplayId());
         final Class<? extends Activity> defaultActivityClass = SlowActivity.class;
         final Intent defaultDisplaySlowIntent = new Intent(mContext, defaultActivityClass);
         defaultDisplaySlowIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK);
@@ -933,8 +940,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 SlowActivity.FLAG_SLOW_TOP_RESUME_RELEASE);
         mTargetContext.startActivity(defaultDisplaySlowIntent, launchOptions.toBundle());
 
-        waitAndAssertTopResumedActivity(getComponentName(SlowActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SlowActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Wait and assert focus switch
         waitAndAssertActivityStates(state(secondActivityClass, ON_TOP_POSITION_LOST),
@@ -998,7 +1006,7 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         // Launch activity on default display, which will be slow to release top position.
         getTransitionLog().clear();
         final ActivityOptions launchOptions = ActivityOptions.makeBasic();
-        launchOptions.setLaunchDisplayId(DEFAULT_DISPLAY);
+        launchOptions.setLaunchDisplayId(getMainDisplayId());
         final Class<? extends Activity> defaultActivityClass = SlowActivity.class;
         final Intent defaultDisplaySlowIntent = new Intent(mContext, defaultActivityClass);
         defaultDisplaySlowIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK);
@@ -1006,8 +1014,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 SlowActivity.FLAG_TIMEOUT_TOP_RESUME_RELEASE);
         mTargetContext.startActivity(defaultDisplaySlowIntent, launchOptions.toBundle());
 
-        waitAndAssertTopResumedActivity(getComponentName(SlowActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SlowActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Wait and assert focus switch.
         waitAndAssertActivityStates(state(secondActivityClass, ON_TOP_POSITION_LOST),
@@ -1052,8 +1061,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         final Activity callbackTrackingActivity =
                 launchActivityAndWait(CallbackTrackingActivity.class);
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display.
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -1068,8 +1078,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
         // An activity is launched on the new display, so the activity on default display should
         // lose the top state.
         assertSequence(CallbackTrackingActivity.class, getTransitionLog(),
@@ -1096,8 +1107,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         final Activity callbackTrackingActivity =
                 launchActivityAndWait(CallbackTrackingActivity.class);
 
-        waitAndAssertTopResumedActivity(getComponentName(CallbackTrackingActivity.class),
-                DEFAULT_DISPLAY, "Activity launched on default display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(CallbackTrackingActivity.class), getMainDisplayId(),
+                "Activity launched on main display assigned to the user must be focused");
 
         // Create new simulated display.
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -1112,8 +1124,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setOptions(launchOptions)
                 .launch();
-        waitAndAssertTopResumedActivity(getComponentName(SingleTopActivity.class),
-                newDisplay.mId, "Activity launched on secondary display must be focused");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                getComponentName(SingleTopActivity.class), newDisplay.mId,
+                "Activity launched on secondary display must be focused");
 
         // Bring the focus back.
         final Intent sameInstanceIntent = new Intent(mContext, CallbackTrackingActivity.class);
@@ -1223,4 +1236,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED)),
                 "finishAlwaysFocusablePip");
     }
+
+    public static class NoRelaunchCallbackTrackingActivity extends CallbackTrackingActivity {}
 }

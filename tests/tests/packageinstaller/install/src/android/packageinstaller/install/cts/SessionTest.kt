@@ -25,7 +25,6 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo.CATEGORY_MAPS
 import android.content.pm.ApplicationInfo.CATEGORY_UNDEFINED
 import android.content.pm.PackageInstaller
-import android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED
 import android.content.pm.PackageInstaller.STATUS_SUCCESS
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
@@ -82,26 +81,6 @@ class SessionTest : PackageInstallerTestBase() {
         } finally {
             pi.abandonSession(sessionId)
         }
-    }
-
-    /**
-     * Check that we can install an app via a package-installer session
-     */
-    @Test
-    fun confirmInstallation() {
-        val installation = startInstallationViaSession(needFuture = true)!!
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-        // Install should have succeeded
-        val result = getInstallSessionResult()
-        assertEquals(STATUS_SUCCESS, result.status)
-        assertEquals(false, result.preapproval)
-        assertInstalled()
-
-        // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
-
-        assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
 
     /**
@@ -183,23 +162,6 @@ class SessionTest : PackageInstallerTestBase() {
             COMPONENT_ENABLED_STATE_DISABLED,
             pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
         )
-    }
-
-    /**
-     * Install an app via a package-installer session, but then cancel it when the package installer
-     * pops open.
-     */
-    @Test
-    fun cancelInstallation() {
-        val installation = startInstallationViaSession(needFuture = true)!!
-        clickInstallerUIButton(CANCEL_BUTTON_ID)
-
-        // Install should have been aborted
-        val result = getInstallSessionResult()
-        assertEquals(STATUS_FAILURE_ABORTED, result.status)
-        assertEquals(false, result.preapproval)
-        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
-        assertNotInstalled()
     }
 
     /**

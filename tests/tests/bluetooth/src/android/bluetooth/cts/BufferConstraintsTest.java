@@ -15,7 +15,8 @@
  */
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BufferConstraint;
@@ -46,8 +47,8 @@ public class BufferConstraintsTest {
     @Before
     public void setUp() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth = context.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        mHasBluetooth =
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
     }
 
     @Test
@@ -61,16 +62,19 @@ public class BufferConstraintsTest {
             int defaultBufferTime = DEFAULT_BUFFER_TIME;
             int maximumBufferTime = MAXIMUM_BUFFER_TIME;
             int minimumBufferTime = MINIMUM_BUFFER_TIME;
-            BufferConstraint bufferConstraint = new BufferConstraint(defaultBufferTime,
-                    maximumBufferTime, minimumBufferTime);
+            BufferConstraint bufferConstraint =
+                    new BufferConstraint(defaultBufferTime, maximumBufferTime, minimumBufferTime);
             mBufferConstraintList.add(bufferConstraint);
         }
         mBufferConstraints = new BufferConstraints(mBufferConstraintList);
 
         for (int i = 0; i < 6; i++) {
-            assertEquals(DEFAULT_BUFFER_TIME, mBufferConstraints.forCodec(i).getDefaultMillis());
-            assertEquals(MAXIMUM_BUFFER_TIME, mBufferConstraints.forCodec(i).getMaxMillis());
-            assertEquals(MINIMUM_BUFFER_TIME, mBufferConstraints.forCodec(i).getMinMillis());
+            assertThat(mBufferConstraints.forCodec(i).getDefaultMillis())
+                    .isEqualTo(DEFAULT_BUFFER_TIME);
+            assertThat(mBufferConstraints.forCodec(i).getMaxMillis())
+                    .isEqualTo(MAXIMUM_BUFFER_TIME);
+            assertThat(mBufferConstraints.forCodec(i).getMinMillis())
+                    .isEqualTo(MINIMUM_BUFFER_TIME);
         }
     }
 }

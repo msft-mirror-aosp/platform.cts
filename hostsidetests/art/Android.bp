@@ -26,7 +26,7 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
     ],
-    data: [
+    device_common_data: [
         ":CtsThreadLocalRandomApp",
     ],
     test_suites: [

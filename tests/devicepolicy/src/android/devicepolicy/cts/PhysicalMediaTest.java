@@ -16,20 +16,21 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_MOUNT_PHYSICAL_MEDIA;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowMountPhysicalMedia;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
@@ -52,8 +53,8 @@ public final class PhysicalMediaTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_MOUNT_PHYSICAL_MEDIA")
     public void setUserRestriction_disallowMountPhysicalMedia_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA));
     }
 
     @PolicyAppliesTest(policy = DisallowMountPhysicalMedia.class)
@@ -61,14 +62,14 @@ public final class PhysicalMediaTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_MOUNT_PHYSICAL_MEDIA")
     public void setUserRestriction_disallowMountPhysicalMedia_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_MOUNT_PHYSICAL_MEDIA))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
         }
     }
 
@@ -77,15 +78,15 @@ public final class PhysicalMediaTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_MOUNT_PHYSICAL_MEDIA")
     public void setUserRestriction_disallowMountPhysicalMedia_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_MOUNT_PHYSICAL_MEDIA))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_MOUNT_PHYSICAL_MEDIA);
         }
     }
 

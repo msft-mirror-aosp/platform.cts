@@ -20,23 +20,34 @@ android_test {
     name: "CtsAppFunctionTestCases",
     team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
+    libs: [
+        "com.android.extensions.appfunctions.stubs",
+    ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
+        "androidx.core_core-ktx",
+        "kotlin-test",
+        "kotlinx_coroutines_test",
         "appsearch_flags_java_exported_lib",
+        "service-appsearch-for-tests",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "CtsAppFunctionsTestUtils",
+        "CtsAppSearchTestUtils",
         "flag-junit",
         "platform-test-annotations",
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
-        "Harrier",
+        "bedstead-enterprise",
+        "bedstead-root",
         "testng",
     ],
+    asset_dirs: ["assets"],
     manifest: "AndroidManifest.xml",
+    platform_apis: true,
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
@@ -47,6 +58,11 @@ android_test {
     ],
     data: [
         ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsSidecarTestHelper",
+        ":CtsAppSearchIndexerTestAppAV1",
+        ":CtsAppSearchIndexerTestAppAV2",
+        ":CtsAppSearchIndexerTestAppAV3",
+        ":CtsAppSearchIndexerTestAppBV1",
     ],
 }
 
@@ -63,5 +79,25 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
     ],
+    asset_dirs: ["helper-app/assets"],
     manifest: "helper-app/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsSidecarTestHelper",
+    defaults: ["cts_defaults"],
+    libs: [
+        "com.android.extensions.appfunctions.stubs",
+    ],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    manifest: "helper-app/AndroidManifest_sidecar.xml",
 }

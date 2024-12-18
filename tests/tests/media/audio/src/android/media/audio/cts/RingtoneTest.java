@@ -22,6 +22,7 @@ import static android.media.cts.Utils.RINGTONE_TEST_URI;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -34,19 +35,26 @@ import android.media.audiofx.HapticGenerator;
 import android.media.cts.Utils;
 import android.net.Uri;
 import android.os.Build;
+import android.os.SystemClock;
+import android.os.UserHandle;
 import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.SystemUtil;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class RingtoneTest extends InstrumentationTestCase {
     private static final String TAG = "RingtoneTest";
+    private static final String PKG = "android.media.audio.cts";
 
     private Context mContext;
     private Ringtone mRingtone;
@@ -100,7 +108,9 @@ public class RingtoneTest extends InstrumentationTestCase {
 
     private void enableAppOps() {
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user ");
+        cmd.append(UserHandle.myUserId());
+        cmd.append(" ");
         cmd.append(getInstrumentation().getContext().getPackageName());
         cmd.append(" android:write_settings allow");
         getInstrumentation().getUiAutomation().executeShellCommand(cmd.toString());
@@ -142,6 +152,10 @@ public class RingtoneTest extends InstrumentationTestCase {
     private boolean isTV() {
         return getInstrumentation().getContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
+    }
+
+    private boolean hasVibrator() {
+        return mContext.getSystemService(Vibrator.class).hasVibrator();
     }
 
     public void testRingtone() {
@@ -231,6 +245,10 @@ public class RingtoneTest extends InstrumentationTestCase {
         if (isTV()) {
             return;
         }
+        if (!hasVibrator()) {
+            Log.i(TAG, "Skipping testRingtoneVibration(): device doesn't have a vibrator.");
+            return;
+        }
         if (!hasAudioOutput()) {
             Log.i(TAG, "Skipping testRingtoneVibration(): device doesn't have audio output.");
             return;
@@ -252,5 +270,64 @@ public class RingtoneTest extends InstrumentationTestCase {
         mRingtone = RingtoneManager.getRingtone(mContext, ringtoneUri);
 
         assertThat(mRingtone.getVibrationEffect()).isInstanceOf(VibrationEffect.class);
+    }
+
+    public void testRingtoneVibrationPlayback() throws IOException {
+        if (isTV()) {
+            return;
+        }
+        if (!hasVibrator()) {
+            Log.i(TAG, "Skipping testRingtoneVibrationPlayback(): "
+                    + "device doesn't have a vibrator.");
+            return;
+        }
+        if (!hasAudioOutput()) {
+            Log.i(TAG, "Skipping testRingtoneVibrationPlayback(): "
+                    + "device doesn't have audio output.");
+            return;
+        }
+        if (!Flags.enableRingtoneHapticsCustomization()) {
+            Log.i(TAG, "Skipping testRingtoneVibrationPlayback(): "
+                    + "ringtone vibration isn't enabled.");
+            return;
+        }
+        if (!Utils.isRingtoneVibrationSupported(mContext)) {
+            Log.i(TAG, "Skipping testRingtoneVibrationPlayback(): "
+                    + "vibration settings isn't supported.");
+            return;
+        }
+
+        assertThat(mRingtone.getVibrationEffect()).isNull();
+
+        // Make sure we have vibration uri
+        Uri uri = Uri.parse("android.resource://" + PKG + "/" + R.raw.john_cage);
+        final Uri ringtoneUri = uri.buildUpon().appendQueryParameter(VIBRATION_URI_PARAM,
+                getTestVibrationFile().toURI().toString()).build();
+        Ringtone ringtone = RingtoneManager.getRingtone(mContext, ringtoneUri, null,
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setHapticChannelsMuted(true)
+                        .build());
+        assertThat(ringtone).isNotNull();
+        ringtone.play();
+        assertThat(ringtone.isPlaying()).isTrue();
+        SystemClock.sleep(200);
+
+        final VibratorManager vibratorManager = Objects.requireNonNull(
+                mContext.getSystemService(VibratorManager.class));
+
+        int[] vibratorIds = vibratorManager.getVibratorIds();
+        boolean isVibrating = false;
+        for (int vibratorId : vibratorIds) {
+            if (SystemUtil.runWithShellPermissionIdentity(
+                    () -> vibratorManager.getVibrator(vibratorId).isVibrating(),
+                    Manifest.permission.ACCESS_VIBRATOR_STATE)) {
+                isVibrating = true;
+            }
+        }
+        assertTrue(isVibrating);
+        ringtone.stop();
+        assertFalse(ringtone.isPlaying());
     }
 }

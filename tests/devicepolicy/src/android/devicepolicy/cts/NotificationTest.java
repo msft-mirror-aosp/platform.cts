@@ -16,7 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.permissions.CommonPermissions.POST_NOTIFICATIONS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,10 +26,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
@@ -49,7 +51,7 @@ public final class NotificationTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .wherePermissions().contains(POST_NOTIFICATIONS)
             .get();
 
@@ -83,7 +85,7 @@ public final class NotificationTest {
     @CddTest(requirements = "3.9.2/C-1-3")
     @NotFullyAutomated(reason = "DoesTheNotificationTitledNotificationHaveAWorkBadgeStep")
     public void notification_fromWorkProfile_isBadged() throws Exception {
-        try (TestAppInstance workProfileApp = sTestApp.install(sDeviceState.workProfile());
+        try (TestAppInstance workProfileApp = sTestApp.install(workProfile(sDeviceState));
              PermissionContext p = workProfileApp.permissions().withPermission(POST_NOTIFICATIONS)) {
             showNotificationWithTitleNotification(workProfileApp);
 

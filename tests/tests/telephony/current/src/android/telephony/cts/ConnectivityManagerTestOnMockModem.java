@@ -23,12 +23,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.ConnectivityManager.NetworkCallback;
 import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Build;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.NetworkRegistrationInfo;
@@ -73,6 +75,14 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     private static final String RESOURCE_PACKAGE_NAME = "android";
     @SuppressWarnings("StaticAssignmentOfThrowable")
     private static AssertionError sInitError = null;
+    private static final String APN_SETTINGS_URL = "content://telephony/carriers";
+    private static final String COLUMN_ID = "_id";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_APN = "apn";
+    private static final String COLUMN_TYPE = "type";
+    private static final String MCC_MNC_TWN_CHT = "46692";
+    private static final String MCC_MNC_TWN_FET = "46601";
+
 
     private static class CMNetworkCallback extends NetworkCallback {
         final CountDownLatch mNetworkLatch = new CountDownLatch(1);
@@ -206,6 +216,62 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
         }
     }
 
+
+    private static boolean hasApns(String mccmnc) {
+        Uri uri = Uri.parse(APN_SETTINGS_URL);
+
+        // Query the database using a ContentResolver
+        String[] projection = new String[]{COLUMN_ID, COLUMN_NAME, COLUMN_APN, COLUMN_TYPE};
+        String selection = "numeric = ?"; // Filter by mccmnc
+        String[] selectionArgs = new String[]{mccmnc}; // Provide the mccmnc as an argument
+        int count = 0;
+        adoptShellPermissionIdentity();
+        try (Cursor cursor =
+                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver()
+                     .query(uri, projection, selection, selectionArgs, null)) {
+
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getCount();
+                Log.i(TAG, "Carrier count for " + mccmnc + ": " + count);
+                do {
+                    int idIndex = cursor.getColumnIndex(COLUMN_ID);
+                    int nameIndex = cursor.getColumnIndex(COLUMN_NAME);
+                    int typeIndex = cursor.getColumnIndex(COLUMN_TYPE);
+                    int apnIndex = cursor.getColumnIndex(COLUMN_APN);
+
+                    if (idIndex != -1 && nameIndex != -1 && typeIndex != -1 && apnIndex != -1) {
+                        int id = cursor.getInt(idIndex);
+                        String name = cursor.getString(nameIndex);
+                        String type = cursor.getString(typeIndex);
+                        String apn = cursor.getString(apnIndex);
+                        Log.d(TAG, "ID: " + id + ", Name: " + name + ", Apn: "
+                                                            + apn + ", Type: " + type);
+                    }
+                } while (cursor.moveToNext());
+            } else {
+                Log.i(TAG, "No results found for carrier " + mccmnc);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error querying carriers table: " + mccmnc + ": " + e.getMessage());
+        } finally {
+            dropShellPermissionIdentity();
+        }
+        return count > 0;
+    }
+
+    /** Allows test app to run as shell UID to acquire privileged permissions */
+    public static void adoptShellPermissionIdentity() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity();
+    }
+
+    /** Disallow test app to run as shell UID to acquire privileged permissions */
+    public static void dropShellPermissionIdentity() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
+    }
+
     private int getRegState(int domain) {
         int reg;
 
@@ -275,7 +341,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
             })
     public void testNetworkValidated() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testNetworkValidated");
-
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
         assumeTrue(isSimHotSwapCapable());
 
         int slotId = 0;
@@ -348,6 +414,8 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     public void testDDSChange() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testDDSChange");
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue(hasApns(MCC_MNC_TWN_FET));
 
         int slotId_0 = 0;
         int slotId_1 = 1;

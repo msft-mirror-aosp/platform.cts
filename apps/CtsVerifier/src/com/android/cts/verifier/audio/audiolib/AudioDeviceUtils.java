@@ -21,7 +21,6 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
-import android.media.audio.Flags;
 import android.util.Log;
 
 import java.util.Collection;
@@ -92,7 +91,8 @@ public class AudioDeviceUtils {
      * @param deviceType The AudioDeviceInfo type ID of the desired device.
      * @return a human-readable full device type name.
      */
-    public static String getDeviceTypeName(int deviceType) {
+    public static String getDeviceTypeName(
+        @AudioDeviceInfo.AudioDeviceType int deviceType) {
         String typeName = sDeviceTypeStrings.get(deviceType);
         return typeName != null ? "TYPE_" + typeName : "invalid type";
     }
@@ -101,7 +101,8 @@ public class AudioDeviceUtils {
      * @param deviceType The AudioDeviceInfo type ID of the desired device.
      * @return a human-readable abreviated device type name.
      */
-    public static String getShortDeviceTypeName(int deviceType) {
+    public static String getShortDeviceTypeName(
+        @AudioDeviceInfo.AudioDeviceType int deviceType) {
         String typeName = sDeviceTypeStrings.get(deviceType);
         return typeName != null ? typeName : "invalid type";
     }
@@ -152,9 +153,6 @@ public class AudioDeviceUtils {
         if (LOG) {
             Log.d(TAG, "supportsAnalogHeadset()");
         }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
-        }
 
         // TYPE_LINE_ANALOG?
         AudioManager audioManager = context.getSystemService(AudioManager.class);
@@ -180,9 +178,6 @@ public class AudioDeviceUtils {
         if (LOG) {
             Log.d(TAG, "supportsUsbAudioInterface()");
         }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
-        }
 
         AudioManager audioManager = context.getSystemService(AudioManager.class);
         Set<Integer> deviceTypeIds =
@@ -205,9 +200,6 @@ public class AudioDeviceUtils {
     public static int supportsUsbHeadset(Context context) {
         if (LOG) {
             Log.d(TAG, "supportsUsbHeadset()");
-        }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
         }
 
         AudioManager audioManager = context.getSystemService(AudioManager.class);

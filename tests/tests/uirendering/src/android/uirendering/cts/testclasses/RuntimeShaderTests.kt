@@ -27,22 +27,32 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Picture
 import android.graphics.Rect
+import android.graphics.RuntimeColorFilter
 import android.graphics.RuntimeShader
+import android.graphics.RuntimeXfermode
 import android.graphics.Shader
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.uirendering.cts.bitmapverifiers.RectVerifier
 import android.uirendering.cts.testinfrastructure.ActivityTestBase
 import android.uirendering.cts.testinfrastructure.CanvasClient
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.android.compatibility.common.util.ApiTest
+import com.android.graphics.hwui.flags.Flags
 import org.junit.Assert
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class RuntimeShaderTests : ActivityTestBase() {
+
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test(expected = NullPointerException::class)
     fun createWithNullInput() {
@@ -54,8 +64,11 @@ class RuntimeShaderTests : ActivityTestBase() {
         RuntimeShader("")
     }
 
-    val bitmapShader = BitmapShader(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
-                                    Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+    val bitmapShader = BitmapShader(
+        Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
+                                    Shader.TileMode.CLAMP,
+        Shader.TileMode.CLAMP
+    )
 
     @Test(expected = NullPointerException::class)
     fun setNullUniformName() {
@@ -205,9 +218,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val rect = Rect(10, 10, 80, 80)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.BLACK, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.BLACK, rect))
     }
 
     @Test
@@ -220,9 +235,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val rect = Rect(10, 10, 80, 80)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.TRANSPARENT, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.TRANSPARENT, rect))
     }
 
     @Test
@@ -234,9 +251,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val rect = Rect(10, 10, 80, 80)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
     }
 
     @Test
@@ -251,9 +270,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         // The shader should be evaluated with an opaque paint color and the paint's alpha will be
         // applied after the shader returns but before it is blended into the destination
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
     }
 
     @Test
@@ -270,9 +291,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         // The shader should be evaluated first then the paint's alpha will be applied after the
         // shader returns but before it is blended into the destination
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.BLACK, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.BLACK, rect))
     }
 
     @Test
@@ -301,19 +324,26 @@ class RuntimeShaderTests : ActivityTestBase() {
         // flag is not respected
         paint.shader = shader
         paint.blendMode = BlendMode.SRC
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
 
         // The bitmap shader should be sampled with FILTER_MODE_LINEAR as the paint's filtering
         // flag is not respected
         paint.isFilterBitmap = false
         bitmapShader.filterMode = BitmapShader.FILTER_MODE_LINEAR
         shader.setInputShader("inputShader", bitmapShader)
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE,
-                Color.valueOf(0.5f, 0.0f, 0.5f).toArgb(), rect))
+                true
+        ).runWithVerifier(RectVerifier(
+            Color.WHITE,
+                Color.valueOf(0.5f, 0.0f, 0.5f).toArgb(),
+            rect
+        ))
     }
 
     private fun getRotateSrgb(): ColorSpace {
@@ -322,8 +352,12 @@ class RuntimeShaderTests : ActivityTestBase() {
         for (i in rotatedPrimaries.indices) {
             rotatedPrimaries[i] = srgb.primaries[(i + 2) % srgb.primaries.size]
         }
-        return ColorSpace.Rgb("Rotated sRGB", rotatedPrimaries, srgb.whitePoint,
-                              srgb.transferParameters!!)
+        return ColorSpace.Rgb(
+            "Rotated sRGB",
+            rotatedPrimaries,
+            srgb.whitePoint,
+                              srgb.transferParameters!!
+        )
     }
 
     @Test
@@ -348,16 +382,20 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         // Use setInputBuffer and let the shader verify that the sample contents were unaltered.
         shader.setInputBuffer("inputShader", bitmapShader)
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.GREEN, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.GREEN, rect))
 
         // Use setInputShader to treating it like a normal bitmap instead of data to verify
         // everything is working as expected
         shader.setInputShader("inputShader", bitmapShader)
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 
     @Test
@@ -371,9 +409,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val rect = Rect(10, 10, 80, 80)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.BLUE, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.BLUE, rect))
     }
 
     @Test
@@ -402,9 +442,11 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val rect = Rect(0, 0, 20, 20)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
                 { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.GREEN, rect, 0))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.GREEN, rect, 0))
     }
 
     @Test
@@ -418,20 +460,24 @@ class RuntimeShaderTests : ActivityTestBase() {
         val linearExtendedSRGB = ColorSpace.get(ColorSpace.Named.LINEAR_EXTENDED_SRGB)
         val linearColorA = colorA.convert(linearExtendedSRGB)
         val linearColorB = colorB.convert(linearExtendedSRGB)
-        val linearColorMix = Color.valueOf((linearColorA.red() + linearColorB.red()) / 2.0f,
+        val linearColorMix = Color.valueOf(
+            (linearColorA.red() + linearColorB.red()) / 2.0f,
                 (linearColorA.green() + linearColorB.green()) / 2.0f,
                 (linearColorA.blue() + linearColorB.blue()) / 2.0f,
                 (linearColorA.alpha() + linearColorB.alpha()) / 2.0f,
-                linearExtendedSRGB)
+                linearExtendedSRGB
+        )
 
         val paint = Paint()
         paint.shader = shader
 
         val rect = Rect(10, 10, 80, 80)
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
         { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, linearColorMix.toArgb(), rect, 4))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, linearColorMix.toArgb(), rect, 4))
     }
 
     @Test
@@ -449,9 +495,11 @@ class RuntimeShaderTests : ActivityTestBase() {
         }
         Assert.assertTrue(picture.requiresHardwareAcceleration())
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
         { canvas: Canvas, width: Int, height: Int -> canvas.drawPicture(picture) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 
     @Test
@@ -470,9 +518,11 @@ class RuntimeShaderTests : ActivityTestBase() {
         }
         Assert.assertTrue(picture.requiresHardwareAcceleration())
 
-        createTest().addCanvasClient(CanvasClient
+        createTest().addCanvasClient(
+            CanvasClient
         { canvas: Canvas, width: Int, height: Int -> canvas.drawPicture(picture) },
-                true).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+                true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -491,6 +541,52 @@ class RuntimeShaderTests : ActivityTestBase() {
 
         val canvas = Canvas(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
         canvas.drawRect(0f, 0f, 10f, 10f, paint)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RUNTIME_COLOR_FILTERS_BLENDERS)
+    fun testChildColorFilter() {
+        val redFilter = """
+            vec4 main(half4 inColor) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val filter = RuntimeColorFilter(redFilter)
+
+        val shader = RuntimeShader(samplingFilterShader)
+        shader.setInputColorFilter("inputFilter", filter)
+
+        val paint = Paint()
+        paint.shader = shader
+
+        val rect = Rect(10, 10, 80, 80)
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RUNTIME_COLOR_FILTERS_BLENDERS)
+    fun testChildXfermode() {
+        val redXfermode = """
+            vec4 main(half4 src, half4 dst) {
+              return vec4(1.0, 0.0, 0.0, 1.0);
+            }"""
+        val xfermode = RuntimeXfermode(redXfermode)
+
+        val shader = RuntimeShader(samplingXfermodeShader)
+        shader.setInputXfermode("inputBlender", xfermode)
+
+        val paint = Paint()
+        paint.shader = shader
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            CanvasClient
+        { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
     }
 
     val mSemiTransparentBlueShader = """
@@ -531,6 +627,18 @@ class RuntimeShaderTests : ActivityTestBase() {
         uniform shader inputShader;
         vec4 main(vec2 coord) {
           return inputShader.eval(coord).rgba;
+        }"""
+    val samplingFilterShader = """
+        uniform colorFilter inputFilter;
+        vec4 main(vec2 coord) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputFilter.eval(color).rgba;
+        }"""
+    val samplingXfermodeShader = """
+        uniform blender inputBlender;
+        vec4 main(vec2 coord) {
+          half4 color = half4(1.0, 1.0, 1.0, 1.0);
+          return inputBlender.eval(color, color).rgba;
         }"""
     val sampleComparisonShader = """
         uniform shader inputShader;

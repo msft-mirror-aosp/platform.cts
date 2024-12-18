@@ -20,7 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 

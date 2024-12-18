@@ -21,17 +21,9 @@
 
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner"/>
-
-        <activity android:name="com.android.angleintegrationtest.common.AngleIntegrationTestActivity"
-             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-         android:targetPackage="com.android.angleintegrationtest.drivertest"/>
+         android:targetPackage="com.android.angleintegrationtest.nativedrivercheck"/>
 
 </manifest>

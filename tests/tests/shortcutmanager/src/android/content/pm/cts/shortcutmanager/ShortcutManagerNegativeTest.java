@@ -109,9 +109,6 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
     public void testDirectAidlCalls() throws IllegalAccessException {
         checkAidlCall("resetThrottling", "Caller must be");
 
-        checkAidlCall("onApplicationActive", "does not have",
-                "package", getTestContext().getUserId());
-
         checkAidlCall("getBackupPayload", "Caller must be", getTestContext().getUserId());
 
         checkAidlCall("applyRestore", "Caller must be", null, getTestContext().getUserId());

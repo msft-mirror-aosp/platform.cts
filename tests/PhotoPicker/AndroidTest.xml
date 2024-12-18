@@ -36,15 +36,18 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
     <option name="config-descriptor:metadata" key="component" value="framework" />
+
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.photopicker.cts" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile" />
         <option name="instrumentation-arg" key="thisisignored" value="thisisignored --no-window-animation" />
     </test>
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
 
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.mediaprovider" />

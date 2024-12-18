@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 public class TestNgRunnerBuilder extends RunnerBuilder {
   // Returns a TestNG runner for this class, only if the class
   // 1. is annotated with testng's @Test, or
-  // 2. has any methods with @Test in it, or
+  // 2. has any methods with @Test in it or its superclasses, or
   // 3. has a `public static void main(String[])` method
   // Note: If the class has any @Test annotation, the main method will not get executed, because
   // JUnit is using the TestNgRunner. It works as intended because we could have added @Test
@@ -54,7 +54,7 @@ public class TestNgRunnerBuilder extends RunnerBuilder {
     }
 
     // Or It's marked @Test at the method level
-    for (Method m : cls.getDeclaredMethods()) {
+    for (Method m : cls.getMethods()) {
       if (m.getAnnotation(Test.class) != null) {
         return true;
       }

@@ -33,12 +33,16 @@ public class BluetoothScanReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(TAG, "Received scan results:" + intent);
-        Log.i(TAG, "ScanResults = " + intent.getParcelableArrayListExtra(
-                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT));
-        Log.i(TAG, "Callback Type = "
-                + intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1));
-        Log.i(TAG, "Error Code = "
-                + intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1));
+        Log.i(
+                TAG,
+                "ScanResults = "
+                        + intent.getParcelableArrayListExtra(
+                                BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT));
+        Log.i(
+                TAG,
+                "Callback Type = "
+                        + intent.getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, -1));
+        Log.i(TAG, "Error Code = " + intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, -1));
         if (sCountDownLatch != null) {
             sCountDownLatch.countDown();
             sCountDownLatch = null;

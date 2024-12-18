@@ -73,9 +73,9 @@ java_defaults {
         "libnativehelper_compat_libc++",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "apache-commons-compress",
@@ -94,8 +94,7 @@ java_defaults {
         "ShortcutManagerTestUtils",
         "libincfs-prebuilt",
         "HelloWorldResHardeningLib",
-        "Nene",
-        "Harrier",
+        "bedstead-enterprise",
         "platformprotosnano",
         "ravenwood-junit",
         "CtsContentUtils",
@@ -117,10 +116,9 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-documentsui",
-        "mcts-documentsui",
     ],
     static_libs: [
+        "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
         "TestParameterInjector",
@@ -172,6 +170,8 @@ android_test {
     ],
     static_libs: [
         "android.content.res.flags-aconfig-java",
+        "flag-junit",
+        "junit-params",
     ],
     srcs: [
         "src/android/content/om/**/*.java",
@@ -237,6 +237,7 @@ android_test {
         ":CtsApkVerityTestPrebuiltFiles",
         ":CtsTargetSdk23TestApp",
         ":CtsTargetSdk24TestApp",
+        ":CtsQueryPackagesTestApp",
         // v1/v2/v3/v4 signed version of android.appsecurity.cts.tinyapp to keep checksums stable
         "data/CtsPkgInstallTinyAppV1.apk",
         "data/CtsPkgInstallTinyAppV2V3V4.apk",
@@ -312,6 +313,13 @@ android_test {
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
         ":CtsDeviceAdminTestApp",
+        ":CtsContentDeclaringLibrary",
+        ":CtsContentDeclaringSdkLibrary",
+        ":CtsContentDeclaringStaticLibrary",
+        ":CtsPackageChangedTestApp",
+        ":CtsPackageChangedSharedUserIdTestApp",
+        ":CtsIntentResolutionApplicationOverrideTestApp",
+        ":CtsIntentResolutionComponentOverrideTestApp",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
@@ -326,6 +334,56 @@ android_test {
     ],
 }
 
+test_module_config {
+    name: "CtsWindowManagerTestCases_wm_cts",
+    base: "CtsWindowManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_om",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.res.loader.cts",
+        "android.content.om.cts",
+    ],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_res_cts",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.res.cts"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_clip",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.cts.ClipDataTest",
+        "android.content.cts.ClipDescriptionTest",
+        "android.content.cts.ClipboardManagerTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_cts_broadcastreceivertest_NoLarge",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.cts.BroadcastReceiverTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_PlatinumTest",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}
+
 android_ravenwood_test {
     name: "CtsContentTestCasesRavenwood",
     defaults: ["cts_defaults"],
@@ -336,7 +394,7 @@ android_ravenwood_test {
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/content/cts/util/XmlUtils.java",
@@ -387,39 +445,18 @@ android_ravenwood_test {
     ],
     resource_apk: "CtsResourcesTestCasesRavenwood-res",
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "androidx.test.uiautomator_uiautomator",
-        "compatibility-device-util-axt",
-        "android.content.res.flags-aconfig-java",
-
-        // TODO Make and use a better default
-
-        "apache-commons-compress",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "services.core",
-        "junit",
-        "truth",
-        "accountaccesslib",
-        // TODO: remove once Android migrates to JUnit 4.12, which provides assertThrows:
-        "testng",
+        "androidx.test.ext.junit",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.core",
-        "androidx.test.uiautomator_uiautomator",
-        "cts-install-lib",
-        "ShortcutManagerTestUtils",
-        "libincfs-prebuilt",
-        "HelloWorldResHardeningLib",
-        "Nene",
-        "Harrier",
-        "platformprotosnano",
-        "ravenwood-junit",
+        "android.content.res.flags-aconfig-java",
+        "services.core",
         "CtsContentUtils",
     ],
     platform_apis: true,

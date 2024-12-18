@@ -321,6 +321,9 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
                 requestKeys.add(CaptureRequest.CONTROL_SCENE_MODE);
                 requestKeys.add(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE);
                 requestKeys.add(CaptureRequest.CONTROL_ZOOM_RATIO);
+                if (Flags.zoomMethod()) {
+                    requestKeys.add(CaptureRequest.CONTROL_ZOOM_METHOD);
+                }
                 requestKeys.add(CaptureRequest.FLASH_MODE);
                 requestKeys.add(CaptureRequest.JPEG_GPS_LOCATION);
                 requestKeys.add(CaptureRequest.JPEG_ORIENTATION);
@@ -595,7 +598,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      * Verifies that valid session characteristic keys can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristicsKeys() throws Exception {
         String[] cameraIds = getCameraIdsUnderTest();
         for (String cameraId : cameraIds) {

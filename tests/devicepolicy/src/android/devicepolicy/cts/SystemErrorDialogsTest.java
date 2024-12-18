@@ -18,9 +18,11 @@ package android.devicepolicy.cts;
 
 import static android.provider.Settings.Secure.SHOW_FIRST_CRASH_DIALOG_DEV_OPTION;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SYSTEM_ERROR_DIALOGS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -32,16 +34,16 @@ import android.provider.Settings;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.DisallowSystemErrorDialogs;
 import com.android.bedstead.harrier.policies.DisallowSystemErrorDialogsPermissionBased;
 import com.android.bedstead.nene.TestApis;
@@ -69,8 +71,8 @@ public final class SystemErrorDialogsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SYSTEM_ERROR_DIALOGS")
     public void addUserRestriction_disallowSystemErrorDialogs_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS));
     }
 
     @CanSetPolicyTest(policy = DisallowSystemErrorDialogs.class)
@@ -80,16 +82,16 @@ public final class SystemErrorDialogsTest {
     // TODO: Test that this is actually global
     public void addUserRestriction_disallowSystemErrorDialogs_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy()
                     .userRestrictions().isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 
@@ -101,15 +103,15 @@ public final class SystemErrorDialogsTest {
     @Ignore // TODO(332503102): this is failing with permissions but the code looks right...
     public void addUserRestrictionGlobally_disallowSystemErrorDialogs_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy()
                     .userRestrictions().isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 
@@ -120,19 +122,19 @@ public final class SystemErrorDialogsTest {
     // TODO: Test that this is actually global
     public void clearUserRestriction_disallowSystemErrorDialogs_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_SYSTEM_ERROR_DIALOGS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
 
             assertThat(TestApis.devicePolicy().userRestrictions()
                     .isSet(DISALLOW_SYSTEM_ERROR_DIALOGS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SYSTEM_ERROR_DIALOGS);
         }
     }
 
@@ -143,7 +145,7 @@ public final class SystemErrorDialogsTest {
             key = Settings.Global.ACTIVITY_MANAGER_CONSTANTS, value = "min_crash_interval=500")
     @Ignore("b/279876672 crash dialogs do not show reliably in test")
     public void appCrashes_disallowSystemErrorDialogsNotSet_alwaysShowSystemErrorDialogsEnabled_showsDialog() {
-        try (TestAppInstance t = sDeviceState.testApps().query()
+        try (TestAppInstance t = testApps(sDeviceState).query()
                 .whereActivities().contains(
                         activity().where().exported().isTrue()
                 ).get()
@@ -167,7 +169,7 @@ public final class SystemErrorDialogsTest {
     @EnsureGlobalSettingSet(
             key = Settings.Global.ACTIVITY_MANAGER_CONSTANTS, value = "min_crash_interval=500")
     public void appCrashes_disallowSystemErrorDialogsSet_alwaysShowSystemErrorDialogsEnabled_doesNotShowDialog() {
-        try (TestAppInstance t = sDeviceState.testApps().query()
+        try (TestAppInstance t = testApps(sDeviceState).query()
                 .whereActivities().contains(
                         activity().where().exported().isTrue()
                 ).get()

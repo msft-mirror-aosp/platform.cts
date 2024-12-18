@@ -125,6 +125,10 @@ public abstract class CodecTestBase {
     public static final boolean IS_AT_LEAST_V =
             ApiLevelUtil.isAfter(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
                 || ApiLevelUtil.codenameEquals("VanillaIceCream");
+    //TODO(b/248315681) Change to a proper condition
+    public static final boolean IS_AT_LEAST_B =
+            ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                || ApiLevelUtil.codenameEquals("Baklava");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
     public static final boolean FIRST_SDK_IS_AT_LEAST_V =
@@ -188,6 +192,8 @@ public abstract class CodecTestBase {
     // max poll counter before test aborts and returns error
     public static final int RETRY_LIMIT = 100;
     public static final String INVALID_CODEC = "unknown.codec_";
+    public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
+    public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
     static final int[] MPEG2_PROFILES = new int[]{MPEG2ProfileSimple, MPEG2ProfileMain,
             MPEG2Profile422, MPEG2ProfileSNR, MPEG2ProfileSpatial, MPEG2ProfileHigh};
     static final int[] MPEG4_PROFILES = new int[]{MPEG4ProfileSimple, MPEG4ProfileSimpleScalable,
@@ -223,11 +229,17 @@ public abstract class CodecTestBase {
     static final int[] HEVC_PROFILES = combine(HEVC_SDR_PROFILES, HEVC_HDR_PROFILES);
     static final int[] AV1_SDR_PROFILES = new int[]{AV1ProfileMain8};
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
+    static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
+    static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
+            DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
+            DolbyVisionProfileDvheDtr, DolbyVisionProfileDvheStn, DolbyVisionProfileDvheDth,
+            DolbyVisionProfileDvheDtb, DolbyVisionProfileDvheSt, DolbyVisionProfileDvavSe,
+            DolbyVisionProfileDvav110};
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
@@ -444,6 +456,7 @@ public abstract class CodecTestBase {
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_PROFILES);
+        PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HLG_PROFILES);
 
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
@@ -457,6 +470,7 @@ public abstract class CodecTestBase {
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_PROFILES);
@@ -737,6 +751,71 @@ public abstract class CodecTestBase {
             }
         }
         return false;
+    }
+
+    public static boolean isFormatSimilar(MediaFormat inpFormat, MediaFormat outFormat) {
+        if (inpFormat == null || outFormat == null) return false;
+        String inpMediaType = inpFormat.getString(MediaFormat.KEY_MIME);
+        String outMediaType = outFormat.getString(MediaFormat.KEY_MIME);
+        // not comparing input and output mediaTypes because for a codec, mediaType is raw on one
+        // side and encoded type on the other
+        if (outMediaType.startsWith("audio/")) {
+            return (inpFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1)
+                    == outFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -2))
+                    && (inpFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1)
+                    == outFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -2))
+                    && inpMediaType.startsWith("audio/");
+        } else if (outMediaType.startsWith("video/")) {
+            return getWidth(inpFormat) == getWidth(outFormat)
+                    && getHeight(inpFormat) == getHeight(outFormat)
+                    && inpMediaType.startsWith("video/");
+        }
+        return true;
+    }
+
+    public static boolean isCSDIdentical(MediaFormat refFormat, MediaFormat testFormat) {
+        String mediaType = refFormat.getString(MediaFormat.KEY_MIME);
+        for (int i = 0; ; i++) {
+            String csdKey = "csd-" + i;
+            boolean refHasCSD = refFormat.containsKey(csdKey);
+            boolean testHasCSD = testFormat.containsKey(csdKey);
+            if (refHasCSD != testHasCSD) {
+                if (ENABLE_LOGS) {
+                    Log.w(LOG_TAG, "error, ref fmt has CSD: " + refHasCSD + " test fmt has CSD: " +
+                            testHasCSD);
+                }
+                return false;
+            }
+            if (refHasCSD) {
+                Log.v(LOG_TAG, mediaType + " has " + csdKey);
+                ByteBuffer r = refFormat.getByteBuffer(csdKey);
+                ByteBuffer t = testFormat.getByteBuffer(csdKey);
+                if (!r.equals(t)) {
+                    if (ENABLE_LOGS) {
+                        Log.w(LOG_TAG, "ref CSD and test CSD buffers are not identical");
+                    }
+                    return false;
+                }
+            } else break;
+        }
+        return true;
+    }
+
+    public static boolean isExtractorFormatSimilar(MediaFormat refFormat, MediaFormat testFormat) {
+        String refMediaType = refFormat.getString(MediaFormat.KEY_MIME);
+        String testMediaType = testFormat.getString(MediaFormat.KEY_MIME);
+
+        if (!refMediaType.equals(testMediaType)) return false;
+        if (refFormat.getLong(MediaFormat.KEY_DURATION) !=
+                    testFormat.getLong(MediaFormat.KEY_DURATION)) {
+            Log.w(LOG_TAG, "Duration mismatches ref / test = " +
+                                   refFormat.getLong(MediaFormat.KEY_DURATION) + " / " +
+                                   testFormat.getLong(MediaFormat.KEY_DURATION));
+            // TODO (b/163477410)(b/163478168)
+            // return false;
+        }
+        if (!isCSDIdentical(refFormat, testFormat)) return false;
+        return isFormatSimilar(refFormat, testFormat);
     }
 
     /**
@@ -1439,26 +1518,6 @@ public abstract class CodecTestBase {
         final Bundle params = new Bundle();
         params.putByteArray(MediaFormat.KEY_HDR10_PLUS_INFO, info);
         mCodec.setParameters(params);
-    }
-
-    public boolean isFormatSimilar(MediaFormat inpFormat, MediaFormat outFormat) {
-        if (inpFormat == null || outFormat == null) return false;
-        String inpMediaType = inpFormat.getString(MediaFormat.KEY_MIME);
-        String outMediaType = outFormat.getString(MediaFormat.KEY_MIME);
-        // not comparing input and output mediaTypes because for a codec, mediaType is raw on one
-        // side and encoded type on the other
-        if (outMediaType.startsWith("audio/")) {
-            return (inpFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1)
-                    == outFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -2))
-                    && (inpFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1)
-                    == outFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -2))
-                    && inpMediaType.startsWith("audio/");
-        } else if (outMediaType.startsWith("video/")) {
-            return getWidth(inpFormat) == getWidth(outFormat)
-                    && getHeight(inpFormat) == getHeight(outFormat)
-                    && inpMediaType.startsWith("video/");
-        }
-        return true;
     }
 
     protected PersistableBundle validateMetrics(String codec) {

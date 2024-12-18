@@ -18,6 +18,7 @@ package android.content.pm.cts;
 
 import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES;
 import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES_FULL;
+import static android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG;
 import static android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES;
 import static android.multiuser.Flags.FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS;
 import static android.multiuser.Flags.FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES;
@@ -54,7 +55,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
-import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
+import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.users.UserReference;
@@ -151,7 +152,8 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
-        FLAG_GET_PRIVATE_SPACE_SETTINGS
+        FLAG_GET_PRIVATE_SPACE_SETTINGS,
+        FLAG_ADD_LAUNCHER_USER_CONFIG
     })
     public void testGeneralApis_withSystemPerm_hiddenProfileInfoAvailable() {
         try (UserReference privateProfile = createProfileAndSetupTestState();
@@ -168,7 +170,8 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
-        FLAG_GET_PRIVATE_SPACE_SETTINGS
+        FLAG_GET_PRIVATE_SPACE_SETTINGS,
+        FLAG_ADD_LAUNCHER_USER_CONFIG
     })
     public void testGeneralApis_defaultLauncherWithNormalPerm_hiddenProfileInfoAvailable() {
         try (UserReference privateProfile = createProfileAndSetupTestState();
@@ -242,7 +245,7 @@ public class LauncherAppsForHiddenProfilesTest {
                 new TestLauncherCallback(targetUser.userHandle(), mTestApp.packageName());
         mLauncherApps.registerCallback(callback, new Handler(Looper.getMainLooper()));
         triggerCallbacks(targetUser);
-        long timeoutSec = 2;
+        long timeoutSec = 10;
         try {
             assertThat(callback.mPackageAdded.await(timeoutSec, TimeUnit.SECONDS))
                     .isEqualTo(received);

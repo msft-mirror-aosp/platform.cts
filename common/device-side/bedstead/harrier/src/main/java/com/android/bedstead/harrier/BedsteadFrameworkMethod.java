@@ -16,12 +16,12 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
+import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import com.google.common.base.Equivalence;

@@ -153,6 +153,9 @@ public class TestUtils {
     public static final String CHECK_DATABASE_ROW_EXISTS_QUERY =
             "android.scopedstorage.cts.check_database_row_exists";
     public static final String RENAME_FILE_QUERY = "android.scopedstorage.cts.renamefile";
+    public static final String MEDIASTORE_VERSION_QUERY =
+            "android.scopedstorage.cts.mediastore_version";
+    public static final String GET_TYPE_URI = "android.scopedstorage.cts.get_type_uri";
 
     public static final String STR_DATA1 = "Just some random text";
     public static final String STR_DATA2 = "More arbitrary stuff";
@@ -278,6 +281,15 @@ public class TestUtils {
      */
     public static ArrayList<String> listAs(TestApp testApp, String dirPath) throws Exception {
         return getContentsFromTestApp(testApp, dirPath, READDIR_QUERY);
+    }
+
+    /**
+     * Makes the given {@code testApp} fetch its MediaStore version and returns the result as a
+     * {@link String}.
+     */
+    public static String mediaStoreVersion(TestApp testApp) throws Exception {
+        return getFromTestApp(testApp, (String) null, MEDIASTORE_VERSION_QUERY)
+              .getString(MEDIASTORE_VERSION_QUERY);
     }
 
     /**
@@ -525,6 +537,16 @@ public class TestUtils {
             throws Exception {
         final String actionName = IS_URI_REDACTED_VIA_FILEPATH;
         return getFromTestApp(testApp, uri, actionName).getBoolean(actionName, false);
+    }
+
+    /**
+     * Makes the given {@code testApp} get mime type with {@code uri}
+     *
+     * <p> This method drops shell permission identity.
+     */
+    public static String getType(TestApp testApp, Uri uri)
+            throws Exception {
+        return getFromTestApp(testApp, uri, GET_TYPE_URI).getString(GET_TYPE_URI);
     }
 
     /**

@@ -16,15 +16,17 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.ComponentName;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestApp;
@@ -47,7 +49,7 @@ public class DeviceOwnerTest {
             RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX,
             "com.android.bedstead.testapp.BaseTestAppDeviceAdminReceiver"
     );
-    private static final TestApp sNonTestOnlyDpc = sDeviceState.testApps().query()
+    private static final TestApp sNonTestOnlyDpc = testApps(sDeviceState).query()
             .whereIsDeviceAdmin().isTrue()
             .whereTestOnly().isFalse()
             .get();

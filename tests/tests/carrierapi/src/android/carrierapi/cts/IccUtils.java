@@ -82,4 +82,16 @@ public class IccUtils {
 
         throw new RuntimeException("invalid hex char '" + c + "'");
     }
+
+    /**
+     * Checks, if a character is REALLY letter or digit.
+     *
+     * Character.isLetterOrDigit returns true for 0xFF.
+     */
+    public static boolean isSeriouslyLetterOrDigit(int ch) {
+        if (ch >= 'a' && ch <= 'z') return true;
+        if (ch >= 'A' && ch <= 'Z') return true;
+        if (ch >= '0' && ch <= '9') return true;
+        return false;
+    }
 }

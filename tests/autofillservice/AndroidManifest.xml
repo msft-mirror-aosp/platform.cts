@@ -45,8 +45,7 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".activities.LoginActivity"
-             android:exported="true"
-             android:theme="@style/OptOutEdgeToEdge">
+             android:exported="true">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
                                          this app during CTS development... -->
@@ -66,8 +65,7 @@
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
-        <activity android:name=".activities.LoginCredentialMixedActivity"
-             android:theme="@style/OptOutEdgeToEdge"/>
+        <activity android:name=".activities.LoginCredentialMixedActivity"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
@@ -84,8 +82,7 @@
              android:taskAffinity=".SecondActivity"/>
         <activity android:name=".activities.ViewAttributesTestActivity"/>
         <activity android:name=".activities.AuthenticationActivity"/>
-        <activity android:name=".activities.ManualAuthenticationActivity"
-          android:theme="@style/OptOutEdgeToEdge"/>
+        <activity android:name=".activities.ManualAuthenticationActivity"/>
         <activity android:name=".activities.CheckoutActivity"
              android:taskAffinity=".CheckoutActivity"/>
         <activity android:name=".activities.InitializedCheckoutActivity"/>
@@ -112,8 +109,7 @@
         <activity android:name=".activities.FragmentContainerActivity"/>
         <activity android:name=".activities.DuplicateIdActivity"
              android:theme="@android:style/Theme.NoTitleBar"/>
-        <activity android:name=".activities.SimpleSaveActivity"
-             android:theme="@style/OptOutEdgeToEdge"/>
+        <activity android:name=".activities.SimpleSaveActivity"/>
         <activity android:name=".activities.PreSimpleSaveActivity"
              android:exported="true">
             <intent-filter>
@@ -148,7 +144,6 @@
         <activity android:name=".activities.TrampolineForResultActivity"/>
         <activity android:name=".activities.OnCreateServiceStatusVerifierActivity"/>
         <activity android:name=".activities.UsernameOnlyActivity"
-             android:theme="@style/OptOutEdgeToEdge"
              android:exported="true">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch

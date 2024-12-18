@@ -31,10 +31,10 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import com.android.ddmlib.Log;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.Log;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
@@ -175,11 +175,8 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
         assertNotNull("No metrics were returned.", result.getMetrics());
         String isSupportedStr = result.getMetrics().get(IS_HINT_SESSION_SUPPORTED_KEY);
         assertNotNull("ADPF support was not specified.", isSupportedStr);
-
-        if (!Boolean.parseBoolean(isSupportedStr)) {
-            Log.i(TAG, "ADPF is not supported on this device, skipping test");
-            return;
-        }
+        assumeTrue("ADPF is not supported on this device, skipping test",
+                "true".equals(isSupportedStr));
 
         if (result.getStatus() != TestStatus.PASSED) {
             String message = result.getFailure().getErrorMessage();

@@ -57,7 +57,7 @@ const (
 	// https://source.android.com/docs/compatibility/14/android-14-cdd#227_handheld_media_performance_class
 	MediaPerformanceClass_MEDIA_PERFORMANCE_CLASS_14 MediaPerformanceClass = 34
 	// As specified in
-	// https://source.android.com/docs/compatibility/15/android-15-cdd#227_handheld_media_performance_class
+	// Link pending
 	MediaPerformanceClass_MEDIA_PERFORMANCE_CLASS_15 MediaPerformanceClass = 35
 )
 

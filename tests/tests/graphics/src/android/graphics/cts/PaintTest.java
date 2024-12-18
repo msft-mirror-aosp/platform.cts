@@ -1062,7 +1062,8 @@ public class PaintTest {
     }
 
     @Test
-    public void testSetGetFontVariationSettings() {
+    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
+    public void testSetGetFontVariationSettings_Api35() {
         final Paint defaultPaint = new Paint();
 
         Paint p = new Paint();
@@ -1115,6 +1116,35 @@ public class PaintTest {
             assertTrue("Must return true for " + effectiveSetting,
                     p.setFontVariationSettings(effectiveSetting));
             assertEquals(effectiveSetting, p.getFontVariationSettings());
+        }
+
+        p.setFontVariationSettings("");
+        assertNull(p.getFontVariationSettings());
+    }
+
+    @Test
+    public void testSetGetFontVariationSettings() {
+        Paint p = new Paint();
+        Context context = InstrumentationRegistry.getTargetContext();
+        Typeface typeface = Typeface.createFromAsset(context.getAssets(),
+                "fonts/var_fonts/multiaxis.ttf");
+        p.setTypeface(typeface);
+
+        // multiaxis.ttf supports "wght", "PRIV", "PR12" axes.
+
+        // The default variation settings should be null.
+        assertNull(p.getFontVariationSettings());
+
+        final String[] varSettingsList = {
+                "'wght' 300",  // supported tag
+                "'wght' 300, 'PRIV' 0.5",  // both are supported
+                "'PRIV' 1.0, 'BBBB' 0.4",  // 'BBBB' is unsupported
+        };
+
+        for (String varSettings : varSettingsList) {
+            assertTrue("Must return true for " + varSettings,
+                    p.setFontVariationSettings(varSettings));
+            assertEquals(varSettings, p.getFontVariationSettings());
         }
 
         p.setFontVariationSettings("");
@@ -1386,7 +1416,7 @@ public class PaintTest {
         new Paint().getTextPath("HIJKLMN", 3, 9, 0, 0, new Path());
     }
 
-    @CddTest(requirement="3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasGlyph() {
         Paint p = new Paint();
@@ -1409,7 +1439,7 @@ public class PaintTest {
         // Note: U+FE0F is variation selection, unofficially reserved for emoji
     }
 
-    @CddTest(requirement = "3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasEmojiGlyph() {
         Paint p = new Paint();
@@ -1789,27 +1819,6 @@ public class PaintTest {
                 }
             }
         }
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_DEPRECATE_UI_FONTS)
-    public void testElegantText() {
-        final Paint p = new Paint();
-        p.setTextSize(10);
-        assertFalse(p.isElegantTextHeight());
-        final float nonElegantTop = p.getFontMetrics().top;
-        final float nonElegantBottom = p.getFontMetrics().bottom;
-
-        p.setElegantTextHeight(true);
-        assertTrue(p.isElegantTextHeight());
-        final float elegantTop = p.getFontMetrics().top;
-        final float elegantBottom = p.getFontMetrics().bottom;
-
-        assertTrue(elegantTop < nonElegantTop);
-        assertTrue(elegantBottom > nonElegantBottom);
-
-        p.setElegantTextHeight(false);
-        assertFalse(p.isElegantTextHeight());
     }
 
     @Test
@@ -2349,5 +2358,19 @@ public class PaintTest {
         Typeface typeface2 = p2.getTypeface();
 
         assertThat(typeface2).isNotEqualTo(typeface);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_ELEGANT_TEXT_HEIGHT_API)
+    public void testDeprecateElegantTextHeight() {
+        final Paint p = new Paint();
+
+        // Elegant Text Height is now true by default.
+        assertThat(p.isElegantTextHeight()).isTrue();
+
+        p.setElegantTextHeight(false);
+
+        // Calling setElegantTextHeight is now no-op.
+        assertThat(p.isElegantTextHeight()).isTrue();
     }
 }

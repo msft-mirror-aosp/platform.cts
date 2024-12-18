@@ -22,7 +22,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":CtsHostsideTaggingManifestDisabledApp",
         ":CtsHostsideTaggingManifestEnabledSdk29App",
         ":CtsHostsideTaggingManifestEnabledSdk30App",
@@ -30,6 +30,7 @@ java_test_host {
         ":CtsHostsideTaggingSdk30App",
         ":CtsHostsideTaggingSdk30MemtagApp",
         ":CtsHostsideTaggingIsMteEnabledApp",
+        ":CtsHostsideTaggingMemtagApp",
     ],
 }
 

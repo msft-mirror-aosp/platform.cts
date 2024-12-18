@@ -21,6 +21,7 @@ android_test {
     name: "CtsAutoFillServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.view.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "androidx.test.ext.junit",
@@ -28,6 +29,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "truth",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.espresso.core",
@@ -113,4 +115,11 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.autofillservice.cts.inline"],
     exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_android_server_autofill_Presubmit",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

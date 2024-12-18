@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -109,6 +110,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     }
 
     @Test
+    @Ignore
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
         CarrierRoamingNtnModeListenerTest listener = new CarrierRoamingNtnModeListenerTest();

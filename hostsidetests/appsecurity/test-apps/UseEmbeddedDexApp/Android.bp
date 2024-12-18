@@ -35,8 +35,8 @@ java_defaults {
         "androidx.test.uiautomator_uiautomator",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
 }
 

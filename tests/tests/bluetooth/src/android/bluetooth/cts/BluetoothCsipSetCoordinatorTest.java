@@ -18,373 +18,182 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
+import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothCsipSetCoordinator;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.BluetoothUuid;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
-import android.os.Build;
-import android.os.ParcelUuid;
-import android.util.Log;
+import android.sysprop.BluetoothProperties;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothCsipSetCoordinatorTest {
     private static final String TAG = BluetoothCsipSetCoordinatorTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
-    private static final int TEST_CALLBACK_TIMEOUT_MS = 500;  // ms timeout for test callback
+    @Mock private BluetoothCsipSetCoordinator.ClientLockCallback mCallback;
+    @Mock private BluetoothProfile.ServiceListener mListener;
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
+    private static final Duration CALLBACK_TIMEOUT = Duration.ofMillis(500);
 
-    private BluetoothCsipSetCoordinator mBluetoothCsipSetCoordinator;
-    private boolean mIsCsipSetCoordinatorSupported;
-    private boolean mIsProfileReady;
-    private Condition mConditionProfileConnection;
-    private ReentrantLock mProfileConnectionlock;
-    private boolean mGroupLockCallbackCalled;
-    private Condition mConditionTestCallback;
-    private ReentrantLock mTestCallbackLock;
-    private TestCallback mTestCallback;
-    private Executor mTestExecutor;
-    private BluetoothDevice mTestDevice;
-    private boolean mIsLocked;
-    private int mTestOperationStatus;
-    private int mTestGroupId;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothDevice mDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final Executor mExecutor = mContext.getMainExecutor();
 
-    class TestCallback implements BluetoothCsipSetCoordinator.ClientLockCallback {
-        @Override
-        public void onGroupLockSet(int groupId, int opStatus, boolean isLocked) {
-            mTestCallbackLock.lock();
-            assertTrue(groupId == mTestGroupId);
-            assertTrue(opStatus == mTestOperationStatus);
-            assertTrue(isLocked == mIsLocked);
-            mGroupLockCallbackCalled = true;
-            try {
-                mConditionTestCallback.signal();
-            } finally {
-                mTestCallbackLock.unlock();
-            }
-        }
-    };
-
-    private boolean waitForGroupLockCallback() {
-        mTestCallbackLock.lock();
-        try {
-            // Wait for call of group lock callback
-            while (!mGroupLockCallbackCalled) {
-                if (!mConditionTestCallback.await(
-                        TEST_CALLBACK_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Group Lock Callback");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForGroupLockCallback: interrupted");
-        } finally {
-            mTestCallbackLock.unlock();
-        }
-        return mGroupLockCallbackCalled;
-    }
+    private BluetoothCsipSetCoordinator mService;
 
     @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
 
-        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+        assumeTrue(SdkLevel.isAtLeastT());
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE));
+
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+
+        assumeTrue(BluetoothProperties.isProfileBapUnicastClientEnabled().orElse(false));
+        assertThat(mAdapter.isLeAudioSupported()).isEqualTo(BluetoothStatusCodes.FEATURE_SUPPORTED);
+
+        assumeTrue(BluetoothProperties.isProfileCsipSetCoordinatorEnabled().orElse(false));
+
+        assertThat(
+                        mAdapter.getProfileProxy(
+                                mContext, mListener, BluetoothProfile.CSIP_SET_COORDINATOR))
+                .isTrue();
+
+        ArgumentCaptor<BluetoothProfile> captor = ArgumentCaptor.forClass(BluetoothProfile.class);
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceConnected(eq(BluetoothProfile.CSIP_SET_COORDINATOR), captor.capture());
+        mService = (BluetoothCsipSetCoordinator) captor.getValue();
+        assertThat(mService).isNotNull();
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-
-        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
-        mAdapter = manager.getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
-        mProfileConnectionlock = new ReentrantLock();
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mIsProfileReady = false;
-        mBluetoothCsipSetCoordinator = null;
-
-        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO));
-        assertEquals(BluetoothStatusCodes.FEATURE_SUPPORTED, mAdapter.isLeAudioSupported());
-
-        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.CSIP_SET_COORDINATOR));
-        assertTrue("Config must be true when profile is supported",
-                TestUtils.isProfileEnabled(BluetoothProfile.CSIP_SET_COORDINATOR));
-
-        Assume.assumeTrue(mAdapter.getProfileProxy(mContext,
-                new BluetoothCsipServiceListener(), BluetoothProfile.CSIP_SET_COORDINATOR));
-
-        mTestCallbackLock = new ReentrantLock();
-        mConditionTestCallback = mTestCallbackLock.newCondition();
-        mGroupLockCallbackCalled = false;
-
-        mTestCallback = new TestCallback();
-        mTestExecutor = mContext.getMainExecutor();
     }
 
     @After
-    public void tearDown() throws Exception {
-        if (mBluetoothCsipSetCoordinator != null) {
-            mBluetoothCsipSetCoordinator.close();
-            mBluetoothCsipSetCoordinator = null;
-            mIsProfileReady = false;
-            mTestDevice = null;
-            mIsLocked = false;
-            mTestOperationStatus = 0;
-            mGroupLockCallbackCalled = false;
-            mTestCallback = null;
-            mTestExecutor = null;
-        }
-        mAdapter = null;
+    public void tearDown() {
+        mAdapter.closeProfileProxy(BluetoothProfile.CSIP_SET_COORDINATOR, mService);
         TestUtils.dropPermissionAsShellUid();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-        assertTrue(mIsProfileReady);
-
-        mAdapter.closeProfileProxy(
-                BluetoothProfile.CSIP_SET_COORDINATOR, mBluetoothCsipSetCoordinator);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        mAdapter.closeProfileProxy(BluetoothProfile.CSIP_SET_COORDINATOR, mService);
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceDisconnected(eq(BluetoothProfile.CSIP_SET_COORDINATOR));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectedDevices() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices = mBluetoothCsipSetCoordinator.getConnectedDevices();
-        assertTrue(connectedDevices.isEmpty());
+        assertThat(mService.getConnectedDevices()).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices =
-                mBluetoothCsipSetCoordinator.getDevicesMatchingConnectionStates(null);
-        assertTrue(connectedDevices.isEmpty());
+        assertThat(mService.getDevicesMatchingConnectionStates(null)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-
-        int state = mBluetoothCsipSetCoordinator.getConnectionState(mTestDevice);
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED, state);
+        assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getGroupUuidMapByDevice() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        mTestDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-
         TestUtils.dropPermissionAsShellUid();
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class, () ->
-                mBluetoothCsipSetCoordinator.getGroupUuidMapByDevice(mTestDevice));
+        assertThrows(SecurityException.class, () -> mService.getGroupUuidMapByDevice(mDevice));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
-        Map<Integer, ParcelUuid> result = mBluetoothCsipSetCoordinator
-                .getGroupUuidMapByDevice(mTestDevice);
-        assertTrue(result.isEmpty());
+        assertThat(mService.getGroupUuidMapByDevice(mDevice)).isEmpty();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void lockUnlockGroup() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        mTestGroupId = 1;
-         // Verify parameter
-        assertThrows(NullPointerException.class, () ->
-                mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId, null, mTestCallback));
-        assertThrows(NullPointerException.class, () ->
-                mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId, mTestExecutor, null));
+        int groupId = 1;
+        // Verify parameter
+        assertThrows(
+                NullPointerException.class, () -> mService.lockGroup(groupId, null, mCallback));
+        assertThrows(
+                NullPointerException.class, () -> mService.lockGroup(groupId, mExecutor, null));
 
         TestUtils.dropPermissionAsShellUid();
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
-                () -> mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId, mTestExecutor,
-                                                            mTestCallback));
+        assertThrows(
+                SecurityException.class, () -> mService.lockGroup(groupId, mExecutor, mCallback));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
         // Lock group
-        mIsLocked = false;
-        mTestOperationStatus = BluetoothStatusCodes.ERROR_CSIP_INVALID_GROUP_ID;
-        try {
-            mBluetoothCsipSetCoordinator.lockGroup(mTestGroupId,
-                    mTestExecutor, mTestCallback);
-        } catch (Exception e) {
-            fail("Exception caught from register(): " + e.toString());
-        }
+        boolean isLocked = false;
+        int opStatus = BluetoothStatusCodes.ERROR_CSIP_INVALID_GROUP_ID;
+        mService.lockGroup(groupId, mExecutor, mCallback);
 
-        assertTrue(waitForGroupLockCallback());
+        verify(mCallback, timeout(CALLBACK_TIMEOUT.toMillis()))
+                .onGroupLockSet(groupId, opStatus, isLocked);
 
         long uuidLsb = 0x01;
         long uuidMsb = 0x01;
         UUID uuid = new UUID(uuidMsb, uuidLsb);
-        try {
-            mBluetoothCsipSetCoordinator.unlockGroup(uuid);
-        } catch (Exception e) {
-            fail("Exception caught from register(): " + e.toString());
-        }
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
-    @Test
-    public void lockCallback() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
-        /* Note. This is just for api coverage until proper testing tools are set up */
-        mTestGroupId = 1;
-        mTestOperationStatus = 1;
-        mIsLocked = true;
-
-        mTestCallback.onGroupLockSet(mTestGroupId, mTestOperationStatus, mIsLocked);
-        assertTrue(waitForGroupLockCallback());
+        mService.unlockGroup(uuid);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getAllGroupIds() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothCsipSetCoordinator);
-
         TestUtils.dropPermissionAsShellUid();
-        assertThrows(SecurityException.class, () ->
-                mBluetoothCsipSetCoordinator.getAllGroupIds(BluetoothUuid.CAP));
+        assertThrows(SecurityException.class, () -> mService.getAllGroupIds(BluetoothUuid.CAP));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
-        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        List<Integer> result = mBluetoothCsipSetCoordinator.getAllGroupIds(null);
-        assertTrue(result.isEmpty());
-    }
-
-    private boolean waitForProfileConnect() {
-        mProfileConnectionlock.lock();
-        try {
-            // Wait for the Adapter to be disabled
-            while (!mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Connect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return mIsProfileReady;
-    }
-
-    private boolean waitForProfileDisconnect() {
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mProfileConnectionlock.lock();
-        try {
-            while (mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Disconnect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return !mIsProfileReady;
-    }
-
-    private final class BluetoothCsipServiceListener implements
-            BluetoothProfile.ServiceListener {
-
-        @Override
-        public void onServiceConnected(int profile, BluetoothProfile proxy) {
-            mProfileConnectionlock.lock();
-            mBluetoothCsipSetCoordinator = (BluetoothCsipSetCoordinator) proxy;
-            mIsProfileReady = true;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(int profile) {
-            mProfileConnectionlock.lock();
-            mIsProfileReady = false;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        assertThat(mService.getAllGroupIds(null)).isEmpty();
     }
 }

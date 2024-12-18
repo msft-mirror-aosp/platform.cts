@@ -670,6 +670,12 @@ public final class CameraDeviceInfo extends DeviceInfo {
     private static HashSet<String> getAllCharacteristicsKeyNames() {
         HashSet<String> charsKeyNames = new HashSet<String>();
         charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES.getName());
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_COLOR_TEMPERATURE_RANGE.getName());
+        }
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES.getName());
+        }
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_ANTIBANDING_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES.getName());
@@ -694,19 +700,14 @@ public final class CameraDeviceInfo extends DeviceInfo {
         if (Flags.cameraAeModeLowLightBoost()) {
             charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
         }
+        if (Flags.aePriority()) {
+            charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES.getName());
+        }
         charsKeyNames.add(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES.getName());
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_DEFAULT_LEVEL.getName());
-        }
+        charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_DEFAULT_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_AVAILABLE.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_STRENGTH_DEFAULT_LEVEL.getName());
@@ -788,9 +789,7 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.INFO_VERSION.getName());
         charsKeyNames.add(CameraCharacteristics.INFO_DEVICE_STATE_SENSOR_ORIENTATION_MAP.getName());
-        if (Flags.featureCombinationQuery()) {
-            charsKeyNames.add(CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION.getName());
-        }
+        charsKeyNames.add(CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION.getName());
         charsKeyNames.add(CameraCharacteristics.SYNC_MAX_LATENCY.getName());
         charsKeyNames.add(CameraCharacteristics.REPROCESS_MAX_CAPTURE_STALL.getName());
         charsKeyNames.add(CameraCharacteristics.DEPTH_DEPTH_IS_EXCLUSIVE.getName());

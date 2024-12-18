@@ -2292,7 +2292,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         final FillRequest fillRequest = sReplier.getNextFillRequest();
 
-        // Assert it only has 1 root view with 12 "leaf" nodes:
+        // Assert it only has 1 root view with 13 "leaf" nodes:
         // 1.text view for app title
         // 2.invisible layout
         // 3.edit text in the invisible layout
@@ -2305,6 +2305,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // 10.save button
         // 11.login button
         // 12.cancel button
+        // 13.make_views_invisible button
         //
         // But it also has an intermediate container (for username) that should be included because
         // it has a resource id.
@@ -2312,7 +2313,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // get activity title
         final CharSequence activityTitle = mActivity.getPackageName() + "/"
                 + getActivityTitle(InstrumentationRegistry.getInstrumentation(), mActivity);
-        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 14, activityTitle);
+        assertNumberOfChildrenWithWindowTitle(fillRequest.structure, 15, activityTitle);
 
         // Make sure container with a resource id was included:
         final ViewNode usernameContainer = findNodeByResourceId(fillRequest.structure,

@@ -19,12 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -36,7 +33,6 @@ import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -44,7 +40,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -68,11 +63,6 @@ public class BluetoothLeBroadcastMetadataTest {
     private static final String TEST_BROADCAST_NAME = "TEST";
 
     private static final int TEST_CODEC_ID = 42;
-    private static final BluetoothLeBroadcastChannel[] TEST_CHANNELS = {
-        new BluetoothLeBroadcastChannel.Builder().setChannelIndex(42).setSelected(true)
-                .setCodecMetadata(new BluetoothLeAudioCodecConfigMetadata.Builder().build())
-                .build()
-    };
 
     // For BluetoothLeAudioCodecConfigMetadata
     private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
@@ -91,8 +81,7 @@ public class BluetoothLeBroadcastMetadataTest {
     private boolean mIsBroadcastAssistantSupported;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -103,24 +92,21 @@ public class BluetoothLeBroadcastMetadataTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
             boolean isBroadcastAssistantEnabledInConfig =
                     TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -138,8 +124,11 @@ public class BluetoothLeBroadcastMetadataTest {
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).build();
-        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .build();
+        BluetoothLeBroadcastSubgroup subgroup = createBroadcastSubgroup();
+        BluetoothLeBroadcastMetadata.Builder builder =
+                new BluetoothLeBroadcastMetadata.Builder()
                         .setEncrypted(false)
                         .setPublicBroadcast(false)
                         .setBroadcastName(TEST_BROADCAST_NAME)
@@ -150,30 +139,23 @@ public class BluetoothLeBroadcastMetadataTest {
                         .setPaSyncInterval(TEST_PA_SYNC_INTERVAL)
                         .setPresentationDelayMicros(TEST_PRESENTATION_DELAY_MS)
                         .setAudioConfigQuality(TEST_AUDIO_QUALITY_STANDARD)
-                        .setPublicBroadcastMetadata(publicBroadcastMetadata);
-        // builder expect at least one subgroup
-        assertThrows(IllegalArgumentException.class, builder::build);
-        BluetoothLeBroadcastSubgroup[] subgroups = new BluetoothLeBroadcastSubgroup[] {
-                createBroadcastSubgroup()
-        };
-        for (BluetoothLeBroadcastSubgroup subgroup : subgroups) {
-            builder.addSubgroup(subgroup);
-        }
+                        .setPublicBroadcastMetadata(publicBroadcastMetadata)
+                        .addSubgroup(subgroup);
         BluetoothLeBroadcastMetadata metadata = builder.build();
-        assertFalse(metadata.isEncrypted());
-        assertFalse(metadata.isPublicBroadcast());
-        assertEquals(TEST_BROADCAST_NAME, metadata.getBroadcastName());
-        assertEquals(testDevice, metadata.getSourceDevice());
-        assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadata.getSourceAddressType());
-        assertEquals(TEST_ADVERTISER_SID, metadata.getSourceAdvertisingSid());
-        assertEquals(TEST_BROADCAST_ID, metadata.getBroadcastId());
-        assertNull(metadata.getBroadcastCode());
-        assertEquals(TEST_PA_SYNC_INTERVAL, metadata.getPaSyncInterval());
-        assertEquals(TEST_PRESENTATION_DELAY_MS, metadata.getPresentationDelayMicros());
-        assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadata.getAudioConfigQuality());
-        assertEquals(publicBroadcastMetadata, metadata.getPublicBroadcastMetadata());
-        assertArrayEquals(subgroups,
-                metadata.getSubgroups().toArray(new BluetoothLeBroadcastSubgroup[0]));
+
+        assertThat(metadata.isEncrypted()).isFalse();
+        assertThat(metadata.isPublicBroadcast()).isFalse();
+        assertThat(metadata.getBroadcastName()).isEqualTo(TEST_BROADCAST_NAME);
+        assertThat(metadata.getSourceDevice()).isEqualTo(testDevice);
+        assertThat(metadata.getSourceAddressType()).isEqualTo(BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        assertThat(metadata.getSourceAdvertisingSid()).isEqualTo(TEST_ADVERTISER_SID);
+        assertThat(metadata.getBroadcastId()).isEqualTo(TEST_BROADCAST_ID);
+        assertThat(metadata.getBroadcastCode()).isNull();
+        assertThat(metadata.getPaSyncInterval()).isEqualTo(TEST_PA_SYNC_INTERVAL);
+        assertThat(metadata.getPresentationDelayMicros()).isEqualTo(TEST_PRESENTATION_DELAY_MS);
+        assertThat(metadata.getAudioConfigQuality()).isEqualTo(TEST_AUDIO_QUALITY_STANDARD);
+        assertThat(metadata.getPublicBroadcastMetadata()).isEqualTo(publicBroadcastMetadata);
+        assertThat(metadata.getSubgroups()).containsExactly(subgroup);
         builder.clearSubgroup();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -186,51 +168,43 @@ public class BluetoothLeBroadcastMetadataTest {
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).build();
-        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
-                .setEncrypted(false)
-                .setPublicBroadcast(false)
-                .setBroadcastName(TEST_BROADCAST_NAME)
-                .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM)
-                .setSourceAdvertisingSid(TEST_ADVERTISER_SID)
-                .setBroadcastId(TEST_BROADCAST_ID)
-                .setBroadcastCode(null)
-                .setPaSyncInterval(TEST_PA_SYNC_INTERVAL)
-                .setPresentationDelayMicros(TEST_PRESENTATION_DELAY_MS)
-                .setAudioConfigQuality(TEST_AUDIO_QUALITY_STANDARD)
-                .setPublicBroadcastMetadata(publicBroadcastMetadata);
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .build();
+        BluetoothLeBroadcastSubgroup subgroup = createBroadcastSubgroup();
+        BluetoothLeBroadcastMetadata metadata =
+                new BluetoothLeBroadcastMetadata.Builder()
+                        .setEncrypted(false)
+                        .setPublicBroadcast(false)
+                        .setBroadcastName(TEST_BROADCAST_NAME)
+                        .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM)
+                        .setSourceAdvertisingSid(TEST_ADVERTISER_SID)
+                        .setBroadcastId(TEST_BROADCAST_ID)
+                        .setBroadcastCode(null)
+                        .setPaSyncInterval(TEST_PA_SYNC_INTERVAL)
+                        .setPresentationDelayMicros(TEST_PRESENTATION_DELAY_MS)
+                        .setAudioConfigQuality(TEST_AUDIO_QUALITY_STANDARD)
+                        .setPublicBroadcastMetadata(publicBroadcastMetadata)
+                        .addSubgroup(subgroup)
+                        .build();
 
-        // builder expect at least one subgroup
-        assertThrows(IllegalArgumentException.class, builder::build);
-        BluetoothLeBroadcastSubgroup[] subgroups = new BluetoothLeBroadcastSubgroup[] {
-                createBroadcastSubgroup()
-        };
-        for (BluetoothLeBroadcastSubgroup subgroup : subgroups) {
-            builder.addSubgroup(subgroup);
-        }
-        BluetoothLeBroadcastMetadata metadata = builder.build();
         BluetoothLeBroadcastMetadata metadataCopy =
                 new BluetoothLeBroadcastMetadata.Builder(metadata).build();
-        assertFalse(metadataCopy.isEncrypted());
-        assertFalse(metadataCopy.isPublicBroadcast());
-        assertEquals(TEST_BROADCAST_NAME, metadataCopy.getBroadcastName());
-        assertEquals(testDevice, metadataCopy.getSourceDevice());
-        assertEquals(BluetoothDevice.ADDRESS_TYPE_RANDOM, metadataCopy.getSourceAddressType());
-        assertEquals(TEST_ADVERTISER_SID, metadataCopy.getSourceAdvertisingSid());
-        assertEquals(TEST_BROADCAST_ID, metadataCopy.getBroadcastId());
-        assertNull(metadataCopy.getBroadcastCode());
-        assertEquals(TEST_PA_SYNC_INTERVAL, metadataCopy.getPaSyncInterval());
-        assertEquals(TEST_PRESENTATION_DELAY_MS, metadataCopy.getPresentationDelayMicros());
-        assertEquals(TEST_AUDIO_QUALITY_STANDARD, metadataCopy.getAudioConfigQuality());
-        assertEquals(publicBroadcastMetadata, metadataCopy.getPublicBroadcastMetadata());
-        assertArrayEquals(subgroups,
-                metadataCopy.getSubgroups().toArray(new BluetoothLeBroadcastSubgroup[0]));
-        builder.clearSubgroup();
-        // builder expect at least one subgroup
-        assertThrows(IllegalArgumentException.class, builder::build);
+        assertThat(metadataCopy.isEncrypted()).isFalse();
+        assertThat(metadataCopy.isPublicBroadcast()).isFalse();
+        assertThat(metadataCopy.getBroadcastName()).isEqualTo(TEST_BROADCAST_NAME);
+        assertThat(metadataCopy.getSourceDevice()).isEqualTo(testDevice);
+        assertThat(metadataCopy.getSourceAddressType())
+                .isEqualTo(BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        assertThat(metadataCopy.getSourceAdvertisingSid()).isEqualTo(TEST_ADVERTISER_SID);
+        assertThat(metadataCopy.getBroadcastId()).isEqualTo(TEST_BROADCAST_ID);
+        assertThat(metadataCopy.getBroadcastCode()).isNull();
+        assertThat(metadataCopy.getPaSyncInterval()).isEqualTo(TEST_PA_SYNC_INTERVAL);
+        assertThat(metadataCopy.getPresentationDelayMicros()).isEqualTo(TEST_PRESENTATION_DELAY_MS);
+        assertThat(metadataCopy.getAudioConfigQuality()).isEqualTo(TEST_AUDIO_QUALITY_STANDARD);
+        assertThat(metadataCopy.getPublicBroadcastMetadata()).isEqualTo(publicBroadcastMetadata);
+        assertThat(metadataCopy.getSubgroups()).containsExactly(subgroup);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS)
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
     public void createMetadataFromBuilderAndCheckRssi() {
@@ -238,27 +212,22 @@ public class BluetoothLeBroadcastMetadataTest {
         final int testRssiInvalidMax = 128;
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
-        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
-                        .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM);
-        BluetoothLeBroadcastSubgroup[] subgroups = new BluetoothLeBroadcastSubgroup[] {
-                createBroadcastSubgroup()
-        };
-        for (BluetoothLeBroadcastSubgroup subgroup : subgroups) {
-            builder.addSubgroup(subgroup);
-        }
+        BluetoothLeBroadcastMetadata.Builder builder =
+                new BluetoothLeBroadcastMetadata.Builder()
+                        .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM)
+                        .addSubgroup(createBroadcastSubgroup());
+
         // validate RSSI is unknown if not set
         BluetoothLeBroadcastMetadata metadata = builder.build();
-        assertEquals(BluetoothLeBroadcastMetadata.RSSI_UNKNOWN, metadata.getRssi());
+        assertThat(metadata.getRssi()).isEqualTo(BluetoothLeBroadcastMetadata.RSSI_UNKNOWN);
 
         // builder expect rssi is in range [-127, 127]
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setRssi(testRssiInvalidMin));
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setRssi(testRssiInvalidMax));
+        assertThrows(IllegalArgumentException.class, () -> builder.setRssi(testRssiInvalidMin));
+        assertThrows(IllegalArgumentException.class, () -> builder.setRssi(testRssiInvalidMax));
 
         builder.setRssi(TEST_RSSI_DBM);
         metadata = builder.build();
-        assertEquals(TEST_RSSI_DBM, metadata.getRssi());
+        assertThat(metadata.getRssi()).isEqualTo(TEST_RSSI_DBM);
     }
 
     static BluetoothLeBroadcastSubgroup createBroadcastSubgroup() {
@@ -271,15 +240,20 @@ public class BluetoothLeBroadcastMetadataTest {
                         .build();
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
-        BluetoothLeBroadcastSubgroup.Builder builder = new BluetoothLeBroadcastSubgroup.Builder()
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
+        BluetoothLeBroadcastChannel channel =
+                new BluetoothLeBroadcastChannel.Builder()
+                        .setChannelIndex(42)
+                        .setSelected(true)
+                        .setCodecMetadata(new BluetoothLeAudioCodecConfigMetadata.Builder().build())
+                        .build();
+        return new BluetoothLeBroadcastSubgroup.Builder()
                 .setCodecId(TEST_CODEC_ID)
                 .setCodecSpecificConfig(codecMetadata)
-                .setContentMetadata(contentMetadata);
-        for (BluetoothLeBroadcastChannel channel : TEST_CHANNELS) {
-            builder.addChannel(channel);
-        }
-        return builder.build();
+                .setContentMetadata(contentMetadata)
+                .addChannel(channel)
+                .build();
     }
-
 }

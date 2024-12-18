@@ -15,6 +15,8 @@
 -->
 <resources>
     <string name="CtsPaymentService">CTS Nfc Test Service</string>
+    <string name="CtsOffHostPaymentService">CTS Nfc Off Host Test Service</string>
+    <string name="CtsOffHostDefaultToObservePaymentService">CTS Nfc Off Host Default to Observe Test Service</string>
     <string name="CtsCustomPaymentService">CTS Nfc Custom Test Service</string>
     <string name="CtsBackgroundPaymentService">CTS Nfc Background Test Service</string>
     <string name="nfc_scan_tag">Place device on a writable NDEF tag</string>

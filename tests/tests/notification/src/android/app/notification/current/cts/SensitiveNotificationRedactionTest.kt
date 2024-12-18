@@ -31,6 +31,7 @@ import android.app.Notification.MessagingStyle.Message
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Person
+import android.app.role.RoleManager
 import android.app.stubs.R
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE
 import android.companion.CompanionDeviceManager
@@ -46,6 +47,7 @@ import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.provider.Telephony
 import android.service.notification.Adjustment
 import android.service.notification.Adjustment.KEY_IMPORTANCE
 import android.service.notification.Adjustment.KEY_RANKING_SCORE
@@ -54,13 +56,18 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
+import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UserHelper
 import com.google.common.truth.Truth.assertWithMessage
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -83,6 +90,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @Before
     @Throws(Exception::class)
     fun setUp() {
+        val userHelper = UserHelper(mContext)
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                userHelper.isVisibleBackgroundUser())
         PermissionUtils.grantPermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS)
 
         setUpNotifListener()
@@ -454,43 +466,62 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         waitForNotification(tag = "start")
 
         val shouldRedact = mutableListOf(
-            "123G5",
-            "123456F8",
-            "123ķ4",
-            "123Ŀ4",
+            "your code is 123G5",
+            "your code is 123456F8",
+            "your code is 123ķ4",
+            "your code is 123Ŀ4",
             "1-1-01 is the date of your code T3425",
             "your code 54-234-3 was sent on 1-1-01",
-            "34-58-30",
-            "12-1-3089",
-            "G-3d523",
-            "G-FD-745",
+            "your code is 34-58-30",
+            "your code is 12-1-3089",
+            "your code is G-3d523",
+            "your code is G-FD-745",
             "your code is:G-345821",
             "your code is (G-345821",
             "your code is \nG-345821",
             "you code is G-345821.",
-            "you code is (G-345821)",
-            "c'est g4zy75",
-            "2109",
-            "3035",
-            "1899")
+            "you code is (G-345821)")
         var notifNum = 0
         val notRedactedFailures = StringBuilder("")
-        for (otp in shouldRedact) {
-            val tag = "$groupKey #$notifNum"
-            sendNotification(text = otp, title = "", subtext = "", tag = tag)
-            val sbn = waitForNotification(tag = tag)
-            val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
-            if (text.contains(otp)) {
-                notRedactedFailures.append("otp \"$otp\" is in notification text \"$text\"\n")
-            }
-            notifNum += 1
+        val existingSmsApp = callWithShellPermissionIdentity {
+            Telephony.Sms.getDefaultSmsPackage(mContext)
         }
+        assumeNotNull(existingSmsApp)
+        setSmsApp(mContext.packageName)
+        try {
+            // Newly enabled NAS can sometimes take a short while to start properly responding
+            for (i in 0..20) {
+                val basicOtp = "your one time code is 3434"
+                val tag = groupKey
+                sendNotification(text = basicOtp, title = "", subtext = "", tag = tag)
+                val sbn = waitForNotification(tag = tag)
+                val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                if (!text.contains(basicOtp)) {
+                    // Detector is up and running
+                    break
+                }
+                Thread.sleep(100)
+            }
 
-        if (notRedactedFailures.toString() != "") {
-            Assert.fail(
-                "The following codes were not redacted, but should have been:" +
-                        "\n$notRedactedFailures"
-            )
+            for (otp in shouldRedact) {
+                val tag = "$groupKey #$notifNum"
+                sendNotification(text = otp, title = "", subtext = "", tag = tag)
+                val sbn = waitForNotification(tag = tag)
+                val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                if (text.contains(otp)) {
+                    notRedactedFailures.append("otp \"$otp\" is in notification text \"$text\"\n")
+                }
+                notifNum += 1
+            }
+
+            if (notRedactedFailures.toString() != "") {
+                Assert.fail(
+                    "The following codes were not redacted, but should have been:" +
+                            "\n$notRedactedFailures"
+                )
+            }
+        } finally {
+            setSmsApp(existingSmsApp)
         }
     }
 
@@ -512,44 +543,81 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
         val shouldNotRedact =
             mutableListOf(
-                "123G",
-                "123",
-                "12 345",
-                "123T56789",
-                "TEFHXES",
-                "01-01-2001",
-                "1-1-2001",
-                "1-1-01",
-                "6--7893",
-                "------",
-                "your code isG-345821",
-                "your code is G-345821for real",
-                "GVRXY 2",
-                "2009",
-                "1945",
+                "your code is 123G.",
+                "your code is 123",
+                "your code is 12 345",
+                "your code is 123T567890",
+                "your code is TEFHXES",
+                "your code is 01-01-2001",
+                "your code is 1-1-2001",
+                "your code is 1-1-01",
+                "your code is 6--7893",
+                "your code is ------",
+                "your code is G-345821forreal",
+                "your code is GVRXY 2",
             )
         var notifNum = 0
         val redactedFailures = StringBuilder("")
-        for (notOtp in shouldNotRedact) {
-            val tag = "$groupKey #$notifNum"
-            sendNotification(text = notOtp, title = "", subtext = "", tag = tag)
-            val sbn = waitForNotification(tag = tag)
-            val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
-            if (!text.contains(notOtp)) {
-                redactedFailures.append(
-                    "non-otp message \"$notOtp\" is not in notification text " +
-                        "\"$text\"\n"
+        val existingSmsApp = callWithShellPermissionIdentity {
+            Telephony.Sms.getDefaultSmsPackage(mContext)
+        }
+        assumeNotNull(existingSmsApp)
+        setSmsApp(mContext.packageName)
+        try {
+            // Newly enabled NAS can sometimes take a short while to start properly responding
+            for (i in 0..20) {
+                val basicOtp = "your one time code is 3434"
+                val tag = groupKey
+                sendNotification(text = basicOtp, title = "", subtext = "", tag = tag)
+                val sbn = waitForNotification(tag = tag)
+                val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                if (!text.contains(basicOtp)) {
+                    // Detector is up and running
+                    break
+                }
+                Thread.sleep(100)
+            }
+
+            for (notOtp in shouldNotRedact) {
+                val tag = "$groupKey #$notifNum"
+                sendNotification(text = notOtp, title = "", subtext = "", tag = tag)
+                val sbn = waitForNotification(tag = tag)
+                val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+                if (!text.contains(notOtp)) {
+                    redactedFailures.append(
+                        "non-otp message \"$notOtp\" is not in notification text " +
+                                "\"$text\"\n"
+                    )
+                }
+                notifNum += 1
+            }
+
+            if (redactedFailures.toString() != "") {
+                Assert.fail(
+                    "The following codes were redacted, but should not have been:" +
+                            "\n$redactedFailures"
                 )
             }
-            notifNum += 1
+        } finally {
+            setSmsApp(existingSmsApp)
         }
+    }
 
-        if (redactedFailures.toString() != "") {
-            Assert.fail(
-                "The following codes were redacted, but should not have been:" +
-                        "\n$redactedFailures"
-            )
+    private fun setSmsApp(packageName: String) {
+        val latch = CountDownLatch(1)
+        runWithShellPermissionIdentity {
+            mRoleManager.addRoleHolderAsUser(
+                RoleManager.ROLE_SMS,
+                packageName,
+                0,
+                Process.myUserHandle(),
+                Executors.newSingleThreadExecutor()
+            ) { success ->
+                assertTrue("Failed to set sms role holder", success)
+                latch.countDown()
+            }
         }
+        latch.await()
     }
 
     private fun assertNotificationNotRedacted() {

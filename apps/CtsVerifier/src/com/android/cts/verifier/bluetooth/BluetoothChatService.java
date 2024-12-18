@@ -52,7 +52,7 @@ public class BluetoothChatService {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
 
-    static final UUID SECURE_UUID =
+    public static final UUID SECURE_UUID =
             UUID.fromString("8591d757-18ee-45e1-9b12-92875d06ba23");
     static final UUID INSECURE_UUID =
             UUID.fromString("301c214f-91a2-43bf-a795-09d1198a81a7");

@@ -160,6 +160,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ItsService extends Service implements SensorEventListener {
     public static final String TAG = ItsService.class.getSimpleName();
@@ -531,7 +532,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Thread.sleep(1);
             }
 
-            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG)) {
+            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATHS_TAG)) {
                 try {
                     mSocketRunnableObj.sendResponse(ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
                             Integer.toString(intent.getIntExtra(
@@ -539,10 +540,15 @@ public class ItsService extends Service implements SensorEventListener {
                                     Activity.RESULT_CANCELED)
                             )
                     );
+                    JSONObject obj = new JSONObject();
+                    JSONArray jcaCapturePaths = new JSONArray(intent.getStringArrayListExtra(
+                            ItsTestActivity.JCA_CAPTURE_PATHS_TAG));
+                    obj.put(ItsTestActivity.JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                    Logt.i(TAG, "Sending JCA capture paths: " + obj.toString());
                     mSocketRunnableObj.sendResponse(
-                            ItsTestActivity.JCA_CAPTURE_PATH_TAG,
-                            intent.getStringExtra(ItsTestActivity.JCA_CAPTURE_PATH_TAG));
-                } catch (ItsException e) {
+                            ItsTestActivity.JCA_CAPTURE_PATHS_TAG,
+                            obj);
+                } catch (ItsException | org.json.JSONException e) {
                     Logt.e(TAG, "Error sending JCA capture path and status", e);
                 }
                 return START_STICKY;
@@ -1024,7 +1030,8 @@ public class ItsService extends Service implements SensorEventListener {
                     String cameraId = cmdObj.getString("cameraId");
                     doGetSupportedVideoSizesCapped(cameraId);
                 } else if ("getSupportedPreviewSizes".equals(cmdObj.getString("cmdName"))) {
-                    doGetSupportedPreviewSizes();
+                    boolean filterRecordable = cmdObj.optBoolean("filter_recordable", false);
+                    doGetSupportedPreviewSizes(filterRecordable);
                 } else if ("getQueryableStreamCombinations".equals(cmdObj.getString("cmdName"))) {
                     doGetQueryableStreamCombinations();
                 } else if ("getSupportedExtensions".equals(cmdObj.getString("cmdName"))) {
@@ -1051,9 +1058,10 @@ public class ItsService extends Service implements SensorEventListener {
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
                     int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+                    int faceDetectMode = cmdObj.optInt("faceDetectMode");
                     doBasicRecording(cameraId, profileId, quality, recordingDuration,
                             videoStabilizationMode, hlg10Enabled, zoomRatio,
-                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
+                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode, faceDetectMode);
                 } else if ("doStaticPreviewRecording".equals(cmdObj.getString("cmdName"))) {
                     doStaticPreviewRecording(cmdObj);
                 } else if ("doDynamicZoomPreviewRecording".equals(
@@ -2714,7 +2722,8 @@ public class ItsService extends Service implements SensorEventListener {
         return arrList.contains(mode);
     }
 
-    private void doGetSupportedPreviewSizes() throws ItsException {
+    private void doGetSupportedPreviewSizes(boolean filterRecordable)
+            throws ItsException {
         StreamConfigurationMap configMap = mCameraCharacteristics.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         if (!StreamConfigurationMap.isOutputSupportedFor(SurfaceHolder.class)) {
@@ -2728,13 +2737,45 @@ public class ItsService extends Service implements SensorEventListener {
             return;
         }
 
-        String response = Arrays.stream(outputSizes)
-                .distinct()
+        Stream<Size> previewSizesStream = Arrays.stream(outputSizes).distinct();
+        if (filterRecordable) {
+            Logt.i(TAG, "Filter preview sizes if supported by MediaRecorder");
+            previewSizesStream = previewSizesStream.filter(
+                    size -> isSizeSupportedByMediaRecorder(size));
+        }
+        String response = previewSizesStream
                 .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
                 .map(Size::toString)
                 .collect(Collectors.joining(";"));
 
         mSocketRunnableObj.sendResponse("supportedPreviewSizes", response);
+    }
+
+    private boolean isSizeSupportedByMediaRecorder(Size previewSize) {
+        Surface recordSurface = MediaCodec.createPersistentInputSurface();
+
+        MediaRecorder mediaRecorder = new MediaRecorder(this);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+
+        mediaRecorder.setVideoSize(previewSize.getWidth(), previewSize.getHeight());
+        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        mediaRecorder.setInputSurface(recordSurface);
+        mediaRecorder.setVideoFrameRate(30);
+        String outputFile = getExternalCacheDir().getAbsolutePath() + "/its_test.mp4";
+        mediaRecorder.setOutputFile(outputFile);
+
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.release();
+            recordSurface.release();
+            return true;
+        } catch (IOException e) {
+            Logt.i(TAG, "Error preparing MediaRecorder with " + previewSize + ". error = " + e);
+        }
+        return false;
     }
 
     private void doGetQueryableStreamCombinations() throws ItsException {
@@ -2816,13 +2857,13 @@ public class ItsService extends Service implements SensorEventListener {
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
             boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
-            int aeAntibandingMode) throws ItsException {
+            int aeAntibandingMode, int faceDetectMode) throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
 
         if (!hlg10Enabled) {
             doBasicRecording(
                     cameraId, profileId, quality, recordingDuration, videoStabilizationMode,
-                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
+                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode, faceDetectMode);
             return;
         }
 
@@ -2892,7 +2933,8 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.HLG10,
                     mockCallback, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
+                    faceDetectMode);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2937,7 +2979,8 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode, double zoomRatio,
-            int aeTargetFpsMin, int aeTargetFpsMax, int aeAntibandingMode) throws ItsException {
+            int aeTargetFpsMin, int aeTargetFpsMax, int aeAntibandingMode, int faceDetectMode)
+            throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         int cameraDeviceId = Integer.parseInt(cameraId);
         mMediaRecorder = new MediaRecorder();
@@ -2971,7 +3014,8 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
                     /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode,
+                    faceDetectMode);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -3123,6 +3167,7 @@ public class ItsService extends Service implements SensorEventListener {
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
+        int faceDetectMode = cmdObj.optInt("faceDetectMode");
         // Record surface size and HDRness.
         JSONArray outputSpecs = ItsUtils.getOutputSpecs(cmdObj);
         if (outputSpecs == null || outputSpecs.length() == 0) {
@@ -3183,7 +3228,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, extraConfigs, aeAntibandingMode);
+                    recordingResultListener, extraConfigs, aeAntibandingMode, faceDetectMode);
             if (paddedFrames) {
                 Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
                 try {
@@ -3624,7 +3669,7 @@ public class ItsService extends Service implements SensorEventListener {
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
             CameraCaptureSession.CaptureCallback captureCallback,
             List<OutputConfiguration> extraConfigs,
-            int aeAntibandingMode) throws CameraAccessException {
+            int aeAntibandingMode, int faceDetectMode) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -3643,6 +3688,11 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.i(TAG, "AE Antibanding Mode: " + aeAntibandingMode);
             mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE,
                     aeAntibandingMode);
+        }
+        if (faceDetectMode > 0) {
+            Logt.i(TAG, "Face Detection Mode: " + faceDetectMode);
+            mCaptureRequestBuilder.set(CaptureRequest.STATISTICS_FACE_DETECT_MODE,
+                    faceDetectMode);
         }
 
         switch (videoStabilizationMode) {
@@ -4912,6 +4962,17 @@ public class ItsService extends Service implements SensorEventListener {
     class RecordingResultListener extends CaptureResultListener {
         private Map<Long, RecordingResult> mTimestampToCaptureResultsMap =
                 new ConcurrentHashMap<>();
+
+        /**
+         * Time to wait for autofocus to converge.
+         */
+        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 1000;
+
+        /**
+         * {@link ConditionVariable} to open when autofocus has converged.
+         */
+        private ConditionVariable mAfConverged = new ConditionVariable();
+
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                 long timestamp, long frameNumber) {
@@ -4928,6 +4989,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, buildLogString(result));
 
                 RecordingResult partialResult = new RecordingResult();
+                int afState = result.get(CaptureResult.CONTROL_AF_STATE);
                 Logt.i(TAG, "TotalCaptureResult # " + mTimestampToCaptureResultsMap.size()
                         + " timestamp = " + result.get(CaptureResult.SENSOR_TIMESTAMP)
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
@@ -4935,7 +4997,7 @@ public class ItsService extends Service implements SensorEventListener {
                         + " phyid = "
                         + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
                         + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
-                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AF_STATE = " + afState
                         + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
@@ -4943,6 +5005,11 @@ public class ItsService extends Service implements SensorEventListener {
                     partialResult.addVKeys(result);
                 }
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);
+
+                if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                    afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED) {
+                    mAfConverged.open();
+                }
             } catch (ItsException e) {
                 throw new ItsRuntimeException("Error handling capture result", e);
             }
@@ -4959,6 +5026,14 @@ public class ItsService extends Service implements SensorEventListener {
          */
         public Map<Long, RecordingResult> getCaptureResultsMap() {
             return mTimestampToCaptureResultsMap;
+        }
+
+        /**
+         * Blocks until the next {@link CaptureResult} that shows AF convergence.
+         */
+        public boolean waitForAfConvergence() throws InterruptedException {
+            mAfConverged.close();
+            return mAfConverged.block(PREVIEW_AUTOFOCUS_TIMEOUT_MS);
         }
     }
 

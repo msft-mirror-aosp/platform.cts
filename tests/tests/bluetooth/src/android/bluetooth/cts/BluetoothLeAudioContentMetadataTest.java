@@ -19,10 +19,7 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
@@ -55,10 +52,19 @@ public class BluetoothLeAudioContentMetadataTest {
     private static final String TEST_LANGUAGE_WITH_WHITESPACE = "   deu     ";
     // See Page 6 of Generic Audio assigned number specification
     private static final byte[] TEST_METADATA_BYTES = {
-            // length is 0x05, type is 0x03, data is "Test" in UTF-8 "54 65 73 74" hex
-            0x05, 0x03, 0x54, 0x65, 0x73, 0x74,
-            // length is 0x04, type is 0x04, data is "deu" in ASCII "64 65 75" hex
-            0x04, 0x04, 0x64, 0x65, 0x75
+        // length is 0x05, type is 0x03, data is "Test" in UTF-8 "54 65 73 74" hex
+        0x05,
+        0x03,
+        0x54,
+        0x65,
+        0x73,
+        0x74,
+        // length is 0x04, type is 0x04, data is "deu" in ASCII "64 65 75" hex
+        0x04,
+        0x04,
+        0x64,
+        0x65,
+        0x75
     };
 
     private Context mContext;
@@ -74,24 +80,19 @@ public class BluetoothLeAudioContentMetadataTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
-            boolean isBroadcastAssistantEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -107,10 +108,12 @@ public class BluetoothLeAudioContentMetadataTest {
     public void createContentMetadataFromBuilder() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
-        assertEquals(TEST_PROGRAM_INFO, contentMetadata.getProgramInfo());
-        assertEquals(TEST_LANGUAGE, contentMetadata.getLanguage());
-        assertArrayEquals(TEST_METADATA_BYTES, contentMetadata.getRawMetadata());
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
+        assertThat(contentMetadata.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
+        assertThat(contentMetadata.getLanguage()).isEqualTo(TEST_LANGUAGE);
+        assertThat(contentMetadata.getRawMetadata()).isEqualTo(TEST_METADATA_BYTES);
 
         // Verifies that the language string is stripped when generating the raw metadata
         BluetoothLeAudioContentMetadata contentMetadataStrippedLanguage =
@@ -118,8 +121,8 @@ public class BluetoothLeAudioContentMetadataTest {
                         .setProgramInfo(TEST_PROGRAM_INFO)
                         .setLanguage(TEST_LANGUAGE_WITH_WHITESPACE.toLowerCase().strip())
                         .build();
-        assertArrayEquals(contentMetadata.getRawMetadata(),
-                contentMetadataStrippedLanguage.getRawMetadata());
+        assertThat(contentMetadataStrippedLanguage.getRawMetadata())
+                .isEqualTo(contentMetadata.getRawMetadata());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -127,12 +130,14 @@ public class BluetoothLeAudioContentMetadataTest {
     public void createContentMetadataFromCopy() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         BluetoothLeAudioContentMetadata contentMetadataCopy =
                 new BluetoothLeAudioContentMetadata.Builder(contentMetadata).build();
-        assertEquals(TEST_PROGRAM_INFO, contentMetadataCopy.getProgramInfo());
-        assertEquals(TEST_LANGUAGE, contentMetadataCopy.getLanguage());
-        assertArrayEquals(TEST_METADATA_BYTES, contentMetadataCopy.getRawMetadata());
+        assertThat(contentMetadataCopy.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
+        assertThat(contentMetadataCopy.getLanguage()).isEqualTo(TEST_LANGUAGE);
+        assertThat(contentMetadataCopy.getRawMetadata()).isEqualTo(TEST_METADATA_BYTES);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -141,9 +146,8 @@ public class BluetoothLeAudioContentMetadataTest {
         BluetoothLeAudioContentMetadata contentMetadata =
                 BluetoothLeAudioContentMetadata.fromRawBytes(TEST_METADATA_BYTES);
         byte[] metadataBytes = contentMetadata.getRawMetadata();
-        assertNotNull(metadataBytes);
-        assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
-        assertEquals(TEST_PROGRAM_INFO, contentMetadata.getProgramInfo());
-        assertEquals(TEST_LANGUAGE, contentMetadata.getLanguage());
+        assertThat(metadataBytes).isEqualTo(TEST_METADATA_BYTES);
+        assertThat(contentMetadata.getProgramInfo()).isEqualTo(TEST_PROGRAM_INFO);
+        assertThat(contentMetadata.getLanguage()).isEqualTo(TEST_LANGUAGE);
     }
 }

@@ -33,12 +33,12 @@ import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.assertEmpty
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Test CDM APIs for listening for changes to [android.companion.AssociationInfo].
@@ -134,21 +134,22 @@ class AssociationsChangedListenerTest : CoreTestBase() {
         assertEquals(2, observer.invocations.size)
         val (event1, event2) = observer.invocations
 
-        // the event we observed first should be an association change
-        assertIs<AssociationChange>(event1)
-        // there should be exactly one association
-        assertEquals(1, event1.associations.size)
-        val associationInfoFromListener = event1.associations.first()
+        val associationChangeEvent =
+            assertIs<AssociationChange>(if (event1 is AssociationChange) event1 else event2)
+        val cdmCallbackEvent = assertIs<CdmCallback>(if (event2 is CdmCallback) event2 else event1)
+
+        // There should be exactly one association in OnAssociationChangedListener
+        assertEquals(1, associationChangeEvent.associations.size)
+        val associationInfoFromListener = associationChangeEvent.associations.first()
         assertEquals(
             actual = associationInfoFromListener.displayName,
             expected = DEVICE_DISPLAY_NAME_A
         )
 
-        // the second event should be the callback invocation
-        assertIs<CdmCallback>(event2)
-        val callbackInvocation = event2.invocation
+        // Check the callback invocation
+        assertIs<CdmCallback>(cdmCallbackEvent)
+        val callbackInvocation = cdmCallbackEvent.invocation
         assertIs<OnAssociationCreated>(callbackInvocation)
-
         val associationInfoFromCallback = callbackInvocation.associationInfo
         assertEquals(associationInfoFromListener, associationInfoFromCallback)
     }

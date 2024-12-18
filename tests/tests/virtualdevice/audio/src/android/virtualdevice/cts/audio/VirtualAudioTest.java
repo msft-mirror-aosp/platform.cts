@@ -46,7 +46,6 @@ import android.companion.virtual.audio.AudioCapture;
 import android.companion.virtual.audio.AudioInjection;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.companion.virtual.audio.VirtualAudioDevice.AudioConfigurationChangeCallback;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
@@ -58,9 +57,9 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -89,6 +88,7 @@ public class VirtualAudioTest {
     public static final int FREQUENCY = 264;
     public static final int SAMPLE_RATE = 44100;
     private static final Duration TIMEOUT = Duration.ofMillis(5000);
+    private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
 
     private static final AudioFormat CAPTURE_FORMAT = new AudioFormat.Builder()
             .setSampleRate(SAMPLE_RATE)
@@ -128,21 +128,14 @@ public class VirtualAudioTest {
         mVirtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
         grantRecordAudioPermission(mVirtualDevice.getDeviceId());
-    }
 
-
-    @Test
-    @RequiresFlagsDisabled(android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS)
-    public void virtualDevice_hasAudioInput_withoutFlag_isFalse() {
-        android.companion.virtual.VirtualDevice virtualDevice = mVirtualDeviceRule.getVirtualDevice(
-                mVirtualDevice.getDeviceId());
-
-        assertThat(virtualDevice.hasCustomAudioInputSupport()).isFalse();
+        // TODO - b/383048413 - use PermissionUpdateBarrierRule
+        // Account for the intentional delay until the audio permissions are propagated
+        SystemClock.sleep(AUDIO_PERMISSIONS_PROPAGATION_TIME_MS);
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
+    @RequiresFlagsEnabled({
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION})
     public void virtualDevice_hasAudioInput_withoutMicrophoneAndCustomPolicy() {
@@ -154,8 +147,7 @@ public class VirtualAudioTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
+    @RequiresFlagsEnabled({
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION})
     public void virtualDevice_hasAudioInput_withMicrophone_isTrue() {
@@ -171,8 +163,7 @@ public class VirtualAudioTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
+    @RequiresFlagsEnabled({
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION})
     public void multipleVirtualDevices_hasAudioInput_microphoneCapabilitiesOrCustomPolicy() {
@@ -200,8 +191,7 @@ public class VirtualAudioTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
+    @RequiresFlagsEnabled({
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION})
     public void virtualDevice_hasAudioInput_withDefaultAudioPolicy_manualAudioPolicy() {
@@ -239,8 +229,7 @@ public class VirtualAudioTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS,
+    @RequiresFlagsEnabled({
             android.media.audiopolicy.Flags.FLAG_AUDIO_MIX_TEST_API,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION})
     public void virtualDevice_noAudioInput_withDefaultAudioPolicy_isFalse() {

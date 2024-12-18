@@ -19,7 +19,6 @@ package android.server.wm.activity;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_TASK_ON_HOME;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -57,6 +56,7 @@ import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -66,6 +66,7 @@ import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WaitForValidActivityState;
+import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 
 import org.junit.Rule;
@@ -95,13 +96,11 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchHomeActivity();
         launchActivity(TRANSLUCENT_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
 
-        int expectedWindowingMode = hasAutomotiveSplitscreenMultitaskingFeature()
-                // On auto devices with this feature enabled, the system is in a permanent
-                // split-screen UI where every app opens in MULTI_WINDOW mode.
-                ? WINDOWING_MODE_MULTI_WINDOW
-                : WINDOWING_MODE_FULLSCREEN;
-        mWmState.assertFrontStackOnDisplay("Fullscreen stack must be the front stack.",
-                expectedWindowingMode, ACTIVITY_TYPE_STANDARD, getMainDisplayId());
+        final int taskWindowingMode =
+                mWmState.getTaskByActivity(TRANSLUCENT_ACTIVITY).getWindowingMode();
+        mWmState.assertFrontStackOnDisplay(
+                "Activity with matching windowing mode must be the front stack.",
+                taskWindowingMode, ACTIVITY_TYPE_STANDARD, getMainDisplayId());
         mWmState.assertVisibility(TRANSLUCENT_ACTIVITY, true);
         mWmState.assertHomeActivityVisible(true);
     }
@@ -205,8 +204,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
-        assumeRunNotOnVisibleBackgroundNonProfileUser(
-                "Keyguard not supported for visible background users");
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
@@ -253,7 +256,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         // The activity will be paused first because the flags turn-screen-on and show-when-locked
@@ -278,8 +286,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FULLSCREEN);
 
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
-        assertTrue("Display turns on by " + (useWindowFlags ? "flags" : "APIs"),
-                isDisplayOn(DEFAULT_DISPLAY));
+        int displayId = activity.getConfigInfo().displayId;
+        assertTrue("Display " + displayId + " turns on by "
+                        + (useWindowFlags ? "flags" : "APIs"),
+                isDisplayOn(displayId));
 
         activity.finish();
         mWmState.waitForActivityRemoved(activity.getName());
@@ -306,10 +316,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FREEFORM);
         mWmState.waitForValidState(
                 new WaitForValidActivityState.Builder(TURN_SCREEN_ON_ACTIVITY)
-                        .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                         .build());
-        assertTrue(mWmState.containsActivityInWindowingMode(
-                TURN_SCREEN_ON_ACTIVITY, WINDOWING_MODE_FULLSCREEN));
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
         assertTrue("Display should be turned on by flags.", isDisplayOn(DEFAULT_DISPLAY));
         activity.finish();
@@ -396,7 +403,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 .setDisplayId(getMainDisplayId())
                 .setIntentFlags(FLAG_ACTIVITY_NEW_TASK).execute();
         waitAndAssertResumedActivity(BROADCAST_RECEIVER_ACTIVITY,"Activity must be resumed");
-        final int taskId = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getTaskId();
+        final Task task = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY);
+        final int taskId = task.getTaskId();
 
         try {
             runWithShellPermission(() -> mAtm.startSystemLockTaskMode(taskId));
@@ -414,10 +422,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
         mWmState.waitAndAssertActivityRemoved(BROADCAST_RECEIVER_ACTIVITY);
 
-        if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
-            // TODO(b/300009006): remove this if condition when root tasks setup is moved to SysUI.
-            // Pass in the display id since home activity can be present on multiple displays for
-            // visible background users
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If the launched activity's task is not in fullscreen windowing mode, it would not
+        // fully obscure the home activity. Only check that the home activity is not visible if
+        // the launched activity's task is fullscreen in this case.
+        final int taskWindowingMode = task.getWindowingMode();
+        if (taskWindowingMode == WINDOWING_MODE_FULLSCREEN) {
             mWmState.assertHomeActivityVisible(false, getMainDisplayId());
         }
     }
@@ -459,9 +469,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 launchTaskDisplayAreaFeatureId, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
         mWmState.waitForActivityState(MOVE_TASK_TO_BACK_ACTIVITY,STATE_STOPPED);
-        final boolean shouldBeVisible =
-                !mWmState.isBehindOpaqueActivities(MOVE_TASK_TO_BACK_ACTIVITY);
-        if (shouldBeVisible) {
+        final int topActivityTaskWindowingMode =
+                mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getWindowingMode();
+        final boolean topActivityOccludes =
+                topActivityTaskWindowingMode == WINDOWING_MODE_FULLSCREEN &&
+                        !mWmState.isActivityTranslucent(BROADCAST_RECEIVER_ACTIVITY);
+        if (!topActivityOccludes) {
             mWmState.assertVisibility(MOVE_TASK_TO_BACK_ACTIVITY, true);
         } else {
             mWmState.waitAndAssertVisibilityGone(MOVE_TASK_TO_BACK_ACTIVITY);
@@ -721,7 +734,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testChangeToFullscreenWhenLockWithAttrInFreeform() {
+    public void testTurnScreenOnWhenLockWithAttrInFreeform() {
         assumeTrue(supportsLockScreen());
         assumeTrue(supportsFreeform());
 
@@ -732,10 +745,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchActivityNoWait(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, WINDOWING_MODE_FREEFORM);
         mWmState.waitForValidState(
                 new WaitForValidActivityState.Builder(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY)
-                        .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                         .build());
-        assertTrue(mWmState.containsActivityInWindowingMode(
-                TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, WINDOWING_MODE_FULLSCREEN));
         mWmState.assertVisibility(TURN_SCREEN_ON_SHOW_ON_LOCK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
     }
@@ -779,8 +789,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
-            // TODO(b/300009006): remove when root tasks setup is moved to SysUI.
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If the launched activity's task is not in fullscreen windowing mode, it would
+        // still be visible and resumed. Otherwise, just assert that it was launched once.
+        final int taskWindowingMode =
+                mWmState.getTaskByActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY).getWindowingMode();
+        if (taskWindowingMode != WINDOWING_MODE_FULLSCREEN) {
             waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
         } else {
             assertSingleLaunch(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
@@ -799,11 +813,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         // and reported after the activity launch.
         waitForDefaultDisplayState(true /* wantOn */);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+        if (taskWindowingMode != WINDOWING_MODE_FULLSCREEN) {
             // In the scenario when the Launcher HOME activity hosts the TaskView, the HOME activity
             // itself will be resumed first before the Test activity resulting in 2 calls to
             // ON_RESUME rather than 1. Is such case just check if the Test activity is resumed.
-            // TODO(b/300009006): assertSingleStart when fixed.
             waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
         } else {
             assertSingleStart(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
@@ -813,6 +826,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
         assumeTrue(supportsLockScreen());
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 

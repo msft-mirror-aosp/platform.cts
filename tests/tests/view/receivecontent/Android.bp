@@ -39,3 +39,10 @@ android_test {
     srcs: ["src/**/*.java"],
     platform_apis: true,
 }
+
+test_module_config {
+    name: "CtsViewReceiveContentTestCases_Presubmit",
+    base: "CtsViewReceiveContentTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}

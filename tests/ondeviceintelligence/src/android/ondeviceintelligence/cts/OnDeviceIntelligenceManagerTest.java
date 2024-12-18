@@ -17,6 +17,7 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
+import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE_MODULE;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
@@ -38,6 +39,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import android.Manifest;
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
+import android.app.ondeviceintelligence.InferenceInfo;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceManager;
 import android.app.ondeviceintelligence.ProcessingCallback;
@@ -45,16 +47,18 @@ import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.IBinder;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
-import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -84,6 +88,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -133,9 +138,11 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
     public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
+    public static final int REQUEST_TYPE_POPULATE_INFERENCE_INFO = 1008;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
-    private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
+    private static final String MODEL_LOADED_BROADCAST_ACTION =
+            "android.service.ondeviceintelligence.MODEL_LOADED";
 
     private Context mContext;
     public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
@@ -165,6 +172,30 @@ public class OnDeviceIntelligenceManagerTest {
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
+    @Test
+    @SkipSetupAndTeardown
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void cannotBindToIsolatedComputeAppEvenFromSamePackage() {
+        assertThrows(
+                "Cannot bind to isolated_compute_app process from same package",
+                SecurityException.class,
+                () -> getInstrumentation().getContext().bindService(
+                        new Intent().setComponent(new ComponentName(CTS_PACKAGE_NAME,
+                                CtsIsolatedInferenceService.class.getCanonicalName())),
+                        new ServiceConnection() {
+                            @Override
+                            public void onServiceConnected(ComponentName name,
+                                    IBinder service) {
+                                Log.i(TAG, "Service connected");
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {
+                                Log.i(TAG, "Service disconnected");
+                            }
+                        },
+                        Context.BIND_AUTO_CREATE));
+    }
 
 //=====================Tests for Access Denied without Permission on all Manager Methods=========
 
@@ -332,6 +363,21 @@ public class OnDeviceIntelligenceManagerTest {
                                 Log.e(TAG, "Final Result : ", error);
                             }
                         }));
+    }
+
+    @Test
+    public void noAccessWhenAttemptingGetLatestInferenceInfo() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.DUMP));
+
+        Feature feature = new Feature.Builder(1).build();
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to getLatestInferenceInfo when missing permission.",
+                SecurityException.class,
+                () -> mOnDeviceIntelligenceManager.getLatestInferenceInfo(0));
     }
 
 //===================== Tests for Result callback invoked on all Manager Methods ==================
@@ -873,7 +919,8 @@ public class OnDeviceIntelligenceManagerTest {
     public void canAccessFilesInIsolated() throws Exception {
         int[] requestTypes =
                 new int[]{REQUEST_TYPE_GET_FILE_FROM_MAP, REQUEST_TYPE_GET_FILE_FROM_STREAM,
-                        REQUEST_TYPE_GET_FILE_FROM_PFD, REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
+                        REQUEST_TYPE_GET_FILE_FROM_PFD,
+                        REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
         for (int requestType : requestTypes) {
             sendRequestToReadTestFile(requestType);
         }
@@ -939,6 +986,38 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch2.await(1, SECONDS)).isTrue();
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE_MODULE)
+    public void getLatestInferenceInfoReturnSuccessfully() throws Exception {
+        // When targets run as a different user than 0, it is not possible to get service
+        // instance from user 0 in this test.
+        assumeTrue(isSystemUser());
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.DUMP,
+                        Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.processRequest(new Feature.Builder(1).build(),
+                Bundle.EMPTY, REQUEST_TYPE_POPULATE_INFERENCE_INFO, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        List<InferenceInfo> inferenceInfoList = mOnDeviceIntelligenceManager.getLatestInferenceInfo(
+                0);
+        assertThat(inferenceInfoList).isNotEmpty();
+    }
+
     //===================== Tests data augmentation while processing request =====================
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
@@ -971,7 +1050,7 @@ public class OnDeviceIntelligenceManagerTest {
 
                     @Override
                     public void onDataAugmentRequest(Bundle processedContent,
-                            @OnDeviceIntelligenceManager.InferenceParams Consumer<Bundle> contentConsumer) {
+                            Consumer<Bundle> contentConsumer) {
                         Bundle bundle = new Bundle();
                         bundle.putString(TEST_AUGMENT_KEY, TEST_AUGMENT_CONTENT);
                         contentConsumer.accept(bundle);
@@ -1104,6 +1183,7 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
                         "android.permission.WRITE_DEVICE_CONFIG",
+                        "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG",
                         "android.permission.READ_DEVICE_CONFIG",
                         "android.permission.MONITOR_DEVICE_CONFIG_ACCESS");
         Feature feature = new Feature.Builder(1).build();
@@ -1172,10 +1252,20 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
     private boolean isServiceOverlayConfigured() {
-        String sanboxedServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
-        String intelligenceServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+        String sanboxedServiceComponentName = mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceSandboxedInferenceService",
+                                                "string",
+                                                "android"));
+        String intelligenceServiceComponentName = mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceIntelligenceService",
+                                                "string",
+                                                "android"));
 
         return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
                 intelligenceServiceComponentName);

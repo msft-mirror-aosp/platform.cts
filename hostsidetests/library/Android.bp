@@ -31,7 +31,7 @@ java_test_host {
         "compatibility-host-util",
     ],
     java_resource_dirs: ["res"],
-    data: [":CtsUseNativeLibraryBuildPackage"],
+    device_common_data: [":CtsUseNativeLibraryBuildPackage"],
 }
 
 // Note that this app is built as a java library. The actual app is built
@@ -69,7 +69,7 @@ java_library {
 // can't be in srcs). To access them, their location in the soong intermediate
 // directory is manually searched in the cmd, while dependencies to them are
 // created using the `required` property.
-genrule {
+java_genrule {
     name: "CtsUseNativeLibraryBuildPackage",
     // srcs, tools, required are all "essentially" inputs of the zip
     // (except for soong_zip which is actually the tool)
@@ -93,20 +93,20 @@ genrule {
     out: ["CtsUseNativeLibraryBuildPackage.zip"],
     // Copied from system/apex/apexer/Android.bp
     cmd: "HOST_OUT_BIN=$$(dirname $(location soong_zip)) && " +
-         "HOST_SOONG_OUT=$$(dirname $$(dirname $$HOST_OUT_BIN)) && " +
-         "SIGNAPK_JAR=$$(find $$HOST_SOONG_OUT -name \"signapk*\") && " +
-         "LIBCONSCRYPT_OPENJDK_JNI=$$(find $$HOST_SOONG_OUT -name \"libconscrypt_openjdk_jni.*\") && " +
-         "rm -rf $(genDir)/content && " +
-         "mkdir -p $(genDir)/content && " +
-         "cp $(location aapt2) $(genDir)/content && " +
-         "cp $(location merge_zips) $(genDir)/content && " +
-         "cp $(location :sdk_public_30_android.jar) $(genDir)/content && " +
-         "cp $(location :CtsUsesNativeLibraryTestApp) $(genDir)/content && " +
-         "cp $(location testkey.pk8) $(genDir)/content && " +
-         "cp $(location testkey.x509.pem) $(genDir)/content && " +
-         "cp $$SIGNAPK_JAR $(genDir)/content && " +
-         "cp $$LIBCONSCRYPT_OPENJDK_JNI $(genDir)/content && " +
-         "$(location soong_zip) -C $(genDir)/content -D $(genDir)/content -o $(out) && " +
-         "rm -rf $(genDir)/content ",
+        "HOST_SOONG_OUT=$$(dirname $$(dirname $$HOST_OUT_BIN)) && " +
+        "SIGNAPK_JAR=$$(find $$HOST_SOONG_OUT -name \"signapk*\") && " +
+        "LIBCONSCRYPT_OPENJDK_JNI=$$(find $$HOST_SOONG_OUT -name \"libconscrypt_openjdk_jni.*\") && " +
+        "rm -rf $(genDir)/content && " +
+        "mkdir -p $(genDir)/content && " +
+        "cp $(location aapt2) $(genDir)/content && " +
+        "cp $(location merge_zips) $(genDir)/content && " +
+        "cp $(location :sdk_public_30_android.jar) $(genDir)/content && " +
+        "cp $(location :CtsUsesNativeLibraryTestApp) $(genDir)/content && " +
+        "cp $(location testkey.pk8) $(genDir)/content && " +
+        "cp $(location testkey.x509.pem) $(genDir)/content && " +
+        "cp $$SIGNAPK_JAR $(genDir)/content && " +
+        "cp $$LIBCONSCRYPT_OPENJDK_JNI $(genDir)/content && " +
+        "$(location soong_zip) -C $(genDir)/content -D $(genDir)/content -o $(out) && " +
+        "rm -rf $(genDir)/content ",
     visibility: ["//visibility:private"],
 }

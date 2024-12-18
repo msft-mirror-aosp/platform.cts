@@ -16,6 +16,8 @@
 
 package android.sensorratepermission.cts.eventconnectionapi31;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
@@ -26,6 +28,8 @@ import android.hardware.cts.helpers.TestSensorEvent;
 import android.os.UserHandle;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -70,6 +74,8 @@ public class EventConnectionAPI31Test {
     @Before
     public void setUp() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeFalse("Sensor privacy toggle is not available on visible background users",
+                new UserHelper(context).isVisibleBackgroundUser());
         SensorManager sensorManager = context.getSystemService(SensorManager.class);
         Sensor sensor = sensorManager.getDefaultSensor(sensorType);
         Assume.assumeTrue("Failed to find a sensor!", sensor != null);

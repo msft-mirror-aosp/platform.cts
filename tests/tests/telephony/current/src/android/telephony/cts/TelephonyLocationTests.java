@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
 import android.telephony.NetworkRegistrationInfo;
@@ -45,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location access permissions")
 public class TelephonyLocationTests {
     private static final String LOCATION_ACCESS_APP_CURRENT_PACKAGE =
             CtsLocationAccessService.class.getPackage().getName();

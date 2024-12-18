@@ -38,8 +38,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "Harrier",
-        "Nene",
+        "bedstead",
         "bedstead-root",
         "truth",
         "testng", // used for assertThrows

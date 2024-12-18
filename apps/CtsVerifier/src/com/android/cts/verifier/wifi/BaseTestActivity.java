@@ -17,11 +17,11 @@
 package com.android.cts.verifier.wifi;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -56,13 +56,18 @@ public abstract class BaseTestActivity extends PassFailButtons.Activity implemen
 
     private String mSsidValue;
     private String mPskValue;
+    protected boolean mPskRequired = false;
 
     protected abstract BaseTestCase getTestCase(Context context);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.wifi_main);
+        if (mPskRequired) {
+            setContentView(R.layout.wifi_main_psk_required);
+        } else  {
+            setContentView(R.layout.wifi_main);
+        }
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
@@ -110,10 +115,18 @@ public abstract class BaseTestActivity extends PassFailButtons.Activity implemen
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
+    private boolean isWear() {
+        return getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+
+
     @Override
     protected void onDestroy() {
-        mTestCase.stop();
-        mWifiProgress.setVisibility(View.GONE);
+        if (!isWear()) {
+            mTestCase.stop();
+            mWifiProgress.setVisibility(View.GONE);
+        }
 
         super.onDestroy();
     }

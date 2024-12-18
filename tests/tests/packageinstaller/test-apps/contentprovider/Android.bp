@@ -67,3 +67,37 @@ android_test_helper_app {
         "sts",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsMultiuserContentProviderInitial",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    min_sdk_version: "26",
+    srcs: ["src/**/MyTestProvider.java"],
+    manifest: "AndroidManifestMultiUserInitial.xml",
+    static_libs: ["androidx.test.rules"],
+    // tag this module as a cts test artifact
+    test_suites: [
+        "arcts",
+        "cts",
+        "general-tests",
+        "sts",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsMultiuserContentProviderOther",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    min_sdk_version: "26",
+    srcs: ["src/**/MyTestProviderOther.java"],
+    manifest: "AndroidManifestMultiUserOther.xml",
+    static_libs: ["androidx.test.rules"],
+    // tag this module as a cts test artifact
+    test_suites: [
+        "arcts",
+        "cts",
+        "general-tests",
+        "sts",
+    ],
+}

@@ -36,6 +36,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.fail;
 
+import android.content.pm.Flags;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.SessionInfo;
 import android.content.pm.PackageInstaller.SessionParams;
@@ -93,6 +94,8 @@ public class InstallSessionParamsUnitTest {
     @Parameterized.Parameter(11)
     public Optional<Integer> packageSource;
     @Parameterized.Parameter(12)
+    public Optional<Boolean> enableAutoDependencyInstall;
+    @Parameterized.Parameter(13)
     public boolean expectFailure;
 
     private PackageInstaller mInstaller = InstrumentationRegistry.getInstrumentation()
@@ -174,7 +177,9 @@ public class InstallSessionParamsUnitTest {
                         PackageInstaller.PACKAGE_SOURCE_OTHER,
                         PackageInstaller.PACKAGE_SOURCE_STORE,
                         PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE,
-                        PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE}, {}}
+                        PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE}, {}},
+         /*enableAutoDependencyInstall*/
+                {{true, false}, {}}
         };
 
         ArrayList<Object[]> allTestParams = new ArrayList<>();
@@ -254,6 +259,11 @@ public class InstallSessionParamsUnitTest {
         installReason.ifPresent(params::setInstallReason);
         installScenario.ifPresent(params::setInstallScenario);
         packageSource.ifPresent(params::setPackageSource);
+        if (Flags.sdkDependencyInstaller()) {
+            // Verify that auto install of dependencies is enabled by default.
+            assertThat(params.isAutoInstallDependenciesEnabled).isTrue();
+            enableAutoDependencyInstall.ifPresent(params::setAutoInstallDependenciesEnabled);
+        }
 
         int sessionId;
         try {
@@ -291,6 +301,10 @@ public class InstallSessionParamsUnitTest {
         originatingUid.ifPresent(i -> assertThat(info.getOriginatingUid()).isEqualTo(i));
         referredUri.ifPresent(uri -> assertThat(info.getReferrerUri()).isEqualTo(uri));
         installReason.ifPresent(i -> assertThat(info.getInstallReason()).isEqualTo(i));
+        if (Flags.sdkDependencyInstaller()) {
+            enableAutoDependencyInstall.ifPresent(
+                    i -> assertThat(info.isAutoInstallDependenciesEnabled()).isEqualTo(i));
+        }
     }
 
     /** Similar to java.util.Optional but distinguishing between null and unset */

@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.admin.DevicePolicyManager;
@@ -23,11 +25,11 @@ import android.content.ComponentName;
 import android.content.Context;
 
 import com.android.bedstead.deviceadminapp.DeviceAdminApp;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
@@ -58,7 +60,7 @@ public final class ClearApplicationDataTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
     private static final ComponentName sComponentName =
             DeviceAdminApp.deviceAdminComponentName(sContext);
-    private static final TestApp sTestApp = sDeviceState.testApps().any();
+    private static final TestApp sTestApp = testApps(sDeviceState).any();
     private static final String DEVICE_PROVISIONING_PACKAGE = TestApis.resources().getString(
             TestApis.resources().getIdentifier("config_deviceProvisioningPackage",
                     "string", "android"));

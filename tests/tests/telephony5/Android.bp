@@ -41,7 +41,7 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
 }

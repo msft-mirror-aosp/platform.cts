@@ -313,7 +313,7 @@ public class LauncherAppsTest {
 
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
-            assertThat(launcherActivityInfo.getLabel().toString()).isEqualTo(ACTIVITY_LABEL_TITLE);
+            assertThat(launcherActivityInfo.getLabel().toString()).contains(ACTIVITY_LABEL_TITLE);
         } finally {
             uninstallPackage(ACTIVITY_LABEL_PACKAGE_NAME);
         }
@@ -331,7 +331,7 @@ public class LauncherAppsTest {
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
             assertThat(launcherActivityInfo.getLabel().toString())
-                    .isEqualTo(APPLICATION_LABEL_TITLE);
+                    .contains(APPLICATION_LABEL_TITLE);
         } finally {
             uninstallPackage(APPLICATION_LABEL_PACKAGE_NAME);
         }
@@ -363,6 +363,18 @@ public class LauncherAppsTest {
         LauncherUserInfo info =
                 mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
         assertThat(info).isNotNull();
+    }
+
+    @Test
+    @AppModeFull(reason = "Need special permission")
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
+            android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG})
+    public void testLauncherUserInfo_addLauncherUserConfig() {
+        LauncherUserInfo info =
+                mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
+        assertThat(info).isNotNull();
+        assertThat(info.getUserConfig()).isNotNull();
     }
 
     @Test

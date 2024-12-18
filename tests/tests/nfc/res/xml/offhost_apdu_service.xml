@@ -1,6 +1,6 @@
 <offhost-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
-       android:description="@string/CtsPaymentService">
-    <aid-group android:description="@string/CtsPaymentService" android:category="payment">
+       android:description="@string/CtsOffHostPaymentService">
+    <aid-group android:description="@string/CtsOffHostPaymentService" android:category="payment">
         <aid-filter android:name="A000000004101014"/>
     </aid-group>
  </offhost-apdu-service>

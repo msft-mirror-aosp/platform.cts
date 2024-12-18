@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!-- Copyright (C) 2024 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,70 +13,68 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Run CTS platinum tests in staging.">
-    <include name="cts-automated" />
-
+<configuration description="Run CTS platinum candidate tests.">
+    <include name="cts-automated"/>
     <!-- CtsCarrierApiTestCases -->
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testDeleteConflictCase" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testQueryConflictCase" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testUpdateConflictCase" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testValidCase" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#cancelBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#simultaneousBugreportsNotAllowed" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_connectivityBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_defaultBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_fullBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_interactiveBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_invalidMode" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_negativeMode" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_remoteBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_wearBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_wifiBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport_consentDenied" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport_consentTimeout" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testAddSubscriptionToExistingGroupForMultipleSims" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testApduFileRead" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCarrierConfigIsAccessible" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCreateAndRemoveSubscriptionGroup" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testDataEnableRequest" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testEapAkaAuthentication" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testEapSimAuthentication" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetIccAuthentication" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetManualNetworkSelectionPlmnPersisted" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetNetworkSelectionMode" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetNetworkSlicingConfiguration" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testHasCarrierPrivileges" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccCloseLogicalChannel" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccExchangeSimIO" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannel" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithInvalidP2" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithValidP2" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduBasicChannel" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannel" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidInputs" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIsManualNetworkSelectionAllowed" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testLine1NumberForDisplay" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testOpportunistic" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testPhoneStateListener" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSendDialerSpecialCode" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSendEnvelopeWithStatus" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSetClearSignalStrengthUpdateRequest" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSimCardPresent" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSubscriptionInfoChangeListener" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSubscriptionInfoListing" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testTelephonyApisAreAccessible" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testUpdateAvailableNetworksWithCarrierPrivilege" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testVoiceMailNumber" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanPermission" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_equals" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_hashCode" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_parcel" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequest_constructorAndGetters" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScan" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanLocationOffFail" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanLocationOffPass" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanWithRenounce" />
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanWithRenounceWithoutChannels" />
-
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testDeleteConflictCase"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testQueryConflictCase"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testUpdateConflictCase"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.ApnDatabaseTest#testValidCase"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#cancelBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#simultaneousBugreportsNotAllowed"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_connectivityBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_defaultBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_fullBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_interactiveBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_invalidMode"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_negativeMode"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_remoteBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_wearBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startBugreport_wifiBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport_consentDenied"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.BugreportManagerTest#startConnectivityBugreport_consentTimeout"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testAddSubscriptionToExistingGroupForMultipleSims"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testApduFileRead"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCarrierConfigIsAccessible"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCreateAndRemoveSubscriptionGroup"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testDataEnableRequest"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testEapAkaAuthentication"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testEapSimAuthentication"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetIccAuthentication"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetManualNetworkSelectionPlmnPersisted"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetNetworkSelectionMode"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testGetNetworkSlicingConfiguration"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testHasCarrierPrivileges"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccCloseLogicalChannel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccExchangeSimIO"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithInvalidP2"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithValidP2"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduBasicChannel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidInputs"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIsManualNetworkSelectionAllowed"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testLine1NumberForDisplay"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testOpportunistic"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testPhoneStateListener"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSendDialerSpecialCode"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSendEnvelopeWithStatus"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSetClearSignalStrengthUpdateRequest"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSimCardPresent"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSubscriptionInfoChangeListener"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testSubscriptionInfoListing"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testTelephonyApisAreAccessible"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testUpdateAvailableNetworksWithCarrierPrivilege"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testVoiceMailNumber"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanPermission"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_equals"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_hashCode"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequestParcel_parcel"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testNetworkScanRequest_constructorAndGetters"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScan"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanLocationOffFail"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanLocationOffPass"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanWithRenounce"/>
+    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.NetworkScanApiTest#testRequestNetworkScanWithRenounceWithoutChannels"/>
 </configuration>

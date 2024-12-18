@@ -43,7 +43,7 @@ java_test_host {
         "host-libprotobuf-java-full",
     ],
 
-    data: [":CtsBiometricsDeviceApp"],
+    device_common_data: [":CtsBiometricsDeviceApp"],
 }
 
 java_test_helper_library {

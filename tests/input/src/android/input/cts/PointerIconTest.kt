@@ -24,12 +24,12 @@ import android.hardware.input.VirtualMouse
 import android.os.SystemProperties
 import android.view.MotionEvent
 import android.view.PointerIcon
-import android.virtualdevice.cts.common.FakeAssociationRule
+import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
-import com.android.cts.input.VirtualDisplayActivityScenarioRule
+import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import kotlin.test.assertNotNull
 import org.junit.After
@@ -69,9 +69,17 @@ class PointerIconTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
+
+    // Use VirtualDeviceManager to create the display for this test because VirtualDisplays
+    // created via VDM have mouse acceleration disabled automatically.
+    // TODO(b/366492484): Remove reliance on VDM when we achieve feature parity between VDM
+    //   and display + input APIs.
     @get:Rule
-    val fakeAssociationRule = FakeAssociationRule()
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(
+        testName,
+        virtualDeviceRule = virtualDeviceRule
+    )
     @get:Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
     @get:Rule
@@ -87,14 +95,16 @@ class PointerIconTest {
 
     @Before
     fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
         activity = virtualDisplayRule.activity
         activity.runOnUiThread {
             activity.actionBar?.hide()
             activity.window.decorView.rootView.setBackgroundColor(Color.WHITE)
         }
 
-        device.setUp(context, virtualDisplayRule.virtualDisplay.display, fakeAssociationRule)
+        device.setUp(
+            virtualDeviceRule.defaultVirtualDevice,
+            virtualDisplayRule.virtualDisplay.display,
+        )
 
         verifier = EventVerifier(activity::getInputEvent)
 
@@ -221,7 +231,6 @@ class PointerIconTest {
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun data(): Iterable<Any> =
-            listOf(TestPointerDevice.MOUSE, TestPointerDevice.DRAWING_TABLET)
+        fun data(): Iterable<Any> = TestPointerDevice.entries
     }
 }

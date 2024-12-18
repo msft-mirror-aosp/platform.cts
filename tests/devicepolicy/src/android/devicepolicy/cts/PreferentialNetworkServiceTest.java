@@ -23,10 +23,13 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.annotation.NonNull;
 import android.app.admin.PreferentialNetworkServiceConfig;
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -41,14 +44,15 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.util.Range;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.policies.PreferentialNetworkService;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.testutils.RecorderCallback.CallbackEntry;
 import com.android.testutils.TestableNetworkCallback;
 import com.android.testutils.TestableNetworkOfferCallback;
 
@@ -161,16 +165,30 @@ public final class PreferentialNetworkServiceTest {
         try {
             // Enable PreferentialNetworkService, verify the provider sees the enterprise
             // slice request.
-            // But the network callback received nothing since it should automatically fallback to
+            // But the network callback received nothing but miscellaneous network callbacks
+            // since it should automatically fallback to
             // default request if there is no enterprise slice.
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceEnabled(true);
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(true);
             offerCallback.expectOnNetworkNeeded(mEnterpriseNcFilter);
-            defaultCallback.assertNoCallback(NO_CALLBACK_TIMEOUT_MS);
+            assertNoCallbackExceptCapOrLpChange(defaultCallback);
         } finally {
             sCm.unregisterNetworkCallback(defaultCallback);
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
             sCm.unregisterNetworkProvider(provider);
         }
+    }
+
+    /**
+     * The networks used in this test are real networks and as such they can see seemingly random
+     * updates of their capabilities or link properties as conditions change, e.g. the network loses
+     * validation or IPv4 shows up. Many tests should simply treat these callbacks as spurious.
+     */
+    private void assertNoCallbackExceptCapOrLpChange(@NonNull final TestableNetworkCallback cb) {
+        cb.assertNoCallback(
+                NO_CALLBACK_TIMEOUT_MS,
+                c ->
+                        !(c instanceof CallbackEntry.CapabilitiesChanged
+                                || c instanceof CallbackEntry.LinkPropertiesChanged));
     }
 
     /**
@@ -197,14 +215,14 @@ public final class PreferentialNetworkServiceTest {
 
         try {
             // Disable PreferentialNetworkService, verify the provider cannot see the enterprise
-            // slice request. And the network callback received nothing since there is no any
-            // change.
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
+            // slice request. And the network callback received nothing but miscellaneous
+            // network callbacks since there is no any change.
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
             offerCallback.assertNoCallback();  // Still unneeded.
-            defaultCallback.assertNoCallback(NO_CALLBACK_TIMEOUT_MS);
+            assertNoCallbackExceptCapOrLpChange(defaultCallback);
         } finally {
             sCm.unregisterNetworkCallback(defaultCallback);
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceEnabled(false);
             sCm.unregisterNetworkProvider(provider);
         }
     }
@@ -239,16 +257,16 @@ public final class PreferentialNetworkServiceTest {
             // Enable PreferentialNetworkService, with blocking non-enterprise network feature
             // enabled. The default network should be lost since the preference does not allow
             // fallback.
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(blockConfig));
-            defaultCallback.expect(TestableNetworkCallback.CallbackEntry.LOST, DEFAULT_TIMEOUT_MS);
+            defaultCallback.eventuallyExpect(CallbackEntry.LOST, DEFAULT_TIMEOUT_MS);
 
             // Verify the application cannot access default network  since it is
             // a non-enterprise network.
             assertBindSocketToNetwork(false /* expectSuccess */, defaultNetwork);
         } finally {
             sCm.unregisterNetworkCallback(defaultCallback);
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(PreferentialNetworkServiceConfig.DEFAULT));
         }
     }
@@ -291,33 +309,33 @@ public final class PreferentialNetworkServiceTest {
     @CannotSetPolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceEnabled_enableService_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setPreferentialNetworkServiceEnabled(true));
     }
 
     @CannotSetPolicyTest(policy = PreferentialNetworkService.class)
     public void isPreferentialNetworkServiceEnabled_default_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .isPreferentialNetworkServiceEnabled());
     }
 
     @CanSetPolicyTest(policy = PreferentialNetworkService.class)
     public void isPreferentialNetworkServiceEnabled_default_isTrue() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().isPreferentialNetworkServiceEnabled())
+        assertThat(dpc(sDeviceState).devicePolicyManager().isPreferentialNetworkServiceEnabled())
                 .isFalse();
     }
 
     @CanSetPolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceConfigs_enabled_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(ENABLED_CONFIG));
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(PreferentialNetworkServiceConfig.DEFAULT));
         }
     }
@@ -331,16 +349,16 @@ public final class PreferentialNetworkServiceTest {
                         .setFallbackToDefaultConnectionAllowed(true)
                         .build();
         try {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(fallbackConfig));
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isTrue();
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0)
                     .isFallbackToDefaultConnectionAllowed()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(PreferentialNetworkServiceConfig.DEFAULT));
         }
     }
@@ -355,19 +373,19 @@ public final class PreferentialNetworkServiceTest {
                         .setShouldBlockNonMatchingNetworks(true)
                         .build();
         try {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(blockConfig));
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isTrue();
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0)
                     .shouldBlockNonMatchingNetworks()).isTrue();
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0)
                     .isFallbackToDefaultConnectionAllowed()).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(PreferentialNetworkServiceConfig.DEFAULT));
         }
     }
@@ -389,21 +407,21 @@ public final class PreferentialNetworkServiceTest {
                         .setIncludedUids(new int[]{currentUid})
                         .build();
         try {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(slice1Config, slice2Config));
 
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isTrue();
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(0)
                     .getExcludedUids()).isEqualTo(new int[]{currentUid});
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(1).isEnabled()).isTrue();
-            assertThat(sDeviceState.dpc().devicePolicyManager()
+            assertThat(dpc(sDeviceState).devicePolicyManager()
                     .getPreferentialNetworkServiceConfigs().get(1)
                     .getIncludedUids()).isEqualTo(new int[]{currentUid});
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+            dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                     List.of(PreferentialNetworkServiceConfig.DEFAULT));
         }
     }
@@ -425,32 +443,32 @@ public final class PreferentialNetworkServiceTest {
                         .setIncludedUids(new int[]{currentUid})
                         .build();
         assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setPreferentialNetworkServiceConfigs(
                                 List.of(slice1Config, slice2Config)));
-        assertThat(sDeviceState.dpc().devicePolicyManager()
+        assertThat(dpc(sDeviceState).devicePolicyManager()
             .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isFalse();
     }
 
     @CanSetPolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceConfigs_default_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+        dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                 List.of(PreferentialNetworkServiceConfig.DEFAULT));
 
-        assertThat(sDeviceState.dpc().devicePolicyManager()
+        assertThat(dpc(sDeviceState).devicePolicyManager()
                 .getPreferentialNetworkServiceConfigs().get(0).isEnabled()).isFalse();
     }
 
     @CannotSetPolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceConfigs_notAllowed_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+                () -> dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                         List.of(ENABLED_CONFIG)));
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setPreferentialNetworkServiceConfigs(
+                () -> dpc(sDeviceState).devicePolicyManager().setPreferentialNetworkServiceConfigs(
                         List.of(PreferentialNetworkServiceConfig.DEFAULT)));
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .getPreferentialNetworkServiceConfigs());
     }
 

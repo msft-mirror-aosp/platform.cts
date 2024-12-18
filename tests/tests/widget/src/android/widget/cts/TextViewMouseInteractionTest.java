@@ -30,18 +30,17 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.hamcrest.CoreMatchers.allOf;
 
 import android.Manifest;
+import android.app.Instrumentation;
+import android.os.SystemClock;
 import android.view.ActionMode;
 import android.view.InputDevice;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
-import androidx.test.espresso.action.GeneralClickAction;
-import androidx.test.espresso.action.GeneralLocation;
-import androidx.test.espresso.action.Press;
-import androidx.test.espresso.action.Tap;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,6 +51,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -74,8 +74,11 @@ public class TextViewMouseInteractionTest {
     public ActivityScenarioRule<TextViewMouseInteractionActivity> rule = new ActivityScenarioRule<>(
             TextViewMouseInteractionActivity.class);
 
-    private static final UiDevice sDevice =
-            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+    private static final Instrumentation sInstrumentation =
+            InstrumentationRegistry.getInstrumentation();
+    private static final UiDevice sDevice = UiDevice.getInstance(sInstrumentation);
+    private UserHelper mUserHelper;
+    private TextView mTextView;
 
     @Before
     public void setUp() throws Exception {
@@ -85,6 +88,7 @@ public class TextViewMouseInteractionTest {
         sDevice.wakeUp();
         dismissKeyguard();
         closeSystemDialog();
+        mUserHelper = new UserHelper(sInstrumentation.getTargetContext());
     }
 
     private void dismissKeyguard() {
@@ -127,12 +131,11 @@ public class TextViewMouseInteractionTest {
             textView.setTextIsSelectable(true);
             textView.setCustomSelectionActionModeCallback(mTestCallback);
             textView.setText(text);
+            mTextView = textView;
         });
 
         onView(allOf(withId(R.id.textView), withText(text))).check(matches(isDisplayed()));
-        onView(withId(R.id.textView)).perform(new GeneralClickAction(
-                Tap.LONG, GeneralLocation.CENTER, Press.PINPOINT, InputDevice.SOURCE_TOUCHSCREEN,
-                MotionEvent.BUTTON_PRIMARY));
+        emulateLongClickOnViewCenter(mTextView, InputDevice.SOURCE_TOUCHSCREEN);
 
         assertThat(sDevice.hasObject(By.text(CUSTOM_FLOATING_TOOLBAR_LABEL))).isTrue();
     }
@@ -146,14 +149,42 @@ public class TextViewMouseInteractionTest {
             textView.setTextIsSelectable(true);
             textView.setCustomSelectionActionModeCallback(mTestCallback);
             textView.setText(text);
+            mTextView = textView;
         });
 
         onView(allOf(withId(R.id.textView), withText(text))).check(matches(isDisplayed()));
-        onView(withId(R.id.textView)).perform(new GeneralClickAction(
-                Tap.LONG, GeneralLocation.CENTER, Press.PINPOINT, InputDevice.SOURCE_MOUSE,
-                MotionEvent.BUTTON_PRIMARY));
+        emulateLongClickOnViewCenter(mTextView, InputDevice.SOURCE_MOUSE);
 
         assertThat(sDevice.hasObject(By.text(CUSTOM_FLOATING_TOOLBAR_LABEL))).isFalse();
+    }
+
+    /**
+     * Emulates a long click on the center of the given TextView.
+     *
+     * The espresso library does not support multiple displays. Therefore, we need to rely on
+     * Instrumentation#sendPointerSync to handle the motion events for multi-display environments.
+     */
+    private void emulateLongClickOnViewCenter(TextView textView, int inputSource) {
+        final int[] viewOnScreenXY = new int[2];
+        textView.getLocationOnScreen(viewOnScreenXY);
+        final int xOnScreen = viewOnScreenXY[0] + textView.getWidth() / 2;
+        final int yOnScreen = viewOnScreenXY[1] + textView.getHeight() / 2;
+
+        injectMotionEvent(MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, inputSource);
+        SystemClock.sleep((long)(ViewConfiguration.getLongPressTimeout() * 1.5f));
+        injectMotionEvent(MotionEvent.ACTION_UP, xOnScreen, yOnScreen, inputSource);
+
+        sInstrumentation.waitForIdleSync();
+    }
+
+    private void injectMotionEvent(int action, int x, int y, int inputSource) {
+        final long now = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(now, now, action, x, y, /* metaState= */ 0);
+        event.setSource(inputSource);
+        event.setButtonState(MotionEvent.BUTTON_PRIMARY);
+        mUserHelper.injectDisplayIdIfNeeded(event);
+        sInstrumentation.sendPointerSync(event);
+        event.recycle();
     }
 }
 

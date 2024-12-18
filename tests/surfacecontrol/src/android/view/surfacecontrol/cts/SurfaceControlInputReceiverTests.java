@@ -24,6 +24,7 @@ import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
+import static android.server.wm.CtsWindowInfoUtils.waitForNthWindowFromTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
@@ -41,6 +42,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.IBinder;
@@ -58,6 +60,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.cts.util.EmbeddedSCVHService;
 import android.view.cts.util.aidl.IAttachEmbeddedWindow;
@@ -73,6 +76,7 @@ import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -111,6 +115,8 @@ public class SurfaceControlInputReceiverTests {
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
+    @Ignore("Need to update platform because the test relies on incorrect information "
+            + "from WindowInfoListener.")
     public void testLocalSurfaceControlReceivesInput() throws InterruptedException {
         SurfaceControl sc = new SurfaceControl.Builder()
                 .setName("Local Child SurfaceControl")
@@ -151,9 +157,12 @@ public class SurfaceControlInputReceiverTests {
                     });
 
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
+            // Since the bbq SurfaceControl with Input is on top, looking for the second top layer
+            // by the expected composition order.
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
+                    waitForNthWindowFromTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                            /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords, mDisplayId);
@@ -242,6 +251,8 @@ public class SurfaceControlInputReceiverTests {
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
+    @Ignore("Need to update platform because the test relies on incorrect information "
+            + "from WindowInfoListener.")
     public void testNonBatchedSurfaceControlReceivesInput() throws InterruptedException {
         SurfaceControl sc = new SurfaceControl.Builder()
                 .setName("Local Child SurfaceControl")
@@ -282,7 +293,8 @@ public class SurfaceControlInputReceiverTests {
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
+                    waitForNthWindowFromTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken,
+                            /* expectedCompositionOrder= */ 1));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords, mDisplayId);
@@ -332,7 +344,7 @@ public class SurfaceControlInputReceiverTests {
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
 
-            assertMotionEventInWindow(embeddedMotionEvent,  centerCoordRelativeToWindow);
+            assertMotionEventInWindow(embeddedMotionEvent, centerCoordRelativeToWindow);
         } finally {
             helper.tearDown();
         }
@@ -550,8 +562,14 @@ public class SurfaceControlInputReceiverTests {
                 return;
             }
 
+            // On some devices, hiding system bars is disabled. In those cases, apply offset to
+            // the child surface control to ensure the surface is drawn out side of system bar area.
+            Insets insets = getRootWindowInsets().getInsets(WindowInsets.Type.systemBars());
+            float xPosition = insets.left + (float) getWidth() / 2;
+            float yPosition = insets.top + (float) getHeight() / 2;
+
             t.setLayer(mChild, 1).setVisibility(mChild, true).setCrop(mChild, sBounds)
-                    .setPosition(mChild, (float) getWidth() / 2, (float) getHeight() / 2);
+                    .setPosition(mChild, xPosition, yPosition);
             t.addTransactionCommittedListener(Runnable::run, mDrawCompleteLatch::countDown);
             getRootSurfaceControl().applyTransactionOnDraw(t);
             mChildScAttached = true;
@@ -717,7 +735,6 @@ public class SurfaceControlInputReceiverTests {
                     embeddedServiceReady.await(WAIT_TIME_S, TimeUnit.SECONDS));
             assertTrue("Failed to create SurfaceView SurfaceControl",
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-
             mEmbeddedName = mIAttachEmbeddedWindow.attachEmbeddedSurfaceControl(
                     surfaceView.getSurfaceControl(),
                     surfaceView.getRootSurfaceControl().getInputTransferToken(), sBounds.width(),

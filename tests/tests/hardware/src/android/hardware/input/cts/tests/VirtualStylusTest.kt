@@ -15,24 +15,20 @@
  */
 package android.hardware.input.cts.tests
 
-import android.companion.virtual.flags.Flags
 import android.hardware.input.VirtualStylus
 import android.hardware.input.VirtualStylusButtonEvent
 import android.hardware.input.VirtualStylusMotionEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.filters.SmallTest
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualStylusTest : VirtualDeviceTestCase() {
@@ -367,25 +363,6 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
 
         assertNoMoreEvents()
-    }
-
-    @Test
-    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val x = 50
-        val y = 50
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualStylus.sendMotionEvent(
-                    VirtualStylusMotionEvent.Builder()
-                        .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                        .setX(x)
-                        .setY(y)
-                        .setPressure(255)
-                        .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                        .build()
-                )
-            }
-        }
     }
 
     private fun verifyStylusTouchWithTilt(

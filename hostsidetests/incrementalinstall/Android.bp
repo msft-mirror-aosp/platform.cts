@@ -33,7 +33,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":IncrementalTestApp",
         ":IncrementalTestAppUncompressed",
         ":IncrementalTestApp2_v1",
@@ -63,4 +63,11 @@ test_module_config_host {
     base: "CtsIncrementalInstallHostTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.incrementalinstall.cts.IncrementalFeatureTest"],
+}
+
+test_module_config_host {
+    name: "CtsIncrementalInstallHostTestCases_PlatinumTest",
+    base: "CtsIncrementalInstallHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
 }

@@ -18,13 +18,14 @@ package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_SecurePlayback;
 import static android.mediapc.cts.CodecDecoderTestBase.WIDEVINE_UUID;
+import static android.mediapc.cts.CodecTestBase.getCodecCapabilities;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
-import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaDrm;
@@ -79,6 +80,7 @@ public class MultiCodecPerfTestBase {
     static Map<String, String> m2160pPc14TestFiles = new HashMap<>();
     static Map<String, String> m2160pPc1410bitTestFiles = new HashMap<>();
     static Map<String, String> m1080pWidevineTestFiles = new HashMap<>();
+    static Map<String, String> m1080pWidevine10bitTestFiles = new HashMap<>();
     static Map<String, String> m2160pPc14WidevineTestFiles = new HashMap<>();
     static Map<String, String> m2160pPc1410bitWidevineTestFiles = new HashMap<>();
 
@@ -128,6 +130,16 @@ public class MultiCodecPerfTestBase {
                 .put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1920x1080_4mbps_30fps_vp9_cenc.webm");
         m1080pWidevineTestFiles
                 .put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1_cenc.mp4");
+
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                        "bbb_1920x1080_4mbps_30fps_hevc_10bit_cenc.mp4");
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_VP9,
+                        "bbb_1920x1080_4mbps_30fps_vp9_10bit_cenc.webm");
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_AV1,
+                        "bbb_1920x1080_4mbps_30fps_av1_10bit_cenc.mp4");
 
         m2160pPc14WidevineTestFiles
                 .put(MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_3840x2160_18mbps_30fps_avc_cenc.mp4");
@@ -179,31 +191,31 @@ public class MultiCodecPerfTestBase {
         return selectHardwareCodecs(mediaType, formatsList, null, isEncoder, allCodecs);
     }
 
-    static boolean isRCodec(String mimeType) {
-        return isRCodec(mimeType, mimeType);
+    static boolean isRCodec(String mediaType) {
+        return isRCodec(mediaType, mediaType);
     }
 
-    static boolean isRCodec(String mimeType1, String mimeType2) {
-        return MEDIAPC_CONCURRENT_CODECS_R.contains(mimeType1)
-                && MEDIAPC_CONCURRENT_CODECS_R.contains(mimeType2);
+    static boolean isRCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType2);
     }
 
-    static boolean isMPCCodec(String mimeType) {
-        return isMPCCodec(mimeType, mimeType);
+    static boolean isMPCCodec(String mediaType) {
+        return isMPCCodec(mediaType, mediaType);
     }
 
-    static boolean isMPCCodec(String mimeType1, String mimeType2) {
-        return MEDIAPC_CONCURRENT_CODECS.contains(mimeType1)
-                && MEDIAPC_CONCURRENT_CODECS.contains(mimeType2);
+    static boolean isMPCCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS.contains(mediaType2);
     }
 
-    static boolean isVP9Codec(String mimeType) {
-        return isVP9Codec(mimeType, mimeType);
+    static boolean isVP9Codec(String mediaType) {
+        return isVP9Codec(mediaType, mediaType);
     }
 
-    static boolean isVP9Codec(String mimeType1, String mimeType2) {
-        return MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType1)
-                || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType2);
+    static boolean isVP9Codec(String mediaType1, String mediaType2) {
+        return MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType1)
+                || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType2);
     }
 
     protected CodecMetrics invokeWithThread(int maxInstances, Collection<? extends
@@ -244,9 +256,10 @@ public class MultiCodecPerfTestBase {
         int required1080pInstances = requiredMinInstances - required4kInstances;
         int loopCount = 0;
         for (Pair<String, String> mediaTypeCodecPair : mediaTypeCodecPairs) {
-            MediaCodec codec = MediaCodec.createByCodecName(mediaTypeCodecPair.second);
-            MediaCodecInfo.CodecCapabilities cap = codec.getCodecInfo()
-                    .getCapabilitiesForType(mediaTypeCodecPair.first);
+            MediaCodecInfo.CodecCapabilities cap =
+                    getCodecCapabilities(mediaTypeCodecPair.second, mediaTypeCodecPair.first);
+            assertNotNull("did not receive capabilities for codec: " + mediaTypeCodecPair.second
+                        + ", media type: " + mediaTypeCodecPair.first + "\n", cap);
             List<PerformancePoint> pps = cap.getVideoCapabilities().getSupportedPerformancePoints();
             assertTrue(pps.size() > 0);
 
@@ -285,7 +298,6 @@ public class MultiCodecPerfTestBase {
                     }
                 }
             }
-            codec.release();
             if (!supportsResolutionPerformance) {
                 Log.e(LOG_TAG,
                         "Codec " + mediaTypeCodecPair.second + " doesn't support " + height + "p/"
@@ -361,11 +373,11 @@ public class MultiCodecPerfTestBase {
 
     boolean isSecureSupportedCodec(String codecName, String mediaType) throws IOException {
         boolean isSecureSupported;
-        MediaCodec codec = MediaCodec.createByCodecName(codecName);
-        isSecureSupported =
-                codec.getCodecInfo().getCapabilitiesForType(mediaType).isFeatureSupported(
-                        FEATURE_SecurePlayback);
-        codec.release();
+        MediaCodecInfo.CodecCapabilities codecCapabilities =
+                        getCodecCapabilities(codecName, mediaType);
+        assertNotNull("did not receive capabilities for codec: " + codecName
+                        + ", media type: " + mediaType + "\n", codecCapabilities);
+        isSecureSupported = codecCapabilities.isFeatureSupported(FEATURE_SecurePlayback);
         return isSecureSupported;
     }
 

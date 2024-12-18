@@ -23,6 +23,7 @@ android_test {
     compile_multilib: "both",
     static_libs: [
         "android.hidl.manager-V1.0-java",
+        "android.sdk.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -34,16 +35,19 @@ android_test {
         "guava",
         "junit",
         "junit-params",
-        "Harrier",
+        "bedstead-enterprise",
         "CtsMockInputMethodLib",
+        "CtsSurfaceValidatorLib",
         "hamcrest-library",
         "platformprotosnano",
         "device-time-shell-utils",
         "flag-junit",
         "ravenwood-junit",
         "android.os.flags-aconfig-java",
+        "android.crashrecovery.flags-aconfig-java",
         "backstage_power_flags_lib",
         "sdk_sandbox_flags_lib",
+        "cts_backported_fixes",
     ],
     jni_uses_platform_apis: true,
     jni_libs: [
@@ -68,13 +72,13 @@ android_test {
         "cts",
         "general-tests",
         "sts",
-        "mcts-documentsui",
         "mts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
         "android.test.runner.stubs.test",
         "android.test.base.stubs.test",
+        "PlatformProperties",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],
@@ -87,9 +91,10 @@ android_ravenwood_test {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     static_libs: [
+        "android.sdk.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
         "android.os.flags-aconfig-java",
         "backstage_power_flags_lib",
         "sdk_sandbox_flags_lib",
@@ -105,6 +110,7 @@ android_ravenwood_test {
         "src/android/os/cts/DeadObjectExceptionTest.java",
         "src/android/os/cts/HandlerTest.java",
         "src/android/os/cts/HandlerThreadTest.java",
+        "src/android/os/cts/IpcDataCacheTest.java",
         "src/android/os/cts/ISecondary.aidl",
         "src/android/os/cts/LocaleListTest.java",
         "src/android/os/cts/LooperTest.java",
@@ -162,4 +168,82 @@ test_module_config {
     base: "CtsOsTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.os.cts.HwBinderTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_presubmit_NoLarge",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: [
+        "android.os.cts.BuildTest#testSdkInt",
+        "android.os.cts.StrictModeTest#testNonSdkApiUsage",
+    ],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_kernel_presubmit",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: [
+        // TODO(b/214271070)
+        "android.os.storage.cts.StorageManagerTest#testMountAndUnmountTwoObbs",
+        "android.os.storage.cts.StorageManagerTest#testMountAndUnmountObbNormal",
+        "android.os.storage.cts.StorageManagerTest#testAttemptMountObbWrongPackage",
+        "android.os.cts.FileObserverTest#testFileObserverExternal",
+        // TODO(b/182562411)
+        "android.os.cts.AutoRevokeTest#testAutoRevoke_userAllowlisting",
+        // Requires a discoverable bluetooth device nearby
+        "android.os.cts.CompanionDeviceManagerTest#testRequestNotifications",
+        // TODO(b/182563360)
+        "android.os.cts.AutoRevokeTest#testPreMinAutoRevokeVersionUnusedApp_doesntGetPermissionRevoked",
+        "android.os.cts.FileObserverTest#testFileObserver_multipleFilesFull",
+        // TODO(b/238904536)
+        "android.os.cts.AutoRevokeTest#testAutoRevoke_goToUnusedAppsPage_removesSafetyCenterIssue",
+        // TODO(b/243642791)
+        "android.os.cts.AutoRevokeTest#testAppWithPermissionsChangedRecently_doesNotGetPermissionRevoked",
+        "android.os.cts.FileObserverTest#testFileObserver",
+        "android.os.cts.FileObserverTest#testConstructor",
+        "android.os.storage.cts.StorageManagerTest#testAttemptMountNonObb",
+        // TODO(b/265922604)
+        "android.os.cts.VibratorTest",
+        "android.os.cts.DebugTest#testStartMethodTracingDefaultExternalStorage",
+        // TODO(b/213570804)
+        "android.os.cts.AutoRevokeTest#testInstallGrants_notRevokedImmediately",
+        // TODO(b/181318429)
+        "android.os.cts.AppHibernationIntegrationTest#testUnusedApp_getsForceStopped",
+        // TODO(b/244594813)
+        "android.os.cts.FileObserverTest#testFileObserverExternalStorageDirectory",
+        // TODO(b/234629012)
+        "android.os.cts.AutoRevokeTest#testUnusedApp_uninstallApp",
+        // TODO(b/203876506)
+        "android.os.cts.BuildTest#testSdkInt",
+    ],
+    exclude_annotations: [
+        "androidx.test.filters.LargeTest",
+        "android.platform.test.annotations.RestrictedBuildTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_Presubmit",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_filters: [
+        "android.os.cts.UsbDebuggingTest#testUsbDebugging",
+        "android.os.cts.BuildTest#testSdkInt",
+        "android.os.cts.StrictModeTest#testNonSdkApiUsage",
+    ],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_ParcelAndBinderTests",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.os.cts.ParcelTest",
+        "android.os.cts.BinderTest",
+    ],
 }

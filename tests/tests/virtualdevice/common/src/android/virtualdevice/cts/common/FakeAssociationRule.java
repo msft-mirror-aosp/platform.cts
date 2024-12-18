@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  * A test rule that creates a {@link CompanionDeviceManager} association with the instrumented
  * package for the duration of the test.
  */
-public class FakeAssociationRule extends ExternalResource {
+class FakeAssociationRule extends ExternalResource {
     private static final String TAG = "FakeAssociationRule";
 
     private static final String FAKE_ASSOCIATION_ADDRESS_FORMAT = "00:00:00:00:00:%02d";
@@ -74,7 +74,7 @@ public class FakeAssociationRule extends ExternalResource {
     private int mNextDeviceId = 0;
 
     private AssociationInfo mAssociationInfo;
-    private CompanionDeviceManager mCompanionDeviceManager;
+    private final CompanionDeviceManager mCompanionDeviceManager;
 
     public FakeAssociationRule() {
         this(AssociationRequest.DEVICE_PROFILE_APP_STREAMING);
@@ -99,7 +99,7 @@ public class FakeAssociationRule extends ExternalResource {
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
         SystemUtil.runShellCommandOrThrow(String.format(Locale.getDefault(Locale.Category.FORMAT),
-                "cmd companiondevice associate %d %s %s %s",
+                "cmd companiondevice associate %d %s %s %s true",
                 getInstrumentation().getContext().getUserId(),
                 mContext.getPackageName(),
                 deviceAddress,

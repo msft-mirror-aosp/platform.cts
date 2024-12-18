@@ -47,6 +47,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -99,6 +100,7 @@ public class TestBase extends WifiJUnit4TestBase {
     private static boolean sWasWifiEnabled;
     private static ScanResult s11McScanResult;
     private static ScanResult s11AzScanResult;
+    private static ScanResult s11AzSecureScanResult;
     private static ScanResult sLegacyScanResult;
 
     protected WifiRttManager mWifiRttManager;
@@ -346,10 +348,29 @@ public class TestBase extends WifiJUnit4TestBase {
 
         if (!ap5Ghz11Az.isEmpty()) {
             s11AzScanResult = getRandomScanResult(ap5Ghz11Az.values());
+            s11AzSecureScanResult = getRandomSecure11azResult(ap5Ghz11Az.values());
         } else {
             s11AzScanResult = getRandomScanResult(ap24Ghz11Az.values());
+            s11AzSecureScanResult = getRandomSecure11azResult(ap5Ghz11Az.values());
         }
+    }
 
+    private static ScanResult getRandomSecure11azResult(Collection<ScanResult> scanResults) {
+        List<ScanResult> secureScanResults = new ArrayList<>();
+        for (ScanResult scanResult : scanResults) {
+            if (isSecureRangingResponder(scanResult)) {
+                secureScanResults.add(scanResult);
+            }
+        }
+        if (secureScanResults.isEmpty()) return null;
+        int index = new Random().nextInt(secureScanResults.size());
+        return new ArrayList<>(secureScanResults).get(index);
+    }
+
+    private static boolean isSecureRangingResponder(ScanResult scanResult) {
+        if (!Flags.secureRanging()) return false;
+        return (scanResult.capabilities != null && scanResult.capabilities.contains("PASN")
+                && scanResult.isSecureHeLtfSupported());
     }
 
     static Context getContext() {
@@ -358,6 +379,10 @@ public class TestBase extends WifiJUnit4TestBase {
 
     static ScanResult getS11AzScanResult() {
         return s11AzScanResult;
+    }
+
+    static ScanResult getS11AzSecureScanResult() {
+        return s11AzSecureScanResult;
     }
 
     static ScanResult getS11McScanResult() {

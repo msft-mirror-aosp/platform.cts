@@ -64,8 +64,8 @@ java_defaults {
         "exoplayer-cts_media-test_utils",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     sdk_version: "test_current",
 }

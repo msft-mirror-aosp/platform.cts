@@ -24,7 +24,8 @@ import os
 import sys
 
 import capture_request_utils
-import colour
+import opencv_processing_utils
+import preview_processing_utils
 import error_util
 import noise_model_constants
 import numpy
@@ -32,6 +33,8 @@ from PIL import Image
 from PIL import ImageCms
 
 
+_ARUCO_MARKERS_COUNT = 4
+_CH_FULL_SCALE = 255
 _CMAP_BLUE = ('black', 'blue', 'lightblue')
 _CMAP_GREEN = ('black', 'green', 'lightgreen')
 _CMAP_RED = ('black', 'red', 'lightcoral')
@@ -45,7 +48,7 @@ DEFAULT_YUV_TO_RGB_CCM = numpy.matrix([[1.000, 0.000, 1.402],
                                        [1.000, -0.344, -0.714],
                                        [1.000, 1.772, 0.000]])
 
-DEFAULT_YUV_OFFSETS = numpy.array([0, 128, 128])
+DEFAULT_YUV_OFFSETS = numpy.array([0, 128, 128], dtype=numpy.uint8)
 MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)
@@ -68,9 +71,16 @@ EXPECTED_GY_SRGB = 0.598
 EXPECTED_BX_SRGB = 0.156
 EXPECTED_BY_SRGB = 0.066
 
+# Color conversion matrix for DISPLAY P3 to CIEXYZ
+P3_TO_XYZ = numpy.array([
+    [0.5151187, 0.2919778, 0.1571035],
+    [0.2411892, 0.6922441, 0.0665668],
+    [-0.0010505, 0.0418791, 0.7840713]
+]).transpose()
+
 # Chosen empirically - tolerance for the point in triangle test for colorspace
 # chromaticities
-COLORSPACE_TRIANGLE_AREA_TOL = 0.00028
+COLORSPACE_TRIANGLE_AREA_TOL = 0.00039
 
 
 def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
@@ -1450,6 +1460,41 @@ def distance(p, q):
   return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(p, q)))
 
 
+def srgb_eotf(img):
+  """Returns the input sRGB-transferred image with a linear transfer function.
+
+  Args:
+    img: The input image as a numpy array.
+
+  Returns:
+    numpy.array: The same image with a linear transfer.
+  """
+
+  # Source:
+  # https://developer.android.com/reference/android/graphics/ColorSpace.Named#DISPLAY_P3
+  return numpy.where(
+      img < 0.04045,
+      img / 12.92,
+      numpy.pow((img + 0.055) / 1.055, 2.4)
+  )
+
+
+def ciexyz_to_xy(img):
+  """Returns the input CIE XYZ image in the CIE xy colorspace.
+
+  Args:
+    img: The input image as a numpy array
+
+  Returns:
+    numpy.array: The same image in the CIE xy colorspace.
+  """
+  img_sums = img.sum(axis=2)
+  img_sums[img_sums == 0] = 1
+  img[:, :, 0] = img[:, :, 0] / img_sums
+  img[:, :, 1] = img[:, :, 1] / img_sums
+  return img[:, :, :2]
+
+
 def p3_img_has_wide_gamut(wide_img):
   """Check if a DISPLAY_P3 image contains wide gamut pixels.
 
@@ -1468,18 +1513,10 @@ def p3_img_has_wide_gamut(wide_img):
   w = wide_img.size[0]
   h = wide_img.size[1]
   wide_arr = numpy.array(wide_img)
+  linear_arr = srgb_eotf(wide_arr / float(numpy.iinfo(numpy.uint8).max))
 
-  img_arr = colour.RGB_to_XYZ(
-      wide_arr / 255.0,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.whitepoint,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.whitepoint,
-      colour.models.rgb.datasets.display_p3.RGB_COLOURSPACE_DISPLAY_P3.matrix_RGB_to_XYZ,
-      'Bradford', lambda x: colour.eotf(x, 'sRGB'))
-
-  xy_arr = colour.XYZ_to_xy(img_arr)
-
-  srgb_colorspace = colour.models.RGB_COLOURSPACE_sRGB
-  srgb_primaries = srgb_colorspace.primaries
+  xyz_arr = numpy.matmul(linear_arr, P3_TO_XYZ)
+  xy_arr = ciexyz_to_xy(xyz_arr)
 
   for y in range(h):
     for x in range(w):
@@ -1487,9 +1524,11 @@ def p3_img_has_wide_gamut(wide_img):
       # This check is not guaranteed not to emit false positives / negatives,
       # however the probability of either on an arbitrary DISPLAY_P3 camera
       # capture is exceedingly unlikely.
-      if not point_in_triangle(*srgb_primaries.reshape(6),
-                               xy_arr[y][x][0], xy_arr[y][x][1],
-                               COLORSPACE_TRIANGLE_AREA_TOL):
+      if not point_in_triangle(x1=EXPECTED_RX_SRGB, y1=EXPECTED_RY_SRGB,
+                               x2=EXPECTED_GX_SRGB, y2=EXPECTED_GY_SRGB,
+                               x3=EXPECTED_BX_SRGB, y3=EXPECTED_BY_SRGB,
+                               xp=xy_arr[y][x][0], yp=xy_arr[y][x][1],
+                               abs_tol=COLORSPACE_TRIANGLE_AREA_TOL):
         return True
 
   return False
@@ -1514,3 +1553,274 @@ def compute_patch_noise(yuv_img, patch_region):
       'chroma_u': numpy.std(patch[:, :, 1]),
       'chroma_v': numpy.std(patch[:, :, 2]),
   }
+
+
+def convert_image_coords_to_sensor_coords(
+    aa_width, aa_height, coords, img_width, img_height):
+  """Transform image coordinates to sensor coordinate system.
+
+  Calculate the difference between sensor active array and image aspect ratio.
+  Taking the difference into account, figure out if the width or height has been
+  cropped. Using this information, transform the image coordinates to sensor
+  coordinates.
+
+  Args:
+    aa_width: int; active array width.
+    aa_height: int; active array height.
+    coords: coordinates; a pair of (x, y) coordinates from image.
+    img_width: int; width of image.
+    img_height: int; height of image.
+  Returns:
+    sensor_coords: coordinates; corresponding coordinates on
+      sensor coordinate system.
+  """
+  # TODO: b/330382627 - find out if distortion correction is ON/OFF
+  aa_aspect_ratio = aa_width / aa_height
+  image_aspect_ratio = img_width / img_height
+  if aa_aspect_ratio >= image_aspect_ratio:
+    # If aa aspect ratio is greater than image aspect ratio, then
+    # sensor width is being cropped
+    aspect_ratio_multiplication_factor = aa_height / img_height
+    crop_width = img_width * aspect_ratio_multiplication_factor
+    buffer = (aa_width - crop_width) / 2
+    sensor_coords = (coords[0] * aspect_ratio_multiplication_factor + buffer,
+                     coords[1] * aspect_ratio_multiplication_factor)
+  else:
+    # If aa aspect ratio is less than image aspect ratio, then
+    # sensor height is being cropped
+    aspect_ratio_multiplication_factor = aa_width / img_width
+    crop_height = img_height * aspect_ratio_multiplication_factor
+    buffer = (aa_height - crop_height) / 2
+    sensor_coords = (coords[0] * aspect_ratio_multiplication_factor,
+                     coords[1] * aspect_ratio_multiplication_factor + buffer)
+  logging.debug('Sensor coordinates: %s', sensor_coords)
+  return sensor_coords
+
+
+def convert_sensor_coords_to_image_coords(
+    aa_width, aa_height, coords, img_width, img_height):
+  """Transform sensor coordinates to image coordinate system.
+
+  Calculate the difference between sensor active array and image aspect ratio.
+  Taking the difference into account, figure out if the width or height has been
+  cropped. Using this information, transform the sensor coordinates to image
+  coordinates.
+
+  Args:
+    aa_width: int; active array width.
+    aa_height: int; active array height.
+    coords: coordinates; a pair of (x, y) coordinates from sensor.
+    img_width: int; width of image.
+    img_height: int; height of image.
+  Returns:
+    image_coords: coordinates; corresponding coordinates on
+      image coordinate system.
+  """
+  aa_aspect_ratio = aa_width / aa_height
+  image_aspect_ratio = img_width / img_height
+  if aa_aspect_ratio >= image_aspect_ratio:
+    # If aa aspect ratio is greater than image aspect ratio, then
+    # sensor width is being cropped
+    aspect_ratio_multiplication_factor = aa_height / img_height
+    crop_width = img_width * aspect_ratio_multiplication_factor
+    buffer = (aa_width - crop_width) / 2
+    image_coords = (
+        (coords[0] - buffer) / aspect_ratio_multiplication_factor,
+        coords[1] / aspect_ratio_multiplication_factor)
+  else:
+    # If aa aspect ratio is less than image aspect ratio, then
+    # sensor height is being cropped
+    aspect_ratio_multiplication_factor = aa_width / img_width
+    crop_height = img_height * aspect_ratio_multiplication_factor
+    buffer = (aa_height - crop_height) / 2
+    image_coords = (
+        coords[0] / aspect_ratio_multiplication_factor,
+        (coords[1] - buffer) / aspect_ratio_multiplication_factor)
+  logging.debug('Image coordinates: %s', image_coords)
+  return image_coords
+
+
+def check_orientation_and_flip(props, img, img_name_stem):
+  """Checks the sensor orientation and flips image.
+
+  The preview stream captures are flipped based on the sensor
+  orientation while using the front camera. In such cases, check the
+  sensor orientation and flip the image if needed.
+
+  Args:
+    props: obj; camera properties object.
+    img: numpy array; image.
+    img_name_stem: str; prefix for the img name to be saved.
+  Returns:
+    numpy array of the two images.
+  """
+  img = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+      props['android.sensor.orientation'], img)
+  write_image(img / _CH_FULL_SCALE, f'{img_name_stem}.png')
+  return img
+
+
+def do_ae_check(
+    img1, img2, file_stem, suffix1, suffix2, rel_tol, abs_tol):
+  """Check two images' luma change is within specified tolerance.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    file_stem: str; path to file.
+    suffix1: str; suffix for the first image file name.
+    suffix2: str; suffix for the second image file name.
+    rel_tol: float; relative threshold for delta between brightness.
+    abs_tol: float; absolute threshold for delta between brightness.
+  Returns:
+    failed_ae_msg: str; failed AE check messages if any. None otherwise.
+    y1_avg: float; y_avg value for the first image.
+    y2_avg: float; y_avg value for the second image.
+  """
+  failed_ae_msg = []
+  y1 = opencv_processing_utils.extract_y(
+      img1, f'{file_stem}_{suffix1}_y.png')
+  y1_avg = numpy.average(y1)
+  logging.debug('%s y avg: %.4f', suffix1, y1_avg)
+
+  y2 = opencv_processing_utils.extract_y(
+      img2, f'{file_stem}_{suffix2}_y.png')
+  y2_avg = numpy.average(y2)
+  logging.debug('%s y avg: %.4f', suffix2, y2_avg)
+  y_avg_change_percent = (abs(y2_avg - y1_avg) / y1_avg) * 100
+  logging.debug('Y avg change percentage: %.4f', y_avg_change_percent)
+
+  if not math.isclose(y1_avg, y2_avg, rel_tol=rel_tol, abs_tol=abs_tol):
+    failed_ae_msg.append('Y avg change is greater than threshold value for '
+                         f'patches: {suffix1} and {suffix2} '
+                         f'diff: {abs(y2_avg - y1_avg):.4f} '
+                         f'ATOL: {abs_tol} '
+                         f'RTOL: {rel_tol} '
+                         f'{suffix1} y avg: {y1_avg:.4f} '
+                         f'{suffix2} y avg: {y2_avg:.4f} ')
+  return failed_ae_msg, y1_avg, y2_avg
+
+
+def do_awb_check(img1, img2, c_atol, patch_color, suffix1, suffix2):
+  """Checks total chroma (saturation) difference between two images.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    c_atol: float; threshold for delta C.
+    patch_color: str; color of the patch to be tested.
+    suffix1: str; suffix for the first image.
+    suffix2: str; suffix for the second image.
+  Returns:
+    failed_awb_msg: failed AWB check messages or None.
+  """
+  failed_awb_msg = []
+  l1, a1, b1 = get_lab_means(img1, suffix1)
+  l2, a2, b2 = get_lab_means(img2, suffix2)
+
+  # Calculate Delta C
+  delta_c = numpy.sqrt(abs(a1 - a2)**2 + abs(b1 - b2)**2)
+  logging.debug('Delta C: %.4f', delta_c)
+
+  if delta_c > c_atol:
+    failed_awb_msg.append('Delta C is greater than the threshold value for '
+                          f'patch: {patch_color} '
+                          f'Delta C ATOL: {c_atol} '
+                          f'Delta C: {delta_c:.4f} '
+                          f'{suffix1} L, a, b means: {l1:.4f}, '
+                          f'{a1:.4f}, {b1:.4f}'
+                          f'{suffix2} L, a, b means: {l2:.4f}, '
+                          f'{a2:.4f}, {b2:.4f}')
+  return failed_awb_msg
+
+
+def get_four_quadrant_patches(img, img_path, suffix, patch_margin):
+  """Divides the img in 4 equal parts and returns the patches.
+
+  Args:
+    img: openCV image in RGB order.
+    img_path: path to save the image.
+    suffix: str; suffix used to save the image.
+    patch_margin: int; pixels of the margin.
+  Returns:
+    four_quadrant_patches: list of 4 patches.
+  """
+  num_rows = 2
+  num_columns = 2
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  four_quadrant_patches = []
+  for i in range(0, num_rows):
+    for j in range(0, num_columns):
+      x = size_x / num_rows * j
+      y = size_y / num_columns * i
+      h = size_y / num_columns
+      w = size_x / num_rows
+      patch = img[int(y):int(y+h), int(x):int(x+w)]
+      patch_path = img_path.with_name(
+          f'{img_path.stem}_{suffix}_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      write_image(patch/_CH_FULL_SCALE, patch_path)
+      cropped_patch = patch[patch_margin:-patch_margin,
+                            patch_margin:-patch_margin]
+      four_quadrant_patches.append(cropped_patch)
+      cropped_patch_path = img_path.with_name(
+          f'{img_path.stem}_{suffix}_cropped_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      write_image(cropped_patch/_CH_FULL_SCALE, cropped_patch_path)
+  return four_quadrant_patches
+
+
+def get_lab_means(img, suffix):
+  """Computes the mean of L,a,b img in Cielab color space.
+
+  Args:
+    img: RGB img in numpy format.
+    suffix: suffix used to save the image.
+  Returns:
+    mean_l, mean_a, mean_b: mean of L, a, b channels.
+  """
+  # Convert to Lab color space
+  from skimage import color  # pylint: disable=g-import-not-at-top
+  img_lab = color.rgb2lab(img)
+
+  # Extract mean of L* channel (brightness)
+  mean_l = numpy.mean(img_lab[:, :, 0])
+  # Extract mean of a* channel (red-green axis)
+  mean_a = numpy.mean(img_lab[:, :, 1])
+  # Extract mean of b* channel (yellow-blue axis)
+  mean_b = numpy.mean(img_lab[:, :, 2])
+
+  logging.debug('Image: %s, mean_l: %.2f, mean_a: %.2f, mean_b: %.2f',
+                suffix, mean_l, mean_a, mean_b)
+  return mean_l, mean_a, mean_b
+
+
+def get_slanted_edge_patch(img, img_path, suffix, patch_margin):
+  """Crops the central slanted edge part of the img and returns the patch.
+
+  Args:
+    img: openCV image in RGB order.
+    img_path: str; path to save the image.
+    suffix: str; suffix used to save the image. ie: 'w' or 'uw'.
+    patch_margin: int; pixels of the margin.
+  Returns:
+    slanted_edge_patch: list of 4 coordinates.
+  """
+  num_rows = 3
+  num_columns = 5
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  slanted_edge_patch = []
+  x = int(round(size_x / num_columns * (num_columns // 2), 0))
+  y = int(round(size_y / num_rows * (num_rows // 2), 0))
+  w = int(round(size_x / num_columns, 0))
+  h = int(round(size_y / num_rows, 0))
+  patch = img[y:y+h, x:x+w]
+  slanted_edge_patch = patch[patch_margin:-patch_margin,
+                             patch_margin:-patch_margin]
+  filename_with_path = img_path.with_name(
+      f'{img_path.stem}_{suffix}_slanted_edge{img_path.suffix}'
+  )
+  write_rgb_uint8_image(slanted_edge_patch, filename_with_path)
+  return slanted_edge_patch

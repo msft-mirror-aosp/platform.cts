@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -96,6 +97,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.PopupWindow;
+import android.window.InputTransferToken;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
 import androidx.annotation.NonNull;
@@ -105,7 +107,6 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
@@ -122,6 +123,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,9 +151,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         }
     }
-
-    @Rule
-    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private static final String TAG = "SurfaceControlViewHostTests";
 
@@ -1274,7 +1273,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
-    @DebugInputRule.DebugInput(bug = 329439551)
     public void testEmbeddedViewReceivesInputOnBottom() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setOnClickListener((View v) -> {
@@ -1675,6 +1673,40 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
+    public void testEmbeddedCannotStealTouchGestureFromHost() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        // Ask the embedded process to request gesture transfer from the host and then 
+        // verify that the call throws a security exception. We need to do the assertion
+        // in the test process to handle the assertion correctly.
+        assertTrue(mTestService.requestTouchGestureTransferFromHostThrows(hostInputTransferToken));
+    }
+
+    @Test
+    public void testHostCannotStealTouchGestureFromEmbedded() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        InputTransferToken surfacePackageInputTransferToken =
+                mRemoteSurfacePackage.getInputTransferToken();
+        WindowManager wm = mActivity.getSystemService(WindowManager.class);
+        assertThrows(SecurityException.class,
+                () -> wm.transferTouchGesture(surfacePackageInputTransferToken,
+                        hostInputTransferToken));
+    }
+
+    @Test
     public void testKeepScreenOn() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
@@ -1727,22 +1759,22 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Assert the KEEP_SCREEN_ON flag is not set on the main window yet.
         assertNotEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnSetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch::countDown));
+                keepScreenOnSetLatch::countDown));
         mTestService.setKeepScreenOnFlag(true);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnSetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);
         // Assert the KEEP_SCREEN_ON flag is now set on the main window.
         assertEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnUnsetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch2::countDown));
+                keepScreenOnUnsetLatch::countDown));
         mTestService.setKeepScreenOnFlag(false);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnUnsetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);

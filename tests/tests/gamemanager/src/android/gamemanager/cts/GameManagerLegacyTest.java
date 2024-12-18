@@ -19,10 +19,12 @@ package android.gamemanager.cts;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.GameManager;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.gamemanager.cts.util.TestUtil;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -52,11 +54,12 @@ public class GameManagerLegacyTest {
 
     @Before
     public void setUp() {
-        TestUtil.uninstallPackage(LEGACY_GAME_TEST_APP_PACKAGE_NAME);
-
         final Instrumentation instrumentation = getInstrumentation();
         mContext = instrumentation.getContext();
+        assumeTrue(TestUtil.shouldTestGameFeatures(mContext));
         mGameManager = mContext.getSystemService(GameManager.class);
+
+        TestUtil.uninstallPackage(LEGACY_GAME_TEST_APP_PACKAGE_NAME);
     }
 
     @After

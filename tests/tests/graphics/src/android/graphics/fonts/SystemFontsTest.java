@@ -16,8 +16,6 @@
 
 package android.graphics.fonts;
 
-import static com.android.text.flags.Flags.FLAG_NEW_FONTS_FALLBACK_XML;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
@@ -30,7 +28,6 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.ErrnoException;
@@ -147,7 +144,6 @@ public class SystemFontsTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testWeightAdjustment() {
         String text = "Hello, World.";
@@ -160,13 +156,20 @@ public class SystemFontsTest {
             for (int i = 0; i < glyphs.glyphCount(); ++i) {
                 assertThat(glyphs.getFakeBold(i)).isFalse();
                 assertThat(glyphs.getFakeItalic(i)).isFalse();
-                assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
-                assertThat(glyphs.getItalicOverride(i)).isEqualTo(0);
+                if (w == 400) {
+                    assertThat(glyphs.getWeightOverride(i))
+                            .isAnyOf(400f, PositionedGlyphs.NO_OVERRIDE);
+                } else {
+                    assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                }
+                // The default font has wght and ital axis and ital is 0 by default.
+                // It is valid to leave no override or override with the default value.
+                assertThat(glyphs.getItalicOverride(i))
+                        .isAnyOf(0f, PositionedGlyphs.NO_OVERRIDE);
             }
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testItalicAdjustment() {
         String text = "Hello, World.";
@@ -179,13 +182,17 @@ public class SystemFontsTest {
             for (int i = 0; i < glyphs.glyphCount(); ++i) {
                 assertThat(glyphs.getFakeBold(i)).isFalse();
                 assertThat(glyphs.getFakeItalic(i)).isFalse();
-                assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                if (w == 400) {
+                    assertThat(glyphs.getWeightOverride(i))
+                            .isAnyOf(400f, PositionedGlyphs.NO_OVERRIDE);
+                } else {
+                    assertThat(glyphs.getWeightOverride(i)).isEqualTo(w);
+                }
                 assertThat(glyphs.getItalicOverride(i)).isEqualTo(1);
             }
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testAdjustmentPreserveWidth() {
         String text = "Hello, World.";

@@ -42,6 +42,10 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
         getPassButton().setEnabled(passBtnEnabled());
     }
 
+    protected String getTestCategory() {
+        return "Audio Datapaths Speaker/Mic Test";
+    }
+
     void gatherTestModules(TestManager testManager) {
         AudioSourceProvider sinSourceProvider = new SinAudioSourceProvider();
 
@@ -226,5 +230,9 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
     protected boolean hasPeripheralSupport() {
         // we're assuming this for all handheld devices
         return true;
+    }
+    @Override
+    String getRouteDescription() {
+        return "mic";
     }
 }

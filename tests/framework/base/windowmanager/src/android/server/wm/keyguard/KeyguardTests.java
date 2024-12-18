@@ -689,8 +689,9 @@ public class KeyguardTests extends KeyguardTestBase {
         lockScreenSession.gotoKeyguard();
 
         launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
-        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
-                  "Activity with showWhenLocked attribute should be resumed.");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
+                "Activity with showWhenLocked attribute should be resumed.");
         mWmState.assertKeyguardShowingAndOccluded();
 
         launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
@@ -698,8 +699,9 @@ public class KeyguardTests extends KeyguardTestBase {
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mWmState.waitAndAssertKeyguardGone();
 
-        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY, DEFAULT_DISPLAY,
-                  "Activity with showWhenLocked attribute should be resumed.");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SHOW_WHEN_LOCKED_DIALOG_ACTIVITY, DEFAULT_DISPLAY,
+                "Activity with showWhenLocked attribute should be resumed.");
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
     }
 
@@ -714,8 +716,9 @@ public class KeyguardTests extends KeyguardTestBase {
         mWmState.computeState();
         mWmState.assertKeyguardGone();
 
-        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY, DEFAULT_DISPLAY,
-                  "Activity with showWhenLocked attribute should be resumed.");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY, DEFAULT_DISPLAY,
+                "Activity with showWhenLocked attribute should be resumed.");
     }
 
     @Test
@@ -804,8 +807,10 @@ public class KeyguardTests extends KeyguardTestBase {
             separateTestJournal();
             lockScreenSession.gotoKeyguard();
             mWmState.assertKeyguardShowingAndNotOccluded();
-            launchActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
-            waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY, DEFAULT_DISPLAY,
+            // TODO(b/375543394): use SHOW_WHEN_LOCKED_ATTR_ACTIVITY once no extra config change
+            launchActivity(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY, DEFAULT_DISPLAY,
                     "Activity with showWhenLocked attribute should be resumed.");
             mWmState.assertKeyguardShowingAndOccluded();
             if (assertAod) {
@@ -816,7 +821,7 @@ public class KeyguardTests extends KeyguardTestBase {
                 mWmState.assertAodShowing();
             }
             mWmState.waitForAllStoppedActivities();
-            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
+            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
         }
     }
 

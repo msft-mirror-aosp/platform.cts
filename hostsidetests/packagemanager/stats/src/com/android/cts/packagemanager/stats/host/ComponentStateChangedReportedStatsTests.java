@@ -48,6 +48,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -115,7 +116,8 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
-        assertThat(data).isNotNull();
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
+        assertThat(data.isEmpty()).isFalse();
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
@@ -150,7 +152,8 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
-        assertThat(data).isNotNull();
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
+        assertThat(data.isEmpty()).isFalse();
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
@@ -185,7 +188,8 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
-        assertThat(data).isNotNull();
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
+        assertThat(data.isEmpty()).isFalse();
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
@@ -220,6 +224,7 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
         assertThat(data.size()).isEqualTo(2);
 
         ComponentStateChangedReported atom1 = data.get(0).getAtom().getExtension(
@@ -266,6 +271,7 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
         assertThat(data.size()).isEqualTo(2);
 
         ComponentStateChangedReported atom1 = data.get(0).getAtom().getExtension(
@@ -313,6 +319,7 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
+        data = retrieveEventMetricDataChangeFromTestComponentStateApp(data);
         assertThat(data.size()).isEqualTo(2);
 
         ComponentStateChangedReported atom1 = data.get(0).getAtom().getExtension(
@@ -336,5 +343,22 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
         assertThat(atom2.getIsForWholeApp()).isFalse();
         assertThat(atom2.getCallingUid()).isEqualTo(
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
+    }
+
+    List<StatsLog.EventMetricData> retrieveEventMetricDataChangeFromTestComponentStateApp(
+            List<StatsLog.EventMetricData> eventMetricData) throws Exception {
+        List<StatsLog.EventMetricData> dataList = new ArrayList<>();
+        if (eventMetricData == null || eventMetricData.size() == 0) {
+            return dataList;
+        }
+        for (int i = 0; i < eventMetricData.size(); i++) {
+            ComponentStateChangedReported atom = eventMetricData.get(i).getAtom().getExtension(
+                    PackagemanagerExtensionAtoms.componentStateChangedReported);
+            if (atom != null && atom.getUid() == PackageManagerStatsTestsBase.getAppUid(getDevice(),
+                    TEST_INSTALL_PACKAGE)) {
+                dataList.add(eventMetricData.get(i));
+            }
+        }
+        return dataList;
     }
 }

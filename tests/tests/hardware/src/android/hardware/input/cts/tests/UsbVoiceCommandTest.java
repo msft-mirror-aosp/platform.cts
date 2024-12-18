@@ -36,6 +36,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.UserHelper;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,6 +101,9 @@ public class UsbVoiceCommandTest extends InputHidTestCase {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse("Voice interaction framework currently does not support "
+                + "visible background users", new UserHelper().isVisibleBackgroundUser());
+
         super.setUp();
         // Exclude packages for voice intent
         addExcludedPackages(mVoiceIntent);

@@ -16,13 +16,15 @@
 
 package com.android.bedstead.testapp;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser;
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.activities.Activity;
 import com.android.bedstead.nene.users.UserReference;
@@ -45,7 +47,7 @@ public final class TestAppActivityReferenceTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnProfileOwnerProfileWithNoDeviceOwner
     public void start_activityIsStarted() {
-        TestApp testApp = sDeviceState.testApps().query().whereActivities().isNotEmpty().get();
+        TestApp testApp = testApps(sDeviceState).query().whereActivities().isNotEmpty().get();
         try (TestAppInstance testAppInstance = testApp.install(sUser)) {
             Activity<TestAppActivity> activity = testAppInstance.activities().any().start();
 
@@ -56,7 +58,7 @@ public final class TestAppActivityReferenceTest {
 
     @Test
     public void remote_executes() {
-        TestApp testApp = sDeviceState.testApps().query().whereActivities().isNotEmpty().get();
+        TestApp testApp = testApps(sDeviceState).query().whereActivities().isNotEmpty().get();
         try (TestAppInstance testAppInstance = testApp.install(sUser)) {
             Activity<TestAppActivity> activity = testAppInstance.activities().any().start();
 

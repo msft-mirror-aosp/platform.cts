@@ -76,3 +76,10 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
 }
+
+test_module_config {
+    name: "CtsTvTestCases_Presubmit",
+    base: "CtsTvTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}

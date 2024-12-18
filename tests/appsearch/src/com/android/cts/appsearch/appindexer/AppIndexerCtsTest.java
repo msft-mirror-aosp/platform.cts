@@ -148,10 +148,11 @@ public class AppIndexerCtsTest {
                     () -> {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
-                        List<String> functionIds =
-                                appFunctions.stream()
-                                        .map(doc -> doc.getPropertyString(PROPERTY_FUNCTION_ID))
-                                        .toList();
+                        List<String> functionIds = new ArrayList<>();
+                        for (int i = 0; i < appFunctions.size(); i++) {
+                            functionIds.add(
+                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
+                        }
                         assertThat(functionIds).containsExactly("com.example.utils#print1");
                     });
         }
@@ -163,10 +164,11 @@ public class AppIndexerCtsTest {
                     () -> {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
-                        List<String> functionIds =
-                                appFunctions.stream()
-                                        .map(doc -> doc.getPropertyString(PROPERTY_FUNCTION_ID))
-                                        .toList();
+                        List<String> functionIds = new ArrayList<>();
+                        for (int i = 0; i < appFunctions.size(); i++) {
+                            functionIds.add(
+                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
+                        }
                         assertThat(functionIds)
                                 .containsExactly(
                                         "com.example.utils#print2", "com.example.utils#print3");
@@ -180,10 +182,11 @@ public class AppIndexerCtsTest {
                     () -> {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
-                        List<String> functionIds =
-                                appFunctions.stream()
-                                        .map(doc -> doc.getPropertyString(PROPERTY_FUNCTION_ID))
-                                        .toList();
+                        List<String> functionIds = new ArrayList<>();
+                        for (int i = 0; i < appFunctions.size(); i++) {
+                            functionIds.add(
+                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
+                        }
                         assertThat(functionIds).isEmpty();
                     });
         }
@@ -199,7 +202,7 @@ public class AppIndexerCtsTest {
                     List<GenericDocument> appFunctions =
                             searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
                     assertThat(appFunctions).hasSize(1);
-                    GenericDocument appFunction = appFunctions.getFirst();
+                    GenericDocument appFunction = appFunctions.get(0);
                     assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
                             .isEqualTo("com.example.utils#print1");
                     assertThat(appFunction.getPropertyString(PROPERTY_PACKAGE_NAME))
@@ -230,7 +233,7 @@ public class AppIndexerCtsTest {
                     List<GenericDocument> appFunctions =
                             searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                     assertThat(appFunctions).hasSize(1);
-                    GenericDocument appFunction = appFunctions.getFirst();
+                    GenericDocument appFunction = appFunctions.get(0);
                     assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
                             .isEqualTo("com.example.utils#print5");
                     assertThat(appFunction.getPropertyBoolean(PROPERTY_ENABLED_BY_DEFAULT))
@@ -253,7 +256,7 @@ public class AppIndexerCtsTest {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
-                        GenericDocument appFunction = appFunctions.getFirst();
+                        GenericDocument appFunction = appFunctions.get(0);
                         assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
                                 .isEqualTo("com.example.utils#print5");
                     });
@@ -275,7 +278,7 @@ public class AppIndexerCtsTest {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
-                        GenericDocument appFunction = appFunctions.getFirst();
+                        GenericDocument appFunction = appFunctions.get(0);
                         assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
                                 .isEqualTo("com.example.utils#print5");
                     });
@@ -292,7 +295,7 @@ public class AppIndexerCtsTest {
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctions).hasSize(1);
-                        GenericDocument appFunction = appFunctions.getFirst();
+                        GenericDocument appFunction = appFunctions.get(0);
                         assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
                                 .isEqualTo("com.example.utils#print5");
                     });
@@ -307,14 +310,14 @@ public class AppIndexerCtsTest {
                         List<GenericDocument> appFunctionsFromB =
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
                         assertThat(appFunctionsFromB).hasSize(1);
-                        GenericDocument appFunctionFromB = appFunctionsFromB.getFirst();
+                        GenericDocument appFunctionFromB = appFunctionsFromB.get(0);
                         assertThat(appFunctionFromB.getPropertyString(PROPERTY_FUNCTION_ID))
                                 .isEqualTo("com.example.utils#print5");
 
                         List<GenericDocument> appFunctionsFromA =
                                 searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
                         assertThat(appFunctionsFromA).hasSize(1);
-                        GenericDocument appFunctionFromA = appFunctionsFromA.getFirst();
+                        GenericDocument appFunctionFromA = appFunctionsFromA.get(0);
                         assertThat(appFunctionFromA.getPropertyString(PROPERTY_FUNCTION_ID))
                                 .isEqualTo("com.example.utils#print1");
                     });
@@ -336,10 +339,11 @@ public class AppIndexerCtsTest {
                         // Its app functions should be indexed.
                         List<GenericDocument> appFunctions =
                                 searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
-                        List<String> functionIds =
-                                appFunctions.stream()
-                                        .map(doc -> doc.getPropertyString(PROPERTY_FUNCTION_ID))
-                                        .toList();
+                        List<String> functionIds = new ArrayList<>();
+                        for (int i = 0; i < appFunctions.size(); i++) {
+                            functionIds.add(
+                                    appFunctions.get(i).getPropertyString(PROPERTY_FUNCTION_ID));
+                        }
                         assertThat(functionIds).containsExactly("com.example.utils#print5");
                     });
         }
@@ -358,10 +362,13 @@ public class AppIndexerCtsTest {
                                 .addFilterPackageNames(INDEXER_PACKAGE_NAME)
                                 .build());
         List<GenericDocument> genericDocuments = collectAllResults(searchResults);
-        return genericDocuments.stream()
-                .filter(genericDocument -> genericDocument.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        for (int i = 0; i < genericDocuments.size(); i++) {
+            GenericDocument genericDocument = genericDocuments.get(i);
+            if (genericDocument.getId().equals(id)) {
+                return genericDocument;
+            }
+        }
+        return null;
     }
 
     private List<GenericDocument> searchAppFunctionsWithPackageName(String packageName)

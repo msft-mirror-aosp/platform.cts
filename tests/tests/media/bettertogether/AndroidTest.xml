@@ -19,7 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <!-- Avoid Play Protect verification -->
@@ -46,7 +46,7 @@
         <option name="hidden-api-checks" value="false" />
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
         <!-- Handle the CTS/MCTS differentiation -->
         <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="cts" />

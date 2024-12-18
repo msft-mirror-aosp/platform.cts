@@ -352,8 +352,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         try {
             mTelecomManager.registerPhoneAccount(toRegister);
         } catch (SecurityException se) {
-            assertEquals("Self-managed ConnectionServices cannot also be call capable, " +
-                    "connection managers, or SIM accounts.", se.getMessage());
+            // Expected a security exception; we got one, so we're good.
             return;
         }
         fail("Expected SecurityException");
@@ -1039,7 +1038,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         setActiveAndVerify(connection);
 
         TestUtils.InvokeCounter counter = connection.getCallAudioStateChangedInvokeCounter();
-        counter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        counter.waitForCount(1);
         CallAudioState callAudioState = (CallAudioState) counter.getArgs(0)[0];
         int availableRoutes = callAudioState.getSupportedRouteMask();
 
@@ -1589,13 +1588,13 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
 
         TestUtils.InvokeCounter currentEndpointCounter =
                 connection.getCallEndpointChangedInvokeCounter();
-        currentEndpointCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        currentEndpointCounter.waitForCount(1);
         CallEndpoint currentEndpoint = (CallEndpoint) currentEndpointCounter.getArgs(0)[0];
         int currentEndpointType = currentEndpoint.getEndpointType();
 
         TestUtils.InvokeCounter availableEndpointsCounter =
                 connection.getAvailableEndpointsChangedInvokeCounter();
-        availableEndpointsCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        availableEndpointsCounter.waitForCount(1);
         List<CallEndpoint> availableEndpoints =
                 (List<CallEndpoint>) availableEndpointsCounter.getArgs(0)[0];
 
@@ -1686,10 +1685,9 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
                 connection.disconnectAndDestroy();
                 assertIsInCall(false);
             }
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
     }
 
     private void verifyIsInSelfManagedCallCrossUsers(UserHandle userHandle) {

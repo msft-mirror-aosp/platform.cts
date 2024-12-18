@@ -20,36 +20,52 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Before;
+import com.google.common.truth.Truth;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * CTS for the {@link Build} class.
- *
- * This class contains tests that must pass without having a {@link RavenwoodRule},
- * so do not add one in this class. {@link #setUp()} has a check to ensure it.
  *
  * For tests that do require a {@link RavenwoodRule}, use {@link BuildExtTest} instead.
  */
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuildTest {
+
+    private static final String BACKPORTED_FIXES_ALIAS_PROP_NAME =
+            "ro.build.backported_fixes.alias_bitset.long_list";
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
+            // 1 the alias for known issue b/350037023
+            // 1023 is the max alias.
+            .setSystemPropertyMutable(BACKPORTED_FIXES_ALIAS_PROP_NAME,
+                    bitSetIndexToLongArrayString(1, 1023))
+            .build();
 
     static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
     static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
@@ -57,16 +73,6 @@ public class BuildTest {
     static final String DEVICE = "ro.product.device";
     static final String MANUFACTURER = "ro.product.manufacturer";
     static final String MODEL = "ro.product.model";
-
-    @Before
-    public void setUp() {
-        // Ensure this class doesn't have a RavenwoodRule.
-        for (var field : this.getClass().getFields()) {
-            if (field.getType() == RavenwoodRule.class) {
-                fail("This clsas is not supposed to have a RavenwoodRule. See the class javadoc.");
-            }
-        }
-    }
 
     /**
      * Check if minimal properties are set (note that these might come from either
@@ -297,6 +303,73 @@ public class BuildTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void getBackportedFixStatus_alwaysFixed() {
+        // Known issue 350037023 has an alias of 1
+        Truth.assertThat(Build.getBackportedFixStatus(1L)).isEqualTo(
+                Build.BACKPORTED_FIX_STATUS_FIXED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void getBackportedFixStatus_neverFixed() {
+        // Known issue 350037348 has an alias of 3
+        Truth.assertThat(Build.getBackportedFixStatus(3L)).isEqualTo(
+                Build.BACKPORTED_FIX_STATUS_UNKNOWN);
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_API_FOR_BACKPORTED_FIXES)
+    public void getBackportedFixStatus_1023() {
+        if (RavenwoodRule.isOnRavenwood()) {
+            // This tests the private method Build.isBitSet
+            Truth.assertThat(Build.getBackportedFixStatus(1023)).isEqualTo(
+                    Build.BACKPORTED_FIX_STATUS_FIXED);
+        }
+    }
+
+    private static String bitSetIndexToLongArrayString(int... bitIndexes) {
+        BitSet bs = new BitSet();
+        for (int i : bitIndexes) {
+            bs.set(i);
+        }
+        return Arrays.stream(bs.toLongArray()).mapToObj(Long::toString).collect(
+                Collectors.joining(","));
+    }
+
+    /**
+     * Verify that SDK_INT_FULL version is always non-zero and positive.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testSdkIntFull() {
+        assertTrue("Version " + Build.VERSION.SDK_INT_FULL
+                + " is invalid; must be non-zero and positive", Build.VERSION.SDK_INT_FULL >= 0);
+    }
+
+    /**
+     * Verify that Build.getMajorSdkVersion returns SDK_INT.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testGetMajorSdkVersion() {
+        assertEquals(
+                "Major SDK version encoded in SDK_INT_FULL is invalid; must be same as SDK_INT",
+                Build.getMajorSdkVersion(Build.VERSION.SDK_INT_FULL), Build.VERSION.SDK_INT);
+    }
+
+    /**
+     * Verify that Build.getMinorSdkVersion returns a non-negative value.
+     */
+    @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    @Test
+    public void testGetMinorSdkVersion() {
+        assertTrue("Minor SDK version encoded in SDK_INT_FULL invalid; must be zero or positive",
+                Build.getMinorSdkVersion(Build.VERSION.SDK_INT_FULL) >= 0);
+    }
+
     /**
      * Verify that MEDIA_PERFORMANCE_CLASS are bounded by both high and low expected values.
      */
@@ -307,15 +380,12 @@ public class BuildTest {
             return;
         }
 
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at least VERSION_CODES.R",
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS >= Build.VERSION_CODES.R);
-        assertTrue(
-                "Media Performance Class " + Build.VERSION.MEDIA_PERFORMANCE_CLASS
-                        + " is invalid; must be at most VERSION.SDK_INT",
-                // we use RESOURCES_SDK_INT to account for active development versions
-                Build.VERSION.MEDIA_PERFORMANCE_CLASS <= Build.VERSION.RESOURCES_SDK_INT);
+        Truth.assertWithMessage(
+                "Build.VERSION.MEDIA_PERFORMANCE_CLASS must be one of the values defined in the "
+                        + "CDD for Media Performance Class.").that(
+                Build.VERSION.MEDIA_PERFORMANCE_CLASS).isAnyOf(
+                        // TODO: b/374814872 autogenerate this list.
+                        30, 31, 33, 34, 35);
     }
 
     private void assertNotEmpty(String value) {

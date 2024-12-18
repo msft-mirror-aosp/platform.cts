@@ -66,14 +66,16 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
     @Override
     protected void tearDown() throws Exception {
         try {
-            CtsSelfManagedConnectionService connectionService =
-                    CtsSelfManagedConnectionService.getConnectionService();
-            if (connectionService != null) {
-                connectionService.tearDown();
+            if (mShouldTestTelecom) {
                 mTelecomManager.unregisterPhoneAccount(
                         TestUtils.TEST_HANDOVER_SRC_PHONE_ACCOUNT_HANDLE);
                 mTelecomManager.unregisterPhoneAccount(
                         TestUtils.TEST_HANDOVER_DEST_PHONE_ACCOUNT_HANDLE);
+            }
+            CtsSelfManagedConnectionService connectionService =
+                    CtsSelfManagedConnectionService.getConnectionService();
+            if (connectionService != null) {
+                connectionService.tearDown();
             }
         } finally {
             super.tearDown();
@@ -96,7 +98,7 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
                 null);
 
         // Expect the handover failed callback to be called.
-        mOnHandoverFailedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnHandoverFailedCounter.waitForCount(1);
         Call callbackCall = (Call) mOnHandoverFailedCounter.getArgs(0)[0];
         int failureReason = (int) mOnHandoverFailedCounter.getArgs(0)[1];
         assertEquals(call, callbackCall);
@@ -121,7 +123,7 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
                 null);
 
         // Expect the handover failed callback to be called.
-        mOnHandoverFailedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnHandoverFailedCounter.waitForCount(1);
         Call callbackCall = (Call) mOnHandoverFailedCounter.getArgs(0)[0];
         int failureReason = (int) mOnHandoverFailedCounter.getArgs(0)[1];
         assertEquals(call, callbackCall);
@@ -156,7 +158,7 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
         TestUtils.InvokeCounter counter =
                 CtsSelfManagedConnectionService.getConnectionService()
                         .getOnCreateOutgoingHandoverConnectionCounter();
-        counter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        counter.waitForCount(1);
 
         SelfManagedConnection connection = TestUtils.waitForAndGetConnection(
                 call.getDetails().getHandle());
@@ -199,7 +201,7 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
         TestUtils.InvokeCounter counter =
                 CtsSelfManagedConnectionService.getConnectionService()
                         .getOnCreateIncomingHandoverConnectionCounter();
-        counter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        counter.waitForCount(1);
 
         SelfManagedConnection connection = TestUtils.waitForAndGetConnection(
                 call.getDetails().getHandle());

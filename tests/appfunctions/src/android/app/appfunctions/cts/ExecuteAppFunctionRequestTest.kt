@@ -49,7 +49,7 @@ class ExecuteAppFunctionRequestTest {
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
-                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras",
             ]
     )
     @Test
@@ -87,7 +87,7 @@ class ExecuteAppFunctionRequestTest {
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getTargetPackageName",
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getFunctionIdentifier",
                 "android.app.appfunctions.ExecuteAppFunctionRequest#getParameters",
-                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras"
+                "android.app.appfunctions.ExecuteAppFunctionRequest#getExtras",
             ]
     )
     @Test

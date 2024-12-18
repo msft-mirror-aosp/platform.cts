@@ -466,6 +466,41 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     }
 
     /**
+     * Create an {@link ImageReader} object and get the surface.
+     * <p>
+     * This function creates {@link ImageReader} object and surface, then assign
+     * to the default {@link mReader} and {@link mReaderSurface}. It closes the
+     * current default active {@link ImageReader} if it exists.
+     * </p>
+     *
+     * @param size The size of this ImageReader to be created.
+     * @param format The format of this ImageReader to be created
+     * @param maxNumImages The max number of images that can be acquired
+     *            simultaneously.
+     * @param usage The usage flag of the ImageReader
+     * @param dataspace The image reader dataspace
+     * @param listener The listener used by this ImageReader to notify
+     *            callbacks.
+     */
+    protected void createDefaultImageReader(Size size, int format, int maxNumImages, long usage,
+            int dataspace, ImageReader.OnImageAvailableListener listener) throws Exception {
+        closeDefaultImageReader();
+
+        ImageReader.Builder builder = new ImageReader.Builder(size.getWidth(),
+                size.getHeight());
+        builder.setImageFormat(format);
+        builder.setDefaultHardwareBufferFormat(format);
+        builder.setDefaultDataSpace(dataspace);
+        builder.setUsage(usage);
+        builder.setMaxImages(maxNumImages);
+
+        mReader = builder.build();
+        mReader.setOnImageAvailableListener(listener, mHandler);
+        mReaderSurface = mReader.getSurface();
+        if (VERBOSE) Log.v(TAG, "Created ImageReader size " + size.toString());
+    }
+
+    /**
      * Create an {@link ImageReader} object.
      *
      * <p>This function creates image reader object for given format, maxImages, usage and size.</p>

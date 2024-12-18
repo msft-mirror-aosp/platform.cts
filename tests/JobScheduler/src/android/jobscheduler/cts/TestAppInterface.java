@@ -17,6 +17,7 @@ package android.jobscheduler.cts;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
+import static android.app.ActivityManager.PROCESS_STATE_UNKNOWN;
 import static android.app.ActivityManager.getCapabilitiesSummary;
 import static android.app.ActivityManager.procStateToString;
 import static android.jobscheduler.cts.BaseJobSchedulerTest.HW_TIMEOUT_MULTIPLIER;
@@ -147,7 +148,8 @@ class TestAppInterface implements AutoCloseable {
         mTestJobStates.clear();
         SystemUtil.runShellCommand("cmd netpolicy stop-watching");
         SystemUtil.runShellCommand(
-                "cmd jobscheduler reset-execution-quota -u current " + TEST_APP_PACKAGE);
+                "cmd jobscheduler reset-execution-quota -u " + UserHandle.myUserId() + " "
+                + TEST_APP_PACKAGE);
         forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
 
@@ -445,19 +447,25 @@ class TestAppInterface implements AutoCloseable {
         assertTrue("Job unexpectedly ready, in state: " + state, !state.contains("ready"));
     }
 
-    void assertJobUidState(int procState, int capabilities, int oomScoreAdj) {
+    void assertJobUidState(ExpectedJobUidState expected) {
         synchronized (mTestJobStates) {
             TestJobState jobState = mTestJobStates.get(mJobId);
             if (jobState == null) {
                 fail("Job not started");
             }
-            assertEquals("procState expected=" + procStateToString(procState)
+            assertEquals("procState expected=" + procStateToString(expected.procState)
                             + ",actual=" + procStateToString(jobState.procState),
-                    procState, jobState.procState);
-            assertEquals("capabilities expected=" + getCapabilitiesSummary(capabilities)
+                    expected.procState, jobState.procState);
+            assertEquals(
+                    "capabilities expected=" + getCapabilitiesSummary(expected.includedCapability)
                             + ",actual=" + getCapabilitiesSummary(jobState.capabilities),
-                    capabilities, jobState.capabilities);
-            assertEquals("Unexpected oomScoreAdj", oomScoreAdj, jobState.oomScoreAdj);
+                    expected.includedCapability,
+                    jobState.capabilities & expected.includedCapability);
+            assertEquals(
+                    "capabilities unexpected=" + getCapabilitiesSummary(expected.excludedCapability)
+                            + ",actual=" + getCapabilitiesSummary(jobState.capabilities),
+                    0, jobState.capabilities & expected.excludedCapability);
+            assertEquals("Unexpected oomScoreAdj", expected.oomScoreAdj, jobState.oomScoreAdj);
         }
     }
 
@@ -511,6 +519,51 @@ class TestAppInterface implements AutoCloseable {
             capabilities = ActivityManager.PROCESS_CAPABILITY_NONE;
             oomScoreAdj = INVALID_ADJ;
             scheduleResult = -1;
+        }
+    }
+
+    public static final class ExpectedJobUidState {
+        public final int procState;
+        public final int oomScoreAdj;
+        public final int includedCapability;
+        public final int excludedCapability;
+
+        private ExpectedJobUidState(Builder builder) {
+            procState = builder.mProcState;
+            oomScoreAdj = builder.mOomScoreAdj;
+            includedCapability = builder.mIncludedCapability;
+            excludedCapability = builder.mExcludedCapability;
+        }
+
+        public static class Builder {
+            int mProcState = PROCESS_STATE_UNKNOWN;
+            int mOomScoreAdj = INVALID_ADJ;
+            int mIncludedCapability = 0;
+            int mExcludedCapability = 0;
+
+            Builder setProcState(int procState) {
+                mProcState = procState;
+                return this;
+            }
+
+            Builder setOomScoreAdj(int oomScoreAdj) {
+                mOomScoreAdj = oomScoreAdj;
+                return this;
+            }
+
+            Builder setExpectedCapability(int capability) {
+                mIncludedCapability = capability;
+                return this;
+            }
+
+            Builder setUnexpectedCapability(int capability) {
+                mExcludedCapability = capability;
+                return this;
+            }
+
+            ExpectedJobUidState build() {
+                return new ExpectedJobUidState(this);
+            }
         }
     }
 }

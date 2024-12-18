@@ -19,8 +19,8 @@ package android.content.pm.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -30,6 +30,7 @@ import android.platform.test.annotations.AppModeFull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.compatibility.common.util.SystemUtil;
@@ -43,6 +44,8 @@ import java.util.Arrays;
 
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
+@RequireRunOnSystemUser
+@EnsureHasNoDeviceOwner
 public class PackageManagerDeviceOwnerTest {
     private static final String DEVICE_ADMIN_TEST_APP_PACKAGE_NAME =
             "android.content.cts.deviceadmintestapp";
@@ -65,7 +68,6 @@ public class PackageManagerDeviceOwnerTest {
     }
 
     @Test
-    @EnsureHasNoDeviceOwner
     public void testInstallAdminAppAsInstantShouldFail() {
         final int currentUser = ActivityManager.getCurrentUser();
         installPackageAsUser(DEVICE_ADMIN_TEST_APP_APK_PATH, currentUser);

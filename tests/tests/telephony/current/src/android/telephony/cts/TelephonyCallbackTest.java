@@ -61,6 +61,7 @@ import android.telephony.TelephonyManager.EmergencyCallbackModeType;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsReasonInfo;
+import android.telephony.satellite.NtnSignalStrength;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -75,6 +76,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -118,6 +120,10 @@ public class TelephonyCallbackTest {
     private boolean mOnEmergencyCallbackModeChangedCalled;
     private boolean mOnCarrierRoamingNtnModeChangedCalled;
     private boolean mOnCarrierRoamingNtnEligibleCalled;
+    private boolean mOnCarrierRoamingNtnAvailableServiceCalled;
+    private boolean mOnCarrierRoamingNtnSignalStrengthCalled;
+    private boolean mOnSecurityAlgorithmsChangedCalled;
+    private boolean mOnCellularIdentifierDisclosedChangedCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -257,6 +263,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnServiceStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -282,6 +289,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithLocationRenounce()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -313,6 +321,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithCoarseRenounce()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -343,6 +352,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithFineOnlyRenounce()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -392,6 +402,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnUnRegisterFollowedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -504,6 +515,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnMessageWaitingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -544,6 +556,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnPreciseCallStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -587,6 +600,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCallStatesChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -637,6 +651,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -675,6 +690,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnImsCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -713,6 +729,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnSrvccStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
@@ -751,6 +768,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnRadioPowerStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -792,6 +810,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnVoiceActivationStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -856,6 +875,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnPreciseDataConnectionStateChangedByRegisterTelephonyCallback()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -968,6 +988,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permissions")
     public void testOnCellLocationChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -1008,6 +1029,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCallStateChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -1124,6 +1146,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permissions")
     public void testOnCellInfoChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -1201,6 +1224,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnOutgoingSmsEmergencyNumberChangedByRegisterTelephonyCallback()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -1300,6 +1324,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnBarringInfoChangedByRegisterTelephonyCallback() throws Throwable {
         assertFalse(mOnBarringInfoChangedCalled);
 
@@ -1403,6 +1428,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnRegistrationFailedByRegisterTelephonyCallback() throws Throwable {
 
         assertFalse(mOnBarringInfoChangedCalled);
@@ -1443,6 +1469,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnPhysicalChannelConfigChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -1497,6 +1524,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnDataEnabledChangedByRegisterTelephonyCallback() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
@@ -1536,6 +1564,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnAllowedNetworkTypesChangedByRegisterPhoneStateListener() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -1613,6 +1642,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnLinkCapacityEstimateChangedByRegisterPhoneStateListener() throws Throwable {
 
         assertFalse(mOnLinkCapacityEstimateChangedCalled);
@@ -1632,18 +1662,21 @@ public class TelephonyCallbackTest {
                 mLinkCapacityEstimateChangedListener);
     }
 
-
     private EmergencyCallbackModeListener mEmergencyCallbackModeListener;
 
     private class EmergencyCallbackModeListener extends TelephonyCallback
             implements TelephonyCallback.EmergencyCallbackModeListener {
         @Override
-        public void onCallBackModeStarted(@EmergencyCallbackModeType int type) {
-
+        public void onCallbackModeStarted(@EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
         }
         @Override
-        public void onCallBackModeStopped(@EmergencyCallbackModeType int type,
-                @EmergencyCallbackModeStopReason int reason) {
+        public void onCallbackModeRestarted(@EmergencyCallbackModeType int type,
+                @NonNull Duration timerDuration, int subId) {
+        }
+        @Override
+        public void onCallbackModeStopped(@EmergencyCallbackModeType int type,
+                @EmergencyCallbackModeStopReason int reason, int subId) {
             synchronized (mLock) {
                 mOnEmergencyCallbackModeChangedCalled = true;
                 mLock.notify();
@@ -1652,6 +1685,8 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_CALLBACK_MODE_NOTIFICATION)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnEmergencyCallbackModeListener() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -1698,10 +1733,29 @@ public class TelephonyCallbackTest {
                 mLock.notify();
             }
         }
+
+        @Override
+        public void onCarrierRoamingNtnAvailableServicesChanged(
+                @NetworkRegistrationInfo.ServiceType int[] availableServices) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnAvailableServiceCalled = true;
+                mLock.notify();
+            }
+        }
+
+        @Override
+        public void onCarrierRoamingNtnSignalStrengthChanged(
+                @NonNull NtnSignalStrength ntnSignalStrength) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnSignalStrengthCalled = true;
+                mLock.notify();
+            }
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCarrierRoamingNtnModeListener() throws Throwable {
         assertFalse(mOnCarrierRoamingNtnModeChangedCalled);
         mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
@@ -1720,6 +1774,7 @@ public class TelephonyCallbackTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCarrierRoamingNtnEligible() throws Throwable {
         assertFalse(mOnCarrierRoamingNtnEligibleCalled);
         mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
@@ -1733,6 +1788,44 @@ public class TelephonyCallbackTest {
         assertTrue(mOnCarrierRoamingNtnEligibleCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnEligibleCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnCarrierRoamingNtnAvailableServices() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnAvailableServiceCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnAvailableServiceCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnAvailableServiceCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnAvailableServiceCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
+    public void testOnCarrierRoamingNtnSignalStrengthChanged() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnSignalStrengthCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnSignalStrengthCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnSignalStrengthCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnSignalStrengthCalled,
                 mCarrierRoamingNtnModeListener);
     }
 }

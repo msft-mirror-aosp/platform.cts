@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.os.UserHandle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
@@ -104,7 +105,7 @@ public class TestNotificationListener extends NotificationListenerService {
     public static void toggleListenerAccess(Context context, boolean on) throws Exception {
         SystemUtil.runShellCommand("cmd notification"
                 + " " + (on ? "allow_listener" : "disallow_listener")
-                + " " + getId());
+                + " " + getId() + " " + UserHandle.myUserId());
 
         final ComponentName listenerComponent = getComponentName();
         final NotificationManager nm = context.getSystemService(NotificationManager.class);

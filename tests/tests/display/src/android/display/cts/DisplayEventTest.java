@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,191 +16,251 @@
 
 package android.display.cts;
 
-import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED;
-import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
-import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
-import static android.util.DisplayMetrics.DENSITY_HIGH;
-import static android.util.DisplayMetrics.DENSITY_MEDIUM;
-
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
-import android.app.ActivityManager;
+import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
-import android.util.SparseArray;
+import android.util.Pair;
+import android.view.Display;
 
-import androidx.annotation.GuardedBy;
-import androidx.annotation.NonNull;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Tests that applications can receive display events correctly.
  */
-@RunWith(Parameterized.class)
+@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class DisplayEventTest {
+public class DisplayEventTest extends TestBase {
+    private static final float RR_FLOAT_DELTA = 0.01f;
     private static final String TAG = "DisplayEventTest";
 
-    private static final String NAME = TAG;
-    private static final int WIDTH = 720;
-    private static final int HEIGHT = 480;
+    private static final int MESSAGE_CALLBACK = 1;
 
-    private static final int MESSAGE_LAUNCHED = 1;
-    private static final int MESSAGE_CALLBACK = 2;
+    private static final long TEST_FAILURE_TIMEOUT_MSEC = 10000;
+
 
     private static final int DISPLAY_ADDED = 1;
     private static final int DISPLAY_CHANGED = 2;
     private static final int DISPLAY_REMOVED = 3;
-
-    private static final long DISPLAY_EVENT_TIMEOUT_MSEC = 100;
-    private static final long TEST_FAILURE_TIMEOUT_MSEC = 10000;
-
-    private static final String TEST_PACKAGE = "android.app.stubs";
-    private static final String TEST_ACTIVITY = TEST_PACKAGE + ".DisplayEventActivity";
-    private static final String TEST_DISPLAYS = "DISPLAYS";
-    private static final String TEST_MESSENGER = "MESSENGER";
 
     private final Object mLock = new Object();
 
     private Instrumentation mInstrumentation;
     private Context mContext;
     private DisplayManager mDisplayManager;
-    private ActivityManager mActivityManager;
-    private ActivityManager.OnUidImportanceListener mUidImportanceListener;
-    private CountDownLatch mLatchActivityLaunch;
-    private CountDownLatch mLatchActivityCached;
+
+    private Display mDisplay;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
+            Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+
+    @Rule
+    public ActivityScenarioRule<DisplayEventPropertyChangeActivity> mActivityRule =
+            new ActivityScenarioRule<>(DisplayEventPropertyChangeActivity.class);
+
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private Messenger mMessenger;
-    private int mPid;
-    private int mUid;
+    private final LinkedBlockingQueue<Pair<Integer, Integer>> mExpectations =
+            new LinkedBlockingQueue<>();
+    private int mInitialMatchContentFrameRate;
+    private DisplayManager.DisplayListener mDisplayListener;
 
-    /**
-     * Array of DisplayBundle. The test handler uses it to check if certain display events have
-     * been sent to DisplayEventActivity.
-     * Key: displayId of each new VirtualDisplay created by this test
-     * Value: DisplayBundle, storing the VirtualDisplay and its expected display events
-     *
-     * NOTE: The lock is required when adding and removing virtual displays. Otherwise it's not
-     * necessary to lock mDisplayBundles when accessing it from the test function.
-     */
-    @GuardedBy("mLock")
-    private SparseArray<DisplayBundle> mDisplayBundles;
+    @Before
+    public void setUp() throws Exception {
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = mInstrumentation.getContext();
+        mDisplayManager = mContext.getSystemService(DisplayManager.class);
+        mDisplay = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
+        mHandlerThread = new HandlerThread("handler");
+        mHandlerThread.start();
+        mHandler = new TestHandler(mHandlerThread.getLooper());
+        mMessenger = new Messenger(mHandler);
+        mInitialMatchContentFrameRate = toSwitchingType(
+                mDisplayManager.getMatchContentFrameRateUserPreference());
+    }
 
-    /**
-     * Helper class to store VirtualDisplay and its corresponding display events expected to be
-     * sent to DisplayEventActivity.
-     */
-    private static final class DisplayBundle {
-        private VirtualDisplay mVirtualDisplay;
-        private final int mDisplayId;
-
-        // Display events we expect to receive before timeout
-        private final LinkedBlockingQueue<Integer> mExpectations;
-
-        DisplayBundle(VirtualDisplay display) {
-            mVirtualDisplay = display;
-            mDisplayId = display.getDisplay().getDisplayId();
-            mExpectations = new LinkedBlockingQueue<>();
+    @After
+    public void tearDown() throws Exception {
+        mHandlerThread.quitSafely();
+        if (mDisplayListener != null) {
+            mDisplayManager.unregisterDisplayListener(mDisplayListener);
         }
+        mDisplayManager.setRefreshRateSwitchingType(mInitialMatchContentFrameRate);
+        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
+    }
 
-        public void releaseDisplay() {
-            if (mVirtualDisplay != null) {
-                mVirtualDisplay.release();
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
+    public void testDisplayStateChangedEvent() throws Exception {
+        registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_STATE);
+
+        // Change the display state
+        switchDisplayState();
+
+        // Validate the event was received
+        waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
+    public void testDisplayRefreshRateChangedEvent() throws InterruptedException {
+        registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_REFRESH_RATE);
+
+        switchRefreshRate();
+
+        waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
+    private void registerDisplayListener(int eventFlagMask) {
+        mDisplayListener = new DisplayManager.DisplayListener() {
+            @Override
+            public void onDisplayAdded(int displayId) {
+                callback(displayId, DISPLAY_ADDED);
             }
-            mVirtualDisplay = null;
-        }
 
-        /**
-         * Add the received display event from the test activity to the queue
-         *
-         * @param event The corresponding display event
-         */
-        public void addDisplayEvent(int event) {
-            Log.d(TAG, "Received " + mDisplayId + " " + event);
-            mExpectations.offer(event);
-        }
+            @Override
+            public void onDisplayRemoved(int displayId) {
+                callback(displayId, DISPLAY_REMOVED);
+            }
 
+            @Override
+            public void onDisplayChanged(int displayId) {
+                callback(displayId, DISPLAY_CHANGED);
+            }
+        };
+        mDisplayManager.registerDisplayListener(mContext.getMainExecutor(), eventFlagMask,
+                mDisplayListener);
+    }
 
-        /**
-         * Assert that there isn't any unexpected display event from the test activity
-         */
-        public void assertNoDisplayEvents() {
+    /**
+     * Add the received display event from the test activity to the queue
+     *
+     * @param event The corresponding display event
+     */
+    private void addDisplayEvent(int displayId, int event) {
+        Log.d(TAG, "Received " + displayId + " " + event);
+        mExpectations.offer(new Pair<>(displayId, event));
+    }
+
+    /**
+     * Wait for the expected display event from the test activity
+     *
+     * @param expect The expected display event
+     */
+    private void waitDisplayEvent(int displayId, int expect) {
+        while (true) {
             try {
-                assertNull(mExpectations.poll(DISPLAY_EVENT_TIMEOUT_MSEC, TimeUnit.MILLISECONDS));
+                Pair<Integer, Integer> expectedPair = new Pair<>(displayId, expect);
+                Pair<Integer, Integer> event = mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC,
+                        TimeUnit.MILLISECONDS);
+                assertNotNull(event);
+                if (expectedPair.equals(event)) {
+                    return;
+                }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
 
-        /**
-         * Wait for the expected display event from the test activity
-         *
-         * @param expect The expected display event
-         */
-        public void waitDisplayEvent(int expect) {
-            while (true) {
-                try {
-                    final Integer event;
-                    event = mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
-                    assertNotNull(event);
-                    if (expect == event) {
-                        Log.d(TAG, "Found    " + mDisplayId + " " + event);
-                        return;
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+    private void switchDisplayState() throws Exception {
+        if (mDisplay.getState() == Display.STATE_OFF) {
+            SystemUtil.runShellCommand(mInstrumentation, "cmd power wakeup");
+        } else {
+            SystemUtil.runShellCommand(mInstrumentation, "cmd power sleep");
         }
     }
 
-    /**
-     * How many virtual displays to create during the test
-     */
-    @Parameter(0)
-    public int mDisplayCount;
+    private void switchRefreshRate() {
+        mDisplayManager.setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE);
+        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
 
-    /**
-     * True if running the test activity in cached mode
-     * False if running it in non-cached mode
-     */
-    @Parameter(1)
-    public boolean mCached;
-
-    @Parameters(name = "#{index}: {0} {1}")
-    public static Iterable<? extends Object> data() {
-        return Arrays.asList(new Object[][]{
-                {1, false}, {2, false}, {3, false}, {10, false},
-                {1, true}, {2, true}, {3, true}, {10, true}
+        int alternateRefreshRateModeId = getAlternateRefreshRateModeId();
+        mActivityRule.getScenario().onActivity(activity -> {
+            activity.setModeId(alternateRefreshRateModeId);
         });
+    }
+
+    private int getAlternateRefreshRateModeId() {
+        int refreshRateModeId = mDisplay.getMode().getModeId();
+        boolean supportsMultipleRefreshRates = false;
+        for (Display.Mode mode : mDisplay.getSupportedModes()) {
+            if (mode.getModeId() == mDisplay.getMode().getModeId()) {
+                continue;
+            }
+
+            if (mode.getPhysicalHeight() != mDisplay.getMode().getPhysicalHeight()) {
+                continue;
+            }
+
+            if (mode.getPhysicalWidth() != mDisplay.getMode().getPhysicalWidth()) {
+                continue;
+            }
+
+            if (!floatEquals(mode.getRefreshRate(), mDisplay.getMode().getRefreshRate(),
+                    RR_FLOAT_DELTA)) {
+                supportsMultipleRefreshRates = true;
+                refreshRateModeId = mode.getModeId();
+            }
+        }
+        assumeTrue(supportsMultipleRefreshRates);
+        return refreshRateModeId;
+    }
+
+    private boolean floatEquals(float f1, float f2, float delta) {
+        return Math.abs(f1 - f2) <= delta;
+    }
+
+    private static int toSwitchingType(int matchContentFrameRateUserPreference) {
+        switch (matchContentFrameRateUserPreference) {
+            case DisplayManager.MATCH_CONTENT_FRAMERATE_NEVER:
+                return DisplayManager.SWITCHING_TYPE_NONE;
+            case DisplayManager.MATCH_CONTENT_FRAMERATE_SEAMLESSS_ONLY:
+                return DisplayManager.SWITCHING_TYPE_WITHIN_GROUPS;
+            case DisplayManager.MATCH_CONTENT_FRAMERATE_ALWAYS:
+                return DisplayManager.SWITCHING_TYPE_ACROSS_AND_WITHIN_GROUPS;
+            default:
+                return -1;
+        }
     }
 
     private class TestHandler extends Handler {
@@ -209,22 +269,11 @@ public class DisplayEventTest {
         }
 
         @Override
-        public void handleMessage(@NonNull Message msg) {
+        public void handleMessage(Message msg) {
             switch (msg.what) {
-                case MESSAGE_LAUNCHED:
-                    mPid = msg.arg1;
-                    mUid = msg.arg2;
-                    Log.d(TAG, "Launched " + mPid + " " + mUid);
-                    mLatchActivityLaunch.countDown();
-                    break;
                 case MESSAGE_CALLBACK:
                     synchronized (mLock) {
-                        // arg1: displayId
-                        DisplayBundle bundle = mDisplayBundles.get(msg.arg1);
-                        if (bundle != null) {
-                            // arg2: display event
-                            bundle.addDisplayEvent(msg.arg2);
-                        }
+                        addDisplayEvent(msg.arg1, msg.arg2);
                     }
                     break;
                 default:
@@ -234,193 +283,15 @@ public class DisplayEventTest {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mContext = mInstrumentation.getContext();
-        mDisplayManager = mContext.getSystemService(DisplayManager.class);
-        mLatchActivityLaunch = new CountDownLatch(1);
-        mLatchActivityCached = new CountDownLatch(1);
-        mActivityManager = mContext.getSystemService(ActivityManager.class);
-        mUidImportanceListener = (uid, importance) -> {
-            if (uid == mUid && importance == IMPORTANCE_CACHED) {
-                Log.d(TAG, "Listener " + uid + " becomes " + importance);
-                mLatchActivityCached.countDown();
-            }
-        };
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                mActivityManager.addOnUidImportanceListener(mUidImportanceListener,
-                        IMPORTANCE_CACHED));
-        mDisplayBundles = new SparseArray<>();
-        mHandlerThread = new HandlerThread("handler");
-        mHandlerThread.start();
-        mHandler = new TestHandler(mHandlerThread.getLooper());
-        mMessenger = new Messenger(mHandler);
-        mPid = 0;
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        mActivityManager.removeOnUidImportanceListener(mUidImportanceListener);
-        mHandlerThread.quitSafely();
-        synchronized (mLock) {
-            for (int i = 0; i < mDisplayBundles.size(); i++) {
-                DisplayBundle bundle = mDisplayBundles.valueAt(i);
-                // Clean up unreleased virtual display
-                bundle.releaseDisplay();
-            }
-            mDisplayBundles.clear();
-        }
-        SystemUtil.runShellCommand(mInstrumentation, "am force-stop " + TEST_PACKAGE);
-    }
-
-    /**
-     * Create virtual displays, change their configurations and release them
-     * mDisplays: the amount of virtual displays to be created
-     * mCached: true to run the test activity in cached mode; false in non-cached mode
-     */
-    @Test
-    public void testDisplayEvents() {
-        Log.d(TAG, "Start test testDisplayEvents " + mDisplayCount + " " + mCached);
-        // Launch DisplayEventActivity and start listening to display events
-        launchTestActivity();
-
-        if (mCached) {
-            // The test activity in cached mode won't receive the pending display events
-            makeTestActivityCached();
-        }
-
-        // Create new virtual displays
-        for (int i = 0; i < mDisplayCount; i++) {
-            // Lock is needed here to ensure the handler can query the displays
-            synchronized (mLock) {
-                VirtualDisplay display = createVirtualDisplay(NAME + i);
-                DisplayBundle bundle = new DisplayBundle(display);
-                mDisplayBundles.put(bundle.mDisplayId, bundle);
-            }
-        }
-
-        for (int i = 0; i < mDisplayCount; i++) {
-            if (mCached) {
-                // DISPLAY_ADDED should be deferred for cached process
-                mDisplayBundles.valueAt(i).assertNoDisplayEvents();
-            } else {
-                // DISPLAY_ADDED should arrive immediately for non-cached process
-                mDisplayBundles.valueAt(i).waitDisplayEvent(DISPLAY_ADDED);
-            }
-        }
-
-        // Change the virtual displays
-        for (int i = 0; i < mDisplayCount; i++) {
-            DisplayBundle bundle = mDisplayBundles.valueAt(i);
-            bundle.mVirtualDisplay.resize(WIDTH, HEIGHT, DENSITY_HIGH);
-        }
-
-        for (int i = 0; i < mDisplayCount; i++) {
-            if (mCached) {
-                // DISPLAY_CHANGED should be deferred for cached process
-                mDisplayBundles.valueAt(i).assertNoDisplayEvents();
-            } else {
-                // DISPLAY_CHANGED should arrive immediately for non-cached process
-                mDisplayBundles.valueAt(i).waitDisplayEvent(DISPLAY_CHANGED);
-            }
-        }
-
-        if (mCached) {
-            // The test activity becomes non-cached and should receive the pending display events
-            bringTestActivityTop();
-
-            for (int i = 0; i < mDisplayCount; i++) {
-                // The pending DISPLAY_ADDED & DISPLAY_CHANGED should arrive now
-                mDisplayBundles.valueAt(i).waitDisplayEvent(DISPLAY_ADDED);
-                mDisplayBundles.valueAt(i).waitDisplayEvent(DISPLAY_CHANGED);
-            }
-        }
-
-        // Release the virtual displays
-        for (int i = 0; i < mDisplayCount; i++) {
-            mDisplayBundles.valueAt(i).releaseDisplay();
-        }
-
-        // DISPLAY_REMOVED should arrive now
-        for (int i = 0; i < mDisplayCount; i++) {
-            mDisplayBundles.valueAt(i).waitDisplayEvent(DISPLAY_REMOVED);
-        }
-    }
-
-    /**
-     * Launch the test activity that would listen to display events
-     */
-    private void launchTestActivity() {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName(TEST_PACKAGE, TEST_ACTIVITY);
-        intent.putExtra(TEST_MESSENGER, mMessenger);
-        intent.putExtra(TEST_DISPLAYS, mDisplayCount);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    mContext.startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-        waitLatch(mLatchActivityLaunch);
-    }
-
-    /**
-     * Bring the test activity back to top
-     */
-    private void bringTestActivityTop() {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName(TEST_PACKAGE, TEST_ACTIVITY);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    mContext.startActivity(intent);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-    }
-
-    /**
-     * Bring the test activity into cached mode by launching another 2 apps
-     */
-    private void makeTestActivityCached() {
-        // Launch another activity to bring the test activity into background
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClass(mContext, SimpleActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-
-        // Launch another activity to bring the test activity into cached mode
-        Intent intent2 = new Intent(Intent.ACTION_MAIN);
-        intent2.setClass(mContext, SimpleActivity2.class);
-        intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    mInstrumentation.startActivitySync(intent);
-                    mInstrumentation.startActivitySync(intent2);
-                },
-                android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-        waitLatch(mLatchActivityCached);
-    }
-
-    /**
-     * Create a virtual display
-     *
-     * @param name The name of the new virtual display
-     * @return The new virtual display
-     */
-    private VirtualDisplay createVirtualDisplay(String name) {
-        return mDisplayManager.createVirtualDisplay(name, WIDTH, HEIGHT, DENSITY_MEDIUM,
-                null /* surface: as we don't actually draw anything, null is enough */,
-                VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                /* flags: a public virtual display that another app can access */);
-    }
-
-    /**
-     * Wait for CountDownLatch with timeout
-     */
-    private void waitLatch(CountDownLatch latch) {
+    private void callback(int displayId, int event) {
         try {
-            latch.await(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
+            Message msg = Message.obtain();
+            msg.what = MESSAGE_CALLBACK;
+            msg.arg1 = displayId;
+            msg.arg2 = event;
+            Log.d(TAG, "Msg " + msg.arg1 + " " + msg.arg2);
+            mMessenger.send(msg);
+        } catch (RemoteException e) {
             throw new RuntimeException(e);
         }
     }

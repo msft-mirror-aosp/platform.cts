@@ -31,23 +31,24 @@ import android.content.res.Resources;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
-import android.support.test.uiautomator.Until;
 import android.util.Log;
 import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
-import com.android.compatibility.common.util.UiAutomatorUtils;
+import com.android.compatibility.common.util.UiAutomatorUtils2;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 
 // This is a partial copy of android.view.cts.surfacevalidator.CapturedActivity.
@@ -55,14 +56,20 @@ import java.util.concurrent.TimeUnit;
 
 /** Start this activity to retrieve a MediaProjection through waitForMediaProjection() */
 public class MediaProjectionActivity extends Activity {
-    private static final String TAG = "MediaProjectionActivity";
     private static final int PERMISSION_CODE = 1;
-    public static final int PERMISSION_DIALOG_WAIT_MS = 1000;
+    private static final int PERMISSION_DIALOG_WAIT_MS = 1000;
+    private static final String TAG = "MediaProjectionActivity";
+    private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
+
+    // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
+    // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
+    private static final String SCREEN_SHARE_OPTIONS_REGEX =
+            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_(options|spinner)";
+
     public static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     public static final String CANCEL_RESOURCE_ID = "android:id/button2";
-    public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    public static final String SCREEN_SHARE_OPTIONS_RESOURCE_ID =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
+    public static final Pattern SCREEN_SHARE_OPTIONS_RES_PATTERN =
+            Pattern.compile(SCREEN_SHARE_OPTIONS_REGEX);
     public static final String ENTIRE_SCREEN_STRING_RES_NAME =
             "screen_share_permission_dialog_option_entire_screen";
     public static final String SINGLE_APP_STRING_RES_NAME =
@@ -174,29 +181,24 @@ public class MediaProjectionActivity extends Activity {
                 Log.e(TAG, "Couldn't select entire screen option");
             }
         }
-        pressStartRecording(isWatch);
+        pressStartRecording();
     }
 
     @Nullable
-    private static UiObject2 findUiObject(String resourceId) {
-        return findUiObject(By.res(resourceId));
-    }
-
-    @Nullable
-    private static UiObject2 findUiObject(BySelector selector) {
+    private static UiObject2 findUiObject(BySelector selector, UiSelector uiSelector) {
         // Check if the View can be found on the current screen.
         UiObject2 obj = waitForObject(selector);
 
         // If the View is not found on the current screen. Try scrolling around to find it.
         if (obj == null) {
             Log.w(TAG, "Couldn't find " + selector + ", now scrolling to it.");
-            scrollToGivenResource(SCREEN_SHARE_OPTIONS_RESOURCE_ID);
+            scrollToGivenResource(uiSelector);
             obj = waitForObject(selector);
         }
         if (obj == null) {
             Log.w(TAG, "Still couldn't find " + selector + ", now scrolling screen height.");
             try {
-                obj = UiAutomatorUtils.waitFindObjectOrNull(selector);
+                obj = UiAutomatorUtils2.waitFindObjectOrNull(selector);
             } catch (UiObjectNotFoundException e) {
                 Log.e(TAG, "Error in looking for " + selector, e);
             }
@@ -210,7 +212,9 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static boolean selectEntireScreenOption(String entireScreenString) {
-        UiObject2 optionSelector = findUiObject(SCREEN_SHARE_OPTIONS_RESOURCE_ID);
+        UiObject2 optionSelector = findUiObject(
+                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN),
+                new UiSelector().resourceIdMatches(SCREEN_SHARE_OPTIONS_REGEX));
         if (optionSelector == null) {
             Log.e(TAG, "Couldn't find option selector to select projection mode, "
                     + "even after scrolling");
@@ -248,24 +252,25 @@ public class MediaProjectionActivity extends Activity {
         return sysUiResources.getString(resourceId);
     }
 
-    private static void pressStartRecording(boolean isWatch) {
+    private static void pressStartRecording() {
         // May need to scroll down to the start button on small screen devices.
-        UiObject2 startRecordingButton = findUiObject(ACCEPT_RESOURCE_ID);
+        UiObject2 startRecordingButton = findUiObject(By.res(ACCEPT_RESOURCE_ID),
+                new UiSelector().resourceId(ACCEPT_RESOURCE_ID));
         if (startRecordingButton != null) {
             startRecordingButton.click();
         }
     }
 
     /** When testing on a small screen device, scrolls to a given UI element. */
-    private static void scrollToGivenResource(String resourceId) {
+    private static void scrollToGivenResource(UiSelector uiSelector) {
         // Scroll down the dialog; on a device with a small screen the elements may not be visible.
         final UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
         try {
-            if (!scrollable.scrollIntoView(new UiSelector().resourceId(resourceId))) {
-                Log.e(TAG, "Didn't find " + resourceId + " when scrolling");
+            if (!scrollable.scrollIntoView(uiSelector)) {
+                Log.e(TAG, "Didn't find " + uiSelector + " when scrolling");
                 return;
             }
-            Log.d(TAG, "We finished scrolling down to the ui element " + resourceId);
+            Log.d(TAG, "We finished scrolling down to the ui element " + uiSelector);
         } catch (UiObjectNotFoundException e) {
             Log.d(TAG, "There was no scrolling (UI may not be scrollable");
         }

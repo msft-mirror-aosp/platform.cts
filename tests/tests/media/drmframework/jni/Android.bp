@@ -42,5 +42,5 @@ cc_test_library {
     ],
     stl: "libc++_static",
     gtest: false,
-    sdk_version: "current",
+    sdk_version: "29",
 }

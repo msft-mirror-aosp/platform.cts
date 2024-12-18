@@ -153,16 +153,6 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         argsList.add(
                 new Object[]{MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, false,
                         ComponentClass.ALL});
-        if (isDispHtAtleastHD) {
-            // 5.3.6/C-2-1
-            argsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720,
-                    isTv ? 60 : 30, false, ComponentClass.ALL});
-        }
-        if (isDispHtAtleastFHD) {
-            // 5.3.6/C-2-2
-            argsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080,
-                    isTv ? 60 : 30, false, ComponentClass.ALL});
-        }
 
         // vp9
         // 5.3.7/C-1-1

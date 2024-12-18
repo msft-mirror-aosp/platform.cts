@@ -81,4 +81,25 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
         }
         assertEquals(1, handlerCount);
     }
+
+    public void testMoveContactsToDefaultAccount() {
+        PackageManager packageManager = getContext().getPackageManager();
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+        ) {
+            return; // Skip test on watch and automotive since the intent is not required.
+        }
+
+        Intent intent = new Intent(
+                ContactsContract.RawContacts.DefaultAccount.ACTION_MOVE_CONTACTS_TO_DEFAULT_ACCOUNT);
+        List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
+        assertNotNull("Missing ResolveInfo", resolveInfoList);
+        int handlerCount = 0;
+        for (ResolveInfo resolveInfo : resolveInfoList) {
+            if ("com.android.providers.contacts".equals(resolveInfo.activityInfo.packageName)) {
+                handlerCount++;
+            }
+        }
+        assertEquals(1, handlerCount);
+    }
 }

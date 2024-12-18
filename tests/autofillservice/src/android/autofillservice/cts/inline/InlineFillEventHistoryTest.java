@@ -22,7 +22,9 @@ import static android.autofillservice.cts.testcore.Helper.NULL_DATASET_ID;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetSelected;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForSaveShown;
+import static android.autofillservice.cts.testcore.Helper.assertHasEventMatchingTypeAndFilter;
 import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClientState;
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.service.autofill.FillEventHistory.Event.UI_TYPE_INLINE;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_GENERIC;
@@ -66,6 +68,7 @@ public class InlineFillEventHistoryTest extends FillEventHistoryCommonTestCase {
     @Override
     protected void enableService() {
         Helper.enableAutofillService(SERVICE_NAME);
+        InstrumentedAutoFillService.setAutofillServiceClass(SERVICE_CLASS);
     }
 
     @Override
@@ -133,7 +136,17 @@ public class InlineFillEventHistoryTest extends FillEventHistoryCommonTestCase {
         final List<Event> events = selection.getEvents();
         assertFillEventForDatasetShown(events.get(0), UI_TYPE_INLINE);
         assertFillEventForDatasetSelected(events.get(1), NULL_DATASET_ID, UI_TYPE_INLINE);
-        assertFillEventForSaveShown(events.get(2), NULL_DATASET_ID);
-        assertFillEventForDatasetShown(events.get(3), UI_TYPE_INLINE);
+        assertHasEventMatchingTypeAndFilter(
+            Event.TYPE_DATASETS_SHOWN,
+            event -> {
+              assertFillEventForDatasetShown(event, UI_TYPE_INLINE);
+            },
+            events);
+        assertHasEventMatchingTypeAndFilter(
+            Event.TYPE_SAVE_SHOWN,
+            event -> {
+              assertFillEventForSaveShown(event, NULL_DATASET_ID);
+            },
+            events);
     }
 }

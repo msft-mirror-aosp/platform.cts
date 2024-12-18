@@ -112,3 +112,17 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsWindowManagerJetpackTestCases_Presubmit",
+    base: "CtsWindowManagerJetpackTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}
+
+test_module_config {
+    name: "CtsWindowManagerJetpackTestCases_PlatinumTest",
+    base: "CtsWindowManagerJetpackTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

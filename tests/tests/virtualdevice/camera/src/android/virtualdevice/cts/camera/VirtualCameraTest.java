@@ -31,19 +31,15 @@ import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.hardware.camera2.params.SessionConfiguration.SESSION_REGULAR;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
-import static com.android.compatibility.common.util.FeatureUtil.hasSystemFeature;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -56,9 +52,7 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraCaptureSession;
@@ -70,11 +64,10 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
 import android.util.Size;
 import android.view.Surface;
+import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import junitparams.JUnitParamsRunner;
@@ -82,8 +75,10 @@ import junitparams.Parameters;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -98,11 +93,12 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY})
 @RunWith(JUnitParamsRunner.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualCameraTest {
+    @ClassRule
+    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
+
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final String CAMERA_NAME = "Virtual camera";
     private static final int CAMERA_WIDTH = 640;
@@ -156,9 +152,6 @@ public class VirtualCameraTest {
 
     @Before
     public void setUp() {
-        assumeFalse("Skipping VirtualCamera E2E test on automotive platform.",
-                    hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-
         MockitoAnnotations.initMocks(this);
 
         mVirtualDevice = mRule.createManagedVirtualDevice(
@@ -178,7 +171,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void virtualCamera_getConfig_returnsCorrectConfig() throws Exception {
+    public void getConfig_returnsCorrectConfig() {
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
         VirtualCameraConfig config = virtualCamera.getConfig();
@@ -187,25 +180,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_triggersCameraAvailabilityCallbacks() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        String virtualCameraId = virtualCamera.getId();
-        verify(mMockDefaultContextCameraAvailabilityCallback, timeout(TIMEOUT_MILLIS))
-                .onCameraAvailable(virtualCameraId);
-
-        virtualCamera.close();
-        verify(mMockDefaultContextCameraAvailabilityCallback, timeout(TIMEOUT_MILLIS))
-                .onCameraUnavailable(virtualCameraId);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void defaultContext_virtualCamera_doesNotTriggerCameraAvailabilityCallbacks()
-            throws Exception {
+    public void defaultContext_withVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -219,9 +194,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_noVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
+    public void vdContext_withoutVirtualCamera_doesNotTriggerCameraAvailabilityCallbacks() {
         setupVirtualDeviceCameraManager();
 
         verify(mMockVdContextCameraAvailabilityCallback, after(TIMEOUT_MILLIS).never())
@@ -231,10 +204,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualFrontCamera_triggersCameraAvailabilityCallbacks()
-            throws Exception {
+    public void vdContext_withVirtualFrontCamera_triggersCameraAvailabilityCallbacks() {
         setupVirtualDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -247,9 +217,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualBackCamera_triggersCameraAvailabilityCallbacks() throws Exception {
+    public void vdContext_withVirtualBackCamera_triggersCameraAvailabilityCallbacks() {
         VirtualCamera virtualCamera = createVirtualCamera(LENS_FACING_BACK);
         setupVirtualDeviceCameraManager();
 
@@ -262,33 +230,8 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_virtualDeviceCloseRemovesCamera() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        mVirtualDevice.close();
-
-        verify(mMockDefaultContextCameraAvailabilityCallback, timeout(TIMEOUT_MILLIS))
-                .onCameraUnavailable(virtualCamera.getId());
-        assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList())
-                .doesNotContain(virtualCamera.getId());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_presentInListOfCameras() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList())
-                .contains(virtualCamera.getId());
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void defaultContext_virtualCamera_notPresentInListOfCameras() throws Exception {
+    public void getCameraIdList_withDefaultContext_withVirtualCamera_doesNotIncludeVirtualCamera()
+        throws Exception {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -297,18 +240,15 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_withoutVirtualCamera_noCamerasPresent() throws Exception {
+    public void getCameraIdList_withVdContext_withoutVirtualCamera_returnsEmptyList() throws Exception {
         setupVirtualDeviceCameraManager();
 
         assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList()).isEmpty();
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualFrontCamera_presentInListOfCameras() throws Exception {
+    public void getCameraIdList_withVdContext_withVirtualFrontCamera_includesOnlyVirtualCamera()
+        throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -317,27 +257,13 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualBackCamera_presentInListOfCameras() throws Exception {
+    public void getCameraIdList_withVdContext_withVirtualBackCamera_includesOnlyVirtualCamera()
+        throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(LENS_FACING_BACK);
 
         assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList())
                 .contains(BACK_CAMERA_ID);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_close_notPresentInListOfCameras() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-        String virtualCameraId = virtualCamera.getId();
-
-        virtualCamera.close();
-
-        assertThat(Arrays.stream(mCameraManager.getCameraIdListNoLazy()).toList())
-                .doesNotContain(virtualCameraId);
     }
 
     @Test
@@ -353,8 +279,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
     public void defaultPolicyVdContext_cannotAccessVirtualCamera() throws Exception {
         setupDefaultDeviceCameraManager();
         String[] defaultCameraIds = mCameraManager.getCameraIdListNoLazy();
@@ -368,33 +292,9 @@ public class VirtualCameraTest {
         assertThat(cameraIds).isEqualTo(defaultCameraIds);
     }
 
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_hasCorrectDeviceId() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(
-                virtualCamera.getId());
-        assertThat(characteristics.get(INFO_DEVICE_ID))
-                .isEqualTo(mVirtualDevice.getDeviceId());
-    }
-
     @Parameters(method = "getAllSensorOrientations")
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_hasCorrectOrientation(int sensorOrientation) throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createVirtualCameraWithSensorOrientation(sensorOrientation);
-
-        verifyCameraSensorOrientation(virtualCamera.getId(), sensorOrientation);
-    }
-
-    @Parameters(method = "getAllSensorOrientations")
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_hasCorrectOrientation(int sensorOrientation)
+    public void virtualCamera_hasCorrectOrientation(int sensorOrientation)
             throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCameraWithSensorOrientation(sensorOrientation);
@@ -403,18 +303,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
     public void virtualCamera_hasCorrectMinFrameDuration() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        verifyCameraMaximumFramesPerSecond(virtualCamera.getId(), CAMERA_MAX_FPS);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_hasCorrectMinFrameDuration() throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -423,19 +312,7 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
     public void virtualCamera_hasCorrectLensFacing(int lensFacing) throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createVirtualCamera(lensFacing);
-
-        verifyCameraLensFacing(virtualCamera.getId(), lensFacing);
-    }
-
-    @Parameters(method = "getAllLensFacingDirections")
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_hasCorrectLensFacing(int lensFacing) throws Exception {
         setupVirtualDeviceCameraManager();
         createVirtualCamera(lensFacing);
 
@@ -463,56 +340,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_openCamera_triggersOnOpenedCallback() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-        String virtualCameraId = virtualCamera.getId();
-
-        mCameraManager.openCamera(virtualCameraId, directExecutor(), mCameraStateCallback);
-
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(
-                mCameraDeviceCaptor.capture());
-        assertThat(mCameraDeviceCaptor.getValue().getId()).isEqualTo(virtualCameraId);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_close_triggersOnDisconnectedCallback() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-        String virtualCameraId = virtualCamera.getId();
-
-        mCameraManager.openCamera(virtualCameraId, directExecutor(), mCameraStateCallback);
-        virtualCamera.close();
-
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
-                .onDisconnected(mCameraDeviceCaptor.capture());
-        assertThat(mCameraDeviceCaptor.getValue().getId()).isEqualTo(virtualCameraId);
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_cameraDeviceClose_triggersOnClosedCallback() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-        String virtualCameraId = virtualCamera.getId();
-
-        mCameraManager.openCamera(virtualCameraId, directExecutor(), mCameraStateCallback);
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onOpened(
-                mCameraDeviceCaptor.capture());
-
-        mCameraDeviceCaptor.getValue().close();
-
-        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS)).onClosed(
-                mCameraDeviceCaptor.capture());
-        assertThat(mCameraDeviceCaptor.getValue().getId()).isEqualTo(virtualCameraId);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_openCamera_triggersOnOpenedCallback() throws Exception {
+    public void vdContext_withVirtualCamera_openCamera_triggersOnOpenedCallback() throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
 
@@ -524,9 +352,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_close_triggersOnDisconnectedCallback() throws Exception {
+    public void vdContext_withVirtualCamera_close_triggersOnDisconnectedCallback() throws Exception {
         setupVirtualDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -539,9 +365,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_cameraDeviceClose_triggersOnClosedCallback()
+    public void vdContext_withVirtualCamera_cameraDeviceClose_triggersOnClosedCallback()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -558,9 +382,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void defaultContext_virtualCamera_openCamera_throwsException() throws Exception {
+    public void defaultContext_withVirtualCamera_openCamera_throwsException() {
         setupDefaultDeviceCameraManager();
         VirtualCamera virtualCamera = createFrontVirtualCamera();
 
@@ -570,27 +392,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_configureSessionForSupportedFormat_succeeds() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        verifyConfigureSessionForSupportedFormatSucceeds(virtualCamera.getId());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void virtualCamera_configureSessionForUnsupportedFormat_fails() throws Exception {
-        setupDefaultDeviceCameraManager();
-        VirtualCamera virtualCamera = createFrontVirtualCamera();
-
-        verifyConfigureSessionForUnsupportedFormatFails(virtualCamera.getId());
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_configureSessionForSupportedFormat_succeeds()
+    public void vdContext_withVirtualCamera_configureSessionForSupportedFormat_succeeds()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -599,9 +401,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_virtualCamera_configureSessionForUnsupportedFormat_fails()
+    public void vdContext_withVirtualCamera_configureSessionForUnsupportedFormat_fails()
             throws Exception {
         setupVirtualDeviceCameraManager();
         createFrontVirtualCamera();
@@ -610,20 +410,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_DEVICE_AWARENESS)
-    public void getNumberOfCameras_includesVirtualCamera() throws Exception {
-        int numberOfCamerasBeforeVirtualCamera = Camera.getNumberOfCameras();
-        createFrontVirtualCamera();
-        int numberOfCamerasAfterVirtualCamera = Camera.getNumberOfCameras();
-
-        assertThat(numberOfCamerasAfterVirtualCamera - numberOfCamerasBeforeVirtualCamera)
-                .isEqualTo(1);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void defaultContext_getNumberOfCameras_doesNotIncludeVirtualCamera() throws Exception {
+    public void defaultContext_getNumberOfCameras_doesNotIncludeVirtualCamera() {
         int numberOfCamerasBeforeVirtualCamera = Camera.getNumberOfCameras();
         createFrontVirtualCamera();
         int numberOfCamerasAfterVirtualCamera = Camera.getNumberOfCameras();
@@ -632,8 +419,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    public void defaultPolicyVdContext_getNumberOfCameras_includesDefaultCameras()
-            throws Exception {
+    public void defaultPolicyVdContext_getNumberOfCameras_includesDefaultCameras() {
         int defaultNumCameras = Camera.getNumberOfCameras();
 
         // Create another virtual device with default camera policy.
@@ -644,10 +430,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void defaultPolicyVdContext_getNumberOfCameras_doesNotIncludeVirtualCamera()
-            throws Exception {
+    public void defaultPolicyVdContext_getNumberOfCameras_doesNotIncludeVirtualCamera() {
         int numberOfCamerasBeforeVirtualCamera = Camera.getNumberOfCameras();
 
         createFrontVirtualCamera();
@@ -659,9 +442,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_getNumberOfCameras_includesOnlyVirtualCamera() throws Exception {
+    public void vdContext_getNumberOfCameras_includesOnlyVirtualCamera() {
         createFrontVirtualCamera();
 
         Context vdContext = getApplicationContext().createDeviceContext(
@@ -670,9 +451,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_getCameraInfo_returnsVirtualCameraInfo() throws Exception {
+    public void vdContext_getCameraInfo_returnsVirtualCameraInfo() {
         createFrontVirtualCamera();
 
         Context vdContext = getApplicationContext().createDeviceContext(
@@ -687,9 +466,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void vdContext_legacyCameraPreview_withVirtualCamera() throws Exception {
+    public void vdContext_legacyCameraPreview_withVirtualCamera_succeeds() throws Exception {
         createFrontVirtualCamera();
 
         Context vdContext = getApplicationContext().createDeviceContext(
@@ -721,9 +498,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void virtualCamera_supports_mandatory_capture_use_cases() throws Exception {
+    public void virtualCamera_supportsMandatoryCaptureUseCases() throws Exception {
         setupVirtualDeviceCameraManager();
         try (VirtualCamera camera = createFrontVirtualCamera()) {
             long[] availableUseCases = mCameraManager.getCameraCharacteristics(
@@ -740,9 +515,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void getConcurrentCameraIds_singleVirtualCamera_returnsEmpty() throws Exception {
+    public void getConcurrentCameraIds_withSingleVirtualCamera_returnsEmpty() throws Exception {
         createFrontVirtualCamera();
         setupVirtualDeviceCameraManager();
 
@@ -751,9 +524,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void getConcurrentCameraIds_multipleVirtualCameras_returnsEmpty() throws Exception {
+    public void getConcurrentCameraIds_withMultipleVirtualCameras_returnsEmpty() throws Exception {
         createFrontVirtualCamera();
         createVirtualCamera(LENS_FACING_BACK);
         setupVirtualDeviceCameraManager();
@@ -763,9 +534,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
-    public void isConcurrentSessionConfigurationSupported_virtualCamera_returnsFalse()
+    public void isConcurrentSessionConfigurationSupported_withVirtualCamera_returnsFalse()
             throws Exception {
         createFrontVirtualCamera();
         createVirtualCamera(LENS_FACING_BACK);

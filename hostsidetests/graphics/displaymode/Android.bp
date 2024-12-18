@@ -27,7 +27,7 @@ java_test_host {
         "guava",
     ],
     static_libs: ["CompatChangeGatingTestBase"],
-    data: [
+    device_common_data: [
         ":CtsBootDisplayModeApp",
     ],
     // tag this module as a cts test artifact
@@ -35,5 +35,5 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    java_resources: [":cts-global-compat-config"],
+    device_common_java_resources: [":cts-global-compat-config"],
 }

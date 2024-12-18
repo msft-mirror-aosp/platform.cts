@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -27,6 +28,8 @@ import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.InstantAppInfo;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.inputmethod.cts.installtests.common.ShellCommandUtils;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
@@ -39,7 +42,8 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.SystemUtil;
@@ -69,6 +73,13 @@ public final class MultiUserMockImeTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();  // Required by Bedstead.
 
+    /** Tag for the first EditText. */
+    private static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
+    /** Tag for the second EditText. */
+    private static final String SECOND_EDIT_TEXT_TAG = "second-EditText";
+
+    private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
+
     @After
     public void tearDown() {
         runShellCommandOrThrow(ShellCommandUtils.resetImesForAllUsers());
@@ -78,8 +89,8 @@ public final class MultiUserMockImeTest {
      * TODO(b/327704045): Unify the implementation with
      * {@link android.view.inputmethod.cts.util.EndToEndImeTestBase#getTestMarker(String)}
      */
-    private String getTestMarker() {
-        return getClass().getName() + "/" + SystemClock.elapsedRealtimeNanos();
+    private String getTestMarker(@NonNull String tag) {
+        return getClass().getName() + "/" + tag + "/" + SystemClock.elapsedRealtimeNanos();
     }
 
     @Test
@@ -87,7 +98,7 @@ public final class MultiUserMockImeTest {
     @EnsureHasWorkProfile
     public void testProfileSwitching() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference workUser = sDeviceState.workProfile(currentUser);
+        final UserReference workUser = workProfile(sDeviceState, currentUser);
         final int currentUserId = currentUser.id();
         final int workUserId = workUser.id();
 
@@ -116,7 +127,7 @@ public final class MultiUserMockImeTest {
             var stream1 = session1.openEventStream();
             var stream2 = session2.openEventStream();
 
-            final String marker1 = getTestMarker();
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
 
             try (var activity1 = MockTestActivityUtil.launchAsUser(
                     currentUserId, isInstant,
@@ -125,13 +136,92 @@ public final class MultiUserMockImeTest {
 
                 MockTestActivityUtil.sendBroadcastAction(
                         MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, currentUserId);
-                final String marker2 = getTestMarker();
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 try (var activity2 = MockTestActivityUtil.launchAsUser(
                         workUserId, isInstant,
                         Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker2))) {
                     expectEvent(stream2, editorMatcher("onStartInput", marker2), TIMEOUT);
                     expectEvent(stream1, event -> "onDestroy".equals(event.getEventName()),
                             TIMEOUT);
+                }
+            }
+        }
+    }
+
+    @Test
+    @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
+    @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
+    @EnsureHasWorkProfile
+    public void testRemoveCurrentProfileCanStartInputOnOtherUser() throws Exception {
+        final UserReference currentUser = sDeviceState.initialUser();
+        final UserReference profileUser = workProfile(sDeviceState, currentUser);
+        final int currentUserId = currentUser.id();
+        final int profileUserId = profileUser.id();
+
+        assertTrue(profileUser.isRunning());
+
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var context = instrumentation.getContext();
+        final var uiAutomation = instrumentation.getUiAutomation();
+
+        // DeviceState setup disabled keyguard to avoid test failures, but we need it enabled.
+        // This also ensures we don't end the test with keyguard shown.
+        TestApis.device().setKeyguardEnabled(true);
+
+        // Copy required packages from the current user to the profile user. Note that currently
+        // bedstead does not support install-existing with "--instant" option so here we directly
+        // use shell commands.
+
+        // For MockIme, always install as full (non-instant) app.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockImePackageNames.MockIme1, profileUserId, false /* instant */));
+        // For the test app, propagate isInstant option from the current user to the work user.
+        runShellCommandOrThrow(ShellCommandUtils.installExisting(
+                MockTestActivityUtil.TEST_ACTIVITY.getPackageName(), profileUserId,
+                false /* instant */));
+
+        try (var session1 = MockImeSession.create(context, uiAutomation,
+                new ImeSettings.Builder())) {
+            final var session2 = MockImeSession.create(instrumentation.getContext(), uiAutomation,
+                    new ImeSettings.Builder().setTargetUser(profileUser.userHandle()));
+            var stream1 = session1.openEventStream();
+            var stream2 = session2.openEventStream();
+
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+
+            try (var activity1 = MockTestActivityUtil.launchAsUser(
+                    currentUserId, false /* instant */,
+                    Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
+                expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
+
+                MockTestActivityUtil.sendBroadcastAction(
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, currentUserId);
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
+                try (var activity2 = MockTestActivityUtil.launchAsUser(
+                        profileUserId, false /* instant */,
+                        Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker2))) {
+                    expectEvent(stream2, editorMatcher("onStartInput", marker2), TIMEOUT);
+                    expectEvent(stream1, event -> "onDestroy".equals(event.getEventName()),
+                            TIMEOUT);
+
+                    TestApis.device().sleep();
+
+                    // The session must be closed before the user is removed.
+                    session2.close();
+                    // Remove profile with screen off to maintain currentImeUser ID in
+                    // InputMethodManagerService.
+                    profileUser.remove();
+
+                    TestApis.device().wakeUp();
+                    // Wait for lock screen to be visible and focused before unlocking.
+                    mWmState.waitForNonActivityWindowFocused();
+                    TestApis.device().unlock();
+
+                    expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()),
+                            TIMEOUT);
+                    // Must be able to startInput on the previous user even when the currentImeUser
+                    // was removed.
+                    expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
                 }
             }
         }

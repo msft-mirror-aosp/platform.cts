@@ -87,6 +87,7 @@ public class HardwareRendererTest {
 
         Executor executor = Runnable::run;
         Consumer<HardwareBufferRenderer.RenderResult> resultListener = renderResult -> {
+            renderResult.getFence().awaitForever();
             renderResult.getFence().close();
         };
 

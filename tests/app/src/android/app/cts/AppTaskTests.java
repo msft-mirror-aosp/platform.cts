@@ -23,6 +23,7 @@ import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -32,6 +33,7 @@ import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.stubs.MockActivity;
 import android.app.stubs.MockListActivity;
+import android.app.stubs.MockTopResumedReporterActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -69,8 +71,8 @@ public class AppTaskTests {
 
     private static final String TAG = AppTaskTests.class.getSimpleName();
 
-    private static final long TIME_SLICE_MS = 100;
-    private static final long MAX_WAIT_MS = 1500;
+    private static final long TIME_SLICE_MS = 1000;
+    private static final long WAIT_RETRIES = 5;
 
     private static final String EXTRA_KEY = "key";
     private static final String EXTRA_VALUE = "some_value";
@@ -81,7 +83,8 @@ public class AppTaskTests {
 
     @Rule
     public ActivityTestRule<MockActivity> mActivityRule =
-            new ActivityTestRule<MockActivity>(MockActivity.class) {
+            new ActivityTestRule<MockActivity>(
+                    MockActivity.class, false /* initialTouchMode */, false /* launchActivity */) {
         @Override
         public Intent getActivityIntent() {
             Intent intent = new Intent();
@@ -144,29 +147,46 @@ public class AppTaskTests {
      */
     @Test
     public void testMoveToFront() throws Exception {
-        final Activity a1 = mActivityRule.launchActivity(null);
+        final Intent firstActivityIntent = new Intent();
+        firstActivityIntent.setComponent(
+                new ComponentName(mTargetContext, MockTopResumedReporterActivity.class));
+        firstActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        MockTopResumedReporterActivity firstActivity =
+                (MockTopResumedReporterActivity) mInstrumentation.startActivitySync(
+                        firstActivityIntent);
 
         // Launch fullscreen activity as an another task to hide the first activity
-        final Intent intent = new Intent();
-        intent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
-        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
+        final Intent secondActivityIntent = new Intent();
+        secondActivityIntent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
+        secondActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
                     | FLAG_ACTIVITY_MULTIPLE_TASK);
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
-        mInstrumentation.startActivitySync(intent, options.toBundle());
-
+        mInstrumentation.startActivitySync(secondActivityIntent, options.toBundle());
+        waitAndAssertCondition(() -> !firstActivity.isTopResumed,
+                "First activity is not top resumed");
         final BooleanValue targetResumed = new BooleanValue();
         mLifecycleMonitor.addLifecycleCallback(new ActivityLifecycleCallback() {
             public void onActivityLifecycleChanged(Activity activity, Stage stage) {
-                if (activity == a1 && stage == Stage.RESUMED) {
+                if (activity == firstActivity && stage == Stage.RESUMED) {
                     targetResumed.value = true;
                 }
             }
         });
 
-        getAppTask(a1).moveToFront();
-        waitAndAssertCondition(() -> targetResumed.value,
-                "Expected activity brought to front and resumed");
+        final ActivityManager.AppTask appTask = getAppTask(firstActivity);
+        appTask.moveToFront();
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). a1 would still be resumed and visible without a lifecycle change even when
+        // another activity is launched in this case.
+        if (!firstActivity.isInMultiWindowMode()) {
+            waitAndAssertCondition(() -> targetResumed.value,
+                    "Expected activity brought to front and resumed");
+        }
+        waitAndAssertCondition(() -> appTask.getTaskInfo().isVisible(), "Waiting for task visible");
+        assertEquals(appTask.getTaskInfo().topActivity, firstActivity.getComponentName());
+        waitAndAssertCondition(() -> firstActivity.isTopResumed,
+                "First activity is top resumed");
     }
 
     /**
@@ -213,8 +233,8 @@ public class AppTaskTests {
     @Test
     public void testSetExcludeFromRecents() throws Exception {
         final Activity a1 = mActivityRule.launchActivity(null);
-        final List<ActivityManager.AppTask> appTasks = getAppTasks();
-        final ActivityManager.AppTask t1 = appTasks.get(0);
+        final ActivityManager.AppTask t1 = getAppTask(a1);
+
         t1.setExcludeFromRecents(true);
         assertTrue((t1.getTaskInfo().baseIntent.getFlags() & FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                 != 0);
@@ -280,15 +300,16 @@ public class AppTaskTests {
     }
 
     private void waitAndAssertCondition(BooleanSupplier condition, String failMsgContext) {
-        long startTime = SystemClock.elapsedRealtime();
+        long count = 0;
         while (true) {
             if (condition.getAsBoolean()) {
                 // Condition passed
                 return;
-            } else if (SystemClock.elapsedRealtime() > (startTime + MAX_WAIT_MS)) {
+            } else if (count >= (WAIT_RETRIES)) {
                 // Timed out
                 fail("Timed out waiting for: " + failMsgContext);
             } else {
+                count++;
                 SystemClock.sleep(TIME_SLICE_MS);
             }
         }

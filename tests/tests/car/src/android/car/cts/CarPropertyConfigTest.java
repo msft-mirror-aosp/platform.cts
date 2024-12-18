@@ -19,10 +19,15 @@ package android.car.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.car.Car;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
 import android.car.VehiclePropertyType;
+import android.car.builtin.os.BuildHelper;
 import android.car.cts.utils.ShellPermissionUtils;
 import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
@@ -340,6 +345,27 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
                 cfg.getMaxValue(areaId);
                 cfg.getMinValue(areaId);
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
+    public void testIsPropertyIdSimulationPropId() {
+        assumeTrue(BuildHelper.isDebuggableBuild());
+        for (CarPropertyConfig<?> cfg : mConfigs) {
+            assertThat(cfg.isPropertyIdSimulationPropId()).isFalse();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
+    public void testIsPropertyIdSimulationPropId_userBuild() {
+        assumeFalse(BuildHelper.isDebuggableBuild());
+        for (CarPropertyConfig<?> cfg : mConfigs) {
+            IllegalStateException thrown =
+                    assertThrows(
+                            IllegalStateException.class, () -> cfg.isPropertyIdSimulationPropId());
+            assertThat(thrown).hasMessageThat().contains("Build is not eng or user-debug");
         }
     }
 

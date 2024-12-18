@@ -67,6 +67,7 @@ import android.server.wm.settings.SettingsSession;
 import android.system.OsConstants;
 import android.text.TextUtils;
 import android.util.DebugUtils;
+import android.util.KeyValueListParser;
 import android.util.Log;
 import android.util.Pair;
 
@@ -156,6 +157,8 @@ public final class ActivityManagerAppExitInfoTest {
     private static final long WAITFOR_SETTLE_DOWN = 2000;
 
     private static final int CMD_PID = 1;
+
+    private static final String KEY_TIMEOUT = "bcast_timeout";
 
     private Context mContext;
     private Instrumentation mInstrumentation;
@@ -638,8 +641,20 @@ public final class ActivityManagerAppExitInfoTest {
         };
         mContext.registerReceiver(receiver,
                 new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
-        final long timeout = Settings.Global.getInt(mContext.getContentResolver(),
-                Settings.Global.BROADCAST_FG_CONSTANTS, 10 * 1000) * 3;
+
+        final KeyValueListParser parser = new KeyValueListParser(',');
+        // (10 * HW_TIMEOUT_MULTIPLIER) seconds is the default BROADCAST_FG_TIMEOUT.
+        // Using 3 times that as the test timeout.
+        final long defaultTimeout = 10L * 1000L * Build.HW_TIMEOUT_MULTIPLIER;
+        long timeout = defaultTimeout * 3;
+        try {
+            parser.setString(Settings.Global.getString(mContext.getContentResolver(),
+                    Settings.Global.BROADCAST_FG_CONSTANTS));
+            timeout = parser.getLong(KEY_TIMEOUT, defaultTimeout) * 3;
+        } catch (IllegalArgumentException e) {
+            Log.d(TAG, "Bad broadcast settings in key '" + Settings.Global.BROADCAST_FG_CONSTANTS
+                    + "'", e);
+        }
 
         long now = System.currentTimeMillis();
 
@@ -981,10 +996,11 @@ public final class ActivityManagerAppExitInfoTest {
         PollingCheck.check("not able to get tombstone", TOMBSTONE_FETCH_TIMEOUT_MS,
                 () -> tombstoneFetcher.fetchTrace());
 
-        InputStream trace = tombstoneFetcher.getTrace();
-        assertNotNull(trace);
-        Tombstone tombstone = Tombstone.parseFrom(trace);
-        assertEquals(tombstone.getPid(), mStubPackagePid);
+        try (InputStream trace = tombstoneFetcher.getTrace()) {
+            assertNotNull(trace);
+            Tombstone tombstone = Tombstone.parseFrom(trace);
+            assertEquals(tombstone.getPid(), mStubPackagePid);
+        }
     }
 
     @Test

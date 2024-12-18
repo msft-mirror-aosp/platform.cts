@@ -101,6 +101,10 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     @Before
     @Override
     public void setUp() throws Exception {
+        assumeRunNotOnVisibleBackgroundNonProfileUser("On visible background users, having the"
+                + "keyboard in one display and the app that consumes the key events in another "
+                + "virtual display, is not supported");
+
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());
@@ -136,19 +140,21 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // virtual display.
         assertImeWindowAndDisplayConfiguration(mWmState.getImeWindowState(), newDisplay);
 
-        // Launch another activity on the default display.
+        // Launch another activity on the main display of the user. When the test runs on the
+        // current user, the display will be the default display.
         imeTestActivitySession2.launchTestActivityOnDisplaySync(
-                ImeTestActivity2.class, DEFAULT_DISPLAY);
+                ImeTestActivity2.class, getMainDisplayId());
         expectEvent(stream, editorMatcher("onStartInput",
                 imeTestActivitySession2.getActivity().mEditText.getPrivateImeOptions()), TIMEOUT);
 
         // Make the activity to show soft input.
-        showSoftInputAndAssertImeShownOnDisplay(DEFAULT_DISPLAY, imeTestActivitySession2, stream);
+        showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), imeTestActivitySession2,
+                stream);
 
         // Assert the configuration of the IME window is the same as the configuration of the
-        // default display.
+        // main display of the user.
         assertImeWindowAndDisplayConfiguration(mWmState.getImeWindowState(),
-                mWmState.getDisplay(DEFAULT_DISPLAY));
+                mWmState.getDisplay(getMainDisplayId()));
     }
 
     /**
@@ -438,8 +444,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .allowMultipleInstances(false)
                 .setDisplayId(DEFAULT_DISPLAY).execute();
-        waitAndAssertTopResumedActivity(imeTestActivitySession.getActivity().getComponentName(),
-                DEFAULT_DISPLAY, "Activity launched on default display and on top");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                imeTestActivitySession.getActivity().getComponentName(), DEFAULT_DISPLAY,
+                "Activity launched on default display and on top");
 
         // Activity is no longer on the secondary display
         assertThat(mWmState.hasActivityInDisplay(newDisplay.mId, imeTestActivityName)).isFalse();
@@ -536,9 +543,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     .setDisplayId(secondDisplay.mId).execute();
 
             // Make sure ImeTestActivity is move from the firstDisplay to the secondDisplay
-            waitAndAssertTopResumedActivity(imeTestActivitySession.getActivity().getComponentName(),
-                    secondDisplay.mId, "ImeTestActivity must be top-resumed on display#"
-                            + secondDisplay.mId);
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    imeTestActivitySession.getActivity().getComponentName(), secondDisplay.mId,
+                    "ImeTestActivity must be top-resumed on display#" + secondDisplay.mId);
             assertThat(mWmState.hasActivityInDisplay(firstDisplay.mId,
                     imeTestActivitySession.getActivity().getComponentName())).isFalse();
             // Wait until IME is ready for the IME client to call showSoftInput().

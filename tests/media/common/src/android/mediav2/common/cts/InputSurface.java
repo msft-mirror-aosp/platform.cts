@@ -78,6 +78,7 @@ public class InputSurface {
         int eglColorSize = useHighBitDepth ? 10 : 8;
         int eglAlphaSize = useHighBitDepth ? 2 : 0;
         int[] recordableList = useHighBitDepth ? new int[]{0, 1} : new int[]{1};
+        String formatStr = useHighBitDepth ? "RGBA1010102" : "RGB888+recordable";
 
         for (int recordable : recordableList) {
             int[] configAttribList = {
@@ -91,8 +92,8 @@ public class InputSurface {
             };
             int[] numConfigs = new int[1];
             if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, mConfigs, 0,
-                    mConfigs.length, numConfigs, 0)) {
-                throw new RuntimeException("unable to find RGB888+recordable ES2 EGL config");
+                    mConfigs.length, numConfigs, 0) || numConfigs[0] == 0) {
+                continue;
             }
 
             // Configure context for OpenGL ES 2.0.
@@ -102,13 +103,14 @@ public class InputSurface {
             };
             mEGLContext = EGL14.eglCreateContext(mEGLDisplay, mConfigs[0], EGL14.EGL_NO_CONTEXT,
                     contextAttribList, 0);
-            if (mEGLContext != null && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
+            checkEglError("eglCreateContext");
+            if (mEGLContext != EGL14.EGL_NO_CONTEXT && EGL14.EGL_SUCCESS == EGL14.eglGetError()) {
                 break;
             }
         }
-        checkEglError("eglCreateContext");
-        if (mEGLContext == null) {
-            throw new RuntimeException("null context");
+
+        if (mEGLContext == EGL14.EGL_NO_CONTEXT) {
+            throw new RuntimeException("unable to find " + formatStr + " ES2 EGL config");
         }
 
         // Create a window surface, and attach it to the Surface we received.

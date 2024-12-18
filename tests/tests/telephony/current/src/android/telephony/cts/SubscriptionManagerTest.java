@@ -33,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.Nullable;
@@ -55,6 +56,7 @@ import android.os.ParcelUuid;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -194,7 +196,7 @@ public class SubscriptionManagerTest {
         private final CountDownLatch mAvailableLatch = new CountDownLatch(1);
 
         public void waitForAvailable() throws InterruptedException {
-            assertTrue("Cellular network did not come up after 5 seconds",
+            assumeTrue("Cellular network did not come up after 5 seconds",
                     mAvailableLatch.await(5, TimeUnit.SECONDS));
         }
 
@@ -274,12 +276,14 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetActiveSubscriptionInfoCount() throws Exception {
         assertTrue(mSm.getActiveSubscriptionInfoCount() <=
                 mSm.getActiveSubscriptionInfoCountMax());
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetActiveSubscriptionInfoForIcc() throws Exception {
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
@@ -288,6 +292,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetAllSubscriptionInfoList() throws Exception {
         List<SubscriptionInfo> allSubInfoList = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mSm, SubscriptionManager::getAllSubscriptionInfoList);
@@ -297,6 +302,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testIsActiveSubscriptionId() throws Exception {
         assertTrue(mSm.isActiveSubscriptionId(mSubId));
     }
@@ -316,6 +322,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetResourcesForSubId() {
         Resources r = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getResourcesForSubId(InstrumentationRegistry.getContext(), mSubId));
@@ -331,6 +338,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testActiveSubscriptions() throws Exception {
         List<SubscriptionInfo> subList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfoList());
@@ -357,6 +365,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_SUBSCRIPTION_USER_FILTER)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testForAllProfilesSubscriptionManager() {
         SubscriptionManager allProfileSm = InstrumentationRegistry.getContext()
                 .getSystemService(SubscriptionManager.class).createForAllUserProfiles();
@@ -386,13 +395,29 @@ public class SubscriptionManagerTest {
         // Push simple plan and get it back
         final SubscriptionPlan plan = buildValidSubscriptionPlan(System.currentTimeMillis());
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan));
-        assertEquals(Arrays.asList(plan), mSm.getSubscriptionPlans(mSubId));
+        final SubscriptionPlan returnedPlan = mSm.getSubscriptionPlans(mSubId).get(0);
+        assertEquals(plan, returnedPlan);
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            assertNull(returnedPlan.getPlanEndDate());
+        }
 
         // Push plan with expiration time and verify that it expired
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan), SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_EXPIRY_MS);
         Thread.sleep(SUBSCRIPTION_PLAN_CLEAR_WAIT_MS);
         assertTrue(mSm.getSubscriptionPlans(mSubId).isEmpty());
+
+        // Push simple non-recurring plan and get it back
+        ZonedDateTime start = ZonedDateTime.parse("2007-03-14T00:00:00.000Z");
+        ZonedDateTime end = ZonedDateTime.parse("2024-11-08T00:00:00.000Z");
+        final SubscriptionPlan planNonRecurring =
+                buildValidSubscriptionPlanNonRecurring(System.currentTimeMillis(), start, end);
+        mSm.setSubscriptionPlans(mSubId, Arrays.asList(planNonRecurring));
+        final SubscriptionPlan returnedPlanNonRecurring = mSm.getSubscriptionPlans(mSubId).get(0);
+        assertEquals(planNonRecurring, returnedPlanNonRecurring);
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            assertEquals(end, returnedPlanNonRecurring.getPlanEndDate());
+        }
 
         // Now revoke our access
         setSubPlanOwner(mSubId, null);
@@ -413,7 +438,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // Make ourselves the owner
         setSubPlanOwner(mSubId, mPackageName);
@@ -464,7 +489,7 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testSubscriptionInfoRecord() {
-        if (!isAutomotive()) return;
+        assumeTrue("Remote SIM is only supported on automotive", isAutomotive());
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
@@ -472,7 +497,8 @@ public class SubscriptionManagerTest {
         final String displayName = "device_name";
         uiAutomation.adoptShellPermissionIdentity();
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
             mSm.removeSubscriptionInfoRecord(uniqueId,
@@ -484,7 +510,8 @@ public class SubscriptionManagerTest {
 
         // Testing permission fail
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             mSm.removeSubscriptionInfoRecord(uniqueId,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
@@ -534,7 +561,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // TODO: Remove this check after b/176119724 is fixed.
         if (!isUnmetered5GSupported()) return;
@@ -569,7 +596,7 @@ public class SubscriptionManagerTest {
         final ConnectivityManager cm = InstrumentationRegistry.getContext()
                 .getSystemService(ConnectivityManager.class);
         final Network net = findCellularNetwork();
-        assertNotNull("Active cellular network required", net);
+        assumeNotNull("Active cellular network required", net);
 
         // TODO: Remove this check after b/176119724 is fixed.
         if (!isUnmetered5GSupported()) return;
@@ -694,19 +721,25 @@ public class SubscriptionManagerTest {
     @Test
     public void testSubscriptionPlanResetNetworkTypes() {
         long time = System.currentTimeMillis();
-        SubscriptionPlan plan = SubscriptionPlan.Builder
+        SubscriptionPlan.Builder builder = SubscriptionPlan.Builder
                 .createRecurring(ZonedDateTime.parse("2007-03-14T00:00:00.000Z"),
                         Period.ofMonths(1))
                 .setTitle("CTS")
                 .setNetworkTypes(new int[] {TelephonyManager.NETWORK_TYPE_LTE})
                 .setDataLimit(1_000_000_000, SubscriptionPlan.LIMIT_BEHAVIOR_DISABLED)
                 .setDataUsage(500_000_000, time)
-                .resetNetworkTypes()
-                .build();
+                .resetNetworkTypes();
+
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+        }
+
+        SubscriptionPlan plan = builder.build();
         assertEquals(plan, buildValidSubscriptionPlan(time));
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permission")
     public void testSubscriptionGrouping() throws Exception {
         // Set subscription group with current sub Id. This should fail
         // because we don't have MODIFY_PHONE_STATE or carrier privilege permission.
@@ -751,6 +784,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testSubscriptionGroupingWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -828,6 +862,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testAddSubscriptionIntoNewGroupWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -867,6 +902,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#setOpportunistic")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permissions")
     public void testSettingOpportunisticSubscription() throws Exception {
         // Set subscription to be opportunistic. This should fail
         // because we don't have MODIFY_PHONE_STATE or carrier privilege permission.
@@ -882,6 +918,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testMccMncString() {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         String mcc = info.getMccString();
@@ -891,6 +928,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetUiccApplicationsEnabled() throws Exception {
         boolean canDisable = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.canDisablePhysicalSubscription());
@@ -968,6 +1006,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSubscriptionInfoCarrierId() {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         int carrierId = info.getCarrierId();
@@ -1030,6 +1069,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testRestoreAllSimSpecificSettingsFromBackup() throws Throwable {
         int activeDataSubId = SubscriptionManager.getActiveDataSubscriptionId();
         assertNotEquals(activeDataSubId, SubscriptionManager.INVALID_SUBSCRIPTION_ID);
@@ -1151,6 +1191,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetAndGetD2DStatusSharing() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
@@ -1171,6 +1212,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetAndGetD2DSharingContacts() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
@@ -1189,6 +1231,8 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(
+            reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
     public void tetsSetAndGetPhoneNumber() throws Exception {
         // The phone number may be anything depends on the state of SIM and device.
         // Simply call the getter and make sure no exception.
@@ -1437,6 +1481,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testCountryIso() throws Throwable {
         final String liechtensteinIso = "li";
         final String faroeIslandsIso = "fo";
@@ -1464,6 +1509,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_enableFlag() throws Exception {
         if (!Flags.oemEnabledSatelliteFlag()) {
             return;
@@ -1471,10 +1517,11 @@ public class SubscriptionManagerTest {
 
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
-        assertThat(info.isOnlyNonTerrestrialNetwork()).isNotNull();
+        boolean unused = info.isOnlyNonTerrestrialNetwork();
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_disableFlag() throws Exception {
         if (Flags.oemEnabledSatelliteFlag()) {
             return;
@@ -1486,7 +1533,6 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {"android.telephony.SubscriptionInfo#getServiceCapabilities"})
     public void testSubscriptionInfo_getServiceCapabilities() throws Exception {
         final List<SubscriptionInfo> allSubInfos =
@@ -1504,6 +1550,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PSIM_TO_ESIM_CONVERSION)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testUpdateSubscription_transferStatus() throws Exception {
         // Testing permission fail
         try {
@@ -1521,6 +1568,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_USER_ASSOCIATION_QUERY)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsSubscriptionAssociatedWithUser() throws Exception {
 
         UserHandle oldAssociatedUser = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
@@ -1656,13 +1704,33 @@ public class SubscriptionManagerTest {
     }
 
     private static SubscriptionPlan buildValidSubscriptionPlan(long dataUsageTime) {
-        return SubscriptionPlan.Builder
-                .createRecurring(ZonedDateTime.parse("2007-03-14T00:00:00.000Z"),
-                        Period.ofMonths(1))
-                .setTitle("CTS")
+        return buildValidSubscriptionPlanRecurring(
+                dataUsageTime, ZonedDateTime.parse("2007-03-14T00:00:00.000Z"));
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanRecurring(
+            long dataUsageTime, ZonedDateTime start) {
+        return buildValidSubscriptionPlanCommon(
+                SubscriptionPlan.Builder.createRecurring(start, Period.ofMonths(1)), dataUsageTime);
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanNonRecurring(
+            long dataUsageTime, ZonedDateTime start, ZonedDateTime end) {
+        return buildValidSubscriptionPlanCommon(
+                SubscriptionPlan.Builder.createNonrecurring(start, end), dataUsageTime);
+    }
+
+    private static SubscriptionPlan buildValidSubscriptionPlanCommon(
+            SubscriptionPlan.Builder builder, long dataUsageTime) {
+        builder.setTitle("CTS")
                 .setDataLimit(1_000_000_000, SubscriptionPlan.LIMIT_BEHAVIOR_DISABLED)
-                .setDataUsage(500_000_000, dataUsageTime)
-                .build();
+                .setDataUsage(500_000_000, dataUsageTime);
+
+        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
+            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+        }
+
+        return builder.build();
     }
 
     private static @Nullable Network findCellularNetwork() {

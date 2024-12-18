@@ -68,6 +68,7 @@ void PrintAhbFormat(std::ostream& os, uint64_t format) {
         FORMAT_CASE(S8_UINT);
         FORMAT_CASE(Y8Cb8Cr8_420);
         FORMAT_CASE(YCbCr_P010);
+        FORMAT_CASE(YCbCr_P210);
         FORMAT_CASE(R8_UNORM);
         FORMAT_CASE(R16_UINT);
         FORMAT_CASE(R16G16_UINT);
@@ -507,11 +508,62 @@ TEST(AHardwareBufferTest, PlanarLockAndUnlockYuvP010Succeed) {
 
     EXPECT_THAT(planes.planes[1].data, NotNull());
     EXPECT_THAT(planes.planes[1].pixelStride, Eq(bytesPerPixel * /*interleaved=*/2));
-    EXPECT_THAT(planes.planes[1].rowStride, Ge(cPlaneWidth * bytesPerPixel));
+    EXPECT_THAT(planes.planes[1].rowStride, Ge(cPlaneWidth * planes.planes[1].pixelStride));
 
     EXPECT_THAT(planes.planes[2].data, NotNull());
     EXPECT_THAT(planes.planes[2].pixelStride, Eq(bytesPerPixel * /*interleaved=*/2));
-    EXPECT_THAT(planes.planes[2].rowStride, Ge(cPlaneWidth * bytesPerPixel));
+    EXPECT_THAT(planes.planes[2].rowStride, Ge(cPlaneWidth * planes.planes[2].pixelStride));
+
+    // Unlock
+    err = AHardwareBuffer_unlock(buffer, nullptr);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_release(buffer);
+}
+
+TEST(AHardwareBufferTest, PlanarLockAndUnlockYuvP210Succeed) {
+    AHardwareBuffer* buffer = NULL;
+    AHardwareBuffer_Desc desc = {};
+
+    desc.width = 32;
+    desc.height = 32;
+    desc.layers = 1;
+    desc.usage = AHARDWAREBUFFER_USAGE_CPU_READ_RARELY;
+    desc.format = AHARDWAREBUFFER_FORMAT_YCbCr_P210;
+
+    if (!AHardwareBuffer_isSupported(&desc)) {
+        ALOGI("Test skipped: AHARDWAREBUFFER_FORMAT_YCbCr_P210 not supported.");
+        return;
+    }
+
+    // Allocate the buffer.
+    int err = AHardwareBuffer_allocate(&desc, &buffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    // Lock its planes
+    AHardwareBuffer_Planes planes;
+    err = AHardwareBuffer_lockPlanes(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
+                                     &planes);
+
+    // Make sure everything looks right
+    EXPECT_EQ(NO_ERROR, err);
+    EXPECT_EQ(3U, planes.planeCount);
+
+    const uint32_t yPlaneWidth = desc.width;
+    const uint32_t cPlaneWidth = desc.width / 2;
+    const uint32_t bytesPerPixel = 2;
+
+    EXPECT_THAT(planes.planes[0].data, NotNull());
+    EXPECT_THAT(planes.planes[0].pixelStride, Eq(bytesPerPixel));
+    EXPECT_THAT(planes.planes[0].rowStride, Ge(yPlaneWidth * bytesPerPixel));
+
+    EXPECT_THAT(planes.planes[1].data, NotNull());
+    EXPECT_THAT(planes.planes[1].pixelStride, Eq(bytesPerPixel * /*interleaved=*/2));
+    EXPECT_THAT(planes.planes[1].rowStride, Ge(cPlaneWidth * planes.planes[1].pixelStride));
+
+    EXPECT_THAT(planes.planes[2].data, NotNull());
+    EXPECT_THAT(planes.planes[2].pixelStride, Eq(bytesPerPixel * /*interleaved=*/2));
+    EXPECT_THAT(planes.planes[2].rowStride, Ge(cPlaneWidth * planes.planes[2].pixelStride));
 
     // Unlock
     err = AHardwareBuffer_unlock(buffer, nullptr);
@@ -669,7 +721,7 @@ TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
         .height = 128,
         .layers = 1,
         .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
-        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_RARELY | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
     };
     AHardwareBuffer* aHardwareBuffer = nullptr;
     int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);

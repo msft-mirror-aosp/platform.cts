@@ -35,6 +35,7 @@ android_test {
         "src/android/packageinstaller/install/cts/PreapprovalInstallTest.kt",
         "src/android/packageinstaller/install/cts/SessionParamsPermissionStateTest.kt",
         "src/android/packageinstaller/install/cts/SessionTest.kt",
+        "src/android/packageinstaller/install/cts/SessionTestWithPia.kt",
         "src/android/packageinstaller/install/cts/SessionTestInstant.kt",
     ],
 
@@ -53,6 +54,7 @@ android_test {
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "platform-test-rules",
+        "TestParameterInjector",
     ],
 
     test_suites: [
@@ -104,6 +106,7 @@ android_test {
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "platform-test-rules",
+        "TestParameterInjector",
     ],
 
     test_suites: [
@@ -119,4 +122,11 @@ android_test {
     per_testcase_directory: true,
     platform_apis: true,
     test_config: "CtsUpdateOwnershipEnforcementTest.xml",
+}
+
+test_module_config {
+    name: "CtsPackageInstallTestCases_NoAppModeInstant",
+    base: "CtsPackageInstallTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeInstant"],
 }

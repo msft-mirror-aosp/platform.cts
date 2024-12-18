@@ -19,17 +19,10 @@ package com.android.cts.input
 import android.app.Instrumentation
 import android.graphics.Matrix
 import android.graphics.Point
-import android.hardware.input.InputManager
-import android.os.Handler
-import android.os.Looper
 import android.server.wm.CtsWindowInfoUtils
-import android.server.wm.WindowManagerStateHelper
 import android.view.Display
 import android.view.Surface
 import android.view.View
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.TestUtils.waitOn
-import java.util.concurrent.TimeUnit
 import kotlin.math.round
 
 private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
@@ -44,7 +37,8 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
 
     if (displayTransform == null) {
         throw IllegalStateException(
-            "failed to find display transform for display ${display.displayId}")
+            "failed to find display transform for display ${display.displayId}"
+            )
     }
 
     // The display transform is the transform from physical display space to
@@ -53,10 +47,21 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
     val inverseTransform = Matrix()
     displayTransform.invert(inverseTransform)
 
-    val point = floatArrayOf(x.toFloat(), y.toFloat())
-    inverseTransform.mapPoints(point)
+    val p = floatArrayOf(x.toFloat(), y.toFloat())
+    inverseTransform.mapPoints(p)
 
-    return Point(round(point[0]).toInt(), round(point[1]).toInt())
+    val point = Point(round(p[0]).toInt(), round(p[1]).toInt())
+
+    // We need to apply offset to correctly map the point to discrete coordinate space, this is done
+    // to account for the disparity between continuous and discrete coordinates during rotation
+    // Refer to frameworks/native/services/inputflinger/docs/input_coordinates.md
+    return when (display.rotation) {
+        Surface.ROTATION_0 -> point
+        Surface.ROTATION_90 -> point.apply { offset(-1, 0) }
+        Surface.ROTATION_180 -> point.apply { offset(-1, -1) }
+        Surface.ROTATION_270 -> point.apply { offset(0, -1) }
+        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+    }
 }
 
 /**
@@ -68,21 +73,10 @@ open class UinputTouchDevice(
     private val display: Display,
     private val registerCommand: UinputRegisterCommand,
     source: Int,
+    private val defaultToolType: Int,
 ) : AutoCloseable {
 
-    private val DISPLAY_ASSOCIATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5)
-    private val uinputDevice = UinputDevice(instrumentation, source, registerCommand)
-    private val inputManager: InputManager
-
-    init {
-        inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
-        associateWith(display)
-
-        // Wait for display transitions to idle as associating an input device with a display could
-        // trigger one because of a display configuration change
-        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
-        instrumentation.uiAutomation.syncInputTransactions()
-    }
+    val uinputDevice = UinputDevice(instrumentation, source, registerCommand, display)
 
     private fun injectEvent(events: IntArray) {
         uinputDevice.injectEvents(events.joinToString(
@@ -108,10 +102,10 @@ open class UinputTouchDevice(
      * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
      * coordinate space.
      */
-    fun sendDown(id: Int, physicalLocation: Point, toolType: Int? = null) {
+    fun sendDown(id: Int, physicalLocation: Point) {
         injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, id))
-        if (toolType != null) injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y))
     }
@@ -153,64 +147,7 @@ open class UinputTouchDevice(
         return uinputDevice.deviceId
     }
 
-    private fun associateWith(display: Display) {
-        runWithShellPermissionIdentity(
-                { inputManager.addUniqueIdAssociationByPort(
-                      registerCommand.port,
-                      display.uniqueId!!
-                  )
-                },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
-        )
-        waitForDeviceUpdatesUntil {
-            val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
-            display.displayId == inputDevice!!.associatedDisplayId
-        }
-    }
-
-    private fun waitForDeviceUpdatesUntil(condition: () -> Boolean) {
-        val lockForInputDeviceUpdates = Object()
-        val inputDeviceListener =
-            object : InputManager.InputDeviceListener {
-                override fun onInputDeviceAdded(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-
-                override fun onInputDeviceRemoved(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-
-                override fun onInputDeviceChanged(deviceId: Int) {
-                    synchronized(lockForInputDeviceUpdates) {
-                        lockForInputDeviceUpdates.notify()
-                    }
-                }
-            }
-
-        inputManager.registerInputDeviceListener(
-            inputDeviceListener,
-            Handler(Looper.getMainLooper())
-        )
-
-        waitOn(
-            lockForInputDeviceUpdates,
-            condition,
-            DISPLAY_ASSOCIATION_TIMEOUT_MILLIS,
-            null
-        )
-
-        inputManager.unregisterInputDeviceListener(inputDeviceListener)
-    }
-
     override fun close() {
-        runWithShellPermissionIdentity(
-                { inputManager.removeUniqueIdAssociationByPort(registerCommand.port) },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
-        )
         uinputDevice.close()
     }
 
@@ -230,11 +167,13 @@ open class UinputTouchDevice(
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
      * @param x The x coordinate in screen (logical display) space.
      * @param y The y coordinate in screen (logical display) space.
+     * @param pressure The pressure value to be used, default not sending pressure.
      */
-    fun touchDown(x: Int, y: Int): Pointer {
+    @JvmOverloads
+    fun touchDown(x: Int, y: Int, pressure: Int? = null): Pointer {
         val pointerId = firstUnusedPointerId()
         pointerIds.add(pointerId)
-        return Pointer(pointerId, x, y)
+        return Pointer(pointerId, pressure, x, y)
     }
 
     private fun firstUnusedPointerId(): Int {
@@ -258,14 +197,17 @@ open class UinputTouchDevice(
      */
     inner class Pointer(
         private val id: Int,
+        private val pressure: Int?,
         x: Int,
         y: Int,
     ) : AutoCloseable {
         private var active = true
+
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display))
+            pressure?.let { sendPressure(pressure) }
             sync()
         }
 
@@ -291,6 +233,7 @@ open class UinputTouchDevice(
                 sendBtnTouch(false)
             }
             sendUp(id)
+            pressure?.let { sendPressure(0) }
             sync()
             active = false
             removePointer(id)

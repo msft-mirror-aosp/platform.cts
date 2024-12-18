@@ -91,6 +91,14 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
+        // handle the (weird) case of a device with NO wired peripheral support
+        if (mAnalogHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_YES
+                && mUsbHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_YES
+                && mUsbInterfaceSupport != AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+            mRoutingNotificationReceived = true;
+            calculatePass();
+        }
+
         DisplayUtils.setKeepScreenOn(this, true);
     }
 

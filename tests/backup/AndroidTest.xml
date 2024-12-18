@@ -46,6 +46,10 @@
         <option name="test-file-name" value="CtsAppLocalesBackupApp1.apk" />
         <option name="test-file-name" value="CtsAppLocalesBackupApp2.apk" />
         <option name="test-file-name" value="CtsBackupRestoreEventLoggerApp.apk" />
+        <option name="test-file-name" value="CtsRestrictedModeOptedInApp.apk" />
+        <option name="test-file-name" value="CtsRestrictedModeOptedOutApp.apk" />
+        <option name="test-file-name" value="CtsRestrictedModeNoActionApp1.apk" />
+        <option name="test-file-name" value="CtsRestrictedModeNoActionApp2.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/backup" />
@@ -59,6 +63,10 @@
         <option name="push" value="CtsAppLocalesBackupApp1.apk->/data/local/tmp/cts/backup/CtsAppLocalesBackupApp1.apk" />
         <option name="push" value="CtsAppLocalesBackupApp2.apk->/data/local/tmp/cts/backup/CtsAppLocalesBackupApp2.apk" />
         <option name="push" value="CtsBackupRestoreEventLoggerApp.apk->/data/local/tmp/cts/backup/CtsBackupRestoreEventLoggerApp.apk" />
+        <option name="push" value="CtsRestrictedModeOptedInApp.apk->/data/local/tmp/cts/backup/CtsRestrictedModeOptedInApp.apk" />
+        <option name="push" value="CtsRestrictedModeOptedOutApp.apk->/data/local/tmp/cts/backup/CtsRestrictedModeOptedOutApp.apk" />
+        <option name="push" value="CtsRestrictedModeNoActionApp1.apk->/data/local/tmp/cts/backup/CtsRestrictedModeNoActionApp1.apk" />
+        <option name="push" value="CtsRestrictedModeNoActionApp2.apk->/data/local/tmp/cts/backup/CtsRestrictedModeNoActionApp2.apk" />
     </target_preparer>
     <target_preparer class="android.cts.backup.BackupPreparer">
         <option name="enable-backup-if-needed" value="true" />

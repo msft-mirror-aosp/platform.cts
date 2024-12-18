@@ -221,7 +221,7 @@ public final class UserReference implements AutoCloseable {
                 throw e;
             }
         }
-        
+
         Log.i(LOG_TAG, "Removed user " + mId);
         return this;
     }
@@ -672,11 +672,45 @@ public final class UserReference implements AutoCloseable {
     }
 
     /**
+     * Returns true if the lock screen is completely disabled, i.e. set to None.
+     * Otherwise returns false.
+     */
+    public boolean getScreenLockDisabled() {
+        return Boolean.parseBoolean(
+                ShellCommand.builder("cmd lock_settings")
+                        .addOperand("get-disabled")
+                        .addOption("--user", mId)
+                        .executeOrThrowNeneException("Error getting lock screen disabled")
+                        .trim());
+    }
+
+    /**
+     * Sets whether the lock screen is disabled. If the lock screen is secure,
+     * this has no immediate effect. I.e. this can only change between Swipe and None.
+     */
+    public void setScreenLockDisabled(boolean disabled) {
+        ShellCommand.builder("cmd lock_settings")
+                .addOption("set-disabled", disabled)
+                .addOption("--user", mId)
+                .validate(s -> s.startsWith("Lock screen disabled set to " + disabled))
+                .executeOrThrowNeneException("Error setting lock screen disabled to " + disabled);
+    }
+
+    /**
      * True if the user has a lock credential (password, pin or pattern set).
      */
     public boolean hasLockCredential() {
-        return TestApis.context().androidContextAsUser(this)
-                .getSystemService(KeyguardManager.class).isDeviceSecure();
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                INTERACT_ACROSS_USERS_FULL)) {
+            KeyguardManager keyguardManager = TestApis.context().androidContextAsUser(this)
+                    .getSystemService(KeyguardManager.class);
+            if (keyguardManager != null) {
+                return keyguardManager.isDeviceSecure();
+            } else {
+                // keyguardManager isn't available in instant apps
+                return !getScreenLockDisabled();
+            }
+        }
     }
 
     /**

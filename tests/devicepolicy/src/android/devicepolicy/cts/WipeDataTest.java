@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_WIPE_DATA;
@@ -27,22 +29,22 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
@@ -62,10 +64,10 @@ public final class WipeDataTest {
     @RequireRunOnInitialUser
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
     public void wipeData_po_removeWorkProfile() {
-        sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0);
+        dpc(sDeviceState).devicePolicyManager().wipeData(/* flags= */ 0);
 
         assertWithMessage("Work profile should have been removed")
-                .that(sDeviceState.workProfile(sDeviceState.initialUser()).exists())
+                .that(workProfile(sDeviceState, sDeviceState.initialUser()).exists())
                 .isFalse();
     }
 
@@ -88,7 +90,7 @@ public final class WipeDataTest {
     public void wipeData_noAdditionalUsers_throwsException() {
         assertThrows("Should prevent the removal of last full user",
                 IllegalStateException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0));
+                () -> dpc(sDeviceState).devicePolicyManager().wipeData(/* flags= */ 0));
     }
 
     @Postsubmit(reason = "new test")
@@ -102,7 +104,7 @@ public final class WipeDataTest {
         // TODO: This should be cached inside of bedstead
         UserReference initialUser = sDeviceState.initialUser();
 
-        sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0);
+        dpc(sDeviceState).devicePolicyManager().wipeData(/* flags= */ 0);
 
         Poll.forValue("initial user exists", initialUser::exists)
                         .toBeEqualTo(false)
@@ -115,10 +117,10 @@ public final class WipeDataTest {
     @EnsureHasAdditionalUser
     @RequireRunOnSystemUser(switchedToUser = ANY)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
-    public void wipeData_systemUser_throwsSecurityException() {
+    public void wipeData_systemUser_throwsIllegalStateException() {
         assertThrows("System user should not be removed",
-                SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0));
+                IllegalStateException.class,
+                () -> dpc(sDeviceState).devicePolicyManager().wipeData(/* flags= */ 0));
     }
 
     @Postsubmit(reason = "new test")
@@ -130,6 +132,6 @@ public final class WipeDataTest {
     public void wipeData_headless_lastUser_throwsIllegalStateException() {
         assertThrows("Last full user should not be removed",
                 IllegalStateException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0));
+                () -> dpc(sDeviceState).devicePolicyManager().wipeData(/* flags= */ 0));
     }
 }

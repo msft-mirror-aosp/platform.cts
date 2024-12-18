@@ -16,7 +16,6 @@
 
 package android.appsecurity.cts;
 
-import com.android.tradefed.util.RunUtil;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -25,6 +24,7 @@ import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.Presubmit;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -133,7 +133,7 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
         uninstallWithKeepDataForUser(TINY_PKG, userId);
         getDevice().rebootUntilOnline();
         waitForBootCompleted();
-        getDevice().startUser(userId);
+        getDevice().startUser(userId, true);
 
         // It is visible for the installed user, but only if match uninstalled
         assertFalse(isAppVisibleForUser(TINY_PKG, userId, MATCH_NORMAL));

@@ -26,7 +26,7 @@ import android.os.PersistableBundle;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
 import com.android.bedstead.nene.TestApis;

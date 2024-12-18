@@ -28,12 +28,12 @@ import android.os.UserManager;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 

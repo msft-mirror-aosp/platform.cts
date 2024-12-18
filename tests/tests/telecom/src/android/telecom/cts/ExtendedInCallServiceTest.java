@@ -20,6 +20,7 @@ import static android.telecom.cts.TestUtils.*;
 
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import android.app.UiModeManager;
 import android.content.Context;
@@ -29,6 +30,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.os.ParcelUuid;
+import android.os.UserManager;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
@@ -40,6 +42,7 @@ import android.telecom.InCallService;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.test.filters.FlakyTest;
 
@@ -128,7 +131,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         assertCallState(call, Call.STATE_DIALING);
 
         final int currentInvokeCount = mOnCallAudioStateChangedCounter.getInvokeCount();
-        mOnCallAudioStateChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnCallAudioStateChangedCounter.waitForCount(1);
         CallAudioState callAudioState =
                 (CallAudioState) mOnCallAudioStateChangedCounter.getArgs(0)[0];
 
@@ -417,6 +420,17 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
+        // Only the main user is able to perform actions on the BlockedNumberProvider:
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        final boolean[] isMainUser = {false};
+        assertNotNull(userManager);
+        runWithShellPermissionIdentity(() -> isMainUser[0] = userManager.isMainUser());
+        if (!isMainUser[0]) {
+            Log.i(TAG, "testIncomingCallFromBlockedNumber_IsRejected: skipping test since "
+                    + "the current user is not the main user");
+            return;
+        }
+
         Uri blockedUri = null;
 
         try {
@@ -447,9 +461,10 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         extras.putInt(TelecomManager.EXTRA_PRIORITY, TelecomManager.PRIORITY_URGENT);
         extras.putString(TelecomManager.EXTRA_CALL_SUBJECT, "blah blah blah");
 
-        TestUtils.setSystemDialerOverride(getInstrumentation());
-        MockCallScreeningService.enableService(mContext);
         try {
+            TestUtils.setSystemDialerOverride(getInstrumentation());
+            MockCallScreeningService.enableService(mContext);
+
             CallScreeningService.CallResponse response =
                     new CallScreeningService.CallResponse.Builder()
                             .setDisallowCall(false)
@@ -506,12 +521,11 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         final Call call = inCallService.getLastCall();
         assertCallState(call, Call.STATE_DIALING);
 
-        final int currentInvokeCount = mOnCallEndpointChangedCounter.getInvokeCount();
-        mOnCallEndpointChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnCallEndpointChangedCounter.waitForCount(1);
         CallEndpoint currentEndpoint = (CallEndpoint) mOnCallEndpointChangedCounter.getArgs(0)[0];
         int currentEndpointType = currentEndpoint.getEndpointType();
 
-        mOnAvailableEndpointsChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnAvailableEndpointsChangedCounter.waitForCount(1);
         List<CallEndpoint> availableEndpoints =
                 (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
         CallEndpoint anotherEndpoint = null;
@@ -525,6 +539,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         Executor executor = mContext.getMainExecutor();
         if (anotherEndpoint != null) {
             final int anotherEndpointType = anotherEndpoint.getEndpointType();
+            final int currentInvokeCount = mOnCallEndpointChangedCounter.getInvokeCount();
             ((InCallService) inCallService).requestCallEndpointChange(anotherEndpoint, executor,
                     new OutcomeReceiver<>() {
                         @Override

@@ -58,10 +58,10 @@ public final class HdmiCecActiveTrackingTest extends BaseHdmiCecCtsTest {
                     .around(hdmiCecClient);
 
     private int createUnusedPhysicalAddress(int usedPhysicalAddress) {
-        if (usedPhysicalAddress == 0x2000) {
-            return 0x2200;
+        if (usedPhysicalAddress == 0x1000) {
+            return 0x1200;
         }
-        return 0x2000;
+        return 0x1000;
     }
 
     /**

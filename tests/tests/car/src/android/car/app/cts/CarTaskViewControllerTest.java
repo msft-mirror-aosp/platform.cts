@@ -20,6 +20,7 @@ package android.car.app.cts;
 import static android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS;
 import static android.content.Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.view.KeyEvent.KEYCODE_HOME;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -56,7 +57,8 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -70,9 +72,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(JUnit4.class)
 public class CarTaskViewControllerTest {
     private static final long QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE = 1000;  // ms
-    private static final String PREFIX_INJECTING_MOTION_CMD = "cmd car_service inject-motion";
-    private static final String COUNT_OPTION = " -c ";
-    private static final String POINTER_OPTION = " -p ";
+    private static final long WAIT_FOR_LAUNCHER_TIME_MS = 2000;
 
     private final Instrumentation mInstrumentation =
             InstrumentationRegistry.getInstrumentation();
@@ -89,10 +89,11 @@ public class CarTaskViewControllerTest {
     private int[] mTmpLocation = new int[2];
     private int mTmpWidth;
     private int mTmpHeight;
+    private int mMyDisplayId;
 
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         Car car = Car.createCar(mContext);
         mUiAutomation.adoptShellPermissionIdentity(
                 // for CAM.getCarTaskViewController
@@ -104,8 +105,11 @@ public class CarTaskViewControllerTest {
         assertThat(mCarActivityManager).isNotNull();
 
         assumeTrue(mCarActivityManager.isCarSystemUIProxyRegistered());
-        mUiDevice.pressHome();
-
+        UserHelper userHelper = new UserHelper(mContext);
+        mMyDisplayId = userHelper.getMainDisplayId();
+        SystemUtil.runShellCommandOrThrow(
+                String.format("input -d %d keyevent %d", mMyDisplayId, KEYCODE_HOME));
+        Thread.sleep(WAIT_FOR_LAUNCHER_TIME_MS);
         Intent startIntent = Intent.makeMainActivity(mTestActivity)
                 .addFlags(FLAG_ACTIVITY_NEW_TASK);
         mHostActivity = (TestActivity) mInstrumentation.startActivitySync(
@@ -373,7 +377,8 @@ public class CarTaskViewControllerTest {
 
         // EmbeddedTestActivity is on the upper part of the screen.
         Point p = getTaskViewCenterOnScreen(carTaskViewHolder.mTaskView);
-        injectTapEventByShell(p.x, p.y);
+        SystemUtil.runShellCommandOrThrow(
+                String.format("input -d %d tap %d %d", mMyDisplayId, p.x, p.y));
         PollingCheck.waitFor(() -> EmbeddedTestActivity1.sInstance.mLastReceivedTouchEvent != null,
                 "Embedded activity didn't receive the touch event.");
 
@@ -382,15 +387,6 @@ public class CarTaskViewControllerTest {
                 .isEqualTo(p.x);
         assertThat(EmbeddedTestActivity1.sInstance.mLastReceivedTouchEvent.getRawY())
                 .isEqualTo(p.y);
-    }
-
-    private static void injectTapEventByShell(int x, int y) {
-        StringBuilder sb = new StringBuilder()
-                .append(PREFIX_INJECTING_MOTION_CMD)
-                .append(COUNT_OPTION).append(1)
-                .append(POINTER_OPTION).append(0)
-                .append(" " + x).append(" " + y);
-        ShellUtils.runShellCommand(sb.toString());
     }
 
     private CarTaskViewTestHolder createControlledTaskView(int parentId,

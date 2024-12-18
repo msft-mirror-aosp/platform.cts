@@ -17,7 +17,7 @@ package android.media.bettertogether.cts;
 
 import static android.Manifest.permission.MEDIA_CONTENT_CONTROL;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -27,30 +27,33 @@ import android.media.MediaCommunicationManager;
 import android.media.MediaSession2;
 import android.media.Session2CommandGroup;
 import android.media.Session2Token;
+import android.os.Bundle;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
+
+import com.google.common.base.Objects;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Tests {@link android.media.MediaCommunicationManager}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link android.media.MediaCommunicationManager}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 @SdkSuppress(minSdkVersion = 31, codeName = "S")
 public class MediaCommunicationManagerTest {
@@ -73,12 +76,14 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetVersion() {
         assertNotNull("Missing MediaCommunicationManager", mManager);
         assertTrue(mManager.getVersion() > 0);
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2Tokens() throws Exception {
         // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
         InstrumentationRegistry.getInstrumentation()
@@ -107,6 +112,7 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void registerSessionCallback_noMediaContentControlPermission_throwsSecurityException()
             throws Exception {
         Executor executor = Executors.newSingleThreadExecutor();
@@ -120,6 +126,7 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER}) // SystemApi. Requires full user. Don't run for work profile.
     public void testManagerSessionCallback() throws Exception {
         // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
         InstrumentationRegistry.getInstrumentation()
@@ -134,38 +141,79 @@ public class MediaCommunicationManagerTest {
 
         mManager.registerSessionCallback(executor, managerCallback);
 
-        try (MediaSession2 session = new MediaSession2.Builder(mContext)
-                .setId("session1")
-                .setSessionCallback(executor, sessionCallback)
-                .build()) {
+        String uuid1 = UUID.randomUUID().toString();
+        Bundle sessionExtras1 = new Bundle();
+        sessionExtras1.putString("uuid", uuid1);
+        try (MediaSession2 session =
+                new MediaSession2.Builder(mContext)
+                        .setId("session1")
+                        .setExtras(sessionExtras1)
+                        .setSessionCallback(executor, sessionCallback)
+                        .build()) {
             assertTrue(managerCallback.mCreatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
             assertTrue(managerCallback.mChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
             Session2Token currentToken = session.getToken();
-            assertTrue(managerCallback.mCreatedTokens.contains(currentToken));
-            assertTrue(managerCallback.mLastTokens.contains(currentToken));
+            assertUuidInExtrasOfTokens(
+                    managerCallback.mCreatedTokens, uuid1, /* expectedNumberOfMatches= */ 1);
+            assertUuidInExtrasOfListOfTokens(
+                    managerCallback.mReportedTokens, uuid1, /* expectedNumberOfMatches= */ 1);
 
             // Create another session
             managerCallback.resetLatches();
-            MediaSession2 session2 = new MediaSession2.Builder(mContext)
-                    .setId("session2")
-                    .setSessionCallback(executor, sessionCallback).build();
+            String uuid2 = UUID.randomUUID().toString();
+            Bundle sessionExtras2 = new Bundle();
+            sessionExtras2.putString("uuid", uuid2);
+            MediaSession2 session2 =
+                    new MediaSession2.Builder(mContext)
+                            .setId("session2")
+                            .setExtras(sessionExtras2)
+                            .setSessionCallback(executor, sessionCallback)
+                            .build();
             assertTrue(managerCallback.mCreatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
             assertTrue(managerCallback.mChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
             Session2Token token2 = session2.getToken();
-            assertTrue(managerCallback.mCreatedTokens.contains(token2));
-            assertTrue(managerCallback.mLastTokens.contains(token2));
+            assertUuidInExtrasOfTokens(
+                    managerCallback.mCreatedTokens, uuid1, /* expectedNumberOfMatches= */ 1);
+            assertUuidInExtrasOfTokens(
+                    managerCallback.mCreatedTokens, uuid2, /* expectedNumberOfMatches= */ 1);
+            assertUuidInExtrasOfListOfTokens(
+                    managerCallback.mReportedTokens, uuid1, /* expectedNumberOfMatches= */ 2);
+            assertUuidInExtrasOfListOfTokens(
+                    managerCallback.mReportedTokens, uuid2, /* expectedNumberOfMatches= */ 1);
 
             // Test if onSession2TokensChanged are called if a session is closed
             managerCallback.resetLatches();
             session2.close();
             assertTrue(managerCallback.mChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
-            assertFalse(managerCallback.mLastTokens.contains(token2));
+            assertUuidInExtrasOfListOfTokens(
+                    managerCallback.mReportedTokens, uuid1, /* expectedNumberOfMatches= */ 3);
+            assertUuidInExtrasOfListOfTokens(
+                    managerCallback.mReportedTokens, uuid2, /* expectedNumberOfMatches= */ 1);
         }
 
         mManager.unregisterSessionCallback(managerCallback);
+    }
+
+    private void assertUuidInExtrasOfTokens(
+            List<Session2Token> tokens, String uuid, int expectedNumberOfMatches) {
+        long matchCount =
+                tokens.stream()
+                        .filter(token -> Objects.equal(uuid, token.getExtras().getString("uuid")))
+                        .count();
+        assertEquals(matchCount, expectedNumberOfMatches);
+    }
+
+    private void assertUuidInExtrasOfListOfTokens(
+            List<List<Session2Token>> listOfTokens, String uuid, int expectedNumberOfMatches) {
+        long matchCount =
+                listOfTokens.stream()
+                        .flatMap(List::stream)
+                        .filter(token -> Objects.equal(uuid, token.getExtras().getString("uuid")))
+                        .count();
+        assertEquals(expectedNumberOfMatches, matchCount);
     }
 
     private static class Session2Callback extends MediaSession2.SessionCallback {
@@ -181,7 +229,7 @@ public class MediaCommunicationManagerTest {
         CountDownLatch mCreatedLatch;
         CountDownLatch mChangedLatch;
         final List<Session2Token> mCreatedTokens = new CopyOnWriteArrayList<>();
-        List<Session2Token> mLastTokens = Collections.emptyList();
+        List<List<Session2Token>> mReportedTokens = new CopyOnWriteArrayList<>();
 
         private ManagerSessionCallback() {
             mCreatedLatch = new CountDownLatch(1);
@@ -196,7 +244,7 @@ public class MediaCommunicationManagerTest {
 
         @Override
         public void onSession2TokensChanged(List<Session2Token> tokens) {
-            mLastTokens = new ArrayList<>(tokens);
+            mReportedTokens.add(tokens);
             mChangedLatch.countDown();
         }
 

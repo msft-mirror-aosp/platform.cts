@@ -35,6 +35,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeNoException;
 
 import static java.lang.Math.max;
 
@@ -56,6 +57,7 @@ import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -119,9 +121,16 @@ public final class CarUserManagerTest extends AbstractCarTestCase {
         // Check if the device supports MUMD. If not, skip the test.
         UserTestingHelper.requireMumd(mContext);
 
-        int displayId = UserTestingHelper
-                .getDisplayForStartingBackgroundUser(mContext, mOccupantZoneManager);
+        int availableDisplay = Display.INVALID_DISPLAY;
+        try {
+            availableDisplay = UserTestingHelper
+                    .getDisplayForStartingBackgroundUser(mContext, mOccupantZoneManager);
+        } catch (IllegalStateException e) {
+            // Skip the test if no display is available.
+            assumeNoException("No secondary display available. Skip test", e);
+        }
 
+        final int displayId = availableDisplay;
         BlockingUserLifecycleListener listenerForVisible = null;
         BlockingUserLifecycleListener listenerForStarting = null;
         BlockingUserLifecycleListener listenerForInvisible = null;

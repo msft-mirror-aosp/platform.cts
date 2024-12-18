@@ -32,8 +32,10 @@ java_library {
         "flag-junit",
         "hamcrest-library",
         "truth",
+        "Nene",
     ],
     libs: [
+        "android.car",
         "android.car-test-stubs",
     ],
 }

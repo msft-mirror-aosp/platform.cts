@@ -16,29 +16,34 @@
 
 package android.bluetooth.cts;
 
-import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
-import android.test.AndroidTestCase;
+import static com.google.common.truth.Truth.assertThat;
 
+import android.bluetooth.BluetoothHidDeviceAppSdpSettings;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
-/**
- * Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}.
- */
-public class BluetoothHidDeviceAppSdpSettingsTest extends AndroidTestCase {
-    @SmallTest
-    public void testGetters() {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Unit test cases for {@link BluetoothHidDeviceAppSdpSettings}. */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BluetoothHidDeviceAppSdpSettingsTest {
+    @Test
+    public void getters() {
         String name = "test-name";
         String description = "test-description";
         String provider = "test-provider";
         byte subclass = 1;
         byte[] descriptors = new byte[] {10};
-        BluetoothHidDeviceAppSdpSettings settings = new BluetoothHidDeviceAppSdpSettings(
-                name, description, provider, subclass, descriptors);
-        assertEquals(name, settings.getName());
-        assertEquals(description, settings.getDescription());
-        assertEquals(provider, settings.getProvider());
-        assertEquals(subclass, settings.getSubclass());
-        assertEquals(descriptors.length, settings.getDescriptors().length);
-        assertEquals(descriptors[0], settings.getDescriptors()[0]);
+        BluetoothHidDeviceAppSdpSettings settings =
+                new BluetoothHidDeviceAppSdpSettings(
+                        name, description, provider, subclass, descriptors);
+        assertThat(settings.getName()).isEqualTo(name);
+        assertThat(settings.getDescription()).isEqualTo(description);
+        assertThat(settings.getProvider()).isEqualTo(provider);
+        assertThat(settings.getSubclass()).isEqualTo(subclass);
+        assertThat(settings.getDescriptors()).isEqualTo(descriptors);
     }
 }

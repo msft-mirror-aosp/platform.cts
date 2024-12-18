@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -57,6 +58,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -90,6 +92,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 
@@ -1455,59 +1458,90 @@ public class AppWidgetTest extends AppWidgetTestCase {
     })
     @Test
     public void testSetGeneratedPreview() {
-        // Disable setWidgetPreview rate limit for tests
-        setGeneratedPreviewRateLimit(/* resetIntervalMs= */ 0,
-                /* maxCallsPerInterval */ Integer.MAX_VALUE);
-
+        // AppWidgetHost is used to wait until provider change notification is sent.
         final Context context = getInstrumentation().getTargetContext();
-        final ComponentName provider = getFirstWidgetComponent();
-        final AppWidgetProviderInfo initialInfo = getFirstAppWidgetProviderInfo();
-        assertThat(initialInfo.generatedPreviewCategories).isEqualTo(0);
-        assertThat(getAppWidgetManager().getWidgetPreview(initialInfo.provider,
-                initialInfo.getProfile(), WIDGET_CATEGORY_HOME_SCREEN)).isNull();
-        assertThat(getAppWidgetManager().getWidgetPreview(initialInfo.provider,
-                initialInfo.getProfile(), WIDGET_CATEGORY_KEYGUARD)).isNull();
+        final AppWidgetHostWithLatch host = new AppWidgetHostWithLatch(context, 0);
+        host.deleteHost();
+        host.startListening();
 
-        final RemoteViews whiteLayout = new RemoteViews(context.getPackageName(),
-                R.layout.simple_white_layout);
-        final RemoteViews blackLayout = new RemoteViews(context.getPackageName(),
-                R.layout.simple_black_layout);
+        try {
+            // Disable setWidgetPreview rate limit for tests
+            setGeneratedPreviewRateLimit(/* resetIntervalMs= */ 0,
+                    /* maxCallsPerInterval */ Integer.MAX_VALUE);
 
-        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
-                whiteLayout)).isTrue();
-        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_KEYGUARD,
-                blackLayout)).isTrue();
+            final ComponentName provider = getFirstWidgetComponent();
+            final AppWidgetProviderInfo initialInfo = getFirstAppWidgetProviderInfo();
 
-        final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
-        assertThat(info.generatedPreviewCategories).isEqualTo(
-                WIDGET_CATEGORY_HOME_SCREEN | WIDGET_CATEGORY_KEYGUARD);
-        final RemoteViews homePreview = getAppWidgetManager().getWidgetPreview(info.provider,
-                info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN);
-        assertThat(homePreview).isNotNull();
-        final RemoteViews keyguardPreview = getAppWidgetManager().getWidgetPreview(
-                info.provider, info.getProfile(), WIDGET_CATEGORY_KEYGUARD);
-        assertThat(keyguardPreview).isNotNull();
+            // Clear providers and verify initial state
+            if (initialInfo.generatedPreviewCategories != 0) {
+                host.latch = new CountDownLatch(1);
+                getAppWidgetManager().removeWidgetPreview(provider,
+                        initialInfo.generatedPreviewCategories);
+                host.latch.await();
 
-        assertThat(homePreview.getLayoutId()).isEqualTo(whiteLayout.getLayoutId());
-        assertThat(keyguardPreview.getLayoutId()).isEqualTo(blackLayout.getLayoutId());
+                final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
+                assertThat(info.generatedPreviewCategories).isEqualTo(0);
+                assertThat(getAppWidgetManager().getWidgetPreview(info.provider,
+                        info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN)).isNull();
+                assertThat(getAppWidgetManager().getWidgetPreview(info.provider,
+                        info.getProfile(), WIDGET_CATEGORY_KEYGUARD)).isNull();
+            }
 
-        // Update previews for homescreen
-        assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
-                blackLayout)).isTrue();
-        final RemoteViews updatedPreview = getAppWidgetManager().getWidgetPreview(info.provider,
-                info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN);
-        assertThat(updatedPreview).isNotNull();
-        assertThat(updatedPreview.getLayoutId()).isEqualTo(blackLayout.getLayoutId());
+            final RemoteViews whiteLayout = new RemoteViews(context.getPackageName(),
+                    R.layout.simple_white_layout);
+            final RemoteViews blackLayout = new RemoteViews(context.getPackageName(),
+                    R.layout.simple_black_layout);
 
-        // remove previews
-        getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
-        getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_KEYGUARD);
-        final AppWidgetProviderInfo newInfo = getFirstAppWidgetProviderInfo();
-        assertThat(newInfo.generatedPreviewCategories).isEqualTo(0);
-        assertThat(getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
-                WIDGET_CATEGORY_HOME_SCREEN)).isNull();
-        assertThat(getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
-                WIDGET_CATEGORY_KEYGUARD)).isNull();
+            host.latch = new CountDownLatch(2);
+            assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                    whiteLayout)).isTrue();
+            assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_KEYGUARD,
+                    blackLayout)).isTrue();
+            host.latch.await();
+
+            final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
+            assertThat(info.generatedPreviewCategories).isEqualTo(
+                    WIDGET_CATEGORY_HOME_SCREEN | WIDGET_CATEGORY_KEYGUARD);
+            final RemoteViews homePreview = getAppWidgetManager().getWidgetPreview(info.provider,
+                    info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN);
+            assertThat(homePreview).isNotNull();
+            final RemoteViews keyguardPreview = getAppWidgetManager().getWidgetPreview(
+                    info.provider, info.getProfile(), WIDGET_CATEGORY_KEYGUARD);
+            assertThat(keyguardPreview).isNotNull();
+
+            assertThat(homePreview.getLayoutId()).isEqualTo(whiteLayout.getLayoutId());
+            assertThat(keyguardPreview.getLayoutId()).isEqualTo(blackLayout.getLayoutId());
+
+            // Update previews for homescreen
+            host.latch = new CountDownLatch(1);
+            assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                    blackLayout)).isTrue();
+            host.latch.await();
+
+            final RemoteViews updatedPreview = getAppWidgetManager().getWidgetPreview(info.provider,
+                    info.getProfile(), WIDGET_CATEGORY_HOME_SCREEN);
+            assertThat(updatedPreview).isNotNull();
+            assertThat(updatedPreview.getLayoutId()).isEqualTo(blackLayout.getLayoutId());
+
+            // remove previews
+            host.latch = new CountDownLatch(1);
+            getAppWidgetManager().removeWidgetPreview(provider,
+                    WIDGET_CATEGORY_HOME_SCREEN | WIDGET_CATEGORY_KEYGUARD);
+            host.latch.await();
+
+            final AppWidgetProviderInfo newInfo = getFirstAppWidgetProviderInfo();
+            assertThat(newInfo.generatedPreviewCategories).isEqualTo(0);
+            assertThat(
+                    getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
+                            WIDGET_CATEGORY_HOME_SCREEN)).isNull();
+            assertThat(
+                    getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
+                            WIDGET_CATEGORY_KEYGUARD)).isNull();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            host.deleteHost();
+        }
     }
 
     @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
@@ -1547,6 +1581,112 @@ public class AppWidgetTest extends AppWidgetTestCase {
         assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
                 whiteLayout)).isTrue();
         getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_CHECK_REMOTE_VIEWS_URI_PERMISSION})
+    @Test
+    public void testCheckRemoteViewsUri() throws Exception {
+        final Context context = getInstrumentation().getTargetContext();
+
+        final AppWidgetHost host = new AppWidgetHost(context, 0);
+        // Delete host to clear up any old ones.
+        host.deleteHost();
+        host.startListening();
+
+        final int myUser = UserHandle.myUserId();
+        int targetUser;
+        if (UserManager.isHeadlessSystemUserMode()) {
+            if (myUser == 10) {
+                targetUser = 11;
+            } else {
+                targetUser = 10;
+            }
+        } else {
+            if (myUser == 0) {
+                targetUser = 10;
+            } else {
+                targetUser = 0;
+            }
+        }
+        final Uri invalidContentUri = Uri.parse(
+                "content://" + targetUser + "@android.appwidget.cts/foobar.png");
+        final Uri validUri = Uri.parse(
+                "content://" + myUser + "@android.appwidget.cts/foobar.png");
+        final Uri resourceUri = Uri.parse("android.resource://android/drawable/foobar");
+        final Uri fileUri = Uri.parse("file:///data/media");
+
+        final int appWidgetId;
+        try {
+            // Configure the provider behavior.
+            final AtomicInteger invocationCounter = new AtomicInteger();
+            AppWidgetProviderCallbacks callbacks = createAppWidgetProviderCallbacks(
+                    invocationCounter);
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    final int appWidgetId = ((int[]) invocation.getArguments()[2])[0];
+
+                    // Provider should not be able to use content URI for package in another user.
+                    RemoteViews invalidRemoteViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    invalidRemoteViews.setImageViewUri(R.id.hello, invalidContentUri);
+                    assertThrows(SecurityException.class, () -> {
+                        getAppWidgetManager().updateAppWidget(appWidgetId, invalidRemoteViews);
+                    });
+
+                    // Content URI for own package should not throw.
+                    RemoteViews contentUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    contentUriViews.setImageViewUri(R.id.hello, validUri);
+                    getAppWidgetManager().updateAppWidget(appWidgetId, contentUriViews);
+
+                    // Resource URI should not throw.
+                    RemoteViews resourceUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    resourceUriViews.setImageViewUri(R.id.hello, resourceUri);
+                    getAppWidgetManager().updateAppWidget(appWidgetId, resourceUriViews);
+
+                    // File URI should throw.
+                    RemoteViews fileUriViews = new RemoteViews(context.getPackageName(),
+                            R.layout.image_view);
+                    // Disable StrictMode temporarily so setImageViewUri will not throw with file
+                    // URI.
+                    final StrictMode.VmPolicy oldPolicy = StrictMode.getVmPolicy();
+                    StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder().build());
+                    try {
+                        fileUriViews.setImageViewUri(R.id.hello, fileUri);
+                    } finally {
+                        StrictMode.setVmPolicy(oldPolicy);
+                    }
+                    assertThrows(SecurityException.class, () -> {
+                        getAppWidgetManager().updateAppWidget(appWidgetId, fileUriViews);
+                    });
+
+                    synchronized (mLock) {
+                        invocationCounter.incrementAndGet();
+                        mLock.notifyAll();
+                    }
+                    return null;
+                }
+            }).when(callbacks).onUpdate(any(Context.class), any(AppWidgetManager.class),
+                    any(int[].class));
+            FirstAppWidgetProvider.setCallbacks(callbacks);
+
+            // Bind an instance of the widget
+            grantBindAppWidgetPermission();
+            final AppWidgetProviderInfo provider = getFirstAppWidgetProviderInfo();
+            appWidgetId = host.allocateAppWidgetId();
+            getAppWidgetManager().bindAppWidgetIdIfAllowed(appWidgetId,
+                    provider.getProfile(), provider.provider, null);
+
+            // Wait for onEnabled and onUpdate
+            waitForCallCount(invocationCounter, 2);
+
+        } finally {
+            FirstAppWidgetProvider.setCallbacks(null);
+            host.deleteHost();
+            revokeBindAppWidgetPermission();
+        }
     }
 
     private void setGeneratedPreviewRateLimit(long resetIntervalMs, int maxCallsPerInterval) {
@@ -1765,6 +1905,22 @@ public class AppWidgetTest extends AppWidgetTestCase {
             super.updateAppWidget(remoteViews);
             if (mOnUpdateAppWidgetListener != null) {
                 mOnUpdateAppWidgetListener.onUpdateAppWidget(remoteViews);
+            }
+        }
+    }
+
+    private static class AppWidgetHostWithLatch extends AppWidgetHost {
+        CountDownLatch latch = null;
+
+        AppWidgetHostWithLatch(Context context, int hostId) {
+            super(context, hostId);
+        }
+
+        @Override
+        protected void onProvidersChanged() {
+            super.onProvidersChanged();
+            if (latch != null) {
+                latch.countDown();
             }
         }
     }

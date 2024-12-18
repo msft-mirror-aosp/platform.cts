@@ -16,8 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -41,8 +40,9 @@ public class BluetoothGattCharacteristicTest {
 
     @Before
     public void setUp() throws Exception {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
 
         mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
     }
@@ -50,19 +50,19 @@ public class BluetoothGattCharacteristicTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getInstanceId() {
-        assertEquals(mBluetoothGattCharacteristic.getInstanceId(), 0);
+        assertThat(mBluetoothGattCharacteristic.getInstanceId()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getService() {
         // Service is null after initialization with public constructor
-        assertNull(mBluetoothGattCharacteristic.getService());
-        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        assertThat(mBluetoothGattCharacteristic.getService()).isNull();
+        BluetoothGattService service =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         service.addCharacteristic(mBluetoothGattCharacteristic);
 
-        assertEquals(mBluetoothGattCharacteristic.getService(), service);
+        assertThat(mBluetoothGattCharacteristic.getService()).isEqualTo(service);
     }
 }

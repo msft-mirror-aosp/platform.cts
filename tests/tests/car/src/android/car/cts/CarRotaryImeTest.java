@@ -70,11 +70,15 @@ public final class CarRotaryImeTest {
 
         assumeHasRotaryService();
 
-        // Wait for RotaryService to be recreated in case it was killed by other tests using
-        // UiAutomation.
+        // Wait for RotaryService to be recreated and running in case it was killed by other tests
+        // using UiAutomation.
+        // When it is running, the dumpsys result is like:
+        // SERVICE com.android.car.rotary/.RotaryService 898025b pid=2101 user=10
+        // Otherwise, the dumpsys result is like:
+        // SERVICE com.android.car.rotary/.RotaryService 19f3b7e pid=(not running))
         PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
-                () -> dumpRotaryService().contains("pid"),
-                "RotaryService is not started yet");
+                () -> dumpRotaryService().contains("user"),
+                "RotaryService is not running yet");
     }
 
     /**
@@ -168,7 +172,7 @@ public final class CarRotaryImeTest {
     // TODO(b/327507413): switch to proto-based dumpsys.
     private static String getStringValueFromDumpsys(String key) {
         String dumpsysOutput = dumpRotaryService();
-        // dumpsys output contains string like:
+        // When RotaryService is running, dumpsys output contains string like:
         // SERVICE com.android.car.rotary/.RotaryService a4d5db3 pid=20152 user=10
         //  Client:
         //    {
@@ -176,11 +180,15 @@ public final class CarRotaryImeTest {
         //      rotaryInputMethod=com.android.car.rotaryime/.RotaryIme
         //      defaultTouchInputMethod=com.google.android.apps.automotive.inputmethod/
         //      .InputMethodService"
-        int startIndex = dumpsysOutput.indexOf(key) + key.length() + 1;
-        int endIndex = dumpsysOutput.indexOf('\n', startIndex);
-        String value = dumpsysOutput.substring(startIndex, endIndex);
-        if (!"null".equals(value)) {
-            return value;
+        // When it is not running, dumpsys output contains string like:
+        // SERVICE com.android.car.rotary/.RotaryService a4d5db3 pid=(not running))
+        if (dumpsysOutput.contains(key)) {
+            int startIndex = dumpsysOutput.indexOf(key) + key.length() + 1;
+            int endIndex = dumpsysOutput.indexOf('\n', startIndex);
+            String value = dumpsysOutput.substring(startIndex, endIndex);
+            if (!"null".equals(value)) {
+                return value;
+            }
         }
         Log.e(TAG, "dumpsysOutput: " + dumpsysOutput);
         return "";

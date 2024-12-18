@@ -19,7 +19,6 @@ package android.server.wm.multidisplay;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.CommandSession.ActivityCallback.ON_CONFIGURATION_CHANGED;
 import static android.server.wm.CommandSession.ActivityCallback.ON_RESUME;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.INVALID_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
@@ -116,7 +115,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         newDisplayIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
         getInstrumentation().getTargetContext().startActivity(newDisplayIntent,
                 launchOptions.toBundle());
-        waitAndAssertTopResumedActivity(activityName, displayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityName, displayId,
                 "Activity moved to secondary display must be focused");
 
         if (handlesConfigChange) {
@@ -160,7 +159,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         final MockImeSession mockImeSession = MockImeHelper.createManagedMockImeSession(this);
 
         assertImeShownAndMatchesDisplayId(
-                activityClass, mockImeSession, DEFAULT_DISPLAY);
+                activityClass, mockImeSession, getMainDisplayId());
 
         final DisplayContent newDisplay = virtualDisplaySession
                 .setSimulateDisplay(true)
@@ -225,7 +224,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .createDisplay();
-        final int displayId = isPrimary ? DEFAULT_DISPLAY : newDisplay.mId;
+        final int displayId = isPrimary ? getMainDisplayId() : newDisplay.mId;
 
         separateTestJournal();
         activitySession.launchTestActivityOnDisplaySync(ClientTestActivity.class, displayId);
@@ -233,7 +232,7 @@ public class MultiDisplayClientTests extends MultiDisplayTestBase {
         final Activity activity = activitySession.getActivity();
         final ComponentName activityName = activity.getComponentName();
 
-        waitAndAssertTopResumedActivity(activityName, displayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityName, displayId,
                 "Activity launched on display:" + displayId + " must be focused");
 
         // Test View#getdisplay() from activity

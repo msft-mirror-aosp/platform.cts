@@ -32,15 +32,17 @@ java_test_host {
         "compatibility-host-util",
     ],
     static_libs: [
+        "android.sdk.flags-aconfig-java-host",
         "cts-host-utils",
+        "flag-junit-host",
         "CtsPackageManagerParsingAnnotationProcessorApi",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":CtsPackageManagerParsingHostTestGen",
     ],
 }
 
-genrule {
+java_genrule {
     name: "CtsPackageManagerParsingHostTestGen",
     defaults: ["CtsPackageManagerParsingApkGenerator"],
     srcs: ["src/**/*.kt"],

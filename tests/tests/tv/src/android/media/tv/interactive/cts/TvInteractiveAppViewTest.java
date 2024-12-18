@@ -22,10 +22,12 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.tv.flags.Flags;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
 import android.os.ConditionVariable;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.tv.cts.R;
 import android.view.InputEvent;
 
@@ -203,5 +205,27 @@ public class TvInteractiveAppViewTest {
                         == mOnUnhandledInputEventListener;
             }
         }.run();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TIAF_V_APIS)
+    @Test
+    public void testSetZOrderMediaOverlay() throws Throwable {
+        // Verifying the z-order from app is not possible. Here we just check if calling APIs does
+        // not lead to any break.
+        mTvInteractiveAppView.setZOrderMediaOverlay(true);
+        mInstrumentation.waitForIdleSync();
+        mTvInteractiveAppView.setZOrderMediaOverlay(false);
+        mInstrumentation.waitForIdleSync();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TIAF_V_APIS)
+    @Test
+    public void testSetZOrderOnTop() throws Throwable {
+        // Verifying the z-order from app is not possible. Here we just check if calling APIs does
+        // not lead to any break.
+        mTvInteractiveAppView.setZOrderOnTop(true);
+        mInstrumentation.waitForIdleSync();
+        mTvInteractiveAppView.setZOrderOnTop(false);
+        mInstrumentation.waitForIdleSync();
     }
 }

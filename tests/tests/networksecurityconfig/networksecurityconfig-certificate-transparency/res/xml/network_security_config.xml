@@ -7,7 +7,7 @@
       <domain includeSubdomains="false">foo.bar</domain>
   </domain-config>
   <domain-config>
-      <domain includeSubdomains="false">android.com</domain>
+      <domain includeSubdomains="false">google.com</domain>
       <certificateTransparency enabled="false" />
   </domain-config>
   <domain-config>

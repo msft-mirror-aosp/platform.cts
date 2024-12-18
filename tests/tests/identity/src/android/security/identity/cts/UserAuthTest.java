@@ -25,6 +25,9 @@ import android.security.identity.IdentityCredential;
 import android.security.identity.IdentityCredentialStore;
 import android.security.identity.WritableIdentityCredential;
 import android.security.identity.ResultData;
+
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.security.identity.internal.Util;
 
 import static org.junit.Assert.assertEquals;
@@ -42,6 +45,8 @@ import androidx.test.InstrumentationRegistry;
 import android.app.KeyguardManager;
 import android.server.wm.ActivityManagerTestBase;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.security.cert.X509Certificate;
@@ -51,8 +56,17 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// Skip the tests for visible background users,
+// since the lockscreen currently doesn't support multi-display.
+// TODO(b/364940609): Allow the tests for visible background users as well,
+// when the lockscreen supports multi-user on multi-display.
+@RequireRunNotOnVisibleBackgroundNonProfileUser
 public class UserAuthTest {
     private static final String TAG = "UserAuthTest";
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private class DeviceLockSession extends ActivityManagerTestBase implements AutoCloseable {
 

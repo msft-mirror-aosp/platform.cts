@@ -243,8 +243,15 @@ public class AudioMultichannelMixdownActivity
         }
 
         void logEnding(int audioApi) {
-            Log.d(TAG, "END_SUB_TEST: " + getSummary() + ", "
-                    + megaAudioApiToString(mAudioApi));
+            Log.d(TAG, "END_SUB_TEST: " + getSummary()
+                    + ", " + megaAudioApiToString(mAudioApi)
+                    + ", " + getPassFailString());
+        }
+
+        public String getPassFailString() {
+            return mPass
+                    ? getString(R.string.audio_general_pass)
+                    : getString(R.string.audio_general_fail);
         }
     }
 
@@ -465,9 +472,7 @@ public class AudioMultichannelMixdownActivity
                     String separatorStr = " - ";
                     mTextFormatter.appendText(testPhase.getSummary() + separatorStr);
                     mTextFormatter.openBold();
-                    mTextFormatter.appendText((testPhase.mPass
-                            ? getString(R.string.audio_general_pass)
-                            : getString(R.string.audio_general_fail)));
+                    mTextFormatter.appendText(testPhase.getPassFailString());
                     mTextFormatter.closeBold();
                     mTextFormatter.appendBreak();
 

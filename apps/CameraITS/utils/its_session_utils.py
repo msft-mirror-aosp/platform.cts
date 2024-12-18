@@ -43,10 +43,11 @@ import ui_interaction_utils
 ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
+ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
-JCA_CAPTURE_PATH_TAG = 'JCA_CAPTURE_PATH'
+JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
@@ -75,6 +76,7 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
+    'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
 )
@@ -84,6 +86,7 @@ TABLET_LEGACY_NAME = 'dragon'
 # List entries must be entered in lowercase
 TABLET_OS_VERSION = types.MappingProxyType({
     'nabu': ANDROID13_API_LEVEL,
+    'nabu_tw': ANDROID13_API_LEVEL,
     'yunluo': ANDROID14_API_LEVEL
     })
 TABLET_REQUIREMENTS_URL = 'https://source.android.com/docs/compatibility/cts/camera-its-box#tablet-allowlist'
@@ -144,10 +147,16 @@ def validate_tablet(tablet_name, brightness, device_id):
   """
   tablet_name = tablet_name.lower()
   if tablet_name not in TABLET_ALLOWLIST:
-    raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    raise AssertionError(
+        f'Tablet product name: {tablet_name}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+    )
   if tablet_name in TABLET_OS_VERSION:
-    if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
-      raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    if (device_sdk := get_build_sdk_version(
+        device_id)) < TABLET_OS_VERSION[tablet_name]:
+      raise AssertionError(
+          f' Tablet product name: {tablet_name}. '
+          f'Android version: {device_sdk}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+      )
   name_to_brightness = {
       TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
   }
@@ -178,6 +187,23 @@ def check_apk_installed(device_id, package_name):
     raise AssertionError(
         f'{package_name} not installed on device {device_id}!'
     )
+
+
+def get_array_size(buffer):
+  """Get array size based on different NumPy versions' functions.
+
+  Args:
+    buffer: A NumPy array.
+
+  Returns:
+    buffer_size: The size of the buffer.
+  """
+  np_version = numpy.__version__
+  if np_version.startswith(('1.25', '1.26', '2.')):
+    buffer_size = numpy.prod(buffer.shape)
+  else:
+    buffer_size = numpy.product(buffer.shape)
+  return buffer_size
 
 
 class ItsSession(object):
@@ -837,7 +863,8 @@ class ItsSession(object):
   def do_basic_recording(self, profile_id, quality, duration,
                          video_stabilization_mode=0, hlg10_enabled=False,
                          zoom_ratio=None, ae_target_fps_min=None,
-                         ae_target_fps_max=None, antibanding_mode=None):
+                         ae_target_fps_max=None, antibanding_mode=None,
+                         face_detect_mode=None):
     """Issue a recording request and read back the video recording object.
 
     The recording will be done with the format specified in quality. These
@@ -858,6 +885,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService which
       contains path at which the recording is saved on the device, quality of
@@ -891,7 +919,12 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode:
       cmd['aeAntibandingMode'] = antibanding_mode
-    else: cmd['aeAntibandingMode'] = 0
+    else:
+      cmd['aeAntibandingMode'] = 0
+    if face_detect_mode:
+      cmd['faceDetectMode'] = face_detect_mode
+    else:
+      cmd['faceDetectMode'] = 0
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
@@ -938,7 +971,7 @@ class ItsSession(object):
   def do_preview_recording_multiple_surfaces(
       self, output_surfaces, duration, stabilize, ois=False,
       zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -957,6 +990,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -981,12 +1015,14 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode is not None:
       cmd['aeAntibandingMode'] = antibanding_mode
+    if face_detect_mode is not None:
+      cmd['faceDetectMode'] = face_detect_mode
     return self._execute_preview_recording(cmd)
 
   def do_preview_recording(
       self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
       ae_target_fps_min=None, ae_target_fps_max=None, hlg10_enabled=False,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -1005,13 +1041,15 @@ class ItsSession(object):
       hlg10_enabled: boolean; True Eanable 10-bit HLG video recording, False
                               record using the regular SDK profile.
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
     return self.do_preview_recording_multiple_surfaces(
         output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max, antibanding_mode)
+        ae_target_fps_min, ae_target_fps_max, antibanding_mode,
+        face_detect_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
@@ -1133,7 +1171,7 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR].split(';')[:-1]  # remove the last appended ';'
 
-  def get_all_supported_preview_sizes(self, camera_id):
+  def get_all_supported_preview_sizes(self, camera_id, filter_recordable=False):
     """Get all supported preview resolutions for this camera device.
 
     ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
@@ -1142,13 +1180,16 @@ class ItsSession(object):
 
     Args:
       camera_id: int; device id
+      filter_recordable: filter preview sizes if supported for video recording
+                       using MediaRecorder
 
     Returns:
       List of all supported preview resolutions in ascending order.
     """
     cmd = {
         _CMD_NAME_STR: 'getSupportedPreviewSizes',
-        _CAMERA_ID_STR: camera_id
+        _CAMERA_ID_STR: camera_id,
+        'filter_recordable': filter_recordable,
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
@@ -1482,7 +1523,7 @@ class ItsSession(object):
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[self._camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -1513,7 +1554,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -1542,8 +1583,37 @@ class ItsSession(object):
 
     return ret
 
-  def do_jca_capture(self, dut, log_path, flash, facing):
-    """Take a capture using JCA, modifying capture settings using the UI.
+  def do_jca_capture(
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0):
+    """Take a single capture using JCA, modifying capture settings using the UI.
+
+    This function is a convenience wrapper for tests that only need to take
+    a single capture.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+      flash_mode_desc: str; constant describing the desired flash mode.
+        Acceptable values: ui_interaction_utils.FLASH_MODES
+      lens_facing: str; constant describing the direction the camera lens faces.
+        Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
+      zoom_ratio: float; zoom ratio for the capture.
+    Returns:
+      A ui_interaction_utils.JcaCapture object describing the capture.
+    """
+    captures = list(
+        self.do_jca_captures_across_zoom_ratios(
+            dut, log_path, flash_mode_desc, lens_facing,
+            zoom_ratios=(zoom_ratio,)
+        )
+    )
+    if len(captures) != 1:
+      raise AssertionError(f'Expected 1 capture, got {len(captures)}!')
+    return captures[0]
+
+  def do_jca_captures_across_zoom_ratios(
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratios=(1.0,)):
+    """Take multiple captures using JCA, modifying capture settings using UI.
 
     Selects UI elements to modify settings, and presses the capture button.
     Reads response from socket containing the capture path, and
@@ -1555,43 +1625,89 @@ class ItsSession(object):
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
-      flash: str; constant describing the desired flash mode.
-        Acceptable values: 'OFF' and 'AUTO'.
-      facing: str; constant describing the direction the camera lens faces.
+      flash_mode_desc: str; constant describing the desired flash mode.
+        Acceptable values: ui_interaction_utils.FLASH_MODES
+      lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
-    Returns:
-      The host-side path of the capture.
+      zoom_ratios: Optional[Iterable[float]]; zoom ratio for the capture.
+    Yields:
+      A ui_interaction_utils.JcaCapture object describing each capture.
     """
+    physical_camera_ids = []
     ui_interaction_utils.open_jca_viewfinder(dut, log_path)
-    ui_interaction_utils.switch_jca_camera(dut, log_path, facing)
-    # Bring up settings, switch flash mode, and close settings
-    dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
-    if flash not in ui_interaction_utils.FLASH_MODE_TO_CLICKS:
-      raise ValueError(f'Flash mode {flash} not supported')
-    for _ in range(ui_interaction_utils.FLASH_MODE_TO_CLICKS[flash]):
-      dut.ui(res=ui_interaction_utils.QUICK_SET_FLASH_RESOURCE_ID).click()
-    dut.take_screenshot(log_path, prefix='flash_mode_set')
-    dut.ui(res=ui_interaction_utils.QUICK_SETTINGS_RESOURCE_ID).click()
-    # Take capture
-    dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
-    return self.get_and_pull_jca_capture(dut, log_path)
+    ui_interaction_utils.switch_jca_camera(dut, log_path, lens_facing)
+    ui_interaction_utils.set_jca_flash_mode(dut, log_path, flash_mode_desc)
+    for zoom_ratio in zoom_ratios:
+      ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
+      # Get physical ID
+      physical_camera_id = int(
+          dut.ui(
+              res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
+      )
+      logging.debug('Physical camera ID: %d', physical_camera_id)
+      physical_camera_ids.append(physical_camera_id)
+      # Take capture
+      dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
+      dut.ui(
+          text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.exists(
+          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+      dut.ui(text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.gone(
+          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    dut.ui.press.back()
+    number_of_captures = 0
+    for capture_path, physical_camera_id in zip(
+        self.get_and_pull_jca_capture(dut, log_path), physical_camera_ids):
+      number_of_captures += 1
+      yield ui_interaction_utils.JcaCapture(capture_path, physical_camera_id)
+    if number_of_captures != len(zoom_ratios):
+      raise AssertionError(
+          f'Expected {len(zoom_ratios)} captures, got {number_of_captures}!'
+      )
 
-  def get_and_pull_jca_capture(self, dut, log_path):
-    """Retrieves a capture path from the socket and pulls capture to host.
+  def do_jca_video_capture(self, dut, log_path, duration):
+    """Take a capture using JCA using the UI.
+
+    Captures JCA video by holding the capture button with requested duration.
+    Reads response from socket containing the capture path, and
+    pulls the image from the DUT.
+
+    This method is included here because an ITS session is needed to retrieve
+    the capture path from the device.
 
     Args:
       dut: An Android controller device object.
       log_path: str; log path to save screenshots.
+      duration: int; requested video duration, in ms.
     Returns:
       The host-side path of the capture.
+    """
+    # Make sure JCA is started
+    jca_capture_button_visible = dut.ui(
+        res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
+            ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    if not jca_capture_button_visible:
+      raise AssertionError('JCA was not started! Please use'
+                           'open_jca_viewfinder() or do_jca_video_setup()'
+                           'in ui_interaction_utils.py to start JCA.')
+    dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click(duration)
+    return self.get_and_pull_jca_capture(dut, log_path)
+
+  def get_and_pull_jca_capture(self, dut, log_path):
+    """Retrieve a capture path from the socket and pulls capture to host.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+    Yields:
+      The host-side path of a capture.
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_path, capture_status = None, None
-    while not capture_path or not capture_status:
+    capture_paths, capture_status = None, None
+    while not capture_paths or not capture_status:
       data, _ = self.__read_response_from_socket()
-      if data[_TAG_STR] == JCA_CAPTURE_PATH_TAG:
-        capture_path = data[_STR_VALUE_STR]
+      if data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
+        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
       elif data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
         capture_status = data[_STR_VALUE_STR]
       else:
@@ -1600,10 +1716,12 @@ class ItsSession(object):
     if capture_status != RESULT_OK_STATUS:
       logging.error('Capture failed! Expected status %d, received %d',
                     RESULT_OK_STATUS, capture_status)
-    logging.debug('capture path: %s', capture_path)
-    _, capture_name = os.path.split(capture_path)
-    its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
-    return os.path.join(log_path, capture_name)
+    logging.debug('capture paths: %s', capture_paths)
+    for capture_path in capture_paths:
+      _, capture_name = os.path.split(capture_path)
+      its_device_utils.run(
+          f'adb -s {dut.serial} pull {capture_path} {log_path}')
+      yield os.path.join(log_path, capture_name)
 
   def do_capture_with_flash(self,
                             preview_request_start,
@@ -2033,7 +2151,7 @@ class ItsSession(object):
         # and cannot be accessed.
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -2051,7 +2169,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2815,6 +2933,17 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
                            "Valid strings: 'ON', 'OFF'.")
 
 
+def get_build_fingerprint(device_id):
+  """Return the build fingerprint of the device."""
+  cmd = f'adb -s {device_id} shell getprop ro.build.fingerprint'
+  try:
+    build_fingerprint = subprocess.check_output(cmd.split()).decode('utf-8').strip()
+    logging.debug('Build fingerprint: %s', build_fingerprint)
+  except (subprocess.CalledProcessError, ValueError) as exp_errors:
+    raise AssertionError('No build_fingerprint.') from exp_errors
+  return build_fingerprint
+
+
 def get_build_sdk_version(device_id):
   """Return the int build version of the device."""
   cmd = f'adb -s {device_id} shell getprop ro.build.version.sdk'
@@ -2982,30 +3111,42 @@ def remove_mp4_file(file_name_with_path):
     logging.debug('File not found: %s', file_name_with_path)
 
 
-def check_and_update_features_tested(
-    features_tested, hlg10, is_stabilized):
-  """Check if the [hlg10, is_stabilized] combination is already tested.
+def check_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Check if the [hlg10, is_stabilized] combination is already tested
+  to be supported.
 
   Args:
-    features_tested: The list of feature combinations already tested
+    features_passed: The list of feature combinations already supported
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
 
   Returns:
-    Whether the [hlg10, is_stabilized] is already tested.
+    Whether the [hlg10, is_stabilized] is already tested to be supported.
   """
   feature_mask = 0
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
   tested = False
-  for tested_feature in features_tested:
+  for tested_feature in features_passed:
     # Only test a combination if they aren't already a subset
     # of another tested combination.
     if (tested_feature | feature_mask) == tested_feature:
       tested = True
       break
-
-  if not tested:
-    features_tested.append(feature_mask)
-
   return tested
+
+
+def mark_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Mark the [hlg10, is_stabilized] combination as tested to pass.
+
+  Args:
+    features_passed: The list of feature combinations already tested
+    hlg10: boolean; Whether HLG10 is enabled
+    is_stabilized: boolean; Whether preview stabilizatoin is enabled
+  """
+  feature_mask = 0
+  if hlg10: feature_mask |= _BIT_HLG10
+  if is_stabilized: feature_mask |= _BIT_STABILIZATION
+  features_passed.append(feature_mask)

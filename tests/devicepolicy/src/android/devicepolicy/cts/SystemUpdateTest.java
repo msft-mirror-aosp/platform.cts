@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -55,9 +57,9 @@ public final class SystemUpdateTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setSystemUpdatePolicy"})
     public void setSystemUpdatePolicy_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .setSystemUpdatePolicy(
-                                sDeviceState.dpc().componentName(), SYSTEM_UPDATE_POLICY)
+                                dpc(sDeviceState).componentName(), SYSTEM_UPDATE_POLICY)
         );
     }
 
@@ -66,19 +68,19 @@ public final class SystemUpdateTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setSystemUpdatePolicy",
             "android.app.admin.DevicePolicyManager#getSystemUpdatePolicy"})
     public void setSystemUpdatePolicy_policyIsSet() {
-        SystemUpdatePolicy originalPolicy = sDeviceState.dpc()
+        SystemUpdatePolicy originalPolicy = dpc(sDeviceState)
                 .devicePolicyManager().getSystemUpdatePolicy();
         try {
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .setSystemUpdatePolicy(
-                            sDeviceState.dpc().componentName(), SYSTEM_UPDATE_POLICY);
+                            dpc(sDeviceState).componentName(), SYSTEM_UPDATE_POLICY);
 
             // String comparison as SystemUpdatePolicy doesn't have a good equals method
             assertThat(sLocalDevicePolicyManager.getSystemUpdatePolicy().toString())
                     .isEqualTo(SYSTEM_UPDATE_POLICY.toString());
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setSystemUpdatePolicy(
-                    sDeviceState.dpc().componentName(), originalPolicy);
+            dpc(sDeviceState).devicePolicyManager().setSystemUpdatePolicy(
+                    dpc(sDeviceState).componentName(), originalPolicy);
         }
     }
 
@@ -88,17 +90,17 @@ public final class SystemUpdateTest {
             "android.app.admin.DevicePolicyManager#getSystemUpdatePolicy"})
     public void setSystemUpdatePolicy_doesNotApply_policyIsNotSet() {
         SystemUpdatePolicy originalPolicy =
-                sDeviceState.dpc().devicePolicyManager().getSystemUpdatePolicy();
+                dpc(sDeviceState).devicePolicyManager().getSystemUpdatePolicy();
         try {
-            sDeviceState.dpc().devicePolicyManager().setSystemUpdatePolicy(
-                    sDeviceState.dpc().componentName(), SYSTEM_UPDATE_POLICY);
+            dpc(sDeviceState).devicePolicyManager().setSystemUpdatePolicy(
+                    dpc(sDeviceState).componentName(), SYSTEM_UPDATE_POLICY);
 
             // String comparison as SystemUpdatePolicy doesn't have a good equals method
             assertThat(sLocalDevicePolicyManager.getSystemUpdatePolicy().toString())
                     .isNotEqualTo(SYSTEM_UPDATE_POLICY.toString());
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setSystemUpdatePolicy(
-                    sDeviceState.dpc().componentName(), originalPolicy);
+            dpc(sDeviceState).devicePolicyManager().setSystemUpdatePolicy(
+                    dpc(sDeviceState).componentName(), originalPolicy);
         }
     }
 

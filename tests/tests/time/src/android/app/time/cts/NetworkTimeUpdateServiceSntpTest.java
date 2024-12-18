@@ -259,7 +259,7 @@ public class NetworkTimeUpdateServiceSntpTest {
         // SystemClock.currentNetworkTimeClock() method currently requires
         // network_time_update_service (or NtpNetworkTimeHelper in the location service) to be
         // running in order to work. See also b/271256787 for context.
-        if (isWatch()) {
+        if (isWatch() && !android.server.Flags.allowNetworkTimeUpdateService()) {
             // network_time_update_service is not expected to exist on Wear due to
             // form-factor-specific changes. If this fails, more changes could be required besides
             // just removing this logic, so failing the test forces a discussion rather than moving

@@ -80,6 +80,18 @@ public class PropertyPathCtsTest {
     }
 
     @Test
+    public void testPropertyPathCJKTValid() {
+        PropertyPath path = new PropertyPath("我.每天.走路.上班[2]");
+        assertThat(path.size()).isEqualTo(4);
+        assertThat(path.get(0).getPropertyName()).isEqualTo("我");
+        assertThat(path.get(0).getPropertyIndex()).isEqualTo(NON_REPEATED_CARDINALITY);
+        assertThat(path.get(1).getPropertyName()).isEqualTo("每天");
+        assertThat(path.get(2).getPropertyName()).isEqualTo("走路");
+        assertThat(path.get(3).getPropertyName()).isEqualTo("上班");
+        assertThat(path.get(3).getPropertyIndex()).isEqualTo(2);
+    }
+
+    @Test
     public void testPropertyPathIterator() {
         PropertyPath path = new PropertyPath("foo.bar[2].bat.baz");
         Iterator<PropertyPath.PathSegment> iterator = path.iterator();

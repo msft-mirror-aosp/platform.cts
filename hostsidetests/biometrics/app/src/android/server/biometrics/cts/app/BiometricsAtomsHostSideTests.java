@@ -153,6 +153,31 @@ public class BiometricsAtomsHostSideTests {
     }
 
     @Test
+    public void testEnrollThenCleanUp() throws Exception {
+        for (SensorProperties prop : mSensorProperties) {
+            final int sensorId = prop.getSensorId();
+            try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId)) {
+                session.startEnroll(mUserId);
+                Utils.waitForBusySensor(sensorId);
+
+                mInstrumentation.waitForIdleSync();
+
+                session.finishEnroll(mUserId);
+                Utils.waitForIdleService();
+
+                mInstrumentation.waitForIdleSync();
+
+                // We only enroll on the framework side so when the enumeration starts, there won't
+                // be any identifier reported from the Hal side which will cause dangling framework.
+                session.cleanupInternalState(mUserId);
+                Utils.waitForBusySensor(sensorId);
+                Utils.waitForIdleService();
+            }
+        }
+        mInstrumentation.waitForIdleSync();
+    }
+
+    @Test
     public void testAuthenticateWithBiometricPrompt() throws Exception {
         // TODO(b/253318030): No API beyond bp (doesn't allow convenience) - need new test API
         for (SensorProperties prop : filterWeakOrGreaterSensorProperties(mSensorProperties)) {

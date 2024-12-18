@@ -34,10 +34,13 @@ import android.security.AttestedKeyPair;
 import android.security.KeyChain;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.util.Log;
 
 import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.nene.appops.AppOpsMode;
+import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
@@ -63,6 +66,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -92,6 +96,8 @@ public final class CredentialManagementAppTest {
                     .build();
     private static final DevicePolicyManager sDevicePolicyManager =
             sContext.getSystemService(DevicePolicyManager.class);
+
+    private static final String LOG_TAG = "CredentialManagementAppTest";
 
     private static PrivateKey getPrivateKey(final byte[] key, String type) {
         try {
@@ -352,7 +358,15 @@ public final class CredentialManagementAppTest {
     }
 
     // TODO (b/174677062): Move this into infrastructure
+    // TODO (b/333230523): Remove unnecessary logging when bug analysis is completed.
     private void setCredentialManagementApp() {
+        // (b/333230523): AppOps is flakily not being set to ALLOWED after setting the credential
+        // management app.
+        AppOpsMode appOpsModeBeforeSetting =
+                TestApis.packages().instrumented().appOps().get(MANAGE_CREDENTIALS);
+        Log.d(LOG_TAG,
+                "AppOps status for current app before setting credential management app: " +
+                        appOpsModeBeforeSetting);
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_CREDENTIAL_MANAGEMENT_APP)) {
             boolean wasSet = KeyChain.setCredentialManagementApp(
@@ -362,8 +376,19 @@ public final class CredentialManagementAppTest {
         }
 
         assertThat(KeyChain.isCredentialManagementApp(sContext)).isTrue();
-        assertThat(TestApis.packages().instrumented().appOps().get(MANAGE_CREDENTIALS))
-                .isEqualTo(ALLOWED);
+        Poll.forValue(() -> {
+                    AppOpsMode appOpsModeAfterSetting =
+                            TestApis.packages().instrumented().appOps().get(MANAGE_CREDENTIALS);
+                    Log.d(LOG_TAG,
+                            "AppOps status for current app after setting credential management "
+                                    + "app: " + appOpsModeAfterSetting);
+                    return appOpsModeAfterSetting;
+                })
+                .toMeet(appOps -> appOps.equals(ALLOWED))
+                // Fail the test if AppOps was not set within 5 seconds, because otherwise we have
+                // a performance issue.
+                .timeout(Duration.ofSeconds(5))
+                .await();
     }
 
     // TODO (b/174677062): Move this into infrastructure

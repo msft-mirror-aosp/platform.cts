@@ -17,6 +17,7 @@
 import cv2
 import logging
 import os.path
+import time
 
 from mobly import test_runner
 import numpy as np
@@ -42,9 +43,12 @@ _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics#EXTENSION_NIGHT
 _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
+_AVG_DELTA_LUMINANCE_THRESH_METERED_REGION = 17
 _AVG_LUMINANCE_THRESH = 70
+_AVG_LUMINANCE_THRESH_METERED_REGION = 54
 
 _CAPTURE_REQUEST = {
     'android.control.mode': _CONTROL_MODE_AUTO,
@@ -59,7 +63,8 @@ _CAPTURE_REQUEST = {
 
 
 def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
-                         mirror_output):
+                         mirror_output, metering_region, use_metering_region,
+                         first_api_level):
   """Capture a preview frame and then analyze it.
 
   Args:
@@ -69,21 +74,47 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
     preview_size: Target size of preview.
     extension: Extension mode or -1 to use Camera2.
     mirror_output: If the output should be mirrored across the vertical axis.
+    metering_region: The metering region to use for the capture.
+    use_metering_region: Whether to use the metering region.
+    first_api_level: The first API level of the device under test.
   """
-  frame_bytes = cam.do_capture_preview_frame(camera_id,
-                                             preview_size,
-                                             _NUM_FRAMES_TO_WAIT,
-                                             extension,
-                                             _CAPTURE_REQUEST)
+  luminance_thresh = _AVG_LUMINANCE_THRESH
+  delta_luminance_thresh = _AVG_DELTA_LUMINANCE_THRESH
+  capture_request = dict(_CAPTURE_REQUEST)
+  if use_metering_region and metering_region is not None:
+    logging.debug('metering_region: %s', metering_region)
+    capture_request['android.control.aeRegions'] = [metering_region]
+    capture_request['android.control.afRegions'] = [metering_region]
+    capture_request['android.control.awbRegions'] = [metering_region]
+    luminance_thresh = _AVG_LUMINANCE_THRESH_METERED_REGION
+    delta_luminance_thresh = _AVG_DELTA_LUMINANCE_THRESH_METERED_REGION
+
+  frame_bytes = cam.do_capture_preview_frame(
+      camera_id, preview_size, _NUM_FRAMES_TO_WAIT, extension, capture_request
+  )
   np_array = np.frombuffer(frame_bytes, dtype=np.uint8)
   img_rgb = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+
   if mirror_output:
     img_rgb = cv2.flip(img_rgb, 1)
-  low_light_utils.analyze_low_light_scene_capture(
-      file_stem,
-      img_rgb,
-      _AVG_LUMINANCE_THRESH,
-      _AVG_DELTA_LUMINANCE_THRESH)
+  try:
+    low_light_utils.analyze_low_light_scene_capture(
+        file_stem, img_rgb, luminance_thresh, delta_luminance_thresh
+    )
+  except AssertionError as e:
+    # On Android 15, we initially test without metered region. If it fails, we
+    # fallback to test with metered region. Otherwise, for newer than
+    # Android 15, we always start test with metered region.
+    if (
+        first_api_level == its_session_utils.ANDROID15_API_LEVEL
+        and not use_metering_region
+    ):
+      logging.debug('Retrying with metering region: %s', e)
+      _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
+                           mirror_output, metering_region, True,
+                           first_api_level)
+    else:
+      raise e
 
 
 class LowLightBoostTest(its_base_test.ItsBaseTest):
@@ -175,6 +206,11 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
+      metering_region = low_light_utils.get_metering_region(
+          cam, f'{test_name}_{self.camera_id}')
+      use_metering_region = (
+          first_api_level > its_session_utils.ANDROID15_API_LEVEL
+      )
 
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
@@ -200,7 +236,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Since low light boost can be supported by Camera2 and Night Mode
       # Extensions, run the test for both (if supported)
-
+      # Wait for tablet brightness to change
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       if is_low_light_boost_supported:
         # Determine preview width and height to test
         target_preview_size = (
@@ -212,20 +249,24 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         file_stem = f'{test_name}_{self.camera_id}_camera2'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NONE,
-                             should_mirror)
+                             should_mirror, metering_region,
+                             use_metering_region, first_api_level)
 
       if is_low_light_boost_supported_night:
         # Determine preview width and height to test
         target_preview_size = (
             preview_processing_utils.get_max_extension_preview_test_size(
-                cam, self.camera_id, _EXTENSION_NIGHT))
+                cam, self.camera_id, _EXTENSION_NIGHT
+            )
+        )
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using night mode extension')
         file_stem = f'{test_name}_{self.camera_id}_camera_extension'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NIGHT,
-                             should_mirror)
+                             should_mirror, metering_region,
+                             use_metering_region, first_api_level)
 
 
 if __name__ == '__main__':

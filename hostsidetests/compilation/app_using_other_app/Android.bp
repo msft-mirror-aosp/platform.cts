@@ -33,6 +33,6 @@ android_test_helper_app {
         "ctstestrunner-axt",
     ],
     libs: [
-        "android.test.base",
+        "sdk_public_31_android.test.base",
     ],
 }

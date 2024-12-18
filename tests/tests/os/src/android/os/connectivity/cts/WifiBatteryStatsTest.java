@@ -23,17 +23,13 @@ import android.os.connectivity.WifiBatteryStats;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
-import android.platform.test.ravenwood.RavenwoodRule;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 public class WifiBatteryStatsTest {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @RequiresFlagsEnabled(
             com.android.server.power.optimization.Flags.FLAG_STREAMLINED_CONNECTIVITY_BATTERY_STATS)

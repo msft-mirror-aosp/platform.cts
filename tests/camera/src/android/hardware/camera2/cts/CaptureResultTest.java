@@ -627,6 +627,24 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
         }
 
+        // Only present when COLOR_CORRECTION_MODE_CCT is on
+        if (Flags.colorTemperature()) {
+            waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
+            waiverKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
+        }
+
+        // TODO: b/380150519 Remove once AE_PRIORITY_MODE default is
+        // correctly populated in the framework
+        if (Flags.aePriority()) {
+            waiverKeys.add(CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        }
+
+        /*
+         * Extension keys. Tested in extension related tests.
+         */
+        waiverKeys.add(CaptureResult.EXTENSION_STRENGTH);
+        waiverKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
+
         // Only present on devices capable of reporting intra-frame statistics
         waiverKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         // Only present on logical cameras that switch between lenses when going trhough zoom ratios
@@ -635,6 +653,11 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         // Only present on devices that support low light boose AE mode
         if (!staticInfo.isAeModeLowLightBoostSupported()) {
             waiverKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
+        }
+
+        // Only present on devices that support night mode scene indicator detection
+        if (!staticInfo.isNightModeIndicatorSupported()) {
+            waiverKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
         }
 
         // LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID not required if key is not supported.
@@ -1004,6 +1027,12 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.COLOR_CORRECTION_TRANSFORM);
         resultKeys.add(CaptureResult.COLOR_CORRECTION_GAINS);
         resultKeys.add(CaptureResult.COLOR_CORRECTION_ABERRATION_MODE);
+        if (Flags.colorTemperature()) {
+            resultKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
+        }
+        if (Flags.colorTemperature()) {
+            resultKeys.add(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
+        }
         resultKeys.add(CaptureResult.CONTROL_AE_ANTIBANDING_MODE);
         resultKeys.add(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION);
         resultKeys.add(CaptureResult.CONTROL_AE_LOCK);
@@ -1036,12 +1065,16 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         if (Flags.cameraAeModeLowLightBoost()) {
             resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
         }
+        if (Flags.zoomMethod()) {
+            resultKeys.add(CaptureResult.CONTROL_ZOOM_METHOD);
+        }
+        if (Flags.aePriority()) {
+            resultKeys.add(CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        }
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);
-        if (Flags.cameraManualFlashStrengthControl()) {
-            resultKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
-        }
+        resultKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
         resultKeys.add(CaptureResult.HOT_PIXEL_MODE);
         resultKeys.add(CaptureResult.JPEG_GPS_LOCATION);
         resultKeys.add(CaptureResult.JPEG_ORIENTATION);
@@ -1089,9 +1122,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.STATISTICS_LENS_SHADING_MAP_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_DATA_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_SAMPLES);
-        if (Flags.concertMode()) {
-            resultKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
-        }
+        resultKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         resultKeys.add(CaptureResult.TONEMAP_CURVE);
         resultKeys.add(CaptureResult.TONEMAP_MODE);
         resultKeys.add(CaptureResult.TONEMAP_GAMMA);
@@ -1099,10 +1130,13 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.BLACK_LEVEL_LOCK);
         resultKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
-        if (Flags.concertMode()) {
-            resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
-        }
+        resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
+        resultKeys.add(CaptureResult.EXTENSION_STRENGTH);
+        resultKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
+        if (Flags.nightModeIndicator()) {
+            resultKeys.add(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        }
 
         return resultKeys;
     }

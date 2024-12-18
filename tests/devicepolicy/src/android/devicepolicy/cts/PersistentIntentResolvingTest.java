@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -52,7 +54,7 @@ public final class PersistentIntentResolvingTest {
     private static final String TEST_ACTION = "com.android.cts.deviceandprofileowner.CONFIRM";
 
     private static final TestApp sTestAppWithMultipleActivities =
-            sDeviceState.testApps().query()
+            testApps(sDeviceState).query()
                     .whereActivities().contains(
                             activity().where().intentFilters().contains(
                                     intentFilter()
@@ -97,9 +99,9 @@ public final class PersistentIntentResolvingTest {
             try {
                 IntentFilter intentFilter = new IntentFilter(TEST_ACTION);
                 intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .addPersistentPreferredActivity(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 intentFilter,
                                 new ComponentName(testAppInstance.packageName(),
                                         PREFERRED_ACTIVITY.className()));
@@ -120,9 +122,9 @@ public final class PersistentIntentResolvingTest {
                         .errorOnFail()
                         .await();
             } finally {
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .clearPackagePersistentPreferredActivities(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 testAppInstance.packageName());
             }
         }
@@ -137,9 +139,9 @@ public final class PersistentIntentResolvingTest {
             try {
                 IntentFilter intentFilter = new IntentFilter(TEST_ACTION);
                 intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .addPersistentPreferredActivity(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 intentFilter,
                                 new ComponentName(testAppInstance.packageName(),
                                         PREFERRED_ACTIVITY.className()));
@@ -148,13 +150,13 @@ public final class PersistentIntentResolvingTest {
                                 .whereType().isEqualTo(
                                         EventId.ADD_PERSISTENT_PREFERRED_ACTIVITY_VALUE)
                                 .whereAdminPackageName().isEqualTo(
-                                        sDeviceState.dpc().packageName())
+                                        dpc(sDeviceState).packageName())
                                 .whereStrings().contains(testAppInstance.packageName()))
                         .wasLogged();
             } finally {
-                sDeviceState.dpc().devicePolicyManager()
+                dpc(sDeviceState).devicePolicyManager()
                         .clearPackagePersistentPreferredActivities(
-                                sDeviceState.dpc().componentName(),
+                                dpc(sDeviceState).componentName(),
                                 testAppInstance.packageName());
             }
         }
@@ -167,16 +169,16 @@ public final class PersistentIntentResolvingTest {
         try (TestAppInstance testAppInstance = sTestAppWithMultipleActivities.install()) {
             IntentFilter intentFilter = new IntentFilter(TEST_ACTION);
             intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .addPersistentPreferredActivity(
-                            sDeviceState.dpc().componentName(),
+                            dpc(sDeviceState).componentName(),
                             intentFilter,
                             new ComponentName(
                                     testAppInstance.packageName(), PREFERRED_ACTIVITY.className()));
 
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .clearPackagePersistentPreferredActivities(
-                            sDeviceState.dpc().componentName(),
+                            dpc(sDeviceState).componentName(),
                             testAppInstance.packageName());
             TestApis.context().instrumentedContext().startActivity(
                     new Intent(TEST_ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

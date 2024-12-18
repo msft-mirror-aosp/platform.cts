@@ -1145,7 +1145,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         assertWithMessage("Current zone config info selected status")
                 .that(currentZoneConfigInfo.isSelected()).isTrue();
         assertWithMessage("Current zone config info default indicator")
-                .that(currentZoneConfigInfo.isDefault()).isFalse();
+                .that(currentZoneConfigInfo.isDefault()).isTrue();
         List<CarVolumeGroupInfo> currentInfos =
                 mCarAudioManager.getVolumeGroupInfosForZone(mZoneId);
         for (CarVolumeGroupInfo info : currentInfos) {
@@ -1891,7 +1891,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     }
 
     private void assumeDynamicRoutingIsDisabled() {
-        assumeFalse("Requires dynamic audio routing",
+        assumeFalse("Requires dynamic audio routing disabled",
                 mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
     }
 

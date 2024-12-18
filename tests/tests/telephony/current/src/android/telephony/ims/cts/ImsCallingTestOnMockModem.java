@@ -39,6 +39,9 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.Call;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
@@ -55,11 +58,13 @@ import android.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -73,6 +78,8 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class ImsCallingTestOnMockModem extends ImsCallingBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String LOG_TAG = "CtsImsCallingTestOnMockModem";
     private static final boolean VDBG = false;
@@ -247,7 +254,7 @@ public class ImsCallingTestOnMockModem extends ImsCallingBase {
     }
 
     @Test
-    @Ignore("b/259254356 - This api is not public yet")
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testSendAnbrQuery() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
@@ -262,6 +269,7 @@ public class ImsCallingTestOnMockModem extends ImsCallingBase {
 
         assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
 
@@ -282,7 +290,7 @@ public class ImsCallingTestOnMockModem extends ImsCallingBase {
     }
 
     @Test
-    @Ignore("b/259254356 - This api is not public yet")
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_MMTEL_INTERFACE)
     public void testNotifyAnbr() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
@@ -297,6 +305,7 @@ public class ImsCallingTestOnMockModem extends ImsCallingBase {
 
         assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
 

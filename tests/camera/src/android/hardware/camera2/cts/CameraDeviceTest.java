@@ -324,6 +324,15 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                                 capReq.get(CaptureRequest.CONTROL_SETTINGS_OVERRIDE)
                                 == CameraMetadata.CONTROL_SETTINGS_OVERRIDE_OFF);
                     }
+                    if (Flags.zoomMethod()) {
+                        if (mStaticInfo.areKeysAvailable(CaptureRequest.CONTROL_ZOOM_METHOD)) {
+                            assertNotNull("CONTROL_ZOOM_METHOD key is not set in capture template",
+                                    capReq.get(CaptureRequest.CONTROL_ZOOM_METHOD));
+                            assertTrue("CONTROL_ZOOM_METHOD isn't AUTO in capture templates",
+                                    capReq.get(CaptureRequest.CONTROL_ZOOM_METHOD)
+                                    == CameraMetadata.CONTROL_ZOOM_METHOD_AUTO);
+                        }
+                    }
                 }
 
                 /**
