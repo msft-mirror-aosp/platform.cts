@@ -26,6 +26,8 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assert.assertThrows;
+
 import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
@@ -51,6 +53,7 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -467,6 +470,15 @@ public class ResourcesTest {
 
         // Some apps rely on the fact that this will return null (rather than throwing).
         assertNull(mResources.getDrawable(R.drawable.fake_image_will_not_decode));
+    }
+
+    @Test
+    public void testGetDrawable_fakeFrro() {
+        var thrown =
+                assertThrows(
+                        Resources.NotFoundException.class,
+                        () -> mResources.getDrawable(R.string.looks_like_frro, null));
+        assertThat(Log.getStackTraceString(thrown)).contains("invalid frro path");
     }
 
     @Test
