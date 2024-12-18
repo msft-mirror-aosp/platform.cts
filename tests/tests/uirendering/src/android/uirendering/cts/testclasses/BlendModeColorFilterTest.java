@@ -16,6 +16,7 @@
 package android.uirendering.cts.testclasses;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import android.graphics.Bitmap;
 import android.graphics.BlendMode;
@@ -117,5 +118,18 @@ public class BlendModeColorFilterTest extends ActivityTestBase {
     public void testBlendModeColorFilterGetColor() {
         BlendModeColorFilter filter = new BlendModeColorFilter(Color.MAGENTA, BlendMode.HARD_LIGHT);
         assertEquals(Color.MAGENTA, filter.getColor());
+    }
+
+    @Test
+    public void testBlendModeColorFilterEquality() {
+        BlendModeColorFilter filterRedSrcA = new BlendModeColorFilter(Color.RED, BlendMode.SRC);
+        BlendModeColorFilter filterRedSrcB = new BlendModeColorFilter(Color.RED, BlendMode.SRC);
+        assertEquals(filterRedSrcA, filterRedSrcB);
+
+        BlendModeColorFilter filterBlueSrc = new BlendModeColorFilter(Color.BLUE, BlendMode.SRC);
+        assertNotEquals(filterRedSrcA, filterBlueSrc);
+
+        BlendModeColorFilter filterRedDst = new BlendModeColorFilter(Color.RED, BlendMode.DST);
+        assertNotEquals(filterRedSrcA, filterRedDst);
     }
 }
