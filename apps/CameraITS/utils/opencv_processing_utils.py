@@ -1335,3 +1335,45 @@ def convert_image_to_high_contrast_black_white(
   high_contrast_img = numpy.expand_dims(
       (CH_FULL_SCALE - high_contrast_img), axis=2)
   return high_contrast_img
+
+
+def extract_main_patch(corners, ids, img_rgb, img_path, suffix):
+  """Extracts the main rectangle patch from the captured frame.
+
+  Find aruco markers in the captured image and detects if the
+  expected number of aruco markers have been found or not.
+  It then, extracts the main rectangle patch and saves it
+  without the aruco markers in it.
+
+  Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+    img_rgb: An openCV image in RGB order.
+    img_path: Path to save the image.
+    suffix: str; suffix used to save the image.
+  Returns:
+    rectangle_patch: numpy float image array of the rectangle patch.
+  """
+  rectangle_patch = get_patch_from_aruco_markers(
+      img_rgb, corners, ids)
+  patch_path = img_path.with_name(
+      f'{img_path.stem}_{suffix}_patch{img_path.suffix}')
+  image_processing_utils.write_image(rectangle_patch/CH_FULL_SCALE, patch_path)
+  return rectangle_patch
+
+
+def extract_y(img_uint8, file_name):
+  """Converts an RGB uint8 image to YUV and returns Y.
+
+  The Y img is saved with file_name in the test dir.
+
+  Args:
+    img_uint8: openCV image in RGB order.
+    file_name: file name along with the path to save the image.
+  Returns:
+    OpenCV image converted to Y.
+  """
+  y_uint8 = convert_to_y(img_uint8, 'RGB')
+  y_uint8 = numpy.expand_dims(y_uint8, axis=2)  # add plane to save image
+  image_processing_utils.write_image(y_uint8/CH_FULL_SCALE, file_name)
+  return y_uint8
