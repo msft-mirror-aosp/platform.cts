@@ -5111,10 +5111,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             codeName = "VanillaIceCream")
     @Test
     public void testPerSsidRoamingMode() throws Exception {
-        if (!sWifiManager.isAggressiveRoamingModeSupported()) {
-            // skip the test if aggressive roaming mode is not supported
-            return;
-        }
         WifiSsid testSsid = WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8));
         Map<String, Integer> roamingModes = new HashMap<>();
         Consumer<Map<String, Integer>> listener = new Consumer<Map<String, Integer>>() {
@@ -5131,7 +5127,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         // Test caller with no permission triggers SecurityException.
         assertThrows("No permission should trigger SecurityException", SecurityException.class,
                 () -> sWifiManager.setPerSsidRoamingMode(testSsid,
-                        WifiManager.ROAMING_MODE_AGGRESSIVE));
+                        WifiManager.ROAMING_MODE_NORMAL));
         assertThrows("No permission should trigger SecurityException", SecurityException.class,
                 () -> sWifiManager.removePerSsidRoamingMode(testSsid));
         assertThrows("No permission should trigger SecurityException", SecurityException.class,
@@ -5140,7 +5136,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         // Test that invalid inputs trigger an Exception.
         assertThrows("null WifiSsid should trigger exception", NullPointerException.class,
                 () -> sWifiManager.setPerSsidRoamingMode(null,
-                        WifiManager.ROAMING_MODE_AGGRESSIVE));
+                        WifiManager.ROAMING_MODE_NORMAL));
         assertThrows("null WifiSsid should trigger exception", NullPointerException.class,
                 () -> sWifiManager.removePerSsidRoamingMode(null));
         assertThrows("null executor should trigger exception", NullPointerException.class,
@@ -5151,15 +5147,32 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            sWifiManager.setPerSsidRoamingMode(testSsid, WifiManager.ROAMING_MODE_AGGRESSIVE);
+            sWifiManager.setPerSsidRoamingMode(testSsid, WifiManager.ROAMING_MODE_NORMAL);
             sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
             Thread.sleep(TEST_WAIT_DURATION_MS);
             assertTrue(
-                    roamingModes.get(testSsid.toString()) == WifiManager.ROAMING_MODE_AGGRESSIVE);
+                    roamingModes.get(testSsid.toString()) == WifiManager.ROAMING_MODE_NORMAL);
             sWifiManager.removePerSsidRoamingMode(testSsid);
             sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
             Thread.sleep(TEST_WAIT_DURATION_MS);
             assertNull(roamingModes.get(testSsid.toString()));
+
+            if (sWifiManager.isAggressiveRoamingModeSupported()) {
+                sWifiManager.setPerSsidRoamingMode(testSsid, WifiManager.ROAMING_MODE_AGGRESSIVE);
+                sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
+                Thread.sleep(TEST_WAIT_DURATION_MS);
+                assertTrue(roamingModes.get(testSsid.toString())
+                        == WifiManager.ROAMING_MODE_AGGRESSIVE);
+                sWifiManager.removePerSsidRoamingMode(testSsid);
+                sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
+                Thread.sleep(TEST_WAIT_DURATION_MS);
+                assertNull(roamingModes.get(testSsid.toString()));
+            } else {
+                assertThrows("Aggressive roaming mode not supported",
+                        UnsupportedOperationException.class,
+                        () -> sWifiManager.setPerSsidRoamingMode(testSsid,
+                                WifiManager.ROAMING_MODE_AGGRESSIVE));
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -7160,6 +7173,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         public void onCreate(TwtSession twtSession) {
             synchronized (mLock) {
                 mTwtSession.set(twtSession);
+                mLock.notify();
             }
         }
     }

@@ -416,8 +416,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         launchActivity(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         assumeNotIgnoringOrientation(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        assertEquals("Legacy translucent activity requested landscape orientation",
-                SCREEN_ORIENTATION_LANDSCAPE, mWmState.getLastOrientation());
+        mWmState.waitAndAssertLastOrientation(
+                "Legacy translucent activity requested landscape orientation",
+                SCREEN_ORIENTATION_LANDSCAPE);
 
         // TODO(b/36897968): uncomment once we can suppress unsupported configurations
         // final ReportedSizes updatedReportedSizes =
@@ -557,8 +558,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         mWmState.assertResumedActivity(
                 "target SDK <= 26 translucent activity should be allowed to launch",
                 SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        assertEquals("translucent activity requested landscape orientation",
-                SCREEN_ORIENTATION_LANDSCAPE, mWmState.getLastOrientation());
+        mWmState.waitAndAssertLastOrientation(
+                "Translucent activity requested landscape orientation",
+                SCREEN_ORIENTATION_LANDSCAPE);
     }
 
     /**
@@ -780,7 +782,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 baseDisplayMetricsSession.getDisplayMetrics();
         final int configMaxUiWidth = mContext.getResources().getInteger(Resources.getSystem()
                 .getIdentifier("config_maxUiWidth", "integer", "android"));
-        if (configMaxUiWidth == 0) {
+        final boolean notMaxWidthConstrained =
+                configMaxUiWidth == 0 || overrideSize.getWidth() <= configMaxUiWidth;
+        if (notMaxWidthConstrained) {
             assertEquals(overrideSize, changedBaseDisplayMetrics.getSize());
         } else {
             // If there is a maximum width constraint, check if the size of the base display has
@@ -791,12 +795,35 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         // Check that the DisplayMetrics-related config of the base display context has changed
         Context baseDisplayContext = baseContextSupplier.apply(activity);
-        assertNotEquals("Base display context width must be changed",
-                origBaseDisplaySize.getWidth(),
-                baseDisplayContext.getResources().getConfiguration().windowConfiguration.getBounds().width());
-        assertNotEquals("Base display context height must be changed",
+        if (notMaxWidthConstrained) {
+            assertNotEquals(
+                    "Base display context width must be changed",
+                    origBaseDisplaySize.getWidth(),
+                    baseDisplayContext
+                            .getResources()
+                            .getConfiguration()
+                            .windowConfiguration
+                            .getBounds()
+                            .width());
+        } else {
+            assertEquals(
+                    configMaxUiWidth,
+                    baseDisplayContext
+                            .getResources()
+                            .getConfiguration()
+                            .windowConfiguration
+                            .getBounds()
+                            .width());
+        }
+        assertNotEquals(
+                "Base display context height must be changed",
                 origBaseDisplaySize.getHeight(),
-                baseDisplayContext.getResources().getConfiguration().windowConfiguration.getBounds().height());
+                baseDisplayContext
+                        .getResources()
+                        .getConfiguration()
+                        .windowConfiguration
+                        .getBounds()
+                        .height());
 
         // Check that the DisplayMetrics-related config of the simulated display context is not
         // changed when base base display context has changed

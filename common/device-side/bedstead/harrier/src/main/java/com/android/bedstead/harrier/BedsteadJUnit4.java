@@ -27,6 +27,7 @@ import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
@@ -59,6 +60,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -100,12 +102,14 @@ import java.util.stream.Stream;
 // @AutoAnnotation is not able to set default value for a field with an annotated data type,
 // so we try to pass the default value explicitly that is accessed via reflection through this
 // class.
+@SuppressWarnings("AndroidJdkLibsChecker")
 @Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
+    private boolean mHasManualHarrierRule = false;
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -238,7 +242,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
             // Default to MIDDLE if no cost is found on the annotation.
-            return AnnotationPriorityRunPrecedence.MIDDLE;
+            return AnnotationCostRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
         }
@@ -463,6 +467,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
+        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
 
         return new ArrayList<>(methods);
     }
@@ -539,7 +544,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
 
         for (FrameworkMethod m : basicTests) {
-            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m);
+            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m.getAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
@@ -688,7 +693,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.toList();
+            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -793,7 +798,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        comparator.thenComparing((o1, o2) -> {
+        var unused = comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -855,9 +860,15 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return annotationCosts;
     }
 
-    private Set<Annotation> getParameterizedAnnotations(FrameworkMethod method) {
+    /**
+     * Filters array of annotations and returns only annotations of type
+     * {@link ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
+     *
+     * @param methodAnnotations the array of annotations of test method
+     */
+    public static Set<Annotation> getParameterizedAnnotations(Annotation[] methodAnnotations) {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
-        List<Annotation> annotations = new ArrayList<>(Arrays.asList(method.getAnnotations()));
+        List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         parseEnterpriseAnnotations(annotations);
         parsePermissionAnnotations(annotations);
@@ -875,14 +886,19 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     /**
      * Create a new {@link EnterprisePolicy} by merging a group of policies.
      *
+     * <p> Example usage
+     * Policy1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     *
      * <p>Each policy will have flags validated.
      *
      * <p>If policies support different delegation scopes, then they cannot be merged and an
      * exception will be thrown. These policies require separate tests.
      */
-    private static EnterprisePolicy mergePolicies(Class<?>[] policies) {
+    private static EnterprisePolicy unionPolicies(Class<?>[] policies) {
         if (policies.length == 0) {
-            throw new IllegalStateException("Cannot merge 0 policies");
+            throw new IllegalStateException("Cannot union 0 policies");
         } else if (policies.length == 1) {
             // Nothing to merge, just return the only one
             return policies[0].getAnnotation(EnterprisePolicy.class);
@@ -929,6 +945,73 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     }
 
+
+    /**
+     * Create a new {@link EnterprisePolicy} with DPC that fulfills all the requirements of all the
+     * provided policies.
+     *
+     * <p> Example usage
+     * Policy1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER |
+     * APPLIES_TO_OWN_USER
+     * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     *
+     * <p>Each policy will have flags validated.
+     */
+    private static EnterprisePolicy intersectPolicies(Class<?>[] policies) {
+        if (policies.length == 0) {
+            throw new IllegalStateException("Cannot intersect 0 policies");
+        } else if (policies.length == 1) {
+            // Nothing to intersect, just return the only one
+            return policies[0].getAnnotation(EnterprisePolicy.class);
+        }
+
+        Set<EnterprisePolicy.Permission> permissions = new HashSet<>();
+        Set<EnterprisePolicy.AppOp> appOps = new HashSet<>();
+        Set<String> delegatedScopes = new HashSet<>();
+
+        int intersectDpc = ~0;
+
+        for (Class<?> policy : policies) {
+            EnterprisePolicy enterprisePolicy = policy.getAnnotation(EnterprisePolicy.class);
+            Policy.validateFlags(policy.getName(), enterprisePolicy.dpc());
+
+            for (int dpcPolicy : enterprisePolicy.dpc()) {
+                intersectDpc &= dpcPolicy;
+            }
+
+            // TODO: (b/331606832) support permissions intersection
+            for (EnterprisePolicy.Permission permission : enterprisePolicy.permissions()) {
+                permissions.add(permission);
+            }
+
+            // TODO: (b/341401594) support appOps intersection
+            for (EnterprisePolicy.AppOp appOp : enterprisePolicy.appOps()) {
+                appOps.add(appOp);
+            }
+
+            if (enterprisePolicy.delegatedScopes().length > 0) {
+                ImmutableSet<String> newDelegatedScopes = ImmutableSet.copyOf(
+                        enterprisePolicy.delegatedScopes());
+                if (!delegatedScopes.isEmpty()
+                        && !delegatedScopes.containsAll(newDelegatedScopes)) {
+                    throw new IllegalStateException(
+                            "Cannot intersect multiple policies which define "
+                                    + "different delegated scopes. You should separate this into "
+                                    + "multiple tests.");
+                }
+
+                delegatedScopes = newDelegatedScopes;
+            }
+        }
+
+        return Policy.enterprisePolicy(new int[]{intersectDpc},
+                permissions.toArray(new EnterprisePolicy.Permission[0]),
+                appOps.toArray(new EnterprisePolicy.AppOp[0]),
+                delegatedScopes.toArray(new String[0]));
+
+    }
+
     /**
      * Parse enterprise-specific annotations.
      *
@@ -943,7 +1026,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.policyAppliesStates(
-                                mergePolicies(((PolicyAppliesTest) annotation).policy()));
+                                unionPolicies(((PolicyAppliesTest) annotation).policy()));
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -953,7 +1036,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.policyDoesNotApplyStates(
-                                mergePolicies(((PolicyDoesNotApplyTest) annotation).policy()));
+                                unionPolicies(((PolicyDoesNotApplyTest) annotation).policy()));
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -963,7 +1046,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.cannotSetPolicyStates(
-                                mergePolicies(((CannotSetPolicyTest) annotation).policy()),
+                                unionPolicies(((CannotSetPolicyTest) annotation).policy()),
                                 ((CannotSetPolicyTest) annotation).includeDeviceAdminStates(),
                                 ((CannotSetPolicyTest) annotation).includeNonDeviceAdminStates());
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
@@ -974,10 +1057,32 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 annotations.remove(index);
                 boolean singleTestOnly = ((CanSetPolicyTest) annotation).singleTestOnly();
 
+                Class<?>[] policyUnionAnnotations = ((CanSetPolicyTest) annotation).policyUnion();
+                Class<?>[] policyIntersectionAnnotations =
+                        ((CanSetPolicyTest) annotation).policyIntersection();
+                Class<?>[] policyAnnotations = ((CanSetPolicyTest) annotation).policy();
+
+                int numberOfUniquePolicySet = (policyAnnotations.length > 0 ? 1 : 0)
+                        + (policyUnionAnnotations.length > 0 ? 1 : 0) + (
+                        policyIntersectionAnnotations.length > 0 ? 1 : 0);
+
+                if (numberOfUniquePolicySet != 1) {
+                    throw new IllegalStateException("Exactly 1 of policy/policyUnion/policyIntersection must be set");
+                }
+
+                EnterprisePolicy enterprisePolicy;
+
+                if (policyAnnotations.length > 0) {
+                    enterprisePolicy = unionPolicies(policyAnnotations);
+                } else if (policyUnionAnnotations.length > 0) {
+                    enterprisePolicy = unionPolicies(policyUnionAnnotations);
+                } else {
+                    enterprisePolicy = intersectPolicies(policyIntersectionAnnotations);
+                }
+
                 List<Annotation> replacementAnnotations =
-                        Policy.canSetPolicyStates(
-                                mergePolicies(((CanSetPolicyTest) annotation).policy()),
-                                singleTestOnly);
+                        Policy.canSetPolicyStates(enterprisePolicy, singleTestOnly);
+
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -1166,43 +1271,51 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     HarrierRule getHarrierRule() {
         if (mHarrierRule == null) {
-            classRules();
+            var unused = classRules();
         }
         return mHarrierRule;
+    }
+
+    @Override
+    protected List<TestRule> getTestRules(Object target) {
+        var testRules = super.getTestRules(target);
+        if (mHasManualHarrierRule) {
+            return testRules;
+        }
+        var harrier = findHarrier(testRules);
+        if (harrier == null) {
+            testRules.add(getHarrierRule());
+        }
+        return testRules;
     }
 
     @Override
     protected List<TestRule> classRules() {
         List<TestRule> rules = super.classRules();
 
-        for (TestRule rule : rules) {
-            if (rule instanceof HarrierRule) {
-                mHarrierRule = (HarrierRule) rule;
-                break;
-            }
-        }
+        mHarrierRule = findHarrier(rules);
+        mHasManualHarrierRule = mHarrierRule != null;
 
         if (mHarrierRule == null) {
-            try {
-                mHarrierRule =
-                        (HarrierRule)
-                                Class.forName("com.android.bedstead.harrier.DeviceState")
-                                        .newInstance();
-                rules = new ArrayList<>(rules);
-                rules.add(mHarrierRule);
-            } catch (ClassNotFoundException e) {
-                // Must be running on the host - for now we don't add anything
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException("Error initialising Harrier Rule", e);
-            }
+            mHarrierRule = new DeviceState();
+        }
+        if (!rules.contains(mHarrierRule)) {
+            rules.add(mHarrierRule);
         }
 
-        if (mHarrierRule != null) {
-            mHarrierRule.setSkipTestTeardown(true);
-            mHarrierRule.setUsingBedsteadJUnit4(true);
-        }
+        mHarrierRule.setSkipTestTeardown(true);
+        mHarrierRule.setUsingBedsteadJUnit4(true);
 
         return rules;
+    }
+
+    private HarrierRule findHarrier(List<TestRule> rules) {
+        for (TestRule rule : rules) {
+            if (rule instanceof HarrierRule) {
+                return (HarrierRule) rule;
+            }
+        }
+        return null;
     }
 
     /**

@@ -19,6 +19,7 @@ package com.android.bedstead.harrier;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
@@ -89,7 +90,9 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                     || annotation instanceof RequireRunOnProfileAnnotation
                     || annotation instanceof RequireRunOnInitialUser
                     || annotation instanceof RequireRunOnAdditionalUser
-                    || annotation instanceof RequireRunOnVisibleBackgroundNonProfileUser) {
+                    || annotation instanceof RequireRunOnVisibleBackgroundNonProfileUser
+                    || annotation instanceof RequireRunOnWorkProfile
+            ) {
                 hasRequireRunOnAnnotation = true;
                 break;
             }
@@ -136,10 +139,11 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             return false;
         }
 
-        if (!(obj instanceof BedsteadFrameworkMethod other)) {
+        if (!(obj instanceof BedsteadFrameworkMethod)) {
             return false;
         }
 
+        BedsteadFrameworkMethod other = (BedsteadFrameworkMethod) obj;
         return equivalence.equivalent(mParameterizedAnnotations, other.mParameterizedAnnotations);
     }
 

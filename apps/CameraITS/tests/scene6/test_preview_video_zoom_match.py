@@ -168,18 +168,19 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
           self.camera_id)
       logging.debug(
           'Supported video profiles and ID: %s', supported_video_qualities)
-      common_size, common_video_quality = (
-          video_processing_utils.get_lowest_common_preview_video_size(
-              supported_preview_sizes, supported_video_qualities,
-              _MIN_RESOLUTION_AREA
-          )
+
+      common_preview_size_info = (
+          video_processing_utils.get_preview_video_sizes_union(
+              cam, self.camera_id, min_area=_MIN_RESOLUTION_AREA)
       )
+      smallest_common_size = common_preview_size_info.smallest_size
+      smallest_common_video_quality = common_preview_size_info.smallest_quality
 
       # Start video recording over minZoom and 2x Zoom
       for quality_profile_id_pair in supported_video_qualities:
         quality = quality_profile_id_pair.split(':')[0]
         profile_id = quality_profile_id_pair.split(':')[-1]
-        if quality == common_video_quality:
+        if quality == smallest_common_video_quality:
           for i, z in enumerate(zoom_ratios_to_be_tested):
             logging.debug('Testing video recording for quality: %s', quality)
             req = capture_request_utils.auto_capture_request()
@@ -194,7 +195,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             logging.debug('Camera focal length: %.2f', cap_fl)
 
             # Determine width and height of video
-            size = common_size.split('x')
+            size = smallest_common_size.split('x')
             width = int(size[0])
             height = int(size[1])
 
@@ -221,7 +222,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
 
       # Start preview recording over minZoom and maxZoom
       for size in supported_preview_sizes:
-        if size == common_size:
+        if size == smallest_common_size:
           for i, z in enumerate(zoom_ratios_to_be_tested):
             cam.do_3a(zoom_ratio=z)
             preview_file_name = _do_preview_recording(

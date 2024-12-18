@@ -134,7 +134,7 @@ public class TransportDiscoveryDataTest {
         parcel.setDataPosition(0);
         TransportDiscoveryData dataFromParcel =
                 TransportDiscoveryData.CREATOR.createFromParcel(parcel);
-        TestUtils.assertArrayEquals(data.toByteArray(), dataFromParcel.toByteArray());
+        assertThat(dataFromParcel.toByteArray()).isEqualTo(data.toByteArray());
         assertThat(data).isEqualTo(dataFromParcel);
     }
 }

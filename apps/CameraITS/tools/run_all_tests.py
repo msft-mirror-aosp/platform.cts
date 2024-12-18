@@ -56,6 +56,7 @@ EXTRA_VERSION = 'camera.its.extra.VERSION'
 CURRENT_ITS_VERSION = '1.0'  # version number to sync with CtsVerifier
 EXTRA_CAMERA_ID = 'camera.its.extra.CAMERA_ID'
 EXTRA_RESULTS = 'camera.its.extra.RESULTS'
+EXTRA_TABLET_NAME = 'camera.its.extra.TABLET_NAME'
 TIME_KEY_START = 'start'
 TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
@@ -72,9 +73,9 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_1/2/... are same scene split to load balance run times for scenes
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
-    'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
-    'scene8', 'scene9',
+    'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
+    'scene6', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -112,6 +113,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene0': None,
     'scene1_1': 'A grey card covering at least the middle 30% of the scene',
     'scene1_2': 'A grey card covering at least the middle 30% of the scene',
+    'scene1_3': 'A grey card covering at least the middle 30% of the scene, '
+                'without a white border like scene1_1 or scene1_2',
     'scene2_a': 'The picture with 3 faces in tests/scene2_a/scene2_a.png',
     'scene2_b': 'The picture with 3 faces in tests/scene2_b/scene2_b.png',
     'scene2_c': 'The picture with 3 faces in tests/scene2_c/scene2_c.png',
@@ -169,12 +172,14 @@ SUB_CAMERA_TESTS = {
     'scene1_1': (
         'test_burst_capture',
         'test_burst_sameness_manual',
-        'test_dng_noise_model',
         'test_exposure_x_iso',
         'test_linearity',
     ),
     'scene1_2': (
         'test_raw_exposure',
+    ),
+    'scene1_3': (
+        'test_dng_noise_model',
         'test_raw_sensitivity',
         'test_yuv_plus_raw',
     ),
@@ -211,12 +216,13 @@ _SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
-def report_result(device_id, camera_id, results):
+def report_result(device_id, camera_id, tablet_name, results):
   """Sends a pass/fail result to the device, via an intent.
 
   Args:
    device_id: The ID string of the device to report the results to.
    camera_id: The ID string of the camera for which to report pass/fail.
+   tablet_name: The tablet name to identify model and build.
    results: a dictionary contains all ITS scenes as key and result/summary of
             current ITS run. See test_report_result unit test for an example.
   """
@@ -239,6 +245,7 @@ def report_result(device_id, camera_id, results):
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
          f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
+         f"{EXTRA_TABLET_NAME} {tablet_name} --es "
          f"{EXTRA_RESULTS} \'{json_results}\'")
   its_device_utils.run(cmd)
 
@@ -1018,7 +1025,7 @@ def main():
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)
       logging.info('ITS results to CtsVerifier: %s', results)
-      report_result(device_id, camera_id, results)
+      report_result(device_id, camera_id, tablet_name, results)
     else:
       write_result(testbed_index, device_id, camera_id, results)
 
@@ -1061,7 +1068,7 @@ def main():
                             'model/type/build/revision.',
                             device_id, parsed_id)
               return
-            report_result(device_id, parsed_camera, parsed_results)
+            report_result(device_id, parsed_camera, tablet_name, parsed_results)
           for temp_file in glob.glob('testbed_*.tmp'):
             os.remove(temp_file)
           break

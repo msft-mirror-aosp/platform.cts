@@ -35,6 +35,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withDeviceId
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withRawCoords
@@ -71,7 +72,7 @@ class SimultaneousTouchAndStylusTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<TwoWindowsActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<TwoWindowsActivity>(testName)
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -141,7 +142,7 @@ class SimultaneousTouchAndStylusTest {
         // ACTION_DOWN - stylus - right window
         stylus.sendBtnTouch(true)
         stylus.sendPressure(255)
-        stylus.sendDown(pointerId, rightWindowLocation, UinputTouchDevice.MT_TOOL_PEN)
+        stylus.sendDown(pointerId, rightWindowLocation)
         stylus.sync()
 
         rightWindowVerifier.assertReceivedMotion(
@@ -240,7 +241,7 @@ class SimultaneousTouchAndStylusTest {
         val rightWindowLocation = Point(getWidth() * 3 / 4, getHeight() * 1 / 2)
 
         // ACTION_HOVER_ENTER - stylus - right window
-        stylus.sendDown(pointerId, rightWindowLocation, UinputTouchDevice.MT_TOOL_PEN)
+        stylus.sendDown(pointerId, rightWindowLocation)
         stylus.sendPressure(0)
         stylus.sync()
         rightWindowVerifier.assertReceivedMotion(

@@ -61,9 +61,9 @@ import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.PollingCheck;

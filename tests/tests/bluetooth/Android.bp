@@ -43,6 +43,7 @@ android_test {
         "cts",
         "general-tests",
         "mts-bluetooth",
+        "dts",
     ],
     min_sdk_version: "Tiramisu",
     sdk_version: "module_current",

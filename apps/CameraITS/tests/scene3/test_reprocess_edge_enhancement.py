@@ -17,8 +17,8 @@
 import logging
 import math
 import os
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -168,7 +168,7 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
       if camera_properties_utils.private_reprocess(props):
         reprocess_formats.append('private')
 
-      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      out_surface = capture_request_utils.get_largest_format('jpeg', props)
       logging.debug('image W: %d, H: %d',
                     out_surface['width'], out_surface['height'])
 
@@ -191,13 +191,13 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
         sharpness_regular.append(ret['sharpness'])
 
       # Initialize plot
-      pylab.figure('reprocess_result')
-      pylab.title(_NAME)
-      pylab.xlabel('Edge Enhance Mode')
-      pylab.ylabel('Sharpness')
-      pylab.xticks(_EDGE_MODES_VALUES)
-      pylab.plot(_EDGE_MODES_VALUES, sharpness_regular,
-                 f"-{_PLOT_COLORS['none']}o", label='None')
+      plt.figure('reprocess_result')
+      plt.title(_NAME)
+      plt.xlabel('Edge Enhance Mode')
+      plt.ylabel('Sharpness')
+      plt.xticks(_EDGE_MODES_VALUES)
+      plt.plot(_EDGE_MODES_VALUES, sharpness_regular,
+               f"-{_PLOT_COLORS['none']}o", label='None')
       logging.debug('Sharpness for edge modes with regular request: %s',
                     str(sharpness_regular))
 
@@ -226,14 +226,14 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
         edge_mode_reported_reprocess.append(edge_mode_reported)
 
         # Add to plot and log results
-        pylab.plot(_EDGE_MODES_VALUES, sharpnesses,
-                   f'-{_PLOT_COLORS[reprocess_format]}o',
-                   label=reprocess_format)
+        plt.plot(_EDGE_MODES_VALUES, sharpnesses,
+                 f'-{_PLOT_COLORS[reprocess_format]}o',
+                 label=reprocess_format)
         logging.debug('Sharpness for edge modes w/ %s reprocess fmt: %s',
                       reprocess_format, str(sharpnesses))
       # Finalize plot
-      pylab.legend(numpoints=1, fancybox=True)
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot.png')
+      plt.legend(numpoints=1, fancybox=True)
+      plt.savefig(f'{name_with_log_path}_plot.png')
       logging.debug('Check regular requests')
       check_edge_modes(sharpness_regular)
 

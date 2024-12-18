@@ -27,7 +27,8 @@ private constructor(
     private val onDeviceFoundAction: ((IntentSender) -> Unit)?,
     private val onAssociationPendingAction: ((IntentSender) -> Unit)?,
     private val onAssociationCreatedAction: ((AssociationInfo) -> Unit)?,
-    private val onFailureAction: ((CharSequence?) -> Unit)?
+    private val onFailureAction: ((CharSequence?) -> Unit)?,
+    private val onFailureCodeAction: ((Int, CharSequence?) -> Unit)?
 ) : CompanionDeviceManager.Callback(),
     InvocationTracker<RecordingCallback.CallbackInvocation> by container {
 
@@ -35,12 +36,16 @@ private constructor(
         onDeviceFoundAction: ((IntentSender) -> Unit)? = null,
         onAssociationPendingAction: ((IntentSender) -> Unit)? = null,
         onAssociationCreatedAction: ((AssociationInfo) -> Unit)? = null,
-        onFailureAction: ((CharSequence?) -> Unit)? = null
-    ) : this(InvocationContainer(),
+        onFailureAction: ((CharSequence?) -> Unit)? = null,
+        onFailureCodeAction: ((Int, CharSequence?) -> Unit)? = null
+    ) : this(
+        InvocationContainer(),
             onDeviceFoundAction,
             onAssociationPendingAction,
             onAssociationCreatedAction,
-            onFailureAction)
+            onFailureAction,
+            onFailureCodeAction
+        )
 
     override fun onDeviceFound(intentSender: IntentSender) {
         logAndRecordInvocation(OnDeviceFound(intentSender))
@@ -62,6 +67,11 @@ private constructor(
         onFailureAction?.invoke(error)
     }
 
+    override fun onFailure(resultCode: Int, error: CharSequence?) {
+        logAndRecordInvocation(OnFailureCode(resultCode, error))
+        onFailureCodeAction?.invoke(resultCode, error)
+    }
+
     private fun logAndRecordInvocation(invocation: CallbackInvocation) {
         Log.d(TAG, "Callback: $invocation")
         recordInvocation(invocation)
@@ -72,4 +82,5 @@ private constructor(
     data class OnAssociationPending(val intentSender: IntentSender) : CallbackInvocation
     data class OnAssociationCreated(val associationInfo: AssociationInfo) : CallbackInvocation
     data class OnFailure(val error: CharSequence?) : CallbackInvocation
+    data class OnFailureCode(val resultCode: Int, val char: CharSequence?) : CallbackInvocation
 }

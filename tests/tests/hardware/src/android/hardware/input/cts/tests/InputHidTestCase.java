@@ -112,7 +112,8 @@ public abstract class InputHidTestCase extends InputTestCase {
                 mVid,
                 mPid,
                 mParser.readSources(mRegisterResourceId) | getAdditionalSources(),
-                mParser.readRegisterCommand(mRegisterResourceId));
+                mParser.readRegisterCommand(mRegisterResourceId),
+                mTestActivity.getDisplay());
         assertNotNull(mHidDevice);
         // Even though we already wait for all possible callbacks such as UHID_START and UHID_OPEN,
         // and wait for the correct device to appear by specifying expected source type in the

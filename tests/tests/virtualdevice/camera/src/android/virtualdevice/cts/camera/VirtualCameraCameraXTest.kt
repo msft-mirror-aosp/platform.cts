@@ -114,7 +114,7 @@ class VirtualCameraCameraXTest {
 
         val virtualDisplay = virtualDeviceRule.createManagedVirtualDisplay(
             virtualDevice,
-            VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG
+            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
         )!!
 
         val activity = virtualDeviceRule.startActivityOnDisplaySync(
